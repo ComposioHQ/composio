@@ -121,6 +121,10 @@ class ComposioToolSet(
         )
         # Flatten and format the parameters structure
         params = schema_params["properties"]
+        required_params = schema_params.get("required", [])
+        for param_name, param_info in params.items():
+            if param_name not in required_params:
+                param_info["nullable"] = True
         tool = StructuredTool(
             name=action,
             description=description,

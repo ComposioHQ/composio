@@ -1,0 +1,460 @@
+---
+title: "Newsletter Summarizer"
+sidebarTitle: "Newsletter Summarizer"
+description: "This project serves as an example of how to use Composio to seamlessly fetch and summarize newsletter emails. It automatically retrieves recent newsletters, summarizes their content, and sends a well-formatted email to the specified recipient."
+---
+
+<Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="fa-brands fa-github" href="https://github.com/ComposioHQ/composio">
+  Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio.
+</Card>
+
+<Steps>
+  <Step title="Install the required packages">
+    <CodeGroup>
+      ```python Python
+      pip install composio-crewai langchain-openai
+      ```
+      
+      ```javascript JavaScript
+      pnpm add hono composio-core dotenv @langchain/openai
+      ```
+    </CodeGroup>
+    Create a .env file and add your API keys.
+  </Step>
+
+  <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+      ```python Python
+      import os
+      from datetime import datetime, timedelta
+
+      from composio_crewai import App, ComposioToolSet
+      from crewai import Agent, Crew, Process, Task
+      from dotenv import load_dotenv
+      from langchain_openai import ChatOpenAI
+      ```
+      
+      ```javascript JavaScript
+      import { Hono } from "hono";
+      import { handle } from "hono/cloudflare-pages";
+      import { CloudflareToolSet } from "composio-core";
+      import { ChatOpenAI } from "@langchain/openai";
+      import dotenv from 'dotenv';
+
+      dotenv.config();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environments and tools">
+    Set up the necessary configurations for our agents and tools.
+    <CodeGroup>
+      ```python Python
+      load_dotenv()
+
+      # Initialize the language model
+      llm = ChatOpenAI(model="gpt-4o")
+
+      # Set up Composio tools
+      composio_toolset = ComposioToolSet()
+      
+      # Get Gmail tools
+      gmail_tools = composio_toolset.get_tools(apps=[App.GMAIL])
+      
+      # Get today's date and the date from 7 days ago
+      today = datetime.today().strftime("%Y/%m/%d")
+      week_ago = (datetime.today() - timedelta(days=7)).strftime("%Y/%m/%d")
+      ```
+      
+      ```javascript JavaScript
+      // Initialize the language model
+      const llm = new ChatOpenAI({ model: "gpt-4o" });
+
+      // Create Hono app
+      const app = new Hono();
+
+      // Configure Composio
+      const composioToolset = new CloudflareToolSet({
+          apiKey: process.env.COMPOSIO_API_KEY
+      });
+      
+      // Function to set up connected account
+      const setupConnection = async (c) => {
+          const connectionId = c.req.headers.get("x-connection-id");
+          
+          if (!connectionId) {
+              return { 
+                  ok: false, 
+                  error: "No connection ID provided in headers" 
+              };
+          }
+          
+          return { ok: true, connectionId };
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Define agents and tasks">
+    Create the agents and tasks needed for summarizing newsletters.
+    <CodeGroup>
+      ```python Python
+      # Define the Email Fetcher Agent
+      email_fetcher = Agent(
+          role="Email Fetcher",
+          goal="Fetch all newsletter emails",
+          backstory="""You are an Email Fetcher specialized in finding newsletter emails.
+          Your job is to identify and retrieve recent newsletter emails from the user's inbox.""",
+          verbose=True,
+          tools=gmail_tools,
+          llm=llm
+      )
+
+      # Define the Email Summarizer Agent
+      summarizer = Agent(
+          role="Newsletter Summarizer",
+          goal="Create concise summaries of newsletter content",
+          backstory="""You are a Newsletter Summarizer who excels at distilling information.
+          You can read newsletter emails and create brief, informative summaries of their main points.""",
+          verbose=True,
+          llm=llm
+      )
+
+      # Define the Email Sender Agent
+      email_sender = Agent(
+          role="Email Sender",
+          goal="Send email with newsletter summaries",
+          backstory="""You are an Email Sender who specializes in composing and sending emails.
+          You take summaries and convert them into well-formatted emails before sending them to recipients.""",
+          verbose=True,
+          tools=gmail_tools,
+          llm=llm
+      )
+
+      # Define tasks for each agent
+      fetch_task = Task(
+          description=f"""Search for newsletter emails in the inbox from {week_ago} to {today}.
+          Return a list of emails with their subjects, senders, and content.""",
+          expected_output="A list of newsletter emails with their content",
+          agent=email_fetcher
+      )
+
+      summarize_task = Task(
+          description="""Create a concise summary of each newsletter email.
+          Identify the key points, announcements, and insights from each newsletter.
+          Format your summaries neatly with bullet points.""",
+          expected_output="Summarized content from all newsletters",
+          agent=summarizer,
+          context=[fetch_task]
+      )
+
+      send_task = Task(
+          description="""Compose an email with the newsletter summaries.
+          Send it to youremail@example.com with the subject 'Weekly Newsletter Digest'.
+          Format the email in a reader-friendly way with headings for each newsletter.""",
+          expected_output="Confirmation that the email was sent",
+          agent=email_sender,
+          context=[summarize_task]
+      )
+      ```
+      
+      ```javascript JavaScript
+      app.post("/summarize-newsletters", async (c) => {
+          // Set up connection
+          const { ok, connectionId, error } = await setupConnection(c);
+          if (!ok) return c.json({ error }, 400);
+          
+          // Get Gmail tools
+          const tools = await composioToolset.getTools({
+              actions: ["gmail_list_messages", "gmail_get_message", "gmail_send_email"],
+              connectionId
+          });
+          
+          // Get today's date and the date from 7 days ago
+          const today = new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+          }).replace(/\//g, "/");
+          
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+          }).replace(/\//g, "/");
+          
+          try {
+              // Process instructions for the AI
+              const instructions = `
+                  1. Search for newsletter emails in the inbox from ${weekAgo} to ${today}
+                  2. For each newsletter found:
+                     - Read the content
+                     - Create a concise summary highlighting key points
+                  3. Compose a single email with all summaries organized clearly
+                  4. Send the summary email to the specified recipient with the subject 'Weekly Newsletter Digest'
+              `;
+              
+              // Message to process with tool calling
+              const message = {
+                  role: "user",
+                  content: instructions
+              };
+              
+              // Process the message with tool calling
+              const result = await composioToolset.process({
+                  messages: [message],
+                  tools,
+                  llm,
+                  recipient: "youremail@example.com"  // Replace with actual recipient
+              });
+              
+              return c.json({ status: "success", result });
+          } catch (error) {
+              console.error("Error:", error);
+              return c.json({ status: "error", message: error.message }, 500);
+          }
+      });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Execute the workflow">
+    Run the summarization process and handle the results.
+    <CodeGroup>
+      ```python Python
+      # Create and run the crew
+      crew = Crew(
+          agents=[email_fetcher, summarizer, email_sender],
+          tasks=[fetch_task, summarize_task, send_task],
+          verbose=2,
+          process=Process.sequential
+      )
+
+      # Execute the workflow
+      result = crew.kickoff()
+      print(f"Result: {result}")
+      ```
+      
+      ```javascript JavaScript
+      // Set up Cloudflare Pages handler
+      export default {
+          fetch: handle(app)
+      };
+
+      // For local testing
+      if (import.meta.main) {
+          console.log("Starting server on http://localhost:8787");
+          Bun.serve({
+              fetch: app.fetch,
+              port: 8787
+          });
+      }
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Complete Code 
+<CodeGroup>
+  ```python Python
+  import os
+  from datetime import datetime, timedelta
+
+  from composio_crewai import App, ComposioToolSet
+  from crewai import Agent, Crew, Process, Task
+  from dotenv import load_dotenv
+  from langchain_openai import ChatOpenAI
+
+  # Load environment variables
+  load_dotenv()
+
+  # Initialize the language model
+  llm = ChatOpenAI(model="gpt-4o")
+
+  # Set up Composio tools
+  composio_toolset = ComposioToolSet()
+  
+  # Get Gmail tools
+  gmail_tools = composio_toolset.get_tools(apps=[App.GMAIL])
+  
+  # Get today's date and the date from 7 days ago
+  today = datetime.today().strftime("%Y/%m/%d")
+  week_ago = (datetime.today() - timedelta(days=7)).strftime("%Y/%m/%d")
+
+  # Define the Email Fetcher Agent
+  email_fetcher = Agent(
+      role="Email Fetcher",
+      goal="Fetch all newsletter emails",
+      backstory="""You are an Email Fetcher specialized in finding newsletter emails.
+      Your job is to identify and retrieve recent newsletter emails from the user's inbox.""",
+      verbose=True,
+      tools=gmail_tools,
+      llm=llm
+  )
+
+  # Define the Email Summarizer Agent
+  summarizer = Agent(
+      role="Newsletter Summarizer",
+      goal="Create concise summaries of newsletter content",
+      backstory="""You are a Newsletter Summarizer who excels at distilling information.
+      You can read newsletter emails and create brief, informative summaries of their main points.""",
+      verbose=True,
+      llm=llm
+  )
+
+  # Define the Email Sender Agent
+  email_sender = Agent(
+      role="Email Sender",
+      goal="Send email with newsletter summaries",
+      backstory="""You are an Email Sender who specializes in composing and sending emails.
+      You take summaries and convert them into well-formatted emails before sending them to recipients.""",
+      verbose=True,
+      tools=gmail_tools,
+      llm=llm
+  )
+
+  # Define tasks for each agent
+  fetch_task = Task(
+      description=f"""Search for newsletter emails in the inbox from {week_ago} to {today}.
+      Return a list of emails with their subjects, senders, and content.""",
+      expected_output="A list of newsletter emails with their content",
+      agent=email_fetcher
+  )
+
+  summarize_task = Task(
+      description="""Create a concise summary of each newsletter email.
+      Identify the key points, announcements, and insights from each newsletter.
+      Format your summaries neatly with bullet points.""",
+      expected_output="Summarized content from all newsletters",
+      agent=summarizer,
+      context=[fetch_task]
+  )
+
+  send_task = Task(
+      description="""Compose an email with the newsletter summaries.
+      Send it to youremail@example.com with the subject 'Weekly Newsletter Digest'.
+      Format the email in a reader-friendly way with headings for each newsletter.""",
+      expected_output="Confirmation that the email was sent",
+      agent=email_sender,
+      context=[summarize_task]
+  )
+
+  # Create and run the crew
+  crew = Crew(
+      agents=[email_fetcher, summarizer, email_sender],
+      tasks=[fetch_task, summarize_task, send_task],
+      verbose=2,
+      process=Process.sequential
+  )
+
+  # Execute the workflow
+  result = crew.kickoff()
+  print(f"Result: {result}")
+  ```
+
+  ```javascript JavaScript
+  import { Hono } from "hono";
+  import { handle } from "hono/cloudflare-pages";
+  import { CloudflareToolSet } from "composio-core";
+  import { ChatOpenAI } from "@langchain/openai";
+  import dotenv from 'dotenv';
+
+  dotenv.config();
+
+  // Initialize the language model
+  const llm = new ChatOpenAI({ model: "gpt-4o" });
+
+  // Create Hono app
+  const app = new Hono();
+
+  // Configure Composio
+  const composioToolset = new CloudflareToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY
+  });
+  
+  // Function to set up connected account
+  const setupConnection = async (c) => {
+      const connectionId = c.req.headers.get("x-connection-id");
+      
+      if (!connectionId) {
+          return { 
+              ok: false, 
+              error: "No connection ID provided in headers" 
+          };
+      }
+      
+      return { ok: true, connectionId };
+  };
+
+  app.post("/summarize-newsletters", async (c) => {
+      // Set up connection
+      const { ok, connectionId, error } = await setupConnection(c);
+      if (!ok) return c.json({ error }, 400);
+      
+      // Get Gmail tools
+      const tools = await composioToolset.getTools({
+          actions: ["gmail_list_messages", "gmail_get_message", "gmail_send_email"],
+          connectionId
+      });
+      
+      // Get today's date and the date from 7 days ago
+      const today = new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+      }).replace(/\//g, "/");
+      
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+      }).replace(/\//g, "/");
+      
+      try {
+          // Process instructions for the AI
+          const instructions = `
+              1. Search for newsletter emails in the inbox from ${weekAgo} to ${today}
+              2. For each newsletter found:
+                 - Read the content
+                 - Create a concise summary highlighting key points
+              3. Compose a single email with all summaries organized clearly
+              4. Send the summary email to the specified recipient with the subject 'Weekly Newsletter Digest'
+          `;
+          
+          // Message to process with tool calling
+          const message = {
+              role: "user",
+              content: instructions
+          };
+          
+          // Process the message with tool calling
+          const result = await composioToolset.process({
+              messages: [message],
+              tools,
+              llm,
+              recipient: "youremail@example.com"  // Replace with actual recipient
+          });
+          
+          return c.json({ status: "success", result });
+      } catch (error) {
+          console.error("Error:", error);
+          return c.json({ status: "error", message: error.message }, 500);
+      }
+  });
+
+  // Set up Cloudflare Pages handler
+  export default {
+      fetch: handle(app)
+  };
+
+  // For local testing
+  if (import.meta.main) {
+      console.log("Starting server on http://localhost:8787");
+      Bun.serve({
+          fetch: app.fetch,
+          port: 8787
+      });
+  }
+  ```
+</CodeGroup>

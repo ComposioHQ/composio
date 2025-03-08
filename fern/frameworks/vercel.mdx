@@ -1,0 +1,48 @@
+---
+title: "Using Composio With Vercel AI SDK"
+sidebarTitle: "Vercel AI"
+description: "Integrate Composio with Vercel AI SDK to let them seamlessly interact with external apps"
+---
+
+## Star A Repository on Github
+In this example, we will use Vercel AI SDK to star a repository on Github using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+```bash JavaScript
+npm install @ai-sdk/openai composio-core ai
+```
+</Step>
+<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+```javascript JavaScript
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet } from "composio-core";
+import { generateText } from "ai";
+
+const toolset = new VercelAIToolSet();
+```
+</Step>
+
+<Step title="Get All Github Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+```javascript JavaScript
+const tools = await toolset.getTools({ apps: ["github"] });
+```
+</Step>
+<Step title="Define the Agent">
+```javascript JavaScript
+const output = await generateText({
+    model: openai("gpt-4o-mini"),
+    streamText: false,
+    tools,
+    prompt: 'Star the repository "composiohq/composio"',
+    maxToolRoundtrips: 5,
+});
+```
+</Step>
+<Step title="Execute the Agent">
+```javascript JavaScript
+console.log(output.text);
+```
+</Step>
+</Steps>

@@ -1,0 +1,123 @@
+---
+title: "🐫 Using Composio With CAMEL-AI"
+sidebarTitle: "CAMEL"
+description: "Integrate Composio with CAMEL agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **CAMEL agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language & CAMEL Agent</Tip>
+
+### Install Packages & Connect a Tool
+
+Ensure you have the necessary packages installed and connect your GitHub account to allow your CAMEL-AI agents to utilize GitHub functionalities.
+<CodeGroup>
+    ``` bash Run command
+    pip install camel-ai
+    pip install composio-camel -U
+    #  Connect your GitHub so agents can use it. 
+    composio add github
+    #  Check all different apps which you can connect with
+    composio apps
+    ```
+</CodeGroup>
+
+### Goal: Prepare your environment by initializing necessary imports from Composio & CAMEL.
+
+<Steps>
+<Step title="Import Base Packages">
+
+Prepare your environment by initializing necessary imports from Composio & CAMEL.
+
+<CodeGroup>
+    ```python Default Imports
+    from colorama import Fore
+    from camel.agents import ChatAgent
+    from camel.configs import ChatGPTConfig
+    from camel.messages import BaseMessage
+    from camel.models import ModelFactory
+    from camel.types import ModelPlatformType, ModelType
+    from camel.utils import print_text_animated
+    from composio_camel import ComposioToolSet, Action
+
+    ```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Integrating GitHub Tools with Composio">
+
+This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for CAMEL operations.
+
+<CodeGroup>
+    ```python CAMEL Supported tools from Composio
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(
+        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    )
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="CAMEL Agent Setup">
+
+This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
+
+<CodeGroup>
+    ```python CAMEL Agent Setup
+    assistant_model_config = ChatGPTConfig(
+        temperature=0.0,
+        tools=tools,
+    )
+
+    model = ModelFactory.create(
+        model_platform=ModelPlatformType.OPENAI,
+        model_type=ModelType.GPT_3_5_TURBO,
+        model_config_dict=assistant_model_config.__dict__,
+    )
+
+
+    # set up agent
+    assistant_sys_msg = BaseMessage.make_assistant_message(
+        role_name="Developer",
+        content=(
+            "You are a programmer as well an experienced github user. "
+            "When asked given a instruction, "
+            "you try to use available tools, and execute it"
+        ),
+    )
+
+    agent = ChatAgent(
+        assistant_sys_msg,
+        model,
+        tools=tools,
+    )
+    agent.reset()
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Execute with your prompt/task.">
+
+Execute the following code to execute the agent, ensuring that the intended task has been successfully completed.
+
+<CodeGroup>
+    ```python CAMEL Agent Execution
+    prompt = (
+        "I have created a new GitHub Repo,"
+        "Please star my github repository: camel-ai/camel"
+    )
+    user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
+    print(Fore.YELLOW + f"User prompt:\n{prompt}\n")
+
+    response = agent.step(user_msg)
+    for msg in response.msgs:
+        print_text_animated(Fore.GREEN + f"Agent response:\n{msg.content}\n")
+    ```
+</CodeGroup>
+
+</Step>
+</Steps>
