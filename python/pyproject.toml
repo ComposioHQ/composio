@@ -52,7 +52,27 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv.workspace]
-members = ["plugins/*", "swe"]
+members = [
+    "plugins/agno",
+    "plugins/autogen",
+    "plugins/camel",
+    "plugins/claude",
+    "plugins/crew_ai",
+    "plugins/gemini",
+    "plugins/google",
+    "plugins/griptape",
+    "plugins/julep",
+    "plugins/langchain",
+    "plugins/langgraph",
+    "plugins/llamaindex",
+    "plugins/openai",
+    "plugins/phidata",
+    "plugins/praisonai",
+    "plugins/pydanticai",
+    "plugins/smolagent",
+    "plugins/togetherai",
+    "swe"
+]
 
 [tool.uv.sources]
 # Define workspace sources for each plugin
@@ -68,7 +88,6 @@ composio_julep = {workspace = true}
 composio_langchain = {workspace = true}
 composio_langgraph = {workspace = true}
 composio_llamaindex = {workspace = true}
-composio_lyzr = {workspace = true}
 composio_openai = {workspace = true}
 composio_phidata = {workspace = true}
 composio_praisonai = {workspace = true}
