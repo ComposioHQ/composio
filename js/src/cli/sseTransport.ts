@@ -14,13 +14,11 @@ import { Command } from "commander";
 import { z } from "zod";
 // Use dynamic import for SSEClientTransport to avoid ESM issues
 import { JSONRPCMessage, JSONRPCRequest } from "composiohq-modelcontextprotocol-typescript-sdk/types.js";
+import { getSSEClient } from "./src/sseTransport";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const log = (...args: any[]): void => console.log("[mcp-transport]", ...args);
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
-const logStderr = (...args: any[]): void =>
-  console.error("[mcp-transport]", ...args);
+const log = (...args: any[]) => console.log('[composio-transport]', ...args)
+const logStderr = (...args: any[]) => console.error('[composio-transport]', ...args)
 
 // If needed, adjust this logic to fetch version from package.json or a default
 function getVersion(): string {
@@ -42,29 +40,15 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   const { Client } = await import("composiohq-modelcontextprotocol-typescript-sdk/client/index.js");
   const { StdioServerTransport } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/stdio.js");
   const { Server } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/index.js");
-  const sseTransport = new SSEClientTransport(new URL(sseUrl));
-  const sseClient = new Client(
-    { name: "mcp-transport", version: getVersion() },
-    { capabilities: {} }
-  );
+  let { sseClient, originalRequest, sseTransport } = await getSSEClient(sseUrl, logStderr);
 
-  sseTransport.onerror = (err: Error) => {
-    logStderr("SSE error:", err);
-  };
-  sseTransport.onclose = () => {
-    logStderr("SSE connection closed");
-    process.exit(1);
-  };
-
-  await sseClient.connect(sseTransport);
   logStderr("SSE connected");
-
+  logStderr("getServerCapabilities " + JSON.stringify(sseClient.getServerCapabilities()));
   const stdioServer = new Server(
     sseClient.getServerVersion() ?? {
       name: "mcp-transport",
       version: getVersion(),
     },
-    { capabilities: sseClient.getServerCapabilities() }
   );
   const stdioTransport = new StdioServerTransport();
   await stdioServer.connect(stdioTransport);
@@ -75,7 +59,7 @@ async function sseToStdio(sseUrl: string): Promise<void> {
     ...payload,
   });
 
-  stdioServer.transport!.onmessage = async (message: JSONRPCMessage) => {
+ stdioServer.transport!.onmessage = async (message: JSONRPCMessage) => {
     if ("method" in message && "id" in message) {
       logStderr("Stdio → SSE:", message);
       const req = message as JSONRPCRequest;
