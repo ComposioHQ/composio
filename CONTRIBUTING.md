@@ -72,3 +72,23 @@ We have various commands which are helpful during development.
   - Use `tox -e mypy` for type checking
 
 Read more detailed guides on development [here](python/docs/development.md).
+
+## Contributing to Docs
+
+To contribute to our documentation:
+
+1. Make sure you have Node.js installed on your system.
+
+2. Install Fern CLI globally:
+   ```bash
+   npm install -g fern-api
+   ```
+
+3. Start the docs server from the project root:
+   ```bash
+   fern docs dev
+   ```
+
+4. View and edit docs at http://localhost:3000
+
+5. When you're happy with your changes, create a PR.
