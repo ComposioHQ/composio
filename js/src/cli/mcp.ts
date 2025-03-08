@@ -95,8 +95,8 @@ export default class MCPCommand {
     command: string
   ): void {
     const config: MCPConfig = {
-      command: "composio",
-      args: ["transport", "--sse", mcpUrl],
+      command: "npx",
+      args: ["-y", "composio-core@rc", "transport", "--sse", mcpUrl],
     };
 
     const homeDir = os.homedir();
