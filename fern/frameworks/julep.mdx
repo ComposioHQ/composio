@@ -1,0 +1,151 @@
+---
+title: "Using Composio With Julep"
+sidebarTitle: "Julep"
+description: "Integrate Composio with Julep agents to enhance their interaction with external apps"
+---
+
+**Composio and Julep together** empower your agents to **interact effectively** with various **external applications**!
+
+### Install Packages & Connect a Tool
+
+<Tip>
+  Goal: Allow agents to interact with GitHub projects, like starring a
+  repository using natural language & Julep Agent
+</Tip>
+
+These commands set up your environment to enable smooth interactions between Julep and GitHub.
+
+<CodeGroup>
+  ```bash Run Command 
+  pip install composio-julep
+
+  # Connect your GitHub so agents can interact with it
+
+  composio add github
+
+  # Check all supported apps
+
+  composio apps
+  ```
+</CodeGroup>
+
+<Steps>
+
+<Step title="Import Base Packages & Create Default Julep Agent">
+Replace `julep_api_key` with actual API key.
+<CodeGroup>
+  ```python Default Imports & Configuration
+  from julep import Client
+  from composio_julep import ComposioToolSet, App
+  import os
+
+  julep_api_key = "{julep_api_key}" # Replace it
+  julep_client = Client(api_key=julep_api_key)
+
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Configure Julep Agent with Composio Tools">
+<CodeGroup>
+  ```python Agent Configuration
+  # Initialise the Composio Tool Set
+  composio_toolset = ComposioToolSet()
+
+  # Register the GitHub app with the right settings
+
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
+
+  # Create and configure the Julep agent
+
+  agent = julep_client.agents.create(
+  name="Jessica",
+  about="Tech entrepreneur with a focus on sustainability and AI.",
+  default_settings={
+  "temperature": 0.7,
+  "top_p": 1,
+  "min_p": 0.01,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "length_penalty": 1.0,
+  "max_tokens": 150
+  },
+  model="gpt-4-turbo",
+  tools=tools,
+  )
+
+  ```
+</CodeGroup>
+</Step>
+<Step title="Execute the Task via Julep Agent">
+<CodeGroup>
+  ```python Julep Agent Executes the Task
+  about = """
+  Sam, a software developer, is passionate about impactful tech.
+  At the tech fair, he seeks investors and collaborators for his project.
+  """
+  user = julep_client.users.create(
+      name="Sam",
+      about=about,
+  )
+
+  situation_prompt = "You are at a tech fair seeking innovative projects."
+  session = julep_client.sessions.create(user_id=user.id, agent_id=agent.id, situation=situation_prompt)
+
+  user_msg = "Could you star the GitHub repository composiohq/composio?"
+
+  response = julep_client.sessions.chat(
+      session_id=session.id,
+      messages=[
+          {"role": "user", "content": user_msg, "name": "Sam"}
+      ],
+      recall=True,
+      remember=True
+  )
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Handle all the Tool calls">
+<CodeGroup>
+  ```python Handle Tool Call
+  response = composio_toolset.handle_tool_calls(response)
+
+  print(response.messages)
+  ```
+</CodeGroup>
+</Step>
+<Step title="Check Response">
+<CodeGroup>
+  ```bash Check Agent Response
+  [{'content': 'I have starred the repository "composio" for you on GitHub under the account "composiohq".', 'role': 'agent'}]
+  ```
+</CodeGroup>
+</Step>
+</Steps>
+
+### Use Specific Actions
+
+<CodeGroup>
+  ```python Filter Specific Action 
+  # To restrict agents from executing any actions, filter specific actions 
+  actions = composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE]) 
+  ```
+</CodeGroup>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```python Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  actions = composio_toolset.get_tools(apps=[App.ASANA, App.GITHUB]) 
+  ```
+</CodeGroup>
+
+### Filter apps actions by tags
+
+<CodeGroup>
+  ```python Filter Actions by Tags 
+  actions = toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
+  ```
+</CodeGroup>
