@@ -8,6 +8,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import {
   ZGetAppParams,
@@ -43,9 +44,11 @@ export type AppItemListResponse = AppInfoResponseDto;
 
 export class Apps {
   private backendClient: AxiosBackendClient;
+  private client: Client;
   private fileName: string = "js/src/sdk/models/apps.ts";
-  constructor(backendClient: AxiosBackendClient) {
+  constructor(backendClient: AxiosBackendClient, client: Client) {
     this.backendClient = backendClient;
+    this.client = client;
   }
 
   /**
@@ -63,7 +66,9 @@ export class Apps {
       params: {},
     });
     try {
-      const { data } = await apiClient.apps.getApps();
+      const { data } = await apiClient.apps.getApps({
+        client: this.client,
+      });
       return data?.items || [];
     } catch (error) {
       throw CEG.handleAllError(error);
@@ -87,6 +92,7 @@ export class Apps {
     });
     try {
       const { data: response } = await apiClient.apps.getApp({
+        client: this.client,
         path: {
           appName: data.appKey,
         },
