@@ -9,6 +9,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { Client } from "@hey-api/client-axios";
 import { ListTriggersResponse } from "../client";
 import {
   TriggerSingleParam,
@@ -60,8 +61,11 @@ export class Triggers {
 
   private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/triggers.ts";
-  constructor(backendClient: AxiosBackendClient) {
+  private client: Client;
+
+  constructor(backendClient: AxiosBackendClient, client: Client) {
     this.backendClient = backendClient;
+    this.client = client;
   }
 
   /**
@@ -96,6 +100,7 @@ export class Triggers {
       const finalAppNames =
         appNames && appNames.length > 0 ? appNames : appUniqueKeys;
       const { data: response } = await apiClient.triggers.listTriggers({
+        client: this.client,
         query: {
           appNames: finalAppNames?.join(","),
           triggerIds: finalTriggerInstanceIds?.join(","),
@@ -127,6 +132,7 @@ export class Triggers {
    */
   async get(data: TriggerSingleParam): Promise<SingleTriggerRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      client: this.client,
       method: "get",
       file: this.fileName,
       params: { data },
@@ -164,6 +170,7 @@ export class Triggers {
         );
       }
       const res = await apiClient.triggers.getTriggerInfoV2({
+        client: this.client,
         path: {
           triggerName: parsedData.triggerName || parsedData.triggerId || "",
         },
@@ -201,6 +208,7 @@ export class Triggers {
     try {
       const parsedData = ZSingleTriggerParam.parse(data);
       const res = await apiClient.triggers.getTriggerInfoV2({
+        client: this.client,
         path: {
           triggerName: parsedData.triggerName || parsedData.triggerId || "",
         },
@@ -237,6 +245,7 @@ export class Triggers {
     try {
       const parsedData = ZTriggerSetupParam.parse(params);
       const response = await apiClient.triggers.enableTrigger({
+        client: this.client,
         path: {
           connectedAccountId: parsedData.connectedAccountId,
           triggerName: parsedData.triggerName,
@@ -284,6 +293,7 @@ export class Triggers {
         );
       }
       await apiClient.triggers.switchTriggerInstanceStatus({
+        client: this.client,
         path: {
           triggerId: finalTriggerId!,
         },
@@ -325,6 +335,7 @@ export class Triggers {
         );
       }
       await apiClient.triggers.switchTriggerInstanceStatus({
+        client: this.client,
         path: {
           triggerId: finalTriggerId!,
         },
@@ -356,6 +367,7 @@ export class Triggers {
     try {
       const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.deleteTrigger({
+        client: this.client,
         path: {
           triggerInstanceId: parsedData.triggerInstanceId,
         },
