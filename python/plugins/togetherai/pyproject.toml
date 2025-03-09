@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "composio-togetherai"
+version = "0.1.0"
+description = "Composio TogetherAI Plugin"
+authors = [
+    {name = "Composio", email = "tech@composio.dev"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4"
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "together>=0.1.0",
+    "pydantic>=2.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ComposioHQ/composio"
+"Bug Tracker" = "https://github.com/ComposioHQ/composio/issues"
