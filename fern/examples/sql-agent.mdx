@@ -1,0 +1,447 @@
+---
+title: "SQL Agent"
+sidebarTitle: "SQL Agent"
+description: "This guide provides detailed steps to create an agent that leverages Composio to perform SQL queries, file operations, and plot insightful graphs based on the data retrieved from databases."
+---
+
+<Card color="#7bee0c" title="SQL Agent GitHub Repository" icon="fa-brands fa-github" href="https://github.com/ComposioHQ/composio">
+  Explore the complete source code for the SQL Agent project. This repository contains all the necessary files and scripts to set up and run the SQL Agent using Composio.
+</Card>
+
+<Steps>
+  <Step title="Install the required packages">
+    <CodeGroup>
+      ```python Python
+      pip install composio-langchain langchain-openai
+      ```
+      
+      ```javascript JavaScript
+      pnpm add @langchain/openai composio-core langchain dotenv
+      ```
+    </CodeGroup>
+    Create a .env file and add your OpenAI API Key.
+  </Step>
+
+  <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+      ```python Python
+      import os
+      import dotenv
+
+      from composio_langchain import App, ComposioToolSet
+      from langchain import hub
+      from langchain.agents import AgentExecutor, create_openai_functions_agent
+      from langchain_openai import ChatOpenAI
+
+      # Load environment variables
+      dotenv.load_dotenv()
+      ```
+      
+      ```javascript JavaScript
+      import dotenv from 'dotenv';
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { ComposioToolSet } from "composio-core";
+      import { pull } from "langchain/hub";
+      
+      dotenv.config();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Initialize Language Model and Define Tools">
+    Set up the language model and define the tools needed for SQL operations.
+    <CodeGroup>
+      ```python Python
+      # Initialize the language model
+      llm = ChatOpenAI(model="gpt-4o")
+
+      # Initialize the Composio ToolSet
+      composio_toolset = ComposioToolSet()
+
+      # Get tools for SQL and File operations
+      sql_file_tools = composio_toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
+
+      # Get tools for code interpreter (for plotting graphs)
+      code_tools = composio_toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+      # Get all tools combined
+      all_tools = composio_toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL, App.CODEINTERPRETER])
+
+      # Pull the prompt template for the agent
+      prompt = hub.pull("hwchase17/openai-functions-agent")
+      ```
+      
+      ```javascript JavaScript
+      // Initialize the Composio ToolSet
+      const composioToolset = new ComposioToolSet({
+          apiKey: process.env.COMPOSIO_API_KEY
+      });
+
+      // Initialize the language model
+      const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+      // Function to get SQL and File tools
+      const getSQLTools = async () => {
+          return await composioToolset.getTools({ 
+              apps: ["sqltool", "filetool"] 
+          });
+      };
+
+      // Function to get all tools including code interpreter
+      const getAllTools = async () => {
+          return await composioToolset.getTools({ 
+              apps: ["sqltool", "filetool", "codeinterpreter"] 
+          });
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set up the SQL Query Agent">
+    Create an agent to execute SQL queries and save results.
+    <CodeGroup>
+      ```python Python
+      # Create the agent for SQL and File operations
+      sql_agent = create_openai_functions_agent(llm, sql_file_tools, prompt)
+      sql_executor = AgentExecutor(agent=sql_agent, tools=sql_file_tools, verbose=True)
+
+      # Define the SQL query task
+      query_task = (
+          "Connect to the SQLite database 'companydb' and execute the following query: "
+          "SELECT * FROM MOCK_DATA ORDER BY salary DESC LIMIT 10. "
+          "Save the results to a file named 'top_salaries.txt' and return the content."
+      )
+
+      # Execute the SQL query task
+      sql_result = sql_executor.invoke({"input": query_task})
+      print(f"SQL Query Result: {sql_result['output']}")
+      ```
+      
+      ```javascript JavaScript
+      // Function to execute SQL queries
+      async function executeSQLQuery(query) {
+          // Get SQL and File tools
+          const sqlTools = await getSQLTools();
+          
+          // Create the agent prompt
+          const prompt = await pull("hwchase17/openai-functions-agent");
+          
+          // Create the agent for SQL operations
+          const agent = await createOpenAIFunctionsAgent({ 
+              llm, 
+              tools: sqlTools, 
+              prompt 
+          });
+      
+          // Create the agent executor
+          const agentExecutor = new AgentExecutor({
+              agent,
+              tools: sqlTools,
+              verbose: true,
+          });
+      
+          // Execute the SQL query
+          const result = await agentExecutor.invoke({
+              input: `Connect to the SQLite database 'companydb' and execute the following query: ${query}. 
+                      Save the results to a file named 'query_results.txt' and return the content.`
+          });
+      
+          console.log("SQL Query Result:", result.output);
+          return result.output;
+      }
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set up the Data Visualization Agent">
+    Create an agent to process data and generate visualizations.
+    <CodeGroup>
+      ```python Python
+      # Create the agent for data visualization
+      visualization_agent = create_openai_functions_agent(llm, code_tools, prompt)
+      visualization_executor = AgentExecutor(agent=visualization_agent, tools=code_tools, verbose=True)
+
+      # Define the visualization task
+      visualization_task = (
+          f"Using the following data from the top 10 highest salaries: {sql_result['output']}\n"
+          "Create a bar chart showing first_name on the x-axis and salary on the y-axis. "
+          "Save the visualization as 'salary_chart.png'."
+      )
+
+      # Execute the visualization task
+      visualization_result = visualization_executor.invoke({"input": visualization_task})
+      print(f"Visualization Result: {visualization_result['output']}")
+      ```
+      
+      ```javascript JavaScript
+      // Function to create data visualizations
+      async function createVisualization(data) {
+          // Get all tools including code interpreter
+          const allTools = await getAllTools();
+          
+          // Create the agent prompt
+          const prompt = await pull("hwchase17/openai-functions-agent");
+          
+          // Create the agent for visualization
+          const agent = await createOpenAIFunctionsAgent({ 
+              llm, 
+              tools: allTools, 
+              prompt 
+          });
+      
+          // Create the agent executor
+          const agentExecutor = new AgentExecutor({
+              agent,
+              tools: allTools,
+              verbose: true,
+          });
+      
+          // Execute the visualization task
+          const result = await agentExecutor.invoke({
+              input: `Using the following data: ${data}
+                      Create a bar chart showing first_name on the x-axis and salary on the y-axis.
+                      Save the visualization as 'salary_chart.png'.`
+          });
+      
+          console.log("Visualization Result:", result.output);
+          return result.output;
+      }
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Putting Everything Together">
+    Execute the full workflow combining SQL queries and data visualization.
+    <CodeGroup>
+      ```python Python
+      # Execute the workflow
+      def main():
+          # First, execute SQL query
+          sql_result = sql_executor.invoke({"input": query_task})
+          print(f"SQL Query Result: {sql_result['output']}")
+          
+          # Then, create visualization
+          visualization_task = (
+              f"Using the following data from the top 10 highest salaries: {sql_result['output']}\n"
+              "Create a bar chart showing first_name on the x-axis and salary on the y-axis. "
+              "Save the visualization as 'salary_chart.png'."
+          )
+          visualization_result = visualization_executor.invoke({"input": visualization_task})
+          print(f"Visualization Result: {visualization_result['output']}")
+          
+          return "Workflow completed successfully!"
+
+      if __name__ == "__main__":
+          main()
+      ```
+      
+      ```javascript JavaScript
+      // Main function to run the SQL Agent workflow
+      async function runSQLAgent() {
+          try {
+              // Define the SQL query
+              const query = "SELECT * FROM MOCK_DATA ORDER BY salary DESC LIMIT 10";
+              
+              // Execute the SQL query
+              const queryResult = await executeSQLQuery(query);
+              
+              // Create visualization based on query results
+              const visualizationResult = await createVisualization(queryResult);
+              
+              console.log("SQL Agent workflow completed successfully!");
+              return {
+                  queryResult,
+                  visualizationResult
+              };
+          } catch (error) {
+              console.error("An error occurred:", error);
+              throw error;
+          }
+      }
+
+      // Execute the workflow
+      runSQLAgent().catch(error => console.error("SQL Agent failed:", error));
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Complete Code 
+<CodeGroup>
+  ```python Python
+  import os
+  import dotenv
+
+  from composio_langchain import App, ComposioToolSet
+  from langchain import hub
+  from langchain.agents import AgentExecutor, create_openai_functions_agent
+  from langchain_openai import ChatOpenAI
+
+  # Load environment variables
+  dotenv.load_dotenv()
+
+  # Initialize the language model
+  llm = ChatOpenAI(model="gpt-4o")
+
+  # Initialize the Composio ToolSet
+  composio_toolset = ComposioToolSet()
+
+  # Get tools for SQL and File operations
+  sql_file_tools = composio_toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
+
+  # Get tools for code interpreter (for plotting graphs)
+  code_tools = composio_toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+  # Pull the prompt template for the agent
+  prompt = hub.pull("hwchase17/openai-functions-agent")
+
+  # Create the agent for SQL and File operations
+  sql_agent = create_openai_functions_agent(llm, sql_file_tools, prompt)
+  sql_executor = AgentExecutor(agent=sql_agent, tools=sql_file_tools, verbose=True)
+
+  # Create the agent for data visualization
+  visualization_agent = create_openai_functions_agent(llm, code_tools, prompt)
+  visualization_executor = AgentExecutor(agent=visualization_agent, tools=code_tools, verbose=True)
+
+  # Define the SQL query task
+  query_task = (
+      "Connect to the SQLite database 'companydb' and execute the following query: "
+      "SELECT * FROM MOCK_DATA ORDER BY salary DESC LIMIT 10. "
+      "Save the results to a file named 'top_salaries.txt' and return the content."
+  )
+
+  def main():
+      # First, execute SQL query
+      sql_result = sql_executor.invoke({"input": query_task})
+      print(f"SQL Query Result: {sql_result['output']}")
+      
+      # Then, create visualization
+      visualization_task = (
+          f"Using the following data from the top 10 highest salaries: {sql_result['output']}\n"
+          "Create a bar chart showing first_name on the x-axis and salary on the y-axis. "
+          "Save the visualization as 'salary_chart.png'."
+      )
+      visualization_result = visualization_executor.invoke({"input": visualization_task})
+      print(f"Visualization Result: {visualization_result['output']}")
+      
+      return "Workflow completed successfully!"
+
+  if __name__ == "__main__":
+      main()
+  ```
+
+  ```javascript JavaScript
+  import dotenv from 'dotenv';
+  import { ChatOpenAI } from "@langchain/openai";
+  import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+  import { ComposioToolSet } from "composio-core";
+  import { pull } from "langchain/hub";
+
+  dotenv.config();
+
+  // Initialize the Composio ToolSet
+  const composioToolset = new ComposioToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY
+  });
+
+  // Initialize the language model
+  const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+  // Function to execute SQL queries
+  async function executeSQLQuery(query) {
+      // Get SQL and File tools
+      const sqlTools = await composioToolset.getTools({ 
+          apps: ["sqltool", "filetool"] 
+      });
+      
+      // Create the agent prompt
+      const prompt = await pull("hwchase17/openai-functions-agent");
+      
+      // Create the agent for SQL operations
+      const agent = await createOpenAIFunctionsAgent({ 
+          llm, 
+          tools: sqlTools, 
+          prompt 
+      });
+  
+      // Create the agent executor
+      const agentExecutor = new AgentExecutor({
+          agent,
+          tools: sqlTools,
+          verbose: true,
+      });
+  
+      // Execute the SQL query
+      const result = await agentExecutor.invoke({
+          input: `Connect to the SQLite database 'companydb' and execute the following query: ${query}. 
+                  Save the results to a file named 'query_results.txt' and return the content.`
+      });
+  
+      console.log("SQL Query Result:", result.output);
+      return result.output;
+  }
+
+  // Function to create data visualizations
+  async function createVisualization(data) {
+      // Get all tools including code interpreter
+      const allTools = await composioToolset.getTools({ 
+          apps: ["sqltool", "filetool", "codeinterpreter"] 
+      });
+      
+      // Create the agent prompt
+      const prompt = await pull("hwchase17/openai-functions-agent");
+      
+      // Create the agent for visualization
+      const agent = await createOpenAIFunctionsAgent({ 
+          llm, 
+          tools: allTools, 
+          prompt 
+      });
+  
+      // Create the agent executor
+      const agentExecutor = new AgentExecutor({
+          agent,
+          tools: allTools,
+          verbose: true,
+      });
+  
+      // Execute the visualization task
+      const result = await agentExecutor.invoke({
+          input: `Using the following data: ${data}
+                  Create a bar chart showing first_name on the x-axis and salary on the y-axis.
+                  Save the visualization as 'salary_chart.png'.`
+      });
+  
+      console.log("Visualization Result:", result.output);
+      return result.output;
+  }
+
+  // Main function to run the SQL Agent workflow
+  async function runSQLAgent() {
+      try {
+          // Define the SQL query
+          const query = "SELECT * FROM MOCK_DATA ORDER BY salary DESC LIMIT 10";
+          
+          // Execute the SQL query
+          const queryResult = await executeSQLQuery(query);
+          
+          // Create visualization based on query results
+          const visualizationResult = await createVisualization(queryResult);
+          
+          console.log("SQL Agent workflow completed successfully!");
+          return {
+              queryResult,
+              visualizationResult
+          };
+      } catch (error) {
+          console.error("An error occurred:", error);
+          throw error;
+      }
+  }
+
+  // Execute the workflow
+  runSQLAgent().catch(error => console.error("SQL Agent failed:", error));
+  ```
+</CodeGroup>

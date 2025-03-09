@@ -31,10 +31,29 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 ## Development setup
 
-- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `pipenv`, then run the following:
+- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `uv`, then run the following:
 
-      make env
-      pipenv shell
+      # Install uv
+      pip install uv
+      
+      # Create and activate virtual environment
+      uv venv
+      source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+      
+      # Install dependencies
+      uv pip install -e .
+      uv pip install -e python/swe
+      
+      # Install plugins as needed
+      uv pip install -e python/plugins/autogen
+      uv pip install -e python/plugins/claude
+      uv pip install -e python/plugins/crew_ai
+      uv pip install -e python/plugins/griptape
+      uv pip install -e python/plugins/julep
+      uv pip install -e python/plugins/langchain
+      uv pip install -e python/plugins/llamaindex
+      uv pip install -e python/plugins/lyzr
+      uv pip install -e python/plugins/openai
 
 ##  For a clean PR run checks in the following order before pushing the code on a PR
 
@@ -53,3 +72,23 @@ We have various commands which are helpful during development.
   - Use `tox -e mypy` for type checking
 
 Read more detailed guides on development [here](python/docs/development.md).
+
+## Contributing to Docs
+
+To contribute to our documentation:
+
+1. Make sure you have Node.js installed on your system.
+
+2. Install Fern CLI globally:
+   ```bash
+   npm install -g fern-api
+   ```
+
+3. Start the docs server from the project root:
+   ```bash
+   fern docs dev
+   ```
+
+4. View and edit docs at http://localhost:3000
+
+5. When you're happy with your changes, create a PR.

@@ -1,0 +1,590 @@
+---
+title: 'Quick Start - Tools'
+subtitle: 'Build your first AI tool-calling app with Composio'
+---
+
+## Star a GitHub Repository with Composio
+
+In this guide, you'll learn how to use Composio to star a GitHub repository
+using AI tool calls. This simple example demonstrates the core concepts of
+Composio in action:
+
+1. 🔐 Configure GitHub integration
+2. 🛠 Discover and fetch relevant tools
+3. 🧠 Pass tools to an LLM
+4. ⭐ Execute tools to star a repository
+
+<Tip>
+A tool is an operation that an LLM can request to be executed. It's execution needs to be 
+</Tip>
+
+## Setting Up the GitHub Integration and Connection
+Before writing any code, you'll need to connect your GitHub account. Choose your
+preferred method:
+
+<Tabs>
+<Tab title="Dashboard">
+
+Head over to the [dashboard](https://app.composio.dev/apps) to setup a GitHub
+integration for your account following the steps in the video below.
+
+<iframe width="640" height="360" src="https://www.youtube.com/embed/yx1Ulle0QeQ?si=YghrhG6WKop-zbUg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</Tab>
+
+<Tab title="CLI">
+<Steps>
+<Step title="Install Composio CLI">
+If you haven't already, install the Composio CLI:
+```shell CLI
+npm install -g composio-core
+```
+</Step>
+<Step title="Authenticate and Connect">
+Log in to Composio
+```shell CLI
+composio login
+```
+Add GitHub integration
+
+```shell CLI
+composio add github
+```
+
+Follow the instructions in the CLI to authenticate and connect your GitHub
+account.
+
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Code">
+<Steps>
+<Step title="Install Required Packages">
+<CodeGroup>
+```python Python
+pip install composio_core
+```
+```javascript JavaScript
+npm install composio-core
+```
+</CodeGroup>
+</Step>
+
+<Step title="Initialize Connection">
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet, App
+
+toolset = ComposioToolSet()
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+```javascript JavaScript
+import { Composio } from "composio-core";
+
+const client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const entity = await client.getEntity("default");
+const connection = await entity.initiateConnection({appName: 'github'});
+
+console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+
+<Card 
+  title="Integrations and Connections" 
+  href="/concepts/authentication/overview" 
+  icon="fa-key"
+>
+  Navigate here to learn more about managing integrations and connections for your users!
+</Card>
+
+## Building the Application
+
+Now that GitHub is connected, let's create our application:
+
+<Steps>
+
+<Step title="Install Dependencies">
+  <CodeGroup>
+    ```python Python
+    pip install composio_core composio_openai python-dotenv openai
+    ```
+    ```javascript JavaScript
+    npm install composio-core openai dotenv zod
+    ```
+  </CodeGroup>
+</Step>
+
+<Step title="Configure Environment">
+Create a `.env` file in your project directory:
+
+<CodeGroup>
+  ```.env .env
+  COMPOSIO_API_KEY=your_composio_api_key
+  OPENAI_API_KEY=your_openai_api_key
+  ```
+</CodeGroup>
+
+<Note>
+Always use environment variables or a secure secrets manager for API keys. Never commit them to version control.
+</Note>
+</Step>
+
+<Step title="Initialize Clients">
+<CodeGroup>
+```python Python
+from openai import OpenAI
+from composio_openai import ComposioToolSet
+
+client = OpenAI()
+toolset = ComposioToolSet()
+```
+```javascript JavaScript
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const client = new OpenAI();
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+```
+</CodeGroup>
+</Step>
+
+<Step title="Discover and Fetch Actions">
+<CodeGroup>
+```python Python
+# Find relevant actions for our task
+actions = toolset.find_actions_by_use_case(
+    use_case="star a repo, print octocat",
+    advanced=True,
+)
+
+# Get the tools for these actions
+tools = toolset.get_tools(actions=actions)
+```
+```javascript JavaScript
+// Find relevant actions for our task
+const actionsEnums = await toolset.client.actions.findActionEnumsByUseCase({
+    apps: ["github"],
+    useCase: "star a repo, print octocat"
+});
+
+// Get the tools for these actions
+const tools = await toolset.getTools({ actions: actionsEnums });
+```
+</CodeGroup>
+</Step>
+
+<Step title="Implement Tool Calling">
+
+Let's break down the tool calling process into smaller steps to understand how
+it works:
+
+1. First, we define our task and set up the conversation with the LLM
+2. Then, we enter a loop that handles the back-and-forth between the LLM and
+   tools
+3. Finally, we process and store the results of each tool call and break the
+   loop when the task is complete.
+
+<Steps>
+<Step title="Define the Task">
+<CodeGroup>
+```python Python
+# Define what we want the LLM to do
+task = "star composiohq/composio and print me an octocat."
+
+# Set up the initial conversation
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": task},
+]
+```
+```javascript JavaScript
+// Define what we want the LLM to do
+const task = "star composiohq/composio and print me an octocat.";
+
+// Set up the initial conversation
+const messages = [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: task },
+];
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Send Request to LLM">
+<CodeGroup>
+```python Python
+response = client.chat.completions.create(
+    model="gpt-4o",
+    tools=tools,    # The tools we prepared earlier
+    messages=messages,
+)
+```
+```javascript JavaScript
+const response = await client.chat.completions.create({
+    model: "gpt-4o",
+    tools: tools,    // The tools we prepared earlier
+    messages: messages,
+});
+```
+</CodeGroup>
+
+<Note>
+The LLM will examine our task and the available tools, then decide which tools to call and in what order.
+</Note>
+</Step>
+
+<Step title="Handle Tools">
+<CodeGroup>
+```python Python
+# Check if the LLM wants to use any tools
+if response.choices[0].finish_reason != "tool_calls":
+    # If no tools needed, just print the response
+    print(response.choices[0].message.content)
+    break
+
+# Execute the tool calls
+result = toolset.handle_tool_calls(response)
+
+# Store the conversation history:
+# 1. Store the LLM's tool call request
+messages.append({
+    "role": "assistant",
+    "content": "",  # Empty content since we're using tools
+    "tool_calls": response.choices[0].message.tool_calls,
+})
+
+# 2. Store the tool's response
+for tool_call in response.choices[0].message.tool_calls:
+    messages.append({
+        "role": "tool",
+        "content": str(result),
+        "tool_call_id": tool_call.id,
+    })
+```
+```javascript JavaScript
+// Check if the LLM wants to use any tools
+if (!response.choices[0].message.tool_calls) {
+    // If no tools needed, just print the response
+    console.log(response.choices[0].message.content);
+    break;
+}
+
+// Execute the tool calls
+const result = await toolset.handleToolCall(response);
+
+// Store the conversation history:
+
+// 1. Store the LLM's tool call request
+messages.push({
+    role: "assistant",
+    content: "",  // Empty content since we're using tools
+    tool_calls: response.choices[0].message.tool_calls,
+});
+
+// 2. Store the tool's response
+messages.push({
+    role: "tool",
+    content: String(result),
+    tool_call_id: response.choices[0].message.tool_calls[0].id,
+});
+```
+</CodeGroup>
+
+<Note>
+This process involves three key steps:
+1. Check if the LLM wants to use tools.
+2. Execute the requested tool calls.
+3. Store both the request and result in the conversation history.
+</Note>
+</Step>
+
+<Step title="Putting It All Together">
+Here's how all these pieces work together in a continuous loop:
+
+<CodeGroup>
+```python Python
+# Main interaction loop
+while True:
+    try:
+        # 1. Send request to LLM
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            tools=tools,
+            messages=messages,
+        )
+
+        # 2. Check if LLM wants to use tools
+        if response.choices[0].finish_reason != "tool_calls":
+            print(response.choices[0].message.content)
+            break
+
+        # 3. Execute tool calls
+        result = toolset.handle_tool_calls(response)
+
+        # 4. Store the conversation history
+        messages.append({
+            "role": "assistant",
+            "content": "",
+            "tool_calls": response.choices[0].message.tool_calls,
+        })
+        for tool_call in response.choices[0].message.tool_calls:
+            messages.append({
+                "role": "tool",
+                "content": str(result),
+                "tool_call_id": tool_call.id,
+            })
+    except Exception as error:
+        print(f"Error: {error}")
+        if hasattr(error, 'response'):
+            print(f"Response data: {error.response}")
+        break
+```
+
+```javascript JavaScript
+async function main() {
+    try {
+        // Initialize clients and tools (from previous steps)
+
+        // Define the task and initial messages
+        const task = "star composiohq/composio and print me an octocat.";
+        const messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: task },
+        ];
+
+        // Main interaction loop
+        while (true) {
+            // 1. Send request to LLM
+            const response = await client.chat.completions.create({
+                model: "gpt-4o",
+                tools: tools,
+                messages: messages,
+            });
+
+            // 2. Check if LLM wants to use tools
+            if (!response.choices[0].message.tool_calls) {
+                console.log(response.choices[0].message.content);
+                break;
+            }
+
+            // 3. Execute tool calls
+            const result = await toolset.handleToolCall(response);
+
+            // 4. Store the conversation history
+            messages.push({
+                role: "assistant",
+                content: "",
+                tool_calls: response.choices[0].message.tool_calls,
+            });
+            messages.push({
+                role: "tool",
+                content: String(result),
+                tool_call_id: response.choices[0].message.tool_calls[0].id,
+            });
+        }
+    } catch (error) {
+        // Handle any errors that occur during execution
+        console.error("Error:", error);
+        if (error.response) {
+            console.error("Response data:", error.response.data);
+        }
+    }
+}
+
+// Start the application
+main();
+```
+</CodeGroup>
+
+<Note>
+The loop continues until either:
+- The LLM completes the task and has no more tool calls to make
+- An error occurs (which would be caught by our error handling)
+</Note>
+</Step>
+
+</Steps>
+
+<Tip>
+  This loop enables complex interactions where the LLM might need multiple tool
+  calls to complete a task. For example, it might first star the repository,
+  then fetch and display the octocat ASCII art.
+</Tip>
+
+</Step>
+
+</Steps>
+
+## Full Code
+
+Here's the full code for the application:
+
+<CodeGroup>
+```python Python
+from dotenv import load_dotenv
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App
+
+load_dotenv()
+
+client = OpenAI()
+toolset = ComposioToolSet()
+
+actions = toolset.find_actions_by_use_case(
+    use_case="star a repo, print octocat",
+    advanced=True,
+)
+
+tools = toolset.get_tools(actions=actions)
+task = "star composiohq/composio and print me an octocat."
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": task},
+]
+
+while True:
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        tools=tools,
+        messages=messages,
+    )
+
+    result = toolset.handle_tool_calls(response)
+
+    if response.choices[0].finish_reason != "tool_calls":
+        print(response.choices[0].message.content)
+        break
+
+    messages.append(
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": response.choices[0].message.tool_calls,
+        }
+    )
+
+    for tool_call in response.choices[0].message.tool_calls:
+        messages.append(
+            {
+                "role": "tool",
+                "content": str(result),
+                "tool_call_id": tool_call.id,
+            }
+        )
+```
+```javascript JavaScript maxLines=80
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+async function main() {
+    try {
+        console.log("🚀 Starting Composio quickstart demo...");
+
+        // Initialize OpenAI and Composio clients
+        console.log("📦 Initializing OpenAI and Composio clients...");
+        const client = new OpenAI();
+        const toolset = new OpenAIToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+        });
+
+        console.log("🔍 Finding relevant GitHub actions for the use case...");
+        const actionsEnums = await toolset.client.actions.findActionEnumsByUseCase({
+            apps: ["github"],
+            useCase: "star a repo, print octocat"
+        });
+        console.log("✅ Found relevant actions:", actionsEnums);
+
+        // Get the tools for GitHub actions
+        console.log("🛠️  Getting tools for the actions...");
+        const tools = await toolset.getTools({ actions: actionsEnums });
+
+        const task = "star composiohq/composio and print me an octocat.";
+        console.log("\n📝 Task:", task);
+
+        const messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: task },
+        ];
+
+        console.log("\n🤖 Starting conversation loop with AI...");
+        while (true) {
+            console.log("\n⏳ Waiting for AI response...");
+            const response = await client.chat.completions.create({
+                model: "gpt-4",
+                tools: tools,
+                messages: messages,
+            });
+
+            if (!response.choices[0].message.tool_calls) {
+                console.log("💬 AI Response:", response.choices[0].message.content);
+                break;
+            }
+
+            console.log("🔧 Executing tool calls...");
+            const result = await toolset.handleToolCall(response);
+            console.log("✅ Tool execution result:", result);
+
+            messages.push({
+                role: "assistant",
+                content: "",
+                tool_calls: response.choices[0].message.tool_calls,
+            });
+
+            messages.push({
+                role: "tool",
+                content: String(result),
+                tool_call_id: response.choices[0].message.tool_calls[0].id,
+            });
+        }
+
+        console.log("\n✨ Demo completed successfully!");
+    } catch (error) {
+        console.error("❌ Error occurred:", error);
+        if (error.response) {
+            console.error("📄 Response data:", error.response.data);
+        }
+    }
+}
+
+main();
+
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup>
+  <Card
+      title="Explore More Apps and Tools"
+      icon="code"
+      href="https://app.composio.dev/apps"
+  >
+  Browse our toolset of 250+ LLM ready apps to integrate with.
+  </Card>
+
+  <Card
+      title="Explore More Examples"
+      icon="book-open"
+      href="https://github.com/ComposioHQ/composio/tree/master/cookbook"
+  >
+  Check out our examples for more inspiration
+  </Card>
+</CardGroup>
+
+<Note>
+  Need help? Join our [Discord community](https://discord.gg/composio) or check
+  out our [Support](/support) page.
+</Note>
+
