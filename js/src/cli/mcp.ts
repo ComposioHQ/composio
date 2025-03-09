@@ -100,10 +100,11 @@ export default class MCPCommand {
     };
 
     const homeDir = os.homedir();
-    
+
     const platformPaths = {
       win32: {
-        baseDir: process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"),
+        baseDir:
+          process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"),
         vscodePath: path.join("Code", "User", "globalStorage"),
       },
       darwin: {
@@ -115,34 +116,41 @@ export default class MCPCommand {
         vscodePath: path.join("Code/User/globalStorage"),
       },
     };
-    
+
     const platform = process.platform as keyof typeof platformPaths;
-    
+
     // Check if platform is supported
     if (!platformPaths[platform]) {
       console.log(chalk.yellow(`\n⚠️ Platform ${platform} is not supported.`));
       return;
     }
-    
+
     const { baseDir } = platformPaths[platform];
-    
+
     // Define client paths using the platform-specific base directories
-    const clientPaths: { [key: string]: { configDir: string; configPath: string } } = {
+    const clientPaths: {
+      [key: string]: { configDir: string; configPath: string };
+    } = {
       claude: {
         configDir: path.join(baseDir, "Claude"),
         configPath: path.join(baseDir, "Claude", "claude_desktop_config.json"),
       },
       windsurf: {
         configDir: path.join(homeDir, ".codeium", "windsurf"),
-        configPath: path.join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-      }
+        configPath: path.join(
+          homeDir,
+          ".codeium",
+          "windsurf",
+          "mcp_config.json"
+        ),
+      },
     };
-    
+
     if (!clientPaths[clientType]) {
       console.log(chalk.yellow(`\n⚠️ Client ${clientType} is not supported.`));
       return;
     }
-    
+
     const { configDir, configPath } = clientPaths[clientType];
 
     if (!fs.existsSync(configDir)) {
