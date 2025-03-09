@@ -40,7 +40,7 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   const { Client } = await import("composiohq-modelcontextprotocol-typescript-sdk/client/index.js");
   const { StdioServerTransport } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/stdio.js");
   const { Server } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/index.js");
-  let { sseClient, originalRequest, sseTransport } = await getSSEClient(sseUrl, logStderr);
+  const { sseClient, originalRequest, sseTransport } = await getSSEClient(sseUrl, logStderr);
 
   logStderr("SSE connected");
   logStderr("getServerCapabilities " + JSON.stringify(sseClient.getServerCapabilities()));

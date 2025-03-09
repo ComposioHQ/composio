@@ -9,13 +9,13 @@ export async function getSSEClient(sseUrl: string, logStderr: (...args: any[]) =
       const { Client } = await import("composiohq-modelcontextprotocol-typescript-sdk/client/index.js");
       let sseTransport = new SSEClientTransport(new URL(sseUrl));
     
-      let sseClient = new Client(
+      const sseClient = new Client(
         { name: "mcp-transport", version: "1.0.0" },
         {    capabilities: {
           tools: {},
         }, }
       );
-      let originalRequest = sseClient.request;
+      const originalRequest = sseClient.request;
       let isConnecting = false;
       let connectionPromise: Promise<void> | null = null;
 
