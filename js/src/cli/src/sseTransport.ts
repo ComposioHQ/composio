@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export async function getSSEClient(
   sseUrl: string,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   logStderr: (...args: any[]) => void
 ) {
   const { SSEClientTransport } = await import(

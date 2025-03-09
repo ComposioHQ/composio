@@ -19,7 +19,9 @@ import {
 } from "composiohq-modelcontextprotocol-typescript-sdk/types.js";
 import { getSSEClient } from "./src/sseTransport";
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const log = (...args: any[]) => console.log("[composio-transport]", ...args);
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const logStderr = (...args: any[]) =>
   console.error("[composio-transport]", ...args);
 
@@ -34,14 +36,6 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   logStderr(`  - sse: ${sseUrl}`);
   logStderr("Connecting to SSE...");
 
-  // @fix: this does not work in dev CLI environment because of esm module.
-  const { SSEClientTransport } = await import(
-    "composiohq-modelcontextprotocol-typescript-sdk/client/sse.js"
-  );
-  // Lazy import Client and StdioServerTransport to avoid ESM issues
-  const { Client } = await import(
-    "composiohq-modelcontextprotocol-typescript-sdk/client/index.js"
-  );
   const { StdioServerTransport } = await import(
     "composiohq-modelcontextprotocol-typescript-sdk/server/stdio.js"
   );
@@ -83,11 +77,13 @@ async function sseToStdio(sseUrl: string): Promise<void> {
         logStderr("Request error:", err);
         const errorCode =
           err && typeof err === "object" && "code" in err
-            ? (err as any).code
+            ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+              (err as any).code
             : -32000;
         let errorMsg =
           err && typeof err === "object" && "message" in err
-            ? (err as any).message
+            ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+              (err as any).message
             : "Internal error";
         const prefix = `MCP error ${errorCode}:`;
         if (errorMsg.startsWith(prefix)) {
