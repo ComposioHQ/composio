@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_togetherai",
-    version="0.7.6",
+    version="0.7.7",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Together AI Function Call.",
