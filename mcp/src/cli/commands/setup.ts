@@ -12,6 +12,7 @@ interface MCPArgs {
 interface MCPConfig {
   command: string;
   args: string[];
+  env?: { [key: string]: string };
 }
 
 interface WindsurfConfig {
@@ -76,7 +77,10 @@ const command: CommandModule<{}, MCPArgs> = {
 function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
-    args: ['-y', '@composio/mcp', 'start', '--url', mcpUrl],
+    args: ['@composio/mcp@latest', 'start', '--url', mcpUrl],
+    env: {
+      npm_config_yes: 'true'
+    }
   };
 
   const homeDir = os.homedir();
