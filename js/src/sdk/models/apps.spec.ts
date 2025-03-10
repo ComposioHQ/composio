@@ -8,7 +8,7 @@ describe("Apps class tests", () => {
 
   beforeAll(() => {
     backendClient = getBackendClient();
-    apps = new Apps(backendClient);
+    apps = new Apps(backendClient, backendClient.instance);
   });
 
   it("should create an Apps instance and retrieve apps list", async () => {
