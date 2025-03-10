@@ -8,7 +8,7 @@ describe("Active Triggers class tests", () => {
 
   beforeAll(() => {
     backendClient = getBackendClient();
-    activeTriggers = new ActiveTriggers(backendClient);
+    activeTriggers = new ActiveTriggers(backendClient, backendClient.instance);
   });
 
   it("should retrieve a list of active triggers", async () => {
