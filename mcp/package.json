@@ -1,14 +1,15 @@
 {
   "name": "@composio/mcp",
-  "version": "1.0.0-0",
+  "version": "1.0.0-10",
   "description": "MCP CLI tool",
   "main": "dist/index.js",
   "bin": {
     "mcp": "dist/cli/index"
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "build": "webpack --config webpack.config.js",
+    "build:dev": "webpack --config webpack.config.js --mode development",
+    "build:watch": "webpack --config webpack.config.js --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
@@ -23,7 +24,7 @@
     "abortcontroller-polyfill": "^1.7.8",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
-    "composiohq-modelcontextprotocol-typescript-sdk": "1.6.1-0",
+    "composiohq-modelcontextprotocol-typescript-sdk": "1.6.1-1",
     "event-source-polyfill": "^1.0.31",
     "event-target-polyfill": "^0.0.4",
     "rollup-plugin-node-polyfills": "^0.2.1",
@@ -39,12 +40,30 @@
     "@types/node": "^20.11.24",
     "@types/yargs": "^17.0.32",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "assert": "^2.1.0",
+    "buffer": "^6.0.3",
     "eslint": "^8.57.1",
+    "https-browserify": "^1.0.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
     "prettier": "^3.5.3",
+    "process": "^0.11.10",
     "rollup": "^4.12.0",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-visualizer": "^5.12.0",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "ts-loader": "^9.5.2",
     "tslib": "^2.8.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.2",
+    "url": "^0.11.4",
+    "util": "^0.12.5",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "composiohq-modelcontextprotocol-typescript-sdk": "link:../../mcp-typescript-sdk"
+    }
   }
 }
