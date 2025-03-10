@@ -79,8 +79,8 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     command: 'npx',
     args: ['@composio/mcp@latest', 'start', '--url', mcpUrl],
     env: {
-      npm_config_yes: 'true'
-    }
+      npm_config_yes: 'true',
+    },
   };
 
   const homeDir = os.homedir();
