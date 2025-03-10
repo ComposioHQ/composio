@@ -12,6 +12,8 @@ instances:
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
+  intercom:
+    app-id: dvp1uc7s
 
 title: Composio
 favicon: favicon.png
@@ -19,6 +21,7 @@ logo:
   light: logo/logo.svg
   dark: logo/logo.svg
   height: 30
+  href: https://docs.composio.dev
 
 
 colors:
@@ -38,6 +41,8 @@ typography:
 layout: 
   tabs-placement: header
   searchbar-placement: header
+  disable-header: true
+  content-width: 50rem
 navbar-links:
   - type: minimal
     text: Discord
@@ -67,7 +72,7 @@ redirects:
   - source: "/patterns/triggers/:slug"
     destination: "/concepts/triggers"
   - source: "/framework/:slug"
-    destination: "/frameworks/"
+    destination: "/frameworks/:slug"
   - source: "/cryptokit/:slug"
     destination: "/"
   - source: "/swe-kit/:slug"
