@@ -12,7 +12,7 @@ export default {
     file: 'dist/cli/index.js',
     format: 'cjs',
     sourcemap: false,
-    banner: '#!/usr/bin/env node'
+    banner: '#!/usr/bin/env node\n' + `process.env.YARGS_MIN_NODE_VERSION = 10`
   },
   plugins: [
     resolve({
