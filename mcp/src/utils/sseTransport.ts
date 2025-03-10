@@ -6,13 +6,13 @@ export async function getSSEClient(
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   logStderr: (...args: any[]) => void
 ) {
-  const { SSEClientTransport } = require(
-    'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/sse.js'
-  );
+  const {
+    SSEClientTransport,
+  } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/sse.js');
   // Lazy import Client and StdioServerTransport to avoid ESM issues
-  const { Client } = require(
-    'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/index.js'
-  );
+  const {
+    Client,
+  } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/index.js');
   let sseTransport = new SSEClientTransport(new URL(sseUrl));
 
   const sseClient = new Client(
