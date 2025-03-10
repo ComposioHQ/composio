@@ -76,7 +76,7 @@ const command: CommandModule<{}, MCPArgs> = {
 function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
-    args: ['-y', '@composio/mcp@rc', 'start', '--sse', mcpUrl],
+    args: ['-y', '@composio/mcp', 'start', '--sse', mcpUrl],
   };
 
   const homeDir = os.homedir();
