@@ -9,7 +9,7 @@ const IS_VISUALIZE_BUNDLE = process.env.IS_VISUALIZE_BUNDLE === 'true';
 export default {
   input: 'src/cli/index.ts',
   output: {
-    file: 'dist/cli/index.js',
+    file: 'dist/cli/index',
     format: 'cjs',
     sourcemap: false,
     banner: '#!/usr/bin/env node\n' + `process.env.YARGS_MIN_NODE_VERSION = 10`

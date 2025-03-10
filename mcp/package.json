@@ -4,7 +4,7 @@
   "description": "MCP CLI tool",
   "main": "dist/index.js",
   "bin": {
-    "mcp": "dist/cli/index.js"
+    "mcp": "dist/cli/index"
   },
   "scripts": {
     "build": "rollup -c",
