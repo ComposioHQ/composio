@@ -1,18 +1,11 @@
 ---
-title: Welcome
-subtitle: Get started with Composio - Your AI Tool Calling Platform
+title: Welcome to Composio
+hide-nav-links: true
 ---
 
-## Get started
+Composio is an integration platform that empowers AI agents and LLM applications to seamlessly connect with external tools, services, and APIs. With Composio, developers can rapidly build powerful AI applications without worrying about complex integration challenges.
 
-Composio allows developers to instantly integrate external tools and services
-into their AI applications. Composio excels at handling tool calling, webhooks,
-authentication, and more.
-
-
-
-If you're new to Composio, start here to learn the essentials and build your
-first AI agents.
+Composio provides a comprehensive infrastructure for AI agents to interact with the external world.
 
 <CardGroup col={1}>
   <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
@@ -43,21 +36,34 @@ first AI agents.
 
 {/* here, we will add link to tutorials that showcase and explain composio's features. */}
 
-## Featured Frameworks
-<Card
-  title="OpenAI"
-  icon="sparkles"
-  href="/frameworks/openai"
+## Framework Integrations
+
+Composio enhances popular AI frameworks with external tool capabilities:
+
+<CardGroup cols={2}>
+  <Card
+    title="OpenAI"
+    icon="sparkles"
+    href="/frameworks/openai"
+  >
+    Add 250+ tools to your Assistants API with automatic authentication handling and real-time function execution.
+  </Card>
+  <Card title="LangChain" icon="link-simple" href="/frameworks/langchain">
+    Turn your LangChain agents into powerful workflows that interact with external services without managing API connections.
+  </Card>
+  <Card title="Autogen" icon="gears" href="/frameworks/autogen">
+    Empower Autogen multi-agent systems with real-world capabilities like file operations, email, and third-party API access.
+  </Card>
+  <Card title="CrewAI" icon="users" href="/frameworks/crewai">
+    Build specialized CrewAI agent teams that collaborate using external tools and data sources to accomplish complex tasks.
+  </Card>
+</CardGroup>
+
+
+<Card 
+    title='All Frameworks' 
+    icon='code-branch' 
+    href='/frameworks'
 >
-  Add tool calling to OpenAI assistants with automatic schema handling.
-</Card>
-<Card title="LangChain" icon="link-simple" href="/frameworks/langchain">
-  Add Composio's tool calling capabilities to your LangChain agents and
-  chains.
-</Card>
-<Card title="Autogen" icon="gears" href="/frameworks/autogen">
-  Enhance Autogen agents with access to real-world tools through Composio.
-</Card>
-<Card title="CrewAI" icon="users" href="/frameworks/crewai">
-  Empower CrewAI agents with Composio's tool orchestration capabilities.
+Check out all the frameworks!
 </Card>
