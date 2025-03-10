@@ -1,5 +1,5 @@
 {
-  "name": "mcp",
+  "name": "@composio/mcp",
   "version": "1.0.0-0",
   "description": "MCP CLI tool",
   "main": "dist/index.js",
