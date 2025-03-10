@@ -38,13 +38,13 @@ const command: CommandModule<{}, MCPArgs> = {
       .positional('url', {
         type: 'string',
         describe: 'The app to use',
-        demandOption: true
+        demandOption: true,
       })
       .option('client', {
         type: 'string',
         describe: 'Client to use (claude, windsurf)',
         default: 'claude',
-        choices: ['claude', 'windsurf']
+        choices: ['claude', 'windsurf'],
       }) as Argv<MCPArgs>;
   },
   handler: async (argv: MCPArgs) => {
@@ -63,28 +63,17 @@ const command: CommandModule<{}, MCPArgs> = {
       saveMcpConfig(url, client, mcpUrl, command);
 
       console.log(
-        chalk.cyan(
-          `\n🚀 All done! Please restart ${client} for changes to take effect\n`
-        )
+        chalk.cyan(`\n🚀 All done! Please restart ${client} for changes to take effect\n`)
       );
     } catch (error) {
       console.log(chalk.red('\n❌ Error occurred while setting up MCP:'));
       console.log(chalk.red(`   ${(error as ErrorWithMessage).message}`));
-      console.log(
-        chalk.yellow(
-          '\nPlease try again or contact support if the issue persists.\n'
-        )
-      );
+      console.log(chalk.yellow('\nPlease try again or contact support if the issue persists.\n'));
     }
-  }
+  },
 };
 
-function saveMcpConfig(
-  url: string,
-  clientType: string,
-  mcpUrl: string,
-  command: string
-): void {
+function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
     args: ['-y', 'composio-core@rc', 'transport', '--sse', mcpUrl],
@@ -178,4 +167,4 @@ function saveMcpConfig(
   }
 }
 
-export default command; 
+export default command;

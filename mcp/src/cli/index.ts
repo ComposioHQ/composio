@@ -1,13 +1,13 @@
 require('event-target-polyfill');
 if (!global.AbortController) {
-    const { AbortController, abortableFetch } = require('abortcontroller-polyfill/dist/cjs-ponyfill');
+  const { AbortController, abortableFetch } = require('abortcontroller-polyfill/dist/cjs-ponyfill');
 
-    global.AbortController = AbortController;
+  global.AbortController = AbortController;
 }
 if (!(global as any).abortableFetch) {
-    const { AbortController, abortableFetch } = require('abortcontroller-polyfill/dist/cjs-ponyfill');
+  const { AbortController, abortableFetch } = require('abortcontroller-polyfill/dist/cjs-ponyfill');
 
-    (global as any).abortableFetch = abortableFetch;
+  (global as any).abortableFetch = abortableFetch;
 }
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
