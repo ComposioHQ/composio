@@ -31,8 +31,8 @@ type ErrorWithMessage = {
 };
 
 const command: CommandModule<{}, MCPArgs> = {
-  command: 'mcp <url>',
-  describe: 'MCP command for app integration',
+  command: 'setup <url>',
+  describe: 'Setup command for app integration',
   builder: (yargs: Argv<{}>): Argv<MCPArgs> => {
     return yargs
       .positional('url', {
@@ -76,7 +76,7 @@ const command: CommandModule<{}, MCPArgs> = {
 function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
-    args: ['-y', 'composio-core@rc', 'transport', '--sse', mcpUrl],
+    args: ['-y', '@composio/mcp@rc', 'start', '--sse', mcpUrl],
   };
 
   const homeDir = os.homedir();

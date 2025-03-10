@@ -11,7 +11,7 @@ if (!(global as any).abortableFetch) {
 }
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import mcpCommand from './commands/mcp';
+import mcpCommand from './commands/setup';
 import startCommand from './commands/start';
 
 const nodeVersion = process.version;
