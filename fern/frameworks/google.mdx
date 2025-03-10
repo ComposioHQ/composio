@@ -1,0 +1,118 @@
+---
+title: "Using Composio With Google AI"
+sidebarTitle: "Google AI"
+description: "Enable Google AI models to seamlessly interact with external apps via Composio for enhanced functionality"
+---
+
+**Composio enables** your **Google AI models** to **connect** with many **tools**!
+
+### Install Packages & Connect a Tool
+
+<Tip>
+  Goal: Enable Google AI models to perform tasks like starring a repository on
+  GitHub via natural language commands
+</Tip>
+
+These steps prepare your environment to enable interactions between Google AI and GitHub through Composio.
+
+<CodeGroup>
+  ```bash Run Command
+  pip install composio-google
+
+  # Connect your GitHub so models can interact with it
+
+  composio add github
+
+  # Check all supported apps
+
+  composio apps
+  ```
+</CodeGroup>
+
+<Steps>
+
+<Step title="Import Base Packages & Initialize Google AI Model">
+Replace `{google_api_key}` with your actual API key.
+<CodeGroup>
+  ```python Default Imports & Configuration
+  import dotenv
+  from composio_google import App, ComposioToolset
+  from vertexai.generative_models import GenerativeModel
+
+  # Load environment variables from .env
+  dotenv.load_dotenv()
+
+  # Initialize the Composio Toolset
+  composio_toolset = ComposioToolset()
+
+  # Get GitHub tools that are pre-configured
+  tool = composio_toolset.get_tool(apps=[App.GITHUB])
+
+  # Initialize the Google AI Gemini model
+  model = GenerativeModel("gemini-1.5-pro", tools=[tool])
+  ```
+</CodeGroup>
+</Step>
+
+<Step title="Start a Chat Session with the Model">
+<CodeGroup>
+  ```python Start Chat Session
+  # Start a chat session
+  chat = model.start_chat()
+  ```
+</CodeGroup>
+</Step>
+
+<Step title="Execute the Task via Google AI Model">
+<CodeGroup>
+  ```python Execute Task
+  # Define task
+  task = "Star a repo composiohq/composio on GitHub"
+
+  # Send a message to the model
+  response = chat.send_message(task)
+
+  print("Model response:")
+  print(response)
+  ```
+</CodeGroup>
+</Step>
+
+<Step title="Handle the Tool Calls">
+<CodeGroup>
+  ```python Handle Tool Calls
+  result = composio_toolset.handle_response(response)
+  print("Function call result:")
+  print(result)
+  ```
+</CodeGroup>
+</Step>
+
+</Steps>
+
+### Use Specific Actions
+
+<CodeGroup>
+  ```python Filter Specific Action 
+  # To restrict models from executing any actions, filter specific actions 
+  actions = composio_toolset.get_tool(actions=[Action.GITHUB_CREATE_ISSUE]) 
+  ```
+</CodeGroup>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```python Filter Specific App 
+  # To restrict models from using all tools, filter specific tools 
+  actions = composio_toolset.get_tool(apps=[App.ASANA, App.GITHUB]) 
+  ```
+</CodeGroup>
+
+### Filter apps actions by tags
+
+<CodeGroup>
+  ```python Filter Actions by Tags 
+  actions = composio_toolset.get_tool(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
+  ```
+</CodeGroup>
+

@@ -1,0 +1,27 @@
+name: Publish Docs
+
+on:
+  push:
+    branches:
+     - master
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/master') && github.run_number > 1 }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Fern
+        run: npm install -g fern-api
+
+      - name: Pull Latest OpenAPI Specification
+        run: sh fern/scripts/pull-openapi-spec.sh
+
+      - name: Publish Docs
+        env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: fern generate --docs

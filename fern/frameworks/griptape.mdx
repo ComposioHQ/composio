@@ -1,0 +1,88 @@
+---
+title: "🧻 Using Composio With Griptape"
+sidebarTitle: "Griptape"
+description: "Integrate Composio with Griptape agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Griptape agents** to **connect** with many **tools**!
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & Griptape Agent
+</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between Griptape and GitHub.
+
+<CodeGroup>
+  ``` bash Run command
+  pip install composio_griptape
+  # Connect your GitHub so agents can use it. 
+  composio add github
+  # Check all different apps which you can connect with
+  composio show-apps
+  ```
+</CodeGroup>
+
+### Goal: Use Agent to Interact with GitHub using Composio
+
+<Steps>
+<Step title="Import Base Packages">
+
+<CodeGroup>
+  ```python Default Imports
+  from griptape.structures import Agent
+  from griptape.utils import Chat
+  from composio_griptape import App, Action, Tag, ComposioToolSet
+  import dotenv
+
+  dotenv.load_dotenv()
+  ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Add Tools to agent">
+
+<CodeGroup>
+  ```python Prepare Griptape Agent
+  composio_toolset = ComposioToolSet()
+  tools = composio_toolset.get_tools(apps = [App.GITHUB])
+
+  agent = Agent(
+  tools=tools
+  )
+  ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Start Agent Chat">
+
+<CodeGroup>
+  ```python Chat with Griptape Agent
+  Chat(agent).start()
+  ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Talk with Agent">
+<Tabs>
+<Tab title="Star Repository">
+<CodeGroup>
+```bash Star Repository
+Star composiohq/composio repository
+```
+</CodeGroup>
+</Tab>
+<Tab title="Get last Commit">
+<CodeGroup>
+```bash Get last commit
+Get last commit on composiohq/composio repository
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+</Steps>

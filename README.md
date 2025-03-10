@@ -38,7 +38,34 @@
   Production Ready Toolset for AI Agents
 </h2>
 
-<img alt="Illustration" src="./python/docs/imgs/banner.gif" style="border-radius: 5px" />
+<p align="center">
+  <a href="https://docs.composio.dev/mcp/overview?utm=readme">
+    <img src="./assets/mcp-banner.png" alt="Composio MCP Servers" width="100%" style="border-radius: 8px; margin: 20px 0;" />
+  </a>
+</p>
+<a href="https://docs.composio.dev/mcp/overview?utm=readme">
+  <img alt="Composio Cursor" src="./assets/cursor-mcp.webp" style="border-radius: 5px" />
+</a>
+
+
+<h2 align="center">🚀 Now launching Composio MCP🚀</h2>
+
+<p align="center">
+  We're excited to announce the launch of <strong>Composio MCP Servers</strong>!
+  Connect Claude, Cursor and Windsurf to 100+ fully-managed MCP Servers with built-in auth! Check it out <a href="https://mcp.composio.dev">here</a>
+</p>
+
+<p align="center">
+
+</p>
+
+<p align="center">
+  <a href="https://docs.composio.dev/mcp/overview">
+    <img src="https://img.shields.io/badge/Learn%20More-MCP%20Servers-blue?style=for-the-badge" alt="Learn More About MCP Servers">
+  </a>
+</p>
+
+
 
 <h2>What is Composio?</h2>
 <p><strong>Composio provides production-ready toolset for AI agents</strong>, offering:</p>

@@ -1,0 +1,111 @@
+---
+title: "📖 Using Composio With PraisonAI"
+sidebarTitle: "PraisonAI SDK"
+description: "Integrate Composio with PraisonAI agents to let them seamlessly interact with external apps"
+---
+
+**Composio** enables your **PraisonAI agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language & PraisonAI Agent</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between PraisonAI and GitHub.
+
+<CodeGroup>
+    ``` bash Run command
+    pip install PraisonAI -q
+    pip install composio-praisonai
+    # login to composio
+    composio login
+    # Connect your GitHub using command below, so agents can use it. 
+    composio add github
+    # Check all different apps which you can connect with
+    composio apps
+    ```
+</CodeGroup>
+
+### Goal: Use PraisonAI Agent to Interact with Github using Composio
+
+<Steps>
+<Step title="Import Base Packages">
+
+Prepare your environment by initializing necessary imports from PraisonAI and setting up your client.
+
+<CodeGroup>
+    ```python Default Imports
+    import os
+    import yaml
+    from praisonai import PraisonAI
+
+    from composio_praisonai import Action, ComposioToolSet
+    ```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Write the Praison-supported Composio Tools in `tools.py` file.">
+
+This step involves fetching and integrating GitHub tools provided by Composio, and writing them in PraisonAI supported Format, returning the name of tools in a format, that should be added to `agents.yml` file.
+
+<CodeGroup>
+    ```python Write the tools
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(
+        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    )
+    tool_section_str = composio_toolset.get_tools_section(tools)
+    print(tool_section_str)
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Define the `agents.yml` either in a separate file, or in your script.">
+
+This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
+
+<CodeGroup>
+    ```python Define agent.yml
+    agent_yaml = """
+    framework: "crewai"
+    topic: "Github Management"
+
+    roles:
+      developer:
+        role: "Developer"
+        goal: "An expert programmer"
+        backstory: "A developer exploring new codebases and having certain tools available to execute different tasks."
+        tasks:
+          star_github:
+            description: "Star a repo composiohq/composio on GitHub"
+            expected_output: "Response whether the task was executed."
+    """ + tool_section_str
+
+    print(agent_yaml)
+    ```
+</CodeGroup>
+
+</Step>
+
+
+<Step title="Run the PraisonAI Agents to execute the goal/task.">
+
+Here you initialize PraisonAI class, and execute.
+
+<CodeGroup>
+    ```python Define agent.yml
+    # Create a PraisonAI instance with the agent_yaml content
+    praison_ai = PraisonAI(agent_yaml=agent_yaml)
+
+    # Run PraisonAI
+    result = praison_ai.main()
+
+    # Print the result
+    print(result)
+    ```
+</CodeGroup>
+
+</Step>
+</Steps>

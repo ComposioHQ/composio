@@ -1,0 +1,72 @@
+---
+title: Installation
+---
+
+Composio provides Python and TypeScript SDKs as well as plugins with other LLM frameworks like CrewAI, LangChain, AutoGen.
+
+## Install the SDK
+
+<Tabs>
+  <Tab title="Python">
+Before installing the SDK, ensure you have Python 3.8+.
+  {/* <Tabs> */}
+  {/* <Tab title='uv'> */}
+  <Steps>
+  <Step title="Install uv">
+    ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+    </Step>
+    <Step title="Install Composio">
+    ```bash
+    uv add composio_core composio_openai
+    ```
+  {/* </Tab> */}
+  {/* <Tab title='pip'>
+    ```bash
+    pip install composio_core
+    ```
+  </Tab> */}
+  {/* </Tabs> */}
+  </Step>
+  <Step title="Install the relevant plugin">
+    Depending on what LLM framework you're using, you'll need to install the relevant plugin.
+    ```bash
+    uv add composio_crewai      # For CrewAI
+    uv add composio_langchain   # For LangChain
+    ```
+    </Step>
+    </Steps>
+  </Tab>
+  <Tab title="TypeScript">
+Before installing the SDK, ensure you have NodeJS 16+.
+  <Steps>
+  <Step title="Install Composio">
+  <Tabs>
+  <Tab title='pnpm'>
+  ```bash
+  pnpm add composio
+  ```
+  </Tab>
+  <Tab title='npm'>
+    ```bash
+    npm install composio
+    ```
+  </Tab>
+  <Tab title='yarn'>
+    ```bash
+    yarn add composio
+    ```
+  </Tab>
+  </Tabs>
+  </Step>
+    > The package includes TypeScript type definitions out of the box.
+  <Step title="Plugins">
+  The TS package comes installed with support for:
+  - [LangChain JS](/frameworks/javascript/langchain)
+  - [Cloudflare Worker AI](/frameworks/javascript/cloudflare)
+  - [Vercel AI SDK](/frameworks/javascript/vercel)
+  </Step>
+  </Steps>
+  </Tab>
+</Tabs>

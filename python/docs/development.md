@@ -2,9 +2,27 @@
 
 ## Setup
 
-- Make sure your machine has `python>=3.8` and `pipenv` installed
-- Run `make env` to create a fresh virtual environment
-- Run `pipenv shell` to enter virtual environment shell
+- Make sure your machine has `python>=3.8` installed
+- Install `uv`: `pip install uv`
+- Create a virtual environment: `uv venv`
+- Activate the virtual environment: 
+  - Linux/macOS: `source .venv/bin/activate` 
+  - Windows: `.venv\Scripts\activate`
+- Install dependencies: 
+  ```bash
+  uv pip install -e .
+  uv pip install -e ../swe
+  # Install plugins as needed
+  uv pip install -e ../plugins/autogen
+  uv pip install -e ../plugins/claude
+  uv pip install -e ../plugins/crew_ai
+  uv pip install -e ../plugins/griptape
+  uv pip install -e ../plugins/julep
+  uv pip install -e ../plugins/langchain
+  uv pip install -e ../plugins/llamaindex
+  uv pip install -e ../plugins/lyzr
+  uv pip install -e ../plugins/openai
+  ```
 
 ## Writing code
 
@@ -48,6 +66,39 @@ To run each of these individually use `tox`
 ## Unit tests
 
 Run unit tests using `tox -e test` to verify the changes you made and check the code coverage.
+
+## Package Management with uv
+
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver written in Rust. It's designed to be a drop-in replacement for pip, pipenv, and other Python package managers.
+
+### Key Features
+
+- Extremely fast package installation and dependency resolution
+- Virtual environment management
+- Compatible with existing Python tools and workflows
+- Supports all standard pip features including editable installs
+
+### Common Commands
+
+```bash
+# Install a package
+uv pip install package_name
+
+# Install a package in development/editable mode
+uv pip install -e .
+
+# Install requirements from a file
+uv pip install -r requirements.txt
+
+# Create a virtual environment
+uv venv
+
+# Activate the virtual environment
+# On Linux/macOS:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+```
 
 ## Environment variables
 
