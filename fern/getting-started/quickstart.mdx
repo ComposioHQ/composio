@@ -1,144 +1,138 @@
 ---
-title: 'Quick Start - Tools'
-subtitle: 'Build your first AI tool-calling app with Composio'
+title: 'Quickstart'
+subtitle: 'Get started with using Composio'
+hide-nav-links: false
 ---
+Let's use Composio to build a workflow to star a GitHub repository using AI. Composio will discover and provide the relevant tools to the LLM and handle it's execution.
 
-## Star a GitHub Repository with Composio
+1. 🔑 Get your Composio API key
+2. 🔐 Configure GitHub integration
+3. 🛠 Discover and fetch relevant tools
+4. 🧠 Pass tools to an LLM
+5. ⭐ Execute tools to star a repository
 
-In this guide, you'll learn how to use Composio to star a GitHub repository
-using AI tool calls. This simple example demonstrates the core concepts of
-Composio in action:
 
-1. 🔐 Configure GitHub integration
-2. 🛠 Discover and fetch relevant tools
-3. 🧠 Pass tools to an LLM
-4. ⭐ Execute tools to star a repository
 
-<Tip>
-A tool is an operation that an LLM can request to be executed. It's execution needs to be 
-</Tip>
+<Warning>Before proceeding, ensure you have [installed Composio](/getting-started/installation)!</Warning>
 
-## Setting Up the GitHub Integration and Connection
-Before writing any code, you'll need to connect your GitHub account. Choose your
-preferred method:
+## Getting your API key
+Before you begin, you'll need a Composio account. Sign up [here](https://app.composio.dev) if you haven't yet! 
+
+Once done, you can generate the API key through either our dashboard or CLI.
 
 <Tabs>
-<Tab title="Dashboard">
-
-Head over to the [dashboard](https://app.composio.dev/apps) to setup a GitHub
-integration for your account following the steps in the video below.
-
-<iframe width="640" height="360" src="https://www.youtube.com/embed/yx1Ulle0QeQ?si=YghrhG6WKop-zbUg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</Tab>
-
 <Tab title="CLI">
 <Steps>
-<Step title="Install Composio CLI">
-If you haven't already, install the Composio CLI:
-```shell CLI
-npm install -g composio-core
+<Step title="Login">
+<Tabs>
+<Tab title="Python">
+
+<Warning>Ensure you have `uv` installed!</Warning>
+
+```bash
+uvx --from composio-core composio login
 ```
+
+To view the API key;
+
+```bash
+uvx --from composio-core composio whoami
+```
+</Tab>
+<Tab title="Node">
+```bash
+npx composio-core login
+```
+To view the API key;
+
+```bash
+npx composio-core whoami
+```
+</Tab>
+</Tabs>
 </Step>
-<Step title="Authenticate and Connect">
-Log in to Composio
-```shell CLI
-composio login
-```
-Add GitHub integration
-
-```shell CLI
-composio add github
+<Step title="Store the API Key">
+When building, store the API key in an `.env` file.
+```bash
+echo "COMPOSIO_API_KEY=YOUR_API_KEY" >> .env
 ```
 
-Follow the instructions in the CLI to authenticate and connect your GitHub
-account.
+Or export it to your environment variables.
+
+```bash
+export COMPOSIO_API_KEY=YOUR_API_KEY
+```
 
 </Step>
 </Steps>
 </Tab>
-
-<Tab title="Code">
+<Tab title="Dashboard">
 <Steps>
-<Step title="Install Required Packages">
-<CodeGroup>
-```python Python
-pip install composio_core
-```
-```javascript JavaScript
-npm install composio-core
-```
-</CodeGroup>
+<Step title="Navigate to the Dasboard">
+Navigate to [Settings > Project Settings](https://app.composio.dev/developers) and create an API key from the "Project API Keys" section.
 </Step>
-
-<Step title="Initialize Connection">
-<CodeGroup>
-```python Python
-from composio_openai import ComposioToolSet, App
-
-toolset = ComposioToolSet()
-request = toolset.initiate_connection(app=App.GITHUB)
-print(f"Open this URL to authenticate: {request.redirectUrl}")
+<Step title="Store the API Key">
+When building, store the API key in an `.env` file.
+```bash
+echo "COMPOSIO_API_KEY=YOUR_API_KEY" >> .env
 ```
-```javascript JavaScript
-import { Composio } from "composio-core";
 
-const client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const entity = await client.getEntity("default");
-const connection = await entity.initiateConnection({appName: 'github'});
+Or export it to your environment variables.
 
-console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+```bash
+export COMPOSIO_API_KEY=YOUR_API_KEY
 ```
-</CodeGroup>
+
 </Step>
 </Steps>
 </Tab>
 </Tabs>
+<Note>
+Make sure to not leak your Composio API key! Anyone with access to your API key can access your authenticated applications.
+</Note>
 
-<Card 
-  title="Integrations and Connections" 
-  href="/concepts/authentication/overview" 
-  icon="fa-key"
->
-  Navigate here to learn more about managing integrations and connections for your users!
-</Card>
+## Setting Up the GitHub Integration
+Before writing any code, you'll need to connect your GitHub account. Choose your
+preferred method:
 
-## Building the Application
-
-Now that GitHub is connected, let's create our application:
-
-<Steps>
-
-<Step title="Install Dependencies">
-  <CodeGroup>
-    ```python Python
-    pip install composio_core composio_openai python-dotenv openai
-    ```
-    ```javascript JavaScript
-    npm install composio-core openai dotenv zod
-    ```
-  </CodeGroup>
-</Step>
-
-<Step title="Configure Environment">
-Create a `.env` file in your project directory:
+<Tabs>
+<Tab title="CLI">
+Add GitHub integration through the CLI.
 
 <CodeGroup>
-  ```.env .env
-  COMPOSIO_API_KEY=your_composio_api_key
-  OPENAI_API_KEY=your_openai_api_key
-  ```
+```uvx uvx
+uvx --from composio-core composio add github
+```
+```npx npx
+npx composio-core add github
+```
 </CodeGroup>
+Follow the instructions in the CLI to authenticate and connect your GitHub account.
+</Tab>
+Follow the instructions in the CLI to authenticate and connect your GitHub
+account.
 
-<Note>
-Always use environment variables or a secure secrets manager for API keys. Never commit them to version control.
-</Note>
-</Step>
+<Tab title="Dashboard">
+Head over to the [GitHub App](https://app.composio.dev/app/github).
+
+1. Select the option to "Setup GitHub Integration"
+2. Click on "Create Integration"
+
+</Tab>
+</Tabs>
+
+## Building the Application
+Now that GitHub is connected, let's make our LLM workflow:
+<Steps>
 
 <Step title="Initialize Clients">
 <CodeGroup>
 ```python Python
 from openai import OpenAI
 from composio_openai import ComposioToolSet
+from dotenv import load_dotenv
+
+load_dotenv()
 
 client = OpenAI()
 toolset = ComposioToolSet()
@@ -156,6 +150,7 @@ const toolset = new OpenAIToolSet({
 </Step>
 
 <Step title="Discover and Fetch Actions">
+
 <CodeGroup>
 ```python Python
 # Find relevant actions for our task
@@ -306,11 +301,11 @@ This process involves three key steps:
 </Note>
 </Step>
 
-<Step title="Putting It All Together">
+<Step title="Create a loop">
 Here's how all these pieces work together in a continuous loop:
 
 <CodeGroup>
-```python Python
+```python Python maxLines=40
 # Main interaction loop
 while True:
     try:
@@ -348,59 +343,37 @@ while True:
         break
 ```
 
-```javascript JavaScript
-async function main() {
-    try {
-        // Initialize clients and tools (from previous steps)
+```javascript JavaScript maxLines=40
+while (true) {
+    console.log("\n⏳ Waiting for AI response...");
+    const response = await client.chat.completions.create({
+        model: "gpt-4o",
+        tools: tools,
+        messages: messages,
+    });
 
-        // Define the task and initial messages
-        const task = "star composiohq/composio and print me an octocat.";
-        const messages = [
-            { role: "system", content: "You are a helpful assistant." },
-            { role: "user", content: task },
-        ];
-
-        // Main interaction loop
-        while (true) {
-            // 1. Send request to LLM
-            const response = await client.chat.completions.create({
-                model: "gpt-4o",
-                tools: tools,
-                messages: messages,
-            });
-
-            // 2. Check if LLM wants to use tools
-            if (!response.choices[0].message.tool_calls) {
-                console.log(response.choices[0].message.content);
-                break;
-            }
-
-            // 3. Execute tool calls
-            const result = await toolset.handleToolCall(response);
-
-            // 4. Store the conversation history
-            messages.push({
-                role: "assistant",
-                content: "",
-                tool_calls: response.choices[0].message.tool_calls,
-            });
-            messages.push({
-                role: "tool",
-                content: String(result),
-                tool_call_id: response.choices[0].message.tool_calls[0].id,
-            });
-        }
-    } catch (error) {
-        // Handle any errors that occur during execution
-        console.error("Error:", error);
-        if (error.response) {
-            console.error("Response data:", error.response.data);
-        }
+    if (!response.choices[0].message.tool_calls) {
+        console.log("💬 AI Response:", response.choices[0].message.content);
+        break;
     }
+
+    console.log("🔧 Executing tool calls...");
+    const result = await toolset.handleToolCall(response);
+    console.log("✅ Tool execution result:", result);
+
+    messages.push({
+        role: "assistant",
+        content: "",
+        tool_calls: response.choices[0].message.tool_calls,
+    });
+
+    messages.push({
+        role: "tool",
+        content: String(result),
+        tool_call_id: response.choices[0].message.tool_calls[0].id,
+    });
 }
 
-// Start the application
-main();
 ```
 </CodeGroup>
 
@@ -412,23 +385,15 @@ The loop continues until either:
 </Step>
 
 </Steps>
-
-<Tip>
-  This loop enables complex interactions where the LLM might need multiple tool
-  calls to complete a task. For example, it might first star the repository,
-  then fetch and display the octocat ASCII art.
-</Tip>
-
 </Step>
-
 </Steps>
 
 ## Full Code
 
-Here's the full code for the application:
+Here's the full code for the workflow.
 
 <CodeGroup>
-```python Python
+```python Python maxLines=80
 from dotenv import load_dotenv
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App
@@ -563,13 +528,13 @@ main();
 ```
 </CodeGroup>
 
-## Next Steps
+{/* ## Next Steps
 
 <CardGroup>
   <Card
-      title="Explore More Apps and Tools"
+      title="Explore Tool Calling in Depth"
       icon="code"
-      href="https://app.composio.dev/apps"
+      href="/concepts/tool-calling/overview"
   >
   Browse our toolset of 250+ LLM ready apps to integrate with.
   </Card>
@@ -581,10 +546,9 @@ main();
   >
   Check out our examples for more inspiration
   </Card>
-</CardGroup>
+</CardGroup> */}
 
 <Note>
-  Need help? Join our [Discord community](https://discord.gg/composio) or check
-  out our [Support](/support) page.
+  Need help? Join our [Discord community](https://dub.composio.dev/discord)!
 </Note>
 
