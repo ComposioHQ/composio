@@ -98,32 +98,25 @@ format-and-check:
 env: clean
 	if [ -z "$$VIRTUAL_ENV"];\
 	then\
-		# Check Python version compatibility
-		python_version=$$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"); \
-		if [ $$(echo "$$python_version < 3.8" | bc) -eq 1 ]; then \
-			echo "Error: UV requires Python 3.8 or higher. Current version: $$python_version"; \
-			exit 1; \
-		fi; \
-		python -m venv .venv;\
-		. .venv/bin/activate;\
-		# Install uv if not already installed
-		if ! command -v uv &> /dev/null; then \
-			pip install uv; \
-		fi; \
-		uv pip install -e .[dev];\
-		uv pip install -e swe;\
-		uv pip install -e plugins/autogen;\
-		uv pip install -e plugins/claude;\
-		uv pip install -e plugins/crew_ai;\
-		uv pip install -e plugins/griptape;\
-		uv pip install -e plugins/julep;\
-		uv pip install -e plugins/langchain;\
-		uv pip install -e plugins/llamaindex;\
-		uv pip install -e plugins/lyzr;\
-		uv pip install -e plugins/openai;\
-		echo "Enter virtual environment with all development dependencies now: '. .venv/bin/activate'.";\
+		pipenv --rm;\
+		pipenv --clear;\
+		pipenv --python 3.10;\
+		pipenv install --skip-lock;\
+		pipenv install --dev --skip-lock;\
+		pipenv run pip install -e swe;\
+		pipenv run pip install -e plugins/autogen;\
+		pipenv run pip install -e plugins/claude;\
+		pipenv run pip install -e plugins/crew_ai;\
+		pipenv run pip install -e plugins/griptape;\
+		pipenv run pip install -e plugins/julep;\
+		pipenv run pip install -e plugins/langchain;\
+		pipenv run pip install -e plugins/llamaindex;\
+		pipenv run pip install -e plugins/lyzr;\
+		pipenv run pip install -e plugins/openai;\
+		pipenv run pip install -e .;\
+		echo "Enter virtual environment with all development dependencies now: 'pipenv shell'.";\
 	else\
-		echo "In a virtual environment! Exit first: 'deactivate'.";\
+		echo "In a virtual environment! Exit first: 'exit'.";\
 	fi
 
 .PHONY: login
