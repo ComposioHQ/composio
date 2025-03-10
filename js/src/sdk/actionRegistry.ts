@@ -185,6 +185,7 @@ export class ActionRegistry {
     const executeRequest = async (data: RawExecuteRequestParam) => {
       try {
         const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
+          client: this.client.backendClient.instance,
           body: {
             ...data,
             connectedAccountId: metadata?.connectionId,
