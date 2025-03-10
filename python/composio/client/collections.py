@@ -1565,6 +1565,8 @@ class Integrations(Collection[IntegrationModel]):
     def remove(self, id: str) -> None:
         self.client.http.delete(url=str(self.endpoint / id))
 
+
+
     @t.overload  # type: ignore
     def get(
         self,
