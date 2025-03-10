@@ -11,7 +11,7 @@ import { StdioServerTransport } from 'composiohq-modelcontextprotocol-typescript
 import { Server } from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/server/index.js';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const log = (...args: any[]) => console.log('[composio-transport]', ...args);
+const log = (...args: any[]) => console.error('[composio-transport]', ...args);
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const logStderr = (...args: any[]) => console.error('[composio-transport]', ...args);
 
@@ -32,13 +32,13 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   const stdioServer = new Server(
     sseClient.getServerVersion()
       ? {
-          name: 'mcp-transport',
-          version: getVersion(),
-        }
+        name: 'mcp-transport',
+        version: getVersion(),
+      }
       : {
-          name: 'mcp-transport',
-          version: getVersion(),
-        }
+        name: 'mcp-transport',
+        version: getVersion(),
+      }
   );
   const stdioTransport = new StdioServerTransport();
   await stdioServer.connect(stdioTransport);
@@ -61,12 +61,12 @@ async function sseToStdio(sseUrl: string): Promise<void> {
         const errorCode =
           err && typeof err === 'object' && 'code' in err
             ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-              (err as any).code
+            (err as any).code
             : -32000;
         let errorMsg =
           err && typeof err === 'object' && 'message' in err
             ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-              (err as any).message
+            (err as any).message
             : 'Internal error';
         const prefix = `MCP error ${errorCode}:`;
         if (errorMsg.startsWith(prefix)) {
@@ -109,7 +109,7 @@ const command: CommandModule = {
   handler: async argv => {
     const { url } = argv;
     await sseToStdio(url as string);
-    console.log('Server started');
+    logStderr('Server started');
     // TODO: Implement server start logic
   },
 };
