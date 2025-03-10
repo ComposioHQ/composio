@@ -1,184 +1,212 @@
 name: main_workflow
-
 on:
+  # Run a cron job every 12 hours
+  schedule:
+    - cron: '0 */12 * * *'
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
 
 jobs:
   lock_check:
     defaults:
       run:
-        working-directory: python
+        working-directory: ./python
+    continue-on-error: False
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10]
+        python-version: ["3.10"]
+    timeout-minutes: 10
+    concurrency:
+      group: 'test:lock-check:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install uv and check requirements
+          python-version: ${{ matrix.python-version }}
+      - name: Pipenv install requirements and check it can be locked
         run: |
-          # Install uv with error handling
-          if ! pip install uv; then
-            echo "Failed to install UV package manager"
-            exit 1
-          fi
-          
-          # Install packages with error handling
-          if ! uv pip install -e .[all]; then
-            echo "Failed to install required packages"
-            exit 1
-          fi
-          
-          if ! uv pip freeze; then
-            echo "Failed to freeze dependencies"
-            exit 1
-          fi
-          
-          if ! uv pip run composio --help; then
-            echo "Failed to run composio help"
-            exit 1
-          fi
+          pip install pipenv
+          pipenv --clear
+          time pipenv install --verbose --dev --skip-lock
+          time pipenv run pip install -e .[all]
+          time pipenv lock
+          time pipenv run composio --help
 
   linter_checks:
     defaults:
       run:
-        working-directory: python
+        working-directory: ./python
+    continue-on-error: False
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10]
+        python-version: ["3.10"]
+    timeout-minutes: 30
+    concurrency:
+      group: 'test:linter_checks:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install tox
-      - name: Run black
+          pip install 'tox>=4.21,<5' tox-uv
+      - name: Code style check
         run: |
-          tox -e black-check
-      - name: Run isort
-        run: |
+          tox -e black-diff
           tox -e isort-check
-      - name: Run flake8
-        run: |
           tox -e flake8
-      - name: Run pylint
-        run: |
-          tox -e pylint
-      - name: Run mypy
-        run: |
-          tox -e mypy
-
-  swe:
-    defaults:
-      run:
-        working-directory: python
-    runs-on: ${{ matrix.os }}
-    if: >
-      github.event_name == 'schedule' ||
-(github.event_name == 'push' && (contains(join(github.event.commits.*.modified, '|'), 'python/swe/') || contains(join(github.event.commits.*.added, '|'), 'python/swe/') || contains(join(github.event.commits.*.removed, '|'), 'python/swe/') || contains(join(github.event.commits.*.modified, '|'), 'python/') || contains(join(github.event.commits.*.added, '|'), 'python/') || contains(join(github.event.commits.*.removed, '|'), 'python/'))) ||
-        (github.event_name == 'pull_request' && (contains(toJSON(github.event.pull_request.files), 'python/swe/') || contains(toJSON(github.event.pull_request.files), 'python/')))
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: [3.10]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install dependencies
-        run: |
-          pip install tox
-      - name: Run tests
-        env:
-          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
-          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
-        run: |
-          if ! cd swe && tox -e py; then
-            echo "Failed to run swe tests"
-            exit 1
-          fi
+      - name: Pylint check
+        run: tox -e pylint
+      - name: Static type check
+        run: tox -e mypy
 
   test:
     defaults:
       run:
-        working-directory: python
+        working-directory: ./python
+    continue-on-error: False
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10, 3.11]
+        python-version: ["3.9", "3.10", "3.11"]
+    timeout-minutes: 20
+    concurrency:
+      group: 'test:common:${{ matrix.python-version }}:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install dependencies
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
         run: |
-          pip install tox
-      - name: Run tests
+          pip install 'tox>=4.21,<5' tox-uv
+      - name: Unittests
+        run: |
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+
+          tox -e test -- -m 'not e2e and not swe'
+      - name: Plugin tests
+        if: matrix.python-version == '3.10'
+        run: |
+          tox -e plugins
+      - if: matrix.python-version == '3.10'
+        name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Slack Notification on Failure
+        if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
+        uses: rtCamp/action-slack-notify@v2
         env:
-          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
-          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
+          SLACK_TITLE: "Tests Failed"
+          SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
+          SLACK_MESSAGE: "<@viraj> <@tushar> ${{ inputs.commit_message || github.event.head_commit.message }}"
+          SLACK_LINK_NAMES: "true"
+          SLACK_COLOR: "failure"
+          SLACK_USERNAME: "GitHub Actions Bot"
+          SLACK_ICON_EMOJI: ":x:"
+          SLACK_FOOTER: "Failed Tests | GitHub Actions"
+
+  swe:
+    defaults:
+      run:
+        working-directory: ./python
+    continue-on-error: False
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    timeout-minutes: 20
+    concurrency:
+      group: 'test:swe:${{ matrix.python-version }}:${{ github.ref }}'
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
         run: |
-          if ! tox -e py; then
-            echo "Failed to run tests"
-            exit 1
-          fi
+          pip install 'tox>=4.21,<5' tox-uv
+      - name: Unittests
+        run: |
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+
+          tox -e test -- -m 'swe'
+      - name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
     defaults:
       run:
-        working-directory: python
+        working-directory: ./python
+    continue-on-error: False
     runs-on: ${{ matrix.os }}
-    if: >
-      github.event_name == 'schedule' ||
-      (github.event_name == 'push' && !contains(join(github.event.commits.*.modified, ' '), 'fern/') && !contains(join(github.event.commits.*.added, ' '), 'fern/') && !contains(join(github.event.commits.*.removed, ' '), 'fern/') && !contains(join(github.event.commits.*.modified, ' '), 'docs/') && !contains(join(github.event.commits.*.added, ' '), 'docs/') && !contains(join(github.event.commits.*.removed, ' '), 'docs/') && !contains(join(github.event.commits.*.modified, ' '), '.md') && !contains(join(github.event.commits.*.added, ' '), '.md') && !contains(join(github.event.commits.*.removed, ' '), '.md')) ||
-      (github.event_name == 'pull_request' && !contains(toJSON(github.event.pull_request.files), 'fern/') && !contains(toJSON(github.event.pull_request.files), 'docs/') && !contains(toJSON(github.event.pull_request.files), '.md'))
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10]
+        python-version: ["3.10"]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Install Docker Engine
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Docker Engine without containerd
         run: |
           sudo apt-get update
           sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli
           sudo systemctl start docker
           sudo systemctl enable docker
+
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install dependencies
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
         run: |
-          pip install tox
-      - name: Run tests
-        env:
-          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
-          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
+          pip install 'tox>=4.21,<5' tox-uv
+      - name: Build docker images
         run: |
-          if ! tox -e e2e; then
-            echo "Failed to run e2e tests"
-            exit 1
-          fi
+          cd dockerfiles
+          make ci
+      - name: Unittests
+        run: |
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+
+          tox -e test -- -m 'e2e'
