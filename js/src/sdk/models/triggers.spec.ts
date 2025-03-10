@@ -16,11 +16,17 @@ describe("Apps class tests", () => {
 
   beforeAll(() => {
     backendClient = getBackendClient();
-    triggers = new Triggers(backendClient);
-    _connectedAccounts = new ConnectedAccounts(backendClient);
+    triggers = new Triggers(backendClient, backendClient.instance);
+    _connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
     _entity = new Entity(backendClient, "default");
-    _connectedAccounts = new ConnectedAccounts(backendClient);
-    _actions = new Actions(backendClient);
+    _connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
+    _actions = new Actions(backendClient, backendClient.instance);
   });
 
   it("should create an Apps instance and retrieve apps list", async () => {
@@ -49,10 +55,13 @@ describe("Apps class tests subscribe", () => {
 
   beforeAll(() => {
     backendClient = getBackendClient();
-    triggers = new Triggers(backendClient);
-    connectedAccounts = new ConnectedAccounts(backendClient);
+    triggers = new Triggers(backendClient, backendClient.instance);
+    connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
     _entity = new Entity(backendClient, "default");
-    _actions = new Actions(backendClient);
+    _actions = new Actions(backendClient, backendClient.instance);
   });
 
   it("should create a new trigger for gmail", async () => {
