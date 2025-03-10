@@ -1,0 +1,50 @@
+{
+  "name": "mcp",
+  "version": "1.0.0",
+  "description": "MCP CLI tool",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "echo \"Error: no test specified\" && exit 1",
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.6.1",
+  "dependencies": {
+    "abortcontroller-polyfill": "^1.7.8",
+    "chalk": "^4.1.2",
+    "commander": "^13.1.0",
+    "composiohq-modelcontextprotocol-typescript-sdk": "^1.6.1",
+    "event-source-polyfill": "^1.0.31",
+    "event-target-polyfill": "^0.0.4",
+    "rollup-plugin-node-polyfills": "^0.2.1",
+    "yargs": "^17.7.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/event-source-polyfill": "^1.0.5",
+    "@types/node": "^20.11.24",
+    "@types/yargs": "^17.0.32",
+    "eslint": "^8.57.1",
+    "prettier": "^3.5.3",
+    "rollup": "^4.12.0",
+    "rollup-plugin-dts": "^6.1.0",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.3.3",
+  },
+  "pnpm": {
+    "overrides": {
+      "composiohq-modelcontextprotocol-typescript-sdk": "link:../../mcp-typescript-sdk"
+    }
+  }
+}
