@@ -1,3 +1,4 @@
+process.env.YARGS_MIN_NODE_VERSION = '10';
 require('event-target-polyfill');
 if (!global.AbortController) {
   const { AbortController, abortableFetch } = require('abortcontroller-polyfill/dist/cjs-ponyfill');
@@ -15,7 +16,6 @@ import mcpCommand from './commands/setup';
 import startCommand from './commands/start';
 
 const nodeVersion = process.version;
-console.log(`Node.js version: ${nodeVersion}`);
 
 yargs(hideBin(process.argv))
   .command(mcpCommand)

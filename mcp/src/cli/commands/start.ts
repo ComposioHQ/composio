@@ -11,7 +11,7 @@ import { StdioServerTransport } from 'composiohq-modelcontextprotocol-typescript
 import { Server } from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/server/index.js';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const log = (...args: any[]) => console.log('[composio-transport]', ...args);
+const log = (...args: any[]) => console.error('[composio-transport]', ...args);
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const logStderr = (...args: any[]) => console.error('[composio-transport]', ...args);
 
@@ -109,7 +109,7 @@ const command: CommandModule = {
   handler: async argv => {
     const { url } = argv;
     await sseToStdio(url as string);
-    console.log('Server started');
+    logStderr('Server started');
     // TODO: Implement server start logic
   },
 };

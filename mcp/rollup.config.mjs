@@ -17,7 +17,6 @@ export default {
   plugins: [
     resolve({
       extensions: ['.ts', '.js', '.json', '.node'],
-      resolveOnly: [/node_modules/],
       preferBuiltins: true
     }),
     commonjs(),
