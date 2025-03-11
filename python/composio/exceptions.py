@@ -99,11 +99,11 @@ class FileError(ComposioSDKError):
     pass
 
 
-class SDKTimeoutError(TimeoutError, ComposioSDKError):
+class SDKTimeoutError(ComposioSDKError, TimeoutError):
     pass
 
 
-class SDKFileNotFoundError(FileNotFoundError, ComposioSDKError):
+class SDKFileNotFoundError(ComposioSDKError, FileNotFoundError):
     pass
 
 
@@ -224,11 +224,11 @@ class SchemaError(ToolError):
     pass
 
 
-class InvalidSchemaError(TypeError, SchemaError):
+class InvalidSchemaError(SchemaError, TypeError):
     pass
 
 
-class InvalidEntityIdError(ValueError, EntityIDError):
+class InvalidEntityIdError(EntityIDError, ValueError):
     pass
 
 
