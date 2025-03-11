@@ -68,6 +68,9 @@ export class Apps {
     try {
       const { data } = await apiClient.apps.getApps({
         client: this.client,
+        query: {
+          additionalFields: "auth_schemes",
+        },
       });
       return data?.items || [];
     } catch (error) {
