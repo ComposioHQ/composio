@@ -3,7 +3,7 @@ import typing as t
 from inspect import Parameter, Signature
 
 from pydantic import ValidationError
-from pydantic_ai.tools import Tool
+from pydantic_ai.tools import RunContext, Tool
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
@@ -105,7 +105,7 @@ class ComposioToolSet(
         # Add type hints
         params = {param.name: param.annotation for param in parameters}
         action_func.__annotations__ = {
-            "ctx": "RunContext[None]",
+            "ctx": RunContext[None],
             "return": t.Dict,
             **params,
         }
@@ -114,7 +114,7 @@ class ComposioToolSet(
         ctx_param = Parameter(
             name="ctx",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation="RunContext[None]",
+            annotation=RunContext[None],
         )
         action_func.__signature__ = Signature(parameters=[ctx_param] + parameters)  # type: ignore
         action_func.__doc__ = description

@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_core>=0.7.0,<0.8.0",
-        "pydantic-ai",
+        "pydantic-ai>=0.0.36",
     ],
     include_package_data=True,
 )
