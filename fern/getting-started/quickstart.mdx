@@ -485,7 +485,7 @@ async function main() {
         while (true) {
             console.log("\n⏳ Waiting for AI response...");
             const response = await client.chat.completions.create({
-                model: "gpt-4",
+                model: "gpt-4o",
                 tools: tools,
                 messages: messages,
             });
