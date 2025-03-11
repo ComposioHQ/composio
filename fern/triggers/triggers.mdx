@@ -6,15 +6,15 @@ subtite: 'Listen in on events using Webhooks and Websockets'
 Triggers monitor specific events in apps and notify your AI agents via webhooks or websockets.
 They send in relevant data that your agents can act upon.
 
-Let's use `gpt-4.5` to reply in greentexts to Slack messages!
+Use `gpt-4.5` to reply in greentexts to Slack messages.
 
 Make sure you've created an integration and a connection to your Slack account.
 
 <Card title="Managing Integrations" href="/authentication/overview.mdx" icon="fa-solid fa-plug">
-Learn how to manage integrations and connected accounts!
+Learn how to manage integrations and connected accounts.
 </Card>
 
-## Managing Triggers
+## Managing triggers
 <Steps>
   <Step title="Enable the Trigger">
     Enable the "New Message Received" trigger for your Slack app through the dashboard, CLI, or code.
@@ -44,7 +44,7 @@ Head to the [Slack app](https://app.composio.dev/app/slack) in the dashboard and
 </Tab>
 
 <Tab title="CLI">
-In the CLI run:
+In the command-line run:
 
 ```bash CLI
 composio triggers add SLACK_RECEIVE_MESSAGE
@@ -318,7 +318,7 @@ Remember to update your webhook URL in the Composio dashboard with your ngrok UR
 
 If you encounter issues with triggers or webhook listeners, you can use the Composio dashboard to inspect detailed trigger logs. The dashboard allows you to review event payloads, identify errors, and manually resend events for testing purposes.
 
-Access the trigger logs here: [Trigger Logs](https://app.composio.dev/trigger_logs)
+Access the trigger logs [here](https://app.composio.dev/trigger_logs)
 
 <video 
     src="../assets/videos/debugging-triggers.mp4"

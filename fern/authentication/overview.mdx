@@ -7,14 +7,18 @@ As agents move closer to the user, they need access to the user's data and servi
 
 ## Integrations
 
-An *integration* is a configuration object that defines how an application connects to external service for a user. It encapsulates the authenticaiton credentials, permission scopes and API specification that determine how an AI agent interacts with the external service.
+As agents move closer to the user, they need access to the user's data and services to perform tasks with agency. Connecting these agents and applications to third party services means having the manage the complexities of authentication yourself.
+
+## Integrations
+
+An *integration* is a configuration object that defines how an application connects to external service for a user. It encapsulates the authentication credentials, permission scopes and API specification that determine how an AI agent interacts with the external service.
 
 
-### Using Composio's Client Credentials *(for prototyping)*
+### Using Composio's client credentials *(for prototyping)*
 
-It is a development overhead and a burden to manage and create a developer app when making AI Agents for personal use or during prototyping.
+It's a development overhead and a burden to manage and create a developer app when making AI Agents for personal use or during prototyping.
 
-To solve for that, you can use Composio's client credentials!
+To solve for that, you can use Composio's client credentials.
 
 <Tabs>
 <Tab title="Dashboard">
@@ -96,7 +100,7 @@ const integration = await composioClient.integrations.create({
 
 
 
-### Creating and using your own Developer App
+### Creating and using your own developer app
 <Tabs>
 <Tab title="Dashboard">
 You can add in your OAuth client credentials directly from the dashboard.
@@ -160,7 +164,7 @@ const integration = await composioClient.integrations.create({
 </Tabs>
 
 
-## Connections and Entities
+## Connections and entities
 An *entity* represents a unique user in your application's ecosystem. Think of it as a container that holds all the third-party service connections for a single user. Key points about entities:
 
 For example, if you have a user "Alice" in your application, she would have a single entity ID that links to all her connected services (GitHub, Google Calendar, etc.).
