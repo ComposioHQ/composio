@@ -5,6 +5,7 @@ from inspect import Parameter, Signature
 from pydantic import ValidationError
 from pydantic_ai.tools import Tool
 
+from pydantic_ai.tools import RunContext  # noqa: F401
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
