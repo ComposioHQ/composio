@@ -174,7 +174,7 @@ You wouldn't want the LLM to generate it in the tool call.
 You can simply modify the schema processor to do so:
 
 ```python {8}
-def schema_processor(schema: dict) -> dict:
+def gmail_schema_processor(schema: dict) -> dict:
     del schema["recipient_email"]
     del schema["attachment"]
 
@@ -185,7 +185,7 @@ processed_send_email_tool = toolset.get_tools(
     },
 )
 ```
-This would result in the `recipient_email` and `attachement` parameters being deleted so the LLM doesn't generate it.
+This removes the `recipient_email` and `attachment` parameters from the schema, preventing the LLM from generating them.
 
 ### Preprocessing
 But you still need to pass `recipient_email` to the tool execution so that `handle_tool_calls` can successfully send the email.
