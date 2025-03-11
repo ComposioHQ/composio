@@ -63,7 +63,7 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 ## Further commands needed during development
 
-We have various commands which are helpful during development.
+The following commands are helpful during development:
 
 - For independent linting and static analysis:
   - Use `tox -e isort` and `tox -e black` for formatting code
@@ -73,9 +73,9 @@ We have various commands which are helpful during development.
 
 Read more detailed guides on development [here](python/docs/development.md).
 
-## Contributing to Docs
+## Contributing to docs
 
-To contribute to our documentation:
+To contribute to the documentation:
 
 1. Make sure you have Node.js installed on your system.
 
