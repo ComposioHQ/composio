@@ -212,16 +212,13 @@ navigation:
             path: triggers/triggers.mdx
           - page: Workspaces
             path: workspaces/workspaces.mdx
-      
-      - section: MCP
-        contents:
-          - page: Overview
-            path: mcp/overview.mdx
 
       - section: Resources
         contents:
           - page: Glossary
             path: resources/glossary.mdx
+          - page: Model Context Protocol
+            path: mcp/overview.mdx
           # - page: FAQs
           #   path: resources/faqs.mdx
 
