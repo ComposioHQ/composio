@@ -148,18 +148,16 @@ This emits a tool call to `GMAIL_SEND_EMAIL` from the LLM. Here are the argument
 }
 ```
 
-Since we didn't provide the `recipient_email` anywhere, the LLM hallucinated something plausible but **wrong nonetheless**.
+When building a system that already infers parameters, the LLM doesn't need to generate these parameters - you can inject them directly.
 
-Morever if you're building a system in which you're already inferring a parameters, you don't need the LLM to tell you the parameter, you can inject it yourself!
+This is where tool processing comes into play.
 
-This is where tool processing comes into play!
-
-<Card title="Schema Processing" href="#schema-processing" icon="code">
+<Card title="Schema processing" href="#schema-processing" icon="code">
     Handler to modify the tool schema, description, parameters before sending to an LLM.
 </Card>
 
 <Card title="Preprocessing" href="#preprocessing" icon="arrow-right">
-    Handler to modify or inject parameters to a tool call before it is executed.
+    Handler to modify or inject parameters before executing a tool call.
 </Card>
 
 {/* <Card title="Postprocessing" href="#postprocessing" icon="arrow-left">
@@ -170,7 +168,7 @@ This is where tool processing comes into play!
 Developers looking to improve agent reliability should analyze both the schema and outputs of tools, then use these processors to make interactions more deterministic where needed.
 </Tip>
 
-### Schema Processing
+### Schema processing
 Say your system already infers the `recipient_email` parameter and you don't want to send an`attachment`.
 You wouldn't want the LLM to generate it in the tool call.
 You can simply modify the schema processor to do so:
@@ -247,7 +245,7 @@ exec_response = toolset.handle_tool_calls(response)
 {/* TODO: Add sequence diagram showing how schema processing fits into the tool calling workflow, illustrating the flow: LLM -> Modified Schema (with removed fields) -> Tool Call Generation */}
 
 ## Postprocessing
-Once a tool call has been executed, the response is sent back to the LLM.
+After executing a tool call, the system sends the response back to the LLM.
 However many APIs tend to return lots of data in their responses, making agentic flows unstable and eating up tokens.
 
 <Tip>We'll deconstruct the working behind `handle_tool_calls` by using `execute_action` to directly call the GMAIL_FETCH_EMAILS tool.</Tip>
@@ -272,11 +270,10 @@ print(num_tokens_from_string(str(emails), encoding.name))
 ```
 <Error>This is already more than twice the context length of `gpt-4o-mini` (128k tokens)!</Error>
 
-*This is where postprocessing comes in. It lets you filter out what information from the tool execution needs to be sent to the LLM.*
+*Postprocessing lets you filter what information from the tool execution reaches the LLM.*
 
-{/* TODO: Add sequence diagram showing postprocessing workflow: API Response (full data) -> Postprocessor (filtering data) -> LLM (simplified response) */}
 
-Say we only need the subject of the emails and the sender, for that we can create a postprocessor as follows:
+To filter only the subject and sender of the emails, create a postprocessor as follows:
 ```python
 def gmail_postprocessor(result: dict) -> dict:
     processed_result = result.copy()
@@ -294,19 +291,19 @@ def gmail_postprocessor(result: dict) -> dict:
 processed_emails = gmail_postprocessor(emails)
 print(num_tokens_from_string(str(processed_emails), encoding.name))
 ```
-This gives us a more digestable response for the LLMs!
+The postprocessor produces a more digestible response for the LLMs.
 ```
 > 356
 ```
 
 ```python
 [{'data': [{'subject': 'Update on AGI Development',
-    'sender': 'Siddharth Balyan <gdb@composio.dev>'},
+    'sender': 'Greg Brockman <gdb@composio.dev>'},
    {'subject': 'Security alert',
     'sender': 'Google <no-reply@accounts.google.com>'},
    {'subject': 'Hiddens Flaw in Most RAG Systems from ChromaDB, LlamaIndex, and Glean',
     'sender': 'Jason Liu <work@jxnl.co>'},
-   {'subject': 'AGI, Inc. - from MultiOn’s Div Garg ❇️',
+   {'subject': 'AGI, Inc. ❇️',
     'sender': 'Cerebral Valley <cerebralvalley@mail.beehiiv.com>'}],
   'error': None,
   'successfull': True,
@@ -381,7 +378,7 @@ You have received two emails related to AGI:
    - Subject: Update on AGI Development  
 
 2. **Email from Cerebral Valley**  
-   - Subject: AGI, Inc. - from MultiOn’s Div Garg ❇️  
+   - Subject: AGI, Inc. - from MultiOn's Div Garg ❇️  
 
 Would you like to take any specific actions regarding these emails?
 ```

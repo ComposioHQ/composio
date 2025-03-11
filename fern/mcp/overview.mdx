@@ -7,19 +7,19 @@ Composio MCP (Model Context Protocol) is a server implementation that enables st
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/rSn1BqTl-og?si=2t5SRJ46hRUyRdfH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen />
 
-### Core Functionality
+### Core feature
 
 * **Unified API Interface**: Access multiple services through a single, consistent API protocol
-* **Authentication Handling**: Built-in support for OAuth, API keys, JWT, and other auth methods
-* **Type-Safe Operations**: Function calls are validated against service-specific schemas
+* **Authentication Handling**: Built-in support for OAuth, API keys, JSON Web Tokens (JWT), and other auth methods
+* **Type-Safe Operations**: Service-specific schemas validate all function calls
 
-### Setup Requirements
+### Setup requirements
 
 * A Composio API key (sign up at [Composio](https://app.composio.dev))
 * Node.js 16+
 * [pnpm](https://pnpm.io/) package manager
 
-### Quick Start
+### Quick-start
 
 1. Visit [MCP Directory](https://mcp.composio.dev) to browse available tools
 
@@ -37,7 +37,7 @@ Composio MCP (Model Context Protocol) is a server implementation that enables st
 #### Claude Integration
 
 1. Visit [MCP Directory](https://mcp.composio.dev) and select your desired service
-2. Copy the SSE URL provided for that service (e.g., "https://mcp.composio.dev/notion/YOUR-ID")
+2. Copy the Server-Sent Events (SSE) URL provided for that service (for example, "https://mcp.composio.dev/notion/YOUR-ID")
 3. Run the following command, replacing the URL with your copied SSE URL:
 
 ```bash

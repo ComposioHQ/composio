@@ -4,11 +4,11 @@ description: 'Optimize your LLM applications with advanced tool configuration an
 ---
 
 
-## Fetching Tools
+## Fetching tools
 While you can find and specify tools from the [dashboard](https://app.composio.dev), Composio also offers programmatic methods to retrieve tools for your LLM applications. This gives you greater flexibility when building dynamic systems.
 
 
-### Specifying Apps and Tags
+### Specifying `apps` and `tags`
 You can also retrieve tools by specifying apps and tags, allowing for more targeted tool selection based on your specific needs. This approach helps you filter the available tools to only those relevant to your application.
 
 <CodeGroup>
@@ -35,15 +35,13 @@ const tools = await toolset.getTools({
 </CodeGroup>
 
 
-When working with tools from specific apps, it's important to consider the number of tools being loaded into your LLM's context window.
+When working with tools from specific apps, consider the number of tools from specific apps loaded into your LLMs context window.
 
 <Warning>When fetching by specifying the `App`, the Toolset returns only the tools with an `important` tag and not all the tools!</Warning>
 
-### Use Case Search
+### Use-case search (experimental)
 
 Finding tools based on what you're trying to accomplish is often the most intuitive approach.
-
-
 <Tabs>
 <Tab title="Search with code">
 
@@ -73,11 +71,11 @@ NOTION_CREATE_DATABASE
 </Tabs>
 
 
-<Tip>Use the `advanced` flag if your use case needs multiple tools working together</Tip>
+<Tip>Use the `advanced` flag when you need to retrieve multiple tools to use together in a chain</Tip>
 
 ## Using tools directly
-It is possible to use custom logic to execute the tools instead of relying on `handle_tool_calls`.
-The `params` is parameter expects all the valid parameters for the tool being executed.
+It's possible to use custom logic to execute the tools instead of relying on `handle_tool_calls`.
+The `params` parameter expects all the valid parameters for the tool you want to execute.
 
 <Tip>You can view the valid parameters for a tool from the [dashboard](https://app.composio.dev/)!</Tip>
 

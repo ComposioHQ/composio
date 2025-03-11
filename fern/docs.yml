@@ -21,7 +21,7 @@ logo:
   light: logo/logo.svg
   dark: logo/logo.svg
   height: 30
-  href: https://docs.composio.dev
+  href: /
 
 
 colors:
@@ -198,7 +198,7 @@ navigation:
         contents:
           - section: Tool Calling
             contents:
-              - page: Overview
+              - page: Tool Calling and Composio
                 path: tool-calling/tool-calling.mdx
               - page: Processing Tools
                 path: tool-calling/processing-tools.mdx
@@ -222,8 +222,8 @@ navigation:
         contents:
           - page: Glossary
             path: resources/glossary.mdx
-          - page: FAQs
-            path: resources/faqs.mdx
+          # - page: FAQs
+          #   path: resources/faqs.mdx
 
   - tab: frameworks
     layout:
