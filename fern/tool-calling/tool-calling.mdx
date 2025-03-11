@@ -3,16 +3,9 @@ title: 'Tool Calling and Composio'
 description: 'Using Composio Tools with LLMs'
 ---
 
-Tool calling lets language models use external functions and APIs through
-structured requests. It transforms AI assistants from conversation-only systems
-into action-oriented tools that can perform specific tasks beyond their built-in
-knowledge.
+Tool calling enables AI models to perform tasks beyond simple conversations, allowing them to interact with external services and applications. Instead of just answering questions, your AI assistant can now browse the internet, schedule meetings, update CRM records, or even manage tasks in project management tools.
 
-Language models can identify when external tools are needed and format
-appropriate requests to access them. This creates a bridge between natural
-language understanding and specialized services—retrieving information,
-processing data, or performing actions while maintaining a consistent user
-experience.
+With Composio, your AI apps and agents gain access to over 250 integrations, including popular services like GitHub, Google Calendar, Salesforce, Slack, and many more. This means your AI agents can seamlessly handle real-world tasks, saving you time and effort.
 
 ## Overview
 
@@ -64,7 +57,7 @@ print("Question: ", question)
 print("Answer: ", result[0]["data"]["sum"])
 ```
 
-```javascript maxLines=100 wordWrap {11-22, 37} llm-with-calculator.mjs
+```javascript maxLines=100 wordWrap {11-22, 37} llm-with-calculator.js
 import { OpenAIToolSet } from "composio-core"
 import { OpenAI } from "openai";
 import { z } from "zod"
@@ -109,8 +102,8 @@ console.log(result);
 
 <Steps>
 <Step>
-**Tool is created**
-- A function in code is converted into a form that an LLM can understand. Here, this is done with the help of the `@action` wrapper (Python) or the callback function (JS)
+**Create tool**
+- Convert a function into LLM-readable form using the `@action` wrapper (Python) or the callback function (JS)
 </Step>
 
 <Step>
@@ -120,15 +113,10 @@ console.log(result);
 </Step>
 <Step>
 **Handling of the tool call**
-- Composio intercepts, interprets and calls the actual method defined.
+- Composio intercepts, interprets, and calls the actual method defined.
 `handle_tool_calls` method interprets the tool call and calls the actual method defined.
 </Step>
 </Steps>
-
-<Note>
-  To learn more about tool calling, we reccomend following our best practices
-  for defining a tool.
-</Note>
 
 ## Tool Calling with Composio
 
@@ -207,23 +195,22 @@ console.log(result);
 
 </CodeGroup>
 ### Using Composio's Local Tools
-Composio ships with a host of tools that are executed on a system locally for performing common development tasks like file operations, shell commands, and code execution.
+Composio ships with a host of tools that run locally on your system for performing common development tasks like file operations, shell commands, and code execution.
 
 These don't require any integration or authentication.
 
-<Info>Local tools are currently only supported on our [Python SDK](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)!</Info>
+<Info>Local tools are currently only supported on our [Python SDK](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)</Info>
 
 These tools run directly on the defined workspace while maintaining security through
 permission controls.
 
 <Card title="Workspaces" href="/concepts/workspaces">
   Workspaces are environments where local tools are fun. Read more about them
-  here!
+  here.
 </Card>
 
 <Accordion title="Workspaces?">
-  Workspaces are environment where local tools can be executed apart from your
-  system.
+  Workspaces are environments where local tools run separately from your system.
 </Accordion>
 
 ```python {7}
@@ -249,8 +236,8 @@ print(result)
 
 ### Using Custom Tools
 
-Custom tools allow you to define your own functionality that can be called by
-LLMs without having to manually write JSON schemas. This provides a unified tool
+Custom tools allow you to define your own functions for LLMs to call
+without manually writing JSON schemas. This provides a unified tool
 calling experience across your application.
 
 These can be:
@@ -259,7 +246,7 @@ These can be:
 - External APIs you want to expose to the LLM
 - Business logic specific to your application
 
-Custom tools can be seamlessly combined with both local and hosted tools!
+Custom tools can be seamlessly combined with both local and hosted tools
 
 <Note>
   For creating custom tools using OpenAPI specifications, visit the [Custom

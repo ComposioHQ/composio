@@ -21,7 +21,7 @@ logo:
   light: logo/logo.svg
   dark: logo/logo.svg
   height: 30
-  href: https://docs.composio.dev
+  href: /
 
 
 colors:
@@ -41,6 +41,8 @@ typography:
 layout: 
   tabs-placement: header
   searchbar-placement: header
+  disable-header: true
+  content-width: 50rem
 navbar-links:
   - type: minimal
     text: Discord
@@ -196,7 +198,7 @@ navigation:
         contents:
           - section: Tool Calling
             contents:
-              - page: Overview
+              - page: Tool Calling and Composio
                 path: tool-calling/tool-calling.mdx
               - page: Processing Tools
                 path: tool-calling/processing-tools.mdx
@@ -210,18 +212,15 @@ navigation:
             path: triggers/triggers.mdx
           - page: Workspaces
             path: workspaces/workspaces.mdx
-      
-      - section: MCP
-        contents:
-          - page: Overview
-            path: mcp/overview.mdx
 
       - section: Resources
         contents:
           - page: Glossary
             path: resources/glossary.mdx
-          - page: FAQs
-            path: resources/faqs.mdx
+          - page: Model Context Protocol
+            path: mcp/overview.mdx
+          # - page: FAQs
+          #   path: resources/faqs.mdx
 
   - tab: frameworks
     layout:
