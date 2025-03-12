@@ -5,8 +5,6 @@ subtitle: 'Manage integrations for yourself and your users'
 
 ## Overview
 
-
-
 As agents move closer to the user, they need access to the user's data and services to perform tasks with agency. Connecting these agents and applications to third party services means having the manage the complexities of authentication yourself.
 
 ## Integrations
@@ -50,12 +48,17 @@ const integration = await composioClient.integrations.create({
 </CodeGroup>
 </Tab>
 <Tab title="CLI">
-Add GitHub integration
+Add an integration
 
-```shell CLI
-composio add github
+<CodeGroup>
+```uvx uvx
+uvx --from composio-core composio add github
 ```
 
+```npx npx
+npx composio-core add github
+```
+</CodeGroup>
 Follow the instructions in the CLI to authenticate and connect your GitHub
 account.
 </Tab>

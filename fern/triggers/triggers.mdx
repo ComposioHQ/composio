@@ -11,7 +11,10 @@ When these events take place, triggers capture relevant information and deliver 
 
 For instance, imagine building a Slack bot designed to generate humorous responses to messages from your co-workers. To achieve this, your application needs to receive notifications whenever someone posts a new message in a specific Slack channel. Triggers fulfill this role by listening for these events and promptly notifying your system, allowing your bot to respond appropriately.
 
+<Frame caption="Triggers through Composio" background="subtle">
 ![Triggers Overview](../assets/images/triggers.png)
+</Frame>
+
 
 Composio supports two primary methods for delivering these payloads:
 
@@ -178,7 +181,7 @@ Once you have the triggers set up, you can specify listener functions using webs
 
 ### Specifying Listeners through Websockets
 We create a listener and then define a callback function that executes when a listener recieves a payload.
-```python focus {6-15} Creating a listener and defining a callback
+```python focus {6-15} Triggers through websockets
 from composio_openai import ComposioToolSet, App, Action
 
 toolset = ComposioToolSet()
@@ -219,7 +222,7 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 
 <Step title="Listening on the webhooks">
 To demonstrate, here's a FastAPI server to handle incoming webhook requests.
-```python
+```python maxLines=100 Triggers through webhooks
 from fastapi import FastAPI, Request
 from typing import Dict, Any
 import uvicorn

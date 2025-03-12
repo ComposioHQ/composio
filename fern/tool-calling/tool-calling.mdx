@@ -9,13 +9,15 @@ With Composio, your AI apps and agents gain access to over 250 integrations, inc
 
 ## Overview
 
-{/* TODO: make a flow for our given example */}
-![Tool calling flow](../assets/images/tool-calling.png)
+<Frame caption="Tool Calling with Composio" background="subtle">
+  ![Tool calling flow](../assets/images/tool-calling.png)
+</Frame>
 
-Here's the above example in code:
+
+Here's the preceding example in code:
 
 <CodeGroup>
-```python maxLines=100 wordWrap {9-20, 36} llm-with-calculator.py
+```python maxLines=100 wordWrap {9-20, 36} Python
 from composio_openai import ComposioToolSet, action
 from typing import Annotated
 from openai import OpenAI
@@ -57,8 +59,8 @@ print("Question: ", question)
 print("Answer: ", result[0]["data"]["sum"])
 ```
 
-```javascript maxLines=100 wordWrap {11-22, 37} llm-with-calculator.js
-import { OpenAIToolSet } from "composio-core"
+```typescript maxLines=100 wordWrap {11-28, 42} TypeScript
+import { ActionExecutionResDto, OpenAIToolSet, RawExecuteRequestParam } from "composio-core"
 import { OpenAI } from "openai";
 import { z } from "zod"
 import dotenv from "dotenv";
@@ -69,23 +71,28 @@ const openai_client = new OpenAI();
 const toolset = new OpenAIToolSet();
 
 await toolset.createAction({
-  actionName: "calculateSquareRoot",
-  description: "Calculate the square root of a number",
+  actionName: "calculateSum",
+  description: "Calculate the sum of two numbers",
   inputParams: z.object({
-      number: z.number()
+      a: z.number(),
+      b: z.number()
   }),
-  callback: async (inputParams) => {
-      const number = inputParams.number;
-      const squareRoot = Math.sqrt(number);
-      return squareRoot;
+  callback: async (inputParams: {}, authCredentials: Record<string, string> | undefined, executeRequest: (data: RawExecuteRequestParam) => Promise<ActionExecutionResDto>) => {
+      const { a, b } = inputParams as { a: number, b: number };
+      const sum = a + b;
+      return {
+        successful: true,
+        data: {
+          sum: sum
+        }
+      };
   }
 });
 
 const tools = await toolset.getTools({
-  actions: ["calculateSquareRoot"]
+  actions: ["calculateSum"]
 });
-
-const instruction = "What is the square root of 212?";
+const instruction = "What is 3932 + 2193?";
 
 const response = await openai_client.chat.completions.create({
   model: "gpt-4o-mini",

@@ -1,6 +1,6 @@
 ---
 title: 'Miscellaneous'
-description: 'Optimize your LLM applications with advanced tool configuration and processing'
+subtitle: 'A collection of tips for managing and executing tools'
 ---
 
 
@@ -22,7 +22,7 @@ tools = toolset.get_tools(
 )
 ```
 
-```javascript JavaScript
+```typescript TypeScript
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
@@ -123,7 +123,7 @@ from composio import ComposioToolSet, App
 
 toolset = ComposioToolSet()
 
-toolset.get_action_schemas(
+schemas = toolset.get_action_schemas(
     actions=[Action.GOOGLECALENDAR_LIST_CALENDARS], check_connected_accounts=False
 )
 ```
