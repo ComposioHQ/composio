@@ -1,3 +1,4 @@
+import json
 import types
 import typing as t
 from inspect import Signature
@@ -108,12 +109,9 @@ class ComposioToolSet(
 
         # Create a function that accepts explicit JSON string for parameters
         # This avoids the issue with **kwargs in schema validation
-        async def execute_action_wrapper(ctx, args_json):
+        async def execute_action_wrapper(_ctx, args_json):
             """Execute Composio action with the given arguments."""
             try:
-                # Parse the args_json into a dict
-                import json
-
                 kwargs = json.loads(args_json) if args_json else {}
 
                 result = self.execute_action(
@@ -122,10 +120,20 @@ class ComposioToolSet(
                     entity_id=entity_id or self.entity_id,
                     _check_requested_actions=True,
                 )
-                return str(result)
+
+                # Serialize the result to JSON string
+                # The OpenAI API expects strings for tool outputs
+                if not isinstance(result, dict):
+                    result_dict = {"result": result}
+                else:
+                    result_dict = result
+
+                # Convert to JSON string
+                return json.dumps(result_dict)
+
             except pydantic.ValidationError as e:
                 error_msg = parse_pydantic_error(e)
-                return str(
+                return json.dumps(
                     {
                         "successful": False,
                         "error": error_msg,
@@ -133,7 +141,7 @@ class ComposioToolSet(
                     }
                 )
             except Exception as e:
-                return str(
+                return json.dumps(
                     {
                         "successful": False,
                         "error": str(e),
