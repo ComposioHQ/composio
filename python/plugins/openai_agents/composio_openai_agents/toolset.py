@@ -1,20 +1,17 @@
+import types
 import typing as t
 from inspect import Signature
-import types
 from typing import List, cast
 
 import pydantic
 import pydantic.error_wrappers
-
 from agents import FunctionTool, Tool
 
 from composio import ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
 from composio.utils.pydantic import parse_pydantic_error
-from composio.utils.shared import (
-    get_signature_format_from_schema_params,
-)
+from composio.utils.shared import get_signature_format_from_schema_params
 
 
 class ComposioToolSet(
@@ -59,6 +56,7 @@ class ComposioToolSet(
     asyncio.run(main())
     ```
     """
+
     def _wrap_action(
         self,
         action: str,
@@ -147,7 +145,7 @@ class ComposioToolSet(
         # This is required by OpenAI's function validation
         modified_schema = schema_params.copy()
         modified_schema["additionalProperties"] = False
-        
+
         # Create a custom FunctionTool with the appropriate schema
         tool = FunctionTool(
             name=action,
@@ -201,7 +199,7 @@ class ComposioToolSet(
                 _populate_requested=True,
             )
         ]
-        
+
         # Cast the list to List[Tool] to satisfy type checking
         # Since FunctionTool is a subclass of Tool, this is type-safe
         return cast(List[Tool], function_tools)

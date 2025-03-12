@@ -1,8 +1,9 @@
 import asyncio
+
 import dotenv
 from agents import Agent, Runner
-
 from composio_openai_agents import Action, ComposioToolSet
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
@@ -11,7 +12,9 @@ dotenv.load_dotenv()
 composio_toolset = ComposioToolSet()
 
 # Get all the tools
-tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+tools = composio_toolset.get_tools(
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+)
 
 # Create an agent with the tools
 agent = Agent(
@@ -20,9 +23,14 @@ agent = Agent(
     tools=tools,
 )
 
+
 # Run the agent
 async def main():
-    result = await Runner.run(agent, "Star the repository composiohq/composio on GitHub")
+    result = await Runner.run(
+        agent,
+        "Star the repository composiohq/composio on GitHub. If done successfully, respond with 'Action executed successfully'",
+    )
     print(result.final_output)
+
 
 asyncio.run(main())
