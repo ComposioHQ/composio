@@ -36,6 +36,8 @@ refactor_debug.ipynb
 **/.composio.coder.*
 .indexing_status.json
 
+.ruff_cache
+
 python/dockerfiles/e2b-dev/composio
 python/dockerfiles/composio
 python/swe/dockerfiles/generated
