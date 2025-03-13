@@ -129,6 +129,8 @@ class ComposioToolSet(
             args_schema=parameters,
             return_schema=True,
             func=action_func,
+            handle_tool_error=True,
+            handle_validation_error=True,
         )
         return tool  # type: ignore
 
