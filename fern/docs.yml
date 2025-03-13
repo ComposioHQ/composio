@@ -237,11 +237,6 @@ navigation:
 
   - tab: frameworks
     layout:
-      - section: Random
-        contents:
-          - page: Python SDK
-            path: frameworks/concepts/python-framework.mdx
-            icon: python
       - section: Frameworks
         contents:
           - page: OpenAI
