@@ -1,12 +1,14 @@
 ---
-title: 'Workspaces'
-subtitle: 'Configuring Workspaces for Local Tools'
+title: 'Workspaces (beta)'
+subtitle: 'Configure environments for local tools to run on'
 ---
 
 ## Overview
 Composio ships with a pre-defined set of local tools that run only on a machine. These tools manipulate files, execute shell commands, and manage code projects.
 
-{/* Insert full list of local tools here.  */}
+<Callout type="warning">
+  **Python SDK Only**: Workspaces are currently only available in the Python SDK. TypeScript support isn't available for this feature.
+</Callout>
 
 <Card title="Host Workspace" icon="server" href="#host">
   Run local tools directly on your host machine with full system access and native performance.
@@ -24,8 +26,8 @@ Composio ships with a pre-defined set of local tools that run only on a machine.
   Deploy and manage workspaces for tool execution to Fly.io for global distribution and scale.
 </Card>
 
-### Host
-By default all local tools are executed locally on the host.
+## Host
+By default, all local tools run directly on your host machine.
 
 ```python focus {6-9} Lists out the files in current directory
 from composio_openai import ComposioToolSet, App, Action, WorkspaceType
@@ -49,7 +51,7 @@ result = toolset.handle_tool_calls(response)
 print(result)
 ```
 
-### Docker
+## Docker
 - Secure sandboxed environments
 - Consistent execution across systems
 - Easy dependency management
@@ -82,7 +84,7 @@ result = toolset.handle_tool_calls(response)
 print(result)
 ```
 
-### E2B
+## E2B
 - Secure serverless execution
 - No infrastructure management
 - Pay-per-use pricing
@@ -117,7 +119,7 @@ result = toolset.handle_tool_calls(response)
 print(result)
 ```
 
-### Fly.io
+## Fly.io
 - Deploy close to users
 - Automatic load balancing
 - Built-in monitoring
@@ -159,4 +161,4 @@ result = toolset.handle_tool_calls(response)
 print(result)
 ```
 
-Each workspace type offers unique benefits and can be chosen based on your specific requirements for security, scalability, and deployment needs. Remember to install the corresponding workspace extension using composio-core[extension_name] before using any workspace type other than the default host configuration.
+Each workspace type offers unique benefits. Choose the appropriate workspace based on your specific requirements for security, scalability, and deployment needs. Remember to install the corresponding workspace extension using composio-core[extension_name] before using any workspace type other than the default host configuration.
