@@ -11,9 +11,7 @@ instances:
 
 analytics:
   posthog:
-    api-key: ${POSTHOG_API_KEY}
-  intercom:
-    app-id: dvp1uc7s
+    api-key: ${POSTHOG_API_KEY} 
 
 title: Composio
 favicon: favicon.png
@@ -157,6 +155,9 @@ redirects:
     destination: "/"
   - source: "/swekit/:slug"
     destination: "/"
+
+js:
+  - ./custom.js
 
 tabs:
   docs:
