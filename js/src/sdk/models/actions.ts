@@ -128,9 +128,6 @@ export class Actions {
           usecaseLimit: data.usecaseLimit || undefined,
           useCase: data.useCase as string,
         },
-        body: {
-          useCase: data.useCase as string,
-        },
       });
       return response.data!;
     } catch (error) {
