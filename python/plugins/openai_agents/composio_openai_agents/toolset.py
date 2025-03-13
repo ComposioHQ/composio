@@ -162,7 +162,7 @@ class ComposioToolSet(
             if "properties" in schema_obj and isinstance(
                 schema_obj["properties"], dict
             ):
-                for prop_name, prop_value in schema_obj["properties"].items():
+                for _, prop_value in schema_obj["properties"].items():
                     if isinstance(prop_value, dict):
                         # Remove examples, pattern, and default from this property
                         if "examples" in prop_value:
@@ -197,7 +197,7 @@ class ComposioToolSet(
                 remove_examples_from_schema(schema_obj["items"])
 
             # Handle any other nested object properties
-            for key, value in schema_obj.items():
+            for _, value in schema_obj.items():
                 if isinstance(value, dict):
                     remove_examples_from_schema(value)
                 elif isinstance(value, list):
