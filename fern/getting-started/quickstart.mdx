@@ -1,6 +1,6 @@
 ---
 title: 'Quickstart'
-subtitle: 'Get started with using Composio'
+subtitle: 'Create your first application with Composio'
 hide-nav-links: false
 ---
 This guide shows how to build a workflow to star a GitHub repository using AI. Composio discovers and provides the relevant tools to the LLM and handles its execution.
@@ -11,9 +11,7 @@ This guide shows how to build a workflow to star a GitHub repository using AI. C
 4. 🧠 Pass tools to an LLM
 5. ⭐ Execute tools to star a repository
 
-
-
-<Warning>Before proceeding, ensure you have [installed Composio](/getting-started/installation)!</Warning>
+<Note>[Click here](#full-code) to skip to the full code.</Note>
 
 ## Getting your API key
 Before you begin, you'll need a Composio account. Sign up [here](https://app.composio.dev) if you haven't yet. 
@@ -390,7 +388,8 @@ The loop continues until either:
 
 Here's the full code for the workflow.
 
-<CodeGroup>
+<AccordionGroup>
+<Accordion title="Python">
 ```python Python maxLines=80
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -443,6 +442,9 @@ while True:
             }
         )
 ```
+</Accordion>
+
+<Accordion title="TypeScript">
 ```javascript JavaScript maxLines=80
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
@@ -524,27 +526,8 @@ async function main() {
 main();
 
 ```
-</CodeGroup>
-
-{/* ## Next Steps
-
-<CardGroup>
-  <Card
-      title="Explore Tool Calling in Depth"
-      icon="code"
-      href="/concepts/tool-calling/overview"
-  >
-  Browse our toolset of 250+ LLM ready apps to integrate with.
-  </Card>
-
-  <Card
-      title="Explore More Examples"
-      icon="book-open"
-      href="https://github.com/ComposioHQ/composio/tree/master/cookbook"
-  >
-  Check out our examples for more inspiration
-  </Card>
-</CardGroup> */}
+</Accordion>
+</AccordionGroup>
 
 <Note>
   Need help? Join the [Discord community](https://dub.composio.dev/discord)!
