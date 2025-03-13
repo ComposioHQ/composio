@@ -163,63 +163,76 @@ tabs:
   docs:
     display-name: Docs
     skip-slug: true
-  tutorials:
-    display-name: Tutorials
-    slug: tutorials
+    icon: book
   guides:
     display-name: Guides
     slug: guides
+    icon: map
   sdk-reference:
     display-name: SDK Reference
     slug: sdk-reference
   api-reference:
     display-name: API Reference
     slug: api-reference
+    icon: server
   frameworks:
     display-name: Frameworks
     slug: frameworks
     skip-slug: true
+    icon: puzzle-piece
   examples:
     display-name: Examples
     slug: examples
     skip-slug: true
+    icon: code
 navigation:
   - tab: docs
     layout:
       - section: Getting Started
+        icon: rocket
         contents:
           - page: Welcome
             path: getting-started/welcome.mdx
+            icon: hand-wave
           - page: Installation
             path: getting-started/installation.mdx
+            icon: download
           - page: Quickstart
             path: getting-started/quickstart.mdx
+            icon: bolt
 
       - section: Concepts
+        icon: lightbulb
         contents:
           - section: Tool Calling
+            path: tool-calling/tool-calling.mdx
+            icon: wrench
             contents:
-              - page: Tool Calling and Composio
-                path: tool-calling/tool-calling.mdx
               - page: Processing Tools
                 path: tool-calling/processing-tools.mdx
+                icon: gear
               - page: Miscellaneous
                 path: tool-calling/miscellaneous.mdx
-          - section: Authentication
-            contents:
-              - page: Overview
-                path: authentication/overview.mdx
+                icon: toolbox
+          - page: Authentication
+            path: authentication/authentication.mdx
+            icon: lock
           - page: Triggers
             path: triggers/triggers.mdx
+            icon: bolt
           - page: Workspaces
             path: workspaces/workspaces.mdx
+            icon: folder
 
       - section: Resources
+        icon: book
         contents:
           - page: Glossary
             path: resources/glossary.mdx
+            icon: asterisk
           - page: Model Context Protocol
             path: mcp/overview.mdx
+            icon: code-branch
           # - page: FAQs
           #   path: resources/faqs.mdx
 
