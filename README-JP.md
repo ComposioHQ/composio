@@ -61,7 +61,7 @@
             </li>
         </ul>
     </li>
-    <li>OpenAI、Groq、 Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini、
+    <li>OpenAI、Groq、 Claude、LlamaIndex、Langchain、CrewAI、AG2 (Formerly AutoGen)、Gemini、
         および <a href="https://docs.composio.dev/framework">その他</a></li>
     <li>複数のプロトコル (OAuth、API キー、Basic JWT) をサポートするマネージド認証</li>
     <li>最適化された設計により、ツール呼び出しの精度が最大 40% 向上</li>
