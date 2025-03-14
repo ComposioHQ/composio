@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_gemini",
-    version="0.7.7",
+    version="0.7.8",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Gemini agent.",
