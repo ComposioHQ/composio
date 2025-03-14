@@ -11,9 +11,7 @@ instances:
 
 analytics:
   posthog:
-    api-key: ${POSTHOG_API_KEY}
-  intercom:
-    app-id: dvp1uc7s
+    api-key: ${POSTHOG_API_KEY} 
 
 title: Composio
 favicon: favicon.png
@@ -158,6 +156,9 @@ redirects:
   - source: "/swekit/:slug"
     destination: "/"
 
+js:
+  - ./custom.js
+
 tabs:
   docs:
     display-name: Docs
@@ -237,6 +238,15 @@ navigation:
 
   - tab: frameworks
     layout:
+      - section: Creating Frameworks
+        contents:
+          - page: Python SDK
+            path: frameworks/guides/python-sdk.mdx
+            icon: fa-brands fa-python
+          - page: TypeScript SDK
+            path: frameworks/guides/ts-sdk.mdx
+            icon: fa-brands fa-typescript
+            hidden: true
       - section: Frameworks
         contents:
           - page: OpenAI
@@ -319,6 +329,7 @@ navigation:
               - page: SmolAgents
                 path: frameworks/smolagents.mdx
                 slug: smolagents
+
   - tab: examples
     layout:
       - section: Agent Examples
