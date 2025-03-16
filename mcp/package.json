@@ -1,10 +1,13 @@
 {
   "name": "@composio/mcp",
-  "version": "1.0.2",
+  "version": "1.0.3-0",
   "description": "MCP CLI tool",
   "main": "dist/index.js",
   "bin": {
-    "mcp": "dist/cli/index"
+    "mcp": "dist/index"
+  },
+  "exports": {
+    "./*": "./dist/*"
   },
   "scripts": {
     "build": "webpack --config webpack.config.js",
@@ -24,7 +27,6 @@
     "abortcontroller-polyfill": "^1.7.8",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
-    "composiohq-modelcontextprotocol-typescript-sdk": "1.6.1-1",
     "event-source-polyfill": "^1.0.31",
     "event-target-polyfill": "^0.0.4",
     "rollup-plugin-node-polyfills": "^0.2.1",
@@ -60,10 +62,5 @@
     "util": "^0.12.5",
     "webpack": "^5.98.0",
     "webpack-cli": "^6.0.1"
-  },
-  "pnpm": {
-    "overrides": {
-      "composiohq-modelcontextprotocol-typescript-sdk": "link:../../mcp-typescript-sdk"
-    }
   }
 }

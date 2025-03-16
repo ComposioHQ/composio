@@ -40,7 +40,7 @@
     "open": "^8.4.0",
     "@hey-api/client-axios": "^0.2.3",
     "resolve-package-path": "^4.0.0",
-    "composiohq-modelcontextprotocol-typescript-sdk": "^1.6.1"    
+    "@composio/mcp": "1.0.3-0"
   },
   "devDependencies": {},
   "publishConfig": {
