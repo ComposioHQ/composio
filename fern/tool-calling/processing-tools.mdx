@@ -3,7 +3,7 @@ title: 'Processing Tools'
 subtitle: 'Enhancing tool reliability with schema, input, and output transformations'
 ---
 
-## Schema Processing and Preprocessing
+## Schema processing and preprocessing
 There may be scenarios where you want to control how the LLM calls a tool and how Composio executes it.
 You may want to remove some parameters from the schema, inject some values into the tool call or process the response from the tool call.
 
@@ -206,8 +206,8 @@ processed_send_email_tool = toolset.get_tools(
 
 <Tip>To avoid confusion between schema and preprocessing, think of schema processing as you changing the tool's definition and preprocessing as a way to process the parameters before the tool is executed!</Tip>
 
-### Putting it all together
-```python maxLines=32 {2}
+### Full example
+```python maxLines=32 {2} 
 def gmail_preprocessor(inputs: dict) -> dict:
     inputs["recipient_email"] = "sama@composio.dev"  # Change to an email you can access to test!
     return inputs
@@ -310,7 +310,7 @@ The postprocessor produces a more digestible response for the LLMs.
   'successful': True}]
 ```
 
-### Putting it all together
+### Full example
 ```python
 from openai import OpenAI
 from composio_openai import ComposioToolSet
