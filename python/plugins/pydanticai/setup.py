@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_pydanticai",
-    version="0.7.7",
+    version="0.7.8",
     author="Siddharth",
     author_email="tech@composio.dev",
     description="Use Composio to get array of strongly typed tools for Pydantic AI",

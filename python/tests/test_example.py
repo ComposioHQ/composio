@@ -120,6 +120,12 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+    "openai_agents": {
+        "plugin": "openai_agents",
+        "file": PLUGINS / "openai_agents" / "openai_agents_demo.py",
+        "match": {"type": "stdout", "values": ["Action executed successfully"]},
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
     "lyzr": {
         "plugin": "lyzr",
         "file": PLUGINS / "lyzr" / "lyzr_demo.py",
