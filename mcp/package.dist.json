@@ -1,10 +1,13 @@
 {
     "name": "@composio/mcp",
-    "version": "1.0.2",
+    "version": "1.0.3-0",
     "description": "MCP CLI tool",
     "main": "index.js",
     "bin": {
       "mcp": "./index"
+    },
+    "exports": {
+      "./*": "./*"
     },
     "scripts": {
       "build": "webpack --config webpack.config.js",

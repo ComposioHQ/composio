@@ -2,8 +2,8 @@ const path = require('path');
 const webpack = require('webpack');
 const fs = require('fs');
 
-module.exports = {
-  entry: './src/cli/index.ts',
+// Common configuration for both bundles
+const commonConfig = {
   target: 'node',
   mode: 'production',
   module: {
@@ -38,6 +38,18 @@ module.exports = {
       'crypto': false
     }
   },
+  optimization: {
+    minimize: false
+  },
+  externals: {
+    'process/browser': 'commonjs process/browser'
+  }
+};
+
+// Main CLI bundle
+const mainConfig = {
+  ...commonConfig,
+  entry: './src/cli/index.ts',
   output: {
     filename: 'index',
     path: path.resolve(__dirname, 'dist'),
@@ -63,11 +75,29 @@ module.exports = {
         });
       }
     }
-  ],
-  optimization: {
-    minimize: false
+  ]
+};
+
+// Commands bundle for export
+const commandsConfig = {
+  ...commonConfig,
+  entry: './src/cli/commands/index.ts',
+  output: {
+    filename: 'index.js',
+    path: path.resolve(__dirname, 'dist/cli/commands'),
+    library: {
+      type: 'umd',
+      name: 'commands'
+    },
+    libraryTarget: 'umd',
+    globalObject: 'this'
   },
-  externals: {
-    'process/browser': 'commonjs process/browser'
-  }
-}; 
+  target: 'node',
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: 'process'
+    })
+  ]
+};
+
+module.exports = [mainConfig, commandsConfig];
