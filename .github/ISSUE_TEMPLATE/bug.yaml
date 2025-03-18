@@ -1,4 +1,4 @@
-name: Pytohn Bug Report
+name: Python Bug Report
 description: File a bug report.
 title: "Error: "
 labels: ["bug", "triage"]
@@ -38,7 +38,7 @@ body:
     id: dependencies
     attributes:
       label: Dependencies
-      description: List of dependencied installed in your system, run `pip freeze` or `uv pip freeze`
+      description: List of dependencies installed in your system, run `pip freeze` or `uv pip freeze`
       placeholder: ...
     validations:
       required: true
