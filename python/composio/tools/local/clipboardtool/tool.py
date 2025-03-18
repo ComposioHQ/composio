@@ -46,6 +46,10 @@ def register_clipboard_actions() -> None:
         )
 
 
+# Register actions in Action enum when the module is imported
+register_clipboard_actions()
+
+
 class Clipboardtool(LocalTool, autoload=True):
     """Clipboard tool."""
 
@@ -62,8 +66,5 @@ class Clipboardtool(LocalTool, autoload=True):
             CopyFilePaths,
             PasteFilePaths,
         ]
-
-        # Register actions in Action enum
-        register_clipboard_actions()
 
         return actions

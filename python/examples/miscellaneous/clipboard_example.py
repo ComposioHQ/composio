@@ -86,8 +86,12 @@ def main():
     with tempfile.TemporaryDirectory() as temp_dir:
         print(f"Using temp directory: {temp_dir}")
         
-        # Use image from downloads folder
-        test_image_path = "/Users/aditya/Downloads/_assets_maybe-card.png"
+        # Create a test image instead of using a hard-coded path
+        test_image_path = os.path.join(temp_dir, "test_image.png")
+        # Create a simple test image
+        test_image = Image.new('RGB', (100, 100), color='red')
+        test_image.save(test_image_path)
+        
         print(f"Using image from: {test_image_path}")
         
         # Ensure the image file exists

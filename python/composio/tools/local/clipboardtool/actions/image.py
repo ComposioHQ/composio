@@ -2,6 +2,8 @@
 
 import base64
 import os
+import logging
+import tempfile
 import typing as t
 from pathlib import Path
 
@@ -14,6 +16,8 @@ from composio.tools.local.clipboardtool.actions.base_action import (
     BaseClipboardResponse,
     get_clipboard_state,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CopyImageRequest(BaseClipboardRequest):
@@ -56,34 +60,37 @@ class CopyImage(LocalAction[CopyImageRequest, CopyImageResponse]):
     def execute(self, request: CopyImageRequest, metadata: t.Dict) -> CopyImageResponse:
         """Execute the action."""
         try:
-            print(f"CopyImage: Checking if image exists at {request.image_path}")
+            logger.debug(f"Checking if image exists at {request.image_path}")
             # Validate image exists
             if not os.path.exists(request.image_path):
-                print(f"CopyImage: Image not found at {request.image_path}")
+                logger.error(f"Image not found at {request.image_path}")
                 return CopyImageResponse(
                     error="Image file not found",
                 )
 
-            print(f"CopyImage: Opening image from {request.image_path}")
+            logger.debug(f"Opening image from {request.image_path}")
             # Store image data in clipboard state
             image = Image.open(request.image_path)
-            temp_path = os.path.join(os.path.dirname(request.image_path), "temp.png")
-            print("CopyImage: Saving temp file to {temp_path}")
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            temp_path = temp_file.name
+            temp_file.close()
+            
+            logger.debug(f"Saving temp file to {temp_path}")
             image.save(temp_path)  # PIL needs a file to copy to clipboard
 
-            print("CopyImage: Reading temp file")
+            logger.debug("Reading temp file")
             with open(temp_path, "rb") as f:
                 data = f.read()
-            print("CopyImage: Cleaning up temp file")
+            logger.debug("Cleaning up temp file")
             Path(temp_path).unlink()  # Clean up temp file
 
-            print("CopyImage: Storing data in clipboard state")
+            logger.debug("Storing data in clipboard state")
             clipboard_state = get_clipboard_state(metadata)
             clipboard_state["image_data"] = base64.b64encode(data).decode()
 
             return CopyImageResponse(message="Image copied to clipboard successfully")
         except Exception as e:
-            print(f"CopyImage: Error occurred: {str(e)}")
+            logger.exception(f"Error occurred: {str(e)}")
             return CopyImageResponse(error=f"Failed to copy image: {str(e)}")
 
 
@@ -99,6 +106,7 @@ class PasteImage(LocalAction[PasteImageRequest, PasteImageResponse]):
             image_data = clipboard_state.get("image_data")
 
             if not image_data:
+                logger.warning("No valid image found in clipboard")
                 return PasteImageResponse(
                     error="No valid image found in clipboard",
                     image_path="",
@@ -112,11 +120,13 @@ class PasteImage(LocalAction[PasteImageRequest, PasteImageResponse]):
             with open(request.save_path, "wb") as f:
                 f.write(data)
 
+            logger.debug(f"Image saved to {request.save_path}")
             return PasteImageResponse(
                 message="Image pasted from clipboard successfully",
                 image_path=request.save_path,
             )
         except Exception as e:
+            logger.exception(f"Failed to paste image: {str(e)}")
             return PasteImageResponse(
                 error=f"Failed to paste image: {str(e)}",
                 image_path="",
