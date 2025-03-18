@@ -40,10 +40,11 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
         jsonref.dumps(
             jsonref.replace_refs(
                 obj=data,
-                lazy_load=False,
+                jsonschema=True,
                 merge_props=True,
+                lazy_load=False,
+                proxies=False,
             ),
-            indent=2,
         )
     )
 
@@ -218,7 +219,7 @@ class _Response(t.Generic[ModelType]):
 
         schema["properties"] = properties
         schema["title"] = f"{self.model.__name__}Wrapper"
-        return remove_json_ref(schema)
+        return schema
 
 
 class ActionBuilder:
