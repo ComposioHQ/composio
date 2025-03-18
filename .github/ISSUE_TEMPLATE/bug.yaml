@@ -1,6 +1,6 @@
-name: Bug Report
+name: Pytohn Bug Report
 description: File a bug report.
-title: "[Bug]: "
+title: "Error: "
 labels: ["bug", "triage"]
 projects: ["composiohq/composio"]
 assignees:
