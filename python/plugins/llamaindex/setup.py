@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_llamaindex",
-    version="0.7.9",
+    version="0.7.10",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your LlamaIndex agent.",
