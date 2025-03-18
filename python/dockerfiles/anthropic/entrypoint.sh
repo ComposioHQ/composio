@@ -28,8 +28,8 @@ if [ "$COMPOSIO_DEV_MODE" = 1 ]; then
     pip install -e /opt/composio-core[all]
 fi
 
-# Update apps
-composio apps update
+# Generate types
+composio apps generate-types
 
 # Setup SSH creds
 export _SSH_USERNAME=user && export _SSH_PASSWORD=$PASSWORD
