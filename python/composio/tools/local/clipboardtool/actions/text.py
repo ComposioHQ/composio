@@ -51,7 +51,7 @@ class CopyText(LocalAction[CopyTextRequest, CopyTextResponse]):
             # Store text in clipboard state
             clipboard_state = get_clipboard_state(metadata)
             clipboard_state["text_data"] = request.text
-            
+
             return CopyTextResponse(message="Text copied to clipboard successfully")
         except Exception as e:
             return CopyTextResponse(error=f"Failed to copy text: {str(e)}")
@@ -65,13 +65,13 @@ class PasteText(LocalAction[PasteTextRequest, PasteTextResponse]):
         try:
             clipboard_state = get_clipboard_state(metadata)
             text = clipboard_state.get("text_data", "")
-            
+
             if not text:
                 return PasteTextResponse(
                     error="No text found in clipboard",
                     text="",
                 )
-            
+
             return PasteTextResponse(
                 message="Text pasted from clipboard successfully",
                 text=text,
@@ -80,4 +80,4 @@ class PasteText(LocalAction[PasteTextRequest, PasteTextResponse]):
             return PasteTextResponse(
                 error=f"Failed to paste text: {str(e)}",
                 text="",
-            ) 
+            )

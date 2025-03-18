@@ -31,7 +31,7 @@ def register_clipboard_actions() -> None:
         (CopyFilePaths, "Copy file paths to clipboard"),
         (PasteFilePaths, "Paste file paths from clipboard"),
     ]
-    
+
     for action, _ in actions:
         add_runtime_action(
             f"CLIPBOARDTOOL_{action.__name__.upper()}",
@@ -42,7 +42,7 @@ def register_clipboard_actions() -> None:
                 no_auth=True,
                 is_local=True,
                 is_runtime=True,
-            )
+            ),
         )
 
 
@@ -62,8 +62,8 @@ class Clipboardtool(LocalTool, autoload=True):
             CopyFilePaths,
             PasteFilePaths,
         ]
-        
+
         # Register actions in Action enum
         register_clipboard_actions()
-            
+
         return actions

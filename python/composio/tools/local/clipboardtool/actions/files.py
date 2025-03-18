@@ -1,7 +1,7 @@
 """File path clipboard actions."""
 
 import os
-from typing import List, Dict
+from typing import Dict, List
 
 from pydantic import Field
 
@@ -47,7 +47,7 @@ class CopyFilePaths(LocalAction[CopyFilePathsRequest, BaseClipboardResponse]):
         try:
             # Validate paths exist
             valid_paths = [p for p in request.paths if os.path.exists(p)]
-            
+
             if not valid_paths:
                 return BaseClipboardResponse(
                     error="No valid files found to copy",
@@ -56,8 +56,10 @@ class CopyFilePaths(LocalAction[CopyFilePathsRequest, BaseClipboardResponse]):
             # Store paths in clipboard state
             clipboard_state = get_clipboard_state(metadata)
             clipboard_state["file_paths"] = valid_paths
-            
-            return BaseClipboardResponse(message="File paths copied to clipboard successfully")
+
+            return BaseClipboardResponse(
+                message="File paths copied to clipboard successfully"
+            )
         except Exception as e:
             return BaseClipboardResponse(error=f"Failed to copy file paths: {str(e)}")
 
@@ -72,22 +74,22 @@ class PasteFilePaths(LocalAction[PasteFilePathsRequest, PasteFilePathsResponse])
         try:
             clipboard_state = get_clipboard_state(metadata)
             paths = clipboard_state.get("file_paths", [])
-            
+
             if not paths:
                 return PasteFilePathsResponse(
                     error="No files found in clipboard",
                     paths=[],
                 )
-            
+
             # Validate paths exist
             valid_paths = [p for p in paths if os.path.exists(p)]
-            
+
             if not valid_paths:
                 return PasteFilePathsResponse(
                     error="No valid files found in clipboard",
                     paths=[],
                 )
-            
+
             return PasteFilePathsResponse(
                 message="File paths pasted from clipboard successfully",
                 paths=valid_paths,
@@ -96,4 +98,4 @@ class PasteFilePaths(LocalAction[PasteFilePathsRequest, PasteFilePathsResponse])
             return PasteFilePathsResponse(
                 error=f"Failed to paste file paths: {str(e)}",
                 paths=[],
-            ) 
+            )

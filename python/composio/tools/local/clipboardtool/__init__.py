@@ -2,4 +2,4 @@
 Clipboard manager.
 """
 
-from .tool import Clipboardtool 
+from .tool import Clipboardtool

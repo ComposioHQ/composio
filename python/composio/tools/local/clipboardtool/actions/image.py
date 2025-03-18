@@ -6,7 +6,7 @@ import typing as t
 from pathlib import Path
 
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.clipboardtool.actions.base_action import (
@@ -68,19 +68,19 @@ class CopyImage(LocalAction[CopyImageRequest, CopyImageResponse]):
             # Store image data in clipboard state
             image = Image.open(request.image_path)
             temp_path = os.path.join(os.path.dirname(request.image_path), "temp.png")
-            print(f"CopyImage: Saving temp file to {temp_path}")
+            print("CopyImage: Saving temp file to {temp_path}")
             image.save(temp_path)  # PIL needs a file to copy to clipboard
-            
-            print(f"CopyImage: Reading temp file")
+
+            print("CopyImage: Reading temp file")
             with open(temp_path, "rb") as f:
                 data = f.read()
-            print(f"CopyImage: Cleaning up temp file")
+            print("CopyImage: Cleaning up temp file")
             Path(temp_path).unlink()  # Clean up temp file
-            
-            print(f"CopyImage: Storing data in clipboard state")
+
+            print("CopyImage: Storing data in clipboard state")
             clipboard_state = get_clipboard_state(metadata)
             clipboard_state["image_data"] = base64.b64encode(data).decode()
-            
+
             return CopyImageResponse(message="Image copied to clipboard successfully")
         except Exception as e:
             print(f"CopyImage: Error occurred: {str(e)}")
@@ -90,26 +90,28 @@ class CopyImage(LocalAction[CopyImageRequest, CopyImageResponse]):
 class PasteImage(LocalAction[PasteImageRequest, PasteImageResponse]):
     """Paste image from clipboard."""
 
-    def execute(self, request: PasteImageRequest, metadata: t.Dict) -> PasteImageResponse:
+    def execute(
+        self, request: PasteImageRequest, metadata: t.Dict
+    ) -> PasteImageResponse:
         """Execute the action."""
         try:
             clipboard_state = get_clipboard_state(metadata)
             image_data = clipboard_state.get("image_data")
-            
+
             if not image_data:
                 return PasteImageResponse(
                     error="No valid image found in clipboard",
                     image_path="",
                 )
-            
+
             # Create destination directory if needed
             os.makedirs(os.path.dirname(request.save_path), exist_ok=True)
-            
+
             # Decode and save image
             data = base64.b64decode(image_data)
             with open(request.save_path, "wb") as f:
                 f.write(data)
-            
+
             return PasteImageResponse(
                 message="Image pasted from clipboard successfully",
                 image_path=request.save_path,
@@ -118,4 +120,4 @@ class PasteImage(LocalAction[PasteImageRequest, PasteImageResponse]):
             return PasteImageResponse(
                 error=f"Failed to paste image: {str(e)}",
                 image_path="",
-            ) 
+            )

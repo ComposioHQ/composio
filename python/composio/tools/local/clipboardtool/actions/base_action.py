@@ -1,12 +1,13 @@
 """Base classes for clipboard actions."""
 
-from typing import Dict, Any, TypedDict
+from typing import Any, Dict, TypedDict
 
 from pydantic import BaseModel, Field
 
 
 class ClipboardState(TypedDict, total=False):
     """Type definition for clipboard state."""
+
     text_data: str
     image_data: str
     file_paths: list[str]
@@ -33,13 +34,13 @@ class BaseClipboardResponse(BaseModel):
 
 def get_clipboard_state(metadata: Dict[str, Any]) -> ClipboardState:
     """Get clipboard state from metadata.
-    
+
     Args:
         metadata: The metadata dictionary containing clipboard state
-        
+
     Returns:
         The clipboard state dictionary, initialized if it doesn't exist
     """
     if "clipboard_state" not in metadata:
         metadata["clipboard_state"] = {}
-    return metadata["clipboard_state"]  # type: ignore 
+    return metadata["clipboard_state"]  # type: ignore
