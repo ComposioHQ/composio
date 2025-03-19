@@ -20,6 +20,7 @@ sed -i.bak "s/\"version\": \"$current_version\"/\"version\": \"$new_version\"/" 
 # Update version in package.json  
 sed -i.bak "s/\"version\": \"$current_version_pkg\"/\"version\": \"$new_version\"/" package.json && rm package.json.bak
 
+echo "Updating version in src/constants.js"
 # Update version in src/constants.js
 sed -i.bak "s/COMPOSIO_VERSION = \`$current_version\`/COMPOSIO_VERSION = \`$new_version\`/" src/constants.js && rm src/constants.js.bak
 

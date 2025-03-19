@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.5.25",
+  "version": "0.5.0",
   "description": "",
   "main": "dist/index.js",
   "browser": {
