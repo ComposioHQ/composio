@@ -81,6 +81,7 @@ export const FILE_DOWNLOADABLE_PROCESSOR: TPostProcessor = async ({
 
     result.data[key] = {
       uri: downloadedFile.filePath,
+      s3Url: fileData.s3url,
       mimeType: downloadedFile.mimeType,
     };
   }
