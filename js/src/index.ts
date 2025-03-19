@@ -4,6 +4,7 @@ import { LangGraphToolSet } from "./frameworks/langgraph";
 import { OpenAIToolSet } from "./frameworks/openai";
 import { VercelAIToolSet } from "./frameworks/vercel";
 import { ComposioToolSet } from "./sdk/base.toolset";
+import { AnthropicToolSet } from "./frameworks/anthropic";
 import { Composio } from "./sdk/index";
 import { ConnectionRequest } from "./sdk/models/connectedAccounts";
 import { ComposioError } from "./sdk/utils/errors/src/composioError";
@@ -28,4 +29,5 @@ export {
   LangchainToolSet,
   OpenAIToolSet,
   VercelAIToolSet,
+  AnthropicToolSet
 };
