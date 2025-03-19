@@ -1,10 +1,10 @@
+import { AnthropicToolSet } from "./frameworks/anthropic";
 import { CloudflareToolSet } from "./frameworks/cloudflare";
 import { LangchainToolSet } from "./frameworks/langchain";
 import { LangGraphToolSet } from "./frameworks/langgraph";
 import { OpenAIToolSet } from "./frameworks/openai";
 import { VercelAIToolSet } from "./frameworks/vercel";
 import { ComposioToolSet } from "./sdk/base.toolset";
-import { AnthropicToolSet } from "./frameworks/anthropic";
 import { Composio } from "./sdk/index";
 import { ConnectionRequest } from "./sdk/models/connectedAccounts";
 import { ComposioError } from "./sdk/utils/errors/src/composioError";
@@ -16,6 +16,7 @@ export {
   // Constants
   ACTIONS,
   APPS,
+  AnthropicToolSet,
   COMPOSIO_SDK_ERROR_CODES,
   // Frameworks
   CloudflareToolSet,
@@ -29,5 +30,4 @@ export {
   LangchainToolSet,
   OpenAIToolSet,
   VercelAIToolSet,
-  AnthropicToolSet
 };

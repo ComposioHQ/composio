@@ -1,3 +1,4 @@
+import { Tool } from "@anthropic-ai/sdk/resources/messages/messages.js";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
@@ -5,7 +6,6 @@ import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { ZToolSchemaFilter } from "../types/base_toolset";
 import { Optional } from "../types/util";
-import { Tool } from '@anthropic-ai/sdk/resources/messages/messages.js';
 
 export class AnthropicToolSet extends BaseComposioToolSet {
   /**
@@ -40,7 +40,7 @@ export class AnthropicToolSet extends BaseComposioToolSet {
         type: "object",
         properties: schema.parameters.properties || {},
         required: schema.parameters.required || [],
-      }
+      },
     };
   }
 
@@ -97,12 +97,12 @@ export class AnthropicToolSet extends BaseComposioToolSet {
     const outputs: string[] = [];
     if (response.content && Array.isArray(response.content)) {
       for (const content of response.content) {
-        if (content.type === 'tool_use') {
+        if (content.type === "tool_use") {
           outputs.push(
             await this.executeToolCall(
               {
                 name: content.name,
-                arguments: JSON.stringify(content.input)
+                arguments: JSON.stringify(content.input),
               },
               entityId
             )
@@ -113,4 +113,3 @@ export class AnthropicToolSet extends BaseComposioToolSet {
     return outputs;
   }
 }
-
