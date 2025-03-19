@@ -54,7 +54,6 @@ ALL_AUTH_SCHEMES = (
     "GOOGLE_SERVICE_ACCOUNT",
     "GOOGLEADS_AUTH",
     "NO_AUTH",
-    "COMPOSIO_LINK",
     "CALCOM_AUTH",
 )
 AUTH_SCHEME_WITH_INITIATE = (
@@ -66,7 +65,6 @@ AUTH_SCHEME_WITH_INITIATE = (
     "BASIC_WITH_JWT",
     "GOOGLE_SERVICE_ACCOUNT",
     "GOOGLEADS_AUTH",
-    "COMPOSIO_LINK",
     "CALCOM_AUTH",
 )
 AuthSchemeType = t.Literal[
@@ -79,7 +77,6 @@ AuthSchemeType = t.Literal[
     "GOOGLE_SERVICE_ACCOUNT",
     "GOOGLEADS_AUTH",
     "NO_AUTH",
-    "COMPOSIO_LINK",
     "CALCOM_AUTH",
 ]
 
