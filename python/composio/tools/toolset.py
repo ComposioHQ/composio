@@ -718,6 +718,22 @@ class SchemaHelper(WithLogger):
             )
         return schema.get("file_downloadable", False)
 
+    def _find_file_downloadable_from_any_of(
+        self, schemas: list[dict]
+    ) -> t.Optional[t.Dict]:
+        for schema in schemas:
+            if "type" not in schema or schema["type"] != "object":
+                continue
+
+            if self._file_downloadable(schema=schema):
+                return schema
+
+            # Hack to avoid recursive check, maybe use recursion
+            if '"file_downloadable":true' in json.dumps(schema):
+                return schema
+
+        return None
+
     def _substitute_file_downloads_recursively(
         self,
         schema: t.Dict,
@@ -740,6 +756,12 @@ class SchemaHelper(WithLogger):
                     )
                 )
                 continue
+
+            if "anyOf" in params[_param]:
+                obj = self._find_file_downloadable_from_any_of(params[_param]["anyOf"])
+                if obj is None:
+                    continue
+                params[_param] = obj
 
             if isinstance(request[_param], dict) and params[_param]["type"] == "object":
                 request[_param] = self._substitute_file_downloads_recursively(
