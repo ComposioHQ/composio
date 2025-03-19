@@ -45,8 +45,7 @@ describe("AnthropicToolSet tests", () => {
     const tools = await anthropicToolset.getTools({
       actions: ["GITHUB_GITHUB_API_ROOT"],
     });
-
-    expect(Object.keys(tools).length).toBe(1);
+    expect(tools.length).toBe(1);
   });
 
   it("should create and execute custom action", async () => {

@@ -32,7 +32,15 @@ export class AnthropicToolSet extends BaseComposioToolSet {
     });
   }
 
-  private _wrapTool(schema: any, entityId: Optional<string> = null): Tool {
+  private _wrapTool(schema: {
+    name: string;
+    description: string;
+    parameters: {
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    appName?: string;
+  }): Tool {
     return {
       name: schema.name,
       description: schema.description,
@@ -55,7 +63,7 @@ export class AnthropicToolSet extends BaseComposioToolSet {
     });
 
     const tools = await this.getToolsSchema(filters, entityId);
-    return tools.map((tool) => this._wrapTool(tool, entityId || this.entityId));
+    return tools.map((tool) => this._wrapTool(tool));
   }
 
   async executeToolCall(
@@ -85,7 +93,14 @@ export class AnthropicToolSet extends BaseComposioToolSet {
   }
 
   async handleToolCall(
-    response: any,
+    response: {
+      content?: Array<{
+        type: string;
+        name: string;
+        id: string;
+        input: Record<string, unknown>;
+      }>;
+    },
     entityId: Optional<string> = null
   ): Promise<string[]> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
