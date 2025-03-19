@@ -95,7 +95,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
         requestId,
       };
       logger.debug(
-        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms, x-request-id: ${requestId}`
+        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`
       );
       return response;
     },
