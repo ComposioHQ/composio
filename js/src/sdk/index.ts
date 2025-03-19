@@ -17,7 +17,7 @@ import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
 import { ZAuthMode } from "./types/integration";
 import ComposioSDKContext from "./utils/composioContext";
-import { getSDKConfig } from "./utils/config";
+import { getSDKConfig, setAxiosClientConfig } from "./utils/config";
 import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
@@ -106,6 +106,8 @@ export class Composio {
       baseURLParsed,
       config?.runtime
     );
+
+    setAxiosClientConfig(this.backendClient.getAxiosInstance());
 
     // Instantiate models with dependencies as needed.
     this.connectedAccounts = new ConnectedAccounts(

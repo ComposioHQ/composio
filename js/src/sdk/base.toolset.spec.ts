@@ -186,7 +186,7 @@ describe("ComposioToolSet class tests", () => {
   });
 
   it.skip("should execute downloadable file action", async () => {
-    const ACTION_NAME = "GOOGLEDRIVE_PARSE_FILE";
+    const ACTION_NAME = "GOOGLEDRIVE_DOWNLOAD_FILE";
     const executionResult = await toolset.executeAction({
       action: ACTION_NAME,
       params: {
@@ -195,8 +195,13 @@ describe("ComposioToolSet class tests", () => {
       entityId: "default",
     });
 
-    // @ts-ignore
-    expect(executionResult.data.file.uri.length).toBeGreaterThan(0);
+    const fileData = executionResult.data.file as {
+      uri: string;
+      s3url: string;
+    };
+
+    expect(fileData.uri.length).toBeGreaterThan(0);
+    expect(fileData.s3url.length).toBeGreaterThan(0);
   });
 
   it("should get tools with usecase limit", async () => {
