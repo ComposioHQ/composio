@@ -84,7 +84,7 @@ from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
 toolset = ComposioToolSet()
-toolset.execute_action(action=Action.GOOGLECALENDAR_LIST_CALENDARS, params={})
+toolset.execute_action(action=Action.GITHUB_GET_A_PULL_REQUEST, params={"owner": "composiohq", "repo": "composio", "pull_number": 1})
 ```
 
 ### Using custom auth
