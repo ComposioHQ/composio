@@ -37,7 +37,7 @@ typography:
       - path: fonts/Inter Regular.woff2
         weight: 500
         style: normal
-      - path: fonts/Inter-Bold.woff2
+      - path: fonts/Inter Bold.woff2
         weight: 600
         style: normal
 layout: 
