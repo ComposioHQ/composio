@@ -1,15 +1,5 @@
+
 ---
-title: 'Authentication and Integrations'
-subtitle: 'Manage integrations for yourself and your users'
----
-
-## Overview
-
-As agents move closer to the user, they need access to the user's data and services to perform tasks with agency. Connecting these agents and applications to third party services means having the manage the complexities of authentication yourself.
-
-## Integrations
-
-An *integration* is a configuration object that defines how an application connects to external service for a user. It encapsulates the authentication credentials, permission scopes and API specification that determine how an AI agent interacts with the external service.
 
 
 ### Using Composio's client credentials *(for prototyping)*
@@ -19,6 +9,23 @@ It's a development overhead and a burden to manage and create a developer app wh
 To solve for that, you can use Composio's client credentials.
 
 <Tabs>
+<Tab title="Dashboard">
+
+Head over to the [dashboard](https://app.composio.dev/apps) to setup a GitHub
+integration for your account following the steps in the video below.
+
+<video
+    src="../assets/videos/creating-integration.mp4"
+    width="854"
+    height="480"
+    autoplay
+    loop
+    playsinline
+    controls
+>
+</video>
+
+</Tab>
 <Tab title="Code">
 <CodeGroup>
 ```python Python
@@ -61,24 +68,6 @@ npx composio-core add github
 </CodeGroup>
 Follow the instructions in the CLI to authenticate and connect your GitHub
 account.
-</Tab>
-
-<Tab title="Dashboard">
-
-Head over to the [dashboard](https://app.composio.dev/apps) to setup a GitHub
-integration for your account following the steps in the video below.
-
-<video
-    src="../assets/videos/creating-integration.mp4"
-    width="854"
-    height="480"
-    autoplay
-    loop
-    playsinline
-    controls
->
-</video>
-
 </Tab>
 </Tabs>
 
