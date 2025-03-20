@@ -222,9 +222,9 @@ navigation:
             path: authentication/concepts.mdx
             icon: lock
             contents:
-              - page: White Labeling
-                path: authentication/white-labeling.mdx
-                icon: palette
+              - page: Miscellaneous
+                path: authentication/miscellaneous.mdx
+                icon: key
             # contents:
             #   - page: Overview
             #     path: authentication/overview.mdx

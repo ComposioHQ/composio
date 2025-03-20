@@ -3,11 +3,182 @@ title: 'Auth Concepts'
 subtitle: 'Understand the core concepts behind Composio Auth'
 ---
 
+**Composio Auth** simplifies integrating user-authorized actions into your app. It securely manages OAuth flows, handles token storage, and ensures actions are executed with the correct user's credentials.
+
 Composio Auth relies on three core concepts. [Integration](#integration), [Connection](#connection), [Entities](#entity).
 
 <Frame background="subtle" title="Composio Auth Concepts">
   <img src="../assets/images/auth-concepts.png" alt="Composio Auth Concepts showing the relationship between Integration, Connection, and Entity" />
 </Frame>
+
+
+## About authentication and authorization
+
+**Authentication** means checking that a user is who they say they are. This is about establishing WHO the user is. 
+
+
+<Accordion title="Authentication Example">
+  For example, when a user connects their Gmail account to your app, Composio Auth guides the user through Google's OAuth login. The user securely proves their identity to Google, and Composio securely stores the resulting access token, confirming the user's identity without you handling sensitive credentials.
+  ```mermaid
+  sequenceDiagram
+      title 1. Authentication - Establishing User Identity
+      actor User
+      participant App as Your App
+      participant Composio as Composio Auth
+      participant Google as Google
+      
+      User->>App: Connect Gmail account
+      App->>Composio: Initiate authentication
+      Composio->>Google: Redirect to OAuth login
+      User->>Google: Login & grant permissions
+      Note over User,Google: User specifies which scopes to allow
+      Google->>Composio: Provide tokens with granted scopes
+      Composio->>Composio: Securely store tokens & scopes
+      Composio->>App: Connection established  
+  ```
+</Accordion>
+
+**Authorization** means checking what resources a user can access. This is about controlling WHAT the authenticated user can do.
+
+<Accordion title="Authorization Example">
+  Continuing the Gmail example, authorization happens when your app attempts to access a user's inbox. Composio manages the permissions (scopes) your app requested during authentication, ensuring your app can only perform authorized actions, like reading emails or managing calendar events, based on the user-granted permissions.
+
+  ```mermaid
+  sequenceDiagram
+      title 2. Authorization - Controlling Access to Resources
+      participant App as Your App
+      participant Composio as Composio Auth
+      participant Google as Gmail API
+      
+      App->>Composio: Request to read emails
+      Composio->>Composio: Check if "gmail.read" scope was granted
+      
+      alt Authorized (Scope Granted)
+          Composio->>Google: Call API with token
+          Google->>Composio: Return email data
+          Composio->>App: Deliver data
+      else Unauthorized (Scope Not Granted)
+          Composio->>App: Error: Insufficient permissions
+      end
+  ```
+</Accordion>
+
+
+Explained below are some authentication schemes that Composio supports.
+
+<AccordionGroup>
+  <Accordion title="OAuth 2.0">
+    OAuth 2.0 allows users to securely grant limited permissions to your app for accessing their data on third-party services without sharing actual login credentials.
+
+    Composio Auth streamlines OAuth by managing user authorization, token handling, secure storage, and token refreshing.
+
+    **OAuth 2.0 Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor User
+        participant Client
+        participant AuthServer
+        participant API
+        
+        User->>Client: 1. Start login
+        Client->>AuthServer: 2. Request authorization
+        AuthServer->>User: 3. Prompt for login
+        User->>AuthServer: 4. Provide credentials
+        AuthServer->>Client: 5. Authorization code
+        Client->>AuthServer: 6. Exchange code + client secret
+        AuthServer->>Client: 7. Access & refresh tokens
+        Client->>API: 8. Request with access token
+        API->>Client: 9. Return resource
+    ```
+
+    <Note>
+    OAuth uses **Scopes** to define the exact permissions your app needs (e.g., `mail.read` for Gmail). Composio helps ensure secure, precise configuration of scopes.
+    </Note>
+  </Accordion>
+
+  <Accordion title="API Key">
+    API Keys are simple credentials used to directly access services, usually with broad access privileges.
+
+    Composio securely stores API keys, automatically applying them to API requests, providing secure yet straightforward access.
+
+    **API Key Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor Developer
+        participant Service
+        participant Client
+        participant API
+        
+        Developer->>Service: 1. Register application
+        Service->>Developer: 2. Generate API key
+        Developer->>Client: 3. Configure with key
+        Client->>API: 4. Request with API key
+        API->>API: 5. Validate key
+        API->>Client: 6. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="Bearer Token">
+    Bearer Tokens are credentials sent in HTTP headers to securely access protected resources without needing underlying user credentials.
+
+    Composio securely manages Bearer Tokens, embedding them in API requests automatically, simplifying secure token handling.
+
+    **Bearer Token Flow:**
+    ```mermaid
+    sequenceDiagram
+        participant Client
+        participant AuthServer
+        participant API
+        
+        Client->>AuthServer: 1. Authentication request
+        AuthServer->>Client: 2. Issue bearer token
+        Client->>API: 3. Request with "Authorization: Bearer [token]"
+        API->>API: 4. Validate token
+        API->>Client: 5. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="Basic Authentication">
+    Basic Authentication encodes and sends user credentials (username and password) with each request.
+
+    Composio securely encodes and handles these credentials, managing headers securely, ensuring sensitive data protection.
+
+    **Basic Authentication Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor User
+        participant Client
+        participant API
+        
+        User->>Client: 1. Enter username/password
+        Client->>Client: 2. Encode as Base64(username:password)
+        Client->>API: 3. Send "Authorization: Basic [encoded]"
+        API->>API: 4. Decode and validate
+        API->>Client: 5. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="JSON Web Token (JWT)">
+    JWT is a compact, secure method for encoding user information, claims, and permissions for safe transmission between systems.
+
+    Composio manages JWT lifecycle, including creation, validation, verification of signatures, expiration handling, and secure storage.
+
+    **JWT Flow:**
+    ```mermaid
+    sequenceDiagram
+        participant Client
+        participant AuthServer
+        participant API
+        
+        Client->>AuthServer: 1. Authentication request
+        AuthServer->>AuthServer: 2. Generate JWT (header.payload.signature)
+        AuthServer->>Client: 3. Return JWT
+        Client->>API: 4. Request with JWT
+        API->>API: 5. Verify signature and claims
+        API->>Client: 6. Return resource
+    ```
+  </Accordion>
+</AccordionGroup>
 
 ## Integration
 
@@ -55,6 +226,9 @@ An Integration in Composio is a configuration that connects your app to third-pa
 <Tabs>
 <Tab title="Code">
 
+Below code snippet some helper functions while working with integrations.
+<Steps>
+<Step title="Listing and checking existing integrations">
 <CodeGroup>
 ```python Python wordWrap maxLines=100
 from typing import Any
@@ -63,6 +237,251 @@ from composio.client.collections import IntegrationModel
 from composio.client.collections import AuthSchemeType
 
 toolset = ComposioToolSet()
+
+
+def has_integration(app: App) -> bool:
+    """
+    Check if an integration exists for the given app.
+    """
+    integrations = toolset.get_integrations(app=app)
+    return len(integrations) > 0
+
+print(has_integration(App.ASANA)) # Check for any valid Composio App
+```
+
+```typescript TypeScript wordWrap maxLines=100
+import { OpenAIToolSet } from "composio-core";
+const composioToolset = new OpenAIToolSet();
+
+async function hasIntegration(app: string) {
+  const integrations = await composioToolset.integrations.list({
+    appName: app,
+  });
+  return integrations.items.length > 0;
+}
+
+console.log(await hasIntegration("asana")); // Check with any valid Composio App
+```
+</CodeGroup>
+</Step>
+
+<Step title="(Optional) Specifying Client Credentials">
+
+For OAuth 2.0 integrations where it is recommended to provide your own client credentials read: [OAuth Client Credentials](https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/), you can specify your client credentials while creating the integration.
+
+**First view the expected params**
+<CodeGroup>
+```python Python wordWrap
+app = toolset.client.apps.get(name="gmail")
+expected_params = toolset.fetch_expected_integration_params(
+    app=app,
+    auth_scheme="OAUTH2",
+)
+print(expected_params)
+```
+
+```typescript TypeScript wordWrap
+const expectedParams =
+  await composioToolset.apps.getRequiredParamsForAuthScheme({
+    appId: "gmail",
+    authScheme: "OAUTH2",
+  });
+
+console.log("Required fields:", expectedParams.expected_from_user);
+console.log("Optional fields:", expectedParams.optional_fields);
+// Required fields: [ "client_id", "client_secret" ]
+// Optional fields: [ "oauth_redirect_uri", "scopes" ]
+```
+</CodeGroup>
+
+<Accordion title="Expected Param Object">
+```json
+{
+  "name": "client_id",
+  "display_name": "Client id",
+  "description": "Client id of the app",
+  "type": "string",
+  "default": null,
+  "required": true,
+  "expected_from_customer": false,
+  "get_current_user_endpoint": null
+}
+{
+  "name": "client_secret",
+  "display_name": "Client secret",
+  "description": "Client secret of the app",
+  "type": "string",
+  "default": null,
+  "required": true,
+  "expected_from_customer": false,
+  "get_current_user_endpoint": null
+}
+{
+  "name": "oauth_redirect_uri",
+  "display_name": "Redirect URI",
+  "description": "Add this Redirect URL to your app's OAuth allow list.",
+  "type": "string",
+  "default": "https://backend.composio.dev/api/v1/auth-apps/add",
+  "required": false,
+  "expected_from_customer": false,
+  "get_current_user_endpoint": null
+}
+{
+  "name": "scopes",
+  "display_name": "Scopes",
+  "description": "Scopes to request from the user, comma separated",
+  "type": "string",
+  "default": "https://www.googleapis.com/auth/gmail.modify,https://www.googleapis.com/auth/userinfo.profile",
+  "required": false,
+  "expected_from_customer": false,
+  "get_current_user_endpoint": null
+}
+```
+</Accordion>
+</Step>
+
+<Step title="Creating the Integration">
+<AccordionGroup>
+  <Accordion title="Arguments">
+  | Parameters (Python/TypeScript) | Expected Values | Description |
+  | --- | --- | --- |
+  | `app` / `appUniqueKey` | Name of the app. Eg: `GITHUB`, `NOTION`, `GMAIL` | Specifies the target app for the integration |
+  | `auth_mode` / `authScheme` | `OAUTH2`, `OAUTH1`, `API_KEY`, `BASIC`, `BEARER_TOKEN`, `BASIC_WITH_JWT`, `NO_AUTH` | Defines the authentication method for the integration. |
+  | `use_composio_oauth_app` / `useComposioAuth` | `True` or `False` | Determines whether to use Composio's managed OAuth app instead of your own credentials. |
+  | `force_new_integration` | `True` or `False` | Forces the creation of a new integration instead of using an existing one. |
+  | `auth_config` | Dictionary/object containing values like `client_id`, `client_secret`, `redirect_uri`, etc. | Contains authentication configuration details specific to the chosen auth scheme. |
+  </Accordion>
+
+  <Accordion title="Example Integration Model">
+  ```json
+  {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "github_1",
+      "authScheme": "OAUTH2", 
+      "createdAt": "2025-03-19T09:06:24.181Z",
+      "updatedAt": "2025-03-19T09:06:24.181Z",
+      "enabled": true,
+      "deleted": false,
+      "appId": "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+      "appName": "github",
+      "expectedInputFields": [],
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/github.png",
+      "defaultConnectorId": "test-github-connector",
+      "connections": null
+  }
+  ```
+  </Accordion>
+</AccordionGroup>
+
+<CodeGroup>
+```python Python
+def create_integration_if_not_exists(
+    app: App,
+    auth_mode: AuthSchemeType,
+    auth_config: dict,
+    use_composio_oauth_app: bool = False,
+    force_new_integration: bool = False,
+) -> IntegrationModel:
+    """
+    Create an integration if it doesn't exist.
+    """
+    if not force_new_integration and has_integration(app):
+        integrations = toolset.get_integrations(app=app)
+        return integrations[0]
+        
+    integration = toolset.create_integration(
+        app=app,
+        auth_mode=auth_mode,
+        auth_config=auth_config,
+        use_composio_oauth_app=use_composio_oauth_app,
+    )
+    return integration
+
+integration = create_integration_if_not_exists(
+    app=App.GMAIL,
+    auth_mode="OAUTH2",
+    auth_config={"client_id": "1234567890", "client_secret": "1234567890"},
+    use_composio_oauth_app=False,
+)
+```
+
+```typescript TypeScript
+async function createIntegrationIfNotExists(
+  app: string,
+  name: string,
+  authScheme:
+    | "OAUTH2"
+    | "OAUTH1"
+    | "OAUTH1A"
+    | "API_KEY"
+    | "BASIC"
+    | "BEARER_TOKEN"
+    | "GOOGLE_SERVICE_ACCOUNT"
+    | "NO_AUTH"
+    | "BASIC_WITH_JWT"
+    | "COMPOSIO_LINK",
+  authConfig: AuthConfig,
+  useComposioAuth: boolean = false
+) {
+  try {
+    // Get existing integrations for the app
+    const integrations = await composioToolset.integrations.list({
+      appName: app,
+    });
+    // Return first existing integration if found
+    if (
+      integrations &&
+      Array.isArray(integrations) &&
+      integrations.length > 0
+    ) {
+      return integrations[0];
+    }
+
+    // Create new integration if none exists
+    const integration = await composioToolset.integrations.create({
+      name: name,
+      appUniqueKey: app,
+      authScheme: authScheme,
+      authConfig: authConfig,
+      useComposioAuth: useComposioAuth,
+    });
+    return integration;
+  } catch (error) {
+    console.error("Error creating/getting integration:", error);
+    throw error;
+  }
+}
+
+const integration = await createIntegrationIfNotExists("gmail", "gmail", "OAUTH2", {
+  client_id: "1234567890",
+  client_secret: "1234567890",
+});
+
+console.log(integration);
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+Below is the full code to creating and managing an integration!
+<Accordion title="Full Code">
+<CodeGroup>
+```python Python
+from typing import Any
+from composio_openai import ComposioToolSet, App, Action
+from composio.client.collections import IntegrationModel
+from composio.client.collections import AuthSchemeType
+
+toolset = ComposioToolSet()
+
+
+def has_integration(app: App) -> bool:
+    """
+    Check if an integration exists for the given app.
+    """
+    integrations = toolset.get_integrations(app=app)
+    return len(integrations) > 0
+
 
 def create_integration_if_not_exists(
     app: App,
@@ -74,27 +493,36 @@ def create_integration_if_not_exists(
     """
     Create an integration if it doesn't exist.
     """
-    integrations = toolset.get_integrations(app=app)
-    if not integrations:
-        integration = toolset.create_integration(
-            app=app,
-            auth_mode=auth_mode,
-            auth_config=auth_config,
-            use_composio_oauth_app=use_composio_oauth_app,
-        )
-        return integration
-    return integrations[0]
+    if not force_new_integration and has_integration(app):
+        integrations = toolset.get_integrations(app=app)
+        return integrations[0]
+        
+    integration = toolset.create_integration(
+        app=app,
+        auth_mode=auth_mode,
+        auth_config=auth_config,
+        use_composio_oauth_app=use_composio_oauth_app,
+    )
+    return integration
 
+print(has_integration(App.GMAIL))
+
+app = toolset.client.apps.get(name="gmail")
+expected_params = toolset.fetch_expected_integration_params(
+    app=app,
+    auth_scheme="OAUTH2",
+)
+print(expected_params)
 
 integration = create_integration_if_not_exists(
-    app=App.GITHUB,
+    app=App.GMAIL,
     auth_mode="OAUTH2",
     auth_config={"client_id": "1234567890", "client_secret": "1234567890"},
     use_composio_oauth_app=False,
 )
 ```
 
-```typescript TypeScript wordWrap maxLines=100
+```typescript TypeScript
 import { OpenAIToolSet } from "composio-core";
 const composioToolset = new OpenAIToolSet();
 
@@ -138,51 +566,16 @@ async function createIntegrationIfNotExists(
   }
 }
 
-
-const integration = await createIntegrationIfNotExists("github", "github-ts", "OAUTH2", {
+const integration = await createIntegrationIfNotExists("gmail", "gmail", "OAUTH2", {
   client_id: "1234567890",
   client_secret: "1234567890",
 });
 
 console.log(integration);
+
 ```
 </CodeGroup>
-
-
-Below are the parameters while creating an integration through code.
-<AccordionGroup>
-  <Accordion title="Arguments">
-  | Parameters (Python/TypeScript) | Expected Values | Description |
-  | --- | --- | --- |
-  | `app` / `appUniqueKey` | Name of the app. Eg: `GITHUB`, `NOTION`, `GMAIL` | Specifies the target app for the integration |
-  | `auth_mode` / `authScheme` | `OAUTH2`, `OAUTH1`, `API_KEY`, `BASIC`, `BEARER_TOKEN`, `BASIC_WITH_JWT`, `NO_AUTH` | Defines the authentication method for the integration. |
-  | `use_composio_oauth_app` / `useComposioAuth` | `True` or `False` | Determines whether to use Composio's managed OAuth app instead of your own credentials. |
-  | `force_new_integration` | `True` or `False` | Forces the creation of a new integration instead of using an existing one. |
-  | `auth_config` | Dictionary/object containing values like `client_id`, `client_secret`, `redirect_uri`, etc. | Contains authentication configuration details specific to the chosen auth scheme. |
-  </Accordion>
-
-  <Accordion title="Example Integration Model">
-  ```json
-  {
-      "id": "00000000-0000-0000-0000-000000000000",
-      "name": "github_1",
-      "authScheme": "OAUTH2", 
-      "createdAt": "2025-03-19T09:06:24.181Z",
-      "updatedAt": "2025-03-19T09:06:24.181Z",
-      "enabled": true,
-      "deleted": false,
-      "appId": "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
-      "appName": "github",
-      "expectedInputFields": [],
-      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/github.png",
-      "defaultConnectorId": "test-github-connector",
-      "connections": null
-  }
-  ```
-  </Accordion>
-</AccordionGroup>
-
-{/* add some info about adding an integration and not using composio auth */}
+</Accordion>
 
 </Tab>
 <Tab title="Dashboard">
@@ -288,11 +681,11 @@ An Entity in Composio serves as an abstraction over a user in your application. 
 
 Instead of directly handling user authentication at the application level, Composio uses Entities to link users to their respective service connections.
 
-- User Identification: Entities allow you to manage users in Composio without directly dealing with user-specific authentication details.
+- **User Identification**: Entities allow you to manage users in Composio without directly dealing with user-specific authentication details.
 
-- Seamless Authentication: Each Entity can have multiple connections to third-party services, enabling secure API interactions on behalf of users.
+- **Seamless Authentication**: Each Entity can have multiple connections to third-party services, enabling secure API interactions on behalf of users.
 
-- Scoped API Execution: When executing API calls, the Entity ID ensures the correct user's authentication details are applied.
+- **Scoped API Execution**: When executing API calls, the Entity ID ensures Composio applies the correct user's authentication details.
 
 ### Entity Management
 
@@ -359,9 +752,7 @@ Creating a connection in application level code requires some basic steps.
 You need to fetch the `entity_id` from your database or application logic.
 
 <CodeGroup>
-```python Python
-import json
-
+```python Python wordWrap
 from composio.client.collections import ExpectedFieldInput
 from composio.exceptions import NoItemsFound
 from composio_openai import App, ComposioToolSet
@@ -777,7 +1168,7 @@ from composio_openai import App, ComposioToolSet
 
 toolset = ComposioToolSet()
 entity = toolset.get_entity("default")
-gmail_params = toolset.get_expected_params_for_user(app=App.GMAIL)
+gmail_params = toolset.get_expected_params_for_user(app=App.GMAIL, auth_scheme="BEARER_TOKEN")
 print(gmail_params["expected_params"])
 # [ExpectedFieldInput(name='token', type='string', description='Token for bearer token auth', displayName='Token', is_secret=False, required=True, expected_from_customer=True, default=None, get_current_user_endpoint=None)]
 
@@ -789,7 +1180,7 @@ gmail_connection_request = entity.initiate_connection(
 )
 
 print(gmail_connection_request.model_dump_json(indent=2))
-      ```
+```
 
 ```typescript TypeScript wordWrap
 import { OpenAIToolSet } from "composio-core";
