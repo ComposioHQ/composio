@@ -8,12 +8,6 @@ This guide walks you through the process of integrating third-party Python frame
 
 ## Understanding the integration pattern
 
-- [ ] Fork then clone
-- [ ] Use linters from Development.md
- -[ ] Default to sync not async
-- [ ] debugging and troubleshooting:
-
-
 When integrating a Python SDK with Composio, you're essentially creating a bridge between:
 
 1. *Composio's tool schema and execution model* - How Composio represents and calls tools
@@ -37,10 +31,12 @@ Before you begin, make sure you have:
 <Steps>
 <Step>
 ### Setup your environment
-First, clone the Composio repository and navigate to the plugins directory:
-
+First, fork and clone the Composio repository:
 ```bash
 git clone https://github.com/ComposioHQ/composio.git
+```
+Then navigate to the plugins directory:
+```bash
 cd composio/python/plugins
 ```
 
@@ -207,7 +203,6 @@ Example demonstrating how to use the [Your Framework] integration with Composio.
 """
 
 import os
-import asyncio
 import dotenv
 
 # Import from your target framework
@@ -219,7 +214,7 @@ from composio_yourframework import App, Action, ComposioToolSet
 # Set up environment
 dotenv.load_dotenv()
 
-async def main():
+def main():
     # Initialize your toolset
     toolset = ComposioToolSet()
     
@@ -234,7 +229,7 @@ async def main():
     )
     
     # Run the agent
-    result = await Runner.run(
+    result = Runner.run(
         agent, 
         "Perform an action using the integrated tools"
     )
@@ -242,7 +237,7 @@ async def main():
     print(result)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
 ```
 
 </Step>
@@ -287,6 +282,13 @@ setup(
 ```
 </Step>
 </Steps>
+
+## Code Standards and Quality
+
+<Info>
+  For comprehensive guidance on code formatting, linting, testing, and development practices, please refer to the `Development.md` file in the Python project's docs directory. This file contains detailed instructions on environment setup, code conventions, and all the commands needed for maintaining code quality.
+</Info>
+
 ## Common challenges and solutions
 
 When creating an integration, you might encounter these challenges:
@@ -370,7 +372,7 @@ def _wrap_tool(
     schema_params = schema["parameters"]
     
     # Create a function that accepts explicit JSON string for parameters
-    async def execute_action_wrapper(ctx, args_json):
+    def execute_action_wrapper(ctx, args_json):
         """Execute Composio action with the given arguments."""
         try:
             # Parse the args_json into a dict
