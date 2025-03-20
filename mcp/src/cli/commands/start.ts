@@ -32,13 +32,13 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   const stdioServer = new Server(
     sseClient.getServerVersion()
       ? {
-        name: 'mcp-transport',
-        version: getVersion(),
-      }
+          name: 'mcp-transport',
+          version: getVersion(),
+        }
       : {
-        name: 'mcp-transport',
-        version: getVersion(),
-      }
+          name: 'mcp-transport',
+          version: getVersion(),
+        }
   );
   const stdioTransport = new StdioServerTransport();
   await stdioServer.connect(stdioTransport);
@@ -61,12 +61,12 @@ async function sseToStdio(sseUrl: string): Promise<void> {
         const errorCode =
           err && typeof err === 'object' && 'code' in err
             ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-            (err as any).code
+              (err as any).code
             : -32000;
         let errorMsg =
           err && typeof err === 'object' && 'message' in err
             ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-            (err as any).message
+              (err as any).message
             : 'Internal error';
         const prefix = `MCP error ${errorCode}:`;
         if (errorMsg.startsWith(prefix)) {
