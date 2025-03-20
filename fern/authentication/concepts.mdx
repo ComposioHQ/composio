@@ -17,8 +17,10 @@ Composio Auth relies on three core concepts. [Integration](#integration), [Conne
 **Authentication** means checking that a user is who they say they are. This is about establishing WHO the user is. 
 
 
-<Accordion title="Authentication Example">
-  For example, when a user connects their Gmail account to your app, Composio Auth guides the user through Google's OAuth login. The user securely proves their identity to Google, and Composio securely stores the resulting access token, confirming the user's identity without you handling sensitive credentials.
+<Accordion title="Authentication Flow">
+  For example, when a user connects their Gmail account to your app, Composio Auth guides the user through Google's OAuth login. The user securely proves their identity to Google, and Composio safely stores the resulting access token, confirming the user's identity without you handling sensitive credentials.
+
+  On expiry, Composio Auth automatically refreshes the access token, ensuring continuous, secure access without requiring users to re-authenticate.
   ```mermaid
   sequenceDiagram
       title 1. Authentication - Establishing User Identity
@@ -40,8 +42,9 @@ Composio Auth relies on three core concepts. [Integration](#integration), [Conne
 
 **Authorization** means checking what resources a user can access. This is about controlling WHAT the authenticated user can do.
 
-<Accordion title="Authorization Example">
-  Continuing the Gmail example, authorization happens when your app attempts to access a user's inbox. Composio manages the permissions (scopes) your app requested during authentication, ensuring your app can only perform authorized actions, like reading emails or managing calendar events, based on the user-granted permissions.
+<Accordion title="Authorization Flow">
+  Continuing the Gmail example, authorization happens when your app attempts to access a user's inbox. 
+  Scopes are used to control what resources a user can access. The application controls access to the resources based on the scopes requested during authentication.
 
   ```mermaid
   sequenceDiagram
@@ -51,7 +54,6 @@ Composio Auth relies on three core concepts. [Integration](#integration), [Conne
       participant Google as Gmail API
       
       App->>Composio: Request to read emails
-      Composio->>Composio: Check if "gmail.read" scope was granted
       
       alt Authorized (Scope Granted)
           Composio->>Google: Call API with token
@@ -184,6 +186,8 @@ Explained below are some authentication schemes that Composio supports.
 
 An Integration in Composio is a configuration that connects your app to third-party services like GitHub, Google Drive, or Slack. It contains all the authentication details (OAuth 2.0, API Key, or JWT) and service-specific settings needed to create secure connections for your users.
 
+Essentially, for each third-party service, you only need one integration that manages multiple users.
+
 <AccordionGroup>
   <Accordion title="Integration Properties">
   An Integration stores all necessary authentication and API communication details required for making authenticated requests to third-party services. These properties define how Composio interacts with the external API.
@@ -191,8 +195,8 @@ An Integration in Composio is a configuration that connects your app to third-pa
   | Property               | Description |
   |------------------------|-------------|
   | **Base URL**          | The root endpoint for all API calls. |
+  | **Scopes**           | The scopes required for the integration. |
   | **Authentication Scheme** | Defines the supported authentication methods, such as API Key, OAuth 2.0, or JWT. |
-  | **Required Headers**  | Any mandatory headers required for API communication. |
   | **Callback URL**      | The endpoint for handling authentication responses and obtaining JWT tokens (if applicable). |
   | **Authorization Parameters** | Custom parameters required when initiating authentication. |
   | **Token Parameters**  | Parameters needed to retrieve and refresh access tokens. |
@@ -536,7 +540,8 @@ interface AuthConfig {
 async function createIntegrationIfNotExists(
   app: string,
   name: string,
-  authScheme: "OAUTH2" | "OAUTH1" | "OAUTH1A" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "GOOGLE_SERVICE_ACCOUNT" | "NO_AUTH" | "BASIC_WITH_JWT" | "COMPOSIO_LINK",
+  authScheme: "OAUTH2" | "OAUTH1" | "OAUTH1A" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | 
+    "GOOGLE_SERVICE_ACCOUNT" | "NO_AUTH" | "BASIC_WITH_JWT" | "COMPOSIO_LINK",
   authConfig: AuthConfig,
   useComposioAuth: boolean = false
 ) {
@@ -598,9 +603,6 @@ Click on the *Setup Integration* button.
   <img src="../assets/images/integration-step-2-0.png" />
 </Frame>
 
-Depending on the authentication method, you may need to provide specific details.
-
-For:
 For authentication methods like:
 - **Bearer Token**
 - **JWT**
@@ -621,13 +623,15 @@ These credentials are typically provided by the user when establishing a connect
 </Frame>
 
 <Note>
-While you can use Composio's client credentials for prototyping, we recommend setting up your own developer application and using your own client ID and client secret for production use.
+While you can use Composio's OAuth app for prototyping, it is recommended to set up your own developer application and use your own client ID and client secret for production use.
 </Note>
 
 </Accordion>
 </Step>
 
 <Step title="(Optional) Limit Available Actions">
+{/* add the fact that this is for security not for limiting the actions */}
+{/* may only wanna give read only actions for example */}
 If desired, you can restrict the actions available to this Integration.
 
 This ensures that users and agents can only perform specific operations, preventing unintended access to unnecessary API endpoints.
@@ -636,8 +640,6 @@ This ensures that users and agents can only perform specific operations, prevent
 <Frame background="subtle" title="Action Limitation Configuration">
   <img src="../assets/images/integration-step-3-0.png" />
 </Frame>
-
-<Tip>This is a helpful configuration when there is a lot of tools available or when you want to limit access to tools on an integration level</Tip>
 </Step>
 <Step title="Create and Save Integration">
 
@@ -660,17 +662,11 @@ Complete the integration setup by clicking **Create Integration**. Upon successf
 </Tab>
 <Tab title="CLI">
 Add an integration through the CLI and follow the steps outlined in the CLI.
-Make sure you have logged in!
+Make sure you have logged in.
 
-<CodeGroup>
-```uvx uvx
-uvx --from composio-core composio add github
+```bash
+composio add github
 ```
-
-```npx npx
-npx composio-core add github
-```
-</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -711,7 +707,7 @@ import { OpenAIToolSet } from "composio-core";
 const toolset = new OpenAIToolSet();
 
 // Expected to fetch the entity ID from application logic
-const entity = toolset.client.getEntity(id='default');
+const entity = toolset.getEntity("default");
 ```
 </CodeGroup>
 
@@ -723,7 +719,7 @@ result = toolset.handle_tool_calls(tool_request, entity_id="user_123")
 ```
 
 ```typescript TypeScript wordWrap
-const result = await toolset.handleToolCall(toolRequest, entity: "default");
+const result = await toolset.handleToolCall(toolRequest, "default");
 ```
 </CodeGroup>
 
@@ -734,12 +730,13 @@ In essence, an Entity in Composio is the mechanism that links your application's
 
 A Connection in Composio represents an authenticated link between a specific [entity](#entity) and an external service through an Integration.
 
+An integration can have multiple connections, each representing a different user's authentication state.
+
 It's an abstraction that stores and manages your users' auth configuration.
 Connections serve as the runtime authentication context that enables Composio to:
-1. Make authenticated API calls on behalf of specific users
-2. Automatically handle token refreshes when needed
-3. Associate API responses with the correct user
-4. Route tool calls to the appropriate external service with proper authentication
+1. Make authenticated API calls on behalf of specific users.
+2. Automatically refresh tokens before expiry.
+3. Associate API responses with the correct user.
 
 <Note>For OAuth 2.0 based connections, Composio automatically refreshes the access token.</Note>
 
@@ -769,9 +766,9 @@ import { OpenAIToolSet } from "composio-core";
 const composioToolset = new OpenAIToolSet();
 
 const userId = "00000000-0000-0000-0000-000000000000";
-const integration = await composioToolset.integrations.list({
+const integration = (await composioToolset.integrations.list({
   appName: "github",
-});
+}))[0];
 ```
 </CodeGroup>
 
@@ -833,9 +830,6 @@ if (isConnected) {
 
 <Tab title="Code">
 
-Since every auth scheme in an integration can have different connection parameters, you can view and later, emit the parameters to your users to enter.
-
-
 Connection parameters vary per integration. For example, `OAUTH2` based integrations don't require any additional parameters from the user, however other methods may require things like the Base URL or JWT token.
 
 | Pre-requisite | Description |
@@ -843,7 +837,6 @@ Connection parameters vary per integration. For example, `OAUTH2` based integrat
 | Auth Scheme | One of: `OAUTH2`, `OAUTH1`, `API_KEY`, `BASIC`, `BEARER_TOKEN`, `BASIC_WITH_JWT`, `NO_AUTH` |
 | Connection Parameters | Optional user-provided details based on the auth scheme. For example, if using `API_KEY`, the user may need to enter the API key and Base URL. |
 
-<Tip> It is recommended to check the connection parameters and then accept each field from the user within your application logic.</Tip>
 
 **Fetching connection parameters with an integration ID**
 
@@ -932,7 +925,7 @@ Here you'll be able to see all the required parameters.
 | force_new_integration | `bool` | Whether to force creation of new integration. Defaults to `False` |
 </Accordion>
 
-**Initiating a connection without parameters**
+**Initializing a connection without parameters**
 <CodeGroup>
 ```python Python wordWrap
 connection = entity.initiate_connection(
@@ -956,7 +949,9 @@ const connection = await entity.initiateConnection({
 </CodeGroup>
 
 
-**Initiating connection with parameters**
+**Initializing connection with parameters**
+<Tip> It is recommended to check the connection parameters and then accept each field from the user within your application logic.</Tip>
+
 <CodeGroup>
 ```python Python maxLines=50 wordWrap
 
@@ -1073,7 +1068,6 @@ console.log("Connection parameters collected:", connectionParams);
 
 if (Object.keys(connectionParams).length === 0) {
   console.log("No connection parameters provided. Exiting.");
-  process.exit(0);
 }
 
 try {
@@ -1095,7 +1089,7 @@ try {
 
 </Step>
 </Steps>
-
+{/*  */}
 
 ### Examples
 

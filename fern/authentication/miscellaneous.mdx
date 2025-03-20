@@ -27,7 +27,7 @@ connection_request = entity.initiate_connection(
 
 ```
 
-```typescript TypeScript {8}
+```typescript TypeScript {9}
 import { OpenAIToolSet } from "composio-core";
 const composioToolset = new OpenAIToolSet();
 const entity = await composioToolset.getEntity("default");
@@ -53,12 +53,11 @@ Clicking the redirect URL takes users to the consent screen of the app where the
 </Frame>
 
 
-| ✅ Use Composio Auth | ❌ Avoid Composio Auth |
+| Composio Auth (Development) | Custom Auth (Production) |
 |----------|-------------|
 | 🚀 Quick prototyping and testing integrations | 🏢 Production applications with significant user base |
 | 🛠️ Internal tools and small applications | 🎨 Applications requiring custom branding and user trust |
 | 🧪 Development and staging environments | 🔒 Applications handling sensitive enterprise data |
-
 
 
 ## Using custom auth app (aka white-labelling)
@@ -69,7 +68,7 @@ When going to production, it's recommended to use your own developer credentials
 <Step title="Add redirect logic">
 The endpoint `https://backend.composio.dev/api/v1/auth-apps/add` is what captures the user's credentials to manage the auth. However, OAuth consent screens show the callback URL - and if it isn't the same as your application, that creates distrust.
 
-It's recommended to add an endpoint from your own domain and create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v1/auth-apps/add`
+It's recommended to specify the redirect URL to your own domain and create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v1/auth-apps/add`
 
 This diagram shows the entire redirect sequence.
 ```mermaid
@@ -98,6 +97,7 @@ Create your integration, specifying the redirect URL in the auth configuration.
 
 <Tip>Make sure to set the `use_composio_oauth_app` / `useComposioAuth` flag to False!</Tip>
 
+Refer to the [concepts](/concepts/auth#retrieve-connection-parameters) page for more information on how to retrieve the auth configuration for an integration.
 <CodeGroup>
 ```python Python {8-12}
 from composio_openai import App, ComposioToolSet
