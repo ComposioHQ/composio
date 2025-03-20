@@ -41,4 +41,4 @@ def browser_agent(event: TriggerEventData) -> list:
         )
 
 print('Listening')
-listener.wait_forever()
+listener.wait_forever() 

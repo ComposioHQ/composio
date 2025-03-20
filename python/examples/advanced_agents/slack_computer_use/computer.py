@@ -78,8 +78,6 @@ class BasePlaywrightComputer:
         if self._playwright:
             self._playwright.stop()
 
-    def get_current_url(self) -> str:
-        return self._page.url
 
     # --- Common "Computer" actions ---
     def screenshot(self) -> str:
