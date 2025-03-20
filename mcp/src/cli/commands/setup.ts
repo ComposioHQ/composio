@@ -10,8 +10,9 @@ interface MCPArgs {
 }
 
 interface MCPConfig {
-  command: string;
-  args: string[];
+  url?: string;
+  command?: string;
+  args?: string[];
   env?: { [key: string]: string };
 }
 
@@ -22,6 +23,12 @@ interface WindsurfConfig {
 }
 
 interface ClaudeConfig {
+  mcpServers: {
+    [key: string]: MCPConfig;
+  };
+}
+
+interface CursorConfig {
   mcpServers: {
     [key: string]: MCPConfig;
   };
@@ -43,9 +50,9 @@ const command: CommandModule<{}, MCPArgs> = {
       })
       .option('client', {
         type: 'string',
-        describe: 'Client to use (claude, windsurf)',
+        describe: 'Client to use (claude, windsurf, cursor)',
         default: 'claude',
-        choices: ['claude', 'windsurf'],
+        choices: ['claude', 'windsurf', 'cursor'],
       }) as Argv<MCPArgs>;
   },
   handler: async (argv: MCPArgs) => {
@@ -81,6 +88,10 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     env: {
       npm_config_yes: 'true',
     },
+  };
+
+  const sseConfig: MCPConfig = {
+    url: mcpUrl,
   };
 
   const homeDir = os.homedir();
@@ -121,6 +132,10 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     windsurf: {
       configDir: path.join(homeDir, '.codeium', 'windsurf'),
       configPath: path.join(homeDir, '.codeium', 'windsurf', 'mcp_config.json'),
+    },
+    cursor: {
+      configDir: path.join(homeDir, '.cursor'),
+      configPath: path.join(homeDir, '.cursor', 'mcp.json'),
     },
   };
 
@@ -167,6 +182,20 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
 
     windsurfConfig.mcpServers[url] = config;
     fs.writeFileSync(configPath, JSON.stringify(windsurfConfig, null, 2));
+    console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
+  } else if (clientType === 'cursor') {
+    let cursorConfig: CursorConfig = { mcpServers: {} };
+    if (fs.existsSync(configPath)) {
+      try {
+        cursorConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (!cursorConfig.mcpServers) cursorConfig.mcpServers = {};
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Creating new config file'));
+      }
+    }
+
+    cursorConfig.mcpServers[url] = sseConfig;
+    fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
     console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
   }
 }
