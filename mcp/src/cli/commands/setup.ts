@@ -194,9 +194,21 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
       }
     }
 
-    cursorConfig.mcpServers[url] = sseConfig;
-    fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
-    console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
+    if (cursorConfig.mcpServers[url]) {
+      delete cursorConfig.mcpServers[url];
+    }
+
+    try {
+    const newKey = url.split('/').slice(3).join('/').replace(/\//g, '-');
+
+      cursorConfig.mcpServers[newKey] = sseConfig;
+      fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
+      console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
+    } catch (error) {
+      console.log(chalk.red('❌ Error occurred while setting up MCP:'));
+      console.log(chalk.red(`   ${(error as ErrorWithMessage).message}`));
+      console.log(chalk.yellow('\nPlease try again or contact support if the issue persists.\n'));
+    }
   }
 }
 
