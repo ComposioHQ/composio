@@ -1,0 +1,176 @@
+---
+title: 'Auth'
+subtitle: 'A primer to authentication and authorization'
+---
+**Composio Auth** simplifies integrating user-authorized actions into your app. It securely manages OAuth flows, handles token storage, and ensures actions are executed with the correct user's credentials.
+
+Depending on the app, your users can authenticate and authorize using OAuth2 or API Keys.
+
+## About authentication and authorization
+
+**Authentication** means checking that a user is who they say they are. This is about establishing WHO the user is. 
+
+
+<Accordion title="Authentication Example">
+  For example, when a user connects their Gmail account to your app, Composio Auth guides the user through Google's OAuth login. The user securely proves their identity to Google, and Composio securely stores the resulting access token, confirming the user's identity without you handling sensitive credentials.
+  ```mermaid
+  sequenceDiagram
+      title 1. Authentication - Establishing User Identity
+      actor User
+      participant App as Your App
+      participant Composio as Composio Auth
+      participant Google as Google
+      
+      User->>App: Connect Gmail account
+      App->>Composio: Initiate authentication
+      Composio->>Google: Redirect to OAuth login
+      User->>Google: Login & grant permissions
+      Note over User,Google: User specifies which scopes to allow
+      Google->>Composio: Provide tokens with granted scopes
+      Composio->>Composio: Securely store tokens & scopes
+      Composio->>App: Connection established  
+  ```
+</Accordion>
+
+**Authorization** means checking what resources a user can access. This is about controlling WHAT the authenticated user can do.
+
+<Accordion title="Authorization Example">
+  Continuing the Gmail example, authorization happens when your app attempts to access a user's inbox. Composio manages the permissions (scopes) your app requested during authentication, ensuring your app can only perform authorized actions, like reading emails or managing calendar events, based on the user-granted permissions.
+
+  ```mermaid
+  sequenceDiagram
+      title 2. Authorization - Controlling Access to Resources
+      participant App as Your App
+      participant Composio as Composio Auth
+      participant Google as Gmail API
+      
+      App->>Composio: Request to read emails
+      Composio->>Composio: Check if "gmail.read" scope was granted
+      
+      alt Authorized (Scope Granted)
+          Composio->>Google: Call API with token
+          Google->>Composio: Return email data
+          Composio->>App: Deliver data
+      else Unauthorized (Scope Not Granted)
+          Composio->>App: Error: Insufficient permissions
+      end
+  ```
+</Accordion>
+
+
+### Authentication Modes Overview
+Composio Auth supports multiple authentication modes
+
+<AccordionGroup>
+  <Accordion title="OAuth 2.0">
+    OAuth 2.0 allows users to securely grant limited permissions to your app for accessing their data on third-party services without sharing actual login credentials.
+
+    Composio Auth streamlines OAuth by managing user authorization, token handling, secure storage, and token refreshing.
+
+    **OAuth 2.0 Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor User
+        participant Client
+        participant AuthServer
+        participant API
+        
+        User->>Client: 1. Start login
+        Client->>AuthServer: 2. Request authorization
+        AuthServer->>User: 3. Prompt for login
+        User->>AuthServer: 4. Provide credentials
+        AuthServer->>Client: 5. Authorization code
+        Client->>AuthServer: 6. Exchange code + client secret
+        AuthServer->>Client: 7. Access & refresh tokens
+        Client->>API: 8. Request with access token
+        API->>Client: 9. Return resource
+    ```
+
+    <Note>
+    OAuth uses **Scopes** to define the exact permissions your app needs (e.g., `mail.read` for Gmail). Composio helps ensure secure, precise configuration of scopes.
+    </Note>
+  </Accordion>
+
+  <Accordion title="API Key">
+    API Keys are simple credentials used to directly access services, usually with broad access privileges.
+
+    Composio securely stores API keys, automatically applying them to API requests, providing secure yet straightforward access.
+
+    **API Key Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor Developer
+        participant Service
+        participant Client
+        participant API
+        
+        Developer->>Service: 1. Register application
+        Service->>Developer: 2. Generate API key
+        Developer->>Client: 3. Configure with key
+        Client->>API: 4. Request with API key
+        API->>API: 5. Validate key
+        API->>Client: 6. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="Bearer Token">
+    Bearer Tokens are credentials sent in HTTP headers to securely access protected resources without needing underlying user credentials.
+
+    Composio securely manages Bearer Tokens, embedding them in API requests automatically, simplifying secure token handling.
+
+    **Bearer Token Flow:**
+    ```mermaid
+    sequenceDiagram
+        participant Client
+        participant AuthServer
+        participant API
+        
+        Client->>AuthServer: 1. Authentication request
+        AuthServer->>Client: 2. Issue bearer token
+        Client->>API: 3. Request with "Authorization: Bearer [token]"
+        API->>API: 4. Validate token
+        API->>Client: 5. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="Basic Authentication">
+    Basic Authentication encodes and sends user credentials (username and password) with each request.
+
+    Composio securely encodes and handles these credentials, managing headers securely, ensuring sensitive data protection.
+
+    **Basic Authentication Flow:**
+    ```mermaid
+    sequenceDiagram
+        actor User
+        participant Client
+        participant API
+        
+        User->>Client: 1. Enter username/password
+        Client->>Client: 2. Encode as Base64(username:password)
+        Client->>API: 3. Send "Authorization: Basic [encoded]"
+        API->>API: 4. Decode and validate
+        API->>Client: 5. Return resource
+    ```
+  </Accordion>
+
+  <Accordion title="JSON Web Token (JWT)">
+    JWT is a compact, secure method for encoding user information, claims, and permissions for safe transmission between systems.
+
+    Composio manages JWT lifecycle, including creation, validation, verification of signatures, expiration handling, and secure storage.
+
+    **JWT Flow:**
+    ```mermaid
+    sequenceDiagram
+        participant Client
+        participant AuthServer
+        participant API
+        
+        Client->>AuthServer: 1. Authentication request
+        AuthServer->>AuthServer: 2. Generate JWT (header.payload.signature)
+        AuthServer->>Client: 3. Return JWT
+        Client->>API: 4. Request with JWT
+        API->>API: 5. Verify signature and claims
+        API->>Client: 6. Return resource
+    ```
+  </Accordion>
+</AccordionGroup>

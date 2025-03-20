@@ -33,13 +33,17 @@ colors:
 typography:
   bodyFont:
     name: Inter-Regular
-    path: fonts/Inter Regular.woff2
-    style: normal
-
+    paths:
+      - path: fonts/Inter Regular.woff2
+        weight: 500
+        style: normal
+      - path: fonts/Inter Bold.woff2
+        weight: 600
+        style: normal
 layout: 
   tabs-placement: header
   searchbar-placement: header
-  disable-header: true
+  disable-header: false
   content-width: 50rem
 navbar-links:
   - type: minimal
@@ -214,9 +218,17 @@ navigation:
               - page: Miscellaneous
                 path: tool-calling/miscellaneous.mdx
                 icon: toolbox
-          - page: Authentication
-            path: authentication/authentication.mdx
+          - section: Auth
+            path: authentication/concepts.mdx
             icon: lock
+            contents:
+              - page: Miscellaneous
+                path: authentication/miscellaneous.mdx
+                icon: key
+            # contents:
+            #   - page: Overview
+            #     path: authentication/overview.mdx
+            #     icon: lock
           - page: Triggers
             path: triggers/triggers.mdx
             icon: bolt
@@ -238,6 +250,12 @@ navigation:
 
   - tab: frameworks
     layout:
+      - section: Creating Frameworks
+        contents:
+          - page: Python SDK
+            path: frameworks/guides/python-sdk.mdx
+            icon: fa-brands fa-python
+
       - section: Frameworks
         contents:
           - page: OpenAI
@@ -320,6 +338,7 @@ navigation:
               - page: SmolAgents
                 path: frameworks/smolagents.mdx
                 slug: smolagents
+
   - tab: examples
     layout:
       - section: Agent Examples
