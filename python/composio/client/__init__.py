@@ -46,6 +46,7 @@ from composio.constants import (
 from composio.exceptions import ApiKeyError, ApiKeyNotProvidedError, InvalidParams
 from composio.storage.user import UserData
 from composio.utils.decorators import deprecated
+from composio.utils.param_normalization import normalize_api_key_params
 from composio.utils.shared import generate_request_id
 from composio.utils.url import get_api_url_base
 
@@ -440,6 +441,18 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
+        # Normalize auth_config parameters if needed
+        if auth_config:
+            auth_config = normalize_api_key_params(
+                str(app_name), auth_config, auth_mode
+            )
+
+        # Normalize connected_account_params if present
+        if connected_account_params:
+            connected_account_params = normalize_api_key_params(
+                str(app_name), connected_account_params, auth_mode
+            )
+
         app = self.client.apps.get(name=App(app_name).slug)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
