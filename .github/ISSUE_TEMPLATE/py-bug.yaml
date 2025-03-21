@@ -1,7 +1,7 @@
-name: Pytohn Bug Report
+name: Python Bug Report
 description: File a bug report.
 title: "Error: "
-labels: ["bug", "triage"]
+labels: ["bug", "triage", "python"]
 projects: ["composiohq/composio"]
 assignees:
   - angrybayblade

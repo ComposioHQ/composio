@@ -1,0 +1,82 @@
+name: Js Bug Report
+description: File a bug report for Js SDK.
+title: "Error: "
+labels: ["bug", "triage", "javascript"]
+projects: ["composiohq/composio"]
+assignees:
+  - utkarsh-dixit
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Please provide the Node.js version you're using
+      placeholder: ex. 16.15.1, 18.12.0
+    validations:
+      required: true
+  - type: input
+    id: npm-version
+    attributes:
+      label: Package Manager & Version
+      description: Which package manager and version are you using?
+      placeholder: ex. npm 8.19.2, yarn 1.22.19, pnpm 7.14.0
+    validations:
+      required: true
+  - type: input
+    id: os-name
+    attributes:
+      label: Operating system
+      description: Name of the operating system
+      placeholder: ex. windows, ubuntu-22.04, macos
+    validations:
+      required: false
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (if applicable)
+      description: Browser and version if this is a browser-related issue
+      placeholder: ex. Chrome 106, Firefox 105, Safari 16
+    validations:
+      required: false
+  - type: textarea
+    id: error
+    attributes:
+      label: Error
+      description: Error log, please provide entire error message and stack trace.
+      placeholder: Tell us what you see!
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List relevant dependencies from your package.json
+      placeholder: Paste your package.json dependencies or the output of `npm list --depth=0`
+      render: json
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/master/CODE_OF_CONDUCT.md). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true 

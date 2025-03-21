@@ -20,34 +20,18 @@ Once done, you can generate the API key through the dashboard or command-line to
 
 <Tabs>
 <Tab title="CLI">
+<Warning>Ensure you have [installed Composio](/getting-started/installation)</Warning>
 <Steps>
 <Step title="Login">
-<Tabs>
-<Tab title="Python">
-
-<Warning>Ensure you have `uv` installed!</Warning>
-
 ```bash
-uvx --from composio-core composio login
+composio login
 ```
 
-To view the API key;
+To view the API key:
 
 ```bash
-uvx --from composio-core composio whoami
+composio whoami
 ```
-</Tab>
-<Tab title="Node">
-```bash
-npx composio-core login
-```
-To view the API key;
-
-```bash
-npx composio-core whoami
-```
-</Tab>
-</Tabs>
 </Step>
 <Step title="Store the API Key">
 When building, store the API key in an `.env` file.
@@ -97,18 +81,11 @@ preferred method:
 <Tab title="CLI">
 Add GitHub integration through the CLI.
 
-<CodeGroup>
-```uvx uvx
-uvx --from composio-core composio add github
+```bash
+composio add github
 ```
-```npx npx
-npx composio-core add github
-```
-</CodeGroup>
 Follow the instructions in the CLI to authenticate and connect your GitHub account.
 </Tab>
-Follow the instructions in the CLI to authenticate and connect your GitHub
-account.
 
 <Tab title="Dashboard">
 Head over to the [GitHub App](https://app.composio.dev/app/github).
