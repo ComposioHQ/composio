@@ -1,4 +1,4 @@
-name: Pytohn Bug Report
+name: Python Bug Report
 description: File a bug report.
 title: "Error: "
 labels: ["bug", "triage"]
