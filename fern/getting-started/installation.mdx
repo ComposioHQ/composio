@@ -9,32 +9,37 @@ Composio provides Python and TypeScript SDKs as well as plugins with other LLM f
 <Tabs>
   <Tab title="Python">
 Before installing the SDK, ensure you have Python 3.8+.
-  {/* <Tabs> */}
-  {/* <Tab title='uv'> */}
   <Steps>
-  <Step title="Install uv">
-    ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-    ```
-    </Step>
-    <Step title="Install Composio">
+  <Step title="Install Composio">
+  <CodeGroup>
+  <CodeBlock title="uv">
     ```bash
     uv add composio_core composio_openai
     ```
-  {/* </Tab> */}
-  {/* <Tab title='pip'>
+  </CodeBlock>
+  <CodeBlock title="pip">
     ```bash
-    pip install composio_core
+    pip install composio_core composio_openai
     ```
-  </Tab> */}
-  {/* </Tabs> */}
+  </CodeBlock>
+  </CodeGroup>
   </Step>
   <Step title="Install the relevant plugin">
     Depending on what LLM framework you're using, you'll need to install the relevant plugin.
+    <CodeGroup>
+    <CodeBlock title="pip">
+    ```bash
+    pip install composio_crewai      # For CrewAI
+    pip install composio_langchain   # For LangChain
+    ```
+    </CodeBlock>
+    <CodeBlock title="uv">
     ```bash
     uv add composio_crewai      # For CrewAI
     uv add composio_langchain   # For LangChain
     ```
+    </CodeBlock>
+    </CodeGroup>
     </Step>
     </Steps>
   </Tab>
@@ -42,25 +47,29 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Before installing the SDK, ensure you have NodeJS 16+.
   <Steps>
   <Step title="Install Composio">
-  <Tabs>
-  <Tab title='pnpm'>
-  ```bash
-  pnpm install composio-core
-  ```
-  </Tab>
-  <Tab title='npm'>
+  <CodeGroup>
+  <CodeBlock title="npm">
     ```bash
     npm install composio-core
     ```
-  </Tab>
-  <Tab title='yarn'>
+  </CodeBlock>
+  <CodeBlock title="pnpm">
+  ```bash
+  pnpm add composio-core
+  ```
+  <CodeBlock title="bun">
+    ```bash
+    bun add composio-core
+    ```
+  </CodeBlock>
+  </CodeBlock>
+  <CodeBlock title="yarn">
     ```bash
     yarn add composio-core
     ```
-  </Tab>
-  </Tabs>
+  </CodeBlock>
+  </CodeGroup>
   </Step>
-    > The package includes TypeScript type definitions out of the box.
   <Step title="Plugins">
   The TS package comes installed with support for:
   - [LangChain JS](/frameworks/javascript/langchain)
