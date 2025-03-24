@@ -378,9 +378,6 @@ navigation:
         contents:
           - page: Overview
             path: sdk/composio/js/modules.mdx
-          - page: Documentation
-            path: sdk/composio/js/README.mdx
-            hidden: true
           - section: SDK
             contents:
               - page: Overview

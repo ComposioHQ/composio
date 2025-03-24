@@ -11,5 +11,6 @@
     ],
     "exclude": ["**/*.spec.ts"],
     "out": "docs",
-    "plugin": ["typedoc-plugin-markdown"]
+    "plugin": ["typedoc-plugin-markdown"],
+    "fileExtension": ".mdx"
 }
