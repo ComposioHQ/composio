@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 import crypto from "crypto";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
-import pathModule from 'path';
+import pa from 'path';
 
 const readFileContent = async (
   path: string
@@ -105,7 +105,7 @@ export const getFileDataAfterUploadingToS3 = async (
   );
   
   return {
-    name: pathModule.basename(path) || `${actionName}_${Date.now()}`,
+    name: pa.basename(path) || `${actionName}_${Date.now()}`,
     mimetype: fileData.mimeType,
     s3key: s3key,
   };
