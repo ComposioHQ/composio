@@ -1,0 +1,307 @@
+---
+title: Custom Auth
+subtitle: Execute tools with custom auth
+---
+
+Composio supports multiple authentication schemes, and a connection can be created with any of these.
+
+| Authentication Method | Description |
+|----------------------|-------------|
+| **OAuth 2.0**       | Requires an authorization URL, token URL, and scopes for user authentication. |
+| **OAuth 1.0**       | An older version of OAuth, requiring a request token and access token for user authentication. |
+| **API Key**         | Uses a static API key, optionally with an API secret, included in request headers or query parameters. |
+| **Basic Authentication** | Requires a username and password for authentication, typically sent in an `Authorization` header. |
+| **Bearer Token**    | Uses a token in the `Authorization` header, often retrieved from OAuth 2.0 or another identity provider. |
+| **Basic with JWT**  | A hybrid approach that combines basic authentication (username/password) with JWT-based token authentication. |
+| **No Authentication** | Some APIs do not require authentication, allowing open access to endpoints. |
+
+
+## Auth with OAuth 2.0
+To add custom OAuth 2.0 credentials, the `auth_config` parameter needs to be specified with the OAuth *client id* and *client secret* while creating an integration.
+Integration object stores the credentials.
+
+A connection request is initiated using the specified integration ID which uses the specified auth OAuth credentials.
+
+Once the connection is established, an action can be executed using the connection object.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100 {9-12} {16-18} {23} {32}
+from composio_openai import App, ComposioToolSet, Action
+from uuid import uuid4
+
+toolset = ComposioToolSet()
+
+integration = toolset.create_integration(
+    app=App.GITHUB,
+    auth_mode="OAUTH2",
+    auth_config={
+        "client_id": "12345678",
+        "client_secret": "12345678"
+    },
+)
+
+connection_request = toolset.initiate_connection(
+    integration_id=integration.id,
+    entity_id=str(uuid4()),
+    auth_scheme="OAUTH2"
+)
+
+print("Connect to GitHub: ", connection_request.redirectUrl)
+
+connection = connection_request.wait_until_active(toolset.client, 10)
+
+tool_res = toolset.execute_action(
+    action=Action.GITHUB_GET_A_PULL_REQUEST,
+    params={
+        "pull_number": 1,
+        "owner": "composiohq",
+        "repo": "agi"
+    },
+    connected_account_id=connection.id
+)
+```
+
+
+```typescript TypeScript wordWrap maxLines=100 {12-14} {19-21} {26} {37}
+import { OpenAIToolSet } from "composio-core";
+import { v4 as uuidv4 } from "uuid";
+
+const composioToolset = new OpenAIToolSet();
+
+const entity = await composioToolset.getEntity(uuidv4());
+
+const integration = await composioToolset.integrations.create({
+  name: "github-ts",
+  appUniqueKey: "github",
+  authScheme: "OAUTH2",
+  authConfig: {
+    client_id: "123456789", 
+    client_secret: "123456789",
+  },
+});
+
+const connectionRequest = await entity.initiateConnection({
+  appName: "github",
+  authMode: "OAUTH2", 
+  integrationId: integration.id,
+});
+
+console.log("Connect to GitHub:", connectionRequest.redirectUrl);
+
+const connection = await connectionRequest.waitUntilActive();
+
+console.log(connection);
+
+const toolRes = await composioToolset.executeAction({
+  action: "GITHUB_GET_A_PULL_REQUEST",
+  params: {
+    owner: "composiohq",
+    repo: "agi",
+    pull_number: 1,
+  },
+  connectedAccountId: connection.id,
+});
+  ```
+</CodeGroup>
+
+### How to retrieve auth configuration
+<Tabs>
+<Tab title="Code">
+<CodeGroup>
+```python Python wordWrap
+from composio_openai import App, ComposioToolSet
+
+toolset = ComposioToolSet()
+
+auth_scheme = toolset.get_auth_scheme_for_app(App.GMAIL)
+
+print(auth_scheme.fields[0].name)
+print(auth_scheme.fields[1].name)
+```
+
+```typescript TypeScript wordWrap
+import { OpenAIToolSet } from "composio-core";
+const composioToolset = new OpenAIToolSet();
+
+const authScheme = await composioToolset.integrations.getRequiredParams({
+  integrationId: "1234567890",
+});
+
+console.log(authScheme);
+```
+</CodeGroup>
+</Tab>
+<Tab title="Dashboard">
+You can also view the connection parameters via the dashboard. Head to the [integrations page](https://app.composio.dev/integrations) and select an integration.
+
+<Frame caption="Click on 'Add Account'" background="subtle">
+  <img src="../assets/images/integrations-page.png" />
+</Frame>
+
+Here you'll be able to see all the required parameters.
+
+<Frame background="subtle">
+  <img src="../assets/images/connection-params.png" />
+</Frame>
+
+</Tab>
+</Tabs>
+
+## Auth with Bearer Token
+
+Many applications that have OAuth 2.0, also support the user providing their own Bearer token.
+For these, the `auth_config` parameter is not required. However, the user is expected to provide the token in the `connectionParams` parameter.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100 {8-10} {17} {26}
+from composio_openai import Action, App, ComposioToolSet
+from uuid import uuid4
+
+toolset = ComposioToolSet()
+
+integration = toolset.create_integration(app=App.GMAIL, auth_mode="BEARER_TOKEN")
+
+gmail_params = toolset.get_expected_params_for_user(
+    app=App.GMAIL, auth_scheme="BEARER_TOKEN"
+)
+param_key = gmail_params["expected_params"][0].name
+param_value = input(f"Enter the Gmail {param_key}: ")
+
+gmail_connection = toolset.initiate_connection(
+    integration_id=integration.id,
+    entity_id=str(uuid4()),
+    auth_scheme="BEARER_TOKEN",
+    connected_account_params={param_key: param_value},  # This is the token the user will provide
+)
+
+print(f"Connection Status: {gmail_connection.connectionStatus}")
+
+toolset.execute_action(
+    action=Action.GMAIL_FETCH_EMAILS,
+    params={},
+    connected_account_id=gmail_connection.connectedAccountId,
+)
+```
+
+```typescript TypeScript wordWrap maxLines=100 {13-16} {23} {33}
+import { OpenAIToolSet } from "composio-core";
+import { v4 as uuidv4 } from "uuid";
+const composioToolset = new OpenAIToolSet();
+
+const entity = await composioToolset.getEntity(uuidv4());
+
+const integration = await composioToolset.integrations.create({
+  name: "gmail-ts",
+  appUniqueKey: "gmail",
+  authScheme: "BEARER_TOKEN",
+});
+
+const gmailParams = await composioToolset.apps.getRequiredParamsForAuthScheme({
+  appId: "gmail",
+  authScheme: "BEARER_TOKEN",
+});
+
+console.log(gmailParams.required_fields);
+// [ "token" ]
+
+const gmailConnectionReq = await entity.initiateConnection({
+  appName: "gmail",
+  authMode: "BEARER_TOKEN",
+  connectionParams: {
+    token: "secret_1234567890", // This is the token the user will provide
+  },
+  integrationId: integration.id,
+});
+
+const toolRes = await composioToolset.executeAction({
+  action: "GMAIL_FETCH_EMAILS",
+  params: {},
+  connectedAccountId: gmailConnectionReq.connectedAccountId,
+});
+
+console.log(toolRes);
+```
+</CodeGroup>
+
+## Auth with API Key
+Similar to Bearer Token Authentication, the `auth_config` parameter is not required.
+In some token based authentication, the user is expected to provide more information than just the token.
+
+*In this case, Shopify requires the user to provide the `api_key` and `shop` parameters.*
+<CodeGroup>
+```python Python maxLines=100 wordWrap {6} {13-17} {22} {31}
+from composio_openai import App, ComposioToolSet, Action
+
+toolset = ComposioToolSet()
+
+integration = toolset.create_integration(
+    app=App.SHOPIFY, auth_mode="API_KEY", use_composio_oauth_app=False
+)
+
+shopify_params = toolset.get_expected_params_for_user(
+    app=App.SHOPIFY, auth_scheme="API_KEY"
+)
+
+params = {}
+for param in shopify_params["expected_params"]:
+    param_key = param.name
+    param_value = input(f"Enter the Shopify {param.name}: ")
+    params[param_key] = param_value
+
+
+shopify_connection = toolset.initiate_connection(
+    app=App.SHOPIFY,
+    auth_scheme="API_KEY",
+    connected_account_params=params,
+)
+
+print(f"Connection Status: {shopify_connection.connectionStatus}")
+
+toolset.execute_action(
+    action=Action.SHOPIFY_GET_ALL_CUSTOMERS,
+    params={},
+    connected_account_id=shopify_connection.connectedAccountId,
+)
+```
+
+```typescript TypeScript wordWrap maxLines=100 {8-10} {13-18} {35}
+import { OpenAIToolSet } from "composio-core";
+import { v4 as uuidv4 } from "uuid";
+
+const composioToolset = new OpenAIToolSet();
+const entity = await composioToolset.getEntity(uuidv4());
+
+const integration = await composioToolset.integrations.create({
+  name: "shopify-ts",
+  appUniqueKey: "shopify",
+  authScheme: "API_KEY",
+});
+
+const shopifyParams = await composioToolset.apps.getRequiredParamsForAuthScheme(
+  {
+    appId: "shopify",
+    authScheme: "API_KEY",
+  }
+);
+console.log(shopifyParams.required_fields);
+// [ "api_key" , "shop"]
+
+const shopifyConnectionReq = await entity.initiateConnection({
+  appName: "shopify",
+  authMode: "API_KEY",
+  connectionParams: {
+    api_key: "secret_1234567890",
+    shop: "test-shop.myshopify.com",
+  },
+  integrationId: integration.id,
+});
+
+const toolRes = await composioToolset.executeAction({
+  action: "SHOPIFY_GET_ALL_CUSTOMERS",
+  params: {},
+  connectedAccountId: shopifyConnectionReq.connectedAccountId,
+});
+
+console.log(toolRes);
+```
+</CodeGroup>
