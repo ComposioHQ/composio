@@ -25,7 +25,7 @@ A connection request is initiated using the specified integration ID which uses 
 Once the connection is established, an action can be executed using the connection object.
 
 <CodeGroup>
-```python Python wordWrap maxLines=100 {9-12} {16-18} {23} {32}
+```python Python wordWrap maxLines=100 {9-12, 16-18, 23, 32}
 from composio_openai import App, ComposioToolSet, Action
 from uuid import uuid4
 
@@ -62,7 +62,7 @@ tool_res = toolset.execute_action(
 ```
 
 
-```typescript TypeScript wordWrap maxLines=100 {12-14} {19-21} {26} {37}
+```typescript TypeScript wordWrap maxLines=100 {12-14, 19-21, 26, 37}
 import { OpenAIToolSet } from "composio-core";
 import { v4 as uuidv4 } from "uuid";
 
@@ -153,7 +153,7 @@ Many applications that have OAuth 2.0, also support the user providing their own
 For these, the `auth_config` parameter is not required. However, the user is expected to provide the token in the `connectionParams` parameter.
 
 <CodeGroup>
-```python Python wordWrap maxLines=100 {8-10} {17} {26}
+```python Python wordWrap maxLines=100 {8-10, 17, 26}
 from composio_openai import Action, App, ComposioToolSet
 from uuid import uuid4
 
@@ -183,7 +183,7 @@ toolset.execute_action(
 )
 ```
 
-```typescript TypeScript wordWrap maxLines=100 {13-16} {23} {33}
+```typescript TypeScript wordWrap maxLines=100 {13-16, 23, 33}
 import { OpenAIToolSet } from "composio-core";
 import { v4 as uuidv4 } from "uuid";
 const composioToolset = new OpenAIToolSet();
@@ -229,7 +229,7 @@ In some token based authentication, the user is expected to provide more informa
 
 *In this case, Shopify requires the user to provide the `api_key` and `shop` parameters.*
 <CodeGroup>
-```python Python maxLines=100 wordWrap {6} {13-17} {22} {31}
+```python Python maxLines=100 wordWrap {6, 13-17, 22, 31}
 from composio_openai import App, ComposioToolSet, Action
 
 toolset = ComposioToolSet()
@@ -264,7 +264,7 @@ toolset.execute_action(
 )
 ```
 
-```typescript TypeScript wordWrap maxLines=100 {8-10} {13-18} {35}
+```typescript TypeScript wordWrap maxLines=100 {8-10, 13-18, 35}
 import { OpenAIToolSet } from "composio-core";
 import { v4 as uuidv4 } from "uuid";
 

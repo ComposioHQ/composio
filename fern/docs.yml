@@ -190,6 +190,8 @@ tabs:
     slug: examples
     skip-slug: true
     icon: code
+
+
 navigation:
   - tab: docs
     layout:
@@ -242,7 +244,7 @@ navigation:
           - link: Claude MCP
             href: https://composio.notion.site/Composio-MCP-Integration-for-Claude-1adf261a6dfe80609836e4e5021e9d44
             icon: asterisk
-          - link: Windsurf
+          - link: Windsurf MCP
             href: https://composio.notion.site/Windsurf-1adf261a6dfe80c2b538c6b0a02b44c8
             icon: fa-solid fa-water
 
@@ -332,60 +334,94 @@ navigation:
 
   - tab: sdk-reference
     layout:
+      - section: Python
+        contents:
           - section: Tools
             contents:
               - page: Overview
                 path: sdk/composio/python/composio/tools/index.mdx
                 hidden: true
-              - page: Schema
-                path: sdk/composio/python/composio/tools/schema.mdx
-              - page: Toolset
-                path: sdk/composio/python/composio/tools/toolset.mdx
+              - section: Core
+                contents:
+                  - page: Schema
+                    path: sdk/composio/python/composio/tools/schema.mdx
+                  - page: Toolset
+                    path: sdk/composio/python/composio/tools/toolset.mdx
           - section: Client
             contents:
               - page: Overview
                 path: sdk/composio/python/composio/client/index.mdx
-              - page: Base Client
-                path: sdk/composio/python/composio/client/base.mdx
-              - page: HTTP Client
-                path: sdk/composio/python/composio/client/http.mdx
-              - page: Collections
-                path: sdk/composio/python/composio/client/collections.mdx
-              - page: Files
-                path: sdk/composio/python/composio/client/files.mdx
-              - page: Utils
-                path: sdk/composio/python/composio/client/utils.mdx
+              - section: Components
+                contents:
+                  - page: Base Client
+                    path: sdk/composio/python/composio/client/base.mdx
+                  - page: HTTP Client
+                    path: sdk/composio/python/composio/client/http.mdx
+                  - page: Collections
+                    path: sdk/composio/python/composio/client/collections.mdx
+                  - page: Files
+                    path: sdk/composio/python/composio/client/files.mdx
+                  - page: Utils
+                    path: sdk/composio/python/composio/client/utils.mdx
           - section: Storage
             contents:
               - page: Overview
                 path: sdk/composio/python/composio/storage/index.mdx
-              - page: Base Storage
-                path: sdk/composio/python/composio/storage/base.mdx
-              - page: User Storage
-                path: sdk/composio/python/composio/storage/user.mdx
-          # - section: Utils
-          #   contents:
-          #     - page: Overview
-          #       path: sdk/composio/python/composio/utils/index.mdx
-          #     - page: Decorators
-          #       path: sdk/composio/python/composio/utils/decorators.mdx
-          #     - page: Enums
-          #       path: sdk/composio/python/composio/utils/enums.mdx
-          #     - page: Git
-          #       path: sdk/composio/python/composio/utils/git.mdx
-          #     - page: Logging
-          #       path: sdk/composio/python/composio/utils/logging.mdx
-          #     - page: Mimetypes
-          #       path: sdk/composio/python/composio/utils/mimetypes.mdx
-          #     - page: PyPI
-          #       path: sdk/composio/python/composio/utils/pypi.mdx
-          #     - page: Pydantic
-          #       path: sdk/composio/python/composio/utils/pydantic.mdx
-          #     - page: Sentry
-          #       path: sdk/composio/python/composio/utils/sentry.mdx
-          #     - page: Shared
-          #       path: sdk/composio/python/composio/utils/shared.mdx
-          #     - page: URL
-          #       path: sdk/composio/python/composio/utils/url.mdx
-          #     - page: Warnings
-          #       path: sdk/composio/python/composio/utils/warnings.mdx
+              - section: Components
+                contents:
+                  - page: Base Storage
+                    path: sdk/composio/python/composio/storage/base.mdx
+                  - page: User Storage
+                    path: sdk/composio/python/composio/storage/user.mdx
+
+      - section: TypeScript
+        contents:
+          - page: Overview
+            path: sdk/composio/js/modules.mdx
+          - page: Documentation
+            path: sdk/composio/js/README.mdx
+            hidden: true
+          - section: SDK
+            contents:
+              - page: Overview
+                path: sdk/composio/js/sdk/README.mdx
+              - section: Classes
+                contents:
+                  - page: Composio
+                    path: sdk/composio/js/sdk/classes/Composio.mdx
+              - section: Types
+                contents:
+                  - page: ComposioInputFieldsParams
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsParams.mdx
+                  - page: ComposioInputFieldsRes
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsRes.mdx
+          - section: Index
+            contents:
+              - page: Overview
+                path: sdk/composio/js/index/README.mdx
+              - section: Classes
+                contents:
+                  - page: VercelAIToolSet
+                    path: sdk/composio/js/index/classes/VercelAIToolSet.mdx
+                  - page: OpenAIToolSet
+                    path: sdk/composio/js/index/classes/OpenAIToolSet.mdx
+                  - page: LangGraphToolSet
+                    path: sdk/composio/js/index/classes/LangGraphToolSet.mdx
+                  - page: LangchainToolSet
+                    path: sdk/composio/js/index/classes/LangchainToolSet.mdx
+                  - page: ComposioToolSet
+                    path: sdk/composio/js/index/classes/ComposioToolSet.mdx
+                  - page: ConnectionRequest
+                    path: sdk/composio/js/index/classes/ConnectionRequest.mdx
+                  - page: CloudflareToolSet
+                    path: sdk/composio/js/index/classes/CloudflareToolSet.mdx
+                  - page: ComposioError
+                    path: sdk/composio/js/index/classes/ComposioError.mdx
+              - section: Variables
+                contents:
+                  - page: COMPOSIO_SDK_ERROR_CODES
+                    path: sdk/composio/js/index/variables/COMPOSIO_SDK_ERROR_CODES.mdx
+                  - page: ACTIONS
+                    path: sdk/composio/js/index/variables/ACTIONS.mdx
+                  - page: APPS
+                    path: sdk/composio/js/index/variables/APPS.mdx

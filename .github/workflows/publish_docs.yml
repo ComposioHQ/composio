@@ -21,8 +21,19 @@ jobs:
       - name: Install Python dependencies
         run: pip install typing-extensions
 
-      - name: Generate SDK documentation
+      - name: Generate Python SDK documentation
         run: python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+          
+      - name: Install TypeDoc dependencies
+        run: bun install typedoc typedoc-plugin-markdown
+
+      - name: Generate TypeScript SDK documentation
+        run: bun run typedoc --plugin typedoc-plugin-markdown src/index.ts src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
 
       - name: Install Fern
         run: npm install -g fern-api
