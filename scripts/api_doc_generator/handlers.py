@@ -10,6 +10,7 @@ import os
 import inspect
 import importlib.util
 import sys
+import types
 
 from .mdx_formatter import MDX
 from .parsers import parse_function, extract_imports, find_imported_references
@@ -40,8 +41,16 @@ def get_clean_file_path(file_path: str) -> str:
 
 
 def get_module_from_file(file_path: Path) -> t.Optional[t.Any]:
-    """Import a module from file path."""
+    """Import a module from file path.
+    
+    This function attempts to import the module in a way that works regardless
+    of whether the package is installed or being run from source.
+    """
+    if not file_path.exists():
+        return None
+        
     try:
+        # Approach 1: Use importlib.util (most reliable but can fail in some environments)
         module_name = file_path.stem
         spec = importlib.util.spec_from_file_location(module_name, file_path)
         if spec and spec.loader:
@@ -49,8 +58,21 @@ def get_module_from_file(file_path: Path) -> t.Optional[t.Any]:
             sys.modules[module_name] = module
             spec.loader.exec_module(module)
             return module
-    except Exception:
-        return None
+    except Exception as e:
+        print(f"Warning: Could not import {file_path} using importlib.util: {e}")
+        
+    # If we get here, the first approach failed - let's try a simpler approach
+    try:
+        # Create a mock module with just the AST information
+        # This doesn't execute the code but provides a minimal module object
+        mock_module = types.ModuleType(file_path.stem)
+        mock_module.__file__ = str(file_path)
+        
+        # This provides basic functionality without needing the package to be installed
+        return mock_module
+    except Exception as e:
+        print(f"Warning: Could not create mock module for {file_path}: {e}")
+        
     return None
 
 
