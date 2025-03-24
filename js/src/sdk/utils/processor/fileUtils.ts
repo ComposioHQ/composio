@@ -1,7 +1,7 @@
 import { Client } from "@hey-api/client-axios";
 import axios, { AxiosError } from "axios";
 import crypto from "crypto";
-import pa from "path";
+import pathModule from 'path';
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
 
@@ -105,7 +105,7 @@ export const getFileDataAfterUploadingToS3 = async (
   );
 
   return {
-    name: pa.basename(path) || `${actionName}_${Date.now()}`,
+    name: pathModule.basename(path) || `${actionName}_${Date.now()}`,
     mimetype: fileData.mimeType,
     s3key: s3key,
   };
