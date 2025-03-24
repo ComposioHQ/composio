@@ -18,28 +18,22 @@ from .parsers import parse_function, extract_imports, find_imported_references
 def get_clean_file_path(file_path: str) -> str:
     """Get a clean file path for display in documentation.
     
-    This strips off the absolute path and returns just the composio-relative path.
+    This uses a simple approach to normalize the path for display.
     """
     if not file_path:
         return "unknown location"
-    
+
     try:
-        path_str = str(file_path)
-        # Handle CI environment paths - debug info
-        if "GITHUB_WORKSPACE" in os.environ:
-            # We're in a GitHub Action
-            workspace = os.environ["GITHUB_WORKSPACE"]
-            if path_str.startswith(workspace):
-                rel_path = path_str[len(workspace):].lstrip("/")
-                if "composio" in rel_path:
-                    parts = rel_path.split("composio/")
-                    return "composio/" + parts[-1]
-                return rel_path
-                
-        if "composio" in path_str:
-            parts = path_str.split("composio/")
-            return "composio/" + parts[-1]
-        return Path(file_path).name
+        # Convert to Path object
+        path = Path(file_path)
+        
+        # Just use the last 3 parts of the path to provide enough context
+        # This gives us something like "composio/module/file.py"
+        if len(path.parts) >= 3:
+            return str(Path(*path.parts[-3:]))
+        # Or if it's shorter, just use what we have
+        return str(path)
+        
     except Exception as e:
         print(f"Error in get_clean_file_path: {e}")
         return Path(file_path).name

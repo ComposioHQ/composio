@@ -28,7 +28,7 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-          
+
       - name: Install TypeDoc dependencies
         run: bun install typedoc typedoc-plugin-markdown
 
