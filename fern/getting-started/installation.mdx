@@ -59,9 +59,15 @@ Before installing the SDK, ensure you have NodeJS 16+.
   </Step>
   <Step title="Plugins">
   The TS package comes installed with support for:
-  - [LangChain JS](/frameworks/javascript/langchain)
-  - [Cloudflare Worker AI](/frameworks/javascript/cloudflare)
-  - [Vercel AI SDK](/frameworks/javascript/vercel)
+  - [LangChain JS](/frameworks)
+  - [Cloudflare Worker AI](/frameworks)
+  - [Vercel AI SDK](/frameworks)
+  </Step>
+  <Step title="Post Installation">
+On new installations, you'll need to generate the SDK types. If you encounter errors related to missing "metadata," it likely means you need to update your types.
+  ```bash
+  composio apps generate-types
+  ```
   </Step>
   <Step title="Post Installation">
 On new installations, you'll need to generate the SDK types. If you encounter errors related to missing "metadata," it likely means you need to update your types.

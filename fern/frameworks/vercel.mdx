@@ -24,7 +24,7 @@ const toolset = new VercelAIToolSet();
 </Step>
 
 <Step title="Get All Github Tools">
-You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](/tool-calling/miscellaneous#specifying-apps-and-tags)
 ```javascript JavaScript
 const tools = await toolset.getTools({ apps: ["github"] });
 ```
