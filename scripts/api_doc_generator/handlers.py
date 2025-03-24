@@ -25,11 +25,23 @@ def get_clean_file_path(file_path: str) -> str:
     
     try:
         path_str = str(file_path)
+        # Handle CI environment paths - debug info
+        if "GITHUB_WORKSPACE" in os.environ:
+            # We're in a GitHub Action
+            workspace = os.environ["GITHUB_WORKSPACE"]
+            if path_str.startswith(workspace):
+                rel_path = path_str[len(workspace):].lstrip("/")
+                if "composio" in rel_path:
+                    parts = rel_path.split("composio/")
+                    return "composio/" + parts[-1]
+                return rel_path
+                
         if "composio" in path_str:
             parts = path_str.split("composio/")
             return "composio/" + parts[-1]
         return Path(file_path).name
-    except Exception:
+    except Exception as e:
+        print(f"Error in get_clean_file_path: {e}")
         return Path(file_path).name
 
 

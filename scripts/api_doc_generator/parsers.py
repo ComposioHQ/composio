@@ -195,9 +195,22 @@ def parse_function(node: ast.FunctionDef, module: t.Optional[types.ModuleType] =
     if source_code is None:
         try:
             source_code = ast.unparse(node)
-            if module and hasattr(module, "__file__"):
+            # If file_path is None and we have a module with __file__, use that
+            if file_path is None and module and hasattr(module, "__file__"):
                 file_path = module.__file__
                 module_path = module.__name__
+            # If we have a file_path from the function context
+            elif file_path is None and isinstance(node, ast.FunctionDef) and hasattr(node, "lineno"):
+                # Use the context from the node to determine file location
+                if isinstance(module, types.ModuleType) and hasattr(module, "__file__"):
+                    file_path = module.__file__
+        except Exception as e:
+            print(f"Error extracting source code: {e}")
+    
+    # If file_path is still None but we got a module, use its file path
+    if file_path is None and module and hasattr(module, "__file__"):
+        try:
+            file_path = str(module.__file__)
         except Exception:
             pass
     
