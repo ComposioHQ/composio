@@ -33,7 +33,7 @@ jobs:
         run: bun install typedoc typedoc-plugin-markdown
 
       - name: Generate TypeScript SDK documentation
-        run: bun run typedoc --plugin typedoc-plugin-markdown src/index.ts src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
+        run: bun run typedoc --plugin typedoc-plugin-markdown js/src/index.ts js/src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
 
       - name: Install Fern
         run: npm install -g fern-api
