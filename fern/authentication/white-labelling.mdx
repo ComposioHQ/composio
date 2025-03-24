@@ -1,74 +1,27 @@
 ---
-title: 'Micellaneous'
-subtitle: 'Guide to white-labeling the OAuth Flow'
+title: White-labelling
+subtitle: Guide to white-labelling the OAuth Flow
 ---
-
-## Using Composio's OAuth App
-Setting up OAuth 2.0 apps is time-consuming and painful, especially while prototyping or making small apps.
-
-To speed up development, developers can use Composio's OAuth 2.0 apps while creating an integration by setting the `use_composio_oauth_app`/`useComposioAuth` flag to `True`.
-
-<CodeGroup>
-```python Python {7}
-from composio_openai import App, ComposioToolSet
-
-toolset = ComposioToolSet()
-integration = toolset.create_integration(
-    app=App.GOOGLECALENDAR,
-    auth_mode="OAUTH2",
-    use_composio_oauth_app=True,
-)
-
-entity = toolset.get_entity("default")
-
-connection_request = entity.initiate_connection(
-    app_name=App.GOOGLECALENDAR, integration=integration
-)
-
-```
-
-```typescript TypeScript {9}
-import { OpenAIToolSet } from "composio-core";
-const composioToolset = new OpenAIToolSet();
-const entity = await composioToolset.getEntity("default");
-
-const integration = await composioToolset.integrations.create({
-  appUniqueKey: "googlecalendar",
-  name: "Google Calendar",
-  authScheme: "OAUTH2",
-  useComposioAuth: true,
-});
-
-const connectionRequest = await entity.initiateConnection({
-  appName: "googlecalendar",
-  authMode: "OAUTH2",
-});
-```
-</CodeGroup>
-
-Clicking the redirect URL takes users to the consent screen of the app where they grant access to Composio's OAuth app.
-
-<Frame background="subtle" title="Composio OAuth Consent Screen">
-  <img src="../assets/images/composio-auth-app.png" />
-</Frame>
-
-
-| Composio Auth (Development) | Custom Auth (Production) |
-|----------|-------------|
-| 🚀 Quick prototyping and testing integrations | 🏢 Production applications with significant user base |
-| 🛠️ Internal tools and small applications | 🎨 Applications requiring custom branding and user trust |
-| 🧪 Development and staging environments | 🔒 Applications handling sensitive enterprise data |
-
 
 ## Using custom auth app (aka white-labelling)
 When going to production, it's recommended to use your own developer credentials.
 
 
 <Steps>
-<Step title="Add redirect logic">
+<Step title="Set up a 301 redirect">
 The endpoint `https://backend.composio.dev/api/v1/auth-apps/add` is what captures the user's credentials to manage the auth. However, OAuth consent screens show the callback URL - and if it isn't the same as your application, that creates distrust.
 
 It's recommended to specify the redirect URL to your own domain and create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v1/auth-apps/add`
+
+<Accordion title="Setting up a redirect through DNS">
+- [Cloudflare URL Forwarding Guide](https://developers.cloudflare.com/rules/url-forwarding/single-redirects/create-dashboard/)
+
+- [GoDaddy Domain Forwarding Guide](https://www.godaddy.com/en-in/help/forward-my-godaddy-domain-12123)
+
+- [Namecheap URL Redirect Setup Guide](https://www.namecheap.com/support/knowledgebase/article.aspx/385/2237/how-to-set-up-a-url-redirect-for-a-domain/)
+</Accordion>
+
+<Note>Whether using DNS or application-level redirects, ensure you're preserving the query string and all params and headers are forwarded correctly</Note>
 
 This diagram shows the entire redirect sequence.
 ```mermaid
