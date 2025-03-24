@@ -329,3 +329,63 @@ navigation:
     layout:
       - api: API Reference
         paginated: true
+
+  - tab: sdk-reference
+    layout:
+          - section: Tools
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/tools/index.mdx
+                hidden: true
+              - page: Schema
+                path: sdk/composio/python/composio/tools/schema.mdx
+              - page: Toolset
+                path: sdk/composio/python/composio/tools/toolset.mdx
+          - section: Client
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/client/index.mdx
+              - page: Base Client
+                path: sdk/composio/python/composio/client/base.mdx
+              - page: HTTP Client
+                path: sdk/composio/python/composio/client/http.mdx
+              - page: Collections
+                path: sdk/composio/python/composio/client/collections.mdx
+              - page: Files
+                path: sdk/composio/python/composio/client/files.mdx
+              - page: Utils
+                path: sdk/composio/python/composio/client/utils.mdx
+          - section: Storage
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/storage/index.mdx
+              - page: Base Storage
+                path: sdk/composio/python/composio/storage/base.mdx
+              - page: User Storage
+                path: sdk/composio/python/composio/storage/user.mdx
+          # - section: Utils
+          #   contents:
+          #     - page: Overview
+          #       path: sdk/composio/python/composio/utils/index.mdx
+          #     - page: Decorators
+          #       path: sdk/composio/python/composio/utils/decorators.mdx
+          #     - page: Enums
+          #       path: sdk/composio/python/composio/utils/enums.mdx
+          #     - page: Git
+          #       path: sdk/composio/python/composio/utils/git.mdx
+          #     - page: Logging
+          #       path: sdk/composio/python/composio/utils/logging.mdx
+          #     - page: Mimetypes
+          #       path: sdk/composio/python/composio/utils/mimetypes.mdx
+          #     - page: PyPI
+          #       path: sdk/composio/python/composio/utils/pypi.mdx
+          #     - page: Pydantic
+          #       path: sdk/composio/python/composio/utils/pydantic.mdx
+          #     - page: Sentry
+          #       path: sdk/composio/python/composio/utils/sentry.mdx
+          #     - page: Shared
+          #       path: sdk/composio/python/composio/utils/shared.mdx
+          #     - page: URL
+          #       path: sdk/composio/python/composio/utils/url.mdx
+          #     - page: Warnings
+          #       path: sdk/composio/python/composio/utils/warnings.mdx

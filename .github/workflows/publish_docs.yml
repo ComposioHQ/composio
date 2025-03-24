@@ -13,6 +13,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install Python dependencies
+        run: pip install typing-extensions
+
+      - name: Generate SDK documentation
+        run: python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+
       - name: Install Fern
         run: npm install -g fern-api
 

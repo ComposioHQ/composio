@@ -48,7 +48,7 @@ python/swe/dockerfiles/indexed
 python/swe/agentic
 python/swe/dockerfiles/generated*
 
-fern/sdk/
+fern/sdk/composio/python/
 
 .cursor/*
 
