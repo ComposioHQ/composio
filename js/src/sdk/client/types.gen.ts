@@ -869,6 +869,10 @@ export type SingleAppInfoResDTO = {
    */
   categories?: Array<string>;
   /**
+   * Get current user endpoint of the app
+   */
+  get_current_user_endpoint?: string;
+  /**
    * The documentation URL of the app, if available. Usually it's a link to the doc to setup and configure the app.
    */
   docs?: string;
