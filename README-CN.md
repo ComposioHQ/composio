@@ -1,7 +1,7 @@
 <p>
-    <a href="https://github.com/composiohq/composio/blob/master/README.md">英语</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国人</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本人</a>
+    <a href="https://github.com/composiohq/composio/blob/master/README.md">英文</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中文</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日文</a>
 </p>
 <p align="center">
     <a href="https://composio.dev//#gh-dark-mode-only">
