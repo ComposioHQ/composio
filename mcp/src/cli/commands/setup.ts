@@ -199,7 +199,7 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     }
 
     try {
-    const newKey = url.split('/').slice(3).join('/').replace(/\//g, '-');
+      const newKey = url.split('/').slice(3)[0] + '_composio';
 
       cursorConfig.mcpServers[newKey] = sseConfig;
       fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
