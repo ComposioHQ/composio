@@ -241,7 +241,7 @@ navigation:
           - page: Claude
             path: mcp/claude.mdx
           - page: Windsurf
-            path: mcp/winsdsurf.mdx
+            path: mcp/windsurf.mdx
 
       # - section: Resources
       #   icon: book
