@@ -86,28 +86,32 @@ To contribute to the documentation:
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
    
-   b. Generate Python SDK documentation:
+   b. Install typing-extensions (required for documentation generation):
+   ```bash
+   pip install typing-extensions
+   ```
+   
+   c. Generate Python SDK documentation:
    ```bash
    python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
    ```
    
-   c. Setup Bun:
+   d. Install Bun (required for TypeScript documentation):
    ```bash
-   # Install Bun if you don't have it
    curl -fsSL https://bun.sh/install | bash
    ```
    
-   d. Install TypeDoc dependencies:
+   e. Install TypeDoc dependencies:
    ```bash
    bun install typedoc typedoc-plugin-markdown
    ```
    
-   e. Generate TypeScript SDK documentation:
+   f. Generate TypeScript SDK documentation:
    ```bash
    bun run typedoc --plugin typedoc-plugin-markdown js/src/index.ts js/src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
    ```
    
-   f. Install Fern globally:
+   g. Install Fern globally:
    ```bash
    npm install -g fern-api
    ```
@@ -119,5 +123,11 @@ To contribute to the documentation:
 
 4. View and edit docs at http://localhost:3000
 
-5. When you're happy with your changes, create a PR.
+5. Before submitting your PR, check for broken links:
+   ```bash
+   fern docs broken-links
+   ```
+   This will ensure your documentation changes don't introduce any broken references.
+
+6. When you're happy with your changes, create a PR.
 
