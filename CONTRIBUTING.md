@@ -79,16 +79,45 @@ To contribute to the documentation:
 
 1. Make sure you have Node.js installed on your system.
 
-2. Install Fern CLI globally:
+2. Generate the SDK documentation first:
+   
+   a. Make sure you're in your virtual environment:
+   ```bash
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+   
+   b. Generate Python SDK documentation:
+   ```bash
+   python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+   ```
+   
+   c. Setup Bun:
+   ```bash
+   # Install Bun if you don't have it
+   curl -fsSL https://bun.sh/install | bash
+   ```
+   
+   d. Install TypeDoc dependencies:
+   ```bash
+   bun install typedoc typedoc-plugin-markdown
+   ```
+   
+   e. Generate TypeScript SDK documentation:
+   ```bash
+   bun run typedoc --plugin typedoc-plugin-markdown js/src/index.ts js/src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
+   ```
+   
+   f. Install Fern globally:
    ```bash
    npm install -g fern-api
    ```
 
 3. Start the docs server from the project root:
    ```bash
-   fern docs dev
+   make docs-dev
    ```
 
 4. View and edit docs at http://localhost:3000
 
 5. When you're happy with your changes, create a PR.
+
