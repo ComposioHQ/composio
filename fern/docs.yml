@@ -335,93 +335,93 @@ navigation:
       - api: API Reference
         paginated: true
 
-  # - tab: sdk-reference
-  #   layout:
-  #     - section: Python
-  #       contents:
-  #         - section: Tools
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/composio/python/composio/tools/index.mdx
-  #               hidden: true
-  #             - section: Core
-  #               contents:
-  #                 - page: Schema
-  #                   path: sdk/composio/python/composio/tools/schema.mdx
-  #                 - page: Toolset
-  #                   path: sdk/composio/python/composio/tools/toolset.mdx
-  #         - section: Client
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/composio/python/composio/client/index.mdx
-  #             - section: Components
-  #               contents:
-  #                 - page: Base Client
-  #                   path: sdk/composio/python/composio/client/base.mdx
-  #                 - page: HTTP Client
-  #                   path: sdk/composio/python/composio/client/http.mdx
-  #                 - page: Collections
-  #                   path: sdk/composio/python/composio/client/collections.mdx
-  #                 - page: Files
-  #                   path: sdk/composio/python/composio/client/files.mdx
-  #                 - page: Utils
-  #                   path: sdk/composio/python/composio/client/utils.mdx
-  #         - section: Storage
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/composio/python/composio/storage/index.mdx
-  #             - section: Components
-  #               contents:
-  #                 - page: Base Storage
-  #                   path: sdk/composio/python/composio/storage/base.mdx
-  #                 - page: User Storage
-  #                   path: sdk/composio/python/composio/storage/user.mdx
+  - tab: sdk-reference
+    layout:
+      - section: Python
+        contents:
+          - section: Tools
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/tools/index.mdx
+                hidden: true
+              - section: Core
+                contents:
+                  - page: Schema
+                    path: sdk/composio/python/composio/tools/schema.mdx
+                  - page: Toolset
+                    path: sdk/composio/python/composio/tools/toolset.mdx
+          - section: Client
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/client/index.mdx
+              - section: Components
+                contents:
+                  - page: Base Client
+                    path: sdk/composio/python/composio/client/base.mdx
+                  - page: HTTP Client
+                    path: sdk/composio/python/composio/client/http.mdx
+                  - page: Collections
+                    path: sdk/composio/python/composio/client/collections.mdx
+                  - page: Files
+                    path: sdk/composio/python/composio/client/files.mdx
+                  - page: Utils
+                    path: sdk/composio/python/composio/client/utils.mdx
+          - section: Storage
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/storage/index.mdx
+              - section: Components
+                contents:
+                  - page: Base Storage
+                    path: sdk/composio/python/composio/storage/base.mdx
+                  - page: User Storage
+                    path: sdk/composio/python/composio/storage/user.mdx
 
-  #     - section: TypeScript
-  #       contents:
-  #         - page: Overview
-  #           path: sdk/composio/js/modules.mdx
-  #         - section: SDK
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/composio/js/sdk/README.mdx
-  #             - section: Classes
-  #               contents:
-  #                 - page: Composio
-  #                   path: sdk/composio/js/sdk/classes/Composio.mdx
-  #             - section: Types
-  #               contents:
-  #                 - page: ComposioInputFieldsParams
-  #                   path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsParams.mdx
-  #                 - page: ComposioInputFieldsRes
-  #                   path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsRes.mdx
-  #         - section: Index
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/composio/js/index/README.mdx
-  #             - section: Classes
-  #               contents:
-  #                 - page: VercelAIToolSet
-  #                   path: sdk/composio/js/index/classes/VercelAIToolSet.mdx
-  #                 - page: OpenAIToolSet
-  #                   path: sdk/composio/js/index/classes/OpenAIToolSet.mdx
-  #                 - page: LangGraphToolSet
-  #                   path: sdk/composio/js/index/classes/LangGraphToolSet.mdx
-  #                 - page: LangchainToolSet
-  #                   path: sdk/composio/js/index/classes/LangchainToolSet.mdx
-  #                 - page: ComposioToolSet
-  #                   path: sdk/composio/js/index/classes/ComposioToolSet.mdx
-  #                 - page: ConnectionRequest
-  #                   path: sdk/composio/js/index/classes/ConnectionRequest.mdx
-  #                 - page: CloudflareToolSet
-  #                   path: sdk/composio/js/index/classes/CloudflareToolSet.mdx
-  #                 - page: ComposioError
-  #                   path: sdk/composio/js/index/classes/ComposioError.mdx
-  #             - section: Variables
-  #               contents:
-  #                 - page: COMPOSIO_SDK_ERROR_CODES
-  #                   path: sdk/composio/js/index/variables/COMPOSIO_SDK_ERROR_CODES.mdx
-  #                 - page: ACTIONS
-  #                   path: sdk/composio/js/index/variables/ACTIONS.mdx
-  #                 - page: APPS
-  #                   path: sdk/composio/js/index/variables/APPS.mdx
+      - section: TypeScript
+        contents:
+          - page: Overview
+            path: sdk/composio/js/modules.mdx
+          - section: SDK
+            contents:
+              - page: Overview
+                path: sdk/composio/js/sdk/README.mdx
+              - section: Classes
+                contents:
+                  - page: Composio
+                    path: sdk/composio/js/sdk/classes/Composio.mdx
+              - section: Types
+                contents:
+                  - page: ComposioInputFieldsParams
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsParams.mdx
+                  - page: ComposioInputFieldsRes
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsRes.mdx
+          - section: Index
+            contents:
+              - page: Overview
+                path: sdk/composio/js/index/README.mdx
+              - section: Classes
+                contents:
+                  - page: VercelAIToolSet
+                    path: sdk/composio/js/index/classes/VercelAIToolSet.mdx
+                  - page: OpenAIToolSet
+                    path: sdk/composio/js/index/classes/OpenAIToolSet.mdx
+                  - page: LangGraphToolSet
+                    path: sdk/composio/js/index/classes/LangGraphToolSet.mdx
+                  - page: LangchainToolSet
+                    path: sdk/composio/js/index/classes/LangchainToolSet.mdx
+                  - page: ComposioToolSet
+                    path: sdk/composio/js/index/classes/ComposioToolSet.mdx
+                  - page: ConnectionRequest
+                    path: sdk/composio/js/index/classes/ConnectionRequest.mdx
+                  - page: CloudflareToolSet
+                    path: sdk/composio/js/index/classes/CloudflareToolSet.mdx
+                  - page: ComposioError
+                    path: sdk/composio/js/index/classes/ComposioError.mdx
+              - section: Variables
+                contents:
+                  - page: COMPOSIO_SDK_ERROR_CODES
+                    path: sdk/composio/js/index/variables/COMPOSIO_SDK_ERROR_CODES.mdx
+                  - page: ACTIONS
+                    path: sdk/composio/js/index/variables/ACTIONS.mdx
+                  - page: APPS
+                    path: sdk/composio/js/index/variables/APPS.mdx
