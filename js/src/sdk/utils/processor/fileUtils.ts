@@ -1,7 +1,7 @@
 import { Client } from "@hey-api/client-axios";
 import axios, { AxiosError } from "axios";
 import crypto from "crypto";
-import pathModule from 'path';
+import pathModule from "path";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
 
