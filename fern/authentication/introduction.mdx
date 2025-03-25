@@ -1,0 +1,173 @@
+---
+title: 'Auth Concepts'
+subtitle: 'Understand the core concepts behind Composio Auth'
+---
+
+**Composio Auth** simplifies integrating user-authorized actions into your app. It securely manages OAuth flows, handles token storage, and ensures actions are executed with the correct user's credentials.
+
+Composio Auth relies on three core concepts. **Integration**, **Connection**, **Entities**.
+
+<Frame background="subtle" title="Composio Auth Concepts">
+  <img src="../assets/images/auth-concepts.png" alt="Composio Auth Concepts showing the relationship between Integration, Connection, and Entity" />
+</Frame>
+
+
+## Getting Started
+Let's use Composio Auth to use the X (formerly Twitter) API to read a tweet.
+
+<Steps>
+<Step title="Import libraries">
+First, initialize and import the Composio and OpenAI SDKs.
+<CodeGroup>
+```python Python wordWrap maxLines=100
+from composio_openai import ComposioToolSet, App, Action
+
+toolset = ComposioToolSet()
+```
+
+```typescript TypeScript wordWrap maxLines=100
+import { OpenAIToolSet } from "composio-core";
+const composioToolset = new OpenAIToolSet();
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create an entity">
+Create or get an existing entity for a user.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+username = input("Enter your X username: ").strip()
+entity = toolset.get_entity(username)
+```
+
+```typescript TypeScript wordWrap maxLines=100
+const username = prompt("Enter your X username: ");
+const entity = composioToolset.getEntity(username);
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Initiate connection to the X API">
+Here, we'll initiate a connection to the X API. This will redirect you to the X OAuth login page where you can login and grant permissions.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+conn_req = entity.initiate_connection(app_name=App.TWITTER)
+print(f"Navigate to the following URL to connect your X account: {conn_req.redirectUrl}")
+```
+
+```typescript TypeScript wordWrap maxLines=100
+const connReq = await entity.initiateConnection({
+    appName: "twitter",
+});
+console.log(`Navigate to the following URL to connect your X account: ${connReq.redirectUrl}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Wait for connection to be active">
+Here, we wait for the connection process to finalize and become active.
+
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+connection = conn_req.wait_until_active(toolset.client, timeout=20)
+print(f"Connection created: {connection.id}")
+```
+
+```typescript TypeScript wordWrap maxLines=100
+const connection = await connReq.waitUntilActive(20);
+console.log(`Connection created: ${connection.id}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Read the tweet">
+Here, we'll read the tweet from the X API. We specify the connection ID to use the correct user's credentials.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+post_res = toolset.execute_action(
+    Action.TWITTER_POST_LOOKUP_BY_POST_ID,
+    params={"id": "1886192184808149383"},
+    connected_account_id=connection.id,
+)
+print(post_res["data"]["text"])
+```
+
+```typescript TypeScript wordWrap maxLines=100
+const postRes = await composioToolset.executeAction({
+    action: "twitter_post_lookup_by_post_id",
+    params: { id: "1886192184808149383" },
+    connectedAccountId: connection.id,
+});
+console.log((postRes.data as any).data.text);
+```
+</CodeGroup>
+</Step>
+
+<Accordion title="Full Code">
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+from composio_openai import Action, App, ComposioToolSet
+from openai import OpenAI
+
+client = OpenAI()
+toolset = ComposioToolSet()
+
+username = input("Enter your X username: ").strip()
+entity = toolset.get_entity(username)
+
+conn_req = entity.initiate_connection(app_name=App.TWITTER)
+print(
+    f"Navigate to the following URL to connect your X account: {conn_req.redirectUrl}"
+)
+
+connection = conn_req.wait_until_active(toolset.client, timeout=20)
+print(f"Connection created: {connection.id}")
+
+post_res = toolset.execute_action(
+    Action.TWITTER_POST_LOOKUP_BY_POST_ID,
+    params={"id": "1886192184808149383"},
+    connected_account_id=connection.id,
+)
+
+print(post_res["data"]["text"])
+
+```
+
+```typescript TypeScript wordWrap maxLines=100
+import { OpenAIToolSet } from "composio-core";
+
+
+const composioToolset = new OpenAIToolSet();
+const username = prompt("Enter your X username: ");
+if (!username) {
+    throw new Error("Username is required");
+}
+const entity = await composioToolset.getEntity(username);
+
+const connReq = await entity.initiateConnection({
+    appName: "twitter",
+});
+
+console.log(`Navigate to the following URL to connect your X account: ${connReq.redirectUrl}`);
+const connection = await connReq.waitUntilActive(20);
+
+console.log(`Connection created: ${connection.id}`);
+
+const postRes = await composioToolset.executeAction({
+    action: "twitter_post_lookup_by_post_id",
+    params: { id: "1886192184808149383" },
+    connectedAccountId: connection.id,
+});
+
+console.log((postRes.data as any).data.text);
+```
+</CodeGroup>
+</Accordion>
+</Steps>
+

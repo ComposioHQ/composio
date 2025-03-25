@@ -40,6 +40,7 @@ typography:
       - path: fonts/Inter Bold.woff2
         weight: 600
         style: normal
+
 layout: 
   tabs-placement: header
   searchbar-placement: header
@@ -189,6 +190,8 @@ tabs:
     slug: examples
     skip-slug: true
     icon: code
+
+
 navigation:
   - tab: docs
     layout:
@@ -197,44 +200,36 @@ navigation:
         contents:
           - page: Welcome
             path: getting-started/welcome.mdx
-            icon: hand-wave
           - page: Installation
             path: getting-started/installation.mdx
-            icon: download
           - page: Quickstart
             path: getting-started/quickstart.mdx
-            icon: bolt
 
-      - section: Concepts
-        icon: lightbulb
+      - section: Tool Calling
+        icon: wrench
         contents:
-          - section: Tool Calling
+          - page: Introduction
             path: tool-calling/tool-calling.mdx
-            icon: wrench
-            contents:
-              - page: Processing Tools
-                path: tool-calling/processing-tools.mdx
-                icon: gear
-              - page: Miscellaneous
-                path: tool-calling/miscellaneous.mdx
-                icon: toolbox
-          - section: Auth
-            path: authentication/concepts.mdx
-            icon: lock
-            contents:
-              - page: Miscellaneous
-                path: authentication/miscellaneous.mdx
-                icon: key
-            # contents:
-            #   - page: Overview
-            #     path: authentication/overview.mdx
-            #     icon: lock
-          - page: Triggers
+          - page: Processing Tools
+            path: tool-calling/processing-tools.mdx
+          - page: Miscellaneous
+            path: tool-calling/miscellaneous.mdx
+
+      - section: Auth
+        icon: lock
+        contents:
+          - page: Introduction
+            path: authentication/introduction.mdx
+          - page: Custom Auth
+            path: authentication/custom-auth.mdx
+          - page: White-labelling
+            path: authentication/white-labelling.mdx
+
+      - section: Triggers
+        icon: bolt
+        contents:
+          - page: Using Triggers
             path: triggers/triggers.mdx
-            icon: bolt
-          - page: Workspaces
-            path: workspaces/workspaces.mdx
-            icon: folder
 
       - section: Resources
         icon: book
@@ -242,119 +237,94 @@ navigation:
           - page: Glossary
             path: resources/glossary.mdx
             icon: asterisk
-          - page: Model Context Protocol
-            path: mcp/overview.mdx
-            icon: code-branch
-          # - page: FAQs
-          #   path: resources/faqs.mdx
+            hidden: true
+          - link: Cursor MCP
+            href: https://composio.notion.site/Cursor-MCP-Docs-1adf261a6dfe80b4ba5fe492bf41441c
+            icon: fa-solid fa-mouse-pointer
+          - link: Claude MCP
+            href: https://composio.notion.site/Composio-MCP-Integration-for-Claude-1adf261a6dfe80609836e4e5021e9d44
+            icon: asterisk
+          - link: Windsurf MCP
+            href: https://composio.notion.site/Windsurf-1adf261a6dfe80c2b538c6b0a02b44c8
+            icon: fa-solid fa-water
 
   - tab: frameworks
     layout:
+      - section: Frameworks
+        contents:
+          - page: OpenAI
+            path: frameworks/openai.mdx
+            slug: openai
+          - page: LangChain
+            path: frameworks/langchain.mdx
+            slug: langchain
+          - page: LangGraph
+            path: frameworks/langgraph.mdx
+            slug: langgraph
+          - page: CrewAI
+            path: frameworks/crewai.mdx
+            slug: crewai
+          - page: Vercel AI
+            path: frameworks/vercel.mdx
+            slug: vercel
+          - page: Autogen
+            path: frameworks/autogen.mdx
+            slug: autogen
+
       - section: Creating Frameworks
         contents:
           - page: Python SDK
             path: frameworks/guides/python-sdk.mdx
             icon: fa-brands fa-python
 
-      - section: Frameworks
+      - section: Other Frameworks
+        slug: frameworks
         contents:
-          - page: OpenAI
-            path: frameworks/openai.mdx
-            slug: openai
-          - page: Agno
-            path: frameworks/agno.mdx
-            slug: agno
-          - page: Autogen
-            path: frameworks/autogen.mdx
-            slug: autogen
-          - page: CrewAI
-            path: frameworks/crewai.mdx
-            slug: crewai
-          - page: LangChain
-            path: frameworks/langchain.mdx
-            slug: langchain
-          - page: LangFlow
-            path: frameworks/langflow.mdx
-            slug: langflow
-          - page: LangGraph
-            path: frameworks/langgraph.mdx
-            slug: langgraph
           - page: LlamaIndex
             path: frameworks/llamaindex.mdx
             slug: llamaindex
+          - page: SmolAgents
+            path: frameworks/smolagents.mdx
+            slug: smolagents 
+          - page: Cloudflare Worker AI
+            path: frameworks/cloudflare.mdx
+            slug: cloudflare
+          - page: CamelAI
+            path: frameworks/camelai.mdx
+            slug: camelai
+          - page: Gemini
+            path: frameworks/gemini.mdx
+            slug: gemini
+          - page: Google
+            path: frameworks/google.mdx
+            slug: google
+          - page: Griptape
+            path: frameworks/griptape.mdx
+            slug: griptape
+          - page: Groq
+            path: frameworks/groq.mdx
+          - page: IBM
+            path: frameworks/ibm.mdx
+            slug: ibm
+          - page: Julep
+            path: frameworks/julep.mdx
+            slug: julep
+          - page: Letta
+            path: frameworks/letta.mdx
+          - page: LiteLLM
+            path: frameworks/litellm.mdx
+            slug: litellm
+          - page: Lyzr
+            path: frameworks/lyzr.mdx
+            slug: lyzr
+          - page: PraisonAI
+            path: frameworks/praisonai.mdx
+          - page: Agno
+            path: frameworks/agno.mdx
+            slug: agno
           - page: Together
             path: frameworks/together.mdx
             slug: together
-
-          - section: JavaScript Frameworks
-            slug: javascript
-            contents:
-              - page: OpenAI (JS)
-                path: frameworks/openai-js.mdx
-                slug: openai
-              - page: LangChain (JS)
-                path: frameworks/langchain-js.mdx
-                slug: langchain
-              - page: Cloudflare Worker AI
-                path: frameworks/cloudflare.mdx
-                slug: cloudflare
-              - page: Vercel AI
-                path: frameworks/vercel.mdx
-                slug: vercel
-
-          - section: Other Frameworks
-            slug: others
-            contents:
-              - page: CamelAI
-                path: frameworks/camelai.mdx
-                slug: camelai
-              - page: Gemini
-                path: frameworks/gemini.mdx
-                slug: gemini
-              - page: Google
-                path: frameworks/google.mdx
-                slug: google
-              - page: Griptape
-                path: frameworks/griptape.mdx
-                slug: griptape
-              - page: Groq
-                path: frameworks/groq.mdx
-              - page: IBM
-                path: frameworks/ibm.mdx
-                slug: ibm
-              - page: Julep
-                path: frameworks/julep.mdx
-                slug: julep
-              - page: Letta
-                path: frameworks/letta.mdx
-              - page: LiteLLM
-                path: frameworks/litellm.mdx
-                slug: litellm
-              - page: Lyzr
-                path: frameworks/lyzr.mdx
-                slug: lyzr
-              - page: PraisonAI
-                path: frameworks/praisonai.mdx
-              - page: SmolAgents
-                path: frameworks/smolagents.mdx
-                slug: smolagents
-
-  - tab: examples
-    layout:
-      - section: Agent Examples
-        contents:
-          - page: Calendar Agent
-            path: examples/calendar-agent.mdx
-          - page: Code Execution Agent
-            path: examples/code-execution-agent.mdx
-          - page: Newsletter Summarizer
-            path: examples/newsletter-summarizer.mdx
-          - page: RAG Agent
-            path: examples/rag-agent.mdx
-          - page: Research Agent
-            path: examples/research-agent.mdx
-          - page: SQL Agent
-            path: examples/sql-agent.mdx
 
 
   - tab: api-reference
@@ -362,69 +332,93 @@ navigation:
       - api: API Reference
         paginated: true
 
-  # - tab: sdk-reference
-  #   layout:
-  #     - section: Python SDK
-  #       contents:
-  #         - page: Constants
-  #           path: sdk/python/composio/constants.mdx
-  #         - page: Exceptions
-  #           path: sdk/python/composio/exceptions.mdx
-  #         - section: Client
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/python/composio/client/index.mdx
-  #             - page: Base Client
-  #               path: sdk/python/composio/client/base.mdx
-  #             # - page: Endpoints
-  #             #   path: sdk/python/composio/client/endpoints.mdx
-  #             - page: HTTP Client
-  #               path: sdk/python/composio/client/http.mdx
-  #             - page: Collections
-  #               path: sdk/python/composio/client/collections.mdx
-  #             - page: Files
-  #               path: sdk/python/composio/client/files.mdx
-  #             - page: Utils
-  #               path: sdk/python/composio/client/utils.mdx
-  #         - section: Tools
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/python/composio/tools/index.mdx
-  #             - page: Schema
-  #               path: sdk/python/composio/tools/schema.mdx
-  #             - page: Toolset
-  #               path: sdk/python/composio/tools/toolset.mdx
-  #         - section: Storage
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/python/composio/storage/index.mdx
-  #             - page: Base Storage
-  #               path: sdk/python/composio/storage/base.mdx
-  #             - page: User Storage
-  #               path: sdk/python/composio/storage/user.mdx
-  #         - section: Utils
-  #           contents:
-  #             - page: Overview
-  #               path: sdk/python/composio/utils/index.mdx
-  #             - page: Decorators
-  #               path: sdk/python/composio/utils/decorators.mdx
-  #             - page: Enums
-  #               path: sdk/python/composio/utils/enums.mdx
-  #             - page: Git
-  #               path: sdk/python/composio/utils/git.mdx
-  #             - page: Logging
-  #               path: sdk/python/composio/utils/logging.mdx
-  #             - page: Mimetypes
-  #               path: sdk/python/composio/utils/mimetypes.mdx
-  #             - page: PyPI
-  #               path: sdk/python/composio/utils/pypi.mdx
-  #             - page: Pydantic
-  #               path: sdk/python/composio/utils/pydantic.mdx
-  #             - page: Sentry
-  #               path: sdk/python/composio/utils/sentry.mdx
-  #             - page: Shared
-  #               path: sdk/python/composio/utils/shared.mdx
-  #             - page: URL
-  #               path: sdk/python/composio/utils/url.mdx
-  #             - page: Warnings
-  #               path: sdk/python/composio/utils/warnings.mdx
+  - tab: sdk-reference
+    layout:
+      - section: Python
+        contents:
+          - section: Tools
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/tools/index.mdx
+                hidden: true
+              - section: Core
+                contents:
+                  - page: Schema
+                    path: sdk/composio/python/composio/tools/schema.mdx
+                  - page: Toolset
+                    path: sdk/composio/python/composio/tools/toolset.mdx
+          - section: Client
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/client/index.mdx
+              - section: Components
+                contents:
+                  - page: Base Client
+                    path: sdk/composio/python/composio/client/base.mdx
+                  - page: HTTP Client
+                    path: sdk/composio/python/composio/client/http.mdx
+                  - page: Collections
+                    path: sdk/composio/python/composio/client/collections.mdx
+                  - page: Files
+                    path: sdk/composio/python/composio/client/files.mdx
+                  - page: Utils
+                    path: sdk/composio/python/composio/client/utils.mdx
+          - section: Storage
+            contents:
+              - page: Overview
+                path: sdk/composio/python/composio/storage/index.mdx
+              - section: Components
+                contents:
+                  - page: Base Storage
+                    path: sdk/composio/python/composio/storage/base.mdx
+                  - page: User Storage
+                    path: sdk/composio/python/composio/storage/user.mdx
+
+      - section: TypeScript
+        contents:
+          - page: Overview
+            path: sdk/composio/js/modules.mdx
+          - section: SDK
+            contents:
+              - page: Overview
+                path: sdk/composio/js/sdk/README.mdx
+              - section: Classes
+                contents:
+                  - page: Composio
+                    path: sdk/composio/js/sdk/classes/Composio.mdx
+              - section: Types
+                contents:
+                  - page: ComposioInputFieldsParams
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsParams.mdx
+                  - page: ComposioInputFieldsRes
+                    path: sdk/composio/js/sdk/type-aliases/ComposioInputFieldsRes.mdx
+          - section: Index
+            contents:
+              - page: Overview
+                path: sdk/composio/js/index/README.mdx
+              - section: Classes
+                contents:
+                  - page: VercelAIToolSet
+                    path: sdk/composio/js/index/classes/VercelAIToolSet.mdx
+                  - page: OpenAIToolSet
+                    path: sdk/composio/js/index/classes/OpenAIToolSet.mdx
+                  - page: LangGraphToolSet
+                    path: sdk/composio/js/index/classes/LangGraphToolSet.mdx
+                  - page: LangchainToolSet
+                    path: sdk/composio/js/index/classes/LangchainToolSet.mdx
+                  - page: ComposioToolSet
+                    path: sdk/composio/js/index/classes/ComposioToolSet.mdx
+                  - page: ConnectionRequest
+                    path: sdk/composio/js/index/classes/ConnectionRequest.mdx
+                  - page: CloudflareToolSet
+                    path: sdk/composio/js/index/classes/CloudflareToolSet.mdx
+                  - page: ComposioError
+                    path: sdk/composio/js/index/classes/ComposioError.mdx
+              - section: Variables
+                contents:
+                  - page: COMPOSIO_SDK_ERROR_CODES
+                    path: sdk/composio/js/index/variables/COMPOSIO_SDK_ERROR_CODES.mdx
+                  - page: ACTIONS
+                    path: sdk/composio/js/index/variables/ACTIONS.mdx
+                  - page: APPS
+                    path: sdk/composio/js/index/variables/APPS.mdx
