@@ -1,0 +1,134 @@
+---
+title: "Custom Tools"
+subtitle: "Learn how to build custom tools that use Composio Auth"
+---
+
+You can create custom tools for Composio apps. One might need this to call API endpoints in third party applications which are private or those which aren't supported by the Composio's Toolset at the moment. 
+
+The key concept is that you define an `execute_request` callable that handles authenticated API calls. 
+
+This callable uses Composio's authentication to make API requests to third-party services.
+
+The callable can be configured to use your own custom authentication parameters as well
+
+| Parameter | Description |
+|-----------|-------------|
+| `endpoint` | Endpoint URL path. The base URL for the app will be prepended automatically |
+| `method` | HTTP method for the request |
+| `body` | Request body payload |
+| `parameters` | Custom authentication parameters |
+
+This allows you to securely make authenticated API calls while leveraging Composio's authentication handling.
+
+## Creating a custom tool
+<CodeGroup>
+```python Python wordWrap maxLines=100
+import typing as t
+from composio_openai import ComposioToolSet, action
+
+toolset = ComposioToolSet()
+
+
+@action(toolname="github")
+def my_custom_action(
+    param_1: str,
+    param_2: str,
+    execute_request: t.Callable,
+) -> dict:
+    """
+    Action Description
+
+    :param param_1: Parameter 1 description
+    :param param_2: Parameter 2 description
+    :return content: Return content description
+    """
+    response = execute_request(
+        endpoint="/user",
+        method="GET",
+        body={},
+        parameters=[],  # custom authentication parameters
+    )
+    return response
+
+
+tools = toolset.get_tools(actions=[my_custom_action])
+```
+
+
+```typescript Typescript wordWrap maxLines=100
+import { OpenAIToolSet } from "composio-core";
+import { z } from "zod";
+
+const openAIToolset = new OpenAIToolSet();
+
+const action = await openAIToolset.createAction({
+    actionName: "my_custom_action",
+    toolName: "github",
+    description: "Action Description",
+    inputParams: z.object({
+        param1: z.string().describe("Parameter 1 description"),
+        param2: z.string().describe("Parameter 2 description"),
+    }),
+    callback: async (inputParams, authCredentials, executeRequest) => {
+        try {
+            const res = await executeRequest({
+                endpoint: "/data", //or any other endpoint path
+                method: "GET", //or any other request method
+                parameters: [], //custom authentication parameters
+                body: {} //request body
+            });
+            return {
+                data: res,
+                successful: true
+            };
+        } catch (e) {
+            console.error(e);
+            return {
+                data: {},
+                successful: false
+            };
+        }
+    },
+})
+
+const tools = await openAIToolset.getTools({
+    actions: ["my_custom_action"]
+});
+```
+</CodeGroup>
+
+
+## Create a custom tool with custom auth
+<Note>Use this when rolling your own auth!</Note>
+
+Composio tools can also be executed when rolling your own auth.
+The `parameters` field in `execute_request` supports providing the key, value as well as the placement of the auth parameter through the `in_` field.
+
+The following table shows the supported parameter placements:
+
+| Placement | Description |
+|-----------|-------------|
+| header | Places the parameter in the request headers |
+| path | Places the parameter in the URL path |
+| query | Places the parameter in the URL query string |
+| subdomain | Places the parameter in the subdomain of the URL |
+| metadata | Places the parameter in the request metadata |
+
+For example, to add an Authorization Bearer token in the headers, you would specify the parameters as:
+<CodeGroup>
+```python Python {23-26} maxLines=100
+parameters=[
+    {"name": "Authorization", "value": "Bearer <bearer_token>", "in_": "header"}
+]
+```
+
+```TypeScript TypeScript {21-23}
+parameters: [
+  {
+    name: "Authorization",
+    in: "header",
+    value: "Bearer <bearer_token>",
+  },
+];
+```
+</CodeGroup>

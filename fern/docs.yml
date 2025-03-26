@@ -185,12 +185,11 @@ tabs:
     slug: frameworks
     skip-slug: true
     icon: puzzle-piece
-  examples:
-    display-name: Examples
-    slug: examples
+  tools:
+    display-name: Tools
+    slug: tools
     skip-slug: true
-    icon: code
-
+    icon: puzzle-piece
 
 navigation:
   - tab: docs
@@ -212,6 +211,8 @@ navigation:
             path: tool-calling/tool-calling.mdx
           - page: Processing Tools
             path: tool-calling/processing-tools.mdx
+          - page: Custom Tools
+            path: tool-calling/custom-tools.mdx
           - page: Miscellaneous
             path: tool-calling/miscellaneous.mdx
 
@@ -326,7 +327,6 @@ navigation:
             path: frameworks/together.mdx
             slug: together
 
-
   - tab: api-reference
     layout:
       - api: API Reference
@@ -422,3 +422,12 @@ navigation:
                     path: sdk/composio/js/index/variables/ACTIONS.mdx
                   - page: APPS
                     path: sdk/composio/js/index/variables/APPS.mdx
+
+  - tab: tools
+    layout:
+      - section: Tools
+        contents:
+          - page: GitHub
+            path: tools/github.mdx
+          - page: Airtable
+            path: tools/airtable.mdx
