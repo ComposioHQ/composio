@@ -1,6 +1,6 @@
 # Game Builder Agent Guide
 
-This guide provides detailed steps to create a Game Builder Agent that leverages Composio, agentic frameworks such as LlamaIndex and GPT to create a Game Builder agent. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Game Builder Agent that leverages Gemini 2.5 and Composio to create a Game Builder agent. Ensure you have Python 3.8 or higher installed.
 
 
 ## Steps to Run
@@ -25,6 +25,6 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/python-examples/advanced_agents/game_builder/main.py
+python main.py
 ```
 
