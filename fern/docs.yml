@@ -325,7 +325,9 @@ navigation:
           - page: Together
             path: frameworks/together.mdx
             slug: together
-
+          - page: Mastra
+            path: frameworks/mastra.mdx
+            slug: mastra
 
   - tab: api-reference
     layout:
