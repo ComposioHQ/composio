@@ -35,8 +35,14 @@ config = types.GenerateContentConfig(
     You are a game intern, you're given the instructions from a game dev, get the code from the instructions, you just have to implement it in a file and run it.
     Use the Shell to execute the code.
     """,
-
-     
+    tools=toolset.get_tools(  # type: ignore
+        actions=[
+            Action.FILETOOL_CREATE_FILE,
+            Action.FILETOOL_EDIT_FILE, 
+            Action.SHELLTOOL_CREATE_SHELL,
+            Action.SHELLTOOL_EXEC_COMMAND
+        ]
+    ),
 )
 
 chat = client.chats.create(model="gemini-2.0-flash-lite", config=config)
