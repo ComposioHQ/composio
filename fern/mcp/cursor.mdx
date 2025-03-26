@@ -38,13 +38,13 @@ Composio MCP supports two authentication methods:
 
 ### OAuth Authentication
 
-1. **Connection Check**
+1. **Connection Check:**
 Ask the LLM if there is any active connection with the said app.
-2. **Initiate Connection**
+2. **Initiate Connection:**
 If no active connection exists, ask the LLM to initiate a connection.
-3. **Complete Authentication**
+3. **Complete Authentication:**
 Click the provided authentication link and complete the OAuth flow in your browser.
-4. **Execute Actions**
+4. **Execute Actions:**
 Once authenticated, the LLM can execute authorized actions.
 
 <Frame caption="OAuth Authentication in Cursor">
@@ -53,13 +53,13 @@ Once authenticated, the LLM can execute authorized actions.
 
 ### API Key Authentication
 
-1. **Connection Verification**
+1. **Connection Verification:**
 Ask the LLM if there is any active connection with the said app.
-2. **Initiate Connection**
+2. **Initiate Connection:**
 If no active connection exists, ask the LLM to initiate a connection.
-3. **Request API Key**
+3. **Request API Key:**
 The LLM initiates a connection and prompts for your API key.
-4. **Enter Credentials**
+4. **Enter Credentials:**
 Paste your API key when prompted in the chat interface.
     
     <Note>
@@ -69,7 +69,7 @@ Paste your API key when prompted in the chat interface.
 5. Execute actions
 After successful authentication, the tool is ready for use.
 
-## Quick Troubleshooting
+<Accordion title="Troubleshooting">
 
 ### 1. Missing Authentication Link
 
@@ -87,6 +87,7 @@ If the LLM skips connection verification and starts executing tools:
 <Info>
 Important: We are actively working on improving the tool execution flow. These troubleshooting steps are temporary solutions to help you get started.
 </Info>
+</Accordion>
 
 ## Best Practices
 

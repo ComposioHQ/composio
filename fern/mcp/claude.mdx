@@ -11,19 +11,19 @@ This guide covers installation, authentication flows, and troubleshooting for MC
 ## Installation
 
 1. **Check NodeJS Installation**
-Verify NodeJS is installed on your system: `node -v`
+    - Verify NodeJS is installed on your system: `node -v`
     
-    If not installed, download from [nodejs.org](https://nodejs.org/).
+    - If not installed, download from [nodejs.org](https://nodejs.org/).
     
 2. **Install MCP Tools**
-Paste the command generated from the [mcp.composio.dev](http://mcp.composio.dev):
+    - Paste the command generated from the [mcp.composio.dev](http://mcp.composio.dev):
 
     ```bash
     Your generated code
     ```
 
 3. **Verify Installation**
-Restart the Claude Desktop app and check installed tools by clicking the "hammer" icon in the Claude chat interface.
+    - Restart the Claude Desktop app and check installed tools by clicking the "hammer" icon in the Claude chat interface.
 
 <Frame caption="Claude MCP Installation">
   <video src="../assets/videos/mcp-claude.mp4" controls width="100%"></video>
@@ -35,13 +35,13 @@ Composio MCP supports two authentication methods:
 
 ### OAuth Authentication
 
-1. **Connection Check**
+1. **Connection Check:**
 Ask the LLM if there is any active connection with the said app.
-2. **Initiate Connection**
+2. **Initiate Connection:**
 If no active connection exists, ask the LLM to initiate a connection.
-3. **Complete Authentication**
+3. **Complete Authentication:**
 Click the provided authentication link and complete the OAuth flow in your browser.
-4. **Execute Actions**
+4. **Execute Actions:**
 Once authenticated, the LLM can execute authorized actions.
 
 <Frame caption="OAuth Authentication in Claude">
@@ -50,13 +50,13 @@ Once authenticated, the LLM can execute authorized actions.
 
 ### API Key Authentication
 
-1. **Connection Verification**
+1. **Connection Verification:**
 Ask the LLM if there is any active connection with the said app.
-2. **Initiate Connection**
+2. **Initiate Connection:**
 If no active connection exists, ask the LLM to initiate a connection.
-3. **Request API Key**
+3. **Request API Key:**
 The LLM initiates a connection and prompts for your API key.
-4. **Enter Credentials**
+4. **Enter Credentials:**
 Paste your API key when prompted in the chat interface.
     
     <Note>
@@ -66,7 +66,7 @@ Paste your API key when prompted in the chat interface.
 5. Execute actions
 After successful authentication, the tool is ready for use.
 
-## Quick Troubleshooting
+<Accordion title="Troubleshooting">
 
 ### 1. Missing Authentication Link
 
@@ -84,3 +84,4 @@ If the LLM skips connection verification and starts executing tools:
 <Info>
 Important: We are actively working on improving the tool execution flow. These troubleshooting steps are quick solutions to help you get started.
 </Info>
+</Accordion>
