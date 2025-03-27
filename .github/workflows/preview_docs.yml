@@ -67,4 +67,4 @@ jobs:
             - name: Comment URL in PR
               uses: thollander/actions-comment-pull-request@v2.4.3
               with:
-                  filePath: preview_url.txt
+                  filePath: fern/preview_url.txt
