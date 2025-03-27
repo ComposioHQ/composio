@@ -1,16 +1,22 @@
 [project]
 name = "fern"
 version = "0.1.0"
-description = "Add your description here"
+description = "Documentation generators for Composio"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "composio-openai>=0.7.11",
     "python-dotenv>=1.1.0",
+    "inflection>=0.5.1",
+    "click>=8.1.7",
+    "ruamel-yaml>=0.18.10",
+    "typing-extensions>=4.13.0",
 ]
 
-[dependency-groups]
-dev = [
-    "ipykernel>=6.29.5",
-    "ipywidgets>=8.1.5",
-]
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
