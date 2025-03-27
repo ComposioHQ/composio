@@ -12,6 +12,8 @@ jobs:
     defaults:
       run:
         working-directory: ./fern
+      env:
+        COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
