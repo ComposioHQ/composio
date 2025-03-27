@@ -1095,7 +1095,8 @@ export type TestConnector = {
     | "NO_AUTH"
     | "BASIC_WITH_JWT"
     | "COMPOSIO_LINK"
-    | "CALCOM_AUTH";
+    | "CALCOM_AUTH"
+    | "BILLCOM_AUTH";
 };
 
 /**
@@ -1112,7 +1113,8 @@ export type authScheme =
   | "NO_AUTH"
   | "BASIC_WITH_JWT"
   | "COMPOSIO_LINK"
-  | "CALCOM_AUTH";
+  | "CALCOM_AUTH"
+  | "BILLCOM_AUTH";
 
 export type AppInfoResponseDto = {
   /**
@@ -3622,7 +3624,8 @@ export type ComposioSearchConfigDTO = {
     | "NO_AUTH"
     | "BASIC_WITH_JWT"
     | "COMPOSIO_LINK"
-    | "CALCOM_AUTH";
+    | "CALCOM_AUTH"
+    | "BILLCOM_AUTH";
 };
 
 export type ConnectorSearchFilterDTOV2 = {
@@ -3679,7 +3682,8 @@ export type ComposioCreateConfigDTO = {
     | "NO_AUTH"
     | "BASIC_WITH_JWT"
     | "COMPOSIO_LINK"
-    | "CALCOM_AUTH";
+    | "CALCOM_AUTH"
+    | "BILLCOM_AUTH";
   /**
    * Authentication configuration
    */

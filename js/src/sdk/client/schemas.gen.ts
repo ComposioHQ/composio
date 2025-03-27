@@ -1515,6 +1515,7 @@ export const $TestConnector = {
         "BASIC_WITH_JWT",
         "COMPOSIO_LINK",
         "CALCOM_AUTH",
+        "BILLCOM_AUTH"
       ],
       type: "string",
       description: "The auth scheme of the test connector",
@@ -5230,6 +5231,7 @@ export const $ComposioSearchConfigDTO = {
         "BASIC_WITH_JWT",
         "COMPOSIO_LINK",
         "CALCOM_AUTH",
+        "BILLCOM_AUTH"
       ],
       description: "Authentication scheme to use",
     },
@@ -5306,6 +5308,7 @@ export const $ComposioCreateConfigDTO = {
         "BASIC_WITH_JWT",
         "COMPOSIO_LINK",
         "CALCOM_AUTH",
+        "BILLCOM_AUTH"
       ],
       description: "Authentication scheme to use",
     },
