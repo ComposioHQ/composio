@@ -61,7 +61,7 @@
             </li>
         </ul>
     </li>
-    <li>全面的框架支持，包括 OpenAI、 Groq、Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini 以及<a
+    <li>全面的框架支持，包括 OpenAI、 Groq、Claude、LlamaIndex、Langchain、CrewAI、AG2 (Formerly AutoGen)、Gemini 以及<a
             href="https://docs.composio.dev/framework">更多</a></li>
     <li>支持多种协议 (OAuth、API 密钥、Basic JWT) 的托管身份验证</li>
     <li>通过优化设计将工具调用准确率提高高达 40%</li>
