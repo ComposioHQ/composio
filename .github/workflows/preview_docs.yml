@@ -23,7 +23,7 @@ jobs:
               run: uv python install
 
             - name: Install Python Dependencies
-              run: uv pip install -e .
+              run: uv sync
 
             - name: Generate Python SDK documentation
               run: python generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
