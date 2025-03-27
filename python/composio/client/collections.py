@@ -286,19 +286,14 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
         # Apply parameter normalization if possible
-        if params:
-            try:
-                # Get integration details to extract app name and auth mode
-                integration = self.client.integrations.get(id=integration_id)
-                if integration:
-                    app_name = integration.appName
-                    auth_mode = integration.authScheme
+        if params is not None:
+            # Get integration details to extract app name and auth mode
+            integration = self.client.integrations.get(id=integration_id)
+            if integration is not None:
+                auth_mode = integration.authScheme
 
-                    # Normalize parameters using the utility function
-                    params = normalize_api_key_params(app_name, params, auth_mode)
-            except Exception:
-                # If we can't get the app name, proceed without normalizing
-                pass
+                # Normalize parameters using the utility function
+                params = normalize_api_key_params(params, auth_mode)
 
         response = self._raise_if_required(
             response=self.client.http.post(
@@ -1551,23 +1546,18 @@ class Integrations(Collection[IntegrationModel]):
         :return: Integration model created by the request.
         """
         # Normalize auth parameters if needed
-        if auth_config:
+        if auth_config is not None:
             app_name = None
-            try:
-                # Get app details to extract app name
-                apps_collection = Apps(client=self.client)
-                apps = apps_collection.get()
-                for app in apps:
-                    if app.appId == app_id:
-                        app_name = app.name
-                        break
-            except Exception:
-                # If we can't find the app name, proceed without normalizing
-                pass
+            apps_collection = Apps(client=self.client)
+            apps = apps_collection.get()
+            for app in apps:
+                if app.appId == app_id:
+                    app_name = app.name
+                    break
 
             # Normalize auth parameters if app name was found
-            if app_name:
-                auth_config = normalize_api_key_params(app_name, auth_config, auth_mode)
+            if app_name is not None:
+                auth_config = normalize_api_key_params(auth_config, auth_mode)
 
         request = {
             "appId": app_id,

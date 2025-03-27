@@ -443,14 +443,12 @@ class Entity:
         """
         # Normalize auth_config parameters if needed
         if auth_config:
-            auth_config = normalize_api_key_params(
-                str(app_name), auth_config, auth_mode
-            )
+            auth_config = normalize_api_key_params(auth_config, auth_mode)
 
         # Normalize connected_account_params if present
         if connected_account_params:
             connected_account_params = normalize_api_key_params(
-                str(app_name), connected_account_params, auth_mode
+                connected_account_params, auth_mode
             )
 
         app = self.client.apps.get(name=App(app_name).slug)

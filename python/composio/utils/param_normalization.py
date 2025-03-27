@@ -13,8 +13,8 @@ LEGACY_API_KEY_PARAMS = ["Base64_Encode", "admin_api_access_token", "apikey"]
 
 
 def normalize_api_key_params(
-    app_name: str, params: t.Optional[t.Dict], auth_mode: t.Optional[str] = None
-) -> t.Optional[t.Dict]:
+    params: t.Optional[t.Dict[str, t.Any]], auth_mode: t.Optional[str] = None
+) -> t.Optional[t.Dict[str, t.Any]]:
     """
     Normalize authentication parameters by mapping legacy parameter names to standardized ones.
 
@@ -32,6 +32,9 @@ def normalize_api_key_params(
 
     # Early exit 1: Not API_KEY auth mode or empty params
     if not params:
+        return params
+
+    if auth_mode is None:
         return params
 
     if auth_mode is not None and auth_mode != "API_KEY":
