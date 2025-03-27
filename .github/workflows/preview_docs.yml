@@ -12,7 +12,7 @@ jobs:
         defaults:
           run:
             working-directory: ./fern
-          env:
+        env:
             COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
 
         steps:

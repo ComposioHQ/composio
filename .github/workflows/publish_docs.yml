@@ -12,7 +12,7 @@ jobs:
     defaults:
       run:
         working-directory: ./fern
-      env:
+    env:
         COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
     steps:
       - name: Checkout repository
@@ -26,8 +26,8 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-        uv sync
-        composio apps generate-types
+          uv sync
+          composio apps generate-types
 
       - name: Generate Python SDK documentation
         run: uv run generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
