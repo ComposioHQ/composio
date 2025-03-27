@@ -6,7 +6,8 @@ docs: sdk-generate docs-dev
 # Generate API documentation
 sdk-generate:
 	@echo "Generating API documentation..."
-	python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+	python generators/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+	bun run typedoc --plugin typedoc-plugin-markdown js/src/index.ts js/src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
 
 # Run the docs development server (with generation)
 docs-dev: sdk-generate

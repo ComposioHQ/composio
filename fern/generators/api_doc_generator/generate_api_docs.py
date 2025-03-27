@@ -17,7 +17,7 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.api_doc_generator.main import main
+from api_doc_generator.main import main
 
 
 if __name__ == "__main__":
