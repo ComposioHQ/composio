@@ -26,7 +26,7 @@ jobs:
               run: uv sync
 
             - name: Generate Python SDK documentation
-              run: python generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
+              run: uv run generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v1
@@ -40,7 +40,7 @@ jobs:
               run: bun run typedoc --plugin typedoc-plugin-markdown ../js/src/index.ts ../js/src/sdk/index.ts --out ./sdk/composio/js --skipErrorChecking
 
             - name: Generate Tool Documentation
-              run: python generators/tool_doc_generator/main.py --workers 10
+              run: uv run generators/tool_doc_generator/main.py --workers 10
 
             - name: Install Fern
               run: npm install -g fern-api
