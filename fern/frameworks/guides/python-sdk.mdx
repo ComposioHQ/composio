@@ -1,0 +1,470 @@
+---
+title: Python SDK Integration
+description: Learn how to customize Composio to emit tools for a framework
+---
+
+
+This guide walks you through the process of integrating third-party Python frameworks with Composio. By creating these integrations, you enable Composio's tools to work seamlessly with popular AI/ML frameworks.
+
+## Understanding the integration pattern
+
+When integrating a Python SDK with Composio, you're essentially creating a bridge between:
+
+1. *Composio's tool schema and execution model* - How Composio represents and calls tools
+2. *The target framework's tool representation* - How the framework defines and calls tools
+
+<Info>
+  An integration primarily handles the transformation of tool schemas and execution flows between the two systems, while preserving all the capabilities and data.
+</Info>
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- Basic understanding of Python and object-oriented programming
+- Familiarity with the Composio platform
+- Knowledge of the target framework you want to integrate
+- Python 3.9+ installed on your development machine
+
+## Step-by-step integration process
+
+<Steps>
+<Step>
+### Setup your environment
+First, fork and clone the Composio repository:
+```bash
+git clone https://github.com/ComposioHQ/composio.git
+```
+Then navigate to the plugins directory:
+```bash
+cd composio/python/plugins
+```
+
+Create a new directory for your integration:
+
+```bash
+mkdir composio_yourframework
+cd composio_yourframework
+```
+</Step>
+
+<Step>
+### Create the basic structure
+
+Every integration requires at least these files:
+
+- `__init__.py` - Exports your module's components
+- `toolset.py` - Contains the core integration logic
+- `setup.py` - Package configuration for installation
+- `README.md` - Documentation for your integration
+
+</Step>
+
+<Step>
+### Implement the `toolset.py` File
+
+This is the heart of your integration. Here's a template to follow:
+
+```python toolset.py
+import typing as t
+from typing import List, cast
+
+# Import from your target framework
+from targetframework import FrameworkTool, SomeFrameworkClass
+
+# Import from Composio
+from composio import ActionType, AppType, TagType
+from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.toolset import ProcessorsType
+from composio.utils.pydantic import parse_pydantic_error
+from composio.utils.shared import get_signature_format_from_schema_params
+
+class ComposioToolSet(BaseComposioToolSet):
+    """
+    Composio toolset for [Your Framework] integration.
+    
+    Add usage examples here to help users understand how to use your integration.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        # Initialize with your framework-specific settings
+        super().__init__(*args, **kwargs, 
+                         runtime="your_framework_name",
+                         description_char_limit=1024,
+                         action_name_char_limit=64)
+    
+    def _wrap_tool(
+        self,
+        schema: t.Dict[str, t.Any],
+        entity_id: t.Optional[str] = None,
+    ) -> FrameworkTool:
+        """Convert a Composio tool schema into a framework-specific tool."""
+        action = schema["name"]
+        description = schema["description"]
+        schema_params = schema["parameters"]
+        
+        # Implementation specific to your framework
+        # This is where you adapt the Composio schema to your framework's format
+        
+        # Example implementation (modify for your framework):
+        tool = FrameworkTool(
+            name=action,
+            description=description,
+            # Transform schema_params to match your framework's format
+            parameters=self._adapt_parameters(schema_params),
+            # Create a wrapper function that calls Composio's execute_action
+            function=lambda **kwargs: self.execute_action(
+                action=action,
+                params=kwargs,
+                entity_id=entity_id or self.entity_id,
+            )
+        )
+        
+        return tool
+    
+    def get_tools(
+        self,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
+        entity_id: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
+    ) -> List[FrameworkTool]:
+        """
+        Get Composio tools as your framework's tool objects.
+        
+        Args:
+            actions: List of specific actions to get
+            apps: List of apps to get tools from
+            tags: Filter tools by tags
+            entity_id: Entity ID to use for tool execution
+            processors: Optional request/response processors
+            check_connected_accounts: Whether to check for connected accounts
+            
+        Returns:
+            A list of framework-compatible tools
+        """
+        # Validate and prepare
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._processor_helpers.merge_processors(processors)
+        
+        # Get action schemas from Composio
+        tools = [
+            self._wrap_tool(
+                schema=tool.model_dump(exclude_none=True),
+                entity_id=entity_id or self.entity_id,
+            )
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
+            )
+        ]
+        
+        return tools
+```
+</Step>
+
+<Step>
+### Create the `__init__.py` File
+
+This file exports the necessary components:
+
+```python __init__.py
+from composio import Action, App, Tag, Trigger, WorkspaceType, action
+
+from composio_yourframework.toolset import ComposioToolSet
+
+__all__ = (
+    "Action",
+    "App",
+    "Tag",
+    "Trigger",
+    "WorkspaceType",
+    "action",
+    "ComposioToolSet",
+)
+```
+</Step>
+
+<Step>
+### Create a demo file
+
+Create a demonstration file that shows your integration in action:
+
+```python framework_demo.py
+"""
+Example demonstrating how to use the [Your Framework] integration with Composio.
+"""
+
+import os
+import dotenv
+
+# Import from your target framework
+from targetframework import Agent, Runner
+
+# Import from your integration
+from composio_yourframework import App, Action, ComposioToolSet
+
+# Set up environment
+dotenv.load_dotenv()
+
+def main():
+    # Initialize your toolset
+    toolset = ComposioToolSet()
+    
+    # Get specific tools
+    tools = toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+    
+    # Create a framework agent with the tools
+    agent = Agent(
+        name="Demo Agent",
+        tools=tools,
+        # Other framework-specific parameters
+    )
+    
+    # Run the agent
+    result = Runner.run(
+        agent, 
+        "Perform an action using the integrated tools"
+    )
+    
+    print(result)
+
+if __name__ == "__main__":
+    main()
+```
+
+</Step>
+
+<Step>
+### Create the `setup.py` File
+
+This configures your package for installation:
+
+```python setup.py
+"""
+Setup configuration for Composio [Your Framework] plugin
+"""
+
+from pathlib import Path
+from setuptools import setup, find_packages
+
+setup(
+    name="composio_yourframework",
+    version="0.1.0",
+    author="Your Name",
+    author_email="your.email@example.com",
+    description="Use Composio with [Your Framework]",
+    long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
+    url="https://github.com/ComposioHQ/composio",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires=">=3.9,<4",
+    packages=find_packages(),
+    install_requires=[
+        "composio_core>=0.7.0,<0.8.0",
+        "your-framework>=X.Y.Z",  # Replace with actual dependency
+        "pydantic>=2.0.0",
+        "typing-extensions>=4.0.0",
+    ],
+    include_package_data=True,
+)
+```
+</Step>
+</Steps>
+
+## Code Standards and Quality
+
+<Info>
+  For comprehensive guidance on code formatting, linting, testing, and development practices, please refer to the `Development.md` file in the Python project's docs directory. This file contains detailed instructions on environment setup, code conventions, and all the commands needed for maintaining code quality.
+</Info>
+
+## Common challenges and solutions
+
+When creating an integration, you might encounter these challenges:
+
+<Warning>
+  Pay special attention to data type conversions between systems. This is the most common source of bugs in integrations.
+</Warning>
+
+### Type compatibility issues
+
+**Problem**: The framework expects different data types than what Composio provides.
+
+**Solution**: 
+```python
+def _adapt_parameters(self, schema_params):
+    """Convert Composio parameter schema to framework-specific format"""
+    # Implement type conversions here
+    return converted_schema
+```
+
+### Schema format differences
+
+**Problem**: The framework has a different JSON schema format than Composio.
+
+**Solution**: Add required properties to match the framework's expectations. For example:
+
+```python
+# Adding additionalProperties: false for OpenAI-compatible frameworks
+modified_schema = schema_params.copy()
+modified_schema["additionalProperties"] = False
+```
+
+### String vs. object returns
+
+**Problem**: Many frameworks expect string outputs from tool calls, while you want to preserve structured data.
+
+**Solution**: Use JSON serialization to preserve structure:
+
+```python
+import json
+
+# When returning tool results
+if isinstance(result, dict):
+    return json.dumps(result)  # For frameworks that expect strings
+else:
+    return json.dumps({"result": result})
+```
+
+### Tool naming restrictions
+
+**Problem**: The framework has restrictions on tool names or descriptions.
+
+**Solution**: Implement transformation logic:
+
+```python
+def _sanitize_tool_name(self, name):
+    """Ensure tool name meets framework requirements"""
+    # Replace invalid characters, truncate if needed, etc.
+    return sanitized_name
+```
+
+## Real-world example: OpenAI Agents Integration
+
+Below is a concrete example of integrating the OpenAI Agents framework with Composio:
+
+<Note>
+  The OpenAI Agents framework expects strings for tool outputs, has specific JSON schema requirements, and needs custom wrapping of tool functions.
+</Note>
+
+Here's the key implementation for `_wrap_tool` in this integration:
+
+```python
+def _wrap_tool(
+    self,
+    schema: t.Dict[str, t.Any],
+    entity_id: t.Optional[str] = None,
+) -> FunctionTool:
+    """Wraps composio tool as OpenAI Agents FunctionTool object."""
+    action = schema["name"]
+    description = schema["description"]
+    schema_params = schema["parameters"]
+    
+    # Create a function that accepts explicit JSON string for parameters
+    def execute_action_wrapper(ctx, args_json):
+        """Execute Composio action with the given arguments."""
+        try:
+            # Parse the args_json into a dict
+            import json
+            kwargs = json.loads(args_json) if args_json else {}
+            
+            result = self.execute_action(
+                action=action,
+                params=kwargs,
+                entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
+            )
+            
+            # Serialize result to JSON string for OpenAI API
+            if not isinstance(result, dict):
+                result_dict = {"result": result}
+            else:
+                result_dict = result
+            
+            return json.dumps(result_dict)
+            
+        except Exception as e:
+            # Handle errors consistently
+            return json.dumps({
+                "successful": False, 
+                "error": str(e),
+                "data": None,
+            })
+    
+    # Add required schema properties for OpenAI
+    modified_schema = schema_params.copy()
+    modified_schema["additionalProperties"] = False
+    
+    # Create a framework-specific tool
+    tool = FunctionTool(
+        name=action,
+        description=description,
+        params_json_schema=modified_schema,
+        on_invoke_tool=execute_action_wrapper,
+        strict_json_schema=True,
+    )
+    
+    return tool
+```
+
+## Testing your integration
+
+Always test your integration thoroughly:
+
+1. **Unit Tests**: Test individual components like parameter transformation
+2. **Integration Tests**: Test the full flow from Composio to framework and back
+3. **End-to-End Testing**: Run a complete scenario with a real API call
+
+Example test structure:
+
+```python
+def test_schema_transformation():
+    """Test that Composio schemas are correctly transformed to framework schemas"""
+    toolset = ComposioToolSet()
+    composio_schema = {...}  # Sample Composio schema
+    framework_tool = toolset._wrap_tool(composio_schema)
+    
+    # Assert framework tool has expected properties
+    assert framework_tool.name == composio_schema["name"]
+    assert framework_tool.description == composio_schema["description"]
+    # ... more assertions
+```
+
+## Best practices for SDK integration
+
+- **Preserve Data Fidelity**: Ensure data structures are properly converted between systems
+- **Handle Errors Gracefully**: Provide clear error messages and follow both systems' error patterns
+- **Document Edge Cases**: Note any limitations or special considerations in your README
+- **Type Safety**: Use proper type annotations and handle type conversions carefully
+- **Minimal Dependencies**: Don't add unnecessary dependencies to your integration
+- **Comprehensive Examples**: Include examples for all common use cases
+
+<Success>
+  The best integrations are those that feel native to both systems, requiring minimal special handling by users.
+</Success>
+
+## Contribution and maintenance
+
+After creating your integration:
+
+1. **Documentation**: Write clear documentation with examples
+2. **Tests**: Ensure comprehensive test coverage
+3. **Pull Request**: Submit a PR to the Composio repository
+4. **Maintenance**: Monitor compatibility with new versions of both Composio and the target framework
+
+## Conclusion
+
+Creating a Python SDK integration for Composio allows users to leverage Composio's rich tool ecosystem within their preferred frameworks. By following this guide, you can create robust, type-safe, and user-friendly integrations that enhance the power of both systems.
+
+Remember that a good integration should feel natural to users of both Composio and the target framework, requiring minimal adaptation of their existing code.

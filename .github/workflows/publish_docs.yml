@@ -9,15 +9,48 @@ jobs:
   run:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/master') && github.run_number > 1 }}
+    defaults:
+      run:
+        working-directory: ./fern
+    env:
+        COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install Python Dependencies
+        run: |
+          uv sync
+          uv run composio apps generate-types
+
+      - name: Generate Python SDK documentation
+        run: uv run generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install TypeDoc dependencies
+        run: bun install typedoc typedoc-plugin-markdown
+
+      - name: Generate TypeScript SDK documentation
+        run: bun run typedoc --plugin typedoc-plugin-markdown ../js/src/index.ts ../js/src/sdk/index.ts --out ./sdk/composio/js --skipErrorChecking
+
+      - name: Generate Tool Documentation
+        run: uv run generators/tool_doc_generator/main.py --workers 10
 
       - name: Install Fern
         run: npm install -g fern-api
 
       - name: Pull Latest OpenAPI Specification
-        run: sh fern/scripts/pull-openapi-spec.sh
+        run: sh scripts/pull-openapi-spec.sh
 
       - name: Publish Docs
         env:

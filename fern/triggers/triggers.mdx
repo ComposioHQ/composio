@@ -25,7 +25,7 @@ Composio supports two primary methods for delivering these payloads:
 ## Managing triggers
 Before proceeding, ensure you've created an integration and established a connection to your external account (e.g., Slack, GitHub).
 
-<Card title="Adding Integrations" href="/authentication/overview.mdx" icon="fa-solid fa-plug">
+<Card title="Adding Integrations" href="/auth/introduction" icon="fa-solid fa-plug">
 You need to have an integration set up in order to listen on it's triggers. Learn how to set it up here.
 </Card>
 
@@ -77,14 +77,9 @@ console.log(res.status);
 </Tab>
 <Tab title="CLI">
 In the command-line run:
-<CodeGroup>
-```uvx uvx
-uvx --from composio-core composio triggers add SLACK_RECEIVE_MESSAGE
+```bash
+composio triggers add SLACK_RECEIVE_MESSAGE
 ```
-```npx npx
-npx composio-core triggers add SLACK_RECEIVE_MESSAGE
-```
-</CodeGroup>
 </Tab>
 <Tab title="Dashboard">
 Head to the [Slack app](https://app.composio.dev/app/slack) in the dashboard and enable the "New Message Recieved" trigger
