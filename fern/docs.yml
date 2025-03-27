@@ -220,23 +220,27 @@ navigation:
         contents:
           - page: Using Triggers
             path: triggers/triggers.mdx
-      - section: Resources
-        icon: book
+
+      - section: MCP
+        icon: plug
         contents:
-          - page: Glossary
-            path: resources/glossary.mdx
-            icon: asterisk
-            hidden: true
-          - link: Cursor MCP
-            href: https://composio.notion.site/Cursor-MCP-Docs-1adf261a6dfe80b4ba5fe492bf41441c
-            icon: fa-solid fa-mouse-pointer
-          - link: Claude MCP
-            href: 
-              https://composio.notion.site/Composio-MCP-Integration-for-Claude-1adf261a6dfe80609836e4e5021e9d44
-            icon: asterisk
-          - link: Windsurf MCP
-            href: https://composio.notion.site/Windsurf-1adf261a6dfe80c2b538c6b0a02b44c8
-            icon: fa-solid fa-water
+          - page: Introduction
+            path: mcp/introduction.mdx
+          - page: Cursor
+            path: mcp/cursor.mdx
+          - page: Claude
+            path: mcp/claude.mdx
+          - page: Windsurf
+            path: mcp/windsurf.mdx
+
+      # - section: Resources
+      #   icon: book
+      #   contents:
+      #     - page: Glossary
+      #       path: resources/glossary.mdx
+      #       icon: asterisk
+      #       hidden: true
+
   - tab: frameworks
     layout:
       - section: Model Providers
