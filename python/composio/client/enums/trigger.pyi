@@ -18,6 +18,11 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     @property
     def app(self) -> str: ...
     ASANA_TASK_TRIGGER: "Trigger"
+    CANVAS_ASSIGNMENT_GRADED_TRIGGER: "Trigger"
+    CANVAS_NEW_CANVAS_DISCUSSION_MESSAGE_TRIGGER: "Trigger"
+    CANVAS_NEW_CANVAS_DISCUSSION_TRIGGER: "Trigger"
+    CANVAS_NEW_COURSE_CREATED_TRIGGER: "Trigger"
+    CANVAS_NEW_FILE_UPLOADED_TRIGGER: "Trigger"
     CODA_CODA_DOCUMENT_DELETED: "Trigger"
     CODA_NEW_CODA_DOCUMENT: "Trigger"
     CODA_NEW_CODA_PAGE: "Trigger"
