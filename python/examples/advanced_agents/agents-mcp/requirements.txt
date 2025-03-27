@@ -1,0 +1,5 @@
+openai-agents
+composio-openai-agents
+python-dotenv
+aioconsole
+uv
