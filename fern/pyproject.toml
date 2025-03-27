@@ -11,6 +11,7 @@ dependencies = [
     "click>=8.1.7",
     "ruamel-yaml>=0.18.10",
     "typing-extensions>=4.13.0",
+    "composio-core>=0.7.11",
 ]
 
 [tool.ruff]
