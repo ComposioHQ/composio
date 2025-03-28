@@ -49,7 +49,9 @@ python/swe/agentic
 python/swe/dockerfiles/generated*
 
 fern/sdk/composio/
-fern/tools
+fern/tools/*
+!fern/tools/introduction.mdx
+fern/code
 
 .cursor/*
 
