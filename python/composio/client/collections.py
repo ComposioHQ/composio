@@ -55,6 +55,7 @@ ALL_AUTH_SCHEMES = (
     "GOOGLEADS_AUTH",
     "NO_AUTH",
     "CALCOM_AUTH",
+    "BILLCOM_AUTH"
 )
 AUTH_SCHEME_WITH_INITIATE = (
     "OAUTH2",
@@ -66,6 +67,7 @@ AUTH_SCHEME_WITH_INITIATE = (
     "GOOGLE_SERVICE_ACCOUNT",
     "GOOGLEADS_AUTH",
     "CALCOM_AUTH",
+    "BILLCOM_AUTH"
 )
 AuthSchemeType = t.Literal[
     "OAUTH2",
@@ -78,6 +80,7 @@ AuthSchemeType = t.Literal[
     "GOOGLEADS_AUTH",
     "NO_AUTH",
     "CALCOM_AUTH",
+    "BILLCOM_AUTH"
 ]
 
 
