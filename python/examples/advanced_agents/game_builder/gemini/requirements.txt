@@ -1,0 +1,2 @@
+composio-gemini==0.7.11
+python-dotenv

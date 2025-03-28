@@ -212,7 +212,6 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     NETSUITE: "App"
     NGROK: "App"
     NOTION: "App"
-    NOTITN: "App"
     ONCEHUB: "App"
     ONEPAGE: "App"
     ONE_DRIVE: "App"

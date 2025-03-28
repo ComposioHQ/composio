@@ -1,0 +1,75 @@
+---
+title: Composio MCP with Windsurf
+---
+
+This guide covers installation, authentication flows, and troubleshooting for MCP tools in Windsurf IDE.
+
+## Installation
+
+1. **Check NodeJS Installation**
+    - Verify NodeJS is installed on your system: `node -v`
+    
+    - If not installed, download from [nodejs.org](https://nodejs.org/).
+    
+2. **Install MCP Tools**
+    - Run the following command in your terminal:
+
+    ```bash
+    npx composio-core@rc mcp "https://mcp.composio.dev/notion/RANDOM_SUFFIX" --client windsurf
+    ```
+
+3. **Verify Installation**
+    - After running the command, restart Windsurf to start using the integration.
+
+## Authentication Methods
+
+Composio MCP supports two authentication methods:
+
+### OAuth Authentication
+
+1. **Connection Check:**
+Ask the LLM if there is any active connection with the said app.
+2. **Initiate Connection:**
+If no active connection exists, ask the LLM to initiate a connection.
+3. **Complete Authentication:**
+Click the provided authentication link and complete the OAuth flow in your browser.
+4. **Execute Actions:**
+Once authenticated, the LLM can execute authorized actions.
+
+### API Key Authentication
+
+1. **Connection Verification:**
+Ask the LLM if there is any active connection with the said app.
+2. **Initiate Connection:**
+If no active connection exists, ask the LLM to initiate a connection.
+3. **Request API Key:**
+The LLM initiates a connection and prompts for your API key.
+4. **Enter Credentials:**
+Paste your API key when prompted in the chat interface.
+    
+    <Note>
+    API key entry will be streamlined in future updates.
+    </Note>
+    
+5. Execute actions
+After successful authentication, the tool is ready for use.
+
+<Accordion title="Troubleshooting">
+
+### 1. Missing Authentication Link
+
+If the authentication link doesn't appear in chat:
+
+- Explicitly request the link by asking: "Connect to [App name] first and output the auth link."
+- Or specify: "Run COMPOSIO_INITIATE_CONNECTION for [App name] and output the auth link"
+
+### 2. Connection Verification Issues
+
+If the LLM skips connection verification and starts executing tools:
+
+- Manually request connection initiation: "Run COMPOSIO_INITIATE_CONNECTION for [app name] and provide the authentication link."
+
+<Info>
+We are actively working on improving the tool execution flow. These troubleshooting steps are temporary solutions to help you get started.
+</Info>
+</Accordion>
