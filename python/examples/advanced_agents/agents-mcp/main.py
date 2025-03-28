@@ -5,42 +5,41 @@ import subprocess
 import time
 from typing import Any
 
-from agents import Agent, Runner, gen_trace_id, trace
+from agents import Agent, ComputerTool, Runner, gen_trace_id, trace
 from agents.mcp import MCPServer, MCPServerSse
 from agents.model_settings import ModelSettings
+from altair import Description
 from dotenv import load_dotenv
 from agents import enable_verbose_stdout_logging
 from aioconsole import ainput, aprint
+from computer import LocalPlaywrightComputer as computer
 
 load_dotenv()
 
-async def run(mcp_server_1: MCPServer, mcp_server_2: MCPServer):
+async def run(mcp_server_1: MCPServer, mcp_server_2: MCPServer, user_input: str):
 
-    # Create new agent for news research
-    search_agent = Agent(
+    computer_agent = Agent(
         name="Search Assistant",
         instructions="Use the Search news search MCP action to research and collate latest news.",
-        mcp_servers=[mcp_server_2],
-        model='gpt-4o',
+        tools=[ComputerTool(computer=computer)], # type: ignore
+        model='computer-use-preview',
+        model_settings=ModelSettings(truncation="auto"),
+        
     )
 
-    message = "Research latest news using Search news search MCP action, related to Open Source AI and Closed Source AI, and collate it to send it as morning brief in non markdown format to the user on their slack general channel."
-    #print(f"\n\nRunning: {message}")
-    search_result = await Runner.run(starting_agent=search_agent, input=message)
-    #print(search_result.final_output)
-
-    # Create new agent for sending message to channel
-    message_agent = Agent(
-        name="Message Assistant",
-        instructions="Use Slack tools to send messages to channels.",
+    manus_agent = Agent(
+        name="Personal Assistant",
+        instructions=f"You are an AI Agent that uses the tools available to it to accomplish the task given to you. Don't send messages in markdown format, send it as just well formatted text.",
         mcp_servers=[mcp_server_1],
+        tools=[computer_agent.as_tool(tool_name='browser_agent', tool_description='An Agent that uses the browser to perform tasks')], # type: ignore
         model='gpt-4o',
     )
+    search_result = await Runner.run(starting_agent=manus_agent, input=f"List all actions you have access to")
+    await aprint(search_result.final_output)
 
-    message = f"This is the news collated by the agent: {search_result.final_output}, Send it to the user's #ai-news-updates channel, add @here in the beginning of the message"
-    final_result = await Runner.run(starting_agent=message_agent, input=message)
-    print(final_result.final_output)
-
+    #print(f"\n\nRunning: {message}")
+    search_result = await Runner.run(starting_agent=manus_agent, input=f"This is what the user wants you to do:{user_input}, perform the task and send it on Slack #ai-news-updates channel")
+    await aprint(search_result.final_output)
 
 
 async def main():
@@ -70,8 +69,10 @@ async def main():
             result = await Runner.run(starting_agent=slack_agent, input=message)
             print("Connection Url: ",result.final_output)
             connection_status = await ainput('Are you connected (yes or no)? ')
+
+            user_input = await ainput("What do you want the Agent to do: ")
             if connection_status=='yes':
-                await run(server_1, server_2)
+                await run(server_1, server_2, user_input)
             else:
                 print("Try again")
 
