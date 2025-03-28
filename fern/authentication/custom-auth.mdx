@@ -1,6 +1,6 @@
 ---
-title: Custom Auth
-subtitle: Execute tools with custom auth
+title: Custom Authentication Guide
+subtitle: Learn how to use various authentication methods to connect to your application.
 ---
 
 Composio supports multiple authentication schemes, and a connection can be created with any of these.
@@ -15,96 +15,94 @@ Composio supports multiple authentication schemes, and a connection can be creat
 | **Basic with JWT**  | A hybrid approach that combines basic authentication (username/password) with JWT-based token authentication. |
 | **No Authentication** | Some APIs do not require authentication, allowing open access to endpoints. |
 
+<AccordionGroup>
+<Accordion title="Auth with OAuth 2.0">
 
-## Auth with OAuth 2.0
-To add custom OAuth 2.0 credentials, the `auth_config` parameter needs to be specified with the OAuth *client id* and *client secret* while creating an integration.
-Integration object stores the credentials.
+To add custom OAuth 2.0 credentials, you can specify your own *client id* and *client secret* while [creating an integration](/auth/auth-lifecycle#configuring-an-integration).
 
-A connection request is initiated using the specified integration ID which uses the specified auth OAuth credentials.
+<Frame background="subtle" title="Specifying custom OAuth 2.0 credentials">
+  <img src="../assets/images/integration-step-2-1.png" />
+</Frame>
 
-Once the connection is established, an action can be executed using the connection object.
+<Steps>
+<Step title="Initiate the Connection">
+The first step is to initiate a connection request using your integration ID. This creates a connection request with the OAuth 2.0 credentials you configured.
 
 <CodeGroup>
-```python Python wordWrap maxLines=100 {9-12, 16-18, 23, 32}
+```python Python wordWrap maxLines=100
 from composio_openai import App, ComposioToolSet, Action
 from uuid import uuid4
+import os
 
 toolset = ComposioToolSet()
 
-integration = toolset.create_integration(
-    app=App.GITHUB,
-    auth_mode="OAUTH2",
-    auth_config={
-        "client_id": "12345678",
-        "client_secret": "12345678"
-    },
-)
+# Get the integration ID from environment variables
+integration_id = os.environ["GITHUB_INTEGRATION_ID"]
 
+# Initialize the connection request
 connection_request = toolset.initiate_connection(
-    integration_id=integration.id,
+    integration_id=integration_id,
     entity_id=str(uuid4()),
     auth_scheme="OAUTH2"
 )
-
-print("Connect to GitHub: ", connection_request.redirectUrl)
-
-connection = connection_request.wait_until_active(toolset.client, 10)
-
-tool_res = toolset.execute_action(
-    action=Action.GITHUB_GET_A_PULL_REQUEST,
-    params={
-        "pull_number": 1,
-        "owner": "composiohq",
-        "repo": "agi"
-    },
-    connected_account_id=connection.id
-)
 ```
 
-
-```typescript TypeScript wordWrap maxLines=100 {12-14, 19-21, 26, 37}
+```typescript TypeScript wordWrap maxLines=100
 import { OpenAIToolSet } from "composio-core";
 import { v4 as uuidv4 } from "uuid";
 
 const composioToolset = new OpenAIToolSet();
-
+const integrationId = process.env.GITHUB_INTEGRATION_ID;
 const entity = await composioToolset.getEntity(uuidv4());
 
-const integration = await composioToolset.integrations.create({
-  name: "github-ts",
-  appUniqueKey: "github",
-  authScheme: "OAUTH2",
-  authConfig: {
-    client_id: "123456789", 
-    client_secret: "123456789",
-  },
-});
-
+// Initialize the connection request
 const connectionRequest = await entity.initiateConnection({
   appName: "github",
   authMode: "OAUTH2", 
-  integrationId: integration.id,
+  integrationId: integrationId,
 });
+```
+</CodeGroup>
+</Step>
+<Step title="Display the Redirect URL and Wait for Activation">
+After initiating the connection, you'll receive a redirect URL. This URL should be presented to the user, who needs to complete the OAuth flow by authorizing the application. Once authorized, you can wait for the connection to become active.
 
+<CodeGroup>
+```python Python wordWrap maxLines=100
+# Display the redirect URL for the user to complete OAuth authentication
+print("Connect to GitHub: ", connection_request.redirectUrl)
+
+# Wait for the connection to become active (timeout after 10 minutes)
+connection = connection_request.wait_until_active(toolset.client, 10)
+```
+
+```typescript TypeScript wordWrap maxLines=100
+// Display the redirect URL for the user to complete OAuth authentication
 console.log("Connect to GitHub:", connectionRequest.redirectUrl);
 
+// Wait for the connection to become active
 const connection = await connectionRequest.waitUntilActive();
-
-console.log(connection);
-
-const toolRes = await composioToolset.executeAction({
-  action: "GITHUB_GET_A_PULL_REQUEST",
-  params: {
-    owner: "composiohq",
-    repo: "agi",
-    pull_number: 1,
-  },
-  connectedAccountId: connection.id,
-});
-  ```
+```
 </CodeGroup>
+</Step>
+<Step title="Checking the Connection Status">
+The status can be checked by:
 
-### How to retrieve auth configuration
+<CodeGroup>
+```python Python wordWrap maxLines=100
+print(f"Connection Status: {connection.connectionStatus}")
+```
+
+```typescript TypeScript wordWrap maxLines=100
+console.log(`Connection Status: ${connection.status}`);
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+{/* ### Retrieving Parameters Users Need to Provide
+When creating connections with certain authentication methods, you'll need to determine what specific information to collect from your end users. Different apps require different parameters from users, such as API keys, subdomains, or tokens. The following examples show how to retrieve these required parameters.
+
 <Tabs>
 <Tab title="Code">
 <CodeGroup>
@@ -145,137 +143,31 @@ Here you'll be able to see all the required parameters.
 </Frame>
 
 </Tab>
-</Tabs>
+</Tabs> */}
+</Accordion>
 
-## Auth with Bearer Token
+<Accordion title="Auth with API keys">
+Many applications have API key or token based authentication, in these cases, your users will need to provide the API key, token or other parameters to authenticate and use the service.
 
-Many applications that have OAuth 2.0, also support the user providing their own Bearer token.
-For these, the `auth_config` parameter is not required. However, the user is expected to provide the token in the `connectionParams` parameter.
-
-<CodeGroup>
-```python Python wordWrap maxLines=100 {8-10, 17, 26}
-from composio_openai import Action, App, ComposioToolSet
-from uuid import uuid4
-
-toolset = ComposioToolSet()
-
-integration = toolset.create_integration(app=App.GMAIL, auth_mode="BEARER_TOKEN")
-
-gmail_params = toolset.get_expected_params_for_user(
-    app=App.GMAIL, auth_scheme="BEARER_TOKEN"
-)
-param_key = gmail_params["expected_params"][0].name
-param_value = input(f"Enter the Gmail {param_key}: ")
-
-gmail_connection = toolset.initiate_connection(
-    integration_id=integration.id,
-    entity_id=str(uuid4()),
-    auth_scheme="BEARER_TOKEN",
-    connected_account_params={param_key: param_value},  # This is the token the user will provide
-)
-
-print(f"Connection Status: {gmail_connection.connectionStatus}")
-
-toolset.execute_action(
-    action=Action.GMAIL_FETCH_EMAILS,
-    params={},
-    connected_account_id=gmail_connection.connectedAccountId,
-)
-```
-
-```typescript TypeScript wordWrap maxLines=100 {13-16, 23, 33}
-import { OpenAIToolSet } from "composio-core";
-import { v4 as uuidv4 } from "uuid";
-const composioToolset = new OpenAIToolSet();
-
-const entity = await composioToolset.getEntity(uuidv4());
-
-const integration = await composioToolset.integrations.create({
-  name: "gmail-ts",
-  appUniqueKey: "gmail",
-  authScheme: "BEARER_TOKEN",
-});
-
-const gmailParams = await composioToolset.apps.getRequiredParamsForAuthScheme({
-  appId: "gmail",
-  authScheme: "BEARER_TOKEN",
-});
-
-console.log(gmailParams.required_fields);
-// [ "token" ]
-
-const gmailConnectionReq = await entity.initiateConnection({
-  appName: "gmail",
-  authMode: "BEARER_TOKEN",
-  connectionParams: {
-    token: "secret_1234567890", // This is the token the user will provide
-  },
-  integrationId: integration.id,
-});
-
-const toolRes = await composioToolset.executeAction({
-  action: "GMAIL_FETCH_EMAILS",
-  params: {},
-  connectedAccountId: gmailConnectionReq.connectedAccountId,
-});
-
-console.log(toolRes);
-```
-</CodeGroup>
-
-## Auth with API Key
-Similar to Bearer Token Authentication, the `auth_config` parameter is not required.
-In some token based authentication, the user is expected to provide more information than just the token.
-
+<Steps>
+<Step title="Retrieving Parameters Users Need to Provide">
 *In this case, Shopify requires the user to provide the `api_key` and `shop` parameters.*
 <CodeGroup>
 ```python Python maxLines=100 wordWrap {6, 13-17, 22, 31}
-from composio_openai import App, ComposioToolSet, Action
+from composio_openai import App, ComposioToolSet
 
 toolset = ComposioToolSet()
 
-integration = toolset.create_integration(
-    app=App.SHOPIFY, auth_mode="API_KEY", use_composio_oauth_app=False
-)
+shopify_params = toolset.get_expected_params_for_user(app=App.SHOPIFY, auth_scheme="API_KEY")
+print(shopify_params["expected_params"])
 
-shopify_params = toolset.get_expected_params_for_user(
-    app=App.SHOPIFY, auth_scheme="API_KEY"
-)
-
-params = {}
-for param in shopify_params["expected_params"]:
-    param_key = param.name
-    param_value = input(f"Enter the Shopify {param.name}: ")
-    params[param_key] = param_value
-
-
-shopify_connection = toolset.initiate_connection(
-    app=App.SHOPIFY,
-    auth_scheme="API_KEY",
-    connected_account_params=params,
-)
-
-print(f"Connection Status: {shopify_connection.connectionStatus}")
-
-toolset.execute_action(
-    action=Action.SHOPIFY_GET_ALL_CUSTOMERS,
-    params={},
-    connected_account_id=shopify_connection.connectedAccountId,
-)
+# [ "api_key" , "shop"]
 ```
 
-```typescript TypeScript wordWrap maxLines=100 {8-10, 13-18, 35}
+```typescript TypeScript wordWrap maxLines=100
 import { OpenAIToolSet } from "composio-core";
-import { v4 as uuidv4 } from "uuid";
 
 const composioToolset = new OpenAIToolSet();
-const entity = await composioToolset.getEntity(uuidv4());
-
-const integration = await composioToolset.integrations.create({
-  name: "shopify-ts",
-  appUniqueKey: "shopify",
-  authScheme: "API_KEY",
-});
 
 const shopifyParams = await composioToolset.apps.getRequiredParamsForAuthScheme(
   {
@@ -285,7 +177,25 @@ const shopifyParams = await composioToolset.apps.getRequiredParamsForAuthScheme(
 );
 console.log(shopifyParams.required_fields);
 // [ "api_key" , "shop"]
+```
+</CodeGroup>
+</Step>
+<Step title="Initiating the Connection">
+Once the user has been prompted for the required parameters, you can initiate a connection with the `connected_account_params` parameter.
 
+<CodeGroup>
+```python Python wordWrap maxLines=100
+shopify_connection = toolset.initiate_connection(
+    app=App.SHOPIFY,
+    auth_scheme="API_KEY",
+    connected_account_params={
+      "api_key": "secret_1234567890", # This is the api key the user will provide
+      "shop": "test-shop.myshopify.com", # This is the shop the user will provide
+    },
+)
+```
+
+```typescript TypeScript wordWrap maxLines=100
 const shopifyConnectionReq = await entity.initiateConnection({
   appName: "shopify",
   authMode: "API_KEY",
@@ -295,13 +205,101 @@ const shopifyConnectionReq = await entity.initiateConnection({
   },
   integrationId: integration.id,
 });
-
-const toolRes = await composioToolset.executeAction({
-  action: "SHOPIFY_GET_ALL_CUSTOMERS",
-  params: {},
-  connectedAccountId: shopifyConnectionReq.connectedAccountId,
-});
-
-console.log(toolRes);
 ```
 </CodeGroup>
+</Step>
+<Step title="Checking the Connection Status">
+In this case, there is no redirect URL, so the connection will be activated immediately.
+
+The status can be checked by:
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+print(f"Connection Status: {shopify_connection.connectionStatus}")
+```
+
+```typescript TypeScript wordWrap maxLines=100
+console.log(`Connection Status: ${shopifyConnectionReq.status}`);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Accordion>
+
+<Accordion title="Auth with Bearer Token">
+Many applications that have OAuth 2.0, also support the user providing their own Bearer token.
+For these, the user is expected to provide the token in the `connectionParams` parameter.
+
+<Steps>
+<Step title="Retrieving Parameters Users Need to Provide">
+Gmail also supports authentication via a Bearer token. If configured to use the Bearer token, the user will need to provide the token in the `connectionParams` parameter.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+from composio_openai import Action, App, ComposioToolSet
+
+toolset = ComposioToolSet()
+
+gmail_params = toolset.get_expected_params_for_user(
+    app=App.GMAIL, auth_scheme="BEARER_TOKEN"
+)
+print(gmail_params["expected_params"])
+# [ "token" ]
+```
+
+```typescript TypeScript wordWrap maxLines=100
+import { OpenAIToolSet } from "composio-core";
+
+const composioToolset = new OpenAIToolSet();
+
+const gmailParams = await composioToolset.apps.getRequiredParamsForAuthScheme({
+  appId: "gmail",
+  authScheme: "BEARER_TOKEN",
+});
+console.log(gmailParams.required_fields);
+// [ "token" ]
+```
+</CodeGroup>
+
+</Step>
+<Step title="Initiating the Connection">
+Once the user has been prompted for the required parameters, you can initiate a connection with the `connected_account_params` parameter.
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+gmail_connection = toolset.initiate_connection(
+    integration_id=integration.id,
+    entity_id=str(uuid4()),
+    auth_scheme="BEARER_TOKEN",
+    connected_account_params={"token": "secret_1234567890"},  # This is the token the user will provide
+)
+```
+
+```typescript TypeScript wordWrap maxLines=100
+const gmailConnectionReq = await entity.initiateConnection({
+  appName: "gmail",
+  authMode: "BEARER_TOKEN",
+  connectionParams: {
+    token: "secret_1234567890", // This is the token the user will provide
+  },
+  integrationId: integration.id,
+});
+```
+</CodeGroup>
+</Step>
+<Step title="Checking the Connection Status">
+The status can be checked by:
+
+<CodeGroup>
+```python Python wordWrap maxLines=100
+print(f"Connection Status: {gmail_connection.connectionStatus}")
+```
+
+```typescript TypeScript wordWrap maxLines=100
+console.log(`Connection Status: ${gmailConnectionReq.status}`);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Accordion>
+</AccordionGroup>
