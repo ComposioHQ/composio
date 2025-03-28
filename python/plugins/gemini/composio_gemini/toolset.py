@@ -54,7 +54,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
     ) -> t.Callable:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
-
+        
         docstring = schema.description
         docstring += "\nArgs:"
         for _param, _schema in schema.parameters.properties.items():
@@ -71,17 +71,31 @@ class ComposioToolSet(
                 entity_id=entity_id,
             )
 
+        params = {
+            "type": "object",
+            "properties": {},
+        }
+        
+        for param_name, param_schema in schema.parameters.properties.items():
+            param_type = param_schema.get("type", "string")
+            params["properties"][param_name] = {
+                "type": param_type,
+                "description": param_schema.get("description", ""),
+                "title": param_name,
+            }
+            if "required" not in params:
+                params["required"] = []
+            params["required"].append(param_name)
+
         function = types.FunctionType(
             code=_execute.__code__,
             name=schema.name,
             globals=globals(),
             closure=_execute.__closure__,
         )
-        parameters = get_signature_format_from_schema_params(
-            schema_params=schema.parameters.model_dump(
-                exclude_none=True,
-            ),
-        )
+        
+        parameters = get_signature_format_from_schema_params(params)
+        
         setattr(function, "__signature__", Signature(parameters=parameters))
         setattr(
             function,
