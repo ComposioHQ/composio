@@ -1,6 +1,6 @@
-# AI News Aggregator and Slack Notification Agent Guide
+# AI Agent with MCP Servers and OpenAI Agents SDK
 
-This guide provides detailed steps to create an automated system that researches AI news and posts updates to Slack using Composio, OpenAI Agents SDK, and MCP servers.
+This guide provides detailed steps to create an AI agent system that can perform various tasks using Composio, OpenAI Agents SDK, and MCP servers.
 
 ## Steps to Run
 
@@ -33,27 +33,29 @@ Fill in your API keys in the generated `.env` file:
 - Composio credentials
 
 ### 3. Prerequisites
-Use Python version 3.11
+Use Python version 3.10
 
 Ensure you have `uv` installed. If not, install it from:
 https://docs.astral.sh/uv/getting-started/installation/
 
 ### 4. Run the Python Script
-Start the AI News Aggregator agent:
+Start the AI Agent:
 ```shell
 python main.py
 ```
 
 The script will:
-1. Initialize connections to two MCP servers:
-   - Search server for news research
-   - Slack server for message posting
-2. Generate a trace ID for monitoring the workflow
-3. Prompt for confirmation of Slack connection
-4. Research latest news about Open Source and Closed Source AI
-5. Post the collated news to your Slack channel #ai-news-updates
+2. Initialize connections to two MCP servers:
+   - Slack MCP server
+3. Generate a trace ID for monitoring the workflow
+4. Check for active Slack connection
+5. Prompt for user input on what task to perform
+6. Execute the requested task using the available agents:
+   - Search Assistant (for browser-based tasks)
+   - Personal Assistant (for coordinating tasks)
+   - Slack Assistant (for Slack interactions)
 
-Note: When prompted "Are you connected (yes or no)?", you must confirm the Slack connection before the news aggregation and posting process begins.
+Note: When prompted "Are you connected (yes or no)?", you must confirm the Slack connection before proceeding with the task execution.
 
 
 

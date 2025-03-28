@@ -1,16 +1,15 @@
 #!/bin/bash
 
-echo "Setting up News on Slack MCP Agent..."
+echo "Setting up AI Agent with MCP Servers..."
 
 # Create virtual environment
 echo "Creating virtual environment..."
-python -m venv venv
+python3.10 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
 echo "Installing required packages..."
-pip install -r requirements.txt
-
+pip3.10 install -r requirements.txt
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
@@ -19,6 +18,8 @@ if [ ! -f .env ]; then
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 
+# Composio Configuration
+COMPOSIO_API_KEY=your_composio_api_key_here
 EOL
     echo ".env file created. Please fill in your API keys and tokens."
 else

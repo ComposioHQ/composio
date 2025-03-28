@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import time
 from typing import Any
+import pyfiglet
+from termcolor import colored
 
 from agents import Agent, ComputerTool, Runner, gen_trace_id, trace
 from agents.mcp import MCPServer, MCPServerSse
@@ -15,6 +17,13 @@ from aioconsole import ainput, aprint
 from computer import LocalPlaywrightComputer as computer
 
 load_dotenv()
+
+def generate_ascii_art(text, font="slant", color="cyan"):
+    try:
+        ascii_art = pyfiglet.figlet_format(text, font=font)
+        return colored(ascii_art, color) # type: ignore
+    except pyfiglet.FontNotFound:
+        return f"Error: The font '{font}' is not available. Try another font."
 
 async def run(mcp_server_1: MCPServer, mcp_server_2: MCPServer, user_input: str):
 
@@ -30,7 +39,7 @@ async def run(mcp_server_1: MCPServer, mcp_server_2: MCPServer, user_input: str)
     manus_agent = Agent(
         name="Personal Assistant",
         instructions=f"You are an AI Agent that uses the tools available to it to accomplish the task given to you. Don't send messages in markdown format, send it as just well formatted text.",
-        mcp_servers=[mcp_server_1],
+        mcp_servers=[mcp_server_1, mcp_server_2],
         tools=[computer_agent.as_tool(tool_name='browser_agent', tool_description='An Agent that uses the browser to perform tasks')], # type: ignore
         model='gpt-4o',
     )
@@ -43,18 +52,23 @@ async def run(mcp_server_1: MCPServer, mcp_server_2: MCPServer, user_input: str)
 
 
 async def main():
+    # Display ASCII art banner
+    text = "Composio MCP + OpenAI Agents SDK"
+    ascii_art = generate_ascii_art(text, font="slant", color="green")
+    print(ascii_art)
+    
     trace_id = gen_trace_id()
     with trace(workflow_name="SSE Example", trace_id=trace_id):
         print(f"View trace: https://platform.openai.com/traces/{trace_id}\n")
         async with MCPServerSse(
-            name="Search",
+            name="CodeInterpreter",
             params={
-                "url": "https://mcp.composio.dev/composio_search/ambitious-able-wire-8gBOk3",
+                "url": "",
             },
         ) as server_2, MCPServerSse(
             name="Slack",
             params={
-                "url":"https://mcp.composio.dev/slack/ambitious-able-wire-8gBOk3"
+                "url":""
             }
         ) as server_1:
             slack_agent = Agent(
@@ -64,7 +78,7 @@ async def main():
                 model='gpt-4o',
             )
 
-            message = "Initiate connection with Slack"
+            message = "Check if i have an active connection with Slack, if not initiate connection"
             print(f"Running: {message}")
             result = await Runner.run(starting_agent=slack_agent, input=message)
             print("Connection Url: ",result.final_output)
