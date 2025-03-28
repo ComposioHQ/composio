@@ -15,6 +15,7 @@ import zipfile
 from functools import update_wrapper
 from hashlib import md5
 from pathlib import Path
+import unicodedata
 
 import typing_extensions as te
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -29,7 +30,6 @@ from composio.tools.base.abs import action_registry
 from composio.tools.env.base import ENV_ACCESS_TOKEN
 from composio.tools.local import load_local_tools
 from composio.utils.logging import get as get_logger
-
 
 ResponseType = t.TypeVar("ResponseType")
 
@@ -281,7 +281,11 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=400, detail="File path is required as query parameter"
             )
-        path = Path(file)
+        # Apply filename sanitization to prevent path injection
+        safe_file = secure_filename(file)
+        if not safe_file:
+            raise HTTPException(status_code=400, detail="Invalid file path after sanitization")
+        path = Path(safe_file)
         if not path.exists():
             return Response(
                 content=APIResponse[None](
@@ -313,3 +317,14 @@ def _archive(directory: Path, output: Path) -> Path:
                     ),
                 )
     return output
+
+
+def secure_filename(filename: str) -> str:
+    filename = unicodedata.normalize("NFKD", filename)
+    filename = filename.encode("ascii", "ignore").decode("ascii")
+    for sep in (os.sep, os.path.altsep):
+        if sep:
+            filename = filename.replace(sep, " ")
+    filename = "_".join(filename.split())
+    filename = filename.strip("._")
+    return filename
