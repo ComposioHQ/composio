@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { Client } from "@hey-api/client-axios";
 import {
   DeleteRowAPIDTO,
   ExpectedInputFieldsDTO,
@@ -17,7 +18,6 @@ import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { Apps } from "./apps";
 import { AxiosBackendClient } from "./backendClient";
 
 // Types generated from zod schemas
@@ -50,11 +50,11 @@ export type IntegrationDeleteRes = DeleteRowAPIDTO;
 export class Integrations {
   private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
-  private apps: Apps;
+  private client: Client;
 
-  constructor(backendClient: AxiosBackendClient) {
+  constructor(backendClient: AxiosBackendClient, client: Client) {
     this.backendClient = backendClient;
-    this.apps = new Apps(backendClient);
+    this.client = client;
   }
 
   /**
@@ -77,6 +77,7 @@ export class Integrations {
       const finalAppName =
         appName && appName.length > 0 ? appName : appUniqueKey;
       const response = await apiClient.appConnector.listAllConnectors({
+        client: this.client,
         query: { ...rest, appName: finalAppName },
         throwOnError: true,
       });
@@ -104,6 +105,7 @@ export class Integrations {
     });
     try {
       const response = await apiClient.appConnector.getConnectorInfo({
+        client: this.client,
         path: data,
         throwOnError: true,
       });
@@ -133,6 +135,7 @@ export class Integrations {
     try {
       ZSingleIntegrationParams.parse(data);
       const response = await apiClient.appConnector.getConnectorInfo({
+        client: this.client,
         path: {
           integrationId: data.integrationId,
         },
@@ -165,7 +168,7 @@ export class Integrations {
       let uniqueKey = data.appUniqueKey;
 
       if (!uniqueKey) {
-        const apps = await apiClient.apps.getApps();
+        const apps = await apiClient.apps.getApps({ client: this.client });
         const app = apps.data?.items.find((app) => app.appId === data.appId);
         uniqueKey = app!.key;
         if (!uniqueKey) {
@@ -180,6 +183,7 @@ export class Integrations {
       }
 
       const response = await apiClient.appConnectorV2.createConnectorV2({
+        client: this.client,
         body: {
           app: {
             uniqueKey: uniqueKey,
@@ -216,7 +220,7 @@ export class Integrations {
       let uniqueKey = data.appUniqueKey;
 
       if (!uniqueKey) {
-        const apps = await apiClient.apps.getApps();
+        const apps = await apiClient.apps.getApps({ client: this.client });
         const app = apps.data?.items.find((app) => app.appId === data.appId);
         uniqueKey = app!.key;
         throw CEG.getCustomError(
@@ -229,6 +233,7 @@ export class Integrations {
       }
 
       const response = await apiClient.appConnectorV2.getOrCreateConnector({
+        client: this.client,
         body: {
           app: {
             uniqueKey,
@@ -268,6 +273,7 @@ export class Integrations {
     try {
       ZSingleIntegrationParams.parse(data);
       const response = await apiClient.appConnector.deleteConnector({
+        client: this.client,
         path: {
           integrationId: data.integrationId,
         },

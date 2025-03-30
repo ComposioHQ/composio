@@ -1,0 +1,10 @@
+{
+	"dependencies": {
+		"supergateway": "^2.1.0"
+	},
+	"devDependencies": {
+		"typedoc": "^0.28.1",
+		"typedoc-plugin-markdown": "^4.6.0"
+	}
+
+}

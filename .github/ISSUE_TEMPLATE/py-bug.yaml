@@ -1,0 +1,52 @@
+name: Python Bug Report
+description: File a bug report.
+title: "Error: "
+labels: ["bug", "triage", "python"]
+projects: ["composiohq/composio"]
+assignees:
+  - angrybayblade
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: py-version
+    attributes:
+      label: Python Version
+      description: Please provide python version you're using
+      placeholder: ex. 3.10, 3.11
+    validations:
+      required: true
+  - type: input
+    id: os-name
+    attributes:
+      label: Operating system
+      description: Name of the operating system
+      placeholder: ex. windows, ubuntu-22.04, macos
+    validations:
+      required: false
+  - type: textarea
+    id: error
+    attributes:
+      label: Error
+      description: Error log, please provide entire traceback start to end.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List of dependencied installed in your system, run `pip freeze` or `uv pip freeze`
+      placeholder: ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/master/CODE_OF_CONDUCT.md). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

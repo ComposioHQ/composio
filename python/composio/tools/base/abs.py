@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
+from composio.utils.enums import PUNCTUATION_REGEX
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
 
@@ -40,10 +41,11 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
         jsonref.dumps(
             jsonref.replace_refs(
                 obj=data,
-                lazy_load=False,
+                jsonschema=True,
                 merge_props=True,
+                lazy_load=False,
+                proxies=False,
             ),
-            indent=2,
         )
     )
 
@@ -218,7 +220,7 @@ class _Response(t.Generic[ModelType]):
 
         schema["properties"] = properties
         schema["title"] = f"{self.model.__name__}Wrapper"
-        return remove_json_ref(schema)
+        return schema
 
 
 class ActionBuilder:
@@ -290,8 +292,9 @@ class ActionBuilder:
                 .strip()
             ),
         )
+        description = " ".join(description.split())
         description, separator, enum = description.partition(DEPRECATED_MARKER)
-        return inflection.titleize(description) + separator + enum
+        return inflection.humanize(description) + separator + enum
 
 
 class ActionMeta(type):
@@ -312,6 +315,12 @@ class ActionMeta(type):
         ActionBuilder.validate(name=name, obj=cls)
         ActionBuilder.set_generics(name=name, obj=cls)
         ActionBuilder.set_metadata(obj=cls)
+        for action in cls.tags():
+            if PUNCTUATION_REGEX.search(action):
+                raise InvalidClassDefinition(
+                    f"Invalid tag `{action}` for action `{name}`, "
+                    "must not contain any punctuation characters"
+                )
 
 
 class Action(

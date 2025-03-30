@@ -24,6 +24,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       entityId?: string;
       runtime?: string;
       connectedAccountIds?: Record<string, string>;
+      allowTracing?: boolean;
     } = {}
   ) {
     super({
@@ -32,6 +33,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       runtime: config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
       connectedAccountIds: config.connectedAccountIds,
+      allowTracing: config.allowTracing || false,
     });
   }
 
@@ -77,7 +79,11 @@ export class LangchainToolSet extends BaseComposioToolSet {
       params: { filters, entityId },
     });
 
-    const tools = await this.getToolsSchema(filters, entityId);
+    const tools = await this.getToolsSchema(
+      filters,
+      entityId,
+      filters.integrationId
+    );
     return tools.map((tool) =>
       this._wrapTool(tool as RawActionData, entityId || this.entityId)
     );

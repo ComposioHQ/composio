@@ -4,16 +4,25 @@ import {
   USER_DATA_FILE_NAME,
 } from "./constants";
 
-import { AxiosInstance } from "axios";
+import {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 import { getUUID } from "../../utils/common";
 import logger from "../../utils/logger";
 import { getEnvVariable } from "../../utils/shared";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
+
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
+      responseTime?: number;
+      responseSize?: number;
       startTime?: number;
+      requestId?: string;
     };
   }
 }
@@ -44,54 +53,74 @@ export const getUserDataJson = () => {
 
 // Axios configuration
 export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
-  axiosClientInstance.interceptors.request.use((request) => {
-    const body = request.data ? JSON.stringify(request.data) : "";
-    // set x-request-id header
-    request.headers["x-request-id"] = getUUID();
-    logger.debug(
-      `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
-      {
-        ...(body && { body }),
-        query: request.params,
-      }
-    );
-    request.metadata = { startTime: Date.now() };
-    return request;
-  });
+  axiosClientInstance.interceptors.request.use(
+    (request: InternalAxiosRequestConfig) => {
+      const body = request.data ? JSON.stringify(request.data) : "";
+      // set x-request-id header
+      const requestId = getUUID();
+      request.headers["x-request-id"] = requestId;
+      request.metadata = {
+        startTime: Date.now(),
+        requestId,
+      };
+      logger.debug(
+        `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${requestId}`,
+        {
+          ...(body && { body }),
+          query: request.params,
+        }
+      );
+      return request;
+    }
+  );
 
   axiosClientInstance.interceptors.response.use(
-    (response) => {
+    (response: AxiosResponse) => {
       const method = response.config.method?.toUpperCase();
       const responseSize = Math.round(
         JSON.stringify(response.data).length / 1024
       );
-      const requestStartTime = response.config.metadata?.startTime;
+      const requestStartTime = (response.config as InternalAxiosRequestConfig)
+        .metadata?.startTime;
       const responseTime = requestStartTime ? Date.now() - requestStartTime : 0;
       const status = response.status;
+      const requestId =
+        response.headers["x-request-id"] ||
+        (response.config as InternalAxiosRequestConfig).metadata?.requestId;
 
-      // @ts-expect-error
+      // @ts-expect-error Error with metadata type
       response["metadata"] = {
         responseTime,
         responseSize,
+        requestId,
       };
       logger.debug(
         `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`
       );
       return response;
     },
-    (error) => {
-      const requestStartTime = error.config?.metadata?.startTime;
+    (error: AxiosError<unknown>) => {
+      const requestStartTime = (error.config as InternalAxiosRequestConfig)
+        ?.metadata?.startTime;
+      const requestStartTimeId = (error.config as InternalAxiosRequestConfig)
+        ?.metadata?.requestId;
       const responseTime = requestStartTime ? Date.now() - requestStartTime : 0;
       const status = error.response?.status || "Unknown";
       const length = JSON.stringify(error.response?.data)?.length || 0;
       const responseSize = Math.round(length / 1024);
+      const requestId =
+        error.response?.headers?.["x-request-id"] || requestStartTimeId;
 
-      error["metadata"] = {
+      const metadata = {
         responseTime,
         responseSize,
+        requestId,
       };
+      // @ts-expect-error Error with metadata type
+      error.metadata = metadata;
+
       logger.debug(
-        `API Error [${status}] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status} - ${responseTime}ms`,
+        `API Error [${status}] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status} - ${responseTime}ms, x-request-id: ${requestId}`,
         {
           headers: error.response?.headers,
           data: error.response?.data,

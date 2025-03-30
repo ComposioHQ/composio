@@ -245,11 +245,17 @@ def _parse_docstring(
             continue
 
         if ":param" in description:
-            param, description = description.replace(":param ", "").split(":")
+            param, description = description.replace(":param ", "").split(
+                ":",
+                maxsplit=1,
+            )
             params[param.lstrip().rstrip()] = description.lstrip().rstrip()
 
         if ":return" in description:
-            param, description = description.replace(":return ", "").split(":")
+            param, description = description.replace(":return ", "").split(
+                ":",
+                maxsplit=1,
+            )
             returns = (param.lstrip().strip(), description.lstrip().rstrip())
 
     return header, params, returns

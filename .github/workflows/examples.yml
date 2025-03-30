@@ -70,6 +70,7 @@ jobs:
             openai,
             langgraph,
             phidata,
+            pydanticai,
           ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -93,8 +94,7 @@ jobs:
           python -m uv pip install --upgrade pip pytest
           python -m uv pip install plugins/${{ matrix.package }}
           python -m uv pip install '.[all]'
-          python -m uv pip install 'numpy<2' python-dotenv
-          python -m uv pip install unstructured
+          python -m uv pip install 'numpy<2' python-dotenv unstructured ag2[openai]
 
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_example.py
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_load_tools.py
@@ -105,7 +105,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
           SLACK_TITLE: "Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
-          SLACK_MESSAGE: "<@viraj> <@tushar> ${{ inputs.commit_message || github.event.head_commit.message }}"
+          SLACK_MESSAGE: "<@viraj> ${{ inputs.commit_message || github.event.head_commit.message }}"
           SLACK_LINK_NAMES: "true"
           SLACK_COLOR: "failure"
           SLACK_USERNAME: "GitHub Actions Bot"

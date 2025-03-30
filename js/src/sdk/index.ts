@@ -17,7 +17,7 @@ import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
 import { ZAuthMode } from "./types/integration";
 import ComposioSDKContext from "./utils/composioContext";
-import { getSDKConfig } from "./utils/config";
+import { getSDKConfig, setAxiosClientConfig } from "./utils/config";
 import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
@@ -53,9 +53,15 @@ export class Composio {
    * @param {string} [config.apiKey] - The API key for authenticating with the Composio backend. Can also be set locally in an environment variable.
    * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
    * @param {string} [config.runtime] - The runtime environment for the SDK.
+   * @param {boolean} [config.allowTracing] - Whether to allow tracing for the SDK.
    */
   constructor(
-    config: { apiKey?: string; baseUrl?: string; runtime?: string } = {}
+    config: {
+      apiKey?: string;
+      baseUrl?: string;
+      runtime?: string;
+      allowTracing?: boolean;
+    } = {}
   ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
@@ -73,6 +79,7 @@ export class Composio {
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
     ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
+    ComposioSDKContext.allowTracing = config?.allowTracing;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
@@ -100,13 +107,27 @@ export class Composio {
       config?.runtime
     );
 
+    setAxiosClientConfig(this.backendClient.getAxiosInstance());
+
     // Instantiate models with dependencies as needed.
-    this.connectedAccounts = new ConnectedAccounts(this.backendClient);
-    this.triggers = new Triggers(this.backendClient);
-    this.apps = new Apps(this.backendClient);
-    this.actions = new Actions(this.backendClient);
-    this.integrations = new Integrations(this.backendClient);
-    this.activeTriggers = new ActiveTriggers(this.backendClient);
+    this.connectedAccounts = new ConnectedAccounts(
+      this.backendClient,
+      this.backendClient.instance
+    );
+    this.triggers = new Triggers(
+      this.backendClient,
+      this.backendClient.instance
+    );
+    this.apps = new Apps(this.backendClient, this.backendClient.instance);
+    this.actions = new Actions(this.backendClient, this.backendClient.instance);
+    this.integrations = new Integrations(
+      this.backendClient,
+      this.backendClient.instance
+    );
+    this.activeTriggers = new ActiveTriggers(
+      this.backendClient,
+      this.backendClient.instance
+    );
 
     this.checkForLatestVersionFromNPM();
   }
@@ -129,7 +150,6 @@ export class Composio {
         isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
         !IS_DEVELOPMENT_OR_CI
       ) {
-        // eslint-disable-next-line no-console
         logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );

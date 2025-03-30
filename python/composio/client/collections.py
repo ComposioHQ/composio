@@ -30,7 +30,7 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
+from composio.constants import DEFAULT_ENTITY_ID, PUSHER_CLUSTER, PUSHER_KEY
 from composio.exceptions import (
     ErrorFetchingResource,
     InvalidParams,
@@ -44,11 +44,40 @@ from composio.utils.shared import generate_request_id
 
 if t.TYPE_CHECKING:
     from composio.client import Composio
-
-ALL_AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "NO_AUTH")
-AUTH_SCHEME_WITH_INITIATE = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
+ALL_AUTH_SCHEMES = (
+    "OAUTH2",
+    "OAUTH1",
+    "API_KEY",
+    "BASIC",
+    "BEARER_TOKEN",
+    "BASIC_WITH_JWT",
+    "GOOGLE_SERVICE_ACCOUNT",
+    "GOOGLEADS_AUTH",
+    "NO_AUTH",
+    "CALCOM_AUTH",
+)
+AUTH_SCHEME_WITH_INITIATE = (
+    "OAUTH2",
+    "OAUTH1",
+    "API_KEY",
+    "BASIC",
+    "BEARER_TOKEN",
+    "BASIC_WITH_JWT",
+    "GOOGLE_SERVICE_ACCOUNT",
+    "GOOGLEADS_AUTH",
+    "CALCOM_AUTH",
+)
 AuthSchemeType = t.Literal[
-    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT", "NO_AUTH"
+    "OAUTH2",
+    "OAUTH1",
+    "API_KEY",
+    "BASIC",
+    "BEARER_TOKEN",
+    "BASIC_WITH_JWT",
+    "GOOGLE_SERVICE_ACCOUNT",
+    "GOOGLEADS_AUTH",
+    "NO_AUTH",
+    "CALCOM_AUTH",
 ]
 
 
@@ -92,7 +121,7 @@ class ConnectedAccountModel(BaseModel):
     connectionParams: AuthConnectionParamsModel
 
     clientUniqueUserId: t.Optional[str] = None
-    entityId: t.Optional[str] = None
+    entityId: str = DEFAULT_ENTITY_ID
 
     # Override arbitrary model config.
     model_config: ConfigDict = ConfigDict(  # type: ignore
@@ -355,7 +384,6 @@ class Apps(Collection[AppModel]):
                     )
                 ).json()
             )
-
         return super().get(queries={})
 
 
@@ -367,7 +395,7 @@ class TriggerPayloadPropertyModel(BaseModel):
     """Trigger payload property data model."""
 
     description: str
-    title: str
+    title: t.Optional[str] = None
     type: t.Optional[str] = None
     anyOf: t.Optional[t.List[TypeModel]] = None
 
@@ -378,7 +406,7 @@ class TriggerPayloadModel(BaseModel):
     """Trigger payload data model."""
 
     properties: t.Dict[str, TriggerPayloadPropertyModel]
-    title: str
+    title: t.Optional[str] = None
     type: t.Optional[str] = None
     anyOf: t.Optional[t.List[TypeModel]] = None
 
@@ -1306,6 +1334,7 @@ class Actions(Collection[ActionModel]):
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         auth: t.Optional[CustomAuthObject] = None,
+        allow_tracing: bool = False,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -1329,6 +1358,7 @@ class Actions(Collection[ActionModel]):
                         "sessionInfo": {
                             "sessionId": session_id,
                         },
+                        "allowTracing": allow_tracing,
                     },
                 )
             ).json()
@@ -1353,6 +1383,7 @@ class Actions(Collection[ActionModel]):
                     "sessionInfo": {
                         "sessionId": session_id,
                     },
+                    "allowTracing": allow_tracing,
                 },
             )
         ).json()
@@ -1561,7 +1592,6 @@ class Integrations(Collection[IntegrationModel]):
                     self.client.http.get(url=str(self.endpoint / id))
                 ).json()
             )
-
         quries = {}
         if page_size is not None:
             quries["pageSize"] = json.dumps(page_size)

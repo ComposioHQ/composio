@@ -31,10 +31,29 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 ## Development setup
 
-- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `pipenv`, then run the following:
+- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `uv`, then run the following:
 
-      make env
-      pipenv shell
+      # Install uv
+      pip install uv
+      
+      # Create and activate virtual environment
+      uv venv
+      source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+      
+      # Install dependencies
+      uv pip install -e .
+      uv pip install -e python/swe
+      
+      # Install plugins as needed
+      uv pip install -e python/plugins/autogen
+      uv pip install -e python/plugins/claude
+      uv pip install -e python/plugins/crew_ai
+      uv pip install -e python/plugins/griptape
+      uv pip install -e python/plugins/julep
+      uv pip install -e python/plugins/langchain
+      uv pip install -e python/plugins/llamaindex
+      uv pip install -e python/plugins/lyzr
+      uv pip install -e python/plugins/openai
 
 ##  For a clean PR run checks in the following order before pushing the code on a PR
 
@@ -44,7 +63,7 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 ## Further commands needed during development
 
-We have various commands which are helpful during development.
+The following commands are helpful during development:
 
 - For independent linting and static analysis:
   - Use `tox -e isort` and `tox -e black` for formatting code
@@ -53,3 +72,62 @@ We have various commands which are helpful during development.
   - Use `tox -e mypy` for type checking
 
 Read more detailed guides on development [here](python/docs/development.md).
+
+## Contributing to docs
+
+To contribute to the documentation:
+
+1. Make sure you have Node.js installed on your system.
+
+2. Generate the SDK documentation first:
+   
+   a. Make sure you're in your virtual environment:
+   ```bash
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+   
+   b. Install typing-extensions (required for documentation generation):
+   ```bash
+   pip install typing-extensions
+   ```
+   
+   c. Generate Python SDK documentation:
+   ```bash
+   python scripts/generate_api_docs.py --source ./python/composio --output ./fern/sdk
+   ```
+   
+   d. Install Bun (required for TypeScript documentation):
+   ```bash
+   curl -fsSL https://bun.sh/install | bash
+   ```
+   
+   e. Install TypeDoc dependencies:
+   ```bash
+   bun install typedoc typedoc-plugin-markdown
+   ```
+   
+   f. Generate TypeScript SDK documentation:
+   ```bash
+   bun run typedoc --plugin typedoc-plugin-markdown js/src/index.ts js/src/sdk/index.ts --out ./fern/sdk/composio/js --skipErrorChecking
+   ```
+   
+   g. Install Fern globally:
+   ```bash
+   npm install -g fern-api
+   ```
+
+3. Start the docs server from the project root:
+   ```bash
+   make docs-dev
+   ```
+
+4. View and edit docs at http://localhost:3000
+
+5. Before submitting your PR, check for broken links:
+   ```bash
+   fern docs broken-links
+   ```
+   This will ensure your documentation changes don't introduce any broken references.
+
+6. When you're happy with your changes, create a PR.
+

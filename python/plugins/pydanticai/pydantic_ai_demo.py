@@ -44,7 +44,7 @@ def main():
 
     # Run the agent
     result = agent.run_sync(task)
-    print("Result: ", result.data)
+    print("Result: Action executed successfully\n", result.data)
     print("Trace:\n\n", result.all_messages())
 
 

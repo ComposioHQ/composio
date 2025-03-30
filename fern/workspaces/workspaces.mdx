@@ -1,0 +1,164 @@
+---
+title: 'Workspaces (beta)'
+subtitle: 'Configure environments for local tools to run on'
+---
+
+## Overview
+Composio ships with a pre-defined set of local tools that run only on a machine. These tools manipulate files, execute shell commands, and manage code projects.
+
+<Callout type="warning">
+  **Python SDK Only**: Workspaces are currently only available in the Python SDK. TypeScript support isn't available for this feature.
+</Callout>
+
+<Card title="Host Workspace" icon="server" href="#host">
+  Run local tools directly on your host machine with full system access and native performance.
+</Card>
+
+<Card title="Docker Workspace" icon="whale" href="#docker">
+  Isolate tool execution in containers for better security and reproducibility.
+</Card>
+
+<Card title="E2B Workspace" icon="cloud" href="#workspacee2b">
+  Execute tools in code sandboxes powered by E2B.
+</Card>
+
+<Card title="Fly.io Workspace" icon="plane" href="#flyio">
+  Deploy and manage workspaces for tool execution to Fly.io for global distribution and scale.
+</Card>
+
+## Host
+By default, all local tools run directly on your host machine.
+
+```python focus {6-9} Lists out the files in current directory
+from composio_openai import ComposioToolSet, App, Action, WorkspaceType
+from openai import OpenAI
+
+client = OpenAI()
+
+toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+entity = toolset.get_entity(id="default")
+tools = toolset.get_tools(["FILETOOL_LIST_FILES"])
+
+question = "List all files in the current directory"
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": question}],
+)
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+## Docker
+- Secure sandboxed environments
+- Consistent execution across systems
+- Easy dependency management
+- Perfect for production deployments
+
+To use Docker workspaces, install the Docker workspace extension:
+```bash
+pip install composio-core[docker]
+```
+
+```python focus {6-9}
+from composio_openai import ComposioToolSet, App, Action, WorkspaceType
+from openai import OpenAI
+
+client = OpenAI()
+
+toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker(
+    image="python:3.9",  # Base image to use
+    volumes={"/host/path": "/container/path"}  # Optional volume mounts
+))
+tools = toolset.get_tools(["FILETOOL_LIST_FILES"])
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": "List files in container"}],
+)
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+## E2B
+- Secure serverless execution
+- No infrastructure management
+- Pay-per-use pricing
+- Automatic scaling
+
+To use E2B workspaces, install the E2B workspace extension:
+```bash
+pip install composio-core[e2b]
+```
+
+```python focus {6-11}
+from composio_openai import ComposioToolSet, App, Action, WorkspaceType
+from openai import OpenAI
+
+client = OpenAI()
+
+toolset = ComposioToolSet(workspace_config=WorkspaceType.E2B(
+    api_key="your_e2b_api_key",  # Required: E2B API Key
+    template="2h9ws7lsk32jyow50lqz",  # Optional: Template ID for creating the sandbox
+    port=8000,  # Optional: Port for launching the toolserver (default: 8000)
+    environment={"KEY": "VALUE"}  # Optional: Environment variables
+))
+tools = toolset.get_tools(["FILETOOL_LIST_FILES"])
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": "List files in E2B sandbox"}],
+)
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+## Fly.io
+- Deploy close to users
+- Automatic load balancing
+- Built-in monitoring
+- Edge computing capabilities
+
+To use Fly.io workspaces, install the Fly.io workspace extension:
+```bash
+pip install composio-core[flyio]
+```
+
+```python focus {6-17}
+from composio_openai import ComposioToolSet, App, Action, WorkspaceType
+from openai import OpenAI
+
+client = OpenAI()
+
+toolset = ComposioToolSet(workspace_config=WorkspaceType.Flyio(
+    token="your_flyio_token",  # Required: Fly.io API token
+    image="your-custom-image:tag",  # Optional: Docker image to use
+    ports=[{  # Optional: Additional ports to expose
+        "ports": [
+            {
+                "port": 3000,
+                "handlers": ["http"]  # Available handlers: http, tls
+            }
+        ]
+    }],
+    environment={"KEY": "VALUE"}  # Optional: Environment variables
+))
+tools = toolset.get_tools(["FILETOOL_LIST_FILES"])
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": "List files in Fly.io instance"}],
+)
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+Each workspace type offers unique benefits. Choose the appropriate workspace based on your specific requirements for security, scalability, and deployment needs. Remember to install the corresponding workspace extension using composio-core[extension_name] before using any workspace type other than the default host configuration.

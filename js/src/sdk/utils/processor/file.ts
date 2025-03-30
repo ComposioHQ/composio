@@ -1,3 +1,4 @@
+import { Client } from "@hey-api/client-axios";
 import {
   TPostProcessor,
   TPreProcessor,
@@ -31,7 +32,8 @@ const convertFileSchemaProperty = (
 
 const processFileUpload = async (
   params: Record<string, unknown>,
-  actionName: string
+  actionName: string,
+  client: Client
 ) => {
   const result = { ...params };
 
@@ -41,7 +43,8 @@ const processFileUpload = async (
     const originalKey = key.replace(FILE_SUFFIX, "");
     const fileData = await getFileDataAfterUploadingToS3(
       value as string,
-      actionName
+      actionName,
+      client
     );
 
     result[originalKey] = fileData;
@@ -54,8 +57,9 @@ const processFileUpload = async (
 export const FILE_INPUT_PROCESSOR: TPreProcessor = async ({
   params,
   actionName,
+  client,
 }) => {
-  return processFileUpload(params, actionName);
+  return processFileUpload(params, actionName, client);
 };
 
 export const FILE_DOWNLOADABLE_PROCESSOR: TPostProcessor = async ({
@@ -77,6 +81,7 @@ export const FILE_DOWNLOADABLE_PROCESSOR: TPostProcessor = async ({
 
     result.data[key] = {
       uri: downloadedFile.filePath,
+      s3url: fileData.s3url,
       mimeType: downloadedFile.mimeType,
     };
   }

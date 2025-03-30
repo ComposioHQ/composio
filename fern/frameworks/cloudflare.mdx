@@ -1,0 +1,80 @@
+---
+title: "Using Composio With Cloudflare Worker AI"
+sidebarTitle: "Cloudflare Worker AI"
+description: "Integrate Composio with Cloudflare Worker AI to let them seamlessly interact with external apps"
+---
+
+## Star A Repository on Github
+In this example, we will use Cloudflare Worker AI to star a repository on Github using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+```bash JavaScript
+npm install composio-core -g wrangler fs
+```
+</Step>
+<Step title="Setup wrangler in wrangler.toml file">
+```toml wrangler.toml
+name = "github-agent"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+COMPOSIO_API_KEY = "<your-composio-api-key>"
+
+[ai]
+binding = "AI"
+```
+</Step>
+<Step title="Import Libraries & Initialize Hono">
+```javascript worker.js
+import { Hono } from 'hono';
+import { CloudflareToolSet } from "composio-core"
+
+const app = new Hono();
+```
+  
+</Step>
+
+<Step title="Create an endpoint & get GitHub Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](/tool-calling/miscellaneous#specifying-apps-and-tags)
+```javascript worker.js
+app.post('/', async (c) => {
+    const toolset = new CloudflareToolSet();
+
+    try {
+        const tools = await toolset.getTools({ apps: ['github'] });
+        const instruction = 'Star the repository "composiohq/composio"';    
+
+        let messages = [
+            { role: 'system', content: '' },
+            { role: 'user', content: instruction },
+        ];
+
+        const config = {
+            model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
+        };
+
+        const toolCallResp = await c.env.AI.run(config.model, {
+            messages,
+            tools,
+        });
+
+        await toolset.handleToolCall(toolCallResp, entity.id);
+        return c.json({ messages: "Your issue has been created" });
+    } catch (err) {
+        console.log(err);
+        return c.text('Something went wrong', 500);
+    }
+
+    export default app;
+});
+```
+</Step>
+<Step title="Start the Worker">
+```bash CLI
+wrangler dev
+```
+</Step> 
+</Steps>
