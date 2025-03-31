@@ -79,20 +79,15 @@ def function_signature_from_jsonschema(
     parameters = []
     required = set(schema.get("required", []))
     for p_name, p_schema in schema.get("properties", {}).items():
-        p_type = None
         if "oneOf" in p_schema:
             p_type = _one_of_to_parameter(schema=p_schema)
-
-        if "anyOf" in p_schema:
+        elif "anyOf" in p_schema:
             p_type = _any_of_to_parameter(schema=p_schema)
-
-        if "allOf" in p_schema:
+        elif "allOf" in p_schema:
             p_type = _all_of_to_parameter(schema=p_schema)
-
-        if "type" in p_schema:
+        elif "type" in p_schema:
             p_type = _type_to_parameter(schema=p_schema)
-
-        if p_type is None:
+        else:
             raise InvalidSchemaError(f"Invalid property object {p_name}: {p_schema!r}")
 
         p_val = p_schema.get("default", None)
