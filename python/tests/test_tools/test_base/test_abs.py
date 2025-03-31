@@ -87,8 +87,9 @@ class TestToolBuilder:
 
     def test_request_titles(self) -> None:
         class TestClassWithFields(BaseModel):
-            baseId: str = Field(..., description="Some random field")
-            user_id: str = Field(..., description="Another random field")
+            camelCase: str = Field(..., description="camel case field")
+            snake_case: str = Field(..., description="snake case field")
+            PascalCase: str = Field(..., description="pascal case field")
 
         class NestedClass(BaseModel):
             nestedField: str = Field(..., description="A nested field")
@@ -103,12 +104,16 @@ class TestToolBuilder:
         schema_with_nested_fields = remove_json_ref(TestNestedClass.model_json_schema())
         empty_schema = remove_json_ref(TestClassWithNoFields.model_json_schema())
         assert (
-            replace_titles(schema_with_fields["properties"])["baseId"]["title"]
-            == "Base Id"
+            replace_titles(schema_with_fields["properties"])["camelCase"]["title"]
+            == "Camel Case"
         )
         assert (
-            replace_titles(schema_with_fields["properties"])["user_id"]["title"]
-            == "User Id"
+            replace_titles(schema_with_fields["properties"])["snake_case"]["title"]
+            == "Snake Case"
+        )
+        assert (
+            replace_titles(schema_with_fields["properties"])["PascalCase"]["title"]
+            == "Pascal Case"
         )
         assert (
             replace_titles(schema_with_nested_fields["properties"])["nestedObject"][
