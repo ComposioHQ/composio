@@ -65,22 +65,15 @@ def generate_app_id(name: str) -> str:
     )
 
 
-def is_camel_case(title: str) -> bool:
-    """Check if the title is in camel case with the first letter lowercase"""
-    return title == inflection.camelize(title, uppercase_first_letter=False)
-
-
 def replace_titles(properties: t.Dict) -> t.Dict:
     for field_name, field_properties in properties.items():
         if "file_uploadable" in field_properties:
             continue
 
-        # Check if the field name is in camel case,
-        # If yes, convert to snake case, replace _ and titelize
-        if is_camel_case(field_name):
-            field_properties["title"] = inflection.titleize(
-                inflection.underscore(field_name).replace("_", " ")
-            )
+        # Convert to snake case and titelize
+        field_properties["title"] = inflection.titleize(
+            inflection.underscore(field_name).replace("_", " ")
+        )
 
         if "properties" in field_properties:
             replace_titles(field_properties["properties"])

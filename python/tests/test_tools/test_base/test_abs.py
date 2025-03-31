@@ -13,6 +13,7 @@ from composio.tools.base.abs import (
     Tool,
     ToolBuilder,
     action_registry,
+    remove_json_ref,
     replace_titles,
     tool_registry,
 )
@@ -89,11 +90,18 @@ class TestToolBuilder:
             baseId: str = Field(..., description="Some random field")
             user_id: str = Field(..., description="Another random field")
 
+        class NestedClass(BaseModel):
+            nestedField: str = Field(..., description="A nested field")
+
+        class TestNestedClass(BaseModel):
+            nestedObject: NestedClass = Field(..., description="A nested object")
+
         class TestClassWithNoFields(BaseModel):
             pass
 
-        schema_with_fields = TestClassWithFields.model_json_schema()
-        empty_schema = TestClassWithNoFields.model_json_schema()
+        schema_with_fields = remove_json_ref(TestClassWithFields.model_json_schema())
+        schema_with_nested_fields = remove_json_ref(TestNestedClass.model_json_schema())
+        empty_schema = remove_json_ref(TestClassWithNoFields.model_json_schema())
         assert (
             replace_titles(schema_with_fields["properties"])["baseId"]["title"]
             == "Base Id"
@@ -101,6 +109,18 @@ class TestToolBuilder:
         assert (
             replace_titles(schema_with_fields["properties"])["user_id"]["title"]
             == "User Id"
+        )
+        assert (
+            replace_titles(schema_with_nested_fields["properties"])["nestedObject"][
+                "title"
+            ]
+            == "Nested Object"
+        )
+        assert (
+            replace_titles(schema_with_nested_fields["properties"])["nestedObject"][
+                "properties"
+            ]["nestedField"]["title"]
+            == "Nested Field"
         )
         assert replace_titles(empty_schema["properties"]) == {}
 
