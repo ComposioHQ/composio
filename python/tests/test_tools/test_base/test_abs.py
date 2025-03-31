@@ -13,8 +13,8 @@ from composio.tools.base.abs import (
     Tool,
     ToolBuilder,
     action_registry,
+    humanize_titles,
     remove_json_ref,
-    replace_titles,
     tool_registry,
 )
 
@@ -84,8 +84,7 @@ class TestActionBuilder:
 
 
 class TestToolBuilder:
-
-    def test_request_titles(self) -> None:
+    def test_humanize_field_titles(self) -> None:
         class TestClassWithFields(BaseModel):
             camelCase: str = Field(..., description="camel case field")
             snake_case: str = Field(..., description="snake case field")
@@ -104,30 +103,73 @@ class TestToolBuilder:
         schema_with_nested_fields = remove_json_ref(TestNestedClass.model_json_schema())
         empty_schema = remove_json_ref(TestClassWithNoFields.model_json_schema())
         assert (
-            replace_titles(schema_with_fields["properties"])["camelCase"]["title"]
+            humanize_titles(schema_with_fields["properties"])["camelCase"]["title"]
             == "Camel Case"
         )
         assert (
-            replace_titles(schema_with_fields["properties"])["snake_case"]["title"]
+            humanize_titles(schema_with_fields["properties"])["snake_case"]["title"]
             == "Snake Case"
         )
         assert (
-            replace_titles(schema_with_fields["properties"])["PascalCase"]["title"]
+            humanize_titles(schema_with_fields["properties"])["PascalCase"]["title"]
             == "Pascal Case"
         )
         assert (
-            replace_titles(schema_with_nested_fields["properties"])["nestedObject"][
+            humanize_titles(schema_with_nested_fields["properties"])["nestedObject"][
                 "title"
             ]
             == "Nested Object"
         )
         assert (
-            replace_titles(schema_with_nested_fields["properties"])["nestedObject"][
+            humanize_titles(schema_with_nested_fields["properties"])["nestedObject"][
                 "properties"
             ]["nestedField"]["title"]
             == "Nested Field"
         )
-        assert replace_titles(empty_schema["properties"]) == {}
+        assert humanize_titles(empty_schema["properties"]) == {}
+
+    def test_request_schema_titles_humanized(self) -> None:
+        class NestedClass(BaseModel):
+            nestedFieldProperty: str = Field(..., description="A nested field")
+
+        class Request(BaseModel):
+            camelCaseProperty: str = Field(..., description="camel case field")
+            snake_case_property: str = Field(..., description="snake case field")
+            PascalCaseProperty: str = Field(..., description="pascal case field")
+            nestedObjectProperty: NestedClass = Field(
+                ..., description="A nested object"
+            )
+
+        class Response(BaseModel):
+            pass
+
+        class SomeAction(Action[Request, Response]):
+            def execute(self, request: Request, metadata: Dict) -> Response:
+                return Response()
+
+        request_schema = SomeAction.request.schema()  # type: ignore
+        assert (
+            request_schema["properties"]["camelCaseProperty"]["title"]
+            == "Camel Case Property"
+        )
+        assert (
+            request_schema["properties"]["snake_case_property"]["title"]
+            == "Snake Case Property"
+        )
+        assert (
+            request_schema["properties"]["PascalCaseProperty"]["title"]
+            == "Pascal Case Property"
+        )
+        assert (
+            request_schema["properties"]["nestedObjectProperty"]["title"]
+            == "Nested Object Property"
+        )
+        assert (
+            request_schema["properties"]["nestedObjectProperty"]["properties"][
+                "nestedFieldProperty"
+            ]["title"]
+            == "Nested Field Property"
+        )
 
     def test_missing_methods(self) -> None:
         with pytest.raises(

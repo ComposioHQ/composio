@@ -65,7 +65,7 @@ def generate_app_id(name: str) -> str:
     )
 
 
-def replace_titles(properties: t.Dict) -> t.Dict:
+def humanize_titles(properties: t.Dict) -> t.Dict:
     for field_name, field_properties in properties.items():
         if "file_uploadable" in field_properties:
             continue
@@ -76,7 +76,7 @@ def replace_titles(properties: t.Dict) -> t.Dict:
         )
 
         if "properties" in field_properties:
-            replace_titles(field_properties["properties"])
+            humanize_titles(field_properties["properties"])
 
     return properties
 
@@ -120,7 +120,7 @@ class _Request(t.Generic[ModelType]):
         if "$defs" in request:
             del request["$defs"]
 
-        properties = replace_titles(request.get("properties", {}))
+        properties = humanize_titles(request.get("properties", {}))
         for prop in properties.values():
             if prop.get("file_readable", False):
                 prop["oneOf"] = [
@@ -209,7 +209,7 @@ class _Response(t.Generic[ModelType]):
         if "$defs" in schema:
             del schema["$defs"]
 
-        properties = replace_titles(schema.get("properties", {}))
+        properties = humanize_titles(schema.get("properties", {}))
         for prop in properties.values():
             if prop.get("file_readable", False):
                 prop["oneOf"] = [
