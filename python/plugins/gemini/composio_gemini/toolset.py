@@ -5,7 +5,7 @@ from inspect import Signature
 from composio import ActionType, AppType, TagType
 from composio.client.collections import ActionModel
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import get_signature_format_from_schema_params
+from composio.utils.openapi import function_signature_from_jsonschema
 
 
 class ComposioToolSet(
@@ -77,10 +77,9 @@ class ComposioToolSet(
             globals=globals(),
             closure=_execute.__closure__,
         )
-        parameters = get_signature_format_from_schema_params(
-            schema_params=schema.parameters.model_dump(
-                exclude_none=True,
-            ),
+        parameters = function_signature_from_jsonschema(
+            schema=schema.parameters.model_dump(exclude_none=True),
+            skip_default=True,
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
         setattr(
