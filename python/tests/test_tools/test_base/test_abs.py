@@ -4,7 +4,7 @@ import re
 from typing import Dict
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from composio.tools.base.abs import (
     DEPRECATED_MARKER,
@@ -13,6 +13,7 @@ from composio.tools.base.abs import (
     Tool,
     ToolBuilder,
     action_registry,
+    replace_titles,
     tool_registry,
 )
 
@@ -82,6 +83,27 @@ class TestActionBuilder:
 
 
 class TestToolBuilder:
+
+    def test_request_titles(self) -> None:
+        class TestClassWithFields(BaseModel):
+            baseId: str = Field(..., description="Some random field")
+            user_id: str = Field(..., description="Another random field")
+
+        class TestClassWithNoFields(BaseModel):
+            pass
+
+        schema_with_fields = TestClassWithFields.model_json_schema()
+        empty_schema = TestClassWithNoFields.model_json_schema()
+        assert (
+            replace_titles(schema_with_fields["properties"])["baseId"]["title"]
+            == "Base Id"
+        )
+        assert (
+            replace_titles(schema_with_fields["properties"])["user_id"]["title"]
+            == "User Id"
+        )
+        assert replace_titles(empty_schema["properties"]) == {}
+
     def test_missing_methods(self) -> None:
         with pytest.raises(
             InvalidClassDefinition,
