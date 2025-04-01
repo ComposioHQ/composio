@@ -165,6 +165,7 @@ class ComposioToolSet(
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
     ) -> FunctionTool:
         """
         Wraps a composio action as an Autogen FunctionTool.
@@ -198,7 +199,8 @@ class ComposioToolSet(
 
         # Set signature and annotations
         params = get_signature_format_from_schema_params(
-            schema_params=schema["parameters"]
+            schema_params=schema["parameters"],
+            skip_default=skip_default,
         )
         setattr(function, "__signature__", Signature(parameters=params))
         setattr(
@@ -222,6 +224,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.Sequence[FunctionTool]:
         """
@@ -244,10 +247,9 @@ class ComposioToolSet(
 
         tools = [
             self._wrap_tool(
-                schema=tool.model_dump(
-                    exclude_none=True,
-                ),
+                schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
+                skip_default=skip_default,
             )
             for tool in self.get_action_schemas(
                 actions=actions,

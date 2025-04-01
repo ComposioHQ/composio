@@ -168,12 +168,12 @@ def test_crewai_toolset() -> None:
                 "type": "string",
             },
             "thread": {
-                "default": None,
+                "additionalProperties": True,
                 "description": "The thread to which the reply is to be drafted",
                 "examples": [],
                 "title": "Thread",
-                # TODO: Thread's properties should be present in the schema
                 "type": "object",
+                "default": None,
             },
         },
         "required": ["message_body"],
@@ -222,11 +222,12 @@ def test_langchain_toolset() -> None:
                 "type": "string",
             },
             "thread": {
-                "default": None,
+                "additionalProperties": True,
                 "description": "The thread to which the reply is to be drafted",
                 "examples": [],
                 "title": "Thread",
                 "type": "object",
+                "default": None,
             },
         },
         "required": ["message_body"],
@@ -296,7 +297,7 @@ def test_claude_toolset() -> None:
 
     tool = tools[0]
     assert tool.get("name") == "computer"
-    assert set(tool.get("input_schema").get("properties", {}).keys()) == {
+    assert set(tool.get("input_schema", {}).get("properties", {}).keys()) == {
         "action",
         "text",
         "coordinate",
@@ -341,8 +342,9 @@ def test_llamaindex_toolset() -> None:
                 "type": "string",
             },
             "thread": {
-                "default": None,
                 # TODO: description missing
+                "additionalProperties": True,
+                "default": None,
                 "title": "Thread",
                 "type": "object",
             },
