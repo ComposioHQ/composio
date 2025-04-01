@@ -4,7 +4,7 @@ import re
 from typing import Dict
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from composio.tools.base.abs import (
     DEPRECATED_MARKER,
@@ -13,6 +13,8 @@ from composio.tools.base.abs import (
     Tool,
     ToolBuilder,
     action_registry,
+    humanize_titles,
+    remove_json_ref,
     tool_registry,
 )
 
@@ -82,6 +84,93 @@ class TestActionBuilder:
 
 
 class TestToolBuilder:
+    def test_humanize_field_titles(self) -> None:
+        class TestClassWithFields(BaseModel):
+            camelCase: str = Field(..., description="camel case field")
+            snake_case: str = Field(..., description="snake case field")
+            PascalCase: str = Field(..., description="pascal case field")
+
+        class NestedClass(BaseModel):
+            nestedField: str = Field(..., description="A nested field")
+
+        class TestNestedClass(BaseModel):
+            nestedObject: NestedClass = Field(..., description="A nested object")
+
+        class TestClassWithNoFields(BaseModel):
+            pass
+
+        schema_with_fields = remove_json_ref(TestClassWithFields.model_json_schema())
+        schema_with_nested_fields = remove_json_ref(TestNestedClass.model_json_schema())
+        empty_schema = remove_json_ref(TestClassWithNoFields.model_json_schema())
+        assert (
+            humanize_titles(schema_with_fields["properties"])["camelCase"]["title"]
+            == "Camel Case"
+        )
+        assert (
+            humanize_titles(schema_with_fields["properties"])["snake_case"]["title"]
+            == "Snake Case"
+        )
+        assert (
+            humanize_titles(schema_with_fields["properties"])["PascalCase"]["title"]
+            == "Pascal Case"
+        )
+        assert (
+            humanize_titles(schema_with_nested_fields["properties"])["nestedObject"][
+                "title"
+            ]
+            == "Nested Object"
+        )
+        assert (
+            humanize_titles(schema_with_nested_fields["properties"])["nestedObject"][
+                "properties"
+            ]["nestedField"]["title"]
+            == "Nested Field"
+        )
+        assert humanize_titles(empty_schema["properties"]) == {}
+
+    def test_request_schema_titles_humanized(self) -> None:
+        class NestedClass(BaseModel):
+            nestedFieldProperty: str = Field(..., description="A nested field")
+
+        class Request(BaseModel):
+            camelCaseProperty: str = Field(..., description="camel case field")
+            snake_case_property: str = Field(..., description="snake case field")
+            PascalCaseProperty: str = Field(..., description="pascal case field")
+            nestedObjectProperty: NestedClass = Field(
+                ..., description="A nested object"
+            )
+
+        class Response(BaseModel):
+            pass
+
+        class SomeAction(Action[Request, Response]):
+            def execute(self, request: Request, metadata: Dict) -> Response:
+                return Response()
+
+        request_schema = SomeAction.request.schema()  # type: ignore
+        assert (
+            request_schema["properties"]["camelCaseProperty"]["title"]
+            == "Camel Case Property"
+        )
+        assert (
+            request_schema["properties"]["snake_case_property"]["title"]
+            == "Snake Case Property"
+        )
+        assert (
+            request_schema["properties"]["PascalCaseProperty"]["title"]
+            == "Pascal Case Property"
+        )
+        assert (
+            request_schema["properties"]["nestedObjectProperty"]["title"]
+            == "Nested Object Property"
+        )
+        assert (
+            request_schema["properties"]["nestedObjectProperty"]["properties"][
+                "nestedFieldProperty"
+            ]["title"]
+            == "Nested Field Property"
+        )
+
     def test_missing_methods(self) -> None:
         with pytest.raises(
             InvalidClassDefinition,
