@@ -176,13 +176,10 @@ Once you have the triggers set up, you can specify listener functions using webs
 
 ### Specifying Listeners through Websockets
 We create a listener and then define a callback function that executes when a listener recieves a payload.
-```python focus {6-15} Triggers through websockets
-from composio_openai import ComposioToolSet, App, Action
-
-toolset = ComposioToolSet()
-entity = toolset.get_entity(id="default")
-
+<CodeGroup>
+```python Python
 listener = toolset.create_trigger_listener()
+
 @listener.callback(
     filters={
         "trigger_name": "SLACK_RECEIVE_MESSAGE",
@@ -193,6 +190,17 @@ def handle_slack_message(event):
 
 listener.wait_forever()
 ```
+```typescript TypeScript
+const listener = toolset.triggers.subscribe(
+    (data) => {
+        console.log(data);
+    },
+    {
+        triggerName: "SLACK_RECEIVE_MESSAGE"
+    }
+)
+```
+</CodeGroup>
 
 ### Specifying Listeners through Webhooks
 Assuming you've already set up a trigger as discussed in previous steps, here's how you can use webhooks instead to listen in on new events happening in an app.
@@ -216,8 +224,9 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 </Step>
 
 <Step title="Listening on the webhooks">
-To demonstrate, here's a FastAPI server to handle incoming webhook requests.
-```python maxLines=100 Triggers through webhooks
+To demonstrate, here's an example of a server to handle incoming webhook requests.
+<CodeGroup>
+```python Python maxLines=100
 from fastapi import FastAPI, Request
 from typing import Dict, Any
 import uvicorn
@@ -241,6 +250,28 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 ```
+```typescript TypeScript
+import express from 'express';
+import type { Request, Response } from 'express';
+import bodyParser from 'body-parser';
+
+const app = express();
+app.use(bodyParser.json());
+
+app.post('/webhook', async (req: Request, res: Response) => {
+    const payload = req.body;
+    console.log('Received webhook payload:');
+    console.log(JSON.stringify(payload, null, 2));
+    res.status(200).json({ status: 'success', message: 'Webhook received' });
+});
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
+});
+```
+</CodeGroup>
 </Step>
 
 <Tip>To test out webhooks locally, use an SSH tunnel like [ngrok](https://ngrok.com/docs/agent/)</Tip>

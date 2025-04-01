@@ -700,6 +700,8 @@ navigation:
             path: tools/intercom.mdx
           - page: Interzoid
             path: tools/interzoid.mdx
+          - page: Jina
+            path: tools/jina.mdx
           - page: Jira
             path: tools/jira.mdx
           - page: Junglescout
