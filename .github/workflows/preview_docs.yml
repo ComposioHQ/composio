@@ -34,7 +34,7 @@ jobs:
               run: uv run generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
 
             - name: Setup Bun
-              uses: oven-sh/setup-bun@v1
+              uses: oven-sh/setup-bun@v2
               with:
                 bun-version: latest
 
@@ -65,6 +65,6 @@ jobs:
                   echo "🌿 Preview your docs: $URL" > preview_url.txt
 
             - name: Comment URL in PR
-              uses: thollander/actions-comment-pull-request@v2.4.3
+              uses: thollander/actions-comment-pull-request@v3.0.1
               with:
                   filePath: fern/preview_url.txt

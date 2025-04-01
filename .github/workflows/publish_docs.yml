@@ -33,7 +33,7 @@ jobs:
         run: uv run generators/api_doc_generator/generate_api_docs.py -s ../python/composio/ -o sdk/
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
