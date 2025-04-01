@@ -5,7 +5,7 @@ from inspect import Signature
 from composio import ActionType, AppType, TagType
 from composio.client.collections import ActionModel
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import get_signature_format_from_schema_params
+from composio.utils.openapi import function_signature_from_jsonschema
 
 
 class ComposioToolSet(
@@ -52,6 +52,7 @@ class ComposioToolSet(
         self,
         schema: ActionModel,
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
     ) -> t.Callable:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
 
@@ -77,10 +78,9 @@ class ComposioToolSet(
             globals=globals(),
             closure=_execute.__closure__,
         )
-        parameters = get_signature_format_from_schema_params(
-            schema_params=schema.parameters.model_dump(
-                exclude_none=True,
-            ),
+        parameters = function_signature_from_jsonschema(
+            schema=schema.parameters.model_dump(exclude_none=True),
+            skip_default=skip_default,
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
         setattr(
@@ -96,7 +96,9 @@ class ComposioToolSet(
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
+        *,
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.List[t.Callable]:
         """
@@ -111,7 +113,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
-            self._wrap_tool(schema=tool, entity_id=entity_id)
+            self._wrap_tool(schema=tool, entity_id=entity_id, skip_default=skip_default)
             for tool in self.get_action_schemas(
                 actions=actions,
                 apps=apps,

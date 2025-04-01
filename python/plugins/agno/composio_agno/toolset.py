@@ -42,6 +42,7 @@ class ComposioToolSet(
         self,
         schema: t.Dict,
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
     ) -> Toolkit:
         """
         Wrap composio tool as Agno `Toolkit` object.
@@ -54,7 +55,10 @@ class ComposioToolSet(
         toolkit = Toolkit(name=name)
 
         # Get function parameters from schema
-        params = shared.get_signature_format_from_schema_params(parameters)
+        params = shared.get_signature_format_from_schema_params(
+            schema_params=parameters,
+            skip_default=skip_default,
+        )
 
         # Create function signature and annotations
         sig = Signature(parameters=params)
@@ -109,6 +113,7 @@ class ComposioToolSet(
         tags: t.Optional[t.List[TagType]] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.List[t.Union[Toolkit, t.Callable, t.Dict, Function]]:
         """
@@ -127,12 +132,12 @@ class ComposioToolSet(
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
+
         return [
             self._wrap_tool(
-                schema=schema.model_dump(
-                    exclude_none=True,
-                ),
+                schema=schema.model_dump(exclude_none=True),
                 entity_id=self.entity_id,
+                skip_default=skip_default,
             )
             for schema in self.get_action_schemas(
                 actions=actions,
