@@ -307,7 +307,8 @@ def get_signature_format_from_schema_params(
         <Parameter "repo: str">
     ]
     """
-    parameters = []
+    default_parameters = []
+    none_default_parameters = []
 
     required_params = schema_params.get("required", [])
     schema_params_object = schema_params.get("properties", {})
@@ -347,21 +348,24 @@ def get_signature_format_from_schema_params(
                 param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
         default = param_default
-        if param_schema.get("required", False) or param_name in required_params:
+        required = param_schema.get("required", False) or param_name in required_params
+        if required:
             default = Parameter.empty
 
         if skip_default:
             default = Parameter.empty
 
-        parameters.append(
-            Parameter(
-                name=param_name,
-                kind=Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=annotation,
-                default=default,
-            )
+        parameter = Parameter(
+            name=param_name,
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=annotation,
+            default=default,
         )
-    return parameters
+        if required:
+            default_parameters.append(parameter)
+            continue
+        none_default_parameters.append(parameter)
+    return default_parameters + none_default_parameters
 
 
 def get_pydantic_signature_format_from_schema_params(
@@ -395,9 +399,7 @@ def get_pydantic_signature_format_from_schema_params(
     ```
     """
     all_parameters = []
-
     field_definitions = json_schema_to_fields_dict(schema_params)
-
     for param_name, (param_dtype, parame_field) in field_definitions.items():
         param = Parameter(
             name=param_name,
