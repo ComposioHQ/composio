@@ -127,6 +127,7 @@ class ComposioToolSet(
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
+
         return [
             ChatCompletionToolParam(  # type: ignore
                 **t.cast(

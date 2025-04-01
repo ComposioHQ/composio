@@ -70,6 +70,7 @@ class ComposioToolSet(
         action: str,
         description: str,
         schema_params: t.Dict[str, t.Any],
+        skip_default: bool = False,
         entity_id: t.Optional[str] = None,
     ):
         """Create a wrapper function for the Composio action."""
@@ -100,7 +101,10 @@ class ComposioToolSet(
         )
 
         # Get parameters using shared utility
-        parameters = get_signature_format_from_schema_params(schema_params)
+        parameters = get_signature_format_from_schema_params(
+            schema_params=schema_params,
+            skip_default=skip_default,
+        )
 
         # Add type hints
         params = {param.name: param.annotation for param in parameters}
@@ -126,6 +130,7 @@ class ComposioToolSet(
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
         max_retries: t.Optional[int] = None,
+        skip_default: bool = False,
     ) -> Tool:
         """Wraps composio tool as Pydantic-AI Tool object."""
         action = schema["name"]
@@ -137,6 +142,7 @@ class ComposioToolSet(
             action=action,
             description=description,
             schema_params=parameters,
+            skip_default=skip_default,
             entity_id=entity_id,
         )
 
@@ -159,6 +165,7 @@ class ComposioToolSet(
         max_retries: t.Optional[t.Dict[Action, int]] = None,
         default_max_retries: int = 3,
         processors: t.Optional[ProcessorsType] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.Sequence[Tool]:
         """
@@ -182,12 +189,12 @@ class ComposioToolSet(
             self._processor_helpers.merge_processors(processors)
 
         max_retries = max_retries or {}
-
         return [
             self._wrap_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
                 max_retries=max_retries.get(Action(tool.name), default_max_retries),
+                skip_default=skip_default,
             )
             for tool in self.get_action_schemas(
                 actions=actions,
