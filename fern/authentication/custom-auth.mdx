@@ -15,9 +15,7 @@ Composio supports multiple authentication schemes, and a connection can be creat
 | **Basic with JWT**  | A hybrid approach that combines basic authentication (username/password) with JWT-based token authentication. |
 | **No Authentication** | Some APIs do not require authentication, allowing open access to endpoints. |
 
-<AccordionGroup>
-<Accordion title="Auth with OAuth 2.0">
-
+## Auth with OAuth 2.0
 To add custom OAuth 2.0 credentials, you can specify your own *client id* and *client secret* while [creating an integration](/auth/auth-lifecycle#configuring-an-integration).
 
 <Frame background="subtle" title="Specifying custom OAuth 2.0 credentials">
@@ -144,9 +142,8 @@ Here you'll be able to see all the required parameters.
 
 </Tab>
 </Tabs> */}
-</Accordion>
 
-<Accordion title="Auth with API keys">
+## Auth with API keys
 Many applications have API key or token based authentication, in these cases, your users will need to provide the API key, token or other parameters to authenticate and use the service.
 
 <Steps>
@@ -224,9 +221,8 @@ console.log(`Connection Status: ${shopifyConnectionReq.status}`);
 </CodeGroup>
 </Step>
 </Steps>
-</Accordion>
 
-<Accordion title="Auth with Bearer Token">
+## Auth with Bearer Token
 Many applications that have OAuth 2.0, also support the user providing their own Bearer token.
 For these, the user is expected to provide the token in the `connectionParams` parameter.
 
@@ -301,5 +297,3 @@ console.log(`Connection Status: ${gmailConnectionReq.status}`);
 </CodeGroup>
 </Step>
 </Steps>
-</Accordion>
-</AccordionGroup>

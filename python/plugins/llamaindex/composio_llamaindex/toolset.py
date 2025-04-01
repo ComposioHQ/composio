@@ -66,6 +66,7 @@ class ComposioToolSet(
         action: str,
         description: str,
         schema_params: t.Dict,
+        skip_default: bool = False,
         entity_id: t.Optional[str] = None,
     ):
         def function(**kwargs: t.Any) -> t.Dict:
@@ -85,27 +86,28 @@ class ComposioToolSet(
         )
         action_func.__signature__ = Signature(  # type: ignore
             parameters=get_pydantic_signature_format_from_schema_params(
-                schema_params=schema_params
+                schema_params=schema_params,
+                skip_default=skip_default,
             )
         )
         action_func.__doc__ = description
-
         return action_func
 
     def _wrap_tool(
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
     ) -> FunctionTool:
         """Wraps composio tool as LlamaIndex FunctionTool object."""
         action = schema["name"]
         description = schema.get("description", schema["name"])
         schema_params = schema["parameters"]
-
         action_func = self._wrap_action(
             action=action,
             description=description,
             schema_params=schema_params,
+            skip_default=skip_default,
             entity_id=entity_id,
         )
         return FunctionTool.from_defaults(
@@ -143,6 +145,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.Sequence[FunctionTool]:
         """
@@ -160,10 +163,9 @@ class ComposioToolSet(
             self._processor_helpers.merge_processors(processors)
         return [
             self._wrap_tool(
-                schema=tool.model_dump(
-                    exclude_none=True,
-                ),
+                schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
+                skip_default=skip_default,
             )
             for tool in self.get_action_schemas(
                 actions=actions,

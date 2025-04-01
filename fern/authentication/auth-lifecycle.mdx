@@ -2,18 +2,7 @@
 title: 'Auth Lifecycle'
 subtitle: 'Learn how to manage the lifecycle of an integration and connection'
 ---
-The typical lifecycle of using Auth in Composio is as follows:
-
-1. Create and configure an integration.
-2. Fetch parameters for a connection from the user.
-3. Create the connection using the parameters.
-4. Check and confirm the connection status.
-5. Use the connection to make API calls.
-6. If required, delete the connection.
-
-
-
-## Configuring an integration
+## Integrations
 Integrations are configuration objects that store credentials and settings for specific APIs. They store the following properties, among others:
 
 <Accordion title="Integration Properties">
@@ -30,11 +19,28 @@ An Integration stores all necessary authentication and API communication details
 | **API Endpoints**     | A list of necessary endpoints used for executing tool calls. |
 </Accordion>
 
-Typically you only need to create an integration once. That integration can be used by multiple users (called entities in Composio).
+### Configuring an integration
+**Typically you only need to create an integration once.** That integration can be used by multiple users (called entities in Composio).
 
 Each entity *connects* to an *integration* using a *connection*.
 
 <Tabs>
+<Tab title="CLI">
+Add an integration through the CLI and follow the steps outlined in the CLI.
+Make sure you have logged in.
+
+```bash
+composio add github
+
+# > Adding integration: Github...
+
+# Please authenticate github in the browser and come back here. URL: https://backend.composio.dev/s/tizSmu22
+# ⚠ Waiting for github authentication...
+# ✔ github added successfully with ID: 00000000-0000-0000-0000-000000000000
+```
+
+On successful creation, you'll receive an **Integration ID** - a unique identifier used for managing your integration.
+</Tab>
 <Tab title="Dashboard">
 <Steps>
 <Step title="Navigate to an application">
@@ -74,7 +80,6 @@ Complete the integration setup by clicking **Create Integration**. Upon successf
 </Step>
 </Steps>
 
-
 {/* <video
     src="../assets/videos/creating-integration.mp4"
     width="854"
@@ -85,16 +90,6 @@ Complete the integration setup by clicking **Create Integration**. Upon successf
     controls
 >
 </video> */}
-</Tab>
-<Tab title="CLI">
-Add an integration through the CLI and follow the steps outlined in the CLI.
-Make sure you have logged in.
-
-```bash
-composio add github
-```
-
-On successful creation, you'll receive an **Integration ID** - a unique identifier used for managing your integration.
 </Tab>
 <Tab title="Code">
 <CodeGroup>
@@ -170,7 +165,7 @@ console.log(integration.id)
 Learn how to customize integrations to use your own credentials and configurations.
 </Card> */}
 
-## Managing Connections
+## Connections
 A connection in Composio is an object that stores and manages your users' authentication state and details for a specific app (integration).
 
 An integration can have multiple connections, each representing a different user's authentication state.
@@ -215,18 +210,7 @@ const connection = await connectionReq.waitUntilActive(20);
 ```
 </CodeGroup>
 
-**Connection Parameters**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `integration_id` | string | ID of an existing integration to use for the connection. If not provided, the system will attempt to find or create an integration based on the `app` parameter. |
-| `app` | string | The app to connect to (e.g., `GMAIL`, `GITHUB`). Required if `integration_id` is not provided. |
-| `labels` | array | Tags or categories to associate with this connection for organizational purposes. |
-| `entity_id` | string | The identifier for the user/entity making the connection. Defaults to the toolset's current entity ID if not specified. |
-| `redirect_url` | string | Custom URL where the user will be redirected after authentication completes. |
-| `connected_account_params` | object | Additional parameters required for the connection, such as API keys or tokens. Required parameters depend on the app and auth scheme. |
-| `auth_scheme` | string | Authentication method to use (e.g., `OAUTH2`, `API_KEY`). If not specified, will use the default scheme for the app. |
-| `auth_config` | object | Advanced integration parameters required when creating a new integration, such as OAuth client credentials and redirect URIs. Only needed if integration doesn't exist. |
-
+You can view the parameters for creating a connection [here](/sdk-reference/python/client/overview#def-initiate_connection)
 
 ### Checking the status of a connection
 Checking for status of a connection is useful to keep track of the authentication flow. This is especially useful for OAuth based flows. 
@@ -322,10 +306,6 @@ console.log(connectionDetails);
 ### Deleting a connection
 Deleting a connection is useful to remove a connection from the system. Typically done when a user wants to disconnect from an app or no longer wishes to give access to an app.
 
-<CodeGroup>
-```python Python maxLines=100 wordWrap
-```
-
 ```typescript TypeScript maxLines=100 wordWrap
 const res =  toolset.client.connectedAccounts.delete({
     connectedAccountId: "********",
@@ -333,5 +313,3 @@ const res =  toolset.client.connectedAccounts.delete({
 
 console.log(res)
 ```
-</CodeGroup>
-
