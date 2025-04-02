@@ -111,6 +111,7 @@ class ComposioToolSet(
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
+        skip_default: bool = False,
     ) -> StructuredTool:
         """Wraps composio tool as Langchain StructuredTool object."""
         action = schema["name"]
@@ -122,7 +123,10 @@ class ComposioToolSet(
             schema_params=schema_params,
             entity_id=entity_id,
         )
-        parameters = json_schema_to_model(json_schema=schema_params)
+        parameters = json_schema_to_model(
+            json_schema=schema_params,
+            skip_default=skip_default,
+        )
         tool = StructuredTool.from_function(
             name=action,
             description=description,
@@ -163,6 +167,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        skip_default: bool = False,
         check_connected_accounts: bool = True,
     ) -> t.Sequence[StructuredTool]:
         """
@@ -178,12 +183,12 @@ class ComposioToolSet(
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
+
         return [
             self._wrap_tool(
-                schema=tool.model_dump(
-                    exclude_none=True,
-                ),
+                schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
+                skip_default=skip_default,
             )
             for tool in self.get_action_schemas(
                 actions=actions,
