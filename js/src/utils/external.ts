@@ -30,10 +30,10 @@ export function sendProcessReq(info: {
   }
 
   try {
-  const url = new URL(info.url);
+    const url = new URL(info.url);
     const protocol = url.protocol === "https:" ? "https" : "http";
     const port = url.port || (url.protocol === "https:" ? 443 : 80);
-    
+
     const args = [
       "-e",
       `
@@ -59,15 +59,15 @@ export function sendProcessReq(info: {
 
       req.write(JSON.stringify(${JSON.stringify(info.data)}));
       req.end();
-      `
+      `,
     ];
 
     // Use spawn with detached option instead of spawnSync to make it non-blocking
-    const { spawn } = require('child_process');
-    spawn("node", args, { 
+    const { spawn } = require("child_process");
+    spawn("node", args, {
       stdio: "ignore",
       detached: true,
-      shell: false
+      shell: false,
     }).unref();
     return true;
   } catch (error) {
