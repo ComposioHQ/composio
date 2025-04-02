@@ -528,6 +528,7 @@ def test_custom_auth_runtime_tool():
     result = toolset.execute_action(action=action_2, params={})
     assert result["successful"]
 
+
 def test_custom_descope_auth_fails_on_localtool():
     # Prepare a fake token response for Descope
     fake_response = {"token": {"accessToken": "dummy-token"}}
@@ -536,7 +537,9 @@ def test_custom_descope_auth_fails_on_localtool():
     fake_post_response.json.return_value = fake_response
 
     # Patch requests.post for the entire descope flow.
-    with mock.patch("composio.tools.toolset.requests.post", return_value=fake_post_response):
+    with mock.patch(
+        "composio.tools.toolset.requests.post", return_value=fake_post_response
+    ):
         toolset = ComposioToolSet(
             descope_config=DescopeConfig(
                 project_id="project_id",
@@ -555,7 +558,7 @@ def test_custom_descope_auth_fails_on_localtool():
                     "assert": metadata["name"] == "value",
                 },
             )
-        
+
         # Since local tools only accept metadata-based custom auth,
         # the header-based token should trigger failure.
         with pytest.raises(
@@ -568,6 +571,7 @@ def test_custom_descope_auth_fails_on_localtool():
                     "pattern": "*.py",
                 },
             )
+
 
 def test_custom_descope_auth_runtime_tool():
     reset_installed_list()
@@ -607,7 +611,9 @@ def test_custom_descope_auth_runtime_tool():
     fake_post_response.json.return_value = fake_response
 
     # Patch requests.post so that get_access_token returns our fake token.
-    with mock.patch("composio.tools.toolset.requests.post", return_value=fake_post_response):
+    with mock.patch(
+        "composio.tools.toolset.requests.post", return_value=fake_post_response
+    ):
         toolset = ComposioToolSet(
             descope_config=DescopeConfig(
                 project_id="project_id",
@@ -625,6 +631,7 @@ def test_custom_descope_auth_runtime_tool():
 
         result = toolset.execute_action(action=action_descope_2, params={})
         assert result["successful"]
+
 
 class TestSubclassInit:
 

@@ -89,12 +89,20 @@ from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
+
 class DescopeConfig(BaseModel):
     """Descope configuration."""
 
-    project_id: str | None = Field(default_factory=lambda: os.environ.get("DESCOPE_PROJECT_ID"))
-    management_key: str | None = Field(default_factory=lambda: os.environ.get("DESCOPE_MANAGEMENT_KEY"))
-    base_url: str = Field(default_factory=lambda: os.environ.get("DESCOPE_BASE_URL") or "https://api.descope.com")
+    project_id: str | None = Field(
+        default_factory=lambda: os.environ.get("DESCOPE_PROJECT_ID")
+    )
+    management_key: str | None = Field(
+        default_factory=lambda: os.environ.get("DESCOPE_MANAGEMENT_KEY")
+    )
+    base_url: str = Field(
+        default_factory=lambda: os.environ.get("DESCOPE_BASE_URL")
+        or "https://api.descope.com"
+    )
 
 
 T = te.TypeVar("T")
@@ -797,6 +805,7 @@ class SchemaHelper(WithLogger):
             file_helper=file_helper,
         )
 
+
 class DescopeClient(WithLogger):
     """Descope client."""
 
@@ -836,7 +845,7 @@ class DescopeClient(WithLogger):
         }
         try:
             response = requests.post(
-                descope_url, headers=headers, data=payload, verify=False
+                descope_url, headers=headers, data=payload, timeout=30
             )
             response.raise_for_status()
             response_data = response.json()
