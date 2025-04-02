@@ -63,7 +63,7 @@ integration = toolset.create_integration(
     auth_config={
       "client_id": "12345678",
       "client_secret": "12345678",
-      "redirect_uri": "https://yourapp.com/redirect"
+      "redirect_uri": ""  # OAuth Redirect URL
     }
 )
 
@@ -87,7 +87,7 @@ const integration = await composioToolset.integrations.create({
   authConfig: {
     client_id: "12345678",
     client_secret: "12345678",
-    redirect_uri: "https://yourapp.com/redirect",
+    redirect_uri: "",  // OAuth Redirect URL
   },
 });
 ```
@@ -96,7 +96,9 @@ const integration = await composioToolset.integrations.create({
 </Step>
 
 <Step title="Create the connection">
-Now you can create the connection. Make sure to include the `redirectUri` parameter and set it to where the user should be redirected to after the auth process is finished.
+You can now create the connection. Make sure to include the `redirectUri` parameter and set it to where the user should be redirected to after the auth process is finished. Recommend to redirect to a success page or the chat thread where the user can continue their conversation.
+
+<Warning>**DO NOT** confuse the redirect URL in this step with the OAuth Redirect URL set while creating the integration.</Warning>
 
 <CodeGroup>
 ```python Python {10-11}
@@ -104,7 +106,7 @@ user_id = "00000000-0000-0000-0000-000000000000"
 entity = toolset.get_entity(user_id)
 
 thread_id = "12345678"
-redirect_url = "https://yourapp.com/thread/{thread_id}" # Example redirect URL
+redirect_url = "https://yourapp.com/thread/{thread_id}"   # Final success redirect URL
 
 conn_req = entity.initiate_connection(
     app_name=App.GOOGLECALENDAR,
@@ -122,7 +124,7 @@ const user_id = "00000000-0000-0000-0000-000000000000";
 const entity = await composioToolset.getEntity(user_id);
 
 const thread_id = "12345678"; 
-const redirect_url = `https://yourapp.com/thread/${thread_id}`; // Example redirect URL
+const redirect_url = `https://yourapp.com/thread/${thread_id}`;   // Final success redirect URL
 
 const connectionRequest = await entity.initiateConnection({
   integrationId: integration.id,
