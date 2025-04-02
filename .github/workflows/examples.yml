@@ -70,6 +70,7 @@ jobs:
             openai,
             langgraph,
             phidata,
+            pydanticai,
           ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -104,7 +105,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
           SLACK_TITLE: "Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
-          SLACK_MESSAGE: "<@viraj> <@tushar> ${{ inputs.commit_message || github.event.head_commit.message }}"
+          SLACK_MESSAGE: "<@viraj> ${{ inputs.commit_message || github.event.head_commit.message }}"
           SLACK_LINK_NAMES: "true"
           SLACK_COLOR: "failure"
           SLACK_USERNAME: "GitHub Actions Bot"

@@ -56,7 +56,7 @@ core_requirements = [
 ]
 
 e2b_workspace_requirements = [
-    "e2b>=0.17.2a37,<1",  # E2B Workspace
+    "e2b>=0.17.2a37,<1.1.0",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
 ]
 
@@ -89,7 +89,7 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.7.7",
+    version="0.7.13",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

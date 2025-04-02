@@ -1,9 +1,9 @@
 ---
 title: 'Quickstart'
-subtitle: 'Get started with using Composio'
+subtitle: 'Create your first application with Composio'
 hide-nav-links: false
 ---
-Let's use Composio to build a workflow to star a GitHub repository using AI. Composio will discover and provide the relevant tools to the LLM and handle it's execution.
+This guide shows how to build a workflow to star a GitHub repository using AI. Composio discovers and provides the relevant tools to the LLM and handles its execution.
 
 1. 🔑 Get your Composio API key
 2. 🔐 Configure GitHub integration
@@ -11,45 +11,27 @@ Let's use Composio to build a workflow to star a GitHub repository using AI. Com
 4. 🧠 Pass tools to an LLM
 5. ⭐ Execute tools to star a repository
 
-
-
-<Warning>Before proceeding, ensure you have [installed Composio](/getting-started/installation)!</Warning>
+<Note>[Click here](#full-code) to skip to the full code.</Note>
 
 ## Getting your API key
-Before you begin, you'll need a Composio account. Sign up [here](https://app.composio.dev) if you haven't yet! 
+Before you begin, you'll need a Composio account. Sign up [here](https://app.composio.dev) if you haven't yet. 
 
-Once done, you can generate the API key through either our dashboard or CLI.
+Once done, you can generate the API key through the dashboard or command-line tool.
 
 <Tabs>
 <Tab title="CLI">
+<Warning>Ensure you have [installed Composio](/getting-started/installation)</Warning>
 <Steps>
 <Step title="Login">
-<Tabs>
-<Tab title="Python">
-
-<Warning>Ensure you have `uv` installed!</Warning>
-
 ```bash
-uvx --from composio-core composio login
+composio login
 ```
 
-To view the API key;
+To view the API key:
 
 ```bash
-uvx --from composio-core composio whoami
+composio whoami
 ```
-</Tab>
-<Tab title="Node">
-```bash
-npx composio-core login
-```
-To view the API key;
-
-```bash
-npx composio-core whoami
-```
-</Tab>
-</Tabs>
 </Step>
 <Step title="Store the API Key">
 When building, store the API key in an `.env` file.
@@ -88,10 +70,10 @@ export COMPOSIO_API_KEY=YOUR_API_KEY
 </Tab>
 </Tabs>
 <Note>
-Make sure to not leak your Composio API key! Anyone with access to your API key can access your authenticated applications.
+Make sure to not leak your Composio API key. Anyone with access to your API key can access your authenticated applications.
 </Note>
 
-## Setting Up the GitHub Integration
+## Setting up the GitHub integration
 Before writing any code, you'll need to connect your GitHub account. Choose your
 preferred method:
 
@@ -99,18 +81,11 @@ preferred method:
 <Tab title="CLI">
 Add GitHub integration through the CLI.
 
-<CodeGroup>
-```uvx uvx
-uvx --from composio-core composio add github
+```bash
+composio add github
 ```
-```npx npx
-npx composio-core add github
-```
-</CodeGroup>
 Follow the instructions in the CLI to authenticate and connect your GitHub account.
 </Tab>
-Follow the instructions in the CLI to authenticate and connect your GitHub
-account.
 
 <Tab title="Dashboard">
 Head over to the [GitHub App](https://app.composio.dev/app/github).
@@ -121,8 +96,8 @@ Head over to the [GitHub App](https://app.composio.dev/app/github).
 </Tab>
 </Tabs>
 
-## Building the Application
-Now that GitHub is connected, let's make our LLM workflow:
+## Building the application
+After connecting GitHub, create the LLM workflow:
 <Steps>
 
 <Step title="Initialize Clients">
@@ -177,20 +152,18 @@ const tools = await toolset.getTools({ actions: actionsEnums });
 
 <Step title="Implement Tool Calling">
 
-Let's break down the tool calling process into smaller steps to understand how
+Breaking down the tool calling process into smaller steps helps understand how
 it works:
 
-1. First, we define our task and set up the conversation with the LLM
-2. Then, we enter a loop that handles the back-and-forth between the LLM and
-   tools
-3. Finally, we process and store the results of each tool call and break the
-   loop when the task is complete.
+1. First, define the task and set up the conversation with the LLM.
+2. Then, enter a loop to handle the interaction between the LLM and tools.
+3. Finally, process and store the results of each tool call, and exit the loop when the task is complete.
 
 <Steps>
 <Step title="Define the Task">
 <CodeGroup>
 ```python Python
-# Define what we want the LLM to do
+# Define the task for the LLM
 task = "star composiohq/composio and print me an octocat."
 
 # Set up the initial conversation
@@ -200,7 +173,7 @@ messages = [
 ]
 ```
 ```javascript JavaScript
-// Define what we want the LLM to do
+// Define the task for the LLM
 const task = "star composiohq/composio and print me an octocat.";
 
 // Set up the initial conversation
@@ -232,7 +205,7 @@ const response = await client.chat.completions.create({
 </CodeGroup>
 
 <Note>
-The LLM will examine our task and the available tools, then decide which tools to call and in what order.
+The LLM examines the task and available tools, then decides which tools to call and in what order.
 </Note>
 </Step>
 
@@ -379,8 +352,8 @@ while (true) {
 
 <Note>
 The loop continues until either:
-- The LLM completes the task and has no more tool calls to make
-- An error occurs (which would be caught by our error handling)
+• The LLM completes the task with no more tool calls
+• Error handling catches an exception
 </Note>
 </Step>
 
@@ -388,11 +361,12 @@ The loop continues until either:
 </Step>
 </Steps>
 
-## Full Code
+## Full code
 
 Here's the full code for the workflow.
 
-<CodeGroup>
+<AccordionGroup>
+<Accordion title="Python">
 ```python Python maxLines=80
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -445,6 +419,9 @@ while True:
             }
         )
 ```
+</Accordion>
+
+<Accordion title="TypeScript">
 ```javascript JavaScript maxLines=80
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
@@ -487,7 +464,7 @@ async function main() {
         while (true) {
             console.log("\n⏳ Waiting for AI response...");
             const response = await client.chat.completions.create({
-                model: "gpt-4",
+                model: "gpt-4o",
                 tools: tools,
                 messages: messages,
             });
@@ -526,29 +503,10 @@ async function main() {
 main();
 
 ```
-</CodeGroup>
-
-{/* ## Next Steps
-
-<CardGroup>
-  <Card
-      title="Explore Tool Calling in Depth"
-      icon="code"
-      href="/concepts/tool-calling/overview"
-  >
-  Browse our toolset of 250+ LLM ready apps to integrate with.
-  </Card>
-
-  <Card
-      title="Explore More Examples"
-      icon="book-open"
-      href="https://github.com/ComposioHQ/composio/tree/master/cookbook"
-  >
-  Check out our examples for more inspiration
-  </Card>
-</CardGroup> */}
+</Accordion>
+</AccordionGroup>
 
 <Note>
-  Need help? Join our [Discord community](https://dub.composio.dev/discord)!
+  Need help? Join the [Discord community](https://dub.composio.dev/discord)!
 </Note>
 

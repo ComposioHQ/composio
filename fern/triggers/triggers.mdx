@@ -1,34 +1,86 @@
 ---
 title: 'Triggers'
-subtite: 'Listen in on events using Webhooks and Websockets'
+subtitle: 'Send payloads to your system based on external events'
 ---
 
-Triggers monitor specific events in apps and notify your AI agents via webhooks or websockets.
-They send in relevant data that your agents can act upon.
+## Overview
 
-Let's use `gpt-4.5` to reply in greentexts to Slack messages!
+Triggers act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your integrations.
 
-Make sure you've created an integration and a connection to your Slack account.
+When these events take place, triggers capture relevant information and deliver structured payloads directly to your system, facilitating timely and context-aware responses.
 
-<Card title="Managing Integrations" href="/authentication/overview.mdx" icon="fa-solid fa-plug">
-Learn how to manage integrations and connected accounts!
+For instance, imagine building a Slack bot designed to generate humorous responses to messages from your co-workers. To achieve this, your application needs to receive notifications whenever someone posts a new message in a specific Slack channel. Triggers fulfill this role by listening for these events and promptly notifying your system, allowing your bot to respond appropriately.
+
+<Frame caption="Triggers through Composio" background="subtle">
+![Triggers Overview](../assets/images/triggers.png)
+</Frame>
+
+
+Composio supports two primary methods for delivering these payloads:
+
+- **[Webhooks](#specifying-listeners-through-webhooks)**: HTTP POST requests sent to a publicly accessible URL that you configure. Webhooks are ideal for scenarios where your application needs to handle events asynchronously and independently from the event source.
+
+- **[Websockets](#specifying-listeners-through-websockets)**: Persistent, real-time connections that push event data directly to your application. Websockets are suitable for applications requiring immediate, continuous, and low-latency communication.
+
+## Managing triggers
+Before proceeding, ensure you've created an integration and established a connection to your external account (e.g., Slack, GitHub).
+
+<Card title="Adding Integrations" href="/auth/introduction" icon="fa-solid fa-plug">
+You need to have an integration set up in order to listen on it's triggers. Learn how to set it up here.
 </Card>
 
-## Managing Triggers
-<Steps>
-  <Step title="Enable the Trigger">
-    Enable the "New Message Received" trigger for your Slack app through the dashboard, CLI, or code.
-  </Step>
-
-  <Step title="Configure Webhook URL">
-    Set up a publicly accessible URL where Composio can send event payloads.
-  </Step>
-
-  <Step title="Implement Handler">
-    Create a webhook handler to process incoming Slack messages.
-  </Step>
-</Steps>
+### Enable the Trigger
+Enable the "New Message Received" trigger for your Slack app through the dashboard, CLI, or code.
 <Tabs>
+<Tab title="Code">
+<CodeGroup>
+```python Python {9-13}
+from composio_openai import ComposioToolSet
+
+toolset = ComposioToolSet()
+
+user_id = "default" # User ID referencing an entity retrieved from application logic
+entity = toolset.get_entity(id=user_id)
+triggers = toolset.get_trigger("SLACK_RECEIVE_MESSAGE")
+
+res = entity.enable_trigger(
+    app=App.SLACK,
+    trigger_name="SLACK_RECEIVE_MESSAGE",
+    config={}
+)
+
+print(res["status"])
+```
+
+```TypeScript TypeScript
+import { ComposioToolSet } from "composio-core";
+const toolset = new ComposioToolSet();
+
+const userId = "default";
+
+const entity = await toolset.getEntity(userId);
+
+const trigger = await toolset.triggers.get({
+  triggerId: "SLACK_RECEIVE_MESSAGE",
+});
+
+const res = await entity.setupTrigger({
+  triggerName: "SLACK_RECEIVE_MESSAGE",
+  app: "slack",
+  config: {},
+});
+
+console.log(res.status);
+```
+</CodeGroup>
+
+</Tab>
+<Tab title="CLI">
+In the command-line run:
+```bash
+composio triggers add SLACK_RECEIVE_MESSAGE
+```
+</Tab>
 <Tab title="Dashboard">
 Head to the [Slack app](https://app.composio.dev/app/slack) in the dashboard and enable the "New Message Recieved" trigger
 <video 
@@ -43,42 +95,31 @@ Head to the [Slack app](https://app.composio.dev/app/slack) in the dashboard and
 </video>
 </Tab>
 
-<Tab title="CLI">
-In the CLI run:
 
-```bash CLI
-composio triggers add SLACK_RECEIVE_MESSAGE
-```
-</Tab>
-
-<Tab title="Code">
-```python {9-13}
-from composio_openai import ComposioToolSet
-
-toolset = ComposioToolSet()
-
-user_id = "default" # User ID referencing an entity retrieved from application logic
-entity = toolset.get_entity(id=user_id)
-triggers = toolset.get_trigger("SLACK_RECEIVE_MESSAGE")
-
-entity.enable_trigger(
-    app=App.SLACK,
-    trigger_name="SLACK_RECEIVE_MESSAGE",
-    config={}
-)
-```
-
-</Tab>
 </Tabs>
 
 
 <Card title="Specifying Trigger Configuration" icon="fa-solid fa-cog">
-Some triggers expect certain configuration in order to set the correct events. You can inspect and add these properties while enabling the triggers!
-
-```python Viewing the expected configuration
+Some triggers expect certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
+</Card>
+<Steps>
+<Step title="Viewing the configuration">
+<CodeGroup>
+```python
+# Using same imports as above
 trigger = toolset.get_trigger("GITHUB_STAR_ADDED_EVENT")
 print(trigger.config.model_dump_json(indent=4))
 ```
+```typescript TypeScript
+// Using same imports as above
+
+const trigger = await toolset.triggers.get({
+  triggerId: "GITHUB_STAR_ADDED_EVENT",
+});
+```
+</CodeGroup>
+</Step>
+
 
 ```json Expected properties focus {2-15} maxLines=20
 {
@@ -105,15 +146,29 @@ print(trigger.config.model_dump_json(indent=4))
 }
 ```
 
-```python Specifying the configuration
+<Step title="Specifying the configuration">
+<CodeGroup>
+```python Python
 response = entity.enable_trigger(
     app=App.GITHUB,
     trigger_name="GITHUB_PULL_REQUEST_EVENT",
     config={"owner": "composiohq", "repo": "composio"},
 )
 ```
-</Card>
+```typescript TypeScript
+const res = await entity.setupTrigger({
+  triggerName: "GITHUB_PULL_REQUEST_EVENT",
+  app: "github",
+  config: {
+    owner: "composiohq",
+    repo: "composio",
+  },
+});
 
+```
+</CodeGroup>
+</Step>
+</Steps>
 
 ## Listeners
 
@@ -121,13 +176,10 @@ Once you have the triggers set up, you can specify listener functions using webs
 
 ### Specifying Listeners through Websockets
 We create a listener and then define a callback function that executes when a listener recieves a payload.
-```python focus {6-15} Creating a listener and defining a callback
-from composio_openai import ComposioToolSet, App, Action
-
-toolset = ComposioToolSet()
-entity = toolset.get_entity(id="default")
-
+<CodeGroup>
+```python Python
 listener = toolset.create_trigger_listener()
+
 @listener.callback(
     filters={
         "trigger_name": "SLACK_RECEIVE_MESSAGE",
@@ -138,6 +190,17 @@ def handle_slack_message(event):
 
 listener.wait_forever()
 ```
+```typescript TypeScript
+const listener = toolset.triggers.subscribe(
+    (data) => {
+        console.log(data);
+    },
+    {
+        triggerName: "SLACK_RECEIVE_MESSAGE"
+    }
+)
+```
+</CodeGroup>
 
 ### Specifying Listeners through Webhooks
 Assuming you've already set up a trigger as discussed in previous steps, here's how you can use webhooks instead to listen in on new events happening in an app.
@@ -161,8 +224,9 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 </Step>
 
 <Step title="Listening on the webhooks">
-To demonstrate, here's a FastAPI server to handle incoming webhook requests.
-```python
+To demonstrate, here's an example of a server to handle incoming webhook requests.
+<CodeGroup>
+```python Python maxLines=100
 from fastapi import FastAPI, Request
 from typing import Dict, Any
 import uvicorn
@@ -186,6 +250,28 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 ```
+```typescript TypeScript
+import express from 'express';
+import type { Request, Response } from 'express';
+import bodyParser from 'body-parser';
+
+const app = express();
+app.use(bodyParser.json());
+
+app.post('/webhook', async (req: Request, res: Response) => {
+    const payload = req.body;
+    console.log('Received webhook payload:');
+    console.log(JSON.stringify(payload, null, 2));
+    res.status(200).json({ status: 'success', message: 'Webhook received' });
+});
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
+});
+```
+</CodeGroup>
 </Step>
 
 <Tip>To test out webhooks locally, use an SSH tunnel like [ngrok](https://ngrok.com/docs/agent/)</Tip>
@@ -318,7 +404,7 @@ Remember to update your webhook URL in the Composio dashboard with your ngrok UR
 
 If you encounter issues with triggers or webhook listeners, you can use the Composio dashboard to inspect detailed trigger logs. The dashboard allows you to review event payloads, identify errors, and manually resend events for testing purposes.
 
-Access the trigger logs here: [Trigger Logs](https://app.composio.dev/trigger_logs)
+Access the trigger logs [here](https://app.composio.dev/trigger_logs)
 
 <video 
     src="../assets/videos/debugging-triggers.mp4"

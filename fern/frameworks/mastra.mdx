@@ -1,0 +1,71 @@
+---
+title: "Using Composio With Mastra"
+sidebarTitle: "Mastra"
+description: "Integrate Composio with Mastra agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Mastra agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with a Mastra agent</Tip>
+
+## Star A Repository on Github
+In this example, we will use Mastra to star a repository on Github using Composio Tools
+
+<Steps>
+  <Step title="Create Mastra project">
+    ```bash title="JavaScript"
+    npx create-mastra@latest
+    ```
+
+    You can get the full Mastra installation instructions [here](https://mastra.ai/docs/getting-started/installation)
+  </Step>
+
+  <Step title="Install `@mastra/mcp`">
+    ```bash title="JavaScript"
+    npm install @mastra/mcp@latest
+    ```
+  </Step>
+
+  <Step title="Import Libraries & Setup MCPConfiguration">
+    The SSE URL that’s generated for Cursor is compatible with Mastra - you can use it directly in your configuration
+
+    ```javascript title="JavaScript"
+    import { MCPConfiguration } from "@mastra/mcp";
+    import { Agent } from "@mastra/core/agent";
+    import { openai } from "@ai-sdk/openai";
+
+    const mcp = new MCPConfiguration({
+      servers: {
+          github: {
+            url: new URL("https://mcp.composio.dev/github/[private-url-path]"),
+          },
+      },
+    });
+    ```
+  </Step>
+
+  <Step title="Execute the Agent">
+    ```javascript title="JavaScript" {8-20}
+    const mcp = new MCPConfiguration({
+        servers: {
+            github: {
+            url: new URL("https://mcp.composio.dev/github/[private-url-path]"),
+            },
+        },
+    });
+
+    const agent = new Agent({
+        name: "CLI Assistant",
+        instructions: "You help users star GitHub repositories",
+        model: openai("gpt-4o-mini"),
+        tools: await mcp.getTools(),
+    });
+
+    const stream = await agent.stream("Please star the repository 'composiohq/composio'");
+
+    for await (const chunk of stream.textStream) {
+        process.stdout.write(chunk);
+    }
+    ```
+  </Step>
+</Steps>

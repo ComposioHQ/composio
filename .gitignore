@@ -36,6 +36,8 @@ refactor_debug.ipynb
 **/.composio.coder.*
 .indexing_status.json
 
+.ruff_cache
+
 python/dockerfiles/e2b-dev/composio
 python/dockerfiles/composio
 python/swe/dockerfiles/generated
@@ -46,7 +48,10 @@ python/swe/dockerfiles/indexed
 python/swe/agentic
 python/swe/dockerfiles/generated*
 
-fern/sdk/
+fern/sdk/composio/
+fern/tools/*
+!fern/tools/introduction.mdx
+fern/code
 
 .cursor/*
 

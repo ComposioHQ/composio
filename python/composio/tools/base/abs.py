@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
+from composio.utils.enums import PUNCTUATION_REGEX
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
 
@@ -40,10 +41,11 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
         jsonref.dumps(
             jsonref.replace_refs(
                 obj=data,
-                lazy_load=False,
+                jsonschema=True,
                 merge_props=True,
+                lazy_load=False,
+                proxies=False,
             ),
-            indent=2,
         )
     )
 
@@ -61,6 +63,22 @@ def generate_app_id(name: str) -> str:
             hash_string[20:],
         )
     )
+
+
+def humanize_titles(properties: t.Dict) -> t.Dict:
+    for field_name, field_properties in properties.items():
+        if "file_uploadable" in field_properties:
+            continue
+
+        # Convert to snake case and titelize
+        field_properties["title"] = inflection.titleize(
+            inflection.underscore(field_name).replace("_", " ")
+        )
+
+        if "properties" in field_properties:
+            humanize_titles(field_properties["properties"])
+
+    return properties
 
 
 class InvalidClassDefinition(ComposioSDKError):
@@ -102,7 +120,7 @@ class _Request(t.Generic[ModelType]):
         if "$defs" in request:
             del request["$defs"]
 
-        properties = request.get("properties", {})
+        properties = humanize_titles(request.get("properties", {}))
         for prop in properties.values():
             if prop.get("file_readable", False):
                 prop["oneOf"] = [
@@ -191,7 +209,7 @@ class _Response(t.Generic[ModelType]):
         if "$defs" in schema:
             del schema["$defs"]
 
-        properties = schema.get("properties", {})
+        properties = humanize_titles(schema.get("properties", {}))
         for prop in properties.values():
             if prop.get("file_readable", False):
                 prop["oneOf"] = [
@@ -218,7 +236,7 @@ class _Response(t.Generic[ModelType]):
 
         schema["properties"] = properties
         schema["title"] = f"{self.model.__name__}Wrapper"
-        return remove_json_ref(schema)
+        return schema
 
 
 class ActionBuilder:
@@ -313,6 +331,12 @@ class ActionMeta(type):
         ActionBuilder.validate(name=name, obj=cls)
         ActionBuilder.set_generics(name=name, obj=cls)
         ActionBuilder.set_metadata(obj=cls)
+        for action in cls.tags():
+            if PUNCTUATION_REGEX.search(action):
+                raise InvalidClassDefinition(
+                    f"Invalid tag `{action}` for action `{name}`, "
+                    "must not contain any punctuation characters"
+                )
 
 
 class Action(
