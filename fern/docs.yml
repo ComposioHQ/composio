@@ -211,7 +211,9 @@ navigation:
         contents:
           - page: Introduction
             path: authentication/introduction.mdx
-          - page: Custom Auth
+          - page: Auth Lifecycle
+            path: authentication/auth-lifecycle.mdx
+          - page: Custom Authentication
             path: authentication/custom-auth.mdx
           - page: White-labelling
             path: authentication/white-labelling.mdx
@@ -318,6 +320,10 @@ navigation:
           - page: Together
             path: frameworks/together.mdx
             slug: together
+          - page: Mastra
+            path: frameworks/mastra.mdx
+            slug: mastra
+
   - tab: api-reference
     layout:
       - api: API Reference
@@ -416,6 +422,8 @@ navigation:
     layout:
       - section: Tools
         contents:
+          - page: Introduction
+            path: tools/introduction.mdx
           - page: Ably
             path: tools/ably.mdx
           - page: Accelo
@@ -692,6 +700,8 @@ navigation:
             path: tools/intercom.mdx
           - page: Interzoid
             path: tools/interzoid.mdx
+          - page: Jina
+            path: tools/jina.mdx
           - page: Jira
             path: tools/jira.mdx
           - page: Junglescout
