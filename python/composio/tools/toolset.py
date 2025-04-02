@@ -20,7 +20,7 @@ from pathlib import Path
 import requests
 import typing_extensions as te
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from requests.exceptions import RequestException
 
 from composio import Action, ActionType, App, AppType, TagType
@@ -92,9 +92,9 @@ from composio.utils.url import get_api_url_base
 class DescopeConfig(BaseModel):
     """Descope configuration."""
 
-    management_key: str | None = os.environ.get("DESCOPE_MANAGEMENT_KEY")
-    project_id: str | None = os.environ.get("DESCOPE_PROJECT_ID")
-    base_url: str = os.environ.get("DESCOPE_BASE_URL") or "https://api.descope.com"
+    project_id: str | None = Field(default_factory=lambda: os.environ.get("DESCOPE_PROJECT_ID"))
+    management_key: str | None = Field(default_factory=lambda: os.environ.get("DESCOPE_MANAGEMENT_KEY"))
+    base_url: str = Field(default_factory=lambda: os.environ.get("DESCOPE_BASE_URL") or "https://api.descope.com")
 
 
 T = te.TypeVar("T")
@@ -877,30 +877,11 @@ class CustomAuthHelper(WithLogger):
 
     def add_descope_auth(
         self,
-        app_id: App,
+        app: AppType,
         user_id: str,
         descope_config: t.Optional[DescopeConfig] = None,
         descope_app_id: t.Optional[str] = None,
     ) -> bool:
-        """Adds Descope authentication to a ComposioToolSet.
-
-        Args:
-            app_id: The ID of the application.
-            user_id: The ID of the user.
-            descope_config: Optional. The Descope configuration. If not provided,
-                a default DescopeConfig will be used.
-            descope_app_id: Optional. The Descope application ID. If not provided,
-                defaults to the string representation of app_id.
-
-        Returns:
-            True if Descope authentication was successfully added, False otherwise.
-
-        Raises:
-            ValueError: If required parameters are missing or invalid.
-            RequestException: If there is an error during the HTTP request.
-            json.JSONDecodeError: If the response from Descope is not valid JSON.
-            ComposioSDKError: For other errors during the process.
-        """
         if descope_config is None:
             descope_config = DescopeConfig()
         if not descope_config.management_key:
@@ -908,13 +889,14 @@ class CustomAuthHelper(WithLogger):
         if not descope_config.project_id:
             raise ValueError("descope_project_id is required")
 
+        app_id = descope_app_id or str(app).lower()
         descope_client = DescopeClient(config=descope_config)
         try:
             access_token = descope_client.get_access_token(
-                app_id=descope_app_id or str(app_id), user_id=user_id
+                app_id=app_id, user_id=user_id
             )
             self.add(
-                app=app_id,
+                app=app,
                 parameters=[
                     {
                         "in_": "header",
@@ -938,6 +920,7 @@ class CustomAuthHelper(WithLogger):
     ) -> t.Dict:
         metadata = {}
         invalid_auth = []
+        print(f"Custom auth for {app}: {custom_auth}")
         for param in custom_auth.parameters:
             if param["in_"] == "metadata":
                 metadata[param["name"]] = param["value"]
@@ -1761,7 +1744,7 @@ class ComposioToolSet(_IntegrationMixin):
 
     def add_descope_auth(
         self,
-        app_id: App,
+        app: AppType,
         user_id: str,
         descope_app_id: t.Optional[str] = None,
     ) -> None:
@@ -1777,7 +1760,7 @@ class ComposioToolSet(_IntegrationMixin):
             ValueError: If descope_management_key or descope_project_id is not provided.
         """
         self._custom_auth_helper.add_descope_auth(
-            app_id=app_id,
+            app=app,
             user_id=user_id,
             descope_app_id=descope_app_id,
             descope_config=self.descope_config,
