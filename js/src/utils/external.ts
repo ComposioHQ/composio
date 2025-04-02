@@ -30,49 +30,46 @@ export function sendProcessReq(info: {
   }
 
   try {
-    // Use node-fetch for making HTTP requests
-    const url = new URL(info.url);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { spawn } = require("child_process");
-    const child = spawn("node", [
+  const url = new URL(info.url);
+    const protocol = url.protocol === "https:" ? "https" : "http";
+    const port = url.port || (url.protocol === "https:" ? 443 : 80);
+    
+    const args = [
       "-e",
       `
-        const http = require('${url.protocol === "https:" ? "https" : "http"}');
-        const options = {
-          hostname: '${url.hostname}',
-          path: '${url.pathname}${url.search}',
-          port: ${url.port || (url.protocol === "https:" ? 443 : 80)},
-          method: '${info.method}',
-          headers: ${JSON.stringify(info.headers)}
-        };
+      const http = require('${protocol}');
+      const options = {
+        hostname: '${url.hostname}',
+        path: '${url.pathname}${url.search}',
+        port: ${port},
+        method: '${info.method}',
+        headers: ${JSON.stringify(info.headers)}
+      };
 
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          
-          res.on('end', () => {
-            if (res.statusCode >= 200 && res.statusCode < 300) {
-              console.log('Request successful');
-            } else {
-              console.error('Request failed with status:', res.statusCode);
-            }
-          });
+      const req = http.request(options, (res) => {
+        res.on('data', () => {});
+        res.on('end', () => {
+          process.exit(0);
         });
+      });
 
-        req.on('error', (error) => {
-          console.error('Error:', error.message);
-          process.exit(1);
-        });
+      req.on('error', () => {
+        process.exit(0);
+      });
 
-        req.write(JSON.stringify(${JSON.stringify(info.data)}));
-        req.end();
-      `,
-    ]);
+      req.write(JSON.stringify(${JSON.stringify(info.data)}));
+      req.end();
+      `
+    ];
 
-    // // Close the stdin stream
-    child.stdin.end();
+    // Use spawn with detached option instead of spawnSync to make it non-blocking
+    const { spawn } = require('child_process');
+    spawn("node", args, { 
+      stdio: "ignore",
+      detached: true,
+      shell: false
+    }).unref();
+    return true;
   } catch (error) {
     logger.debug("Error sending error to telemetry", error);
     // DO NOTHING
