@@ -17,9 +17,11 @@ from functools import wraps
 from importlib.util import find_spec
 from pathlib import Path
 
+import requests
 import typing_extensions as te
 import yaml
 from pydantic import BaseModel
+from requests.exceptions import RequestException
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
@@ -86,6 +88,13 @@ from composio.utils import help_msg
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
+
+class DescopeConfig(BaseModel):
+    """Descope configuration."""
+
+    management_key: str | None = os.environ.get("DESCOPE_MANAGEMENT_KEY")
+    project_id: str | None = os.environ.get("DESCOPE_PROJECT_ID")
+    base_url: str = os.environ.get("DESCOPE_BASE_URL") or "https://api.descope.com"
 
 
 T = te.TypeVar("T")
@@ -788,6 +797,64 @@ class SchemaHelper(WithLogger):
             file_helper=file_helper,
         )
 
+class DescopeClient(WithLogger):
+    """Descope client."""
+
+    def __init__(self, config: DescopeConfig):
+        super().__init__()
+        self.config = config
+
+    def get_access_token(self, app_id: str, user_id: str) -> str:
+        """Get Descope access token.
+
+        Args:
+            app_id: The ID of the application.
+            user_id: The ID of the user.
+
+        Returns:
+            The Descope access token.
+
+        Raises:
+            RequestException: If there is an error during the HTTP request.
+            json.JSONDecodeError: If the response from Descope is not valid JSON.
+            ComposioSDKError: For other errors during the process.
+        """
+        descope_url = f"{self.config.base_url}/v1/mgmt/outbound/app/user/token"
+        self.logger.debug(
+            f"Requesting Descope token: URL={descope_url}, App ID={app_id}, User ID={user_id}"
+        )
+        payload = json.dumps(
+            {
+                "appId": app_id,
+                "userId": user_id,
+                "scopes": ["user", "public_repo"],
+            }
+        )
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.config.project_id}:{self.config.management_key}",
+        }
+        try:
+            response = requests.post(
+                descope_url, headers=headers, data=payload, verify=False
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            if (
+                "token" not in response_data
+                or "accessToken" not in response_data["token"]
+            ):
+                raise ValueError(
+                    f"Invalid response format: missing 'token' or 'accessToken' in {response_data}"
+                )
+            return response_data["token"]["accessToken"]
+        except RequestException as e:
+            raise RequestException(f"Error during Descope token request: {e}") from e
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON response from server: {e}") from e
+        except Exception as e:
+            raise ComposioSDKError(f"Error during Descope token request: {e}") from e
+
 
 class CustomAuthHelper(WithLogger):
 
@@ -807,6 +874,62 @@ class CustomAuthHelper(WithLogger):
             base_url=base_url,
             parameters=parameters,
         )
+
+    def add_descope_auth(
+        self,
+        app_id: App,
+        user_id: str,
+        descope_config: t.Optional[DescopeConfig] = None,
+        descope_app_id: t.Optional[str] = None,
+    ) -> bool:
+        """Adds Descope authentication to a ComposioToolSet.
+
+        Args:
+            app_id: The ID of the application.
+            user_id: The ID of the user.
+            descope_config: Optional. The Descope configuration. If not provided,
+                a default DescopeConfig will be used.
+            descope_app_id: Optional. The Descope application ID. If not provided,
+                defaults to the string representation of app_id.
+
+        Returns:
+            True if Descope authentication was successfully added, False otherwise.
+
+        Raises:
+            ValueError: If required parameters are missing or invalid.
+            RequestException: If there is an error during the HTTP request.
+            json.JSONDecodeError: If the response from Descope is not valid JSON.
+            ComposioSDKError: For other errors during the process.
+        """
+        if descope_config is None:
+            descope_config = DescopeConfig()
+        if not descope_config.management_key:
+            raise ValueError("descope_management_key is required")
+        if not descope_config.project_id:
+            raise ValueError("descope_project_id is required")
+
+        descope_client = DescopeClient(config=descope_config)
+        try:
+            access_token = descope_client.get_access_token(
+                app_id=descope_app_id or str(app_id), user_id=user_id
+            )
+            self.add(
+                app=app_id,
+                parameters=[
+                    {
+                        "in_": "header",
+                        "name": "Authorization",
+                        "value": f"Bearer {access_token}",
+                    }
+                ],
+            )
+            return True
+        except RequestException as e:
+            raise RequestException(f"Error during Descope token request: {e}") from e
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON response from server: {e}") from e
+        except Exception as e:
+            raise ComposioSDKError(f"Error during Descope token request: {e}") from e
 
     def _get_custom_params_for_local_action(
         self,
@@ -1477,6 +1600,7 @@ class ComposioToolSet(_IntegrationMixin):
         output_in_file: bool = False,
         verbosity_level: t.Optional[int] = None,
         allow_tracing: bool = False,
+        descope_config: t.Optional[DescopeConfig] = None,
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         *,
         max_retries: int = 3,
@@ -1602,8 +1726,8 @@ class ComposioToolSet(_IntegrationMixin):
             connected_account_ids=connected_account_ids or {}
         )
         self.max_retries = max_retries
-        self.add_auth = self._custom_auth_helper.add
         self.allow_tracing = allow_tracing
+        self.descope_config = descope_config or DescopeConfig()
         # To be populated by get_tools(), from within subclasses like composio_openai's Toolset.
         self._requested_actions: t.List[str] = []
 
@@ -1630,6 +1754,34 @@ class ComposioToolSet(_IntegrationMixin):
 
         self._remote_client.local = self._local_client
         return self._remote_client
+
+    @property
+    def add_auth(self) -> t.Callable:
+        return self._custom_auth_helper.add
+
+    def add_descope_auth(
+        self,
+        app_id: App,
+        user_id: str,
+        descope_app_id: t.Optional[str] = None,
+    ) -> None:
+        """
+        Adds Descope authentication to a ComposioToolSet.
+
+        Args:
+            app_id: The ID of the application.
+            user_id: The ID of the user.
+            descope_app_id: Optional. The Descope application ID. If not provided, defaults to the string representation of app_id.
+
+        Raises:
+            ValueError: If descope_management_key or descope_project_id is not provided.
+        """
+        self._custom_auth_helper.add_descope_auth(
+            app_id=app_id,
+            user_id=user_id,
+            descope_app_id=descope_app_id,
+            descope_config=self.descope_config,
+        )
 
     @property
     def client(self) -> Composio:  # type: ignore[override]
