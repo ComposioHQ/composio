@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
-from composio.utils.enums import PUNCTUATION_REGEX
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
 
@@ -331,12 +330,6 @@ class ActionMeta(type):
         ActionBuilder.validate(name=name, obj=cls)
         ActionBuilder.set_generics(name=name, obj=cls)
         ActionBuilder.set_metadata(obj=cls)
-        for action in cls.tags():
-            if PUNCTUATION_REGEX.search(action):
-                raise InvalidClassDefinition(
-                    f"Invalid tag `{action}` for action `{name}`, "
-                    "must not contain any punctuation characters"
-                )
 
 
 class Action(
