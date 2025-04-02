@@ -20,7 +20,7 @@ from composio.exceptions import (
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
 from composio.tools.local.filetool.tool import Filetool, FindFile
-from composio.tools.toolset import ComposioToolSet
+from composio.tools.toolset import ComposioToolSet, DescopeConfig
 from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
@@ -528,6 +528,103 @@ def test_custom_auth_runtime_tool():
     result = toolset.execute_action(action=action_2, params={})
     assert result["successful"]
 
+def test_custom_descope_auth_fails_on_localtool():
+    # Prepare a fake token response for Descope
+    fake_response = {"token": {"accessToken": "dummy-token"}}
+    fake_post_response = mock.MagicMock()
+    fake_post_response.raise_for_status = lambda: None
+    fake_post_response.json.return_value = fake_response
+
+    # Patch requests.post for the entire descope flow.
+    with mock.patch("composio.tools.toolset.requests.post", return_value=fake_post_response):
+        toolset = ComposioToolSet(
+            descope_config=DescopeConfig(
+                project_id="project_id",
+                management_key="management_key",
+            )
+        )
+        # This call now uses the patched requests.post and should return "dummy-token"
+        toolset.add_descope_auth(
+            app=Filetool.enum,
+            user_id="user_id",
+        )
+
+        def _execute(cls, request, metadata):  # pylint: disable=unused-argument
+            return mock.MagicMock(
+                model_dump=lambda *_: {
+                    "assert": metadata["name"] == "value",
+                },
+            )
+        
+        # Since local tools only accept metadata-based custom auth,
+        # the header-based token should trigger failure.
+        with pytest.raises(
+            ComposioSDKError,
+            match="Invalid custom auth found for FILETOOL",
+        ):
+            toolset.execute_action(
+                action=FindFile.enum,
+                params={
+                    "pattern": "*.py",
+                },
+            )
+
+def test_custom_descope_auth_runtime_tool():
+    reset_installed_list()
+    tool = "tool"
+    expected_data = {
+        "headers": {"Authorization": "Bearer dummy-token"},
+    }
+
+    @custom_action(toolname=tool)
+    def action_descope_1(auth: t.Dict) -> int:
+        """
+        Custom action 1
+
+        :return exit_code: int
+        """
+        assert auth["headers"] == expected_data["headers"]
+        return 0
+
+    class Req(BaseModel):
+        pass
+
+    class Res(BaseModel):
+        data: int = Field(...)
+
+    @custom_action(toolname=tool)
+    def action_descope_2(
+        request: Req,  # pylint: disable=unused-argument
+        metadata: dict,
+    ) -> Res:
+        assert metadata["headers"] == expected_data["headers"]
+        return Res(data=0)
+
+    # Prepare a fake token response for Descope
+    fake_response = {"token": {"accessToken": "dummy-token"}}
+    fake_post_response = mock.MagicMock()
+    fake_post_response.raise_for_status = lambda: None
+    fake_post_response.json.return_value = fake_response
+
+    # Patch requests.post so that get_access_token returns our fake token.
+    with mock.patch("composio.tools.toolset.requests.post", return_value=fake_post_response):
+        toolset = ComposioToolSet(
+            descope_config=DescopeConfig(
+                project_id="project_id",
+                management_key="management_key",
+            )
+        )
+        # add_descope_auth creates header-based auth (which is allowed for runtime tools)
+        toolset.add_descope_auth(
+            app="tool",  # using a simple string to denote the tool
+            user_id="user_id",
+        )
+
+        result = toolset.execute_action(action=action_descope_1, params={})
+        assert result["successful"]
+
+        result = toolset.execute_action(action=action_descope_2, params={})
+        assert result["successful"]
 
 class TestSubclassInit:
 
