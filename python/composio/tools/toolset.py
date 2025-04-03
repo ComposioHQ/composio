@@ -64,6 +64,8 @@ from composio.exceptions import (
     ApiKeyNotProvidedError,
     ComposioSDKError,
     ConnectedAccountNotFoundError,
+    DescopeAuthError,
+    DescopeConfigError,
     EnumStringNotFound,
     ErrorFetchingResource,
     IntegrationError,
@@ -813,7 +815,7 @@ class DescopeClient(WithLogger):
         super().__init__()
         self.config = config
 
-    def get_access_token(self, app_id: str, user_id: str) -> str:
+    def get_access_token(self, app_id: str, user_id: str, scopes: t.List[str]) -> str:
         """Get Descope access token.
 
         Args:
@@ -829,14 +831,18 @@ class DescopeClient(WithLogger):
             ComposioSDKError: For other errors during the process.
         """
         descope_url = f"{self.config.base_url}/v1/mgmt/outbound/app/user/token"
-        self.logger.debug(
-            f"Requesting Descope token: URL={descope_url}, App ID={app_id}, User ID={user_id}"
+        masked_user_id = (
+            f"{user_id[:3]}...{user_id[-3:]}" if len(user_id) > 6 else "***"
         )
+        self.logger.debug(
+            f"Requesting Descope token: URL={descope_url}, App ID={app_id}, User ID={masked_user_id}"
+        )
+
         payload = json.dumps(
             {
                 "appId": app_id,
                 "userId": user_id,
-                "scopes": ["user", "public_repo"],
+                "scopes": scopes,
             }
         )
         headers = {
@@ -845,7 +851,7 @@ class DescopeClient(WithLogger):
         }
         try:
             response = requests.post(
-                descope_url, headers=headers, data=payload, timeout=30
+                descope_url, headers=headers, data=payload, timeout=10, verify=True
             )
             response.raise_for_status()
             response_data = response.json()
@@ -853,16 +859,16 @@ class DescopeClient(WithLogger):
                 "token" not in response_data
                 or "accessToken" not in response_data["token"]
             ):
-                raise ValueError(
+                raise DescopeAuthError(
                     f"Invalid response format: missing 'token' or 'accessToken' in {response_data}"
                 )
             return response_data["token"]["accessToken"]
         except RequestException as e:
-            raise RequestException(f"Error during Descope token request: {e}") from e
+            raise DescopeAuthError(f"Error during Descope token request: {e}") from e
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from server: {e}") from e
+            raise DescopeAuthError(f"Invalid JSON response from server: {e}") from e
         except Exception as e:
-            raise ComposioSDKError(f"Error during Descope token request: {e}") from e
+            raise DescopeAuthError(f"Error during Descope token request: {e}") from e
 
 
 class CustomAuthHelper(WithLogger):
@@ -888,21 +894,22 @@ class CustomAuthHelper(WithLogger):
         self,
         app: AppType,
         user_id: str,
+        scopes: t.List[str],
         descope_config: t.Optional[DescopeConfig] = None,
         descope_app_id: t.Optional[str] = None,
     ) -> bool:
         if descope_config is None:
             descope_config = DescopeConfig()
         if not descope_config.management_key:
-            raise ValueError("descope_management_key is required")
+            raise DescopeConfigError("descope_management_key is required")
         if not descope_config.project_id:
-            raise ValueError("descope_project_id is required")
+            raise DescopeConfigError("descope_project_id is required")
 
         app_id = descope_app_id or str(app).lower()
         descope_client = DescopeClient(config=descope_config)
         try:
             access_token = descope_client.get_access_token(
-                app_id=app_id, user_id=user_id
+                app_id=app_id, user_id=user_id, scopes=scopes
             )
             self.add(
                 app=app,
@@ -915,12 +922,8 @@ class CustomAuthHelper(WithLogger):
                 ],
             )
             return True
-        except RequestException as e:
-            raise RequestException(f"Error during Descope token request: {e}") from e
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from server: {e}") from e
         except Exception as e:
-            raise ComposioSDKError(f"Error during Descope token request: {e}") from e
+            raise DescopeAuthError(f"Error during Descope token request: {e}") from e
 
     def _get_custom_params_for_local_action(
         self,
@@ -929,7 +932,6 @@ class CustomAuthHelper(WithLogger):
     ) -> t.Dict:
         metadata = {}
         invalid_auth = []
-        print(f"Custom auth for {app}: {custom_auth}")
         for param in custom_auth.parameters:
             if param["in_"] == "metadata":
                 metadata[param["name"]] = param["value"]
@@ -1755,14 +1757,16 @@ class ComposioToolSet(_IntegrationMixin):
         self,
         app: AppType,
         user_id: str,
+        scopes: t.List[str],
         descope_app_id: t.Optional[str] = None,
     ) -> None:
         """
         Adds Descope authentication to a ComposioToolSet.
 
         Args:
-            app_id: The ID of the application.
+            app: The app to which the authentication is being added.
             user_id: The ID of the user.
+            scopes: List of scopes for the Descope authentication.
             descope_app_id: Optional. The Descope application ID. If not provided, defaults to the string representation of app_id.
 
         Raises:
@@ -1772,6 +1776,7 @@ class ComposioToolSet(_IntegrationMixin):
             app=app,
             user_id=user_id,
             descope_app_id=descope_app_id,
+            scopes=scopes,
             descope_config=self.descope_config,
         )
 
