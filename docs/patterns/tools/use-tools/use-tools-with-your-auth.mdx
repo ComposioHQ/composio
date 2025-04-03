@@ -34,7 +34,7 @@ toolset.add_auth(
 )
 
 # Method 2: Using add_descope_auth (for Descope)
-toolset.add_descope_auth(app_id=App.GITHUB, user_id="your_user_id") # Requires Descope setup and environment variables
+toolset.add_descope_auth(app_id=App.GITHUB, user_id="your_user_id", scopes=["user", "public_repo"]) # Requires Descope setup and environment variables
 
 toolset.execute_action(
     action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",

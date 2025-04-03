@@ -550,6 +550,7 @@ def test_custom_descope_auth_fails_on_localtool():
         toolset.add_descope_auth(
             app=Filetool.enum,
             user_id="user_id",
+            scopes=["openid", "email"],
         )
 
         def _execute(cls, request, metadata):  # pylint: disable=unused-argument
@@ -624,6 +625,7 @@ def test_custom_descope_auth_runtime_tool():
         toolset.add_descope_auth(
             app="tool",  # using a simple string to denote the tool
             user_id="user_id",
+            scopes=["openid", "email"],
         )
 
         result = toolset.execute_action(action=action_descope_1, params={})
