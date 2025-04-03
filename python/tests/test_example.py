@@ -17,6 +17,7 @@ EXAMPLES_PATH = Path.cwd() / "examples"
 
 # Require env vars
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
 JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
 JULEP_API_URL = os.environ.get("JULEP_API_URL")
@@ -125,6 +126,12 @@ EXAMPLES = {
         "file": PLUGINS / "openai_agents" / "openai_agents_demo.py",
         "match": {"type": "stdout", "values": ["Action executed successfully"]},
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
+    "gemini": {
+        "plugin": "gemini",
+        "file": PLUGINS / "gemini" / "gemini_demo.py",
+        "match": {"type": "stdout", "values": ["Action executed successfully"]},
+        "env": {"GOOGLE_API_KEY": GOOGLE_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "lyzr": {
         "plugin": "lyzr",

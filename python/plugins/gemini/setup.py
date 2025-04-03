@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_core>=0.7.0,<0.8.0",
-        "google-genai",
+        "google-genai==1.5.0",
     ],
     include_package_data=True,
 )
