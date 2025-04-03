@@ -1,0 +1,60 @@
+---
+title: "API V3 Changes"
+subtitle: "Changes in Composio's API, SDK and more"
+---
+
+This document serves as a running changelog for Composio's V3 API and SDK. It will be updated as new changes are introduced, including migration guides, rollout schedules, deprecations, and more.
+
+## Why V3?
+V3 represents a significant improvement over previous versions. It offers:
+- **Enhanced Performance**: Faster response times and improved stability, especially for tool calls and triggers
+- **More Intuitive**: Streamlines interfaces for easier integration.
+- **Greater Robustness**: Significantly improved error handling, suggestions and validation.
+
+On top of this, a **major change in nomenclature** has been implemented across the API and SDK.
+The table below outlines the terminology changes implemented in the V3 API.
+
+| Previous Term | New Term (V3) | Description |
+|--------------|---------------|-------------|
+| App | Toolkit | A collection of LLM-callable tools grouped together for a specific domain or purpose |
+| Action | Tool | A function that can be directly called by an LLM to perform a specific task |
+| Trigger | Trigger | Event-based mechanism that initiates automated workflows |
+| Integration | Auth Config | Authentication and configuration settings for a toolkit's external service connections |
+| Connection | Connected Account | User's authenticated instance of an external service with active credentials |
+| Entity | User | Individual account with permissions and access to the platform |
+| Trigger Metadata | Trigger Instance | Specific configuration and settings for a deployed trigger in your workflow |
+
+When migrating your code from previous versions to V3, references need to be updated according to this new terminology. Migration guides and code examples will use these new terms exclusively.
+
+
+
+<Card 
+    title="Nothing Changes Unexpectedly" 
+    icon="fa-solid fa-exclamation" 
+    iconPosition="left"
+>
+    All existing functionality remains stable during the migration process. This changelog documents the gradual rollout of improvements to services.
+</Card>
+
+## Rollout plan
+
+### Current phase
+- **Platform & Dashboard Implementation** - We are currently testing and implementing the V3 API on the platform and dashboard.
+
+### Upcoming phases
+1. **Service-wide Implementation** - V3 is scheduled for implementation across all services.
+2. **Beta Access** - V3 API becomes available for beta users and testers in the coming weeks.
+3. **SDK Release** - Once the V3 API stabilizes, Beta SDKs revamped for the new API become available.
+4. **Documentation Release** - Migration guides and code examples become available shortly after.
+
+<Note>The rollout plan may change based on feedback and testing results.</Note>
+
+
+## Resources
+
+- V3 API references (Coming soon)
+- Migration guides (Coming soon)
+- Code examples (Coming soon)
+
+- Migration support channel (Coming soon)
+- Contact support (Coming soon)
