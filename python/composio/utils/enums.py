@@ -1,13 +1,9 @@
 """Enum helpers."""
 
-import re
 import string
 
 
 REPLACE = string.punctuation + " –“”"
-PUNCTUATION_REGEX = re.compile(
-    "|".join(re.escape(c) for c in string.punctuation if c != "_")
-)
 
 
 def get_enum_key(name: str) -> str:

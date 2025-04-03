@@ -264,6 +264,10 @@ class DocumentContent:
         # Only wrap in accordion group if there are actions
         if all_action_content:
             self._blocks.append(MDX.as_accordion_group("\n".join(all_action_content)))
+        else:
+            self._blocks.append("""This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/custom-tools) for the app using Composio Auth.""")
         return self
 
     def __str__(self) -> str:
@@ -443,7 +447,7 @@ class ToolDocGenerator:
             # Sort tools alphabetically by name
             sorted_tools = sorted(self.generated_tools, key=lambda x: x["name"])
 
-            # Create page entries
+            # Create page entries for generated tools
             tools_contents = []
             for tool in sorted_tools:
                 tools_contents.append({"page": tool["display_name"], "path": tool["path"]})
@@ -464,8 +468,18 @@ class ToolDocGenerator:
                         # Find the tools section
                         for section in tab_section.get("layout", []):
                             if section.get("section") == "Tools":
+                                # Preserve the Introduction entry if it exists
+                                existing_contents = section.get("contents", [])
+                                intro_entries = [
+                                    item for item in existing_contents 
+                                    if item.get("page") == "Introduction"
+                                ]
+                                
+                                # Add introduction entries first, then the generated tools
+                                final_contents = intro_entries + tools_contents
+                                
                                 # Update the section contents
-                                section["contents"] = tools_contents
+                                section["contents"] = final_contents
                                 break
                         break
 
@@ -484,8 +498,18 @@ class ToolDocGenerator:
                         # Find the tools section
                         for section in tab_section.get("layout", []):
                             if section.get("section") == "Tools":
+                                # Preserve the Introduction entry if it exists
+                                existing_contents = section.get("contents", [])
+                                intro_entries = [
+                                    item for item in existing_contents 
+                                    if item.get("page") == "Introduction"
+                                ]
+                                
+                                # Add introduction entries first, then the generated tools
+                                final_contents = intro_entries + tools_contents
+                                
                                 # Update the section contents
-                                section["contents"] = tools_contents
+                                section["contents"] = final_contents
                                 break
                         break
 

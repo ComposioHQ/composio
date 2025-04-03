@@ -92,6 +92,7 @@ else:
             self,
             schema: t.Dict[str, t.Any],
             entity_id: t.Optional[str] = None,
+            skip_default: bool = False,
         ) -> BaseTool:
             """Wraps composio tool as Langchain StructuredTool object."""
             action = schema["name"]
@@ -124,6 +125,7 @@ else:
                 description=description,
                 args_schema=json_schema_to_model(
                     json_schema=schema_params,
+                    skip_default=skip_default,
                 ),
             )
 
@@ -156,6 +158,7 @@ else:
             entity_id: t.Optional[str] = None,
             *,
             processors: t.Optional[ProcessorsType] = None,
+            skip_default: bool = False,
             check_connected_accounts: bool = True,
         ) -> t.Sequence[BaseTool]:
             """
@@ -174,10 +177,9 @@ else:
 
             tools = [
                 self._wrap_tool(
-                    schema=tool.model_dump(
-                        exclude_none=True,
-                    ),
+                    schema=tool.model_dump(exclude_none=True),
                     entity_id=entity_id or self.entity_id,
+                    skip_default=skip_default,
                 )
                 for tool in self.get_action_schemas(
                     actions=actions,
