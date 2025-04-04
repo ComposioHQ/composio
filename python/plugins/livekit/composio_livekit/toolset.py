@@ -2,7 +2,7 @@ import json
 import types
 import typing as t
 from inspect import Parameter, Signature
-from typing import Any, Dict, List, Type, cast
+from typing import Dict, List, cast
 
 from livekit.agents import FunctionTool, RunContext
 from livekit.agents.llm import ToolError, function_tool
@@ -14,8 +14,8 @@ from composio.tools.toolset import ProcessorsType
 from composio.utils.shared import get_signature_format_from_schema_params
 
 
-# Type mapping for JSON schema to Python types
-JSON_SCHEMA_TYPE_MAP: Dict[str, t.Type[t.Any]] = {
+# Type mapping for JSON schema array types to Python List types
+JSON_SCHEMA_ARRAY_TYPE_MAP: Dict[str, t.Type[t.Any]] = {
     "string": t.List[str],
     "integer": t.List[int],
     "number": t.List[float],
@@ -141,8 +141,7 @@ class ComposioToolSet(
                 prop_info = modified_schema["properties"].get(param.name, {})
                 if prop_info.get("type") == "array" and "items" in prop_info:
                     items_type = prop_info["items"].get("type", "string")
-                    item_python_type: Type = JSON_SCHEMA_TYPE_MAP.get(items_type, str)
-                    annotation = JSON_SCHEMA_TYPE_MAP.get(items_type, str)
+                    annotation = JSON_SCHEMA_ARRAY_TYPE_MAP.get(items_type, str)
             params[param.name] = annotation
 
         action_func.__annotations__ = {

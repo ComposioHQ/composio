@@ -1,10 +1,6 @@
-from typing import Any
-
 import dotenv
 from composio_livekit import Action, ComposioToolSet
 from livekit import agents
-from livekit.agents import RunContext
-from livekit.agents.llm import function_tool
 from livekit.agents.voice import Agent, AgentSession, room_io
 from livekit.plugins import (
     cartesia,
