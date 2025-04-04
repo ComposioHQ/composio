@@ -1,3 +1,4 @@
+import { AnthropicToolSet } from "./frameworks/anthropic";
 import { CloudflareToolSet } from "./frameworks/cloudflare";
 import { LangchainToolSet } from "./frameworks/langchain";
 import { LangGraphToolSet } from "./frameworks/langgraph";
@@ -15,6 +16,7 @@ export {
   // Constants
   ACTIONS,
   APPS,
+  AnthropicToolSet,
   COMPOSIO_SDK_ERROR_CODES,
   // Frameworks
   CloudflareToolSet,
