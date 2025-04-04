@@ -89,6 +89,7 @@ toolset.execute_action(action=Action.GITHUB_GET_A_PULL_REQUEST, params={"owner":
 
 ### Using custom auth
 If you wish to manage your own authentication from another provider you can add the auth parameters for any app as well!
+You can also use add_descope_auth for simpler Descope integration.
 
 ```python {5-14}
 from composio import ComposioToolSet, App
@@ -105,6 +106,9 @@ toolset.add_auth(
         )
     ],
 )
+
+# Method 2: Using add_descope_auth (for Descope)
+toolset.add_descope_auth(app_id=App.GITHUB, user_id="your_user_id", scopes=["user", "public_repo"]) # Requires Descope setup and environment variables
 
 toolset.execute_action(
     action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
