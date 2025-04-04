@@ -15,11 +15,11 @@ from composio.utils.shared import get_signature_format_from_schema_params
 
 
 # Type mapping for JSON schema to Python types
-JSON_SCHEMA_TYPE_MAP: Dict[str, Type] = {
-    "string": str,
-    "integer": int,
-    "number": float,
-    "boolean": bool,
+JSON_SCHEMA_TYPE_MAP: Dict[str, t.Type[t.Any]] = {
+    "string": t.List[str],
+    "integer": t.List[int],
+    "number": t.List[float],
+    "boolean": t.List[bool],
 }
 
 
@@ -142,7 +142,7 @@ class ComposioToolSet(
                 if prop_info.get("type") == "array" and "items" in prop_info:
                     items_type = prop_info["items"].get("type", "string")
                     item_python_type: Type = JSON_SCHEMA_TYPE_MAP.get(items_type, str)
-                    annotation = t.List[item_python_type]
+                    annotation = JSON_SCHEMA_TYPE_MAP.get(items_type, str)
             params[param.name] = annotation
 
         action_func.__annotations__ = {
