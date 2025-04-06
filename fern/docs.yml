@@ -235,6 +235,12 @@ navigation:
           - page: Windsurf
             path: mcp/windsurf.mdx
 
+      - section: Changelog
+        icon: calendar
+        contents:
+          - page: API V3 Changes
+            path: changelogs/overview.mdx
+
       # - section: Resources
       #   icon: book
       #   contents:
