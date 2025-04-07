@@ -1,3 +1,4 @@
+import asyncio
 import json
 import types
 import typing as t
@@ -5,7 +6,7 @@ from inspect import Parameter, Signature
 from typing import Dict, List, cast
 
 from livekit.agents import FunctionTool, RunContext
-from livekit.agents.llm import ToolError, function_tool
+from livekit.agents.llm import function_tool
 from livekit.agents.llm.tool_context import _FunctionToolInfo
 
 from composio import ActionType, AppType, TagType
@@ -32,9 +33,6 @@ class ComposioToolSet(
     """
     Composio toolset for LiveKit integration.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def _clean_schema_properties(self, prop_value: dict) -> None:
         """Clean individual property fields."""
@@ -95,23 +93,17 @@ class ComposioToolSet(
         # Apply schema cleaning
         self._clean_schema(modified_schema)
 
-        async def execute_action_wrapper(ctx: RunContext, **kwargs) -> str:
+        async def execute_action_wrapper(_ctx: RunContext, **kwargs) -> str:
             """Execute Composio action with the given arguments."""
-            try:
-                result = self.execute_action(
-                    action=action,
-                    params=kwargs,
-                    entity_id=entity_id or self.entity_id,
-                )
-                if not isinstance(result, dict):
-                    result = {"result": result}
-                return json.dumps(result)
-            except json.JSONDecodeError as e:
-                raise ToolError(
-                    f"Failed to serialize result for action '{action}': {str(e)}"
-                ) from e
-            except Exception as e:
-                raise ToolError(f"Failed to execute action '{action}': {str(e)}") from e
+            result = await asyncio.to_thread(
+                self.execute_action,
+                action=action,
+                params=kwargs,
+                entity_id=entity_id or self.entity_id,
+            )
+            if not isinstance(result, dict):
+                result = {"result": result}
+            return json.dumps(result)
 
         action_func = types.FunctionType(
             execute_action_wrapper.__code__,
