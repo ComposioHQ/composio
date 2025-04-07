@@ -1,0 +1,4 @@
+paths:
+  # Hide the MCP server validation endpoint
+  /api/v1/mcp/servers/validate/uuid:
+    x-hidden: true  # This will hide this endpoint completely
