@@ -54,7 +54,7 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y jq
 
             - name: Pull Latest OpenAPI Specification
-              run: sh scripts/pull-openapi-spec.sh
+              run: bash scripts/pull-openapi-spec.sh
 
             - name: Generate preview URL
               id: generate-docs

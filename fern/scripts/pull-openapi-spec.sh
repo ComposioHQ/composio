@@ -6,13 +6,20 @@ set -e
 # Define the OpenAPI specification URL and paths
 OPENAPI_URL="https://backend.composio.dev/openapi.json"
 OPENAPI_V3_URL="https://qa-apollo.composio.dev/api/v3/openapi.json"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Get the directory where the script is located, works in both CI and local environments
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || dirname "$0")" && pwd)"
 FERN_DIR="$(dirname "$SCRIPT_DIR")"
 API_DIR="$FERN_DIR/api"
 TEMP_FILE="/tmp/openapi-temp.json"
 TEMP_V3_FILE="/tmp/openapi-v3-temp.json"
 OUTPUT_FILE="$API_DIR/openapi.json"
 OUTPUT_V3_FILE="$API_DIR/openapi-v3.json"
+
+# Debug information
+echo "Script directory: $SCRIPT_DIR"
+echo "Fern directory: $FERN_DIR"
+echo "API directory: $API_DIR"
 
 # Create API directory if it doesn't exist
 mkdir -p "$API_DIR"
@@ -74,6 +81,11 @@ else
     # Copy unfiltered file as fallback
     cp "$TEMP_V3_FILE" "$OUTPUT_V3_FILE"
 fi
+
+# For debugging
+ls -la "$API_DIR"
+echo "FERN_DIR=$FERN_DIR"
+echo "API_DIR=$API_DIR"
 
 # Clean up temporary files
 rm "$TEMP_FILE" "$TEMP_V3_FILE"
