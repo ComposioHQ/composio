@@ -1,0 +1,406 @@
+:root {
+    --background-color: #000000;
+    --text-color: #e7e9ea;
+    --secondary-text-color: #71767b;
+    --border-color: #2f3336;
+    --accent-color: #1d9bf0; /* Twitter Blue */
+    --accent-color-hover: #1a8cd8;
+    --error-background: #5c0000;
+    --error-border: #a11919;
+    --error-text: #f8d7da;
+    --info-background: #544d03;
+    --info-border: #948708;
+    --info-text: #fff3cd;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.app-container {
+    max-width: 600px; /* Typical feed width */
+    margin: 0 auto;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    min-height: 100vh;
+}
+
+.app-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.8); /* Slightly transparent header? */
+    backdrop-filter: blur(5px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+.main-content {
+    padding: 0;
+}
+
+/* Compose Tweet Area Styling */
+.compose-tweet-area {
+    padding: 12px 16px; /* Match tweet padding */
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px; /* Match tweet gap */
+    /* Removed align-items: center */
+}
+
+.compose-left {
+    /* Container for the profile pic */
+    flex-shrink: 0;
+}
+
+/* Use the existing profile pic styles */
+.compose-left .profile-pic-placeholder {
+     width: 48px;
+     height: 48px;
+     border-radius: 50%;
+     background-color: var(--secondary-text-color); /* Example color */
+     /* Add initials or icon if desired later */
+}
+
+.compose-right {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 12px; /* Space between input row and actions row */
+}
+
+.compose-input-wrapper {
+    /* Styles for the input field container if needed */
+    padding: 12px 0; /* Add some vertical padding */
+}
+
+#topic-input {
+    flex-grow: 1;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2em; /* Slightly larger font */
+    padding: 0; /* Removed padding */
+    outline: none;
+    width: 100%; /* Ensure it takes full width */
+    line-height: 1.3;
+}
+
+#topic-input::placeholder {
+    color: var(--secondary-text-color);
+    font-size: 1.2em; /* Match input font size */
+    line-height: 1.3;
+}
+
+.compose-actions-wrapper {
+    display: flex;
+    justify-content: space-between; /* Icons on left, button on right */
+    align-items: center;
+}
+
+.compose-icons {
+    display: flex;
+    gap: 8px; /* Reduced gap for closer icons */
+    align-items: center;
+}
+
+.compose-icon {
+    /* font-size: 1.1em; Remove if using SVG */
+    color: var(--accent-color);
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    /* Add dimensions for the SVG container */
+    width: 20px; 
+    height: 20px;
+    display: inline-flex; /* Needed for alignment */
+    align-items: center;
+    justify-content: center;
+}
+
+.compose-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor; /* Make SVG use the span's color */
+}
+
+.compose-icon:hover {
+    /* Slightly lighten background on hover? */
+    /* background-color: rgba(29, 155, 240, 0.1); */ 
+    opacity: 0.8; /* Keep existing opacity hover */
+}
+
+/* Style for disabled location icon */
+.compose-icon[aria-label="Tag location"] {
+    opacity: 0.5;
+    cursor: default;
+}
+
+#start-button {
+    background-color: var(--accent-color);
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    /* Ensure it doesn't shrink */
+    flex-shrink: 0; 
+}
+
+#start-button:hover {
+    background-color: var(--accent-color-hover);
+}
+
+#start-button:disabled {
+    background-color: #0e4d77; 
+    cursor: not-allowed;
+    opacity: 0.5; /* Make disabled state clearer */
+}
+
+#loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+    color: var(--secondary-text-color);
+    font-size: 0.9em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border-left-color: var(--accent-color);
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.tweet-stream {
+    /* Container for tweets */
+}
+
+.tweet {
+    padding: 12px 16px; /* Slightly adjusted padding */
+    border-bottom: 1px solid var(--border-color);
+    display: flex; /* Use flexbox for profile pic + main content */
+    gap: 12px; /* Space between pic and content */
+}
+
+.tweet:hover {
+    background-color: rgba(255, 255, 255, 0.03); /* Subtle hover */
+}
+
+/* Styles for BOTH placeholder and actual image */
+.profile-pic-placeholder,
+.profile-pic {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Placeholder-specific styles */
+.profile-pic-placeholder {
+    background-color: var(--secondary-text-color); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--background-color);
+}
+
+/* Image-specific styles */
+.profile-pic {
+    object-fit: cover; /* Ensure image covers the area, maintaining aspect ratio */
+    background-color: var(--border-color); /* Background color while image loads */
+}
+
+.tweet-main-area {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow main area to take remaining space */
+    gap: 2px; /* Reduced gap between author/content/actions */
+}
+
+.tweet-author {
+    font-weight: bold;
+    color: var(--text-color);
+    /* Add styles for handle/timestamp if needed */
+    /* display: flex; gap: 5px; */
+}
+
+/* Optional: Style for handle */
+.tweet-author .handle {
+    color: var(--secondary-text-color);
+    font-weight: normal;
+}
+
+.tweet-content {
+    color: var(--text-color);
+    white-space: pre-wrap; 
+    word-wrap: break-word;
+    margin-top: 2px; /* Small space above content */
+}
+
+.tweet-actions {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--secondary-text-color);
+    font-size: 0.80em; /* Slightly smaller base size */
+}
+
+/* Common style for each action group (icon + count/text) */
+.action-icon {
+    background: none;
+    border: none;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px; /* Reduced gap between icon and number */
+    cursor: pointer;
+    color: inherit; /* Inherit grey color */
+    transition: color 0.2s ease;
+}
+
+/* Wrapper for the SVG icon to handle hover effects */
+.icon-wrapper {
+    width: 34px; /* Slightly larger hit area */
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    margin: -7px; /* Keep vertical margin for hit area */
+}
+
+.action-svg {
+    width: 1.25em; /* Relative to action-icon font-size */
+    height: 1.25em;
+    fill: currentColor; 
+}
+
+.action-icon .count {
+    font-size: 1em; /* Relative to action-icon font-size */
+    line-height: 1;
+}
+
+/* Specific hover states */
+.reply-button:hover {
+    color: var(--accent-color);
+}
+.reply-button:hover .icon-wrapper {
+    background-color: rgba(29, 155, 240, 0.1); /* Blue hover */
+}
+
+.retweet-button:hover {
+    color: #00ba7c; /* Green */
+}
+.retweet-button:hover .icon-wrapper {
+    background-color: rgba(0, 186, 124, 0.1); /* Green hover */
+}
+
+.like-button:hover,
+.like-button.liked {
+    color: #f91880; /* Pink/Red */
+}
+.like-button:hover .icon-wrapper {
+    background-color: rgba(249, 24, 128, 0.1); /* Pink/Red hover */
+}
+.like-button.liked .icon-wrapper {
+    background: none; /* No background when liked? Or keep hover? */
+}
+
+/* Style filled heart path */
+.like-button .heart-path-fill {
+    display: none; /* Hide filled path initially */
+}
+.like-button.liked .heart-path-fill {
+    display: block; /* Show filled path when liked */
+    fill: #f91880;
+}
+.like-button.liked .heart-path-outline {
+    display: none; /* Hide outline when liked */
+}
+
+.views-button {
+    cursor: default; /* Views usually not clickable */
+}
+.views-button:hover {
+    /* No hover effect */
+    color: inherit;
+}
+.views-button:hover .icon-wrapper {
+     background: none;
+}
+
+.bookmark-button:hover, 
+.share-button:hover {
+    color: var(--accent-color);
+}
+.bookmark-button:hover .icon-wrapper,
+.share-button:hover .icon-wrapper {
+    background-color: rgba(29, 155, 240, 0.1); /* Blue hover */
+}
+
+/* Container for right-aligned icons (bookmark, share) */
+.extra-actions {
+    display: inline-flex;
+    gap: 0px; /* Reduce gap, rely on icon wrapper padding */
+    margin-left: auto; 
+}
+
+.extra-actions .action-icon {
+    gap: 0; /* No count, no gap needed */
+}
+
+/* System Message Styling Adjustments */
+.tweet.System_Error,
+.tweet.system_error,
+.tweet.System_Info,
+.tweet.system_info {
+    /* Remove flex styling specific to regular tweets if needed, */
+    /* or keep it if profile pic still desired for system messages */
+    gap: 8px; /* Adjust gap for system messages */
+}
+
+.tweet.System_Error .profile-pic-placeholder,
+.tweet.system_error .profile-pic-placeholder {
+    background-color: var(--error-border);
+    color: var(--error-text);
+}
+
+.tweet.System_Info .profile-pic-placeholder,
+.tweet.system_info .profile-pic-placeholder {
+    background-color: var(--info-border);
+    color: var(--info-text);
+}
+
+.tweet.System_Error .tweet-main-area,
+.tweet.system_error .tweet-main-area,
+.tweet.System_Info .tweet-main-area,
+.tweet.system_info .tweet-main-area {
+     /* No specific changes needed here unless overriding regular styles */
+}
