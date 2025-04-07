@@ -2,7 +2,7 @@ api:
   namespaces:
     v1:
       path: ./api/openapi.json
-      overrides: ./openapi-overrides.yml
+      overrides: ./api/openapi-overrides.yml
       settings: 
         use-title: false
     v3:
