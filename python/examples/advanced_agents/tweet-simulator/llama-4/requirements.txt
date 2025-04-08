@@ -1,0 +1,7 @@
+composio-llamaindex==0.7.11
+llama-index-llms-groq==0.3.1
+python-dotenv==1.0.1
+aioconsole==0.8.1
+fastapi[all]==0.115.12
+sse-starlette==2.1.3
+llama-index-core==0.12.25

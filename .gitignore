@@ -1,75 +1,82 @@
+# Environment files
 .env
+
+# Jupyter notebooks
 try.ipynb
+refactor_debug.ipynb
+
+# Python cache and compiled files
+**/__pycache__
+*.pyc
 *pycache*
-user_data.json
+**/*.egg-info
+*egg-info*
+.mypy_cache/
+.ruff_cache
+.tox/
+
+# Virtual environments
 .venv
 venv*
+
+# Distribution and build directories
 **/dist
-.DS_Store
-*egg-info*
-**/composio_autogen.egg-info
-**/composio_llamaindex.egg-info
-**/__pycache__
-**/*.egg-info
-*.pyc
-.tox/
-.mypy_cache/
-
-.coverage
-coverage.xml
-junit.xml
-
-core/build/lib/*
-
-node_modules
-~
-
-Pipfile.lock
 build
+core/build/lib/*
 temp
-.cache
-.pytest_cache
-.test_results
-.trunk
-refactor_debug.ipynb
+
+# Logs and caches
 **/coder_agent_logs_*
 **/.composio.coder.*
 .indexing_status.json
+.python/swe/logs
+python/swe/tests/logs_dir
+python/swe/dockerfiles/logs*
 
-.ruff_cache
+# Coverage and test results
+.coverage
+coverage.xml
+junit.xml
+.pytest_cache
+.test_results
 
+# Node modules and other dependencies
+node_modules
+Pipfile.lock
+
+# System files
+.DS_Store
+~
+
+# Specific project directories and files
+**/composio_autogen.egg-info
+**/composio_llamaindex.egg-info
+.cache
+.trunk
+
+# Dockerfiles and related directories
 python/dockerfiles/e2b-dev/composio
 python/dockerfiles/composio
 python/swe/dockerfiles/generated
-python/swe/dockerfiles/logs*
-python/swe/logs
-python/swe/tests/logs_dir
 python/swe/dockerfiles/indexed
 python/swe/agentic
 python/swe/dockerfiles/generated*
 
+# Fern SDK and tools
 fern/sdk/composio/
 fern/tools/*
 !fern/tools/introduction.mdx
 fern/code
+fern/api/openapi.json
+fern/api/openapi-v3.json
 
+# Cursor and GitHub styles
 .cursor/*
-
 .github/styles/*
-# !.github/styles/config/
-
 .github/styles/config/*
-# !.github/styles/config/vocabularies/
-
 .github/styles/config/vocabularies/*
-# !.github/styles/config/vocabularies/Base
 
-
+# Styles
 styles/*
-# !styles/config/
-
 styles/config/*
-# !styles/config/vocabularies/
-
 styles/config/vocabularies/*
-# !styles/config/vocabularies/Composio

@@ -49,8 +49,11 @@ jobs:
       - name: Install Fern
         run: npm install -g fern-api
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Pull Latest OpenAPI Specification
-        run: sh scripts/pull-openapi-spec.sh
+        run: bash scripts/pull-openapi-spec.sh
 
       - name: Publish Docs
         env:
