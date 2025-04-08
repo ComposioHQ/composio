@@ -1,336 +1,307 @@
 ---
-title: "Custom Tools"
-subtitle: "Learn how to build custom tools that use Composio Auth"
+title: 'Creating Custom Tools'
+subtitle: 'Define your own functions as tools, extend apps, or use custom authentication'
 ---
 
-You can create custom tools for Composio apps. One might need this to call API endpoints in third party applications which are private or those which aren't supported by the Composio's Toolset at the moment. 
+While Composio offers a vast library of pre-built tools, you often need to integrate your own custom logic or interact with APIs in specific ways. This guide covers how to create and use custom tools within the Composio ecosystem.
 
-The key concept is that you define an `execute_request` callable that handles authenticated API calls. 
+**You can create custom tools to:**
+- [Wrap your existing functions](#defining-tools-from-your-functions), making them callable by LLMs.
+- [Extend the functionality of existing Composio-integrated apps](#extending-composio-toolkits) by calling their APIs using Composio's managed authentication.
+- Inject and [use your own external authentication](#adding-custom-authentication-to-tools) credentials to execute any Composio tool.
 
-This callable uses Composio's authentication to make API requests to third-party services.
+## Defining Tools from Your Functions
 
-The callable can be configured to use your own custom authentication parameters as well
+The most straightforward way to create a custom tool is to wrap an existing function in your codebase. Composio provides decorators (Python) and methods (TypeScript) to make these functions discoverable and executable by LLMs.
 
-| Parameter | Description |
-|-----------|-------------|
-| `endpoint` | Endpoint URL path. The base URL for the app will be prepended automatically |
-| `method` | HTTP method for the request |
-| `body` | Request body payload |
-| `parameters` | Custom authentication parameters |
+### Python (`@action`)
+Use the `@action` decorator from `composio` to designate a Python function as a tool. Composio automatically infers the tool's schema and description from the following:
 
-This allows you to securely make authenticated API calls while leveraging Composio's authentication handling.
+- **Function Name:** Becomes the default tool name (can be overridden).
+- **Docstring:** Used as the tool's description for the LLM. Make it clear and concise!
+- **Type Hints:** Define the input parameters and their types for the LLM and for validation.
+- **Return Type Hint:** Informs the expected output structure.
 
-## Creating a custom tool
-<CodeGroup>
-```python Python wordWrap maxLines=100
-import typing as t
-from composio_openai import ComposioToolSet, action
+**Example:**
 
-toolset = ComposioToolSet()
+```python Python maxLines=100
+from composio import action
+from typing import Annotated # Recommended for descriptions
 
+# Define a simple function
+@action # Decorate it to make it a Composio tool
+def add_numbers(
+    a: Annotated[int, "The first number to add"],
+    b: Annotated[int, "The second number to add"]
+) -> int:
+    """Adds two integers and returns the result."""
+    print(f"Executing add_numbers: Adding {a} and {b}")
+    return a + b
 
-@action(toolname="github")
-def my_custom_action(
-    param_1: str,
-    param_2: str,
-    execute_request: t.Callable,
-) -> dict:
-    """
-    Action Description
-
-    :param param_1: Parameter 1 description
-    :param param_2: Parameter 2 description
-    :return content: Return content description
-    """
-    response = execute_request(
-        endpoint="/user",
-        method="GET",
-        body={},
-        parameters=[],  # custom authentication parameters
-    )
-    return response
-
-
-tools = toolset.get_tools(actions=[my_custom_action])
+# Optionally, provide a custom name for the tool
+@action(toolname="calculator_multiply")
+def multiply_numbers(
+    a: Annotated[int, "The first number"],
+    b: Annotated[int, "The second number"]
+) -> int:
+    """Multiplies two integers."""
+    print(f"Executing multiply_numbers: Multiplying {a} by {b}")
+    return a * b
 ```
 
+### TypeScript (`createAction`)
 
-```typescript Typescript wordWrap maxLines=100
-import { OpenAIToolSet } from "composio-core";
+Use the `createAction` method on your ToolSet instance (`OpenAIToolSet`, `LangchainToolSet`, etc.). You provide the configuration, including a [Zod](https://zod.dev/) schema for input parameters and an async callback function containing your logic.
+
+**Example:**
+
+```typescript TypeScript maxLines=100
+import { OpenAIToolSet } from "composio-core"; // Or your specific framework ToolSet
 import { z } from "zod";
 
-const openAIToolset = new OpenAIToolSet();
+const toolset = new OpenAIToolSet(); // Initialize ToolSet
 
-const action = await openAIToolset.createAction({
-    actionName: "my_custom_action",
-    toolName: "github",
-    description: "Action Description",
-    inputParams: z.object({
-        param1: z.string().describe("Parameter 1 description"),
-        param2: z.string().describe("Parameter 2 description"),
-    }),
-    callback: async (inputParams, authCredentials, executeRequest) => {
-        try {
-            const res = await executeRequest({
-                endpoint: "/data", //or any other endpoint path
-                method: "GET", //or any other request method
-                parameters: [], //custom authentication parameters
-                body: {} //request body
-            });
-            return {
-                data: res,
-                successful: true
-            };
-        } catch (e) {
-            console.error(e);
-            return {
-                data: {},
-                successful: false
-            };
-        }
+// Define the input schema using Zod
+const addSchema = z.object({
+    a: z.number().describe("The first number to add"),
+    b: z.number().describe("The second number to add"),
+});
+
+// Register the custom action
+await toolset.createAction({
+    actionName: "add_numbers", // Unique name for this tool
+    description: "Adds two numbers and returns the sum.",
+    inputParams: addSchema, // Provide the Zod schema
+    // The callback function containing your logic
+    callback: async (input) => {
+        // Safely access validated input (casting based on schema)
+        const params = input as z.infer<typeof addSchema>;
+        console.log(`Executing add_numbers: Adding ${params.a} and ${params.b}`);
+        const sum = params.a + params.b;
+        // Return a JSON-serializable result
+        return { result: sum };
     },
-})
-
-const tools = await openAIToolset.getTools({
-    actions: ["my_custom_action"]
 });
+
+console.log("Custom action 'add_numbers' registered.");
+```
+
+### Using Your Custom Function Tools
+
+Once defined (`@action`) or registered (`createAction`), these tools behave like any other Composio tool:
+
+1.  **Fetch them:** Use `get_tools`, referencing the function object (Python) or the `actionName` string (Python/TS).
+2.  **Execute them:** Use framework handlers (like Vercel's `execute`) or `execute_action`.
+
+<CodeGroup>
+```python Python maxLines=100
+# Fetch custom and built-in tools together
+tools = toolset.get_tools(
+    actions=[
+        Action.GITHUB_GET_THE_AUTHENTICATED_USER, # Built-in
+        add_numbers,                         # Custom (by function object)
+        "calculator_multiply"                # Custom (by toolname string)
+    ]
+)
+# Pass 'tools' to your LLM or framework
+```
+```typescript TypeScript maxLines=100
+// Fetch custom and built-in tools together
+const tools = await toolset.getTools({
+    actions: [
+        Action.GITHUB_GET_THE_AUTHENTICATED_USER, // Built-in
+        "add_numbers"                        // Custom (by actionName string)
+    ]
+});
+// Pass 'tools' to your LLM or framework
 ```
 </CodeGroup>
 
+## Extending Composio Toolkits
 
-## Create a custom tool with custom auth
-<Note>Use this when rolling your own auth!</Note>
+A powerful feature is creating custom tools that leverage Composio's **managed authentication** for an existing app (like GitHub, Slack, etc.). This allows you to call API endpoints for that app without handling credentials yourself.
 
-Composio tools can also be executed when rolling your own auth.
-The `parameters` field in `execute_request` supports providing the key, value as well as the placement of the auth parameter through the `in_` field.
 
-The following table shows the supported parameter placements:
+**Example: Get GitHub Repository Topics**
 
-| Placement | Description |
-|-----------|-------------|
-| header | Places the parameter in the request headers |
-| path | Places the parameter in the URL path |
-| query | Places the parameter in the URL query string |
-| subdomain | Places the parameter in the subdomain of the URL |
-| metadata | Places the parameter in the request metadata |
+Let's create a tool to fetch topics for a GitHub repo, using Composio's managed GitHub auth.
 
-For example, to add an Authorization Bearer token in the headers, you would specify the parameters as:
 <CodeGroup>
-```python Python {23-26} maxLines=100
+```python Python maxLines=100
+# Python Example using execute_request
+from composio import action, ComposioToolSet
 import typing as t
-from composio_openai import ComposioToolSet, action
 
 toolset = ComposioToolSet()
 
-
-@action(toolname="github")
-def my_custom_action(
-    param_1: str,
-    param_2: str,
-    execute_request: t.Callable,
+@action(toolname="github") # Associate with GitHub app for auth
+def get_github_repo_topics(
+    owner: Annotated[str, "Repository owner username"],
+    repo: Annotated[str, "Repository name"],
+    execute_request: t.Callable # Injected by Composio
 ) -> dict:
-    """
-    Action Description
+    """Gets the topics associated with a specific GitHub repository."""
+    print(f"Getting topics for {owner}/{repo} using Composio-managed GitHub auth...")
+    try:
+        # Call the GitHub API endpoint using the injected function
+        response_data = execute_request(
+            endpoint=f"/repos/{owner}/{repo}/topics", # API path relative to base URL
+            method="GET"
+            # Body/parameters usually not needed when relying on managed auth
+        )
+        # Ensure response_data is a dictionary before accessing 'names'
+        if isinstance(response_data, dict):
+             return {"topics": response_data.get("names", [])}
+        else:
+             # Handle unexpected response format
+             print(f"Warning: Unexpected response format from execute_request: {type(response_data)}")
+             return {"error": "Failed to parse topics", "raw_response": response_data}
 
-    :param param_1: Parameter 1 description
-    :param param_2: Parameter 2 description
-    :return content: Return content description
-    """
-    response = execute_request(
-        endpoint="/user",
-        method="GET",
-        body={},
-        parameters=[
-            {"name": "Authorization", "value": "Bearer <bearer_token>", "in_": "header"}
-]
-    )
-    return response
+    except Exception as e:
+        print(f"Error executing request for topics: {e}")
+        return {"error": str(e)}
 
-
-tools = toolset.get_tools(actions=[my_custom_action])
+# --- Example Usage ---
+# You would fetch this tool like any other:
+# tools = toolset.get_tools(actions=[get_github_repo_topics])
+# result = toolset.execute_action(get_github_repo_topics, params={"owner": "composiohq", "repo": "composio"})
+# print(result)
 ```
-
-```TypeScript maxLines=100 TypeScript {21-23}
-import { OpenAIToolSet } from "composio-core";
+```typescript TypeScript maxLines=100
+// TypeScript Example using executeRequest
+import { OpenAIToolSet, App, RawExecuteRequestParam, ActionExecutionResDto, ParamPlacement } from "composio-core";
 import { z } from "zod";
 
-const openAIToolset = new OpenAIToolSet();
+const toolset = new OpenAIToolSet();
 
-const action = await openAIToolset.createAction({
-  actionName: "my_custom_action",
-  toolName: "github",
-  description: "Action Description",
-  inputParams: z.object({
-    param1: z.string().describe("Parameter 1 description"),
-    param2: z.string().describe("Parameter 2 description"),
-  }),
-  callback: async (inputParams, authCredentials, executeRequest) => {
-    try {
-      const res = await executeRequest({
-        endpoint: "/data", //or any other endpoint path
-        method: "GET", //or any other request method
-        parameters: [
-          {
-            name: "Authorization",
-            in: "header",
-            value: "Bearer <bearer_token>",
-          },
-        ],
-        body: {}, //request body
-      });
-      return {
-        data: res,
-        successful: true,
-      };
-    } catch (e) {
-      console.error(e);
-      return {
-        data: {},
-        successful: false,
-      };
+await toolset.createAction({
+    actionName: "get_github_repo_topics",
+    toolName: "github", // Associate with GitHub app for managed auth
+    description: "Gets the topics associated with a specific GitHub repository.",
+    inputParams: z.object({
+        owner: z.string().describe("Repository owner username"),
+        repo: z.string().describe("Repository name"),
+    }),
+    // Callback receives input, credentials (usually undefined here), and executeRequest
+    callback: async (inputParams, _authCredentials, executeRequest): Promise<ActionExecutionResDto> => {
+         // Type assertion for validated input
+         const { owner, repo } = inputParams as { owner: string, repo: string };
+         console.log(`Getting topics for ${owner}/${repo} using Composio-managed GitHub auth...`);
+         try {
+             // Call executeRequest - Composio injects auth for 'github'
+             const response = await executeRequest({
+                 endpoint: `/repos/${owner}/${repo}/topics`, // API path
+                 method: "GET",
+                 // No body/parameters needed for standard managed auth GET request
+             });
+
+             // Process response and return in Composio's expected format
+             // Assuming response directly contains the API data structure
+             const topics = (response as any)?.names ?? []; // Safely extract topics
+             return { successful: true, data: { topics: topics } };
+
+         } catch (e) {
+             console.error("Error calling executeRequest for topics:", e);
+             // Return error in Composio's expected format
+             return { successful: false, error: String(e) };
+         }
     }
-  },
 });
 
-const tools = await openAIToolset.getTools({
-  actions: ["my_custom_action"],
-});
-
+// --- Example Usage ---
+// You would fetch this tool like any other:
+// const tools = await toolset.getTools({ actions: ["get_github_repo_topics"] });
+// const result = await toolset.executeAction({ action: "get_github_repo_topics", params: { owner: "composiohq", repo: "composio" } });
+// console.log(result);
 ```
 </CodeGroup>
 
-## OpenAPI based Apps and Tools
-Composio supports installing [custom apps and tools](https://app.composio.dev/custom_tools) based on an OpenAPI specification.
+This allows you to extend Composio's capabilities for any integrated app without managing the authentication flow yourself.
 
-Make sure to have `info` section in your OpenAPI Specification. In the info section, you should have the following fields:
-- `title`: Name of the tool
-- `version`: Version of the tool/spec
+## Adding Custom Authentication to Tools
 
-### Integration YAML Configuration
+You can also execute *any* Composio tool (pre-built or custom-defined) using your own authentication credentials provided at runtime. This is useful if you manage tokens or API keys separately from Composio's connection system.
 
-This README provides an overview of the `integration.yaml` file structure used for configuring app integrations, with a focus on custom fields.
+Use the `execute_action` method and provide the `auth` parameter.
 
-### YAML Structure
+**Example: Create GitHub Issue with a Provided Token**
 
-The `integration.yaml` file typically includes the following key sections:
+<CodeGroup>
+```python Python
+# Python example providing a custom Bearer token
+from composio import ComposioToolSet, Action
 
-1. **Basic Information**
-   - `name`: App name
-   - `unique_key`: Unique identifier for the app
-   - `description`: Brief description of the app
-   - `logo`: URL to the app's logo
-   - `categories`: List of categories the app belongs to. Examples include:
-     - productivity
-     - marketing
-     - social
-     - crm
-   - `docs`: Link to the app's documentation
+toolset = ComposioToolSet()
+bearer_token = "ghp_YourPersonalAccessToken..." # Replace with your actual token
 
-2. **Authentication Schemes**
-   - `auth_schemes`: List of authentication methods supported
-     - `name`: Name of the auth scheme
-     - `auth_mode`: Authentication mode (Supported modes: OAUTH2, BASIC, API_KEY, OAUTH1)
-     - For OAuth2:
-       - `authorization_url`: OAuth authorization URL
-       - `token_url`: Token endpoint URL
-       - `default_scopes`: Default OAuth scopes
-       - `available_scopes`: List of all available scopes
-       - `authorization_params`: Additional parameters for authorization (e.g., `response_type`, `user_scopes`)
-     - For OAuth1:
-       - `authorization_url`: OAuth authorization URL
-       - `request_url`: Request token URL
-       - `token_url`: Access token URL
-       - `signature_method`: Signature method (e.g., HMAC-SHA1)
-       - `default_scopes`: Default OAuth scopes
-       - `scope_separator`: Character used to separate scopes
-     - For API Key:
-       ```yaml
-       proxy:
-         base_url: "{{base_url}}"
-         headers:
-           Authorization: "{{api_key}}"
-       ```
-     - For Basic Auth:
-       `username` and `password` fields are required. You can use them in the proxy/header section directly like:
-       ```yaml
-       proxy:
-         headers:
-           username: "{{username}}"
-           password: "{{password}}"
-       ```
+print("Creating issue using custom auth...")
+try:
+    result = toolset.execute_action(
+        action=Action.GITHUB_CREATE_ISSUE,
+        params={
+            "owner": "your-username",
+            "repo": "test-repo",
+            "title": "Issue Created with Custom Token",
+            "body": "This issue uses an externally provided auth token."
+        },
+        # Provide authentication details via the 'auth' parameter
+        auth={
+            "parameters": [
+                {
+                    "name": "Authorization", # Header name
+                    "value": f"Bearer {bearer_token}", # Header value
+                    "in_": "header" # Placement (header, query, path, etc.)
+                }
+            ]
+            # 'base_url' could be added here for GitHub Enterprise
+            # 'body' could be added for complex auth flows if needed
+        }
+        # entity_id is typically not needed when providing full custom auth
+    )
+    print(result)
+except Exception as e:
+    print(f"An error occurred: {e}")
+```
+```typescript TypeScript
+// TypeScript example providing a custom Bearer token
+import { ComposioToolSet, Action, ParamPlacement } from "composio-core";
 
-3. **Endpoints**
-   - `get_current_user_endpoint`: Endpoint for retrieving current user info. This is used to check if the auth is valid and refresh the token if it is expired.
+const toolset = new ComposioToolSet();
+const bearerToken = "ghp_YourPersonalAccessToken..."; // Replace with your actual token
 
-4. **Custom Fields**
-   Custom fields are defined within the `auth_schemes` section and provide additional configuration options for the integration. They are typically found under the `fields` key of an auth scheme.
+async function createWithCustomAuth() {
+    console.log("Creating issue using custom auth...");
+    try {
+        const result = await toolset.executeAction({
+            action: Action.GITHUB_CREATE_ISSUE,
+            params: {
+                owner: "your-username",
+                repo": "test-repo",
+                title: "Issue Created with Custom Token",
+                body: "This issue uses an externally provided auth token."
+            },
+            // Provide authentication details via the 'auth' parameter
+            auth: {
+                parameters: [
+                    {
+                        name: "Authorization", // Parameter name
+                        value: `Bearer ${bearerToken}`, // Parameter value
+                        in: ParamPlacement.Header // Where to place it (Header, Query, Path etc.)
+                    }
+                ]
+                // 'baseUrl' could be added here for GitHub Enterprise
+                // 'body' could be added for complex auth flows if needed
+            }
+            // entityId is typically not needed when providing full custom auth
+        });
+        console.log(result);
+    } catch (error) {
+        console.error("An error occurred:", error);
+    }
+}
 
-   Common attributes for custom fields include:
-   - `name`: Unique identifier for the field
-   - `display_name`: Human-readable name for the field
-   - `description`: Detailed explanation of the field's purpose
-   - `type`: Data type of the field (e.g., string, boolean)
-   - `required`: Whether the field is mandatory
-   - `expected_from_customer`: Indicates if the end customer needs to provide this information
-   - `default`: Default value for the field (if applicable)
+createWithCustomAuth();
+```
+</CodeGroup>
 
-   Examples of custom fields:
-
-   a. API Key field:
-   ```yaml
-   fields:
-     - name: api_key
-       display_name: API Key
-       description: "Your API key for authentication."
-       type: string
-       required: true
-       expected_from_customer: true
-   ```
-
-   b. Instance URL field (e.g., for Salesforce):
-   ```yaml
-   fields:
-     - name: instanceUrl
-       display_name: Instance URL
-       description: "The base URL for your instance, used for API requests."
-       type: string
-       required: true
-       expected_from_customer: true
-   ```
-
-   c. Subdomain field (e.g., for PostHog):
-   ```yaml
-   fields:
-     - name: subdomain
-       display_name: Sub Domain
-       description: "Your PostHog subdomain (e.g., 'app' for app.posthog.com)."
-       type: string
-       required: true
-       default: "app"
-   ```
-
-5. **Additional Configuration**
-   - `callback_url`: URL for OAuth callback
-   - `token_response_metadata`: List of metadata fields expected in the token response
-   - `proxy`: Configuration for API request proxying. This section defines the data to be used in the request. It can use the fields defined via jinja templating `{{field_name}}`. It can include:
-     - `base_url`: The base URL for API requests
-     - `headers`: Custom headers to be included in the request
-     - `query_params`: Custom query parameters to be included in the request
-     - `path_params`: Custom path parameters to be included in the request
-
-   Example of a proxy configuration:
-   ```yaml
-   proxy:
-     base_url: "https://api.example.com/v1"
-     headers:
-       Authorization: "Bearer {{access_token}}"
-       Content-Type: "application/json"
-     query_params:
-       api_key: "{{api_key}}"
-   ```
-
-   In this example, `{{access_token}}` and `{{api_key}}` are placeholders that will be replaced with actual values from the authentication process or custom fields.
-
-### Usage of Custom Fields
-
-Custom fields are used to gather necessary information from users or provide default configurations for the integration. They can be referenced in other parts of the configuration using placeholders, typically in the format `{{field_name}}`.
+This gives you flexibility while still leveraging Composio's standardized action execution and schema handling. The `ParamPlacement` enum (TS) or string values (`"header"`, `"query"`, `"path"`) specify where the custom parameter should be injected into the API request.

@@ -112,7 +112,7 @@ Let's take `GMAIL_SEND_EMAIL` as an example. Below is the schema.
 ```
 </Accordion>
 
-```python Python maxLines=24 focus {10-23}
+```python Python maxLines=100
 from dotenv import load_dotenv
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
@@ -173,6 +173,7 @@ Say your system already infers the `recipient_email` parameter and you don't wan
 You wouldn't want the LLM to generate it in the tool call.
 You can simply modify the schema processor to do so:
 
+<CodeGroup>
 ```python {8}
 def gmail_schema_processor(schema: dict) -> dict:
     del schema["recipient_email"]
@@ -185,6 +186,33 @@ processed_send_email_tool = toolset.get_tools(
     },
 )
 ```
+```typescript Typescript
+import { ActionExecutionResDto, OpenAIToolSet, RawActionData, TPostProcessor, TPreProcessor, TSchemaProcessor } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const gmailSchemaProcessor: TSchemaProcessor = ({
+    actionName,
+    toolSchema,
+}) => {
+    const modifiedSchema = { ...toolSchema };
+    const filteredProperties = { ...(modifiedSchema.parameters?.properties || {}) };
+    delete filteredProperties.recipient_email;
+    delete filteredProperties.attachment;
+
+    modifiedSchema.parameters = {
+        ...modifiedSchema.parameters,
+        properties: filteredProperties,
+        required: modifiedSchema.parameters?.required?.filter(
+            field => field !== "recipient_email" && field !== "attachment"
+        ) || []
+    };
+
+    return modifiedSchema;
+}
+```
+</CodeGroup>
+
 This removes the `recipient_email` and `attachment` parameters from the schema, preventing the LLM from generating them.
 
 ### Preprocessing

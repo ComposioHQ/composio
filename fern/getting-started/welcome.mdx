@@ -1,44 +1,49 @@
 ---
-title: Welcome to Composio
+title: Introduction
 hide-nav-links: true
 ---
 
-## Introduction
-Composio is an integration platform that empowers AI agents and LLM applications to seamlessly connect with external tools, services, and APIs. With Composio, developers can rapidly build powerful AI applications without worrying about complex integration challenges.
+Composio is an integration and tooling platform built for AI agents and LLM applications that lets you:
+- Add tool-use capabilities to your AI agent from [300+ apps](/tools/).
+- Give agents [authenticated access to tools](/auth/introduction).
+- [Listen and trigger](/triggers/using-triggers) agents and workflows from external events (e.g., new Slack message, GitHub issue).
+- Define [custom tools](/tool-calling/custom-tools) for proprietary APIs or specific functions.
+- Seamlessly integrate tool-calling into frameworks like OpenAI Agents, Vercel AI, LangChain, etc.
+- Refine tool interactions with [input/output processing](/tool-calling/processing-tools) for greater reliability.
 
-Composio provides a comprehensive infrastructure for AI agents to interact with the external world.
+You get to connect your AI agents faster without wrestling with individual API integrations and managing their authentication or converting them into LLM tool calls.
 
-<CardGroup col={1}>
-  <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
-    Learn how to setup Composio and create an AI Agent in minutes.
-  </Card>
-  <Card
-    title="Tool Calling"
-    icon="wrench"
-    href="/tool-calling/introduction"
-  >
-    Connect AI agents to third-party services with Composio's tool library.
-  </Card>
-  <Card
-    title="Authentication"
-    icon="lock"
-    href="/auth/introduction">
-    Securely connect your agents to third-party services using Composio's authentication system
-  </Card>
-  <Card
-    title="Triggers"
-    icon="bell"
-    href="/triggers/using-triggers"
-  >
-    Listen in on events to kick off or notify your agents.
-  </Card>
-</CardGroup>
+We also optimise the tool calls for you for maximum accuracy, free of cost! 😉
 
-{/* here, we will add link to tutorials that showcase and explain composio's features. */}
+## Getting started
+The fastest way to give your agent tools is with Composio — often with **zero setup** needed on your part. Just:
+
+1.  **Install the core SDK** (and a framework helper if needed):
+    <CodeGroup>
+    ```bash Python
+    pip install composio_core composio_openai # Example for OpenAI
+    ```
+
+    ```bash TypeScript
+    npm install composio-core
+    ```
+    </CodeGroup>
+2.  **Login and get your API key**:
+    ```bash
+    composio login
+    ```
+    *(Ensure `COMPOSIO_API_KEY` is set as an environment variable)*
+3.  **Connect your first app** (e.g., GitHub):
+    ```bash
+    composio add github
+    ```
+
+...and you're ready to integrate tools. Here's what you can do next:
+- Head to the [quickstart](/getting-started/quickstart) guide to learn more.
+- Browse our [tools](/tools) to see what you can integrate with.
 
 ## Framework Integrations
-
-Composio enhances popular AI frameworks with external tool capabilities:
+Here are some popular frameworks that Composio supports:
 
 <CardGroup cols={2}>
   <Card
@@ -48,11 +53,11 @@ Composio enhances popular AI frameworks with external tool capabilities:
   >
     Add 250+ tools to your Assistants API with automatic authentication handling and real-time function execution.
   </Card>
+  <Card title="Vercel AI SDK" icon="code-branch" href="/frameworks/vercel">
+    Turn your Vercel AI SDK agents into powerful workflows that interact with external services without managing API connections.
+  </Card>
   <Card title="LangChain" icon="link-simple" href="/frameworks/langchain">
     Turn your LangChain agents into powerful workflows that interact with external services without managing API connections.
-  </Card>
-  <Card title="Autogen" icon="gears" href="/frameworks/autogen">
-    Empower Autogen multi-agent systems with real-world capabilities like file operations, email, and third-party API access.
   </Card>
   <Card title="CrewAI" icon="users" href="/frameworks/crewai">
     Build specialized CrewAI agent teams that collaborate using external tools and data sources to accomplish complex tasks.

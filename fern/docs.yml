@@ -199,13 +199,15 @@ navigation:
         icon: wrench
         contents:
           - page: Introduction
-            path: tool-calling/tool-calling.mdx
+            path: tool-calling/introduction.mdx
+          - page: Fetching Tools
+            path: tool-calling/fetching-tools.mdx
+          - page: Executing Tools
+            path: tool-calling/executing-tools.mdx
+          - page: Customizing Tools
+            path: tool-calling/custom-tools.mdx
           - page: Processing Tools
             path: tool-calling/processing-tools.mdx
-          - page: Custom Tools
-            path: tool-calling/custom-tools.mdx
-          - page: Miscellaneous
-            path: tool-calling/miscellaneous.mdx
       - section: Auth
         icon: lock
         contents:
