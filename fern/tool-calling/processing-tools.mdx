@@ -1,412 +1,182 @@
 ---
 title: 'Processing Tools'
-subtitle: 'Enhancing tool reliability with schema, input, and output transformations'
+subtitle: 'Customize tool behavior by modifying schemas, inputs, and outputs'
 ---
 
-## Schema processing and preprocessing
-There may be scenarios where you want to control how the LLM calls a tool and how Composio executes it.
-You may want to remove some parameters from the schema, inject some values into the tool call or process the response from the tool call.
+Composio allows you to refine how tools interact with LLMs and external APIs through **Processors**. These are custom functions you provide to modify data at key stages:
+- before the LLM sees the tool's definition
+- before Composio executes the tool
+- after Composio executes the tool
 
-{/* In many scenarios, the default schemas, inputs, or outputs of tools may benefit from additional processing. This refinement can significantly improve the reliability and performance of your LLM applications. */}
-Let's take `GMAIL_SEND_EMAIL` as an example. Below is the schema.
-{/*  */}
+**Why use Processors?**
 
-<Accordion title='`GMAIL_SEND_EMAIL` Schema'>
-```json JSON maxLines=50 {14-19, 63-89} wordWrap
-{
-	"type": "function",
-	"function": {
-		"name": "GMAIL_SEND_EMAIL",
-		"description": "Send An Email Using Gmail's Api.",
-		"parameters": {
-			"properties": {
-				"user_id": {
-					"default": "me",
-					"description": "The user's email address or 'me' for the authenticated user. Please provide a value of type string.",
-					"title": "User Id",
-					"type": "string"
-				},
-				"recipient_email": {
-					"description": "Email address of the recipient. Please provide a value of type string. This parameter is required.",
-					"examples": ["john@doe.com"],
-					"title": "Recipient Email",
-					"type": "string"
-				},
-				"cc": {
-					"default": [],
-					"description": "Email addresses of the recipients to be added as a carbon copy (CC).",
-					"examples": [
-						["john@doe.com", "jane@doe.com"]
-					],
-					"items": {
-						"type": "string"
-					},
-					"title": "Cc",
-					"type": "array"
-				},
-				"bcc": {
-					"default": [],
-					"description": "Email addresses of the recipients to be added as a blind carbon copy (BCC).",
-					"examples": [
-						["john@doe.com", "jane@doe.com"]
-					],
-					"items": {
-						"type": "string"
-					},
-					"title": "Bcc",
-					"type": "array"
-				},
-				"subject": {
-					"default": null,
-					"description": "Subject of the email. Please provide a value of type string.",
-					"examples": ["Job Application"],
-					"title": "Subject",
-					"type": "string"
-				},
-				"body": {
-					"description": "Body content of the email. Can be plain text or HTML. Please provide a value of type string. This parameter is required.",
-					"examples": ["<h1>Hello</h1><p>This is an HTML email.</p>"],
-					"title": "Body",
-					"type": "string"
-				},
-				"is_html": {
-					"default": false,
-					"description": "Set to True if the body content is HTML. Please provide a value of type boolean.",
-					"title": "Is Html",
-					"type": "boolean"
-				},
-				"attachment": {
-					"anyOf": [{
-						"file_uploadable": true,
-						"properties": {
-							"name": {
-								"title": "Name",
-								"type": "string"
-							},
-							"mimetype": {
-								"title": "Mimetype",
-								"type": "string"
-							},
-							"s3key": {
-								"title": "S3Key",
-								"type": "string"
-							}
-						},
-						"required": ["name", "mimetype", "s3key"],
-						"title": "FileUploadable",
-						"type": "object"
-					}, {
-						"type": "null"
-					}],
-					"default": null,
-					"description": "Path of File to be attached with the mail, If attachment to be sent.",
-					"type": "object"
-				}
-			},
-			"title": "SendEmailRequest",
-			"type": "object",
-			"required": ["recipient_email", "body"]
-		}
-	}
-}
+- **Improve Reliability:** Remove confusing parameters or inject required values the LLM might miss.
+- **Guide LLMs:** Simplify tool schemas or descriptions for better tool selection.
+- **Manage Context & Cost:** Filter large API responses to send only relevant data back to the LLM, saving tokens.
+- **Adapt to Workflows:** Transform tool inputs or outputs to match your application's specific needs.
+
+<Warning title="Python SDK Only">
+Tool Processors described on this page are currently only available in Composio's **Python SDK**. Support for TypeScript is planned for the future.
+</Warning>
+
+## How Processors Work
+
+Processors are Python functions you define and pass to `get_tools` within a `processors` dictionary. The dictionary maps the processing stage (`"schema"`, `"pre"`, `"post"`) to another dictionary, which maps the specific `Action` to your processor function.
+
+```python Python
+# Conceptual structure for applying processors
+
+def my_schema_processor(schema: dict) -> dict: ...
+def my_preprocessor(inputs: dict) -> dict: ...
+def my_postprocessor(result: dict) -> dict: ...
+
+tools = toolset.get_tools(
+    actions=[Action.SOME_ACTION],
+    processors={
+        # Applied BEFORE the LLM sees the schema
+        "schema": {Action.SOME_ACTION: my_schema_processor},
+
+        # Applied BEFORE the tool executes
+        "pre": {Action.SOME_ACTION: my_preprocessor},
+
+        # Applied AFTER the tool executes, BEFORE the result is returned
+        "post": {Action.SOME_ACTION: my_postprocessor}
+    }
+)
 ```
-</Accordion>
 
-```python Python maxLines=100
-from dotenv import load_dotenv
-from openai import OpenAI
-from composio_openai import ComposioToolSet, App, Action
+Let's look at each type.
 
-load_dotenv()
+## Schema Processing (`schema`)
 
-client = OpenAI()
+**Goal:** Modify the tool's definition (schema) *before* it's provided to the LLM.
+
+**Example: Simplifying `GMAIL_SEND_EMAIL` Schema**
+
+Let's hide the `recipient_email` and `attachment` parameters from the LLM, perhaps because our application handles the recipient logic separately and doesn't support attachments in this flow.
+
+```python Python
+from composio_openai import ComposioToolSet, Action
+
 toolset = ComposioToolSet()
 
-send_email_tool = toolset.get_tools(
-    [Action.GMAIL_SEND_EMAIL], check_connected_accounts=False
-)
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {"role": "system", "content": "You are a head of AGI at OpenAI."},
-        {
-            "role": "user",
-            "content": "Send an email to Sam Altman in one sentence that AGI is coming 5 years earlier.",
-        },
-    ],
-    tools=send_email_tool,
-)
-```
-
-This emits a tool call to `GMAIL_SEND_EMAIL` from the LLM. Here are the arguments for it.
-```json GMAIL_SEND_EMAIL
-{
-    "user_id": "me",
-	"recipient_email": "sam.altman@openai.com",
-	"subject": "Urgent Update on AGI Timeline",
-	"body": "AGI is projected to arrive 5 years earlier than anticipated."
-}
-```
-
-When building a system that already infers parameters, the LLM doesn't need to generate these parameters - you can inject them directly.
-
-This is where tool processing comes into play.
-
-<Card title="Schema processing" href="#schema-processing" icon="code">
-    Handler to modify the tool schema, description, parameters before sending to an LLM.
-</Card>
-
-<Card title="Preprocessing" href="#preprocessing" icon="arrow-right">
-    Handler to modify or inject parameters before executing a tool call.
-</Card>
-
-{/* <Card title="Postprocessing" href="#postprocessing" icon="arrow-left">
-  Transforms the OUTPUTS from the tool AFTER execution, but BEFORE returning to the LLM
-</Card> */}
-
-<Tip>
-Developers looking to improve agent reliability should analyze both the schema and outputs of tools, then use these processors to make interactions more deterministic where needed.
-</Tip>
-
-### Schema processing
-Say your system already infers the `recipient_email` parameter and you don't want to send an`attachment`.
-You wouldn't want the LLM to generate it in the tool call.
-You can simply modify the schema processor to do so:
-
-<CodeGroup>
-```python {8}
-def gmail_schema_processor(schema: dict) -> dict:
-    del schema["recipient_email"]
-    del schema["attachment"]
-
-processed_send_email_tool = toolset.get_tools(
-    actions=[Action.GMAIL_SEND_EMAIL],
-    processors={
-        "schema": {Action.GMAIL_SEND_EMAIL: gmail_schema_processor},
-    },
-)
-```
-```typescript Typescript
-import { ActionExecutionResDto, OpenAIToolSet, RawActionData, TPostProcessor, TPreProcessor, TSchemaProcessor } from "composio-core";
-
-const toolset = new OpenAIToolSet();
-
-const gmailSchemaProcessor: TSchemaProcessor = ({
-    actionName,
-    toolSchema,
-}) => {
-    const modifiedSchema = { ...toolSchema };
-    const filteredProperties = { ...(modifiedSchema.parameters?.properties || {}) };
-    delete filteredProperties.recipient_email;
-    delete filteredProperties.attachment;
-
-    modifiedSchema.parameters = {
-        ...modifiedSchema.parameters,
-        properties: filteredProperties,
-        required: modifiedSchema.parameters?.required?.filter(
-            field => field !== "recipient_email" && field !== "attachment"
-        ) || []
-    };
-
-    return modifiedSchema;
-}
-```
-</CodeGroup>
-
-This removes the `recipient_email` and `attachment` parameters from the schema, preventing the LLM from generating them.
-
-### Preprocessing
-But you still need to pass `recipient_email` to the tool execution so that `handle_tool_calls` can successfully send the email.
-
-```python {9}
-def gmail_preprocessor(inputs: dict) -> dict:
-    inputs["recipient_email"] = "sam@openai.com"
-    return inputs
-
-processed_send_email_tool = toolset.get_tools(
-    actions=[Action.GMAIL_SEND_EMAIL],
-    processors={
-        "schema": {Action.GMAIL_SEND_EMAIL: gmail_schema_processor},
-        "pre": {Action.GMAIL_SEND_EMAIL: gmail_preprocessor},
-    },
-)
-```
-
-<Tip>To avoid confusion between schema and preprocessing, think of schema processing as you changing the tool's definition and preprocessing as a way to process the parameters before the tool is executed!</Tip>
-
-### Full example
-```python maxLines=32 {2} 
-def gmail_preprocessor(inputs: dict) -> dict:
-    inputs["recipient_email"] = "sama@composio.dev"  # Change to an email you can access to test!
-    return inputs
-
-
-def gmail_schema_processor(schema: dict) -> dict:
-    del schema["recipient_email"]
+def simplify_gmail_send_schema(schema: dict) -> dict:
+    """Removes recipient_email and attachment params from the schema."""
+    params = schema.get("parameters", {}).get("properties", {})
+    params.pop("recipient_email", None)
+    params.pop("attachment", None)
+    # We could also modify descriptions here, e.g.:
+    # schema["description"] = "Sends an email using Gmail (recipient managed separately)."
     return schema
 
-
-processed_send_email_tool = toolset.get_tools(
+# Get tools with the modified schema
+processed_tools = toolset.get_tools(
     actions=[Action.GMAIL_SEND_EMAIL],
     processors={
-        "schema": {Action.GMAIL_SEND_EMAIL: gmail_schema_processor},
-        "pre": {Action.GMAIL_SEND_EMAIL: gmail_preprocessor},
-    },
-    check_connected_accounts=False,
+        "schema": {Action.GMAIL_SEND_EMAIL: simplify_gmail_send_schema}
+    }
 )
 
-response = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[
-        {"role": "system", "content": "You are head of AGI at OpenAI."},
-        {
-            "role": "user",
-            "content": "Send an email to Sam Altman in one sentence that AGI is coming 5 years earlier.",
-        },
-    ],
-    tools=processed_send_email_tool,
+# Now, when 'processed_tools' are given to an LLM, it won't see
+# the 'recipient_email' or 'attachment' parameters in the schema.
+# print(processed_tools[0]) # To inspect the modified tool definition
+```
+
+## Preprocessing (`pre`)
+
+**Goal:** Modify the input parameters provided by the LLM *just before* the tool executes.
+
+Use this to inject required values hidden from the LLM (like the `recipient_email` from the previous example), add default values, clean up or format LLM-generated inputs, or perform last-minute validation.
+
+**Example: Injecting `recipient_email` for `GMAIL_SEND_EMAIL`**
+
+Continuing the previous example, since we hid `recipient_email` from the LLM via schema processing, we now need to inject the correct value before Composio executes the `GMAIL_SEND_EMAIL` action.
+
+```python Python
+def inject_gmail_recipient(inputs: dict) -> dict:
+    """Injects a fixed recipient email into the inputs."""
+    # Get the recipient from app logic, context, or hardcode it
+    inputs["recipient_email"] = "fixed.recipient@example.com"
+    # Ensure subject exists, providing a default if necessary
+    inputs["subject"] = inputs.get("subject", "No Subject Provided")
+    return inputs
+
+# Combine schema processing and preprocessing
+processed_tools = toolset.get_tools(
+    actions=[Action.GMAIL_SEND_EMAIL],
+    processors={
+        "schema": {Action.GMAIL_SEND_EMAIL: simplify_gmail_send_schema},
+        "pre": {Action.GMAIL_SEND_EMAIL: inject_gmail_recipient}
+    }
 )
 
-exec_response = toolset.handle_tool_calls(response)
+# Now, when the LLM calls this tool (without providing recipient_email),
+# the 'inject_gmail_recipient' function will run automatically
+# before Composio executes the action, adding the correct email.
+# result = toolset.handle_tool_calls(llm_response_using_processed_tools)
 ```
 
-{/* TODO: Add sequence diagram showing how schema processing fits into the tool calling workflow, illustrating the flow: LLM -> Modified Schema (with removed fields) -> Tool Call Generation */}
+<Tip title="Schema vs. Preprocessing">
+Think of `schema` processing as changing the **tool's instructions** for the LLM, while `pre` processing adjusts the **actual inputs** right before execution based on those instructions (or other logic).
+</Tip>
 
-## Postprocessing
-After executing a tool call, the system sends the response back to the LLM.
-However many APIs tend to return lots of data in their responses, making agentic flows unstable and eating up tokens.
+## Postprocessing (`post`)
 
-<Tip>We'll deconstruct the working behind `handle_tool_calls` by using `execute_action` to directly call the GMAIL_FETCH_EMAILS tool.</Tip>
+**Goal:** Modify the result returned by the tool's execution *before* it is passed back.
 
-```python {12-13}
-import tiktoken
-from composio_openai import ComposioToolset, Action
+This is invaluable for filtering large or complex API responses to extract only the necessary information, reducing the number of tokens sent back to the LLM, improving clarity, and potentially lowering costs.
 
-def num_tokens_from_string(string: str, encoding_name: str) -> int:
-    encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
+**Example: Filtering `GMAIL_FETCH_EMAILS` Response**
 
-encoding = tiktoken.encoding_for_model("gpt-4o-mini")
-toolset = ComposioToolset()
+The `GMAIL_FETCH_EMAILS` action can return a lot of data per email. Let's filter the response to include only the `sender` and `subject`, significantly reducing the payload sent back to the LLM.
 
-emails = toolset.execute_action(Action.GMAIL_FETCH_EMAILS, {})
-print(num_tokens_from_string(str(emails), encoding.name))
-```
-```
->>291344
-```
-<Error>This is already more than twice the context length of `gpt-4o-mini` (128k tokens)!</Error>
+```python Python
+import json # For pretty printing example output
 
-*Postprocessing lets you filter what information from the tool execution reaches the LLM.*
+def filter_email_results(result: dict) -> dict:
+    """Filters email list to only include sender and subject."""
+    # Pass through errors or unsuccessful executions unchanged
+    if not result.get("successful") or "data" not in result:
+        return result
 
+    original_messages = result["data"].get("messages", [])
+    if not isinstance(original_messages, list):
+        return result # Return if data format is unexpected
 
-To filter only the subject and sender of the emails, create a postprocessor as follows:
-```python
-def gmail_postprocessor(result: dict) -> dict:
-    processed_result = result.copy()
-    processed_response = []
-    for email in result["data"]["messages"]:
-        processed_response.append(
-            {
-                "subject": email["subject"],
-                "sender": email["sender"],
-            }
-        )
-    processed_result["data"] = processed_response
+    filtered_messages = []
+    for email in original_messages:
+        filtered_messages.append({
+            "sender": email.get("sender"),
+            "subject": email.get("subject"),
+        })
+
+    # Construct the new result dictionary
+    processed_result = {
+        "successful": True,
+        # Use a clear key for the filtered data
+        "data": {"summary": filtered_messages},
+        "error": None
+    }
     return processed_result
 
-processed_emails = gmail_postprocessor(emails)
-print(num_tokens_from_string(str(processed_emails), encoding.name))
-```
-The postprocessor produces a more digestible response for the LLMs.
-```
-> 356
-```
-
-```python
-[{'data': [{'subject': 'Update on AGI Development',
-    'sender': 'Greg Brockman <gdb@composio.dev>'},
-   {'subject': 'Security alert',
-    'sender': 'Google <no-reply@accounts.google.com>'},
-   {'subject': 'Hiddens Flaw in Most RAG Systems from ChromaDB, LlamaIndex, and Glean',
-    'sender': 'Jason Liu <work@jxnl.co>'},
-   {'subject': 'AGI, Inc. ❇️',
-    'sender': 'Cerebral Valley <cerebralvalley@mail.beehiiv.com>'}],
-  'error': None,
-  'successfull': True,
-  'successful': True}]
-```
-
-### Full example
-```python
-from openai import OpenAI
-from composio_openai import ComposioToolSet
-
-client = OpenAI()
-toolset = ComposioToolSet()
-
-def gmail_postprocessor(result: dict) -> dict:
-    processed_result = result.copy()
-    processed_response = []
-    for email in result["data"]["messages"]:
-        processed_response.append(
-            {
-                "subject": email["subject"],
-                "sender": email["sender"],
-            }
-        )
-    processed_result["data"] = processed_response
-    return processed_result
-
-processed_fetch_emails_tool = toolset.get_tools(
+# Get tools with the postprocessor
+processed_tools = toolset.get_tools(
     actions=[Action.GMAIL_FETCH_EMAILS],
     processors={
-        "post": {Action.GMAIL_FETCH_EMAILS: gmail_postprocessor},
-    },
+        "post": {Action.GMAIL_FETCH_EMAILS: filter_email_results}
+    }
 )
 
-messages = [
-    {"role": "system", "content": "You are an Email Agent"},
-    {
-        "role": "user",
-        "content": "get me my emails and then answer who has sent me an email about agi?",
-    },
-]
-while True:
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        tools=processed_fetch_emails_tool,
-        messages=messages,
-    )
-    result = toolset.handle_tool_calls(response)
-    if response.choices[0].finish_reason != "tool_calls":
-        print(response.choices[0].message.content)
-        break
-    messages.append(
-        {
-            "role": "assistant",
-            "content": "",
-            "tool_calls": response.choices[0].message.tool_calls,
-        }
-    )
-    for tool_call in response.choices[0].message.tool_calls:
-        messages.append(
-            {
-                "role": "tool",
-                "content": str(result),
-                "tool_call_id": tool_call.id,
-            }
-        )
-```
-```
-You have received two emails related to AGI:
+# --- Simulate Execution and Postprocessing ---
+# Assume 'raw_execution_result' is the large dictionary returned by
+# executing GMAIL_FETCH_EMAILS without postprocessing.
+# raw_execution_result = toolset.execute_action(Action.GMAIL_FETCH_EMAILS, params={...})
 
-1. **Email from gdb@composio.dev**  
-   - Subject: Update on AGI Development  
-
-2. **Email from Cerebral Valley**  
-   - Subject: AGI, Inc. - from MultiOn's Div Garg ❇️  
-
-Would you like to take any specific actions regarding these emails?
+# Apply the postprocessor manually to see the effect (handle_tool_calls does this automatically)
+# filtered_result = filter_email_results(raw_execution_result)
+# print("Filtered Result (much smaller for LLM):")
+# print(json.dumps(filtered_result, indent=2))
 ```
+
+By using postprocessing, you can make tool results much more manageable and useful for the LLM, preventing context overflow and focusing its attention on the most relevant information.
+

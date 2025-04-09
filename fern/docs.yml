@@ -213,12 +213,19 @@ navigation:
         contents:
           - page: Introduction
             path: authentication/introduction.mdx
-          - page: Auth Lifecycle
-            path: authentication/auth-lifecycle.mdx
-          - page: Custom Authentication
-            path: authentication/custom-auth.mdx
+          - page: Set up Integrations
+            path: authentication/integration.mdx
+          - section: Connecting Users
+            path: authentication/connection.mdx
+            contents:
+              - page: To OAuth Apps
+                path: authentication/oauth.mdx
+              - page: To Token Apps
+                path: authentication/non-oauth.mdx
           - page: White-labelling
             path: authentication/white-labelling.mdx
+          - page: Injecting Custom Credentials
+            path: authentication/injecting-credentials.mdx
       - section: Triggers
         icon: bolt
         contents:
