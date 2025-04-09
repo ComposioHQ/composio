@@ -276,6 +276,9 @@ navigation:
           - page: Vercel AI
             path: frameworks/vercel.mdx
             slug: vercel
+          - page: Agents SDK
+            path: frameworks/openai-agents.mdx
+            slug: agents-sdk
           - page: Autogen
             path: frameworks/autogen.mdx
             slug: autogen
