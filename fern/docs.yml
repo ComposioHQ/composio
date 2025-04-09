@@ -332,6 +332,9 @@ navigation:
           - page: Mastra
             path: frameworks/mastra.mdx
             slug: mastra
+          - page: Livekit
+            path: frameworks/livekit.mdx
+            slug: livekit
 
   - tab: api-reference
     layout:
