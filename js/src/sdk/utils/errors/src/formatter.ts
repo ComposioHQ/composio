@@ -55,13 +55,15 @@ export const getAPIErrorDetails = (
 
   switch (errorCode) {
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
+      const messageFromResponse = axiosError.response?.data?.message;
       const validationErrors = axiosError.response?.data?.details;
       const formattedErrors = Array.isArray(validationErrors)
         ? validationErrors.map((err) => JSON.stringify(err)).join(", ")
-        : JSON.stringify(validationErrors);
+        : messageFromResponse;
 
       return {
-        message: genericMessage,
+        message:
+          genericMessage + "Check .description for info.",
         description: `Validation Errors: ${formattedErrors}`,
         possibleFix:
           "Please check the request parameters and ensure they are correct.",
