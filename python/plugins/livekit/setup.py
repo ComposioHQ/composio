@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="composio_livekit",
-    version="0.1.0",
+    version="0.7.15",
     author="Sushmitha",
     author_email="tech@composio.dev",
     description="Use Composio Toolset with LiveKit",
