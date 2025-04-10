@@ -63,7 +63,7 @@ jobs:
         run: |
           pip install build twine
 
-          plugins="autogen camel claude crew_ai griptape julep langchain llamaindex lyzr openai praisonai langgraph phidata google gemini agno pydanticai openai_agents smolagent"
+          plugins="autogen camel claude crew_ai griptape julep langchain llamaindex lyzr openai praisonai langgraph phidata google gemini agno pydanticai openai_agents smolagent livekit"
           mkdir plugins_dist
           for plugin in $plugins; do
             cd plugins/$plugin
