@@ -7,7 +7,7 @@ An **Integration** is the developer-level configuration within Composio for a sp
 
 *   Integrations **do not** store individual user credentials.
 *   You typically **create an Integration once per app**, per environment (e.g., one for development, one for production).
-*   The main outcome is obtaining a unique **`integration_id`**, which you'll use later to [connect your users](/auth/connect-users/).
+*   The main outcome is obtaining a unique **`integration_id`**, which you'll use later to [connect your users](/auth/connection).
 
 ## Creating an Integration
 
@@ -33,8 +33,8 @@ Click the **"Setup Integration"** button.
 <Step title="Configure Integration Settings (If Required)">
 The next steps depend on the app's authentication method:
 
-- **For OAuth 2.0 Apps:** You'll need to decide whether to use Composio's default OAuth app or your own developer credentials. For more details, see **[Handling OAuth Connections](/auth/connect-users/oauth-apps)** and **[White-labelling](/auth/white-labelling)**.
-- **For API Key/Token Apps:** The keys are typically provided by the end-user later in the connection flow. See **[Handling API Key Connections](/auth/connect-users/token-apps)** for that process.
+- **For OAuth 2.0 Apps:** You'll need to decide whether to use Composio's default OAuth app or your own developer credentials. For more details, see **[Handling OAuth Connections](/auth/connection/oauth)** and **[White-labelling](/auth/white-labelling)**.
+- **For API Key/Token Apps:** The keys are typically provided by the end-user later in the connection flow. See **[Handling API Key Connections](/auth/connection/non-oauth)** for that process.
 
 You might also configure default scopes or API base URLs here if applicable.
 </Step>
@@ -126,7 +126,7 @@ createIntegrationProgrammatically();
 ```
 </CodeGroup>
 <Info>
-For details on providing specific `auth_config` parameters programmatically (e.g., for custom OAuth or other schemes), consult the [SDK Reference](/sdk-reference/) and the relevant guides like [Handling OAuth](/auth/connect-users/oauth-apps) or [White-labelling](/auth/white-labelling).
+For details on providing specific `auth_config` parameters programmatically (e.g., for custom OAuth or other schemes), consult the [SDK Reference](/sdk-reference/) and the relevant guides like [Handling OAuth](/auth/connection/oauth) or [White-labelling](/auth/white-labelling).
 </Info>
 </Tab>
 </Tabs>
@@ -137,4 +137,4 @@ The key outcome of this setup process is the **`integration_id`**. This unique i
 
 You will use this `integration_id` in the next step to initiate the authentication flow for your end-users.
 
-➡️ **Next: [Connecting Users Overview](/auth/connect-users/)**
+➡️ **Next: [Connecting Users Overview](/auth/connection/)**

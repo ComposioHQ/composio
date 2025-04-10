@@ -9,7 +9,7 @@ This flow involves redirecting the user to the external service's login and cons
 
 **Prerequisites:**
 
-*   An [Integration](/auth/integrations) for the OAuth app must be configured in Composio, providing you with an `integration_id`. Ensure it's set up correctly for OAuth (using Composio's shared app or your own credentials).
+*   An [Integration](/auth/set-up-integrations) for the OAuth app must be configured in Composio, providing you with an `integration_id`. Ensure it's set up correctly for OAuth (using Composio's shared app or your own credentials).
 *   A unique `entity_id` representing the user within your application.
 
 ## OAuth Connection Flow
@@ -21,8 +21,8 @@ The process involves initiating the connection, redirecting the user for authori
 Use the `initiate_connection` (Python) or `initiateConnection` (TypeScript) method on the user's `Entity` object. Provide the `integration_id` for the OAuth app you configured.
 
 <CodeGroup>
-```python Python
-from composio import ComposioToolSet, App
+```python Python wordWrap
+from composio_openai import ComposioToolSet, App
 
 # Assumes toolset is initialized
 toolset = ComposioToolSet()
@@ -34,16 +34,17 @@ entity = toolset.get_entity(id=user_id)
 
 try:
     print(f"Initiating OAuth connection for entity {entity.id}...")
-    connection_request = entity.initiate_connection(
-        integration_id=google_integration_id
+    connection_request = toolset.initiate_connection(
+        integration_id=google_integration_id,
+        entity_id=user_id,
         # Optionally add: redirect_url="https://yourapp.com/final-destination"
         # if you want user sent somewhere specific *after* Composio finishes.
+        # Optional add: app=App.APP_NAME
     )
 
     # Check if a redirect URL was provided (expected for OAuth)
     if connection_request.redirectUrl:
         print(f"Received redirect URL: {connection_request.redirectUrl}")
-        # Proceed to Step 2: Redirect the user
     else:
         print("Error: Expected a redirectUrl for OAuth flow but didn't receive one.")
         # Handle error: Maybe the integration is misconfigured?
@@ -53,48 +54,33 @@ try:
 
 except Exception as e:
     print(f"Error initiating connection: {e}")
-
 ```
 ```typescript TypeScript
-import { ComposioToolSet, App, ConnectionRequest } from "composio-core";
+import { OpenAIToolSet } from "composio-core";
 
 // Assumes toolset is initialized
-const toolset = new ComposioToolSet();
+const toolset = new OpenAIToolSet();
 const userId = "your_user_unique_id";
 // Get this from your Composio Integration setup
 const googleIntegrationId = "int_google_xxxxxxxx...";
 
-async function initiateOAuthConnection() {
-    try {
-        const entity = await toolset.getEntity(userId);
+console.log(`Initiating OAuth connection for entity ${userId}...`);
+const connectionRequest = await toolset.connectedAccounts.initiate({
+    integrationId: googleIntegrationId,
+    entityId: userId,
+    // Optionally add: redirectUri: "https://yourapp.com/final-destination"
+    // if you want user sent somewhere specific *after* Composio finishes.
+});
 
-        console.log(`Initiating OAuth connection for entity ${entity.id}...`);
-        const connectionRequest = await entity.initiateConnection({
-            integrationId: googleIntegrationId
-            // Optionally add: redirectUri: "https://yourapp.com/final-destination"
-            // if you want user sent somewhere specific *after* Composio finishes.
-        });
-
-        // Check if a redirect URL was provided (expected for OAuth)
-        if (connectionRequest?.redirectUrl) {
-            console.log(`Received redirect URL: ${connectionRequest.redirectUrl}`);
-            // Proceed to Step 2: Redirect the user
-            // Return or pass connectionRequest to the next stage
-            return connectionRequest;
-        } else {
-            console.error("Error: Expected a redirectUrl for OAuth flow but didn't receive one.");
-            // Handle error
-            return null;
-        }
-
-    } catch (error) {
-        console.error("Error initiating connection:", error);
-        return null;
-    }
+// Check if a redirect URL was provided (expected for OAuth)
+if (connectionRequest?.redirectUrl) {
+    console.log(`Received redirect URL: ${connectionRequest.redirectUrl}`);
+    // Proceed to Step 2: Redirect the user
+    // Return or pass connectionRequest to the next stage
+} else {
+    console.error("Error: Expected a redirectUrl for OAuth flow but didn't receive one.");
+    // Handle error
 }
-
-// Initiate and potentially store the request object for the next step
-// const connectionRequest = await initiateOAuthConnection();
 ```
 </CodeGroup>
 
@@ -134,26 +120,18 @@ except Exception as e: # Catches TimeoutError, etc.
 ```
 ```typescript TypeScript
 // Assuming 'connectionRequest' from Step 1
+console.log("Waiting for user authorization and connection activation...");
+try {
+    // Poll Composio until the status is ACTIVE
+    const activeConnection = await connectionRequest.waitUntilActive(180); // Wait up to 3 minutes
 
-async function pollForActivation(connectionRequest: ConnectionRequest) {
-    console.log("Waiting for user authorization and connection activation...");
-    try {
-        // Poll Composio until the status is ACTIVE
-        const activeConnection = await connectionRequest.waitUntilActive(180); // Wait up to 3 minutes
-
-        console.log(`Success! Connection is ACTIVE. ID: ${activeConnection.id}`);
-        // Store activeConnection.id associated with your user (entityId)
-        // Now ready for Step 4.
-        return activeConnection;
-    } catch (error) {
-        console.error("Connection did not become active within timeout or failed:", error);
-        // Implement retry logic or inform the user
-        return null;
-    }
+    console.log(`Success! Connection is ACTIVE. ID: ${activeConnection.id}`);
+    // Store activeConnection.id associated with your user (entityId)
+    // Now ready for Step 4.
+} catch (error) {
+    console.error("Connection did not become active within timeout or failed:", error);
+    // Implement retry logic or inform the user
 }
-
-// Call this after redirecting the user and expecting them to return/complete
-// const activeConnection = await pollForActivation(connectionRequest);
 ```
 </CodeGroup>
 

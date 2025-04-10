@@ -19,7 +19,7 @@ You will pass the `entity_id` when initiating the connection process using the S
 
 <CodeGroup>
 ```python Python
-from composio_openai import ComposioToolSet
+from composio_openai import ComposioToolSet, Action, App
 
 toolset = ComposioToolSet()
 user_identifier_from_my_app = "user_7a9f3b_db_id" # Example
@@ -48,9 +48,17 @@ The process generally starts by calling `initiate_connection` (Python) or `initi
 <CodeGroup>
 ```python Python
 # Conceptual initiation - details depend on auth type
-connection_request = entity.initiate_connection(integration_id=YOUR_INTEGRATION_ID)
+connection_request = toolset.initiate_connection(
+    integration_id=YOUR_INTEGRATION_ID, entity_id=user_identifier_from_my_app
+)
 # or
-connection_request = entity.initiate_connection(app_name="github")
+connection_request = toolset.initiate_connection(
+    app_name=App.GITHUB, entity_id=user_identifier_from_my_app
+)
+
+toolset.execute_action(
+    action=Action.GITHUB_CREATE_AN_ISSUE, params={...}, entity_id=user_identifier_from_my_app
+)
 
 toolset.execute_action(
     action=Action.GITHUB_CREATE_AN_ISSUE,
@@ -60,9 +68,17 @@ toolset.execute_action(
 ```
 ```typescript TypeScript
 // Conceptual initiation - details depend on auth type
-const connectionRequest = await entity.initiateConnection({ integrationId: YOUR_INTEGRATION_ID });
+const connectionRequest = await toolset.connectedAccounts.initiate({
+  integrationId: YOUR_INTEGRATION_ID,
+});
 // or
-const connectionRequest = await entity.initiateConnection({ appName: "github" });
+// const connectionRequest = await entity.initiateConnection({ appName: "github" });
+
+toolset.executeAction({
+  action: "GITHUB_CREATE_AN_ISSUE",
+  params: {},
+  entityId: userIdentifierFromMyApp
+});
 ```
 </CodeGroup>
 
@@ -70,8 +86,8 @@ The specific steps that follow (handling redirects, waiting for activation, or p
 
 **Follow the detailed guides for your specific scenario:**
 
-*   **[Connecting to OAuth Apps](/auth/connect-users/oauth-apps)**
-*   **[Connecting to Token/API Key Apps](/auth/connect-users/token-apps)**
+*   **[Connecting to OAuth Apps](/auth/connect/oauth)**
+*   **[Connecting to Token/API Key Apps](/auth/connect/non-oauth)**
 
 ## Managing Existing Connections
 
@@ -79,10 +95,11 @@ Once connections are established, you can retrieve and manage them using the SDK
 
 *   **List Connections for a User:** Get all active connections associated with a specific `entity_id`.
     <CodeGroup>
-    ```python Python
-    entity = toolset.get_entity(id="user_7a9f3b_db_id")
+    ```python Python wordWrap
+    user_identifier_from_my_app = "user_7a9f3b_db_id"  # Example
+    entity = toolset.get_entity(id=user_identifier_from_my_app)
     try:
-        connections = entity.get_connections() # Returns list of active connections
+        connections = toolset.get_connected_accounts(entity_id=user_identifier_from_my_app) # Returns list of active connections
         print(f"Found {len(connections)} active connections for {entity.id}:")
         for conn in connections:
             print(f"- App: {conn.appName}, ID: {conn.id}, Status: {conn.status}")
@@ -91,71 +108,36 @@ Once connections are established, you can retrieve and manage them using the SDK
     except Exception as e:
         print(f"Error fetching connections: {e}")
     ```
-    ```typescript TypeScript
-    async function listUserConnections(userId: string) {
-        try {
-            const entity = await toolset.getEntity(userId);
-            const connections = await entity.getConnections(); // Returns list of active connections
-            console.log(`Found ${connections.length} active connections for ${entity.id}:`);
-            connections.forEach(conn => {
-                console.log(`- App: ${conn.appName}, ID: ${conn.id}, Status: ${conn.status}`);
-            });
-            // You can also filter directly via the client:
-            // const connections = await toolset.client.connectedAccounts.get({ entityIds: [userId], active: true });
-        } catch (error) {
-            console.error("Error fetching connections:", error);
-        }
-    }
-    // listUserConnections("user_7a9f3b_db_id");
+    ```typescript TypeScript wordWrap
+    const entity = await toolset.getEntity(userIdentifierFromMyApp);
+    const connections = await toolset.connectedAccounts.list({
+        entityId: entity.id,
+    }); // Returns list of active connections
+    console.log(
+        `Found ${connections.items.length} active connections for ${entity.id}:`
+    );
+    connections.items.forEach((conn) => {
+        console.log(`- App: ${conn.appName}, ID: ${conn.id}, Status: ${conn.status}`);
+    });
     ```
     </CodeGroup>
 
 *   **Get a Specific Connection:** Retrieve details using its unique `connected_account_id`.
     <CodeGroup>
-    ```python Python
-    a_connection_id = "conn_abc123def..."
-    try:
-        connection = toolset.client.connected_accounts.get(connection_id=a_connection_id)
-        print(f"Details for {connection.id}: App={connection.appName}, Status={connection.status}")
-    except Exception as e:
-        print(f"Error fetching connection {a_connection_id}: {e}")
-    ```
-    ```typescript TypeScript
-    const aConnectionId = "conn_abc123def...";
-    async function getConnectionDetails(connId: string) {
-        try {
-            const connection = await toolset.client.connectedAccounts.get({ connectedAccountId: connId });
-            console.log(`Details for ${connection.id}: App=${connection.appName}, Status=${connection.status}`);
-        } catch (error) {
-            console.error(`Error fetching connection ${connId}:`, error);
-        }
-    }
-    // getConnectionDetails(aConnectionId);
-    ```
-    </CodeGroup>
+    ```python Python wordWrap
+    connection_id = "1d28bbbb-91d0-4181-b4e5-088bab0d7779"
 
-*   **Delete a Connection:** Remove a user's connection, for example, if they revoke access within your application.
-    <CodeGroup>
-    ```python Python
-    connection_id_to_delete = "conn_abc123def..."
-    try:
-        # Note: Uses the base client, not the entity object
-        toolset.client.connected_accounts.delete(connectedAccountId=connection_id_to_delete)
-        print(f"Successfully deleted connection {connection_id_to_delete}")
-    except Exception as e:
-        print(f"Error deleting connection: {e}")
+    connection = toolset.get_connected_account(connection_id)
+    print(f"Details for {connection.id}: App={connection.appName}, Status={connection.status}")
     ```
-    ```typescript TypeScript
-    const connectionIdToDelete = "conn_abc123def...";
-    async function deleteUserConnection(connId: string) {
-        try {
-            // Note: Uses the base client, not the entity object
-            await toolset.client.connectedAccounts.delete({ connectedAccountId: connId });
-            console.log(`Successfully deleted connection ${connId}`);
-        } catch (error) {
-            console.error(`Error deleting connection: ${error}`);
-        }
-    }
-    // deleteUserConnection(connectionIdToDelete);
+    ```typescript TypeScript wordWrap
+    const connectionId = "1d28bbbb-91d0-4181-b4e5-088bab0d7779";
+
+    const connection = await toolset.connectedAccounts.get({
+        connectedAccountId: connectionId,
+    });
+    console.log(
+        `Details for ${connection.id}: App=${connection.appName}, Status=${connection.status}`
+    );
     ```
     </CodeGroup>
