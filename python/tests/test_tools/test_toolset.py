@@ -624,3 +624,43 @@ def test_invalid_handle_tool_calls() -> None:
     toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with mock.patch.object(toolset, "_execute_remote"):
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+
+class TestIntegrationsConnections:
+    integration_ids: t.List
+    toolset: LangchainToolSet
+    app: App
+
+    @classmethod
+    def setup_class(cls) -> None:
+        cls.integration_ids = []
+        cls.toolset = LangchainToolSet()
+        cls.app = App.GMAIL
+
+    @classmethod
+    def teardown_class(cls) -> None:
+        for integration_id in cls.integration_ids:
+            status = cls.toolset.client.integrations.remove(id=integration_id)
+            if status != 204:
+                raise pytest.fail(reason="Unable to perform teardown successfully.")
+
+    def test_create_integration_with_composio_auth(self) -> None:
+        integration = self.toolset.create_integration(
+            app=self.app, auth_mode="OAUTH2", use_composio_oauth_app=True
+        )
+        assert len(integration.id) > 0
+        self.integration_ids.append(integration.id)
+
+    def test_initiate_connection(
+        self,
+    ) -> None:
+        integration = self.toolset.create_integration(
+            app=self.app, auth_mode="OAUTH2", use_composio_oauth_app=True
+        )
+        assert len(integration.id) > 0
+        self.integration_ids.append(integration.id)
+
+        connection = self.toolset.initiate_connection(
+            integration_id=integration.id,
+        )
+        assert connection.connectionStatus == "INITIATED"
