@@ -286,8 +286,9 @@ export class ComposioToolSet {
     if (await this.isCustomAction(action)) {
       let accountId = connectedAccountId;
       if (!accountId) {
-        // fetch connected account id
+        const toolName = await this.userActionRegistry.getToolName({ action });
         const connectedAccounts = await this.client.connectedAccounts.list({
+          appNames: toolName,
           user_uuid: entityId,
           status: "ACTIVE",
           showActiveOnly: true,

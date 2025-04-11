@@ -30,6 +30,7 @@ describe("Entity class tests", () => {
     const entity2 = new Entity(backendClient, entityId);
     const connection = await entity2.initiateConnection({
       appName: "github",
+      authMode: "OAUTH2",
     });
     expect(connection.connectionStatus).toBe("INITIATED");
 
