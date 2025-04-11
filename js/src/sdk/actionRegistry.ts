@@ -81,16 +81,6 @@ export class ActionRegistry {
     if (!options.actionName) {
       throw new Error("You must provide actionName for this action");
     }
-    if (!options.toolName) {
-      throw CEG.getCustomError(
-        COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
-        {
-          message: "Tool name is required",
-          description:
-            "Please provide a toolName when creating a custom action",
-        }
-      );
-    }
     if (!options.inputParams) {
       options.inputParams = z.object({}) as P;
     }
