@@ -68,7 +68,7 @@ print(f"Fetched {len(github_tools)} tools for GitHub.")
 ```typescript TypeScript
 async function fetchAppTools() {
   // Fetch default tools for the connected GitHub app
-  const githubTools = await toolset.getTools({ apps: [App.GITHUB] });
+  const githubTools = await toolset.getTools({ apps: ["github"] });
 
   console.log(`Fetched ${githubTools.length} tools for GitHub.`);
   // Output contains schemas for 'important' GitHub tools.
@@ -81,6 +81,38 @@ fetchAppTools();
 <Warning title="Default App Tool Filtering">
 By default, fetching tools using only the `apps` filter returns actions tagged as `important`. This prevents overwhelming the LLM's context window with too many tools. If you need *all* actions for an app, you'll need to fetch them explicitly or explore the app's page in the [Tool Directory](/tools/).
 </Warning>
+
+## Fetching Specific Tools
+You can fetch specific tools by their action names.
+
+<CodeGroup>
+```python Python
+# Fetch specific tools by action name
+github_tools = toolset.get_tools(
+    actions=[
+        Action.GITHUB_GET_THE_AUTHENTICATED_USER,
+        Action.GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER
+    ]
+)
+
+print(f"Fetched {len(github_tools)} tools.")
+# Output contains schemas for the specified actions.
+```
+
+```typescript TypeScript
+async function fetchSpecificTools() {
+  // Fetch specific tools by action name
+  const githubTools = await toolset.getTools({
+      actions: ["GITHUB_GET_THE_AUTHENTICATED_USER", "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER"]
+  });
+
+  console.log(`Fetched ${githubTools.length} tools.`);
+  // Output contains schemas for the specified actions.
+}
+
+fetchSpecificTools();
+```
+</CodeGroup>
 
 ## Filtering App Tools by Tags
 
@@ -249,7 +281,7 @@ async function inspectSchema() {
     }
 
      // Fetching by app:
-     // const githubSchemas = await baseToolset.getActionsSchema({ apps: [App.GITHUB] });
+     // const githubSchemas = await baseToolset.getActionsSchema({ apps: ["github"] });
 }
 
 inspectSchema();

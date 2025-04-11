@@ -109,7 +109,7 @@ tools = toolset.get_tools(
 // Fetch custom and built-in tools together
 const tools = await toolset.getTools({
     actions: [
-        Action.GITHUB_GET_THE_AUTHENTICATED_USER, // Built-in
+        "GITHUB_GET_THE_AUTHENTICATED_USER", // Built-in
         "add_numbers"                        // Custom (by actionName string)
     ]
 });

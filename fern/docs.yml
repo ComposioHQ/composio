@@ -211,6 +211,8 @@ navigation:
             path: tool-calling/custom-tools.mdx
           - page: Processing Tools
             path: tool-calling/processing-tools.mdx
+          - page: Adding Your Own App
+            path: tool-calling/add-your-app.mdx
       - section: Auth
         icon: lock
         contents:

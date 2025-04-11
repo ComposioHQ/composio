@@ -11,7 +11,9 @@ There are two primary ways to execute Composio tools:
 2. **[Direct execution](#direct-execution)**: Your LLM/agent decides to call a tool and the code explicitly invokes the specific Composio tool using the `execute_action` method, often used for testing or simple automation.
 
 ## Automatic execution
-Frameworks like the Vercel AI SDK often expect tools to have an `execute` method. Composio's `VercelAIToolSet` automatically creates tools where this `execute` function calls the underlying Composio logic:
+Frameworks like the Vercel AI, LangGraph often have features to automatically `execute` the tools. The framework will handle the execution logic provided by Composio.
+
+**Here's an example of how Vercel AI SDK automatically executes tools**
 
 ```typescript Vercel AI SDK maxLines=100
 // Conceptual illustration within Vercel AI SDK context
