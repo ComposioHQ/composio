@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 
 from composio import Action
+from composio.client.utils import check_cache_refresh
 from composio.exceptions import ComposioSDKError
 
 
@@ -41,13 +42,14 @@ def test_load_tools(plugin: str) -> None:
         pytest.skip(f"Skipping {plugin}")
 
     toolset = importlib.import_module(f"composio_{plugin}").ComposioToolSet()
+    check_cache_refresh(toolset.client)
     actions = []
     for action in Action.all():
         try:
             action.load()
             actions.append(action)
-        except ComposioSDKError:
-            continue
+        except ComposioSDKError as e:
+            pytest.fail(f"Error loading {action!r}: {e}")
 
     with (
         mock.patch.object(toolset, "check_connected_account"),

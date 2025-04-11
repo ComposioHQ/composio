@@ -173,9 +173,9 @@ def create_app() -> FastAPI:
             update_triggers,
         )
 
-        apps = update_apps(client=get_context().client)
-        update_actions(client=get_context().client, apps=apps)
-        update_triggers(client=get_context().client, apps=apps)
+        update_apps(client=get_context().client)
+        update_actions(client=get_context().client)
+        update_triggers(client=get_context().client)
         return True
 
     @app.get("/api/apps/{name}", response_model=APIResponse[AppModel])
