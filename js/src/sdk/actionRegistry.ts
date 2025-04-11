@@ -135,6 +135,15 @@ export class ActionRegistry {
     );
   }
 
+  async getToolName({
+    action,
+  }: {
+    action: string;
+  }): Promise<string | undefined> {
+    const lowerCaseName = action.toLowerCase();
+    return this.customActions.get(lowerCaseName)?.metadata.toolName;
+  }
+
   async executeAction(
     name: string,
     inputParams: Record<string, unknown>,
