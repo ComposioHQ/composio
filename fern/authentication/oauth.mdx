@@ -1,0 +1,140 @@
+---
+title: 'Connecting to OAuth Apps'
+subtitle: 'Handle the user connection flow for apps like Google, GitHub, Slack'
+---
+
+This guide details the programmatic steps required to connect your users (Entities) to external applications that use **OAuth 2.0** for authorization (e.g., Google Workspace, GitHub, Slack, Salesforce).
+
+This flow involves redirecting the user to the external service's login and consent screen in their browser.
+
+**Prerequisites:**
+
+*   An [Integration](/auth/set-up-integrations) for the OAuth app must be configured in Composio, providing you with an `integration_id`. Ensure it's set up correctly for OAuth (using Composio's shared app or your own credentials).
+*   A unique `entity_id` representing the user within your application.
+
+## OAuth Connection Flow
+
+The process involves initiating the connection, redirecting the user for authorization, and then waiting for Composio to confirm the connection is active.
+
+**Step 1: Initiate the Connection**
+
+Use the `initiate_connection` (Python) or `initiateConnection` (TypeScript) method on the user's `Entity` object. Provide the `integration_id` for the OAuth app you configured.
+
+<CodeGroup>
+```python Python wordWrap
+from composio_openai import ComposioToolSet, App
+
+# Assumes toolset is initialized
+toolset = ComposioToolSet()
+user_id = "your_user_unique_id"
+# Get this from your Composio Integration setup
+google_integration_id = "int_google_xxxxxxxx..."
+
+entity = toolset.get_entity(id=user_id)
+
+try:
+    print(f"Initiating OAuth connection for entity {entity.id}...")
+    connection_request = toolset.initiate_connection(
+        integration_id=google_integration_id,
+        entity_id=user_id,
+        # Optionally add: redirect_url="https://yourapp.com/final-destination"
+        # if you want user sent somewhere specific *after* Composio finishes.
+        # Optional add: app=App.APP_NAME
+    )
+
+    # Check if a redirect URL was provided (expected for OAuth)
+    if connection_request.redirectUrl:
+        print(f"Received redirect URL: {connection_request.redirectUrl}")
+    else:
+        print("Error: Expected a redirectUrl for OAuth flow but didn't receive one.")
+        # Handle error: Maybe the integration is misconfigured?
+
+    # Store connection_request.connectedAccountId if needed for Step 3 polling
+    # connection_id_in_progress = connection_request.connectedAccountId
+
+except Exception as e:
+    print(f"Error initiating connection: {e}")
+```
+```typescript TypeScript
+import { OpenAIToolSet } from "composio-core";
+
+// Assumes toolset is initialized
+const toolset = new OpenAIToolSet();
+const userId = "your_user_unique_id";
+// Get this from your Composio Integration setup
+const googleIntegrationId = "int_google_xxxxxxxx...";
+
+console.log(`Initiating OAuth connection for entity ${userId}...`);
+const connectionRequest = await toolset.connectedAccounts.initiate({
+    integrationId: googleIntegrationId,
+    entityId: userId,
+    // Optionally add: redirectUri: "https://yourapp.com/final-destination"
+    // if you want user sent somewhere specific *after* Composio finishes.
+});
+
+// Check if a redirect URL was provided (expected for OAuth)
+if (connectionRequest?.redirectUrl) {
+    console.log(`Received redirect URL: ${connectionRequest.redirectUrl}`);
+    // Proceed to Step 2: Redirect the user
+    // Return or pass connectionRequest to the next stage
+} else {
+    console.error("Error: Expected a redirectUrl for OAuth flow but didn't receive one.");
+    // Handle error
+}
+```
+</CodeGroup>
+
+The key output here is the `redirectUrl`.
+
+**Step 2: Redirect the User**
+
+Your application **must** now direct the user's browser to the `redirectUrl` obtained in Step 1.
+
+*   **How:** This typically involves sending an HTTP 302 Redirect response from your backend, or using `window.location.href = redirectUrl;` in your frontend JavaScript.
+
+The user will see the external service's login page (if not already logged in) followed by an authorization screen asking them to grant the permissions (scopes) defined in your Composio Integration.
+
+**Step 3: Wait for Connection Activation**
+
+After the user authorizes the app, the external service redirects back (typically to Composio's callback URL). Composio exchanges the authorization code for access/refresh tokens and securely stores them, marking the Connection as `ACTIVE`.
+
+Your application needs to wait for this confirmation. Use the `wait_until_active` (Python) / `waitUntilActive` (TypeScript) method on the `connection_request` object obtained in Step 1.
+
+<CodeGroup>
+```python Python
+# Assuming 'connection_request' from Step 1
+
+print("Waiting for user authorization and connection activation...")
+try:
+    # Poll Composio until the status is ACTIVE
+    active_connection = connection_request.wait_until_active(
+        client=toolset.client, # Pass the Composio client instance
+        timeout=180 # Wait up to 3 minutes (adjust as needed)
+    )
+    print(f"Success! Connection is ACTIVE. ID: {active_connection.id}")
+    # Store active_connection.id associated with your user (entity_id)
+    # Now ready for Step 4.
+except Exception as e: # Catches TimeoutError, etc.
+    print(f"Connection did not become active within timeout or failed: {e}")
+    # Implement retry logic or inform the user
+```
+```typescript TypeScript
+// Assuming 'connectionRequest' from Step 1
+console.log("Waiting for user authorization and connection activation...");
+try {
+    // Poll Composio until the status is ACTIVE
+    const activeConnection = await connectionRequest.waitUntilActive(180); // Wait up to 3 minutes
+
+    console.log(`Success! Connection is ACTIVE. ID: ${activeConnection.id}`);
+    // Store activeConnection.id associated with your user (entityId)
+    // Now ready for Step 4.
+} catch (error) {
+    console.error("Connection did not become active within timeout or failed:", error);
+    // Implement retry logic or inform the user
+}
+```
+</CodeGroup>
+
+**Step 4: Use the Connection**
+
+Once `wait_until_active` completes successfully, the Connection is ready. You can now use the `entity_id` or the obtained `active_connection.id` to [execute actions](/tool-calling/executing-tools) on behalf of this user for the connected app.

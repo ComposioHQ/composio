@@ -1,0 +1,109 @@
+---
+title: "Using Composio With LiveKit"
+sidebarTitle: "LiveKit"
+description: "Use Composio tools with LiveKit to build real-time voice and multimodal AI applications"
+---
+
+## Star A Repository on Github
+In this example, we will use LiveKit to build a voice a Agent to star a repository on GitHub using Composio Tools. Follow LiveKit's [Guide](https://docs.livekit.io/agents/v1/start/voice-ai/) for basic setup before proceeding.
+
+<Steps>
+<Step title="Install Packages">
+```bash Python
+pip install composio-livekit
+```
+</Step>
+<Step title="Set Environment Variables">
+```python .env
+DEEPGRAM_API_KEY=
+OPENAI_API_KEY=
+CARTESIA_API_KEY=
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+LIVEKIT_URL=
+COMPOSIO_API_KEY=
+```
+</Step>
+<Step title="Import Libraries & Initialize ComposioToolSet">
+```python Python
+from composio_livekit import Action, ComposioToolSet
+from livekit import agents
+from livekit.agents.voice import Agent, AgentSession, room_io
+from livekit.plugins import (
+    cartesia,
+    deepgram,
+    noise_cancellation,
+    openai,
+    silero,
+    turn_detector,
+)
+
+toolset = ComposioToolSet()
+```
+</Step>
+
+<Step title="Connect Your GitHub Account">
+    <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+    <CodeGroup>
+        ```shell CLI
+        composio login
+        composio add github
+        ```
+        ```python Python
+        request = toolset.initiate_connection(app=App.GITHUB)
+        print(f"Open this URL to authenticate: {request.redirectUrl}")
+        ```
+    </CodeGroup>
+</Step>
+
+<Step title="Get the Star A Repository Action">
+```python Python
+tools = toolset.get_tools(
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+)
+```
+</Step>
+<Step title="Define the Agent">
+Define the agent and pass the tools to it
+```python Python {4}
+class Assistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions="You are a helpful voice AI assistant.", tools=tools
+        )
+
+async def entrypoint(ctx: agents.JobContext):
+    await ctx.connect()
+
+    session = AgentSession(
+        stt=deepgram.STT(),
+        llm=openai.LLM(model="gpt-4o"),
+        tts=cartesia.TTS(),
+        vad=silero.VAD.load(),
+        turn_detection=turn_detector.EOUModel(),
+    )
+
+    await session.start(
+        room=ctx.room,
+        agent=Assistant(),
+        room_input_options=room_io.RoomInputOptions(
+            noise_cancellation=noise_cancellation.BVC(),
+        ),
+    )
+
+    await session.generate_reply()
+
+if __name__ == "__main__":
+    agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
+```
+</Step>
+
+<Step title="Speak To Your Agent">
+Start your agent in `console` mode to run inside your terminal:
+```bash Python
+python main.py console
+```
+Your agent speaks to you in the terminal, and you can speak to it as well.
+</Step>
+</Steps>
+
