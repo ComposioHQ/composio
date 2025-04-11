@@ -1,0 +1,21 @@
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.0",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/openai-toolset": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "typescript": "^5.8.3"
+  }
+}
