@@ -144,52 +144,51 @@ composio add github # Run this in terminal
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
+# Initialize OpenAI client
 openai_client = OpenAI(
-api_key="{{OPENAIKEY}}"
+    api_key="{{OPENAIKEY}}"
 )
 
-# Initialise the Composio Tool Set
-
+# Initialize the Composio Tool Set
 composio_tool_set = ComposioToolSet()
 
 # Get GitHub tools that are pre-configured
 actions = composio_tool_set.get_actions(
-actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 my_task = "Star a repo composiodev/composio on GitHub"
 
-# Setup openai assistant
+# Setup OpenAI assistant
 assistant_instruction = "You are a super intelligent personal assistant"
-
 assistant = openai_client.beta.assistants.create(
-name="Personal Assistant",
-instructions=assistant_instruction,
-model="gpt-4-turbo",
-tools=actions,
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo",
+    tools=actions,
 )
 
-# create a thread
+# Create a thread
 thread = openai_client.beta.threads.create()
 
+# Add user message to thread
 message = openai_client.beta.threads.messages.create(
-thread_id=thread.id,
-role="user",
-content=my_task
+    thread_id=thread.id,
+    role="user",
+    content=my_task
 )
 
 # Execute Agent with integrations
 run = openai_client.beta.threads.runs.create(
-thread_id=thread.id,
-assistant_id=assistant.id
+    thread_id=thread.id,
+    assistant_id=assistant.id
 )
-
 
 # Execute Function calls
 response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_calls(
-client=openai_client,
-run=run,
-thread=thread,
+    client=openai_client,
+    run=run,
+    thread=thread,
 )
 
 print(response_after_tool_calls)
@@ -223,38 +222,43 @@ import OpenAI from "openai";
 const toolset = new OpenAIToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const tools = await toolset.getTools({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] });
+const tools = await toolset.getTools({ 
+  actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] 
+});
 
 async function createGithubAssistant(openai, tools) {
-return await openai.beta.assistants.create({
-name: "Github Assistant",
-instructions: "You're a GitHub Assistant, you can do operations on GitHub",
-tools: tools,
-model: "gpt-4o"
-});
+  return await openai.beta.assistants.create({
+    name: "Github Assistant",
+    instructions: "You're a GitHub Assistant, you can do operations on GitHub",
+    tools: tools,
+    model: "gpt-4o"
+  });
 }
 
 async function executeAssistantTask(openai, toolset, assistant, task) {
-const thread = await openai.beta.threads.create();
-const run = await openai.beta.threads.runs.create(thread.id, {
-assistant_id: assistant.id,
-instructions: task,
-tools: tools,
-model: "gpt-4o",
-stream: false
-});
-const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
-console.log(call);
+  const thread = await openai.beta.threads.create();
+  
+  const run = await openai.beta.threads.runs.create(thread.id, {
+    assistant_id: assistant.id,
+    instructions: task,
+    tools: tools,
+    model: "gpt-4o",
+    stream: false
+  });
+  
+  const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
+  console.log(call);
 }
 
 (async () => {
-const githubAssistant = await createGithubAssistant(openai, tools);
-await executeAssistantTask(
-openai,
-toolset,
-githubAssistant,
-"Star the repository 'composiohq/composio'"
-);
+  const githubAssistant = await createGithubAssistant(openai, tools);
+  
+  await executeAssistantTask(
+    openai,
+    toolset,
+    githubAssistant,
+    "Star the repository 'composiohq/composio'"
+  );
 })();
 ```
 
