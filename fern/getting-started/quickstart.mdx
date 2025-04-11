@@ -141,7 +141,7 @@ response = client.chat.completions.create(
     tools=tools,
     tool_choice="auto",
 )
-result = toolset.handle_tool_call(response)
+result = toolset.handle_tool_calls(response)
 print(result)
 ```
 
