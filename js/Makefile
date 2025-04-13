@@ -7,6 +7,15 @@ install:
 build:
 	pnpm run build
 
+.PHONY: clean
+clean:
+	rm -rf ./dist
+
+.PHONY: clean_build
+clean_build:
+	rm -rf ./dist
+	pnpm run build
+
 .PHONY: api_client_generate
 api_client_generate:
 	pnpm run openapispec:generate

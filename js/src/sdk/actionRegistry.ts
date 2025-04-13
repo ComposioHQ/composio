@@ -135,6 +135,24 @@ export class ActionRegistry {
     );
   }
 
+  async getToolName({
+    action,
+  }: {
+    action: string;
+  }): Promise<string | undefined> {
+    if (!action) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+        {
+          message: "Action name is required",
+          description: "Please provide an action name to get its tool name",
+        }
+      );
+    }
+    const lowerCaseName = action.toLowerCase();
+    return this.customActions.get(lowerCaseName)?.metadata.toolName;
+  }
+
   async executeAction(
     name: string,
     inputParams: Record<string, unknown>,
