@@ -106,7 +106,7 @@ class DescopeAuth:
                 headers=headers, 
                 data=payload, 
                 timeout=10, 
-                verify=False  # Note: Consider making verify configurable for production use
+                verify=False 
             )
             response.raise_for_status()
             

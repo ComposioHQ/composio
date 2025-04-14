@@ -36,24 +36,14 @@ toolset.add_auth(
 # Method 2: Using DescopeAuth (for Descope)
 from composio.utils.descope import DescopeAuth
 
-# Initialize DescopeAuth with your credentials
-descope = DescopeAuth(
-    project_id="your_project_id",    # Or uses DESCOPE_PROJECT_ID env var
-    management_key="your_management_key"  # Or uses DESCOPE_MANAGEMENT_KEY env var
-)
+descope = DescopeAuth(project_id="your_project_id", management_key="your_management_key")
 toolset = ComposioToolSet()
 
-# Add authentication using DescopeAuth
 toolset.add_auth(
-    app=App.GITHUB,
-    parameters=descope.get_auth(
-        app=App.GITHUB,
-        user_id="your_user_id",
-        scopes=["user", "public_repo"]  # Permissions for the generated token
-    )
+    App.GITHUB,
+    descope.get_auth(user_id="your_user_id", scopes=["user", "public_repo"])
 )
 
-# Execute the action with authentication applied
 toolset.execute_action(
     action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
     params={"owner": "composiohq", "repo": "composio"},
@@ -63,11 +53,6 @@ toolset.execute_action(
 # Additional Context for DescopeAuth Usage
 
 To use `DescopeAuth`, ensure you have the required `project_id` and `management_key` from your Descope account. These credentials are necessary to authenticate and generate the required headers for API calls. The `scopes` parameter defines the permissions for the generated token.
-
-The process works in three steps:
-1. Create a DescopeAuth instance with your Descope credentials
-2. Use get_auth() to generate the authentication parameters for your target app
-3. Add these parameters to your toolset with add_auth() method
 </Tab>
 <Tab title="JavaScript">
 Install packages:
