@@ -36,6 +36,9 @@ typography:
       - path: fonts/Inter Bold.woff2
         weight: 600
         style: normal
+announcement:
+  message: "🚧 Deprecating V1/V2 Log APIs! Check out the <a href=\"/changelog\">changelog</a> for more details."
+
 layout:
   tabs-placement: header
   searchbar-placement: header
@@ -199,24 +202,38 @@ navigation:
         icon: wrench
         contents:
           - page: Introduction
-            path: tool-calling/tool-calling.mdx
+            path: tool-calling/introduction.mdx
+          - page: Fetching Tools
+            path: tool-calling/fetching-tools.mdx
+          - page: Executing Tools
+            path: tool-calling/executing-tools.mdx
+          - page: Customizing Tools
+            path: tool-calling/custom-tools.mdx
           - page: Processing Tools
             path: tool-calling/processing-tools.mdx
-          - page: Custom Tools
-            path: tool-calling/custom-tools.mdx
-          - page: Miscellaneous
-            path: tool-calling/miscellaneous.mdx
+          - page: Adding Your Own App
+            path: tool-calling/add-your-app.mdx
       - section: Auth
         icon: lock
         contents:
           - page: Introduction
             path: authentication/introduction.mdx
-          - page: Auth Lifecycle
-            path: authentication/auth-lifecycle.mdx
-          - page: Custom Authentication
-            path: authentication/custom-auth.mdx
+          - page: Set up Integrations
+            path: authentication/integration.mdx
+          - section: Connecting Users
+            slug: connection
+            path: authentication/connection.mdx
+            contents:
+              - page: To OAuth Apps
+                path: authentication/oauth.mdx
+                slug: oauth
+              - page: To Token Apps
+                path: authentication/non-oauth.mdx
+                slug: non-oauth
           - page: White-labelling
             path: authentication/white-labelling.mdx
+          - page: Injecting Custom Credentials
+            path: authentication/injecting-credentials.mdx
       - section: Triggers
         icon: bolt
         contents:
@@ -235,13 +252,11 @@ navigation:
           - page: Windsurf
             path: mcp/windsurf.mdx
 
-      # - section: Resources
-      #   icon: book
-      #   contents:
-      #     - page: Glossary
-      #       path: resources/glossary.mdx
-      #       icon: asterisk
-      #       hidden: true
+      - section: Changelog
+        icon: calendar
+        contents:
+          - page: API V3 Migration
+            path: changelogs/overview.mdx
 
   - tab: frameworks
     layout:
@@ -323,6 +338,9 @@ navigation:
           - page: Mastra
             path: frameworks/mastra.mdx
             slug: mastra
+          - page: Livekit
+            path: frameworks/livekit.mdx
+            slug: livekit
 
   - tab: api-reference
     layout:

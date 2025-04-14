@@ -1,0 +1,145 @@
+---
+title: 'Connecting to Token/API Key Apps'
+subtitle: 'Handle connections where users provide their own credentials (e.g., API Keys)'
+---
+
+This guide covers the connection process for external apps that use authentication methods like **static API Keys**, **Bearer Tokens**, or other credentials that the **end-user must provide** (e.g., OpenAI, Stripe, Twilio, many database connections).
+
+Unlike OAuth, this flow doesn't typically involve redirecting the user's browser. Instead, your application securely collects the necessary credentials from the user and passes them to Composio during the connection setup.
+
+**Prerequisites:**
+
+*   An [Integration](/auth/set-up-integrations) for the target app must be configured in Composio, specifying the correct authentication scheme (e.g., `API_KEY`, `BEARER_TOKEN`).
+*   A unique `entity_id` representing the user within your application.
+
+## Token/API Key Connection Flow
+
+**Step 1: Discover Required Fields**
+
+Before prompting your user, determine exactly which credentials they need to provide. Use `get_expected_params_for_user` (Python) or `apps.getRequiredParamsForAuthScheme` (TypeScript) to query Composio.
+
+<CodeGroup>
+```python Python wordWrap
+from composio_openai import ComposioToolSet, App
+
+toolset = ComposioToolSet()
+
+# Replace with your actual integration ID
+YOUR_INTEGRATION_ID = "int_shopify_xxxxxxxx..."
+
+auth_scheme_for_shopify = "API_KEY"  # Check Integration config or Tool Directory
+try:
+    required_info = toolset.get_expected_params_for_user(
+        app=App.SHOPIFY, auth_scheme=auth_scheme_for_shopify, integration_id=YOUR_INTEGRATION_ID
+    )
+    field_names = [field["name"] for field in required_info["expectedInputFields"]]
+    print(f"Required fields for {App.SHOPIFY.value} ({auth_scheme_for_shopify}): {field_names}")
+    # Use required_info["expectedInputFields"] for descriptions to show the user
+except Exception as e:
+    print(f"Error fetching required params: {e}")
+
+```
+```typescript TypeScript wordWrap
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+// Example: Find required fields for Stripe (which uses API Key)
+const appKey = "SHOPIFY";
+const authSchemeForShopify = "API_KEY"; // Check Integration config or Tool Directory
+
+try {
+  const requiredInfo = await toolset.client.apps.getRequiredParamsForAuthScheme(
+    {
+      appId: appKey,
+      authScheme: authSchemeForShopify,
+    }
+  );
+  const fieldNames = requiredInfo.required_fields;
+  console.log(
+    `Required fields for ${appKey} (${authSchemeForShopify}): ${fieldNames}`
+  );
+  // Example Output for Stripe: ['api_key']
+  // Use requiredInfo.fields for descriptions to show the user
+} catch (error) {
+  console.error("Error fetching required params:", error);
+}
+```
+</CodeGroup>
+
+This tells your application which fields (e.g., `api_key`, `account_sid`, `token`) to request from the user.
+
+**Step 2: Securely Collect Credentials from User**
+
+Your application's UI must now prompt the user to enter the credentials identified in Step 1.
+
+<Warning title="Handle Credentials Securely">
+Always transmit credentials over HTTPS. Avoid storing them unnecessarily client-side. Mask input fields for keys/tokens. **Never log raw credentials.**
+</Warning>
+
+**Step 3: Initiate Connection with User Credentials**
+
+Call `initiate_connection` (Python) or `initiateConnection` (TypeScript) on the user's `Entity` object. Provide the `integration_id` (or `app_name`) and `entity_id`. Crucially, pass the credentials collected from the user inside the `connected_account_params` (Python) or `connectionParams` (TypeScript) dictionary.
+
+<CodeGroup>
+```python Python wordWrap
+user_id = "user_shopify_456"
+
+# Assume user provided this value securely via your UI
+user_provided_shopify_key = "sk_live_xxxxxxxxxxxxxxx"
+
+# Assume entity and integration ID are known
+# entity = toolset.get_entity(id="user_stripe_456")
+SHOPIFY_INTEGRATION_ID = "int_shopify_yyyyyyyy..."
+
+try:
+    print(f"Initiating Shopify connection for entity {user_id}...")
+    connection_request = toolset.initiate_connection(
+        integration_id=SHOPIFY_INTEGRATION_ID, # Or app_name=App.SHOPIFY
+        entity_id=user_id,
+        auth_scheme="API_KEY", # Must match the integration's config
+        # Pass the user-provided key(s) here
+        connected_account_params={
+            "api_key": user_provided_shopify_key
+            # Add other fields if the app requires more (e.g., account_id)
+        },
+    )
+    print("Connection initiation response:", connection_request)
+    # Status should be ACTIVE almost immediately
+    # connection_id = connection_request.connectedAccountId
+
+except Exception as e:
+    print(f"Error initiating connection: {e}")
+
+```
+```typescript TypeScript wordWrap
+const userId = "user_shopify_456";
+// Assume user provided this value securely via your UI
+const userProvidedShopifyKey = "sk_live_xxxxxxxxxxxxxxx";
+
+try {
+    console.log(`Initiating Shopify connection for entity ${userId}...`);
+    const connectionRequest = await toolset.connectedAccounts.initiate({
+        integrationId: "int_shopify_yyyyyyyy...",
+        authMode: "API_KEY", // Must match the integration's config
+        // Pass the user-provided key(s) here
+        connectionParams: {
+            api_key: userProvidedShopifyKey
+            // Add other fields if the app requires more
+        }
+    });
+    console.log("Connection initiation response:", connectionRequest);
+    // Status should be ACTIVE almost immediately
+    // const connectionId = connectionRequest.connectedAccountId;
+} catch (error) {
+    console.error("Error initiating connection:", error);
+}
+```
+</CodeGroup>
+
+**Step 4: Connection Activation (Immediate)**
+
+For these types of connections, the `connectionStatus` in the response from `initiate_connection` should usually be **`ACTIVE`** immediately, as no external user authorization step is needed. The `redirectUrl` will typically be null.
+
+You can optionally fetch the connection details using the `connectedAccountId` from the response to confirm the `ACTIVE` status before proceeding.
+
+Once active, the Connection is ready, and you can use the `entity_id` or `connectedAccountId` to [execute actions](/tool-calling/executing-tools) for this user and app.
