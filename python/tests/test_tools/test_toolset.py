@@ -20,10 +20,11 @@ from composio.exceptions import (
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
 from composio.tools.local.filetool.tool import Filetool, FindFile
-from composio.tools.toolset import ComposioToolSet, DescopeConfig
+from composio.tools.toolset import ComposioToolSet
 from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
+from composio.utils.descope import DescopeAuth
 
 
 def test_get_schemas() -> None:
@@ -538,19 +539,19 @@ def test_custom_descope_auth_fails_on_localtool():
 
     # Patch requests.post for the entire descope flow.
     with mock.patch(
-        "composio.tools.toolset.requests.post", return_value=fake_post_response
+        "composio.utils.descope.requests.post", return_value=fake_post_response
     ):
         toolset = ComposioToolSet(
-            descope_config=DescopeConfig(
+            descope_config=DescopeAuth(
                 project_id="project_id",
                 management_key="management_key",
             )
         )
         # This call now uses the patched requests.post and should return "dummy-token"
-        toolset.add_descope_auth(
+        descope = DescopeAuth(project_id="project_id", management_key="management_key")
+        toolset.add_auth(
             app=Filetool.enum,
-            user_id="user_id",
-            scopes=["openid", "email"],
+            parameters=descope.get_auth(Filetool.enum, user_id="user_id", scopes=["openid", "email"]),
         )
 
         def _execute(cls, request, metadata):  # pylint: disable=unused-argument
@@ -613,19 +614,19 @@ def test_custom_descope_auth_runtime_tool():
 
     # Patch requests.post so that get_access_token returns our fake token.
     with mock.patch(
-        "composio.tools.toolset.requests.post", return_value=fake_post_response
+        "composio.utils.descope.requests.post", return_value=fake_post_response
     ):
         toolset = ComposioToolSet(
-            descope_config=DescopeConfig(
+            descope_config=DescopeAuth(
                 project_id="project_id",
                 management_key="management_key",
             )
         )
-        # add_descope_auth creates header-based auth (which is allowed for runtime tools)
-        toolset.add_descope_auth(
-            app="tool",  # using a simple string to denote the tool
-            user_id="user_id",
-            scopes=["openid", "email"],
+        # Updated to use DescopeAuth and add_auth
+        descope = DescopeAuth(project_id="project_id", management_key="management_key")
+        toolset.add_auth(
+            app="tool",
+            parameters=descope.get_auth("tool", user_id="user_id", scopes=["openid", "email"]),
         )
 
         result = toolset.execute_action(action=action_descope_1, params={})
