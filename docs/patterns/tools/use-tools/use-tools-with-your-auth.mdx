@@ -16,6 +16,7 @@ pip install composio-core
 ```
 
 Use the `add_auth` method to add the existing authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
+You can also use `DescopeAuth` for simpler Descope integration.
 ```python {7-13}
 from composio import ComposioToolSet, App
 
@@ -32,11 +33,26 @@ toolset.add_auth(
     ],
 )
 
+# Method 2: Using DescopeAuth (for Descope)
+from composio.utils.descope import DescopeAuth
+
+descope = DescopeAuth(project_id="your_project_id", management_key="your_management_key")
+toolset = ComposioToolSet()
+
+toolset.add_auth(
+    App.GITHUB,
+    descope.get_auth(user_id="your_user_id", scopes=["user", "public_repo"])
+)
+
 toolset.execute_action(
     action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
     params={"owner": "composiohq", "repo": "composio"},
 )
 ```
+
+# Additional Context for DescopeAuth Usage
+
+To use `DescopeAuth`, ensure you have the required `project_id` and `management_key` from your Descope account. These credentials are necessary to authenticate and generate the required headers for API calls. The `scopes` parameter defines the permissions for the generated token.
 </Tab>
 <Tab title="JavaScript">
 Install packages:
