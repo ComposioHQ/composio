@@ -11,6 +11,8 @@ Composio allows you to [execute actions directly](action-guide-without-agents) u
 <Tabs>
 <Tab title="Python">
 Use the `add_auth` method to add the custom authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
+You can also use `DescopeAuth` for simpler Descope integration.
+
 ```python {7-13}
 from composio import ComposioToolSet, App
 
@@ -27,11 +29,32 @@ toolset.add_auth(
     ],
 )
 
-toolset.execute_action(
-    action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
-    params={"owner": "composiohq", "repo": "composio"},
+# Method 2: Using DescopeAuth (for Descope)
+from composio.utils.descope import DescopeAuth
+
+# Initialize DescopeAuth with your credentials
+descope = DescopeAuth(
+    project_id="your_project_id",    # Or uses DESCOPE_PROJECT_ID env var
+    management_key="your_management_key"  # Or uses DESCOPE_MANAGEMENT_KEY env var
+)
+
+toolset = ComposioToolSet()
+
+# Add authentication using DescopeAuth
+toolset.add_auth(
+    app=App.GITHUB,
+    parameters=descope.get_auth(
+        app=App.GITHUB,
+        user_id="your_user_id",
+        scopes=["user", "public_repo"]  # Permissions for the token
+    )
 )
 ```
+
+The `DescopeAuth` utility simplifies authentication with Descope by:
+- Generating the necessary authentication tokens for external services
+- Managing the authorization headers and metadata
+- Setting appropriate scopes for the required permissions
 </Tab>
 <Tab title="JavaScript">
 Here you need to pass the authentication parameters inside the `authConfig`. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
