@@ -1,4 +1,4 @@
-import { Tool } from "../types/Tool.types";
+import { Tool } from "../types/tool.types";
 import { BaseComposioToolset } from "./BaseToolset";
 
 /**

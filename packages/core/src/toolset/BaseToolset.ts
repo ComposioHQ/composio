@@ -1,5 +1,5 @@
-import { Toolset } from "../types/Toolset.types.";
-import { Tool } from "../types/Tool.types";
+import { Toolset } from "../types/toolset.types.";
+import { Tool } from "../types/tool.types";
 
 /**
  * Base toolset implementation with proper generic defaults

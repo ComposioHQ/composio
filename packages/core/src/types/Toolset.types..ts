@@ -1,4 +1,4 @@
-import { Tool } from "./Tool.types";
+import { Tool } from "./tool.types";
 
 /**
  * Base toolset implementation, which needs to be implemented by the extended class.
@@ -7,3 +7,12 @@ import { Tool } from "./Tool.types";
 export interface Toolset<TTool extends Tool> {
   _wrapTool: (tool: Tool) => TTool;
 }
+
+
+/**
+ * This type is used to infer the wrapped tool type from the toolset.
+ * It checks if the toolset has a method `_wrapTool` and infers the return type.
+ */
+export type WrappedTool<TToolset> = TToolset extends {
+  _wrapTool: (tool: Tool) => infer TTool;
+} ? TTool : never;

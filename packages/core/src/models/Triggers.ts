@@ -1,5 +1,23 @@
 import ComposioSDK from "@composio/client";
+import { RequestOptions } from "@composio/client/internal/request-options";
+import {
+  TriggerInstanceListActiveParams,
+  TriggerInstanceRemoveUpsertResponse,
+  TriggerInstanceUpdateStatusParams,
+  TriggerInstanceUpsertParams,
+  TriggerInstanceUpsertResponse,
+  TriggersTypeListParams,
+  TriggersTypeListResponse,
+  TriggersTypeRetrieveEnumResponse,
+  TriggersTypeRetrieveResponse,
+} from "@composio/client/resources/index";
+import { TriggerStatusEnum } from "../types/triggers.types";
 
+/**
+ * Trigger (Instance) class
+ * /api/v3/trigger_instances
+ *
+ */
 export class Triggers {
   private client: ComposioSDK;
 
@@ -7,28 +25,136 @@ export class Triggers {
     this.client = client;
   }
 
-  async list() {
-    return this.client.triggerInstances.listActive();
+  /**
+   * Fetch list of all the active triggers
+   * @returns {Promise<TriggerInstance[]>} List of trigger instances
+   */
+  async list(
+    query?: TriggerInstanceListActiveParams,
+    options?: RequestOptions
+  ) {
+    return this.client.triggerInstances.listActive(query, options);
   }
 
+  /**
+   * Create a new trigger instance
+   *
+   * @param {string} slug - The slug of the trigger instance
+   * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The created trigger instance
+   */
   async create(
     slug: string,
-    {
-      connectedAuthId,
-      triggerConfig,
-    }: {
-      connectedAuthId: string;
-      triggerConfig: { [key: string]: any };
-    }
-  ) {
-    return this.client.triggerInstances.upsert(slug, {
-      connectedAuthId,
-      triggerConfig,
-    });
+    body: TriggerInstanceUpsertParams,
+    options?: RequestOptions
+  ): Promise<TriggerInstanceUpsertResponse> {
+    return this.client.triggerInstances.upsert(slug, body, options);
   }
 
-  async delete(slug: string) {
+  /**
+   * Update an existing trigger instance
+   *
+   * @param {string} slug - The slug of the trigger instance
+   * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
+   */
+  async update(
+    slug: string,
+    body: TriggerInstanceUpsertParams,
+    options?: RequestOptions
+  ): Promise<TriggerInstanceUpsertResponse> {
+    return this.client.triggerInstances.upsert(slug, body, options);
+  }
+
+  /**
+   * Delete a trigger instance
+   *
+   * @param {string} slug - The slug of the trigger instance
+   * @returns
+   */
+  async delete(slug: string): Promise<TriggerInstanceRemoveUpsertResponse> {
     return this.client.triggerInstances.removeUpsert(slug);
   }
-  
+
+  /**
+   * Update the status of a trigger
+   *
+   * @param {TriggerStatusEnum} status - The new status of the trigger
+   * @param {TriggerInstanceUpdateStatusParams} params - The parameters to update the trigger instance
+   * @param {RequestOptions} options - Request options
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
+   */
+  async updateStatus(
+    status: TriggerStatusEnum,
+    params: TriggerInstanceUpdateStatusParams,
+    options?: RequestOptions
+  ) {
+    return this.client.triggerInstances.updateStatus(status, params, options);
+  }
+
+  /**
+   * Disable a trigger instance
+   *
+   * @param {string} slug - The slug of the trigger instance
+   * @param {RequestOptions options - Request options
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
+   */
+  async disable(slug: string, options?: RequestOptions) {
+    return this.client.triggerInstances.updateStatus(
+      "disable",
+      { slug },
+      options
+    );
+  }
+
+  /**
+   * Enable a trigger instance
+   *
+   * @param {string} slug - The slug of the trigger instance
+   * @param {RequestOptions options - Request options
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
+   */
+  async enable(slug: string, options?: RequestOptions) {
+    return this.client.triggerInstances.updateStatus(
+      "enable",
+      { slug },
+      options
+    );
+  }
+
+  /**
+   * @TODO Learn about trigger types
+   */
+  /**
+   * List all the trigger types
+   * 
+   * @param {TriggersTypeListParams} query - The query parameters to filter the trigger types
+   * @param {RequestOptions} options - Request options
+   * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
+   */
+  async listTypes(query?: TriggersTypeListParams, options?: RequestOptions): Promise<TriggersTypeListResponse> {
+    return this.client.triggersTypes.list(query, options);
+  }
+
+  /**
+   * Retrieve a trigger type by its slug
+   * 
+   * @param {string} slug - The slug of the trigger type
+   * @param {RequestOptions} options - request options
+   * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
+   */
+  async getType(slug: string, options?: RequestOptions): Promise<TriggersTypeRetrieveResponse> {
+    return this.client.triggersTypes.retrieve(slug, options);
+  }
+
+  /**
+   * Fetches the list of all the available trigger enums
+   * 
+   * This method is used by the CLI where filters are not required.
+   * @param options 
+   * @returns 
+   */
+  async listEnum(options?: RequestOptions): Promise<TriggersTypeRetrieveEnumResponse> {
+    return this.client.triggersTypes.retrieveEnum(options);
+  }
 }

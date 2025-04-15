@@ -1,21 +1,58 @@
 import ComposioSDK from "@composio/client";
+import { RequestOptions } from "@composio/client/internal/request-options";
+import {
+  ToolkitListParams,
+  ToolkitListResponse,
+  ToolkitRetrieveCategoriesResponse,
+  ToolkitRetrieveResponse,
+} from "@composio/client/resources/toolkits";
 
+/**
+ * Toolkits class
+ *
+ * Toolkits are a collection of tools that can be used to perform various tasks.
+ * This is similar/replacement of `apps` in the Composio API.
+ */
 export class Toolkits {
-    private client: ComposioSDK;
+  private client: ComposioSDK;
 
-    constructor(client: ComposioSDK) {
-        this.client = client;
-    }
+  constructor(client: ComposioSDK) {
+    this.client = client;
+  }
+  /**
+   * List all toolkits available in the Composio SDK.
+   * This method fetches the toolkits from the Composio API.
+   * @returns {Promise<Toolkit[]>} List of toolkits
+   */
+  async list(
+    query: ToolkitListParams,
+    options?: RequestOptions
+  ): Promise<ToolkitListResponse> {
+    return this.client.toolkits.list(query, options);
+  }
 
-    async list() {
-        return this.client.toolkits.list();
-    }
+  /**
+   * Fetches a toolkit by its Slug.
+   * This method retrieves the toolkit from the Composio API.
+   * @param slug - The ID of the toolkit to be retrieved
+   * @param options - Request options
+   * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
+   */
+  async get(
+    slug: string,
+    options?: RequestOptions
+  ): Promise<ToolkitRetrieveResponse> {
+    return this.client.toolkits.retrieve(slug, options);
+  }
 
-    async get(toolkitId: string) {
-        return this.client.toolkits.retrieve(toolkitId);
-    }
-
-    async listCategories() {
-        return this.client.toolkits.retrieveCategories();
-    }
+  /**
+   * Fetches all categories available in the Composio SDK
+   *
+   * @returns {Promise<ToolkitRetrieveCategoriesResponse>} List of categories
+   */
+  async listCategories(
+    options?: RequestOptions
+  ): Promise<ToolkitRetrieveCategoriesResponse> {
+    return this.client.toolkits.retrieveCategories(options);
+  }
 }
