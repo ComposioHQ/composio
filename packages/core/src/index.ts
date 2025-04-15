@@ -1,6 +1,7 @@
 import { Composio } from "./composio";
-import type { Tool } from "./models/Tools";
-import { ComposioToolset } from "./toolset/Toolset";
+import type { ComposioToolset } from "./toolset/ComposioToolset";
+import type { BaseComposioToolset } from "./toolset/BaseToolset";
+import type { Tool } from "./types/Tool.types";
+import type { Toolset } from "./types/Toolset.types.";
 
-export { Composio, Tool };
-export { ComposioToolset };
+export { Composio, ComposioToolset, BaseComposioToolset, Tool, Toolset };

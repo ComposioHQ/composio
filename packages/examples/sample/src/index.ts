@@ -1,34 +1,20 @@
 import { Composio } from "@composio/core";
-import { OpenAIToolSet } from "@composio/openai-toolset";
+import { OpenAIToolset } from "@composio/openai-toolset";
 
 /**
  * General example
  */
 async function constructorExample() {
-    const composio = new Composio({
-        apiKey: process.env.COMPOSIO_API_KEY,
-        toolset: new OpenAIToolSet(),
-    });
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    toolset: new OpenAIToolset(),
+  });
 
-    const tool = await composio.tools.get("HACKERNEWS_SEARCH_POSTS");
-    
-    composio.toolset.handleToolCall([tool]);
+  const tool = await composio.tools.get("HACKERNEWS_SEARCH_POSTS");
+
+  composio.toolset.handleToolCall(tool);
+
+  tool.execute({});
 }
 
 constructorExample();
-/**
- * Builder example
- */
-// async function builderExample() {
-//     const composio = Composio.init()
-//         .withToolset(new OpenAIToolSet())
-//         .withApiKey(process.env.COMPOSIO_API_KEY as string)
-//         .build();
-
-//     const tool = await composio.tools.get("HACKERNEWS_SEARCH_POSTS");
-
-//     tool.execute();
-// }
-
-// constructorExample();
-// builderExample();
