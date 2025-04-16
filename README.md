@@ -12,6 +12,23 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 - **ActionExecution**: Track and manage the execution of actions within the platform.
 
 
+## Usage
+To use the composio tools with your Provider, please install the recommended packages along with `@composio/core`.
+
+```
+import { Composio } from "@composio/core";
+import { OpenAIToolset } from "@composio/openai-toolset";
+
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+const tool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
+console.log(tool);
+```
+
 ## Creating a new toolset
 To create a new Toolset, you need to extend the `BaseComposioToolset<YourToolType>` and implement the `_wrapTool` method to return the tool type of your choice.
 
