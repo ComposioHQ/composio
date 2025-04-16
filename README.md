@@ -13,10 +13,11 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 
 ## Internal
 What's not included from @composio/client
-- Action Execution
-- Org/Project Mangement with API Keys
-- CLI 
-- MCP
-- Team Members
+- [ ] Zod Schemas for type checking
+- [ ] Action Execution
+- [ ] Org/Project Mangement with API Keys
+- [ ] CLI 
+- [ ] MCP
+- [ ] Team Members
 
 These models can be still be accessed via the SDK explicitly by using the `@composio/client`.
