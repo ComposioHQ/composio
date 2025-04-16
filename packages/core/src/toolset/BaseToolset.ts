@@ -1,5 +1,5 @@
 import { Toolset } from "../types/toolset.types.";
-import { Tool } from "../types/tool.types";
+import { Tool, BaseTool } from "../types/tool.types";
 import { Composio } from "../composio";
 
 /**
@@ -12,20 +12,38 @@ import { Composio } from "../composio";
  * 
  * eg:
  * ```ts
- * class MyToolset extends BaseComposioToolset<MyTool> {
- *  _wrapTool(tool: BaseTool): MyTool {}
- * }
+ * // Using default BaseTool type
+ * class DefaultToolset extends BaseComposioToolset {}
+ * 
+ * // Using a custom tool type
+ * class MyToolset extends BaseComposioToolset<MyCustomTool> {}
+ * 
+ * // Using a third-party tool type
+ * class ThirdPartyToolset extends BaseComposioToolset<ThirdPartyTool> {}
  * ```
  */
-export abstract class BaseComposioToolset<TTool> implements Toolset<TTool> {
+export abstract class BaseComposioToolset<TTool = BaseTool> implements Toolset<TTool> {
     protected client: Composio<Toolset<TTool>> | undefined;
 
+    /**
+     * Set the client for the toolset. This is automatically done by the Composio class.
+     * @param client - The Composio client.
+     */
     setClient(client: Composio<Toolset<TTool>>): void {
         this.client = client;
     }
 
+    /**
+     * Wrap a tool in the toolset.
+     * @param tool - The tool to wrap.
+     * @returns The wrapped tool.
+     */
     abstract _wrapTool(tool: Tool): TTool;
 
+    /**
+     * Ensure the client is initialized.
+     * This is automatically done by the Composio class.
+     */
     protected ensureClient(): void {
         if (!this.client) {
             throw new Error('Client not initialized. Make sure the toolset is properly initialized with Composio.');

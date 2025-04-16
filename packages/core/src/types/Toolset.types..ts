@@ -1,11 +1,11 @@
 import { Composio } from "../composio";
-import { Tool } from "./tool.types";
+import { Tool, BaseTool } from "./tool.types";
 
 /**
  * Base toolset implementation, which needs to be implemented by the extended class.
  * This class is used to create a base toolset by implementing this class.
  */
-export interface Toolset<TTool> {
+export interface Toolset<TTool = BaseTool> {
   _wrapTool: (tool: Tool) => TTool;
   setClient<T extends Toolset<TTool>>(client: Composio<T>): void;
 }

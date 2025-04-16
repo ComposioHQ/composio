@@ -9,20 +9,14 @@ import { BaseComposioToolset } from "./BaseToolset";
  * This class shouldn't be used directly or to be extended.
  */
 
-export class ComposioToolset extends BaseComposioToolset<Tool> {
+interface CustomTool {
+  name: string;
+}
+export class ComposioToolset extends BaseComposioToolset<CustomTool> {
 
-  _wrapTool = (tool: Tool): Tool => {
-    return tool as Tool;
+  _wrapTool = (tool: Tool): CustomTool => {
+    return tool as CustomTool;
   };
 
   async test() {}
 }
-
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new ComposioToolset(),
-});
-
-composio.toolset.test();
-composio.getTool("123");

@@ -13,6 +13,9 @@ importers:
       '@composio/client':
         specifier: 0.1.0-alpha.1
         version: 0.1.0-alpha.1
+      '@composio/openai-toolset':
+        specifier: workspace:^
+        version: link:../toolsets/openai
     devDependencies:
       rolldown:
         specifier: 1.0.0-beta.7

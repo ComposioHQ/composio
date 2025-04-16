@@ -3,8 +3,9 @@ import { Tools } from "./models/Tools";
 import { Toolkits } from "./models/Toolkits";
 import { Triggers } from "./models/Triggers";
 import { ComposioToolset } from "./toolset/ComposioToolset";
+import { OpenAIToolset} from "@composio/openai-toolset";
 import { Toolset, WrappedTool } from "./types/toolset.types.";
-import { Tool } from "./types/tool.types";
+import { BaseTool, Tool } from "./types/tool.types";
 import { AuthConfigs } from "./models/AuthConfigs";
 import { ConnectedAccounts } from "./models/ConnectedAccounts";
 import { ToolListParams } from "@composio/client/resources/tools";
@@ -69,7 +70,7 @@ export class Composio<T extends Toolset<any>> {
     /**
      * Set the default toolset, if not provided by the user.
      */
-    const defaultToolset = new ComposioToolset();
+    const defaultToolset = new OpenAIToolset();
     this.toolset = config.toolset ?? (defaultToolset as unknown as T);
     this.toolset.setClient(this);
 

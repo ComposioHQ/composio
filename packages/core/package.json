@@ -18,6 +18,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.1"
+    "@composio/client": "0.1.0-alpha.1",
+    "@composio/openai-toolset": "workspace:^"
   }
 }

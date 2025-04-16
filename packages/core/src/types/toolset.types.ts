@@ -1,7 +1,7 @@
 import { Tool } from "./tool.types";
 import { Composio } from "../composio";
 
-export interface Toolset<TTool> {
+export interface Toolset<TTool = Tool> {
     _wrapTool(tool: Tool): TTool;
     setClient(client: Composio<Toolset<TTool>>): void;
 }
