@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "create-toolset": "bash scripts/create-toolset.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "packageManager": "pnpm@10.8.0"

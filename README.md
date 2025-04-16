@@ -11,6 +11,19 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 - **ConnectedAccounts**: Manage third-party service connections. Includes functionality to create, list, refresh, and manage the status of connected accounts.
 - **ActionExecution**: Track and manage the execution of actions within the platform.
 
+
+## Creating a new toolset
+To create a new Toolset, you need to extend the `BaseComposioToolset<YourToolType>` and implement the `_wrapTool` method to return the tool type of your choice.
+
+To Quickly create a toolset project, execute the following command from the root of the project
+```
+pnpm run create-toolset <your toolset name>
+```
+eg:
+```
+pnpm run create-toolset langchain
+```
+
 ## Internal
 What's not included from @composio/client
 - [ ] Zod Schemas for type checking

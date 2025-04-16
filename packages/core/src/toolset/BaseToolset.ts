@@ -1,5 +1,5 @@
 import { Toolset } from "../types/toolset.types.";
-import { Tool, BaseTool } from "../types/tool.types";
+import { Tool, BaseTool, ToolListParams } from "../types/tool.types";
 import { Composio } from "../composio";
 
 /**
@@ -31,6 +31,27 @@ export abstract class BaseComposioToolset<TTool = BaseTool> implements Toolset<T
      */
     setClient(client: Composio<TTool, this>): void {
         this.client = client;
+    }
+
+
+    /**
+     * Get all the tools from the client.
+     * @param params - The parameters for the tool list.
+     * @returns The tools.
+     */
+    async getTools(params?: ToolListParams): Promise<TTool[] | Record<string, TTool>> {
+        const tools = await this.client?.tools.list(params);
+        return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
+    }
+
+    /** 
+     * Get a tool from the client.
+     * @param slug - The slug of the tool.
+     * @returns The tool.
+     */
+    async getTool(slug: string): Promise<TTool> {
+        const tool = await this.client?.tools.get(slug);
+        return this._wrapTool(tool as Tool);
     }
 
     /**

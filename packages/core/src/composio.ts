@@ -131,9 +131,8 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
    * Generic function to get all the tools
    * @returns {Promise<T[]>} Promise with list of tools
    */
-  async getTool(id: string): Promise<WrappedTool<T>> {
-    const tool = await this.tools.get(id);
-    return this.toolset._wrapTool(tool) as WrappedTool<T>;
+  async getTool(slug: string): Promise<WrappedTool<T>> {
+    return this.toolset.getTool(slug) as Promise<WrappedTool<T>>;
   }
 
   /**
@@ -141,8 +140,7 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
    * @param query - Query parameters for the tools
    * @returns {Promise<T[]>} Promise with list of tools
    */
-  async getTools(query?: ToolListParams): Promise<WrappedTool<T>[]> {
-    const tools = await this.tools.list(query);
-    return tools.items.map((tool) => this.toolset._wrapTool(tool as Tool)) as WrappedTool<T>[];
+  async getTools(query?: ToolListParams): Promise<WrappedTool<T>[] | Record<string, WrappedTool<T>>> {
+    return this.toolset.getTools(query) as Promise<WrappedTool<T>[]>;
   }
 }

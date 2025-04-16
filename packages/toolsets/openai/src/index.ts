@@ -1,4 +1,4 @@
-import { BaseComposioToolset, Composio, Toolset } from "@composio/core";
+import { BaseComposioToolset } from "@composio/core";
 import { Tool } from "@composio/core";
 import { OpenAI } from "openai";
 import { Stream } from "openai/streaming";
@@ -6,6 +6,10 @@ import { Stream } from "openai/streaming";
 export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool> {
   static readonly FRAMEWORK_NAME = "openai";
   private static readonly FILE_NAME = "toolsets/openai/src/index.ts";
+
+  constructor() {
+    super();
+  }
 
   /**
    * Absract method to wrap a tool in the toolset.
@@ -24,31 +28,6 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool
       function: formattedSchema,
     };
   };
-
-  /**
-   * Get all the tools from the client.
-   * @returns {Promise<OpenAI.ChatCompletionTool[]>} The tools.
-   */
-  async getTools (): Promise<OpenAI.ChatCompletionTool[]> {
-    if (!this.client) {
-      throw new Error("Client not set");
-    }
-    const tools = await this.client.tools.list();
-    return tools.items.map((tool) => this._wrapTool(tool as Tool));
-  }
-
-  /**
-   * Get a tool from the client.
-   * @param id - The id of the tool.
-   * @returns {Promise<OpenAI.ChatCompletionTool>} The tool.
-   */
-  async getTool (id: string): Promise<OpenAI.ChatCompletionTool> {
-    if (!this.client) {
-      throw new Error("Client not set");
-    }
-    const tool = await this.client.tools.get(id);
-    return this._wrapTool(tool as Tool);
-  }
 
   /**
    * @TODO include the connectedAccountId / app name in the tool call

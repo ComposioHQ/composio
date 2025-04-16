@@ -1,17 +1,11 @@
 import { Composio } from "@composio/core";
 import { OpenAIToolset } from "@composio/openai-toolset";
 
-/**
- * General example
- */
-async function constructorExample() {
-  const composio = new Composio({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    toolset: new OpenAIToolset(),
-  });
 
-  const tool = await composio.tools.get("HACKERNEWS_SEARCH_POSTS");
-  const sampleTool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
-}
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
 
-constructorExample();
+const tool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
+console.log(tool);

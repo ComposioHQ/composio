@@ -1,7 +1,11 @@
+// Core exports
 import { Composio } from "./composio";
-import type { ComposioToolset } from "./toolset/ComposioToolset";
-import type { BaseComposioToolset } from "./toolset/BaseToolset";
-import type { Tool } from "./types/tool.types";
+import { ComposioToolset } from "./toolset/ComposioToolset";
+import { BaseComposioToolset } from "./toolset/BaseToolset";
+import type { Tool, ToolListParamsSchema, ToolListParams } from "./types/tool.types";
 import type { Toolset } from "./types/toolset.types.";
 
-export { Composio, ComposioToolset, BaseComposioToolset, Tool, Toolset };
+// Utils exports
+import { jsonSchemaToModel } from "./utils/JsonSchema";
+
+export { Composio, ComposioToolset, BaseComposioToolset, Tool, ToolListParamsSchema, ToolListParams, Toolset, jsonSchemaToModel };
