@@ -3,14 +3,14 @@ import { Tools } from "./models/Tools";
 import { Toolkits } from "./models/Toolkits";
 import { Triggers } from "./models/Triggers";
 import { ComposioToolset } from "./toolset/ComposioToolset";
-import { OpenAIToolset} from "@composio/openai-toolset";
-import { Toolset, WrappedTool } from "./types/toolset.types.";
-import { BaseTool, Tool } from "./types/tool.types";
+import { WrappedTool } from "./types/toolset.types.";
+import { Tool } from "./types/tool.types";
 import { AuthConfigs } from "./models/AuthConfigs";
 import { ConnectedAccounts } from "./models/ConnectedAccounts";
 import { ToolListParams } from "@composio/client/resources/tools";
+import { BaseComposioToolset } from "./toolset/BaseToolset";
 
-export type ComposioConfig<T extends Toolset<any>> = {
+export type ComposioConfig<TTool, T extends BaseComposioToolset<TTool>> = {
   apiKey?: string;
   baseURL?: string;
   runtime?: string;
@@ -23,14 +23,14 @@ export type ComposioConfig<T extends Toolset<any>> = {
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<T extends Toolset<any>> {
+export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
    */
   private client: ComposioClient;
 
-  private config: ComposioConfig<T>;
+  private config: ComposioConfig<TTool, T>;
 
   /**
    * Core models for Composio.
@@ -51,7 +51,7 @@ export class Composio<T extends Toolset<any>> {
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<T>) {
+  constructor(config: ComposioConfig<TTool,T>) {
     /**
      * Initialize the Composio SDK client.
      * The client is used to make API calls to the Composio API.
@@ -70,8 +70,7 @@ export class Composio<T extends Toolset<any>> {
     /**
      * Set the default toolset, if not provided by the user.
      */
-    const defaultToolset = new OpenAIToolset();
-    this.toolset = config.toolset ?? (defaultToolset as unknown as T);
+    this.toolset = config.toolset ?? new ComposioToolset() as unknown as T;
     this.toolset.setClient(this);
 
     /**

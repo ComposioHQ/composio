@@ -23,13 +23,13 @@ import { Composio } from "../composio";
  * ```
  */
 export abstract class BaseComposioToolset<TTool = BaseTool> implements Toolset<TTool> {
-    protected client: Composio<Toolset<TTool>> | undefined;
+    protected client: Composio<TTool, this> | undefined;
 
     /**
      * Set the client for the toolset. This is automatically done by the Composio class.
      * @param client - The Composio client.
      */
-    setClient(client: Composio<Toolset<TTool>>): void {
+    setClient(client: Composio<TTool, this>): void {
         this.client = client;
     }
 

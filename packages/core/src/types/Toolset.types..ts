@@ -7,7 +7,6 @@ import { Tool, BaseTool } from "./tool.types";
  */
 export interface Toolset<TTool = BaseTool> {
   _wrapTool: (tool: Tool) => TTool;
-  setClient<T extends Toolset<TTool>>(client: Composio<T>): void;
 }
 
 

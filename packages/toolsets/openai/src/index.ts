@@ -6,11 +6,6 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool
   static readonly FRAMEWORK_NAME = "openai";
   static readonly DEFAULT_USER_ID = "default";
   private static readonly FILE_NAME = "toolsets/openai/src/index.ts";
-  private client: Composio<OpenAI.ChatCompletionTool, Toolset<OpenAI.ChatCompletionTool>> | undefined;
-
-  setClient(client: Composio<OpenAI.ChatCompletionTool, Toolset<OpenAI.ChatCompletionTool>>) {
-    this.client = client;
-  }
 
   _wrapTool = (tool: Tool): OpenAI.ChatCompletionTool => {
     const formattedSchema: OpenAI.FunctionDefinition = {
