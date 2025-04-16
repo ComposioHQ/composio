@@ -1,5 +1,6 @@
 import { Toolset } from "../types/toolset.types.";
 import { Tool } from "../types/tool.types";
+import { Composio } from "../composio";
 
 /**
  * Base toolset implementation with proper generic defaults
@@ -16,8 +17,14 @@ import { Tool } from "../types/tool.types";
  * }
  * ```
  */
-export abstract class BaseComposioToolset<TTool extends Tool> implements Toolset<TTool> {
-  
+export abstract class BaseComposioToolset<TTool> implements Toolset<TTool> {
+
+    /**
+     * Sets the client for the toolset
+     * @param client 
+     */
+    abstract setClient(client: Composio<TTool, Toolset<TTool>>): void;
+
     /**
      * Wraps the tool to a specific type
      * This method should be implemented by the extended class to wrap the tool to a specific type.
@@ -26,17 +33,5 @@ export abstract class BaseComposioToolset<TTool extends Tool> implements Toolset
      */
     abstract _wrapTool: (tool: Tool) => TTool; 
 
-    getTools(): TTool[] {
-      return [];
-    }
-
-    // pre process the tool before executing it
-    preProcessTool(tool: TTool): TTool {
-        return tool;
-    }
-
-    // post process the tool after executing it
-    postProcessTool(tool: TTool): TTool {
-        return tool;
-    }
+    // @TODO add pre-process and post-process methods
 }

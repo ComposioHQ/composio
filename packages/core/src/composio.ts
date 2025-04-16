@@ -7,10 +7,10 @@ import { Toolset, WrappedTool } from "./types/toolset.types.";
 import { Tool } from "./types/tool.types";
 import { AuthConfigs } from "./models/AuthConfigs";
 import { ConnectedAccounts } from "./models/ConnectedAccounts";
-import { ActionExecutions } from "./models/ActionExecution";
+import { ToolListParams } from "@composio/client/resources/tools";
 
 export type ComposioConfig<
-  TTool extends Tool,
+  TTool,
   TToolset extends Toolset<TTool>
 > = {
   apiKey?: string;
@@ -25,7 +25,10 @@ export type ComposioConfig<
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TTool extends Tool, TToolset extends Toolset<TTool>> {
+export class Composio<
+  TTool,
+  TToolset extends Toolset<TTool> = Toolset<TTool>
+> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -37,13 +40,12 @@ export class Composio<TTool extends Tool, TToolset extends Toolset<TTool>> {
   /**
    * Core models for Composio.
    */
-  tools: Tools<TTool, TToolset>;
+  tools: Tools;
   toolkits: Toolkits;
   triggers: Triggers;
   toolset: TToolset;
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
-  ActionExecution: ActionExecutions;
 
   /**
    * @param {Object} config Configuration for the Composio SDK.
@@ -82,16 +84,16 @@ export class Composio<TTool extends Tool, TToolset extends Toolset<TTool>> {
      */
     const defaultToolset = new ComposioToolset();
     this.toolset = config.toolset ?? (defaultToolset as unknown as TToolset);
+    this.toolset.setClient(this);
 
     /**
      * Initialize all the models with composio client.
      */
-    this.tools = new Tools(this.client, this.toolset);
+    this.tools = new Tools(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
-    this.ActionExecution = new ActionExecutions(this.client);
   }
 
   /**
@@ -111,16 +113,18 @@ export class Composio<TTool extends Tool, TToolset extends Toolset<TTool>> {
    * Generic function to get all the tools
    * @returns {Promise<T[]>} Promise with list of tools
    */
-  getTool(id: string): Promise<WrappedTool<TToolset>> {
-    return this.tools.get(id);
+  async getTool(id: string): Promise<WrappedTool<TToolset>> {
+    const tool = await this.tools.get(id);
+    return this.toolset._wrapTool(tool) as WrappedTool<TToolset>;
   }
 
-  getTools(): Promise<WrappedTool<TToolset>[]> {
-    return this.tools.list();
-  }
-
-  getEntity(): Promise<void> {
-    console.log("Entity");
-    return Promise.resolve();
+  /**
+   * Generic function to get all the tools
+   * @param query - Query parameters for the tools
+   * @returns {Promise<T[]>} Promise with list of tools
+   */
+  async getTools(query?: ToolListParams): Promise<WrappedTool<TToolset>[]> {
+    const tools = await this.tools.list(query);
+    return tools.items.map((tool) => this.toolset._wrapTool(tool as Tool)) as WrappedTool<TToolset>[];
   }
 }

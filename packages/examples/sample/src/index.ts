@@ -11,13 +11,7 @@ async function constructorExample() {
   });
 
   const tool = await composio.tools.get("HACKERNEWS_SEARCH_POSTS");
-
   const sampleTool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
-  sampleTool.execute({});
-
-  composio.toolset.handleToolCall(tool);
-
-  tool.execute({});
 }
 
 constructorExample();
