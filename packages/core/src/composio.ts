@@ -9,33 +9,27 @@ import { AuthConfigs } from "./models/AuthConfigs";
 import { ConnectedAccounts } from "./models/ConnectedAccounts";
 import { ToolListParams } from "@composio/client/resources/tools";
 
-export type ComposioConfig<
-  TTool,
-  TToolset extends Toolset<TTool>
-> = {
+export type ComposioConfig<T extends Toolset<any>> = {
   apiKey?: string;
   baseURL?: string;
   runtime?: string;
   allowTracking?: boolean;
   allowTracing?: boolean;
-  toolset?: TToolset;
+  toolset?: T;
 };
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<
-  TTool,
-  TToolset extends Toolset<TTool> = Toolset<TTool>
-> {
+export class Composio<T extends Toolset<any>> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
    */
   private client: ComposioClient;
 
-  private config: ComposioConfig<TTool, TToolset>;
+  private config: ComposioConfig<T>;
 
   /**
    * Core models for Composio.
@@ -43,7 +37,7 @@ export class Composio<
   tools: Tools;
   toolkits: Toolkits;
   triggers: Triggers;
-  toolset: TToolset;
+  toolset: T;
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
 
@@ -56,14 +50,7 @@ export class Composio<
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
-  constructor(config: {
-    apiKey?: string;
-    baseURL?: string;
-    runtime?: string;
-    allowTracking?: boolean;
-    allowTracing?: boolean;
-    toolset?: TToolset;
-  }) {
+  constructor(config: ComposioConfig<T>) {
     /**
      * Initialize the Composio SDK client.
      * The client is used to make API calls to the Composio API.
@@ -83,7 +70,7 @@ export class Composio<
      * Set the default toolset, if not provided by the user.
      */
     const defaultToolset = new ComposioToolset();
-    this.toolset = config.toolset ?? (defaultToolset as unknown as TToolset);
+    this.toolset = config.toolset ?? (defaultToolset as unknown as T);
     this.toolset.setClient(this);
 
     /**
@@ -113,9 +100,9 @@ export class Composio<
    * Generic function to get all the tools
    * @returns {Promise<T[]>} Promise with list of tools
    */
-  async getTool(id: string): Promise<WrappedTool<TToolset>> {
+  async getTool(id: string): Promise<WrappedTool<T>> {
     const tool = await this.tools.get(id);
-    return this.toolset._wrapTool(tool) as WrappedTool<TToolset>;
+    return this.toolset._wrapTool(tool) as WrappedTool<T>;
   }
 
   /**
@@ -123,8 +110,8 @@ export class Composio<
    * @param query - Query parameters for the tools
    * @returns {Promise<T[]>} Promise with list of tools
    */
-  async getTools(query?: ToolListParams): Promise<WrappedTool<TToolset>[]> {
+  async getTools(query?: ToolListParams): Promise<WrappedTool<T>[]> {
     const tools = await this.tools.list(query);
-    return tools.items.map((tool) => this.toolset._wrapTool(tool as Tool)) as WrappedTool<TToolset>[];
+    return tools.items.map((tool) => this.toolset._wrapTool(tool as Tool)) as WrappedTool<T>[];
   }
 }

@@ -18,20 +18,17 @@ import { Composio } from "../composio";
  * ```
  */
 export abstract class BaseComposioToolset<TTool> implements Toolset<TTool> {
+    protected client: Composio<Toolset<TTool>> | undefined;
 
-    /**
-     * Sets the client for the toolset
-     * @param client 
-     */
-    abstract setClient(client: Composio<TTool, Toolset<TTool>>): void;
+    setClient(client: Composio<Toolset<TTool>>): void {
+        this.client = client;
+    }
 
-    /**
-     * Wraps the tool to a specific type
-     * This method should be implemented by the extended class to wrap the tool to a specific type.
-     * @param tool The tool to wrap (This will be the tool retrieved from the API)
-     * @returns The wrapped tool
-     */
-    abstract _wrapTool: (tool: Tool) => TTool; 
+    abstract _wrapTool(tool: Tool): TTool;
 
-    // @TODO add pre-process and post-process methods
+    protected ensureClient(): void {
+        if (!this.client) {
+            throw new Error('Client not initialized. Make sure the toolset is properly initialized with Composio.');
+        }
+    }
 }
