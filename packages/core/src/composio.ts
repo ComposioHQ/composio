@@ -10,13 +10,15 @@ import { ConnectedAccounts } from "./models/ConnectedAccounts";
 import { ToolListParams } from "@composio/client/resources/tools";
 import { BaseComposioToolset } from "./toolset/BaseToolset";
 
+
 export type ComposioConfig<TTool, T extends BaseComposioToolset<TTool>> = {
   apiKey?: string;
   baseURL?: string;
-  runtime?: string;
   allowTracking?: boolean;
   allowTracing?: boolean;
   toolset?: T;
+  userId?: string;
+  connectedAccountIds?: Record<string, string>;
 };
 
 /**
@@ -24,13 +26,27 @@ export type ComposioConfig<TTool, T extends BaseComposioToolset<TTool>> = {
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
+
+  private readonly DEFAULT_USER_ID = "default";
+  private static readonly FILE_NAME = "core/composio.ts";
+
   /**
    * The Composio API client.
    * @type {ComposioClient}
    */
   private client: ComposioClient;
 
+  /**
+   * The configuration for the Composio SDK.
+   * @type {ComposioConfig<TTool, T>}
+   */
   private config: ComposioConfig<TTool, T>;
+
+  /**
+   * Context variables for the Composio SDK.
+   */
+  userId?: string;
+  connectedAccountIds?: Record<string, string>;
 
   /**
    * Core models for Composio.
@@ -68,6 +84,12 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
     this.config = config;
 
     /**
+     * Set the context variables for the Composio SDK.
+     */
+    this.userId = config.userId?? this.DEFAULT_USER_ID; // entity id of the user
+    this.connectedAccountIds = config.connectedAccountIds?? {}; // app name -> account id of the connected account
+
+    /**
      * Set the default toolset, if not provided by the user.
      */
     this.toolset = config.toolset ?? new ComposioToolset() as unknown as T;
@@ -81,6 +103,15 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
+  }
+
+  /**
+   * Get the connected account id for the given app name.
+   * @param appName - The name of the app.
+   * @returns {string | undefined} The connected account id for the given app name.
+   */
+  getConnectedAccountId(appName: string): string | undefined {
+    return this.connectedAccountIds?.[appName];
   }
 
   /**
