@@ -1,5 +1,4 @@
-import { Composio } from "../composio";
-import { Tool } from "../types/tool.types";
+import { Tool, ToolListParams } from "../types/tool.types";
 import { BaseComposioToolset } from "./BaseToolset";
 
 /**
@@ -12,11 +11,16 @@ import { BaseComposioToolset } from "./BaseToolset";
 interface CustomTool {
   name: string;
 }
-export class ComposioToolset extends BaseComposioToolset<CustomTool> {
+export class ComposioToolset extends BaseComposioToolset<Array<CustomTool>, CustomTool> {
 
   _wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };
+
+  async getTools(params?: ToolListParams): Promise<Array<CustomTool>> {
+    const tools = await this.client?.tools.list(params);
+    return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
+  }
 
   async test() {}
 }

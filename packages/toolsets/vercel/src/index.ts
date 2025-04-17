@@ -2,7 +2,8 @@ import { BaseComposioToolset, Tool as ComposioTool, ToolListParams } from "@comp
 import type { Tool as VercelTool } from "ai";
 import { jsonSchema, tool } from "ai";
 
-export class VercelToolset extends BaseComposioToolset<VercelTool> {
+type VercelToolCollection = Record<string, VercelTool>;
+export class VercelToolset extends BaseComposioToolset<VercelToolCollection, VercelTool> {
 
     private static readonly FILE_NAME = "toolsets/vercel/src/index.ts";
     static readonly FRAMEWORK_NAME = "vercel";
@@ -14,12 +15,15 @@ export class VercelToolset extends BaseComposioToolset<VercelTool> {
      * @param params - The parameters for the tool list.
      * @returns The tools.
      */
-    override async getTools(params?: ToolListParams): Promise<Record<string, VercelTool>> {
+    override async getTools(params?: ToolListParams): Promise<VercelToolCollection> {
         if (!this.client) {
             throw new Error("Client not initialized");
         }
         const tools = await this.client.tools.list(params);
-        return tools.items.reduce((tools, tool) => ({ ...tools, [tool.name]: this._wrapTool(tool as ComposioTool) }), {});
+        return tools.items.reduce((tools, tool) => ({
+            ...tools,
+            [tool.slug]: this._wrapTool(tool as ComposioTool)
+        }), {});
     }
     
     /**
@@ -40,7 +44,7 @@ export class VercelToolset extends BaseComposioToolset<VercelTool> {
         const appName = toolSchema?.name.toLowerCase();
         const args = typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments;
 
-        const results = await this.client.tools.execute(toolSchema.name, {
+        const results = await this.client.tools.execute(toolSchema.slug, {
             arguments: args,
             entity_id: userId ?? this.client.userId,
             connected_account_id: this.client.getConnectedAccountId(appName)
@@ -57,7 +61,7 @@ export class VercelToolset extends BaseComposioToolset<VercelTool> {
             execute: async (params) => {
                 return await this.executeToolCall(
                     {
-                        name: composioTool.name,
+                        name: composioTool.slug,
                         arguments: JSON.stringify(params),
                     },
                     this.client?.userId

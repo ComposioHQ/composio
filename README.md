@@ -29,6 +29,8 @@ const tool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
 console.log(tool);
 ```
 
+For more examples, please check the `/examples` directory.
+
 ## Creating a new toolset
 To create a new Toolset, you need to extend the `BaseComposioToolset<YourToolType>` and implement the `_wrapTool` method to return the tool type of your choice.
 

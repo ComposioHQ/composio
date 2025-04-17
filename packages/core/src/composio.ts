@@ -11,12 +11,12 @@ import { ToolListParams } from "@composio/client/resources/tools";
 import { BaseComposioToolset } from "./toolset/BaseToolset";
 
 
-export type ComposioConfig<TTool, T extends BaseComposioToolset<TTool>> = {
+export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> = {
   apiKey?: string;
   baseURL?: string;
   allowTracking?: boolean;
   allowTracing?: boolean;
-  toolset?: T;
+  toolset?: TToolset;
   userId?: string;
   connectedAccountIds?: Record<string, string>;
 };
@@ -25,7 +25,7 @@ export type ComposioConfig<TTool, T extends BaseComposioToolset<TTool>> = {
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
+export class Composio<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> {
 
   private readonly DEFAULT_USER_ID = "default";
   private static readonly FILE_NAME = "core/composio.ts";
@@ -38,9 +38,9 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
 
   /**
    * The configuration for the Composio SDK.
-   * @type {ComposioConfig<TTool, T>}
+   * @type {ComposioConfig<TTool, TToolset>}
    */
-  private config: ComposioConfig<TTool, T>;
+  private config: ComposioConfig<TToolCollection, TTool, TToolset>;
 
   /**
    * Context variables for the Composio SDK.
@@ -54,7 +54,7 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
   tools: Tools;
   toolkits: Toolkits;
   triggers: Triggers;
-  toolset: T;
+  toolset: TToolset;
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
 
@@ -67,7 +67,7 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<TTool,T>) {
+  constructor(config: ComposioConfig<TToolCollection,TTool,TToolset>) {
     /**
      * Initialize the Composio SDK client.
      * The client is used to make API calls to the Composio API.
@@ -92,7 +92,7 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
     /**
      * Set the default toolset, if not provided by the user.
      */
-    this.toolset = config.toolset ?? new ComposioToolset() as unknown as T;
+    this.toolset = config.toolset ?? new ComposioToolset() as unknown as TToolset;
     this.toolset.setClient(this);
 
     /**
@@ -129,18 +129,19 @@ export class Composio<TTool, T extends BaseComposioToolset<TTool>> {
 
   /**
    * Generic function to get all the tools
-   * @returns {Promise<T[]>} Promise with list of tools
+   * @returns {Promise<ReturnType<TToolset["getTool"]>>} Promise with list of tools
    */
-  async getTool(slug: string): Promise<WrappedTool<T>> {
-    return this.toolset.getTool(slug) as Promise<WrappedTool<T>>;
+  async getTool(slug: string): Promise<ReturnType<TToolset["getTool"]>> {
+    return this.toolset.getTool(slug) as Promise<ReturnType<TToolset["getTool"]>>;
   }
 
   /**
    * Generic function to get all the tools
    * @param query - Query parameters for the tools
-   * @returns {Promise<T[]>} Promise with list of tools
+   * @returns {Promise<ReturnType<TToolset["getTools">} Promise with list/records of tools
    */
-  async getTools(query?: ToolListParams): Promise<WrappedTool<T>[] | Record<string, WrappedTool<T>>> {
-    return this.toolset.getTools(query) as Promise<WrappedTool<T>[]>;
+  async getTools(query?: ToolListParams): Promise<ReturnType<TToolset["getTools"]>> {
+    return this.toolset.getTools(query) as Promise<ReturnType<TToolset["getTools"]>>;
   }
+
 }

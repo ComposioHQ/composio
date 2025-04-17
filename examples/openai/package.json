@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "bun src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,7 +13,8 @@
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "@composio/openai-toolset": "workspace:*"
+    "@composio/openai-toolset": "workspace:*",
+    "openai": "^4.94.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

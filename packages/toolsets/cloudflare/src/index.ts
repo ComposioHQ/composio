@@ -1,7 +1,9 @@
 import { AiTextGenerationToolInput } from "@cloudflare/workers-types";
 import { BaseComposioToolset, Tool, ToolListParams } from "@composio/core";
 
-export class CloudflareToolset extends BaseComposioToolset<AiTextGenerationToolInput> {
+type AiToolCollection = Record<string, AiTextGenerationToolInput>;
+
+export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiTextGenerationToolInput> {
   static FRAMEWORK_NAME = "cloudflare";
   private DEFAULT_ENTITY_ID = "default";
   static fileName: string = "toolsets/cloudflare/src/index.ts";
@@ -14,7 +16,7 @@ export class CloudflareToolset extends BaseComposioToolset<AiTextGenerationToolI
    */
   _wrapTool(tool: Tool): AiTextGenerationToolInput {
     const formattedSchema: AiTextGenerationToolInput["function"] = {
-      name: tool.name!,
+      name: tool.slug!,
       description: tool.description!,
       parameters: tool.input_parameters as unknown as {
         type: "object";
@@ -39,7 +41,7 @@ export class CloudflareToolset extends BaseComposioToolset<AiTextGenerationToolI
    * @param {ToolListParams} query - The query parameters for the tools.
    * @returns {Promise<Record<string, AiTextGenerationToolInput>>} The tools from the Cloudflare API.
    */
-  override async getTools(query?: ToolListParams): Promise<Record<string, AiTextGenerationToolInput>> {
+  override async getTools(query?: ToolListParams): Promise<AiToolCollection> {
     if (!this.client) {
       throw new Error("Client not set");
     }
@@ -47,7 +49,7 @@ export class CloudflareToolset extends BaseComposioToolset<AiTextGenerationToolI
     const tools = await this.client.tools.list(query);
     return tools.items.reduce((tools, tool) => ({
       ...tools,
-      [tool.name]: this._wrapTool(tool as Tool),
+      [tool.slug]: this._wrapTool(tool as Tool),
     }), {});
   }
 
@@ -64,13 +66,14 @@ export class CloudflareToolset extends BaseComposioToolset<AiTextGenerationToolI
     }
 
     const toolSchema = await this.client.tools.get(tool.name);
+    const appName = toolSchema?.toolkit?.name.toLowerCase();
     const args = typeof tool.arguments === "string"
       ? JSON.parse(tool.arguments)
       : tool.arguments;
-    const results = await this.client?.tools.execute(toolSchema.name, {
+    const results = await this.client?.tools.execute(toolSchema.slug, {
       arguments: args,
       entity_id: this.DEFAULT_ENTITY_ID,
-      connected_account_id: this.client?.getConnectedAccountId(toolSchema.name),
+      connected_account_id: this.client?.getConnectedAccountId(appName),
     });
 
     return JSON.stringify(results);

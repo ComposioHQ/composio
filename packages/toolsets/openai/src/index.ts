@@ -1,9 +1,10 @@
-import { BaseComposioToolset } from "@composio/core";
+import { BaseComposioToolset, ToolListParams } from "@composio/core";
 import { Tool } from "@composio/core";
 import { OpenAI } from "openai";
 import { Stream } from "openai/streaming";
 
-export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool> {
+type OpenAiToolCollection = Array<OpenAI.ChatCompletionTool>;
+export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, OpenAI.ChatCompletionTool> {
   static readonly FRAMEWORK_NAME = "openai";
   private static readonly FILE_NAME = "toolsets/openai/src/index.ts";
 
@@ -19,7 +20,7 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool
    */
   _wrapTool = (tool: Tool): OpenAI.ChatCompletionTool => {
     const formattedSchema: OpenAI.FunctionDefinition = {
-      name: tool.name!,
+      name: tool.slug!,
       description: tool.description!,
       parameters: tool.input_parameters!,
     };
@@ -28,6 +29,16 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool
       function: formattedSchema,
     };
   };
+
+  /**
+   * Get all the tools from the Composio in OpenAI format.
+   * @param params - The parameters for the tool list.
+   * @returns The tools.
+   */
+  async getTools(params?: ToolListParams): Promise<Array<OpenAI.ChatCompletionTool>> {
+    const tools = await this.client?.tools.list(params);
+    return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
+  }
 
   /**
    * @TODO include the connectedAccountId / app name in the tool call
@@ -44,12 +55,18 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAI.ChatCompletionTool
       throw new Error("Client not set");
     }
 
+    /**
+     * @TODO: This is redundant, we should be able to get the tool name from the tool call
+     */
     const toolSchema = await this.client.tools.get(tool.function.name);
-    const appName = toolSchema?.name.toLowerCase();
-    const results = await this.client.tools.execute(toolSchema.name, {
+    const appName = toolSchema?.toolkit?.name.toLowerCase();
+    const connectedAccountId = this.client.getConnectedAccountId(appName);
+
+
+    const results = await this.client.tools.execute(toolSchema.slug, {
       arguments: JSON.parse(tool.function.arguments),
       entity_id: userId ?? this.client.userId,
-      connected_account_id: this.client.getConnectedAccountId(appName)
+      // connected_account_id: connectedAccountId,
     });
 
     return JSON.stringify(results);

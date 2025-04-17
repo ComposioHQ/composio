@@ -11,25 +11,16 @@ import { Composio } from "../composio";
  * these extended toolsets can add their own functionality/methods to the toolset.
  * 
  * eg:
- * ```ts
- * // Using default BaseTool type
- * class DefaultToolset extends BaseComposioToolset {}
- * 
- * // Using a custom tool type
- * class MyToolset extends BaseComposioToolset<MyCustomTool> {}
- * 
- * // Using a third-party tool type
- * class ThirdPartyToolset extends BaseComposioToolset<ThirdPartyTool> {}
- * ```
+ * class YourToolSet extends BaseComposioToolset<CustomToolCollection, CustomTool> {}
  */
-export abstract class BaseComposioToolset<TTool = BaseTool> implements Toolset<TTool> {
-    protected client: Composio<TTool, this> | undefined;
+export abstract class BaseComposioToolset<TToolCollection, TTool = BaseTool> implements Toolset<TTool, TToolCollection> {
+    protected client: Composio<TToolCollection, TTool, this> | undefined;
 
     /**
      * Set the client for the toolset. This is automatically done by the Composio class.
      * @param client - The Composio client.
      */
-    setClient(client: Composio<TTool, this>): void {
+    setClient(client: Composio<TToolCollection, TTool, this>): void {
         this.client = client;
     }
 
@@ -39,10 +30,7 @@ export abstract class BaseComposioToolset<TTool = BaseTool> implements Toolset<T
      * @param params - The parameters for the tool list.
      * @returns The tools.
      */
-    async getTools(params?: ToolListParams): Promise<TTool[] | Record<string, TTool>> {
-        const tools = await this.client?.tools.list(params);
-        return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
-    }
+    abstract getTools(params?: ToolListParams): Promise<TToolCollection>;
 
     /** 
      * Get a tool from the client.
