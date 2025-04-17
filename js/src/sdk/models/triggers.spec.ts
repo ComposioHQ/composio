@@ -79,13 +79,13 @@ describe("Apps class tests subscribe", () => {
       connectedAccountId,
       triggerName: "gmail_new_gmail_message",
       config: {
-        userId: connectedAccount.items[0].id,
+        userId: "me",
         interval: 60,
         labelIds: "INBOX",
       },
     });
 
-    expect(trigger.status).toBe("success");
+    expect(trigger.status).toMatch(/^(COMPLETED|success)$/);
     expect(trigger.triggerId).toBeTruthy();
 
     triggerId = trigger.triggerId;
@@ -103,10 +103,10 @@ describe("Apps class tests subscribe", () => {
   });
 
   it("should get the config of a trigger", async () => {
-    const res = await triggers.getTriggerConfig({
+    const res = await triggers.get({
       triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
     });
-    expect(res.config.title).toBe("GmailNewMessageConfigSchema");
+    expect(res.config.title).toBe("NewMessageConfig");
   });
 
   it("should get the payload of a trigger", async () => {
