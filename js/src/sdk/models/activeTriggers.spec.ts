@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { ActiveTriggers } from "./activeTriggers";
+import { Triggers } from "./triggers"
 
 describe("Active Triggers class tests", () => {
   let backendClient;

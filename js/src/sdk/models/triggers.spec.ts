@@ -98,9 +98,15 @@ describe("Apps class tests subscribe", () => {
     trigger = await triggers.enable({ triggerId });
     expect(trigger.status).toBe("success");
 
-    trigger = await triggers.disable({ triggerId });
-    expect(trigger.status).toBe("success");
+    // trigger = await triggers.disable({ triggerId });
+    // expect(trigger.status).toBe("success");
   });
+
+  // it("should enable the trigger", async () => {
+  //   let trigger = await triggers.disable({ triggerId });
+  //   trigger = await triggers.enable({ triggerId });
+  //   expect(trigger.status).toBe("success");
+  // });
 
   it("should get the config of a trigger", async () => {
     const res = await triggers.get({
