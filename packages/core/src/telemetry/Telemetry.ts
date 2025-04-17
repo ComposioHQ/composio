@@ -88,7 +88,24 @@ export class Telemetry<U extends InstrumentedInstance> {
 
                 console.log("telemetryPayload", telemetryPayload);
 
-                return await originalMethod.apply(instance, args);
+                // @TODO: Add a try catch here to create global error handler
+                try {
+
+                    return await originalMethod.apply(instance, args);
+                } catch (error) {
+                    const telemetryPayload: TelemetryPayload = {
+                        eventName: TELEMETRY_EVENTS.SDK_METHOD_ERROR,
+                        data: {
+                            fileName: instance.FILE_NAME ?? fileName ?? "unknown",
+                            method: name,
+                            params: args,
+                            error: error,
+                        },
+                        sdk_meta: this.telemetryMetadata,
+                    }
+                    this.batchProcessor.pushItem(telemetryPayload);
+                    throw error;
+                }
             };
         }
 

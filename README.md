@@ -45,14 +45,14 @@ pnpm run create-toolset langchain
 
 ## Internal
 What's not included from @composio/client
-- [ ] Zod Schemas for type checking
+- [X] Org/Project Mangement with API Keys
+- [X] Trigger Subscriptions
+- [ ] Zod Schemas for type checking `Ideally strike a minimal balance, since backend has most`
 - [ ] Action Execution
-- [ ] Org/Project Mangement with API Keys
-- [ ] CLI 
-- [ ] MCP
-- [ ] Team Members
+- [ ] CLI `Do we need this in the core SDK?`
+- [ ] MCP `Not required as this is not necessary`
+- [ ] Team Members 
 - [ ] File uploads/user files
-- [ ] Trigger Subscriptions
 - [ ] Tests
 
 These models can be still be accessed via the SDK explicitly by using the `@composio/client`.
