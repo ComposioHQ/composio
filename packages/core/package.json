@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.7",
+    "pusher-js": "^8.4.0",
     "zod": "^3.24.2"
   }
 }

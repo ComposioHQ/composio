@@ -9,6 +9,7 @@ import { ProcessTelemetryTransport } from "./transports/ProcessTransport";
  * The Telemetry class is used to log the telemetry for any given instance which extends InstrumentedInstance.
  * 
  * This class is used to instrument the telemetry for the given instance and send the telemetry to the server.  
+ * This class is also used to create a global error handler for the given instance.
  * 
  * @example
  * 
