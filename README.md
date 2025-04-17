@@ -51,5 +51,8 @@ What's not included from @composio/client
 - [ ] CLI 
 - [ ] MCP
 - [ ] Team Members
+- [ ] File uploads/user files
+- [ ] Trigger Subscriptions
+- [ ] Tests
 
 These models can be still be accessed via the SDK explicitly by using the `@composio/client`.

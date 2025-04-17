@@ -34,11 +34,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.1
-        version: 0.1.0-alpha.1
-      '@composio/openai-toolset':
-        specifier: workspace:^
-        version: link:../toolsets/openai
+        specifier: 0.1.0-alpha.7
+        version: 0.1.0-alpha.7
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -154,8 +151,8 @@ packages:
   '@cloudflare/workers-types@4.20250416.0':
     resolution: {integrity: sha512-i37TX0Clp+MrPdXMBdvKZM7JghCrWD9GtG7E+8ANOAPmtZjUkZfEy9qq46IG3XlNpagPaWDkY3SgJ3s01gPxCw==}
 
-  '@composio/client@0.1.0-alpha.1':
-    resolution: {integrity: sha512-cWN3Kffl1zkJ9LVHXtIAZplyUP1fktNIXgPhKL9RMRrUlQyuwpA8k2so4nlxg4f1C77NZSM+9/gbNOLNRWx21g==}
+  '@composio/client@0.1.0-alpha.7':
+    resolution: {integrity: sha512-2KYo7mloXf6vplX+6cMjnuaS/Hia74HwPZd7/3RCehVptqTzaqgQFBEAGfnQ3zMBtTkLt+S7JQsZc9RE0SIMoA==}
 
   '@emnapi/core@1.4.0':
     resolution: {integrity: sha512-H+N/FqT07NmLmt6OFFtDfwe8PNygprzBikrEMyQfgqSmT0vzE515Pz7R8izwB9q/zsH/MA64AKoul3sA6/CzVg==}
@@ -1252,7 +1249,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250416.0': {}
 
-  '@composio/client@0.1.0-alpha.1': {}
+  '@composio/client@0.1.0-alpha.7': {}
 
   '@emnapi/core@1.4.0':
     dependencies:

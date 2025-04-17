@@ -18,7 +18,7 @@ import { checkForLatestVersionFromNPM } from "./utils/version";
 
 export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> = {
   apiKey?: string;
-  baseUrl?: string;
+  baseURL?: string;
   allowTracking?: boolean;
   allowTracing?: boolean;
   toolset?: TToolset;
@@ -79,7 +79,7 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
   constructor(config: ComposioConfig<TToolCollection, TTool, TToolset>) {
 
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
-      config?.baseUrl,
+      config?.baseURL,
       config?.apiKey
     );
 
@@ -97,6 +97,7 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
       baseURL: baseURLParsed,
     });
 
+    this.client
     /**
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.

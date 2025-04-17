@@ -11,8 +11,11 @@ import {
   TriggersTypeRetrieveEnumResponse,
   TriggersTypeRetrieveResponse,
 } from "@composio/client/resources/index";
-import { TriggerStatusEnum } from "../types/triggers.types";
+import { TriggerStatusEnum, TriggerSubscribeParams } from "../types/triggers.types";
 import { InstrumentedInstance } from "../types/telemetry.types";
+import { PusherUtils, TriggerData } from "../utils/pusher";
+import logger from "../utils/logger";
+import { Session } from "./Session";
 
 
 
@@ -161,5 +164,67 @@ export class Triggers implements InstrumentedInstance {
    */
   async listEnum(options?: RequestOptions): Promise<TriggersTypeRetrieveEnumResponse> {
     return this.client.triggersTypes.retrieveEnum(options);
+  }
+
+  async subscribe(
+    fn: (data: TriggerData) => void,
+    filters: TriggerSubscribeParams = {}
+  ) {
+
+    if (!fn) throw new Error("Function is required for trigger subscription");
+
+    // @TODO: Get the client id from the backend
+    const session = new Session(this.client);
+    const sessionInfo = await session.getInfo();
+    const clientId = sessionInfo.project?.id;
+
+    if (!clientId) throw new Error("Client ID not found");
+
+    await PusherUtils.getPusherClient(
+      this.client.baseURL,
+      this.client.apiKey
+    );
+
+    const shouldSendTrigger = (data: TriggerData) => {
+      if (Object.keys(filters).length === 0) return true;
+      else {
+        return (
+          (!filters.appName ||
+            data.appName.toLowerCase() === filters.appName.toLowerCase()) &&
+          (!filters.triggerId ||
+            data.metadata.id.toLowerCase() ===
+              filters.triggerId.toLowerCase()) &&
+          (!filters.connectionId ||
+            data.metadata.connectionId.toLowerCase() ===
+              filters.connectionId.toLowerCase()) &&
+          (!filters.triggerName ||
+            data.metadata.triggerName.toLowerCase() ===
+              filters.triggerName.toLowerCase()) &&
+          (!filters.entityId ||
+            data.metadata.connection.clientUniqueUserId.toLowerCase() ===
+              filters.entityId.toLowerCase()) &&
+          (!filters.integrationId ||
+            data.metadata.connection.integrationId.toLowerCase() ===
+              filters.integrationId.toLowerCase())
+        );
+      }
+    };
+
+    logger.debug("Subscribing to triggers", filters);
+    PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
+      if (shouldSendTrigger(data)) {
+        fn(data);
+      }
+    });
+  }
+
+  async unsubscribe() {
+    const session = new Session(this.client);
+    const sessionInfo = await session.getInfo();
+    const clientId = sessionInfo.project?.id;
+
+    if (!clientId) throw new Error("Client ID not found");
+
+    PusherUtils.triggerUnsubscribe(clientId);
   }
 }
