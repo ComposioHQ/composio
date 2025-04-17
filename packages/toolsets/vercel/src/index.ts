@@ -5,7 +5,7 @@ import { jsonSchema, tool } from "ai";
 type VercelToolCollection = Record<string, VercelTool>;
 export class VercelToolset extends BaseComposioToolset<VercelToolCollection, VercelTool> {
 
-    private static readonly FILE_NAME = "toolsets/vercel/src/index.ts";
+    readonly FILE_NAME = "toolsets/vercel/src/index.ts";
     static readonly FRAMEWORK_NAME = "vercel";
 
     /**

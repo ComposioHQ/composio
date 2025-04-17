@@ -1,0 +1,20 @@
+import { TelemetryTransportParams } from "../types/telemetry.types";
+
+export abstract class BaseTelemetryTransport {
+    /**
+     * Send the payload to the telemetry service.
+     * @param payload - The payload to send.
+     */
+    abstract send(payload: TelemetryTransportParams): Promise<void>;
+}
+
+/**
+ * A telemetry transport that logs to the console.
+ * This is just for testing purposes.
+ */
+export class ConsoleTelemetryTransport implements BaseTelemetryTransport {
+    send(payload: TelemetryTransportParams): Promise<void> {
+        console.log("payload", payload);
+        return Promise.resolve();
+    }
+}

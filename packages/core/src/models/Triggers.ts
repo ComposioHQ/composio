@@ -12,13 +12,18 @@ import {
   TriggersTypeRetrieveResponse,
 } from "@composio/client/resources/index";
 import { TriggerStatusEnum } from "../types/triggers.types";
+import { InstrumentedInstance } from "../types/telemetry.types";
+
+
+
 
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
  *
  */
-export class Triggers {
+export class Triggers implements InstrumentedInstance {
+  readonly FILE_NAME: string = "core/models/Triggers.ts";
   private client: ComposioSDK;
 
   constructor(client: ComposioSDK) {

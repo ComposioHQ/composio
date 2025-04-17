@@ -3,22 +3,28 @@ import { Tools } from "./models/Tools";
 import { Toolkits } from "./models/Toolkits";
 import { Triggers } from "./models/Triggers";
 import { ComposioToolset } from "./toolset/ComposioToolset";
-import { WrappedTool } from "./types/toolset.types.";
-import { Tool } from "./types/tool.types";
 import { AuthConfigs } from "./models/AuthConfigs";
 import { ConnectedAccounts } from "./models/ConnectedAccounts";
 import { ToolListParams } from "@composio/client/resources/tools";
 import { BaseComposioToolset } from "./toolset/BaseToolset";
+import { Telemetry } from "./telemetry/Telemetry";
+import { BaseTelemetryTransport, ConsoleTelemetryTransport } from "./telemetry/TelemetryTransport";
+import type { InstrumentedInstance } from "./types/telemetry.types";
+import { getSDKConfig } from "./utils/sdk";
+import logger from "./utils/logger";
+import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
+import { checkForLatestVersionFromNPM } from "./utils/version";
 
 
 export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> = {
   apiKey?: string;
-  baseURL?: string;
+  baseUrl?: string;
   allowTracking?: boolean;
   allowTracing?: boolean;
   toolset?: TToolset;
   userId?: string;
   connectedAccountIds?: Record<string, string>;
+  telemetryTransport?: BaseTelemetryTransport;
 };
 
 /**
@@ -28,7 +34,7 @@ export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposio
 export class Composio<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> {
 
   private readonly DEFAULT_USER_ID = "default";
-  private static readonly FILE_NAME = "core/composio.ts";
+  readonly FILE_NAME = "core/composio.ts";
 
   /**
    * The Composio API client.
@@ -42,11 +48,14 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
    */
   private config: ComposioConfig<TToolCollection, TTool, TToolset>;
 
+  private telemetry: Telemetry<InstrumentedInstance> | undefined;
+
   /**
    * Context variables for the Composio SDK.
    */
   userId?: string;
   connectedAccountIds?: Record<string, string>;
+
 
   /**
    * Core models for Composio.
@@ -67,27 +76,41 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<TToolCollection,TTool,TToolset>) {
+  constructor(config: ComposioConfig<TToolCollection, TTool, TToolset>) {
+
+    const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
+      config?.baseUrl,
+      config?.apiKey
+    );
+
+    if (IS_DEVELOPMENT_OR_CI) {
+      logger.info(
+        `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
+      );
+    }
     /**
      * Initialize the Composio SDK client.
      * The client is used to make API calls to the Composio API.
      */
     this.client = new ComposioClient({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
+      apiKey: apiKeyParsed,
+      baseURL: baseURLParsed,
     });
 
     /**
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
-    this.config = config;
+    this.config = {
+      ...config,
+      allowTracking: config.allowTracking ?? true
+    };
 
     /**
      * Set the context variables for the Composio SDK.
      */
-    this.userId = config.userId?? this.DEFAULT_USER_ID; // entity id of the user
-    this.connectedAccountIds = config.connectedAccountIds?? {}; // app name -> account id of the connected account
+    this.userId = config.userId ?? this.DEFAULT_USER_ID; // entity id of the user
+    this.connectedAccountIds = config.connectedAccountIds ?? {}; // app name -> account id of the connected account
 
     /**
      * Set the default toolset, if not provided by the user.
@@ -103,6 +126,37 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
+
+    /**
+    * Initialize the client telemetry.
+    */
+    if (this.config.allowTracking) {
+
+      this.telemetry = new Telemetry({
+        apiKey: apiKeyParsed ?? "",
+        baseUrl: baseURLParsed ?? "",
+        frameworkRuntime: "node",
+        source: "node", // @TODO: get the source
+        sessionId: this.userId,
+        composioVersion: require('../package.json').version,
+        isBrowser: typeof window !== "undefined",
+      }, config.telemetryTransport ?? new ConsoleTelemetryTransport());
+
+
+      /**
+       * Instrument the client telemetry.
+      */
+      this.telemetry.instrumentTelemetry(this);
+      this.telemetry.instrumentTelemetry(this.tools);
+      this.telemetry.instrumentTelemetry(this.toolkits);
+      this.telemetry.instrumentTelemetry(this.triggers);
+      this.telemetry.instrumentTelemetry(this.authConfigs);
+      this.telemetry.instrumentTelemetry(this.connectedAccounts);
+      this.telemetry.instrumentTelemetry(this.toolset);
+
+      // Check for the latest version of the Composio SDK from NPM.
+      checkForLatestVersionFromNPM();
+    }
   }
 
   /**

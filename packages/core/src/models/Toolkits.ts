@@ -6,6 +6,10 @@ import {
   ToolkitRetrieveCategoriesResponse,
   ToolkitRetrieveResponse,
 } from "@composio/client/resources/toolkits";
+import { InstrumentedInstance } from "../types/telemetry.types";
+
+
+
 
 /**
  * Toolkits class
@@ -13,7 +17,8 @@ import {
  * Toolkits are a collection of tools that can be used to perform various tasks.
  * This is similar/replacement of `apps` in the Composio API.
  */
-export class Toolkits {
+export class Toolkits implements InstrumentedInstance {
+  readonly FILE_NAME: string = "core/models/Toolkits.ts";
   private client: ComposioSDK;
 
   constructor(client: ComposioSDK) {

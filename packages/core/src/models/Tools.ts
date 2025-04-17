@@ -9,14 +9,17 @@ import {
   ToolListResponse,
   ToolRetrieveEnumResponse,
 } from "@composio/client/resources/tools";
+import { InstrumentedInstance } from "../types/telemetry.types";
+
 
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
  */
-export class Tools {
+export class Tools implements InstrumentedInstance {
+  readonly FILE_NAME: string = "core/models/Tools.ts";
   private client: ComposioSDK;
-
+  
   constructor(client: ComposioSDK) {
     this.client = client;
   }

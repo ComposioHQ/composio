@@ -11,6 +11,10 @@ import {
     ConnectedAccountUpdateStatusParams,
     ConnectedAccountUpdateStatusResponse,
 } from "@composio/client/resources/connected-accounts";
+import { InstrumentedInstance } from "../types/telemetry.types";
+
+
+
 
 /**
  * ConnectedAccounts class
@@ -18,7 +22,8 @@ import {
  * This class is used to manage connected accounts in the Composio SDK.
  * Connected accounts are used to authenticate with third-party services.
  */
-export class ConnectedAccounts {
+export class ConnectedAccounts implements InstrumentedInstance {
+    readonly FILE_NAME: string = "core/models/ConnectedAccounts.ts";
     private client: ComposioSDK;
 
     constructor(client: ComposioSDK) {

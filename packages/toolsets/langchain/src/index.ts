@@ -6,7 +6,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 export class LangchainToolset extends BaseComposioToolset<Array<DynamicStructuredTool>, DynamicStructuredTool> {
     static FRAMEWORK_NAME = "langchain";
     private DEFAULT_ENTITY_ID = "default";
-    static fileName: string = "toolsets/langchain/src/index.ts";
+    readonly FILE_NAME: string = "toolsets/langchain/src/index.ts";
 
     /**
      * Abstract method to wrap a tool in the toolset.

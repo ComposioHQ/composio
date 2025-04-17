@@ -12,6 +12,10 @@ import {
     AuthConfigUpdateStatusParams,
     AuthConfigUpdateStatusResponse,
 } from "@composio/client/resources/auth-configs";
+import { InstrumentedInstance } from "../types/telemetry.types";
+
+
+
 
 /**
  * AuthConfigs class
@@ -19,7 +23,8 @@ import {
  * This class is used to manage authentication configurations in the Composio SDK.
  * Auth configs are used to configure authentication providers and settings.
  */
-export class AuthConfigs {
+export class AuthConfigs implements InstrumentedInstance {
+    readonly FILE_NAME: string = "core/models/AuthConfigs.ts";
     private client: ComposioSDK;
 
     constructor(client: ComposioSDK) {

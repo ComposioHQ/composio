@@ -6,7 +6,7 @@ import { Stream } from "openai/streaming";
 type OpenAiToolCollection = Array<OpenAI.ChatCompletionTool>;
 export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, OpenAI.ChatCompletionTool> {
   static readonly FRAMEWORK_NAME = "openai";
-  private static readonly FILE_NAME = "toolsets/openai/src/index.ts";
+  readonly FILE_NAME = "toolsets/openai/src/index.ts";
 
   constructor() {
     super();

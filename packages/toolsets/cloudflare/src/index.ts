@@ -4,9 +4,10 @@ import { BaseComposioToolset, Tool, ToolListParams } from "@composio/core";
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
 export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiTextGenerationToolInput> {
+  readonly FILE_NAME: string = "toolsets/cloudflare/src/index.ts";
+  
   static FRAMEWORK_NAME = "cloudflare";
   private DEFAULT_ENTITY_ID = "default";
-  static fileName: string = "toolsets/cloudflare/src/index.ts";
 
   /**
    * Abstract method to wrap a tool in the toolset.

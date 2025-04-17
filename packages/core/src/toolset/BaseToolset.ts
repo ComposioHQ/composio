@@ -15,7 +15,8 @@ import { Composio } from "../composio";
  */
 export abstract class BaseComposioToolset<TToolCollection, TTool = BaseTool> implements Toolset<TTool, TToolCollection> {
     protected client: Composio<TToolCollection, TTool, this> | undefined;
-
+    abstract FILE_NAME: string;
+    
     /**
      * Set the client for the toolset. This is automatically done by the Composio class.
      * @param client - The Composio client.

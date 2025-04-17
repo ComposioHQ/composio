@@ -12,7 +12,8 @@ interface CustomTool {
   name: string;
 }
 export class ComposioToolset extends BaseComposioToolset<Array<CustomTool>, CustomTool> {
-
+  readonly FILE_NAME: string = "core/toolset/ComposioToolset.ts";
+  
   _wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };

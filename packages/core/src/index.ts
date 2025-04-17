@@ -6,6 +6,21 @@ import type { Tool, ToolListParamsSchema, ToolListParams } from "./types/tool.ty
 import type { Toolset } from "./types/toolset.types.";
 
 // Utils exports
-import { jsonSchemaToModel } from "./utils/JsonSchema";
+import { jsonSchemaToModel } from "./utils/jsonSchema";
 
-export { Composio, ComposioToolset, BaseComposioToolset, Tool, ToolListParamsSchema, ToolListParams, Toolset, jsonSchemaToModel };
+// telemetry exports
+import type { InstrumentedInstance } from "./types/telemetry.types";
+import { BaseTelemetryTransport } from "./telemetry/TelemetryTransport";
+
+export { 
+    Composio, 
+    ComposioToolset, 
+    BaseComposioToolset, 
+    Tool, 
+    ToolListParamsSchema, 
+    ToolListParams, 
+    Toolset, 
+    jsonSchemaToModel, 
+    InstrumentedInstance, 
+    BaseTelemetryTransport 
+};
