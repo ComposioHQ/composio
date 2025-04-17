@@ -16,7 +16,7 @@ import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { checkForLatestVersionFromNPM } from "./utils/version";
 
 
-export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> = {
+export type ComposioConfig<TToolset extends BaseComposioToolset<any, any>> = {
   apiKey?: string;
   baseURL?: string;
   allowTracking?: boolean;
@@ -31,7 +31,7 @@ export type ComposioConfig<TToolCollection, TTool, TToolset extends BaseComposio
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TToolCollection, TTool, TToolset extends BaseComposioToolset<TToolCollection, TTool>> {
+export class Composio<TToolset extends BaseComposioToolset<any, any>> {
 
   private readonly DEFAULT_USER_ID = "default";
   readonly FILE_NAME = "core/composio.ts";
@@ -46,7 +46,7 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
    * The configuration for the Composio SDK.
    * @type {ComposioConfig<TTool, TToolset>}
    */
-  private config: ComposioConfig<TToolCollection, TTool, TToolset>;
+  private config: ComposioConfig<TToolset>;
 
   private telemetry: Telemetry<InstrumentedInstance> | undefined;
 
@@ -76,7 +76,7 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<TToolCollection, TTool, TToolset>) {
+  constructor(config: ComposioConfig<TToolset>) {
 
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
@@ -116,7 +116,7 @@ export class Composio<TToolCollection, TTool, TToolset extends BaseComposioTools
     /**
      * Set the default toolset, if not provided by the user.
      */
-    this.toolset = config.toolset ?? new ComposioToolset() as unknown as TToolset;
+    this.toolset = (config.toolset ?? new ComposioToolset()) as TToolset;
     this.toolset.setClient(this);
 
     /**

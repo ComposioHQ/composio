@@ -13,15 +13,15 @@ import { Composio } from "../composio";
  * eg:
  * class YourToolSet extends BaseComposioToolset<CustomToolCollection, CustomTool> {}
  */
-export abstract class BaseComposioToolset<TToolCollection, TTool = BaseTool> implements Toolset<TTool, TToolCollection> {
-    protected client: Composio<TToolCollection, TTool, this> | undefined;
+export abstract class BaseComposioToolset<TToolCollection, TTool> implements Toolset<TTool, TToolCollection> {
+    protected client: Composio<this> | undefined;
     abstract FILE_NAME: string;
     
     /**
      * Set the client for the toolset. This is automatically done by the Composio class.
      * @param client - The Composio client.
      */
-    setClient(client: Composio<TToolCollection, TTool, this>): void {
+    setClient(client: Composio<this>): void {
         this.client = client;
     }
 
