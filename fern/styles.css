@@ -8,3 +8,24 @@
 .fern-logo-container {
   padding-right: 10px;
 }
+
+/* Custom styles for announcement banner links */
+.fern-announcement a {
+  color: #E2E8F0; /* Light gray with slight blue tint for good contrast */
+  text-decoration: underline;
+  font-weight: 500; /* Semi-bold for better visibility without being too heavy */
+  transition: color 0.2s ease-in-out, text-decoration 0.2s ease-in-out;
+}
+
+.fern-announcement a:hover {
+  color: #FFFFFF; /* Pure white on hover */
+  text-decoration: underline;
+}
+
+.dark .fern-announcement a {
+  color: #E2E8F0; /* Same light gray for dark mode */
+}
+
+.dark .fern-announcement a:hover {
+  color: #FFFFFF; /* White on hover in dark mode */
+}

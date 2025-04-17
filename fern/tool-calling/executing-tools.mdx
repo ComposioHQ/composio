@@ -1,0 +1,257 @@
+---
+title: 'Executing Tools'
+subtitle: 'Learn how to run Composio tools via LLM frameworks or directly from your code'
+---
+
+Once you have fetched or defined your tools ([Fetching Tools](/tool-calling/fetching-tools)), the next step is to execute them. This means triggering the actual API call or function execution that the tool represents.
+
+There are two primary ways to execute Composio tools:
+
+1. **[Automatic execution](#automatic-execution)**: Your chosen LLM decides which tool to call, and a framework (like Vercel AI SDK, LangChain) handles triggering the execution logic provided by Composio.
+2. **[Direct execution](#direct-execution)**: Your LLM/agent decides to call a tool and the code explicitly invokes the specific Composio tool using the `execute_action` method, often used for testing or simple automation.
+
+## Automatic execution
+Frameworks like the Vercel AI, LangGraph often have features to automatically `execute` the tools. The framework will handle the execution logic provided by Composio.
+
+**Here's an example of how Vercel AI SDK automatically executes tools**
+
+```typescript Vercel AI SDK maxLines=100
+// Conceptual illustration within Vercel AI SDK context
+import { VercelAIToolSet } from "composio-core";
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const toolset = new VercelAIToolSet(); // Gets API key from env
+
+async function runVercelExample() {
+  const { tool } = await import('ai'); // Vercel AI SDK tool definition type
+
+  // 1. Fetch tool - Composio formats it for Vercel, including an 'execute' function
+  const tools = await toolset.getTools({ actions: ["GITHUB_GET_THE_AUTHENTICATED_USER"] });
+
+  // 2. Use the tool with the framework's function (e.g., generateText)
+  const { text, toolResults } = await generateText({
+    model: openai('gpt-4o-mini'),
+    prompt: 'Get my GitHub username',
+    tools: tools // Provide the Composio-generated tool definitions
+  });
+
+  // 3. Framework internally calls the 'execute' method on the chosen tool.
+  //    Composio's wrapper inside 'execute' handles the actual API call.
+  console.log("Tool Results:", toolResults);
+  console.log("Final Text:", text);
+}
+```
+
+**Key Takeaway:** When using a framework integration, you typically fetch tools using the corresponding Composio ToolSet (e.g., `VercelAIToolSet`) and then use the framework's standard way to handle tool calls. Composio's ToolSet ensures the execution logic is correctly wired behind the scenes.
+
+<Tip>
+Refer to the specific **[Framework Integration Guide](/frameworks/)** for your chosen framework (e.g., Vercel AI, LangChain, CrewAI) to see the exact code patterns for handling tool execution within that ecosystem.
+</Tip>
+
+## Direct execution
+
+For scenarios where you want to run a specific tool programmatically without an LLM making the decision, use the `execute_action` method. This is available on the base `ComposioToolSet` and framework-specific ToolSets.
+
+<Note>Use this when you want to run a specific tool programmatically without an LLM making the decision.</Note>
+
+Let's create a **[GitHub issue](/tools/github#github_create_an_issue)** using Composio.
+
+<CodeGroup>
+```python Python maxLines=100
+# Example: Create a GitHub Issue Directly
+from composio_openai import ComposioToolSet, Action
+# Assumes toolset is initialized and authenticated
+
+toolset = ComposioToolSet()
+
+print("Creating GitHub issue directly...")
+try:
+    result = toolset.execute_action(
+        action=Action.GITHUB_CREATE_AN_ISSUE,
+        params={
+            "owner": "composiohq",  # Replace with actual owner
+            "repo": "agi",  # Replace with actual repo
+            "title": "New Issue via Composio execute_action",
+            "body": "This issue was created directly using the Composio SDK.",
+            # Other optional params like 'assignees', 'labels' can be added here
+        },
+        # entity_id="your-user-id" # Optional: Specify if not 'default'
+    )
+
+    if result.get("successful"):
+        print("Successfully created issue!")
+        # Issue details are often in result['data']
+        print("Issue URL:", result.get("data", {}).get("html_url"))
+    else:
+        print("Failed to create issue:", result.get("error"))
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+```
+
+```typescript TypeScript maxLines=100
+// Example: Create a GitHub Issue Directly
+import { OpenAIToolSet } from "composio-core";
+// Assumes toolset is initialized and authenticated
+
+const toolset = new OpenAIToolSet();
+
+async function createIssue() {
+  console.log("Creating GitHub issue directly...");
+  try {
+    const result = await toolset.executeAction({
+      action: "GITHUB_CREATE_AN_ISSUE", // Use Enum for type safety
+      params: {
+        owner: "composiohq", // Replace with actual owner
+        repo: "agi", // Replace with actual repo
+        title: "New Issue via Composio executeAction",
+        body: "This issue was created directly using the Composio SDK.",
+      },
+      // entityId: "your-user-id" // Optional: Specify if not 'default'
+    });
+
+    if (result.successful) {
+      console.log("Successfully created issue!");
+      // Issue details are often in result.data
+      console.log("Issue URL:", (result.data as any)?.html_url);
+    } else {
+      console.error("Failed to create issue:", result.error);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+}
+
+createIssue();
+
+```
+</CodeGroup>
+
+This directly triggers the specified Composio action using the associated user's credentials.
+
+## Specifying Users
+
+### By using `entity_id`
+
+Composio needs to know *which user's* connection/credentials to use when executing an authenticated action. You provide this context using `entity_id` and sometimes `connected_account_id`.
+
+By default it uses the default entity ID `"default"`.
+
+For multi-tenant applications (multi-user apps), you need to provide the `entity_id`.
+
+<CodeGroup>
+```python Python
+# Direct Execution with entity_id
+toolset.execute_action(
+    action=Action.GITHUB_CREATE_AN_ISSUE,
+    params={...},
+    entity_id="user-from-my-db-123"
+)
+```
+```typescript TypeScript
+// Direct Execution with entityId
+await toolset.executeAction({
+    action: "GITHUB_CREATE_AN_ISSUE",
+    params: {...},
+    entityId: "user-from-my-db-123"
+});
+```
+</CodeGroup>
+
+### By using `connected_account_id`
+
+`connected_account_id` offers more precision by identifying a *specific instance* of a connection (e.g., a user's work Gmail vs. personal Gmail). 
+
+You typically only need this if an `entity_id` has multiple active connections for the *same app*.
+
+If `connected_account_id` is not provided, Composio generally uses the most recently added *active* connection matching the `entity_id` and the app being used. You can pass it when needed, primarily with `execute_action`:
+
+<CodeGroup>
+```python Python
+# Direct Execution targeting a specific connection
+toolset.execute_action(
+    action=Action.GMAIL_SEND_EMAIL,
+    params={...},
+    connected_account_id="conn_abc123xyz" # The specific Gmail connection
+)
+```
+```typescript TypeScript
+// Direct Execution targeting a specific connection
+await toolset.executeAction({
+    action: "GMAIL_SEND_EMAIL",
+    params: {...},
+    connectedAccountId: "conn_abc123xyz" // The specific Gmail connection
+});
+```
+</CodeGroup>
+
+
+{/* ## Direct Execution with Custom Authentication
+
+If you are managing authentication tokens outside of Composio's connection flow (e.g., obtaining a temporary token via a different process), you can still use `execute_action` by providing the necessary credentials directly.
+
+<CodeGroup>
+```python Python
+# Example: Create GitHub Issue with a provided Bearer token
+bearer_token = "gho_YourTemporaryOrManagedToken"
+
+try:
+    result = toolset.execute_action(
+        action=Action.GITHUB_CREATE_ISSUE,
+        params={
+            "owner": "target-owner",
+            "repo": "target-repo",
+            "title": "Issue via Custom Auth",
+            "body": "Using a provided Bearer token."
+        },
+        # Provide auth details directly
+        auth={
+            "parameters": [
+                {"name": "Authorization", "value": f"Bearer {bearer_token}", "in_": "header"}
+            ]
+            # 'base_url' can be added if needed for self-hosted instances
+            # 'body' can be added for auth methods requiring it
+        }
+    )
+    print(result)
+except Exception as e:
+    print(f"An error occurred: {e}")
+```
+```typescript TypeScript
+// Example: Create GitHub Issue with a provided Bearer token
+import { ComposioToolSet, Action, ParamPlacement } from "composio-core";
+
+const bearerToken = "gho_YourTemporaryOrManagedToken";
+const toolset = new ComposioToolSet(); // Init ToolSet
+
+async function createWithCustomAuth() {
+    try {
+        const result = await toolset.executeAction({
+            action: Action.GITHUB_CREATE_ISSUE,
+            params: {
+                owner: "target-owner",
+                repo: "target-repo",
+                title: "Issue via Custom Auth",
+                body": "Using a provided Bearer token."
+            },
+            // Provide auth details directly
+            auth: {
+                parameters: [
+                    { name: "Authorization", value: `Bearer ${bearerToken}`, in: ParamPlacement.Header }
+                ]
+                // 'baseUrl' can be added if needed
+                // 'body' can be added if needed
+            }
+        });
+        console.log(result);
+    } catch (error) {
+        console.error("An error occurred:", error);
+    }
+}
+
+createWithCustomAuth();
+```
+</CodeGroup>
+
+This allows leveraging Composio's action execution logic even when authentication is handled externally. Refer to the [`CustomAuthParameter`](/sdk-reference/python/client/collections/CustomAuthParameter) details for parameter placement options (`header`, `query`, etc.). */}

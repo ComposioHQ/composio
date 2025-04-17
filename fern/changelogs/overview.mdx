@@ -1,0 +1,80 @@
+---
+title: "Changelog & Updates" # <-- Renamed Title
+subtitle: "Tracking changes, deprecations, and migrations for Composio"
+---
+
+## Upcoming Changes
+<Warning title="Upcoming Deprecation: V1/V2 Action Log APIs">
+  **Effective Date:** **2025-04-15**
+
+  The **V1/V2 Action Log APIs** (endpoints for fetching historical action execution logs) will be **deprecated in one week** and subsequently removed.
+
+  This is part of our migration to the enhanced V3 API infrastructure. Please transition to the new **V3 Logs API** for improved logging and tracing capabilities before the deprecation date to avoid disruption.
+
+  **Resources:**
+  *   **V3 Logs API Reference:** [`/api-reference/api-reference/v-3/logs/`](/api-reference/api-reference/v-3/logs/) - *Start migration here.*
+  *   [V3 General API Reference](/api-reference/api-reference/v-3/)
+  *   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for assistance.
+</Warning>
+
+Below you'll find details on major platform updates, ongoing migrations, and historical changes.
+
+---
+
+## V3 API Migration (Ongoing)
+
+This section details the ongoing migration to Composio's V3 API.
+
+### Why V3?
+V3 represents a significant improvement over previous versions. It offers:
+- **Enhanced Performance**: Faster response times and improved stability, especially for tool calls and triggers
+- **More Intuitive**: Streamlines interfaces for easier integration.
+- **Greater Robustness**: Significantly improved error handling, suggestions and validation.
+- **Simpler Developer Experience**: Takes into account the feedback from our users and makes the API more user-friendly.
+
+On top of this, we **implemented a major change in nomenclature** across the API (Coming soon in the SDK).
+The table below outlines the terminology changes implemented in the V3 API.
+
+| Previous Term | New Term (V3) | Description |
+|--------------|---------------|-------------|
+| App | Toolkit | A collection of LLM-callable tools grouped together for a specific domain or purpose |
+| Action | Tool | A function that can be directly called by an LLM to perform a specific task |
+| Integration | Auth Config | Authentication and configuration settings for a toolkit's external service connections |
+| Connection | Connected Account | User's authenticated instance of an external service with active credentials |
+| Entity | User | Individual account with permissions and access to the platform |
+| Trigger | Trigger Types | The available triggers for a user on a specific toolkit |
+| Trigger Metadata | Trigger Instance | Specific configuration and settings for a deployed trigger in your workflow |
+
+When migrating your code from previous versions to V3, update your references to match this new terminology. Migration guides and code examples will use these new terms exclusively.
+
+<Card 
+    title="Nothing Changes for you today!" 
+    icon="fa-solid fa-exclamation" 
+    iconPosition="left"
+>
+    We will provide ample notice and support before deprecating the old APIs.
+
+    We will be supporting V1/V2 APIs and corresponding SDKs for the foreseeable future, and they will still work in production and have full backwards compatability with new API surface.
+</Card>
+
+### General rollout plan
+1. **Frontend Implementation** - As of right now, our dashboard is running on V3 APIs. This phase allows us to gather information about performance and see how the api works in a controlled environment.
+2. **Beta Access** - We will make the V3 API available for beta users and testers in the coming week.
+3. **SDK Release** - We will release Beta SDKs revamped for the new API once the V3 API stabilizes.
+4. **LSE Release** - We will work towards stabilizing the new SDKs that power V3 APIs and get them to a stable release - at which time they will become our primary SDKs. We will still be supporting the old SDKs at this time.
+5. **Deprecations** - We will deprecate the old APIs and SDKs after the LSE release, with two months of notice before finally discontinuing them.
+
+<Note>The rollout plan may change based on feedback and testing results.</Note>
+
+We have opened an issue as an RFC for comment on changes here: https://github.com/ComposioHQ/composio/issues/1523
+
+### Resources
+
+- [V3 API Reference](/api-reference/api-reference/v-3/)
+- Migration guides (Coming soon)
+- Code examples (Coming soon)
+- Migration support channel (Coming soon)
+- Contact support (Coming soon)
+
+--- 
+{/* Future changelog entries can go here, e.g., ## [Date] - New Feature XYZ */}

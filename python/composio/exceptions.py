@@ -250,3 +250,11 @@ class InvalidConnectedAccount(ValidationError, ConnectedAccountError):
 
 class ErrorProcessingToolExecutionRequest(PluginError):
     pass
+
+
+class DescopeAuthError(ComposioSDKError):
+    pass
+
+
+class DescopeConfigError(ComposioSDKError):
+    pass
