@@ -33,6 +33,11 @@ const response = await openai.chat.completions.create({
 
 
 if (response.choices[0].message.tool_calls) {
-  const result = await composio.toolset.executeToolCall(response.choices[0].message.tool_calls[0]);
-  console.log(JSON.stringify(result, null, 2));
+  try {
+
+    const result = await composio.toolset.executeToolCall(response.choices[0].message.tool_calls[0]);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(JSON.stringify(error, null, 2));
+  }
 }

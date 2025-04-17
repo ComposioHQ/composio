@@ -62,12 +62,13 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     const appName = toolSchema?.toolkit?.name.toLowerCase();
     const connectedAccountId = this.client.getConnectedAccountId(appName);
 
-
-    const results = await this.client.tools.execute(toolSchema.slug, {
-      arguments: JSON.parse(tool.function.arguments),
+    const payload = {
       entity_id: userId ?? this.client.userId,
       connected_account_id: connectedAccountId,
-    });
+      arguments: JSON.parse(tool.function.arguments),
+    }
+
+    const results = await this.client.tools.execute(toolSchema.slug, payload);
 
     return JSON.stringify(results);
   }
