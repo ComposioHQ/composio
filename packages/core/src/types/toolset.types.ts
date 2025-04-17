@@ -1,4 +1,3 @@
-import { Composio } from "../composio";
 import { InstrumentedInstance } from "./telemetry.types";
 import { Tool, BaseTool, ToolListParams } from "./tool.types";
 

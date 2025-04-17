@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "turbo build",
     "create-toolset": "bash scripts/create-toolset.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

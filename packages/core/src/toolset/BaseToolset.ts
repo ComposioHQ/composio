@@ -1,4 +1,4 @@
-import { Toolset } from "../types/toolset.types.";
+import { Toolset } from "../types/toolset.types";
 import { Tool, BaseTool, ToolListParams } from "../types/tool.types";
 import { Composio } from "../composio";
 
