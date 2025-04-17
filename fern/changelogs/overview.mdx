@@ -3,19 +3,48 @@ title: "Changelog & Updates" # <-- Renamed Title
 subtitle: "Tracking changes, deprecations, and migrations for Composio"
 ---
 
-## Upcoming Changes
-<Warning title="Upcoming Deprecation: V1/V2 Action Log APIs">
-  **Effective Date:** **2025-04-15**
+## Deprecations
 
-  The **V1/V2 Action Log APIs** (endpoints for fetching historical action execution logs) will be **deprecated in one week** and subsequently removed.
+<Warning title="Deprecated: V1/V2 Action Log APIs">
+  The **V1/V2 Action Log APIs** (endpoints for fetching historical action execution logs) are now deprecated and will be removed in the future.
 
-  This is part of our migration to the enhanced V3 API infrastructure. Please transition to the new **V3 Logs API** for improved logging and tracing capabilities before the deprecation date to avoid disruption.
+  This is part of our migration to the enhanced V3 API infrastructure. Please transition to the new **V3 Logs API** for improved logging and tracing capabilities to avoid disruption.
 
   **Resources:**
   *   **V3 Logs API Reference:** [`/api-reference/api-reference/v-3/logs/`](/api-reference/api-reference/v-3/logs/) - *Start migration here.*
   *   [V3 General API Reference](/api-reference/api-reference/v-3/)
   *   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for assistance.
 </Warning>
+
+
+## Incremental v3 SDK Releases (16th April 2025)
+
+
+<CardGroup>
+    <Card title="Experimental V3 Python SDK" href="https://pypi.org/project/composio-client/" icon="fa-brands fa-python">
+        Get the base Python SDK for V3: 
+        
+        
+        ```bash
+        pip install composio-client
+        ```
+    </Card>
+    <Card title="Experimental V3 Node.js SDK" href="https://www.npmjs.com/package/@composio/client" icon="fa-brands fa-node-js">
+        Get the base Node.js SDK for V3: 
+
+        ```bash
+        npm install @composio/client
+        ```
+    </Card>
+</CardGroup>
+
+<Note>
+These are foundational SDKs that wrap the V3 API (in alpha). 
+
+More developer-friendly core sdks + framework-specific sdks are coming soon!
+
+Expect docs to follow soon.
+</Note>
 
 Below you'll find details on major platform updates, ongoing migrations, and historical changes.
 
