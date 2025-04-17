@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.1",
-    "@composio/openai-toolset": "workspace:^",
     "zod": "^3.24.2"
   }
 }
