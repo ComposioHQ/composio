@@ -13,16 +13,13 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 
 
 ## Usage
-To use the composio tools with your Provider, please install the recommended packages along with `@composio/core`.
-
+@composio/core ships with openai toolset by default. You can directly use the tools from composio in `openai` methods.
 ```
 import { Composio } from "@composio/core";
-import { OpenAIToolset } from "@composio/openai-toolset";
 
-
+// By default composio ships with OpenAI toolset
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new OpenAIToolset(),
 });
 
 const tool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
@@ -30,6 +27,23 @@ console.log(tool);
 ```
 
 For more examples, please check the `/examples` directory.
+
+## Using with a different toolset
+To use a different toolset, please install the recommended toolset packages.
+
+```
+import { Composio } from "@composio/core";
+import { VercelToolset } from "@composio/vercel"
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new VercelToolset();
+});
+
+const tool = await composio.getTool("HACKERNEWS_SEARCH_POSTS");
+console.log(tool);
+```
+
 
 ## Creating a new toolset
 To create a new Toolset, you need to extend the `BaseComposioToolset<YourToolType>` and implement the `_wrapTool` method to return the tool type of your choice.
