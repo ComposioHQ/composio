@@ -7,8 +7,6 @@ export class BrowserTelemetryTransport implements BaseTelemetryTransport {
             return Promise.reject(new Error('BrowserTelemetryTransport can only be used in browser environments'));
         } 
 
-        console.log("Sending telemetry to", payload.url);
-
         return new Promise((resolve) => {
             try {
                 // Create a new XMLHttpRequest object

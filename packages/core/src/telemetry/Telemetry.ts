@@ -87,7 +87,6 @@ export class Telemetry<U extends InstrumentedInstance> {
 
                 this.batchProcessor.pushItem(telemetryPayload);
 
-                console.log("telemetryPayload", telemetryPayload);
 
                 // @TODO: Add a try catch here to create global error handler
                 try {
@@ -135,7 +134,6 @@ export class Telemetry<U extends InstrumentedInstance> {
             headers: { "Content-Type": "application/json" },
         };
 
-        console.log("reqPayload", reqPayload);
 
         this.transport.send(reqPayload);
     }
