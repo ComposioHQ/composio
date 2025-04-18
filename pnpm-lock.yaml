@@ -36,6 +36,9 @@ importers:
       '@composio/client':
         specifier: 0.1.0-alpha.7
         version: 0.1.0-alpha.7
+      openai:
+        specifier: ^4.94.0
+        version: 4.94.0(zod@3.24.2)
       pusher-js:
         specifier: ^8.4.0
         version: 8.4.0

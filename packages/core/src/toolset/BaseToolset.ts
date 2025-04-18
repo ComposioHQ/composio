@@ -1,6 +1,6 @@
-import { Toolset } from "../types/toolset.types";
-import { Tool, BaseTool, ToolListParams } from "../types/tool.types";
-import { Composio } from "../composio";
+import type { Toolset } from "../types/toolset.types";
+import type { Tool, ToolListParams } from "../types/tool.types";
+import type { Composio } from "../composio";
 
 /**
  * Base toolset implementation with proper generic defaults

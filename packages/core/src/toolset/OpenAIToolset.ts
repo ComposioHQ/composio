@@ -1,7 +1,13 @@
-import { BaseComposioToolset } from "@composio/core";
-import type { Tool, ToolListParams } from "@composio/core";
+/**
+ * OpenAI ToolSet
+ * 
+ * This is a default toolset for Composio SDK.
+ * This will be shipped with the SDK and users don't need to install it separately.
+ */
 import { OpenAI } from "openai";
 import { Stream } from "openai/streaming";
+import { BaseComposioToolset } from "./BaseToolset";
+import { Tool, ToolListParams } from "../types/tool.types";
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
