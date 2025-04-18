@@ -15,9 +15,6 @@ const composio = new Composio({
 // these tools are automatically typed and wrapped with the OpenAI Toolset
 const tool = await composio.getTool("HACKERNEWS_GET_USER");
 
-await composio.toolset.getTool("HACKERNEWS_GET_USER");
-
-
 const task = "Fetch the details of the user 'haxzie'";
 
 const messages: OpenAI.ChatCompletionMessageParam[] = [
