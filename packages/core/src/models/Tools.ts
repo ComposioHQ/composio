@@ -1,4 +1,4 @@
-import ComposioSDK from "@composio/client";
+import ComposioClient from "@composio/client";
 import { Tool } from "../types/tool.types";
 import {
   ToolExecuteParams,
@@ -18,9 +18,9 @@ import { InstrumentedInstance } from "../types/telemetry.types";
  */
 export class Tools implements InstrumentedInstance {
   readonly FILE_NAME: string = "core/models/Tools.ts";
-  private client: ComposioSDK;
+  private client: ComposioClient;
   
-  constructor(client: ComposioSDK) {
+  constructor(client: ComposioClient) {
     this.client = client;
   }
 

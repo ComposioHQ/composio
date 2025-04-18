@@ -1,4 +1,4 @@
-import ComposioSDK from "@composio/client";
+import ComposioClient from "@composio/client";
 import { RequestOptions } from "@composio/client/internal/request-options";
 import {
   ToolkitListParams,
@@ -19,9 +19,9 @@ import { InstrumentedInstance } from "../types/telemetry.types";
  */
 export class Toolkits implements InstrumentedInstance {
   readonly FILE_NAME: string = "core/models/Toolkits.ts";
-  private client: ComposioSDK;
+  private client: ComposioClient;
 
-  constructor(client: ComposioSDK) {
+  constructor(client: ComposioClient) {
     this.client = client;
   }
   /**

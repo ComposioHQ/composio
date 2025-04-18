@@ -1,4 +1,4 @@
-import ComposioSDK from "@composio/client";
+import ComposioClient from "@composio/client";
 import { RequestOptions } from "@composio/client/internal/request-options";
 import {
     AuthConfigListParams,
@@ -9,7 +9,6 @@ import {
     AuthConfigRetrieveResponse,
     AuthConfigUpdateParams,
     AuthConfigUpdateResponse,
-    AuthConfigUpdateStatusParams,
     AuthConfigUpdateStatusResponse,
 } from "@composio/client/resources/auth-configs";
 import { InstrumentedInstance } from "../types/telemetry.types";
@@ -25,9 +24,9 @@ import { InstrumentedInstance } from "../types/telemetry.types";
  */
 export class AuthConfigs implements InstrumentedInstance {
     readonly FILE_NAME: string = "core/models/AuthConfigs.ts";
-    private client: ComposioSDK;
+    private client: ComposioClient;
 
-    constructor(client: ComposioSDK) {
+    constructor(client: ComposioClient) {
         this.client = client;
     }
 
@@ -100,8 +99,8 @@ export class AuthConfigs implements InstrumentedInstance {
 
     /**
      * Update the status of an auth config
+     * @param {string} status - The status to update the auth config to
      * @param {string} nanoid - Unique identifier of the auth config
-     * @param {AuthConfigUpdateStatusParams} params - Parameters for updating the status
      * @param {RequestOptions} options - Request options
      * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
      */

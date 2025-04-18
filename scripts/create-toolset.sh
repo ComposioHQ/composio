@@ -20,7 +20,20 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   "name": "@composio/${TOOLSET_NAME}-toolset",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "test": "echo \\"Error: no test specified\\" && exit 1"
@@ -74,16 +87,21 @@ EOL
 
 # Create src/index.ts
 cat > "$TOOLSET_PATH/src/index.ts" << EOL
-import { BaseComposioToolset, Tool } from "@composio/core";
+import { BaseComposioToolset } from "@composio/core";
+import type { Tool, ToolListParams } from "@composio/core";
 
 interface ToolType {
     // Add your tool type here
 }
 
-export class ${CAPITAL_TOOLSET_NAME}Toolset extends BaseComposioToolset<ToolType> {
+interface ToolCollection {
+  // Add your tool collection here
+}
+
+export class ${CAPITAL_TOOLSET_NAME}Toolset extends BaseComposioToolset<ToolCollection, ToolType> {
   static FRAMEWORK_NAME = "${TOOLSET_NAME}";
   private DEFAULT_ENTITY_ID = "default";
-  static fileName: string = "toolsets/${TOOLSET_NAME}/src/index.ts";
+  readonly FILE_NAME: string = "toolsets/${TOOLSET_NAME}/src/index.ts";
 
   /**
    * Abstract method to wrap a tool in the toolset.
@@ -93,6 +111,15 @@ export class ${CAPITAL_TOOLSET_NAME}Toolset extends BaseComposioToolset<ToolType
    */
   _wrapTool = (tool: Tool): ToolType => {
     return tool as ToolType;
+  }
+
+  /**
+   * Get all the tools from the Composio API
+   * @param query - The query to get the tools
+   * @returns The tools
+   */
+  getTools = async (query?: ToolListParams): Promise<ToolCollection> => {
+    return [];
   }
 }
 EOL

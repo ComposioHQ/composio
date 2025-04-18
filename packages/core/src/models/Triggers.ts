@@ -1,4 +1,4 @@
-import ComposioSDK from "@composio/client";
+import ComposioClient from "@composio/client";
 import { RequestOptions } from "@composio/client/internal/request-options";
 import {
   TriggerInstanceListActiveParams,
@@ -27,9 +27,9 @@ import { Session } from "./Session";
  */
 export class Triggers implements InstrumentedInstance {
   readonly FILE_NAME: string = "core/models/Triggers.ts";
-  private client: ComposioSDK;
+  private client: ComposioClient;
 
-  constructor(client: ComposioSDK) {
+  constructor(client: ComposioClient) {
     this.client = client;
   }
 

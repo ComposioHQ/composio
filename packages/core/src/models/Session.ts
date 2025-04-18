@@ -1,13 +1,13 @@
 import { SessionGetInfoResponse } from "@composio/client/resources/auth/session";
 import { InstrumentedInstance } from "../types/telemetry.types";
-import ComposioSDK from "@composio/client";
+import ComposioClient from "@composio/client";
 
 
 export class Session implements InstrumentedInstance {
     readonly FILE_NAME: string = "core/models/Session.ts";
-    private client: ComposioSDK;
+    private client: ComposioClient;
 
-    constructor(client: ComposioSDK) {
+    constructor(client: ComposioClient) {
         this.client = client;
     }
 
