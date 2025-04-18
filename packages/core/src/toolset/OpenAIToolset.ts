@@ -8,6 +8,7 @@ import { OpenAI } from "openai";
 import { Stream } from "openai/streaming";
 import { BaseComposioToolset } from "./BaseToolset";
 import { Tool, ToolListParams } from "../types/tool.types";
+import logger from "../utils/logger";
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -44,10 +45,10 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
   }
 
   /**
-   * @TODO include the connectedAccountId / app name in the tool call
-   * @param tool 
-   * @param userId 
-   * @returns 
+   * Execute a tool call.
+   * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool to execute.
+   * @param {string} userId - The user id.
+   * @returns {Promise<string>} The result of the tool call.
    */
   async executeToolCall(
     tool: OpenAI.ChatCompletionMessageToolCall,
@@ -108,15 +109,17 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> =
       await Promise.all(
         tool_calls.map(async (tool_call) => {
-          // @TOOD: Log the tool call
+          
+          logger.debug(`Executing tool call: ${tool_call.id}`);
 
           // Execute each tool call and get the response
           const tool_response = await this.executeToolCall(
             tool_call as OpenAI.ChatCompletionMessageToolCall,
             userId
           );
+
           
-          // @TODO: Log the tool response
+          logger.debug(`Tool call ${tool_call.id} executed with response: ${tool_response}`);
 
           return {
             tool_call_id: tool_call.id,

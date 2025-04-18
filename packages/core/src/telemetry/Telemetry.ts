@@ -87,10 +87,7 @@ export class Telemetry<U extends InstrumentedInstance> {
 
                 this.batchProcessor.pushItem(telemetryPayload);
 
-
-                // @TODO: Add a try catch here to create global error handler
                 try {
-
                     return await originalMethod.apply(instance, args);
                 } catch (error) {
                     const telemetryPayload: TelemetryPayload = {

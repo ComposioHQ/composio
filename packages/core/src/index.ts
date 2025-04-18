@@ -12,6 +12,9 @@ import { jsonSchemaToModel } from "./utils/jsonSchema";
 import type { InstrumentedInstance } from "./types/telemetry.types";
 import { BaseTelemetryTransport } from "./telemetry/TelemetryTransport";
 
+// toolsets exports
+import { OpenAIToolset } from "./toolset/OpenAIToolset";
+
 export { 
     Composio, 
     ComposioToolset, 
@@ -22,5 +25,6 @@ export {
     Toolset, 
     jsonSchemaToModel, 
     InstrumentedInstance, 
-    BaseTelemetryTransport 
+    BaseTelemetryTransport ,
+    OpenAIToolset
 };
