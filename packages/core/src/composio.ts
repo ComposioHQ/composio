@@ -9,7 +9,7 @@ import { ToolListParams } from "@composio/client/resources/tools";
 import { BaseComposioToolset } from "./toolset/BaseToolset";
 import { Telemetry } from "./telemetry/Telemetry";
 import { BaseTelemetryTransport, ConsoleTelemetryTransport } from "./telemetry/TelemetryTransport";
-import type { InstrumentedInstance } from "./types/telemetry.types";
+import type { InstrumentedInstance, TelemetryMetadata } from "./types/telemetry.types";
 import { getSDKConfig } from "./utils/sdk";
 import logger from "./utils/logger";
 import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
@@ -89,6 +89,12 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
         `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
       );
     }
+    if (config.userId && config.connectedAccountIds) {
+      logger.warn(
+        "When both userId and connectedAccountIds are provided, preference will be given to connectedAccountIds"
+      );
+    }
+
     /**
      * Initialize the Composio SDK client.
      * The client is used to make API calls to the Composio API.
@@ -132,9 +138,8 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
     /**
     * Initialize the client telemetry.
     */
-    if (this.config.allowTracking) {
-
-      this.telemetry = new Telemetry({
+    if (this.config.allowTracking ?? true) {
+      this.initializeTelemetry({
         apiKey: apiKeyParsed ?? "",
         baseUrl: baseURLParsed ?? "",
         frameworkRuntime: "node",
@@ -142,23 +147,30 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
         sessionId: this.userId,
         composioVersion: require('../package.json').version,
         isBrowser: typeof window !== "undefined",
-      }, config.telemetryTransport ?? new ConsoleTelemetryTransport());
-
-
-      /**
-       * Instrument the client telemetry.
-      */
-      this.telemetry.instrumentTelemetry(this);
-      this.telemetry.instrumentTelemetry(this.tools);
-      this.telemetry.instrumentTelemetry(this.toolkits);
-      this.telemetry.instrumentTelemetry(this.triggers);
-      this.telemetry.instrumentTelemetry(this.authConfigs);
-      this.telemetry.instrumentTelemetry(this.connectedAccounts);
-      this.telemetry.instrumentTelemetry(this.toolset);
-
-      // Check for the latest version of the Composio SDK from NPM.
-      checkForLatestVersionFromNPM();
+      }, config.telemetryTransport)
     }
+
+    // Check for the latest version of the Composio SDK from NPM.
+    checkForLatestVersionFromNPM();
+  }
+
+  /**
+   * Initialize the instrumentations and telemetry for the Composio SDK.
+   * @param {TelemetryMetadata} config - The configuration for the telemetry.
+   * @param {BaseTelemetryTransport} transport - The transport for the telemetry.
+   */
+  private initializeTelemetry(config: TelemetryMetadata, transport?: BaseTelemetryTransport) {
+    this.telemetry = new Telemetry(config, transport);
+    /**
+     * Instrument the instance and all the models with telemetry.
+    */
+    this.telemetry.instrumentTelemetry(this);
+    this.telemetry.instrumentTelemetry(this.tools);
+    this.telemetry.instrumentTelemetry(this.toolkits);
+    this.telemetry.instrumentTelemetry(this.triggers);
+    this.telemetry.instrumentTelemetry(this.authConfigs);
+    this.telemetry.instrumentTelemetry(this.connectedAccounts);
+    this.telemetry.instrumentTelemetry(this.toolset);
   }
 
   /**
