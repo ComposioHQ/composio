@@ -21,11 +21,11 @@ logo:
   href: /
 colors:
   accent-primary:
-    light: '#6366F1'
-    dark: '#818CF8'
+    light: "#6366F1"
+    dark: "#818CF8"
   background:
-    light: '#F8F9FF'
-    dark: '#0F172A'
+    light: "#F8F9FF"
+    dark: "#0F172A"
 typography:
   bodyFont:
     name: Inter-Regular
@@ -37,7 +37,8 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message: "🆕 Incremental v3 SDK Releases! Check out the <a href=\"/changelog/api-v-3-migration\">changelog</a> for more details."
+  message: '🆕 Incremental v3 SDK Releases! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
+    for more details.'
 
 layout:
   tabs-placement: header
@@ -718,8 +719,6 @@ navigation:
             path: tools/intercom.mdx
           - page: Interzoid
             path: tools/interzoid.mdx
-          - page: Jina
-            path: tools/jina.mdx
           - page: Jira
             path: tools/jira.mdx
           - page: Junglescout
@@ -838,14 +837,20 @@ navigation:
             path: tools/productboard.mdx
           - page: Qualaroo
             path: tools/qualaroo.mdx
+          - page: Quickbooks
+            path: tools/quickbooks.mdx
           - page: Rafflys
             path: tools/rafflys.mdx
+          - page: Ramp
+            path: tools/ramp.mdx
           - page: Ravenseotools
             path: tools/ravenseotools.mdx
           - page: Recallai
             path: tools/recallai.mdx
           - page: Reddit
             path: tools/reddit.mdx
+          - page: Resend
+            path: tools/resend.mdx
           - page: Retellai
             path: tools/retellai.mdx
           - page: Ring Central
