@@ -216,45 +216,53 @@ Connect your GitHub account to Composio
 composio add github # Run this in terminal
 ```
 
-```javascript
+```typescript
 import { OpenAIToolSet } from "composio-core";
 import OpenAI from "openai";
 
 const toolset = new OpenAIToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const tools = await toolset.getTools({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] });
-
-async function createGithubAssistant(openai, tools) {
-return await openai.beta.assistants.create({
-name: "Github Assistant",
-instructions: "You're a GitHub Assistant, you can do operations on GitHub",
-tools: tools,
-model: "gpt-4o"
+const tools = await toolset.getTools({
+  actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"]
 });
+
+async function createGithubAssistant(openai: OpenAI, tools: any) {
+  return await openai.beta.assistants.create({
+    name: "Github Assistant",
+    instructions: "You're a GitHub Assistant, you can do operations on GitHub",
+    tools: tools,
+    model: "gpt-4o"
+  });
 }
 
-async function executeAssistantTask(openai, toolset, assistant, task) {
-const thread = await openai.beta.threads.create();
-const run = await openai.beta.threads.runs.create(thread.id, {
-assistant_id: assistant.id,
-instructions: task,
-tools: tools,
-model: "gpt-4o",
-stream: false
-});
-const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
-console.log(call);
+async function executeAssistantTask(
+  openai: OpenAI,
+  toolset: OpenAIToolSet,
+  assistant: any,
+  task: string
+) {
+  const thread = await openai.beta.threads.create();
+  const run = await openai.beta.threads.runs.create(thread.id, {
+    assistant_id: assistant.id,
+    instructions: task,
+    tools: tools,
+    model: "gpt-4o",
+    stream: false
+  });
+
+  const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
+  console.log(call);
 }
 
 (async () => {
-const githubAssistant = await createGithubAssistant(openai, tools);
-await executeAssistantTask(
-openai,
-toolset,
-githubAssistant,
-"Star the repository 'composiohq/composio'"
-);
+  const githubAssistant = await createGithubAssistant(openai, tools);
+  await executeAssistantTask(
+    openai,
+    toolset,
+    githubAssistant,
+    "Star the repository 'composiohq/composio'"
+  );
 })();
 ```
 
