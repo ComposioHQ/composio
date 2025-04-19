@@ -39,6 +39,7 @@ from composio.exceptions import (
     TriggerSubscriptionError,
 )
 from composio.utils import help_msg, logging
+from composio.utils.param_normalization import normalize_api_key_params
 from composio.utils.shared import generate_request_id
 
 
@@ -284,6 +285,16 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
+        # Apply parameter normalization if possible
+        if params is not None:
+            # Get integration details to extract app name and auth mode
+            integration = self.client.integrations.get(id=integration_id)
+            if integration is not None:
+                auth_mode = integration.authScheme
+
+                # Normalize parameters using the utility function
+                params = normalize_api_key_params(params, auth_mode)
+
         response = self._raise_if_required(
             response=self.client.http.post(
                 url=str(self.endpoint),
@@ -1529,11 +1540,25 @@ class Integrations(Collection[IntegrationModel]):
 
         :param app_id: App ID string.
         :param name: Name of the integration.
-        :param auth_param: Auth mode string.
+        :param auth_mode: Auth mode string.
         :param auth_config: Authentication configuration.
         :param use_composio_auth: Whether to use default composio auth or not
         :return: Integration model created by the request.
         """
+        # Normalize auth parameters if needed
+        if auth_config is not None:
+            app_name = None
+            apps_collection = Apps(client=self.client)
+            apps = apps_collection.get()
+            for app in apps:
+                if app.appId == app_id:
+                    app_name = app.name
+                    break
+
+            # Normalize auth parameters if app name was found
+            if app_name is not None:
+                auth_config = normalize_api_key_params(auth_config, auth_mode)
+
         request = {
             "appId": app_id,
             "useComposioAuth": use_composio_auth,
