@@ -45,17 +45,18 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
                 not match with the expected status code
         """
         if response.status_code != status_code:
-            raise HTTPError(
-                message=response.content.decode(encoding="utf-8"),
-                status_code=response.status_code,
-            )
+            raise HTTPError(message=response.text, status_code=response.status_code)
         return response
 
     def get(self, queries: t.Optional[t.Dict[str, str]] = None) -> t.List[ModelType]:
         """List available models."""
         request = self._raise_if_required(
             response=self.client.http.get(
-                url=str(self.endpoint(queries=queries or {})),
+                url=str(
+                    self.endpoint(
+                        queries=queries or {},
+                    )
+                ),
             ),
         )
 
