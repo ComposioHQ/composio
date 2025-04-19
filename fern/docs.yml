@@ -8,9 +8,13 @@ instances:
         owner: ComposioHQ
         repo: composio
         branch: master
+
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
+
+experimental: 
+  openapi-parser-v3: true
 
 title: Composio
 favicon: favicon.png
