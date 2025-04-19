@@ -3,10 +3,10 @@ api:
     v1:
       path: ./api/openapi.json
       overrides: ./api/openapi-overrides.yml
-      settings: 
+      settings:
         use-title: false
     v3:
       path: ./api/openapi-v3.json
       overrides: ./api/openapi-v3-overrides.yml
-      settings: 
+      settings:
         use-title: false

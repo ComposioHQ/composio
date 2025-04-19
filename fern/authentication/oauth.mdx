@@ -16,7 +16,7 @@ This flow involves redirecting the user to the external service's login and cons
 
 The process involves initiating the connection, redirecting the user for authorization, and then waiting for Composio to confirm the connection is active.
 
-**Step 1: Initiate the Connection**
+### Step 1: Initiate the Connection
 
 Use the `initiate_connection` (Python) or `initiateConnection` (TypeScript) method on the user's `Entity` object. Provide the `integration_id` for the OAuth app you configured.
 
@@ -86,7 +86,7 @@ if (connectionRequest?.redirectUrl) {
 
 The key output here is the `redirectUrl`.
 
-**Step 2: Redirect the User**
+### Step 2: Redirect the User
 
 Your application **must** now direct the user's browser to the `redirectUrl` obtained in Step 1.
 
@@ -94,7 +94,7 @@ Your application **must** now direct the user's browser to the `redirectUrl` obt
 
 The user will see the external service's login page (if not already logged in) followed by an authorization screen asking them to grant the permissions (scopes) defined in your Composio Integration.
 
-**Step 3: Wait for Connection Activation**
+### Step 3: Wait for Connection Activation
 
 After the user authorizes the app, the external service redirects back (typically to Composio's callback URL). Composio exchanges the authorization code for access/refresh tokens and securely stores them, marking the Connection as `ACTIVE`.
 
@@ -135,6 +135,72 @@ try {
 ```
 </CodeGroup>
 
-**Step 4: Use the Connection**
+### Step 4: Use the Connection
 
 Once `wait_until_active` completes successfully, the Connection is ready. You can now use the `entity_id` or the obtained `active_connection.id` to [execute actions](/tool-calling/executing-tools) on behalf of this user for the connected app.
+
+### Step 5 (Optional): Refresh the Connection
+Sometimes, a user's connection to an external service might become invalid. This can happen if:
+- The access token expires (though Composio handles automatic refresh for many OAuth 2.0 flows).
+- The user revokes access permissions directly on the third-party service.
+
+You may see errors like:
+```
+Composio SDK while executing action 'GMAIL_FETCH_EMAILS':
+
+{"status":400,"message":"Connected account is disabled","requestId":"000000000000","type":"BadRequestError","details":{}}
+```
+
+When a connection is invalid you need to guide the user through the authentication process again to re-establish a valid connection.
+
+<Note>🚧 We don't currently support the ability to re-initiate connections using our Python SDK. You may use the [`v1/connections/reinitiate-connection`](/api-reference/api-reference/v-1/connections/reinitiate-connection) endpoint.</Note>
+
+    <CodeGroup>
+    ```python Python 
+    # Create the connection using the same parameters.
+    user_id = "alice" 
+    entity = toolset.get_entity(user_id)
+    connection_req = entity.initiate_connection(
+        app_name=App.GMAIL,
+        entity_id=user_id,
+        # You can use integration_id as well
+        # integration_id=GMAIL_INTEGRATION_ID,
+        # Add redirect_url if needed for your app flow
+        # redirect_url="https://yourapp.com/post-auth" 
+    )
+
+    print(f"Please re-authenticate your Gmail account: {connection_req.redirectUrl}")
+    print(f"Initial status: {connection_req.connectionStatus}") # Will likely be INITIATED
+    ```
+
+    ```typescript TypeScript 
+    const userId = "alice";
+    const entity = await toolset.getEntity(userId);
+
+    const connectionReq = await toolset.connectedAccounts.reinitiateConnection({
+      connectedAccountId: "00000000-0000-0000-0000-000000000000",
+      data: {},
+      redirectUri: "https://example.com/callback",
+    });
+    
+    // Alternatively you can create a new connection altogether
+    
+    const integrationId = GMAIL_INTEGRATION_ID; 
+    const connectionReq = await entity.initiateConnection({
+        integrationId: integrationId,
+        // appName: "gmail"
+    });
+
+    console.log(`Please re-authenticate your Gmail account: ${connectionReq.redirectUrl}`);
+    console.log(`Initial status: ${connectionReq.connectionStatus}`); // Will likely be INITIATED
+    ```
+    ```bash curl
+    curl --location 'https://backend.composio.dev/api/v1/connectedAccounts/<connectedAccountId>/reinitiate' \
+    --header 'x-api-key: <api_key>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "data": {}  # Data stays empty
+    }'
+    ```
+    
+    </CodeGroup>
