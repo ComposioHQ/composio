@@ -76,3 +76,14 @@ This tool can be integrated with the Composio framework via the `DocumentRagTool
 
 -   `UploadDocument`: Processes and indexes documents
 -   `QueryDocument`: Retrieves information from indexed documents
+
+
+### IMPORTANT NOTE : 
+
+The agent side commits made in this repo are not prod ready. I  was not able to register the tool with composio tools. This will throw a tool not found error.
+The working code is pushed in the repo below. The only difference between this and the working code is, instead of using the composio library, I am directly loading the tools in the agent.
+
+github : https://github.com/arunmenon9/document-rag
+
+For any queries please connect @ arunmenon99@gmail.com
+
