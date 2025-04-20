@@ -31,16 +31,10 @@ try:
 except Exception as e:
     print(f"Error loading DocumentRagTool: {e}")
     try:
-        from composio.tools.local.documentragtool.tool import DocumentRagTool
-        toolset.register_tool(DocumentRagTool)
-        tools = toolset.get_tools("DocumentRagTool")
-    except Exception as inner_e:
-        print(f"Second error loading DocumentRagTool: {inner_e}")
-        try:
-            available_tools = toolset.list_available_tools()
-            print(f"Available tools: {available_tools}")
-        except:
-            pass
+        available_tools = toolset.list_available_tools()
+        print(f"Available tools: {available_tools}")
+    except:
+        pass
         exit(1)
 
 # Define the Document RAG Agent
