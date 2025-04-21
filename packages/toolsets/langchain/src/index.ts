@@ -1,11 +1,10 @@
-import { BaseComposioToolset, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
+import { BaseComposioToolset, Composio, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
 
 
 export class LangchainToolset extends BaseComposioToolset<Array<DynamicStructuredTool>, DynamicStructuredTool> {
     static FRAMEWORK_NAME = "langchain";
-    private DEFAULT_ENTITY_ID = "default";
     readonly FILE_NAME: string = "toolsets/langchain/src/index.ts";
 
     /**

@@ -1,3 +1,4 @@
 packages:
-  - 'packages/**'
+  - 'packages/core'
+  - 'packages/toolsets/*'
   - 'examples/*'

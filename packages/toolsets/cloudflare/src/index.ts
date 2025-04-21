@@ -7,7 +7,6 @@ export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiT
   readonly FILE_NAME: string = "toolsets/cloudflare/src/index.ts";
   
   static FRAMEWORK_NAME = "cloudflare";
-  private DEFAULT_ENTITY_ID = "default";
 
   /**
    * Abstract method to wrap a tool in the toolset.
