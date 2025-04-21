@@ -23,7 +23,7 @@ export class LangchainToolset extends BaseComposioToolset<LangChainToolCollectio
             return JSON.stringify(
                 await this.client?.tools.execute(toolName, {
                     arguments: kwargs[0] as Record<string, unknown>,
-                    entity_id: this.DEFAULT_ENTITY_ID,
+                    entity_id: this.client.userId ?? this.DEFAULT_ENTITY_ID,
                     connected_account_id: connectedAccountId,
                 })
             );
