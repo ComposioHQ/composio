@@ -1,3 +1,14 @@
+/**
+ * Langchain Toolset
+ * 
+ * Author: @haxzie
+ * Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/langchain.ts
+ * 
+ * This toolset provides a set of tools for interacting with Langchain.
+ * 
+ * @packageDocumentation
+ * @module toolsets/langchain
+ */
 import { BaseComposioToolset, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 

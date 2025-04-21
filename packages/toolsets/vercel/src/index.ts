@@ -1,3 +1,15 @@
+/**
+ * Vercel AI Toolset 
+ * To be used with the Vercel AI SDK
+ * 
+ * Author: @haxzie
+ * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/vercel.ts
+ * 
+ * This toolset provides a set of tools for interacting with Vercel AI SDK.
+ * 
+ * @packageDocumentation
+ * @module toolsets/vercel
+ */
 import { BaseComposioToolset, Tool as ComposioTool, ToolListParams } from "@composio/core";
 import type { Tool as VercelTool } from "ai";
 import { jsonSchema, tool } from "ai";
