@@ -17,7 +17,7 @@ import { checkForLatestVersionFromNPM } from "./utils/version";
 import { OpenAIToolset } from "./toolset/OpenAIToolset";
 
 
-export type ComposioConfig<TToolset extends BaseComposioToolset<any, any>> = {
+export type ComposioConfig<TToolset extends BaseComposioToolset<any, any> = OpenAIToolset> = {
   apiKey?: string;
   baseURL?: string;
   allowTracking?: boolean;
@@ -32,7 +32,7 @@ export type ComposioConfig<TToolset extends BaseComposioToolset<any, any>> = {
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TToolset extends BaseComposioToolset<any, any>> {
+export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToolset> {
 
   private readonly DEFAULT_USER_ID = "default";
   readonly FILE_NAME = "core/composio.ts";
