@@ -347,6 +347,7 @@ navigation:
     layout:
       - api: API Reference
         paginated: true
+        skip-slug: true
   - tab: sdk-reference
     layout:
       - section: Python
