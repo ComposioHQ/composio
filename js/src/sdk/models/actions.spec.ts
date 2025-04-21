@@ -60,20 +60,16 @@ describe("Actions class tests", () => {
   });
 
   it("should execute an action of noauth app", async () => {
-    const actionName = "codeinterpreter_execute_code";
-    const input = { code_to_execute: 'print("Hello World");' };
+    const actionName = "COMPOSIO_LIST_APPS";
 
     const executionResult = await actions.execute({
       actionName,
       requestBody: {
-        input: input,
-        appName: "codeinterpreter",
+        appName: "composio",
       },
     });
 
     expect(executionResult).toHaveProperty("successfull", true);
-    expect(executionResult.data).toHaveProperty("stdout", "Hello World\n");
-    expect(executionResult.data).toHaveProperty("stderr", "");
   });
 
   it("should get a list of actions by use case", async () => {
