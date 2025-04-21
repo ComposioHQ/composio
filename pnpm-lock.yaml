@@ -12,11 +12,33 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
 
+  examples/langchain:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@composio/langchain-toolset':
+        specifier: workspace:*
+        version: link:../../packages/toolsets/langchain
+      openai:
+        specifier: ^4.94.0
+        version: 4.94.0(zod@3.24.2)
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.9
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/openai:
     dependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@composio/langchain-toolset':
+        specifier: workspace:*
+        version: link:../../packages/toolsets/langchain
       openai:
         specifier: ^4.94.0
         version: 4.94.0(zod@3.24.2)
