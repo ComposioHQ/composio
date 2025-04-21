@@ -1,6 +1,9 @@
 /**
  * OpenAI ToolSet
  * 
+ * Author: @haxzie
+ * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/openai.ts
+ * 
  * This is a default toolset for Composio SDK.
  * This will be shipped with the SDK and users don't need to install it separately.
  */

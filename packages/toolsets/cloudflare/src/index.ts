@@ -1,3 +1,14 @@
+/**
+ * Cloudflare AI Toolset
+ * 
+ * Author: @haxzie
+ * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/cloudflare.ts
+ * 
+ * This toolset provides a set of tools for interacting with Cloudflare AI.
+ * 
+ * @packageDocumentation
+ * @module toolsets/cloudflare
+ */
 import { AiTextGenerationToolInput } from "@cloudflare/workers-types";
 import { BaseComposioToolset, Tool, ToolListParams } from "@composio/core";
 
