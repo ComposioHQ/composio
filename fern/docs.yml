@@ -37,8 +37,8 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message: '🆕 Incremental v3 SDK Releases! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
-    for more details.'
+  message: '⚠️ Deprecating the V1 Logs API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
+    to migrate to the V3 Logs API.'
 
 layout:
   tabs-placement: header
