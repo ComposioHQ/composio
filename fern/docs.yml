@@ -37,8 +37,8 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message: '⚠️ Deprecating the V1 Logs API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
-    to migrate to the V3 Logs API.'
+  message: '⚠️ Deprecating the initiate connection API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
+    to learn more.'
 
 layout:
   tabs-placement: header
@@ -347,6 +347,7 @@ navigation:
     layout:
       - api: API Reference
         paginated: true
+        skip-slug: true
   - tab: sdk-reference
     layout:
       - section: Python
