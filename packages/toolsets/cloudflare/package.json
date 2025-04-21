@@ -1,5 +1,5 @@
 {
-  "name": "@composio/cloudflare-toolset",
+  "name": "@composio/cloudflare",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
