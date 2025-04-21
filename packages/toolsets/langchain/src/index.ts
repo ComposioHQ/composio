@@ -1,9 +1,9 @@
-import { BaseComposioToolset, Composio, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
+import { BaseComposioToolset, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
 
-
-export class LangchainToolset extends BaseComposioToolset<Array<DynamicStructuredTool>, DynamicStructuredTool> {
+export type LangChainToolCollection = Array<DynamicStructuredTool>;
+export class LangchainToolset extends BaseComposioToolset<LangChainToolCollection, DynamicStructuredTool> {
     static FRAMEWORK_NAME = "langchain";
     readonly FILE_NAME: string = "toolsets/langchain/src/index.ts";
 
@@ -46,7 +46,7 @@ export class LangchainToolset extends BaseComposioToolset<Array<DynamicStructure
      * @param params - The parameters for the tool list.
      * @returns The tools.
      */
-    async getTools(params?: ToolListParams): Promise<Array<DynamicStructuredTool>> {
+    async getTools(params?: ToolListParams): Promise<LangChainToolCollection> {
         const tools = await this.client?.tools.list(params);
         return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
     }
