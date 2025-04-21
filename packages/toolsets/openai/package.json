@@ -1,5 +1,5 @@
 {
-  "name": "@composio/openai-toolset",
+  "name": "@composio/openai",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",

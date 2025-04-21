@@ -1,5 +1,5 @@
 {
-  "name": "@composio/vercel-toolset",
+  "name": "@composio/vercel",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
