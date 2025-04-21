@@ -4,11 +4,9 @@ import process from "process"
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new LangchainToolset()
 })
 
-const toolset = new LangchainToolset()
-toolset.setClient(composio)
-
-const tools = await toolset.getTools()
+const tools = await composio.getTools()
 
 console.log(tools)
