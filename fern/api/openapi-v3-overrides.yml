@@ -1,4 +1,17 @@
 paths:
   # Hide the MCP server validation endpoint
   /api/v1/mcp/servers/validate/uuid:
-    x-hidden: true  # This will hide this endpoint completely
+    x-hidden: true # This will hide this endpoint completely
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key authentication
+    CookieAuth:
+      # type: apiKey
+      # in: header
+      # name: authToken
+      # description: Cookie based authentication
