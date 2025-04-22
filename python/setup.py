@@ -47,6 +47,7 @@ core_requirements = [
     "click",
     "rich>=13.7.1,<14",
     "pyperclip>=1.8.2,<2",
+    "Pillow>=10.2.0,<11",  # For image clipboard support
     # Workspace dependencies
     "paramiko>=3.4.1",  # Host workspace
     # Tooling server dependencies
