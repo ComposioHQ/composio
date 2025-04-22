@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_google",
-    version="0.7.15",
+    version="0.7.16-rc.1",
     author="Assistant",
     author_email="karan@composio.dev",
     description="Use Composio to get an array of tools with your Google AI Python Gemini model.",

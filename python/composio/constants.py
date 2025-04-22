@@ -104,7 +104,7 @@ WEB_URL_STAGING = "https://hermes-frontend-git-master-composio.vercel.app"
 Web URL for staging server.
 """
 
-BASE_URL_LOCAL = "http://localhost:9900/api"
+BASE_URL_LOCAL = "http://localhost:9899/api"
 """
 Base URL for local server.
 """
@@ -123,7 +123,7 @@ BASE_URL_TO_PROD_MAPPING = {
 Composio API server base url -> web url mappings.
 """
 
-PUSHER_KEY = "ff9f18c208855d77a152"
+PUSHER_KEY = "8e1b8c92b7f8b2151c15"
 """
 API Key for Pusher subscriptions.
 """

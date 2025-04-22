@@ -1,80 +1,117 @@
 ---
-title: "Changelog & Updates" # <-- Renamed Title
+title: "Changelog & Updates"
 subtitle: "Tracking changes, deprecations, and migrations for Composio"
 ---
 
-## Upcoming Changes
-<Warning title="Upcoming Deprecation: V1/V2 Action Log APIs">
-  **Effective Date:** **2025-04-15**
+This page tracks important updates, new features, deprecations, and migration information for the Composio platform, APIs, and SDKs. Check back regularly to stay informed about the latest changes.
 
-  The **V1/V2 Action Log APIs** (endpoints for fetching historical action execution logs) will be **deprecated in one week** and subsequently removed.
+## Updates
 
-  This is part of our migration to the enhanced V3 API infrastructure. Please transition to the new **V3 Logs API** for improved logging and tracing capabilities before the deprecation date to avoid disruption.
+Keep up-to-date with the latest releases, deprecations, and announcements.
 
-  **Resources:**
-  *   **V3 Logs API Reference:** [`/api-reference/api-reference/v-3/logs/`](/api-reference/api-reference/v-3/logs/) - *Start migration here.*
-  *   [V3 General API Reference](/api-reference/api-reference/v-3/)
-  *   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for assistance.
-</Warning>
+### [2025-04-21] Deprecation: V1 Initiate Connection API
 
-Below you'll find details on major platform updates, ongoing migrations, and historical changes.
+The **[`/v1/connectedAccounts`](/api-reference/v-1/connections/initiate-connection)** endpoint, used to start the authentication flow for connecting user accounts is deprecated as of **April 21st, 2025**. It will be fully removed by **April 28th, 2025**.
+
+The recommended endpoint to use is [`/v2/connectedAccounts/initiateConnection`](/api-reference/v-1/connectionsv-2/initiate-connection-v-2). Please update your applications to use the V2 endpoint immediately to avoid service interruption.
+
+**Resources:**
+*   **[V2 Initiate Connection API Reference](/api-reference/v-1/connectionsv-2/initiate-connection-v-2)**
+*   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for migration assistance.
 
 ---
 
-## V3 API Migration (Ongoing)
+### [2025-04-16] Release: Experimental V3 Base SDKs
 
-This section details the ongoing migration to Composio's V3 API.
+We have released experimental base SDKs for Python and Node.js that wrap the new V3 API (currently in alpha). These SDKs provide foundational access to the V3 API endpoints.
+
+<CardGroup>
+    <Card title="Experimental V3 Python SDK" href="https://pypi.org/project/composio-client/" icon="fa-brands fa-python">
+        Install via pip:
+        ```bash
+        pip install composio-client
+        ```
+    </Card>
+    <Card title="Experimental V3 Node.js SDK" href="https://www.npmjs.com/package/@composio/client" icon="fa-brands fa-node-js">
+        Install via npm:
+        ```bash
+        npm install @composio/client
+        ```
+    </Card>
+</CardGroup>
+
+<Note>
+These are **foundational SDKs**. More developer-friendly core SDKs and framework-specific integrations (like Langchain, OpenAI Assistants) built on V3 are coming soon! Documentation for these SDKs will follow shortly.
+</Note>
+
+---
+### [2025-04-10] Deprecation: V1/V2 Log APIs
+
+The **V1/V2 Action Log APIs** (endpoints for fetching historical action execution logs) are now deprecated as of **April 10th, 2025**. They have been replaced by the enhanced **V3 Logs API**.
+
+Endpoints deprecated:
+*   **V1 Action Log APIs:** [`/v1/logs`](/api-reference/v-1/logs/get-logs)
+*   **V2 Action Log API:** [`/v2/actions/logs/all/`](/api-reference/v-1/action-v-2-logs/)
+
+Please update your applications to use the new **V3 Logs API** to leverage improved logging, tracing capabilities, and ensure continued functionality.
+
+**Resources:**
+*   **[V3 Logs API Reference](/api-reference/v-3/logs/)** - *Start migration here.*
+*   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for assistance.
+
+---
+{/* Future entries will be added above this line */}
+
+## V3 API Migration Overview
+
+This section provides high-level context about the ongoing migration to Composio's V3 API infrastructure. Specific V3-related releases or deprecations will be announced in the **Updates** section above.
 
 ### Why V3?
 V3 represents a significant improvement over previous versions. It offers:
-- **Enhanced Performance**: Faster response times and improved stability, especially for tool calls and triggers
-- **More Intuitive**: Streamlines interfaces for easier integration.
-- **Greater Robustness**: Significantly improved error handling, suggestions and validation.
-- **Simpler Developer Experience**: Takes into account the feedback from our users and makes the API more user-friendly.
+- **Enhanced Performance**: Faster response times and improved stability, especially for tool calls and triggers.
+- **More Intuitive**: Streamlined interfaces for easier integration.
+- **Greater Robustness**: Significantly improved error handling, suggestions, and validation.
+- **Simpler Developer Experience**: Incorporates user feedback to make the API more user-friendly.
 
-On top of this, we **implemented a major change in nomenclature** across the API (Coming soon in the SDK).
-The table below outlines the terminology changes implemented in the V3 API.
+### V3 Terminology Changes
+As part of V3, we are standardizing our terminology. Please familiarize yourself with these changes:
 
 | Previous Term | New Term (V3) | Description |
 |--------------|---------------|-------------|
-| App | Toolkit | A collection of LLM-callable tools grouped together for a specific domain or purpose |
-| Action | Tool | A function that can be directly called by an LLM to perform a specific task |
-| Integration | Auth Config | Authentication and configuration settings for a toolkit's external service connections |
-| Connection | Connected Account | User's authenticated instance of an external service with active credentials |
-| Entity | User | Individual account with permissions and access to the platform |
-| Trigger | Trigger Types | The available triggers for a user on a specific toolkit |
-| Trigger Metadata | Trigger Instance | Specific configuration and settings for a deployed trigger in your workflow |
+| App | Toolkit | A collection of LLM-callable tools grouped together for a specific domain or purpose. |
+| Action | Tool | A function that can be directly called by an LLM to perform a specific task. |
+| Integration | Auth Config | Authentication and configuration settings for a toolkit's external service connections. |
+| Connection | Connected Account | User's authenticated instance of an external service with active credentials. |
+| Entity | User | Individual account with permissions and access to the platform. |
+| Trigger | Trigger Types | The available triggers for a user on a specific toolkit. |
+| Trigger Metadata | Trigger Instance | Specific configuration and settings for a deployed trigger in your workflow. |
 
-When migrating your code from previous versions to V3, update your references to match this new terminology. Migration guides and code examples will use these new terms exclusively.
+Future V3 documentation and migration guides will use these new terms.
 
-<Card 
-    title="Nothing Changes for you today!" 
-    icon="fa-solid fa-exclamation" 
+### V1/V2 API Support
+<Card
+    title="V1/V2 APIs Remain Supported"
+    icon="fa-solid fa-shield-halved"
     iconPosition="left"
 >
-    We will provide ample notice and support before deprecating the old APIs.
-
-    We will be supporting V1/V2 APIs and corresponding SDKs for the foreseeable future, and they will still work in production and have full backwards compatability with new API surface.
+    We will continue supporting V1/V2 APIs and their corresponding SDKs for the foreseeable future. Existing integrations will continue to work, and we will provide ample notice (minimum two months) before any V1/V2 deprecations occur.
 </Card>
 
-### General rollout plan
-1. **Frontend Implementation** - As of right now, our dashboard is running on V3 APIs. This phase allows us to gather information about performance and see how the api works in a controlled environment.
-2. **Beta Access** - We will make the V3 API available for beta users and testers in the coming week.
-3. **SDK Release** - We will release Beta SDKs revamped for the new API once the V3 API stabilizes.
-4. **LSE Release** - We will work towards stabilizing the new SDKs that power V3 APIs and get them to a stable release - at which time they will become our primary SDKs. We will still be supporting the old SDKs at this time.
-5. **Deprecations** - We will deprecate the old APIs and SDKs after the LSE release, with two months of notice before finally discontinuing them.
+### General Rollout Plan for V3
+Our V3 rollout is phased to ensure a smooth transition:
+1.  **Frontend Implementation:** Our dashboard (`app.composio.dev`) is already running on V3 APIs.
+2.  **Beta API Access:** The V3 API will be available for beta users soon.
+3.  **Beta SDK Release:** Foundational V3 SDKs are now available (see Updates feed). Core and framework-specific SDKs will follow.
+4.  **Stable SDK Release (LSE):** Once stable, V3 SDKs become primary.
+5.  **V1/V2 Deprecation:** Deprecation timeline (min. 2 months notice) announced after V3 SDK LSE.
 
-<Note>The rollout plan may change based on feedback and testing results.</Note>
+<Note>The rollout plan is subject to change based on feedback and testing results.</Note>
 
-We have opened an issue as an RFC for comment on changes here: https://github.com/ComposioHQ/composio/issues/1523
+We welcome feedback on the V3 changes: [GitHub RFC Issue #1523](https://github.com/ComposioHQ/composio/issues/1523)
 
-### Resources
-
-- [V3 API Reference](/api-reference/api-reference/v-3/)
-- Migration guides (Coming soon)
-- Code examples (Coming soon)
-- Migration support channel (Coming soon)
-- Contact support (Coming soon)
-
---- 
-{/* Future changelog entries can go here, e.g., ## [Date] - New Feature XYZ */}
+### V3 Resources
+*   [V3 API Reference](/api-reference/api-reference/v-3/)
+*   Migration guides (Coming soon)
+*   Code examples (Coming soon)
+*   Migration support channel (Coming soon)
+*   Contact support via [Discord](https://dub.composio.dev/discord) or [email](mailto:tech@composio.dev)
