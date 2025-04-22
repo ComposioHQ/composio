@@ -267,7 +267,7 @@ class DocumentContent:
         else:
             self._blocks.append("""This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
                                 
-                                You can also create [custom actions](/tool-calling/custom-tools) for the app using Composio Auth.""")
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.""")
         return self
 
     def __str__(self) -> str:

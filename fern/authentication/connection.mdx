@@ -1,0 +1,145 @@
+---
+title: 'Connecting Users Overview'
+subtitle: 'Establishing Secure Connections for User Authorization'
+---
+
+After [setting up an Integration](/auth/integrations) for an external app, the next step is to enable your individual end-users to authorize Composio to act on their behalf. This process creates a **Connection**.
+
+It securely stores the user-specific credentials (like OAuth tokens or API keys) obtained during the authorization process. Every authenticated action executed via Composio happens through one of these Connections.
+
+## Identifying Your User: The `entity_id`
+
+A fundamental concept when creating Connections is the `entity_id`.
+
+- **What:** A unique ID that represents *your* end-user within Composio. Can map to DB/UUID in your app.
+- **Why:** It allows Composio to use the correct credentials for your end-user in multi-tenant scenarios.
+- **Default:** Composio uses the default ID `"default"`. This is suitable only for single-user scripts, personal testing.
+
+You will pass the `entity_id` when initiating the connection process using the SDK, typically by first getting an `Entity` object:
+
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet, Action, App
+
+toolset = ComposioToolSet()
+user_identifier_from_my_app = "user_7a9f3b_db_id" # Example
+
+# Get the Composio Entity object for your user
+entity = toolset.get_entity(id=user_identifier_from_my_app)
+# Use this 'entity' object to initiate connections
+```
+```typescript TypeScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+const userIdentifierFromMyApp = "user_7a9f3b_db_id"; // Example
+
+// Get the Composio Entity object for your user
+const entity = await toolset.getEntity(userIdentifierFromMyApp);
+// Use this 'entity' object to initiate connections
+
+```
+</CodeGroup>
+
+## Initiating a Connection (Conceptual)
+
+The process generally starts by calling `initiate_connection` (Python) or `initiateConnection` (TS) on the `entity` object, providing the `integration_id` or `app_name`.
+
+<CodeGroup>
+```python Python
+# Conceptual initiation - details depend on auth type
+connection_request = toolset.initiate_connection(
+    integration_id=YOUR_INTEGRATION_ID, entity_id=user_identifier_from_my_app
+)
+# or
+connection_request = toolset.initiate_connection(
+    app_name=App.GITHUB, entity_id=user_identifier_from_my_app
+)
+
+toolset.execute_action(
+    action=Action.GITHUB_CREATE_AN_ISSUE, params={...}, entity_id=user_identifier_from_my_app
+)
+
+toolset.execute_action(
+    action=Action.GITHUB_CREATE_AN_ISSUE,
+    params={...},
+    entity_id=user_identifier_from_my_app
+)
+```
+```typescript TypeScript
+// Conceptual initiation - details depend on auth type
+const connectionRequest = await toolset.connectedAccounts.initiate({
+  integrationId: YOUR_INTEGRATION_ID,
+});
+// or
+// const connectionRequest = await entity.initiateConnection({ appName: "github" });
+
+toolset.executeAction({
+  action: "GITHUB_CREATE_AN_ISSUE",
+  params: {},
+  entityId: userIdentifierFromMyApp
+});
+```
+</CodeGroup>
+
+The specific steps that follow (handling redirects, waiting for activation, or providing parameters) depend heavily on whether the app uses OAuth or requires user-provided tokens.
+
+**Follow the detailed guides for your specific scenario:**
+
+*   **[Connecting to OAuth Apps](/auth/connect/oauth)**
+*   **[Connecting to Token/API Key Apps](/auth/connect/non-oauth)**
+
+## Managing Existing Connections
+
+Once connections are established, you can retrieve and manage them using the SDK.
+
+### **List Connections for a User** 
+Get all active connections associated with a specific `entity_id`.
+    <CodeGroup>
+    ```python Python wordWrap
+    user_identifier_from_my_app = "user_7a9f3b_db_id"  # Example
+    entity = toolset.get_entity(id=user_identifier_from_my_app)
+    try:
+        connections = toolset.get_connected_accounts(entity_id=user_identifier_from_my_app) # Returns list of active connections
+        print(f"Found {len(connections)} active connections for {entity.id}:")
+        for conn in connections:
+            print(f"- App: {conn.appName}, ID: {conn.id}, Status: {conn.status}")
+        # You can also filter directly via the client:
+        # connections = toolset.client.connected_accounts.get(entity_ids=[entity.id], active=True)
+    except Exception as e:
+        print(f"Error fetching connections: {e}")
+    ```
+    ```typescript TypeScript wordWrap
+    const entity = await toolset.getEntity(userIdentifierFromMyApp);
+    const connections = await toolset.connectedAccounts.list({
+        entityId: entity.id,
+    }); // Returns list of active connections
+    console.log(
+        `Found ${connections.items.length} active connections for ${entity.id}:`
+    );
+    connections.items.forEach((conn) => {
+        console.log(`- App: ${conn.appName}, ID: ${conn.id}, Status: ${conn.status}`);
+    });
+    ```
+    </CodeGroup>
+
+### **Get a Specific Connection** 
+Retrieve details using its unique `connected_account_id`.
+    <CodeGroup>
+    ```python Python wordWrap
+    connection_id = "1d28bbbb-91d0-4181-b4e5-088bab0d7779"
+
+    connection = toolset.get_connected_account(connection_id)
+    print(f"Details for {connection.id}: App={connection.appName}, Status={connection.status}")
+    ```
+    ```typescript TypeScript wordWrap
+    const connectionId = "1d28bbbb-91d0-4181-b4e5-088bab0d7779";
+
+    const connection = await toolset.connectedAccounts.get({
+        connectedAccountId: connectionId,
+    });
+    console.log(
+        `Details for ${connection.id}: App=${connection.appName}, Status=${connection.status}`
+    );
+    ```
+    </CodeGroup>

@@ -1,0 +1,297 @@
+---
+title: 'Fetching Tools'
+subtitle: 'Learn how to filter and go through Composio tools programmatically'
+---
+
+Composio has 9000+ tools that one can view, fetch and filter from.
+
+To view the tools, you can use the **[Composio Tool Directory](/tools/)**. It's a searchable catalog of tools from all our apps. It has the following info for each app:
+- Authentication details for the app.
+- List of available actions.
+- Schema for each action.
+
+Once you know which tools you need, you can fetch their definitions programmatically using the methods below.
+
+## Fetching Specific Actions
+
+This is the most precise method. Use it when you know exactly which tool(s) your agent needs access to for a specific task. You can pass specific `Action` enums or their string equivalents.
+
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet, Action
+
+# Initialize ToolSet (assuming API key is in env)
+toolset = ComposioToolSet()
+
+# Fetch only the tool for starring a GitHub repo
+github_star_tool = toolset.get_tools(
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+)
+
+print(github_star_tool)
+# Output will contain the schema for the specified action.
+```
+
+```typescript TypeScript
+import { OpenAIToolSet } from "composio-core";
+
+// Initialize ToolSet (assuming API key is in env)
+const toolset = new OpenAIToolSet();
+
+async function fetchSpecificTool() {
+    // Fetch only the tool for starring a GitHub repo
+    const githubStarTool = await toolset.getTools({
+        actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"]
+    });
+
+    console.log(githubStarTool);
+    // Output will contain the schema for the specified action.
+}
+
+fetchSpecificTool();
+```
+</CodeGroup>
+
+## Fetching Tools by App
+
+If you want to give an LLM general capabilities for a connected application (like "manage my GitHub issues"), you can fetch tools by specifying the `App`.
+
+<CodeGroup>
+```python Python
+# Fetch default tools for the connected GitHub app
+github_tools = toolset.get_tools(apps=[App.GITHUB])
+
+print(f"Fetched {len(github_tools)} tools for GitHub.")
+# Output contains schemas for 'important' GitHub tools.
+```
+
+```typescript TypeScript
+async function fetchAppTools() {
+  // Fetch default tools for the connected GitHub app
+  const githubTools = await toolset.getTools({ apps: ["github"] });
+
+  console.log(`Fetched ${githubTools.length} tools for GitHub.`);
+  // Output contains schemas for 'important' GitHub tools.
+}
+
+fetchAppTools();
+```
+</CodeGroup>
+
+<Warning title="Default App Tool Filtering">
+By default, fetching tools using only the `apps` filter returns actions tagged as `important`. This prevents overwhelming the LLM's context window with too many tools. If you need *all* actions for an app, you'll need to fetch them explicitly or explore the app's page in the [Tool Directory](/tools/).
+</Warning>
+
+## Fetching Specific Tools
+You can fetch specific tools by their action names.
+
+<CodeGroup>
+```python Python
+# Fetch specific tools by action name
+github_tools = toolset.get_tools(
+    actions=[
+        Action.GITHUB_GET_THE_AUTHENTICATED_USER,
+        Action.GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER
+    ]
+)
+
+print(f"Fetched {len(github_tools)} tools.")
+# Output contains schemas for the specified actions.
+```
+
+```typescript TypeScript
+async function fetchSpecificTools() {
+  // Fetch specific tools by action name
+  const githubTools = await toolset.getTools({
+      actions: ["GITHUB_GET_THE_AUTHENTICATED_USER", "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER"]
+  });
+
+  console.log(`Fetched ${githubTools.length} tools.`);
+  // Output contains schemas for the specified actions.
+}
+
+fetchSpecificTools();
+```
+</CodeGroup>
+
+## Filtering App Tools by Tags
+
+You can refine the tools fetched for an app by adding `tags`. This is useful for focusing the LLM on a specific category of actions within an app.
+
+<CodeGroup>
+```python Python
+# Fetch only Jira tools related to 'Issues'
+jira_issue_tools = toolset.get_tools(
+    apps=[App.JIRA],
+    tags=["Issues"] # Tag names are case-sensitive
+)
+
+print(f"Fetched {len(jira_issue_tools)} Jira tools tagged with 'Issues'.")
+```
+
+```typescript TypeScript
+async function fetchTaggedTools() {
+  // Fetch only Jira tools related to 'Issues'
+  const jiraIssueTools = await toolset.getTools({
+      apps: [App.JIRA],
+      tags: ["Issues"] // Tag names are case-sensitive
+  });
+
+  console.log(`Fetched ${jiraIssueTools.length} Jira tools tagged with 'Issues'.`);
+}
+
+fetchTaggedTools();
+```
+</CodeGroup>
+
+## Finding Tools by Use Case (Experimental)
+
+For creating more agentic flows when creating general agents over a broad problem statement, you can search for actions based on a natural language description of the task and then inject it in.
+
+<Tip>This feature uses semantic search and is currently experimental. Results may vary.</Tip>
+
+<CodeGroup>
+```python Python
+# Describe the task
+query = "create a new page in notion"
+
+# Find relevant action ENUMS (Python-specific helper)
+relevant_actions = toolset.find_actions_by_use_case(
+    use_case=query,
+    apps=[App.NOTION] # Optionally scope the search to specific apps
+    # advanced=True # Use for complex queries needing multiple tools
+)
+
+print(f"Found relevant actions: {relevant_actions}")
+
+# Fetch the actual tool schemas for the found actions
+if relevant_actions:
+    notion_tools = toolset.get_tools(actions=relevant_actions)
+    print(f"Fetched {len(notion_tools)} tool(s) for the use case.")
+else:
+    print("No relevant actions found for the use case.")
+
+# Use the `notion_tools` in your agent
+
+```
+
+```typescript TypeScript
+async function fetchToolsByUseCase() {
+  // Describe the task
+  const query = "create a new page in notion";
+
+  // Find relevant action ENUMS
+  const relevantActions = await toolset.client.actions.findActionEnumsByUseCase({
+      useCase: query,
+      apps: [App.NOTION] // Optionally scope the search
+      // advanced: true // Use for complex queries needing multiple tools
+  });
+
+  console.log("Found relevant action enums:", relevantActions);
+
+  // Fetch the actual tool schemas for the found actions
+  if (relevantActions && relevantActions.length > 0) {
+      const notionTools = await toolset.getTools({ actions: relevantActions });
+      console.log(`Fetched ${notionTools.length} tool(s) for the use case.`);
+  } else {
+      console.log("No relevant actions found for the use case.");
+  }
+}
+
+// Use the `notionTools` in your agent
+
+fetchToolsByUseCase();
+```
+</CodeGroup>
+
+Use the `advanced=True` (Python) / `advanced: true` (TypeScript) flag if the use case might require multiple tools working together in sequence. Composio's search will attempt to find a suitable chain of actions.
+
+
+## Inspecting Tool Schemas
+
+Sometimes, you might need to examine the raw JSON schema definition of a tool, rather than getting it pre-formatted for a specific LLM framework via `get_tools`. This can be useful for:
+
+*   Understanding exact input parameters and output structures.
+*   Building custom logic around tool definitions.
+*   Debugging tool interactions.
+*   Research and experimentation.
+
+You can retrieve the raw action schemas using the `get_action_schemas` method.
+
+<Tip title="Bypass Connection Checks">
+A key feature for inspection is setting `check_connected_accounts=False`. This allows you to fetch the schema for any tool, even if you haven't connected the corresponding app via `composio add <app>`, making it ideal for exploration.
+</Tip>
+
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, Action, App # Use base ComposioToolSet for schema inspection
+
+# Initialize base ToolSet
+base_toolset = ComposioToolSet()
+
+# Get the raw schema for a specific Google Calendar action
+# Bypass the check for an active Google Calendar connection
+calendar_schemas = base_toolset.get_action_schemas(
+    actions=[Action.GOOGLECALENDAR_LIST_CALENDARS],
+    check_connected_accounts=False
+)
+
+if calendar_schemas:
+    import json
+    print("Raw Schema for GOOGLECALENDAR_LIST_CALENDARS:")
+    # calendar_schemas is a list, access the first element
+    print(json.dumps(calendar_schemas[0].model_dump(), indent=2))
+else:
+    print("Schema not found.")
+
+# You can also fetch schemas by app or tags similarly
+# github_schemas = base_toolset.get_action_schemas(
+#    apps=[App.GITHUB], check_connected_accounts=False
+# )
+```
+
+```typescript TypeScript
+import { ComposioToolSet, Action, App } from "composio-core"; // Use base ComposioToolSet
+
+// Initialize base ToolSet
+const baseToolset = new ComposioToolSet();
+
+async function inspectSchema() {
+    // Get the raw schema for a specific Google Calendar action
+    // Bypass the check for an active Google Calendar connection
+    const calendarSchemas = await baseToolset.getActionsSchema( // Note: Method name might differ slightly or require client access depending on SDK version/structure
+       { actions: [Action.GOOGLECALENDAR_LIST_CALENDARS] },
+       undefined, // entityId - not relevant here
+       // Pass underlying client option if needed, or use client directly:
+       // await baseToolset.client.actions.get({ actions: [Action.GOOGLECALENDAR_LIST_CALENDARS] })
+       // The exact TS equivalent depends on how schema fetching bypassing checks is exposed.
+       // Assuming getActionsSchema handles it conceptually:
+       // check_connected_accounts=false equivalent might be implicit or require direct client usage.
+       // This example assumes a conceptual equivalent exists on the toolset for simplicity.
+    );
+
+
+    if (calendarSchemas && calendarSchemas.length > 0) {
+        console.log("Raw Schema for GOOGLECALENDAR_LIST_CALENDARS:");
+        // calendarSchemas is an array, access the first element
+        console.log(JSON.stringify(calendarSchemas[0], null, 2));
+         // Adjust access based on actual return type (might be ActionModel-like objects)
+    } else {
+        console.log("Schema not found.");
+    }
+
+     // Fetching by app:
+     // const githubSchemas = await baseToolset.getActionsSchema({ apps: ["github"] });
+}
+
+inspectSchema();
+
+// Note: The TypeScript example is conceptual. Direct schema fetching bypassing connection checks
+// might require using `baseToolset.client.actions.get(...)` directly if `getActionsSchema`
+// on the ToolSet enforces checks or framework formatting. Refer to TS SDK specifics.
+
+```
+</CodeGroup>
+
+This method returns detailed `ActionModel` objects containing the full parameter and response schemas, version information, and more, without the framework-specific wrappers applied by `get_tools`.
+```
