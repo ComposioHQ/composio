@@ -17,7 +17,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # or whatever you're using
+          node-version: '23' # or whatever you're using
           cache: 'pnpm'
 
       - name: Install pnpm
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '23'
           cache: 'pnpm'
 
       - name: Install pnpm
