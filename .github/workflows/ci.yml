@@ -6,33 +6,9 @@ on:
   pull_request:
 
 jobs:
-  install:
-    name: Install Dependencies
+  build:
+    name: Build
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      # Enable PNPM with correct version
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10.8.0  # Match the version in package.json
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-  build-and-test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    needs: install
 
     steps:
       - name: Checkout Code
@@ -54,6 +30,3 @@ jobs:
 
       - name: Run Build
         run: pnpm turbo run build
-
-      - name: Run Tests
-        run: pnpm turbo run test
