@@ -1,4 +1,7 @@
 paths:
+  /api/v1/mcp/servers/validate/{uuid}:
+    get:
+      x-fern-ignore: true
   /api/v1/client/auth/identify:
     post:
       x-fern-sdk-group-name:
