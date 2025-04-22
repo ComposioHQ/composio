@@ -14,14 +14,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # Enable PNPM
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8 # or whichever version you're using
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '23' # or whatever you're using
+          node-version: '20' # Using LTS version instead of non-existent v23
           cache: 'pnpm'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -35,14 +38,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # Enable PNPM
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8 # or whichever version you're using
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '23'
+          node-version: '20' # Using LTS version instead of non-existent v23
           cache: 'pnpm'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
