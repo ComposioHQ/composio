@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0-rc.4",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -16,7 +16,10 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["README.md", "dist"],
+  "files": [
+    "README.md",
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -31,7 +34,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.7",
+    "@composio/client": "0.1.0-alpha.8",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
     "zod": "^3.24.2"

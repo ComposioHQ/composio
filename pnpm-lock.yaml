@@ -72,8 +72,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.7
-        version: 0.1.0-alpha.7
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8
       openai:
         specifier: ^4.94.0
         version: 4.94.0(zod@3.24.2)
@@ -200,6 +200,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.7':
     resolution: {integrity: sha512-2KYo7mloXf6vplX+6cMjnuaS/Hia74HwPZd7/3RCehVptqTzaqgQFBEAGfnQ3zMBtTkLt+S7JQsZc9RE0SIMoA==}
+
+  '@composio/client@0.1.0-alpha.8':
+    resolution: {integrity: sha512-xC69tJcJMWtYjteypDdDoY7hf07NUSP9ZAOoPX8RiRu/IuI82OTKeS2SlFpK+Kao0N5p0ybvai26i1W2MaoM/w==}
 
   '@composio/core@0.1.0-rc.3':
     resolution: {integrity: sha512-bwiHtZmkrY5g0+c9WorGB966FPdkDYnEBc0RTj4LpozqC7H6aR+/g9hCKb4Ls2ZnDPdmIn0EgG/uDW6Lfm/SDw==}
@@ -1209,6 +1212,8 @@ snapshots:
   '@cloudflare/workers-types@4.20250416.0': {}
 
   '@composio/client@0.1.0-alpha.7': {}
+
+  '@composio/client@0.1.0-alpha.8': {}
 
   '@composio/core@0.1.0-rc.3':
     dependencies:
