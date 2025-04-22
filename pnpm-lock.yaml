@@ -119,7 +119,7 @@ importers:
         version: 4.20250416.0
       '@composio/core':
         specifier: ^0.1.0-rc.1
-        version: 0.1.0-rc.1
+        version: 0.1.0-rc.3
     devDependencies:
       tsup:
         specifier: ^8.4.0
@@ -148,7 +148,7 @@ importers:
     dependencies:
       '@composio/core':
         specifier: ^0.1.0-rc.1
-        version: 0.1.0-rc.1
+        version: 0.1.0-rc.3
       ai:
         specifier: ^4.3.8
         version: 4.3.8(react@19.1.0)(zod@3.24.2)
@@ -164,7 +164,7 @@ importers:
     dependencies:
       '@composio/core':
         specifier: ^0.1.0-rc.1
-        version: 0.1.0-rc.1
+        version: 0.1.0-rc.3
       ai:
         specifier: ^4.3.8
         version: 4.3.8(react@19.1.0)(zod@3.24.2)
