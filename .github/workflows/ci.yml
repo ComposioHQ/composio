@@ -14,16 +14,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Enable PNPM
+      # Enable PNPM with correct version
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8 # or whichever version you're using
+          version: 10.8.0  # Match the version in package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20' # Using LTS version instead of non-existent v23
+          node-version: '20'
           cache: 'pnpm'
 
       - name: Install Dependencies
@@ -38,16 +38,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Enable PNPM
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8 # or whichever version you're using
+          version: 10.8.0  # Match the version in package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20' # Using LTS version instead of non-existent v23
+          node-version: '20'
           cache: 'pnpm'
 
       - name: Install Dependencies
