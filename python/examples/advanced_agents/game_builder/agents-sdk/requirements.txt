@@ -1,0 +1,3 @@
+python-dotenv
+composio-openai-agents==0.7.10
+pygame
