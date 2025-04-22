@@ -9,7 +9,8 @@
  * @packageDocumentation
  * @module toolsets/langchain
  */
-import { BaseComposioToolset, jsonSchemaToModel, Tool, ToolListParams } from "@composio/core";
+import { BaseComposioToolset, jsonSchemaToModel } from "@composio/core";
+import type {  Tool, ToolListParams } from "@composio/core";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
 
@@ -24,7 +25,7 @@ export class LangchainToolset extends BaseComposioToolset<LangChainToolCollectio
      * @param tool - The tool to wrap.
      * @returns The wrapped tool.
      */
-    _wrapTool = (tool: Tool): DynamicStructuredTool => {
+    _wrapTool(tool: Tool): DynamicStructuredTool {
         const toolName = tool.slug
         const description = tool.description;
         const appName = tool.toolkit.name?.toLowerCase();

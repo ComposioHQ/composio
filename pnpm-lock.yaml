@@ -113,8 +113,8 @@ importers:
   packages/toolsets/langchain:
     dependencies:
       '@composio/core':
-        specifier: workspace:^
-        version: link:../../core
+        specifier: 0.1.0-rc.1
+        version: 0.1.0-rc.1
       '@langchain/core':
         specifier: ^0.3.44
         version: 0.3.44(openai@4.94.0(zod@3.24.2))
@@ -200,6 +200,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.7':
     resolution: {integrity: sha512-2KYo7mloXf6vplX+6cMjnuaS/Hia74HwPZd7/3RCehVptqTzaqgQFBEAGfnQ3zMBtTkLt+S7JQsZc9RE0SIMoA==}
+
+  '@composio/core@0.1.0-rc.1':
+    resolution: {integrity: sha512-8HoIMzKdi5CgpkGJzX+ttiHhY+KAvyQuQm8wKSdFXN/gBKeJUfzCnAyyUGsqWMnjsaG6T97/sMizOKrRs72BLQ==}
 
   '@esbuild/aix-ppc64@0.25.2':
     resolution: {integrity: sha512-wCIboOL2yXZym2cgm6mlA742s9QeJ8DjGVaL39dLN4rRwrOgOyYSnOaFPhKZGLb2ngj4EyfAFjsNJwPXZvseag==}
@@ -1206,6 +1209,16 @@ snapshots:
   '@cloudflare/workers-types@4.20250416.0': {}
 
   '@composio/client@0.1.0-alpha.7': {}
+
+  '@composio/core@0.1.0-rc.1':
+    dependencies:
+      '@composio/client': 0.1.0-alpha.7
+      openai: 4.94.0(zod@3.24.2)
+      pusher-js: 8.4.0
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - encoding
+      - ws
 
   '@esbuild/aix-ppc64@0.25.2':
     optional: true
