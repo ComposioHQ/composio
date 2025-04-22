@@ -5,11 +5,11 @@ import process from "process"
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new LangchainToolset()
-})
+  toolset: new LangchainToolset(),
+});
 
 // direct tool access
-const tools = await composio.getTools()
+const tools = await composio.getTools();
 
 class MyToolSet extends BaseComposioToolset<typeof tools, typeof tools[number]> {
   readonly FILE_NAME = "examples/langchain/src/index.ts";
