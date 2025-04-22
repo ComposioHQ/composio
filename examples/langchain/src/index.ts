@@ -1,5 +1,5 @@
 import { Composio } from "@composio/core"
-import { LangchainToolset } from "@composio/langchain-toolset"
+import { LangchainToolset } from "@composio/langchain"
 import process from "process"
 
 const composio = new Composio({
@@ -7,6 +7,7 @@ const composio = new Composio({
   toolset: new LangchainToolset()
 })
 
+// direct tool access
 const tools = await composio.getTools()
 
 console.log(tools)
