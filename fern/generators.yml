@@ -1,13 +1,11 @@
 api:
   namespaces:
     v1:
-      origin: https://backend.composio.dev/openapi.json
       path: ./api/openapi.json
       overrides: ./api/openapi-overrides.yml
       settings:
         use-title: false
     v3:
-      origin: https://backend.composio.dev/api/v3/openapi.json
       path: ./api/openapi-v3.json
       overrides: ./api/openapi-v3-overrides.yml
       settings:
