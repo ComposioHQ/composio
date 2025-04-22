@@ -113,8 +113,8 @@ importers:
   packages/toolsets/langchain:
     dependencies:
       '@composio/core':
-        specifier: 0.1.0-rc.1
-        version: 0.1.0-rc.1
+        specifier: 0.1.0-rc.2
+        version: 0.1.0-rc.2
       '@langchain/core':
         specifier: ^0.3.44
         version: 0.3.44(openai@4.94.0(zod@3.24.2))
@@ -201,8 +201,8 @@ packages:
   '@composio/client@0.1.0-alpha.7':
     resolution: {integrity: sha512-2KYo7mloXf6vplX+6cMjnuaS/Hia74HwPZd7/3RCehVptqTzaqgQFBEAGfnQ3zMBtTkLt+S7JQsZc9RE0SIMoA==}
 
-  '@composio/core@0.1.0-rc.1':
-    resolution: {integrity: sha512-8HoIMzKdi5CgpkGJzX+ttiHhY+KAvyQuQm8wKSdFXN/gBKeJUfzCnAyyUGsqWMnjsaG6T97/sMizOKrRs72BLQ==}
+  '@composio/core@0.1.0-rc.2':
+    resolution: {integrity: sha512-eESmbWDFb+GUPW5HrnROvLoGVZZxRpTsWrb5qDmrTsxriyucH+gWB3F4DELtNwgkyFmoLGxCOxfnrKDSo2mrbQ==}
 
   '@esbuild/aix-ppc64@0.25.2':
     resolution: {integrity: sha512-wCIboOL2yXZym2cgm6mlA742s9QeJ8DjGVaL39dLN4rRwrOgOyYSnOaFPhKZGLb2ngj4EyfAFjsNJwPXZvseag==}
@@ -1210,7 +1210,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.7': {}
 
-  '@composio/core@0.1.0-rc.1':
+  '@composio/core@0.1.0-rc.2':
     dependencies:
       '@composio/client': 0.1.0-alpha.7
       openai: 4.94.0(zod@3.24.2)

@@ -10,7 +10,7 @@
  * @module toolsets/langchain
  */
 import { BaseComposioToolset, jsonSchemaToModel } from "@composio/core";
-import type {  Tool, ToolListParams } from "@composio/core";
+import type { Tool, ToolListParams } from "@composio/core";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
 
