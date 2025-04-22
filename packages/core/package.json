@@ -1,8 +1,8 @@
 {
   "name": "@composio/core",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0-rc.3",
   "description": "",
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "type": "module",
   "publishConfig": {
     "access": "public",
