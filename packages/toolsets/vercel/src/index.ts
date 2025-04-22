@@ -58,8 +58,8 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
 
         const results = await this.client.tools.execute(toolSchema.slug, {
             arguments: args,
-            // entity_id: userId ?? this.client.userId,
-            // connected_account_id: this.client.getConnectedAccountId(appName)
+            entity_id: userId ?? this.client.userId,
+            connected_account_id: this.client.getConnectedAccountId(appName)
         });
 
         return JSON.stringify(results);
