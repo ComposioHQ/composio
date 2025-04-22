@@ -2,7 +2,7 @@
   "name": "@composio/core",
   "version": "0.1.0-rc.2",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/main.js",
   "type": "module",
   "publishConfig": {
     "access": "public",
