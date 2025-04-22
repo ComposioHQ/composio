@@ -16,7 +16,10 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["README.md", "dist"],
+  "files": [
+    "README.md",
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -31,6 +34,6 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250416.0",
-    "@composio/core": "workspace:^"
+    "@composio/core": "^0.1.0-rc.1"
   }
 }

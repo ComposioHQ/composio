@@ -1,5 +1,6 @@
-import logger from "./logger";
-import { IS_DEVELOPMENT_OR_CI } from "./constants";
+import logger from './logger';
+import { IS_DEVELOPMENT_OR_CI } from './constants';
+import { version } from '../../package.json';
 
 /**
  * Compares two semantic versions and returns true if the first version is newer than the second.
@@ -16,33 +17,28 @@ export function isNewerVersion(version1: string, version2: string): boolean {
     if (v1[i] < v2[i]) return false;
   }
   return false;
-} 
+}
 
 /**
-   * Checks for the latest version of the Composio SDK from NPM.
-   * If a newer version is available, it logs a warning to the console.
-   */
+ * Checks for the latest version of the Composio SDK from NPM.
+ * If a newer version is available, it logs a warning to the console.
+ */
 export async function checkForLatestVersionFromNPM() {
-    try {
-        const packageName = "composio-core";
-        const currentVersionFromPackageJson = require("../../package.json").version;
+  try {
+    const packageName = 'composio-core';
+    const currentVersionFromPackageJson = version;
 
-        // @TODO: Check if fetch is available, if not use node-fetch
-        const response = await fetch(
-            `https://registry.npmjs.org/${packageName}/latest`
-        );
-        const data = await response.json();
-        const latestVersion = data.version;
+    // @TODO: Check if fetch is available, if not use node-fetch
+    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`);
+    const data = await response.json();
+    const latestVersion = data.version;
 
-        if (
-            isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
-            !IS_DEVELOPMENT_OR_CI
-        ) {
-            logger.info(
-                `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
-            );
-        }
-    } catch (_error) {
-        // Ignore and do nothing
+    if (isNewerVersion(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
+      logger.info(
+        `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
+      );
     }
+  } catch (_error) {
+    // Ignore and do nothing
+  }
 }

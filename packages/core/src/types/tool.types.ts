@@ -1,17 +1,16 @@
-import { ToolRetrieveResponse } from "@composio/client/resources/tools";
-import { z } from "zod";
+import { ToolRetrieveResponse } from '@composio/client/resources/tools';
+import { z } from 'zod';
 
 export type Tool = ToolRetrieveResponse;
 
 export interface BaseTool {
   name: string;
   description?: string;
-  input_parameters?: Record<string, any>;
-  output_parameters?: Record<string, any>;
+  input_parameters?: Record<string, unknown>;
+  output_parameters?: Record<string, unknown>;
 }
 
 export type ToolType<T extends BaseTool> = T;
-
 
 export const ToolListParamsSchema = z.object({
   cursor: z.string().optional(),

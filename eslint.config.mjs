@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ["packages/**/dist/**", "packages/**/node_modules/**", "node_modules/**"]
+    ignores: ["packages/**/dist/**", "packages/**/node_modules/**", "node_modules/**", "examples/"]
   },
   {files: ["packages/**/*.{ts}"]},
   {languageOptions: { globals: globals.browser }},

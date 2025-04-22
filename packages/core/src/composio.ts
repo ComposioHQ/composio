@@ -1,41 +1,41 @@
-import ComposioClient from "@composio/client";
-import { Tools } from "./models/Tools";
-import { Toolkits } from "./models/Toolkits";
-import { Triggers } from "./models/Triggers";
-import { ComposioToolset } from "./toolset/ComposioToolset";
-import { AuthConfigs } from "./models/AuthConfigs";
-import { ConnectedAccounts } from "./models/ConnectedAccounts";
-import { ToolListParams } from "@composio/client/resources/tools";
-import { BaseComposioToolset } from "./toolset/BaseToolset";
-import { Telemetry } from "./telemetry/Telemetry";
-import { BaseTelemetryTransport, ConsoleTelemetryTransport } from "./telemetry/TelemetryTransport";
-import type { InstrumentedInstance, TelemetryMetadata } from "./types/telemetry.types";
-import { getSDKConfig } from "./utils/sdk";
-import logger from "./utils/logger";
-import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
-import { checkForLatestVersionFromNPM } from "./utils/version";
-import { OpenAIToolset } from "./toolset/OpenAIToolset";
+import ComposioClient from '@composio/client';
+import { Tools } from './models/Tools';
+import { Toolkits } from './models/Toolkits';
+import { Triggers } from './models/Triggers';
+import { ComposioToolset } from './toolset/ComposioToolset';
+import { AuthConfigs } from './models/AuthConfigs';
+import { ConnectedAccounts } from './models/ConnectedAccounts';
+import { ToolListParams } from '@composio/client/resources/tools';
+import { BaseComposioToolset } from './toolset/BaseToolset';
+import { Telemetry } from './telemetry/Telemetry';
+import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
+import type { InstrumentedInstance, TelemetryMetadata } from './types/telemetry.types';
+import { getSDKConfig } from './utils/sdk';
+import logger from './utils/logger';
+import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
+import { checkForLatestVersionFromNPM } from './utils/version';
+import { OpenAIToolset } from './toolset/OpenAIToolset';
+import { version } from '../package.json';
 
-
-export type ComposioConfig<TToolset extends BaseComposioToolset<any, any> = OpenAIToolset> = {
-  apiKey?: string;
-  baseURL?: string;
-  allowTracking?: boolean;
-  allowTracing?: boolean;
-  toolset?: TToolset;
-  userId?: string;
-  connectedAccountIds?: Record<string, string>;
-  telemetryTransport?: BaseTelemetryTransport;
-};
+export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
+  {
+    apiKey?: string;
+    baseURL?: string;
+    allowTracking?: boolean;
+    allowTracing?: boolean;
+    toolset?: TToolset;
+    userId?: string;
+    connectedAccountIds?: Record<string, string>;
+    telemetryTransport?: BaseTelemetryTransport;
+  };
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToolset> {
-
-  private readonly DEFAULT_USER_ID = "default";
-  readonly FILE_NAME = "core/composio.ts";
+export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
+  private readonly DEFAULT_USER_ID = 'default';
+  readonly FILE_NAME = 'core/composio.ts';
 
   /**
    * The Composio API client.
@@ -57,7 +57,6 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
   userId?: string;
   connectedAccountIds?: Record<string, string>;
 
-
   /**
    * Core models for Composio.
    */
@@ -78,20 +77,17 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
    * @param {TS} config.toolset The toolset to use for this Composio instance.
    */
   constructor(config: ComposioConfig<TToolset>) {
-
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
       config?.apiKey
     );
 
     if (IS_DEVELOPMENT_OR_CI) {
-      logger.info(
-        `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
-      );
+      logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
     if (config.userId && config.connectedAccountIds) {
       logger.warn(
-        "When both userId and connectedAccountIds are provided, preference will be given to connectedAccountIds"
+        'When both userId and connectedAccountIds are provided, preference will be given to connectedAccountIds'
       );
     }
 
@@ -104,14 +100,13 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
       baseURL: baseURLParsed,
     });
 
-    this.client
     /**
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
     this.config = {
       ...config,
-      allowTracking: config.allowTracking ?? true
+      allowTracking: config.allowTracking ?? true,
     };
 
     /**
@@ -136,18 +131,21 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
     this.connectedAccounts = new ConnectedAccounts(this.client);
 
     /**
-    * Initialize the client telemetry.
-    */
+     * Initialize the client telemetry.
+     */
     if (this.config.allowTracking ?? true) {
-      this.initializeTelemetry({
-        apiKey: apiKeyParsed ?? "",
-        baseUrl: baseURLParsed ?? "",
-        frameworkRuntime: "node",
-        source: "node", // @TODO: get the source
-        sessionId: this.userId,
-        composioVersion: require('../package.json').version,
-        isBrowser: typeof window !== "undefined",
-      }, config.telemetryTransport)
+      this.initializeTelemetry(
+        {
+          apiKey: apiKeyParsed ?? '',
+          baseUrl: baseURLParsed ?? '',
+          frameworkRuntime: 'node',
+          source: 'node', // @TODO: get the source
+          sessionId: this.userId,
+          composioVersion: version,
+          isBrowser: typeof window !== 'undefined',
+        },
+        config.telemetryTransport
+      );
     }
 
     // Check for the latest version of the Composio SDK from NPM.
@@ -163,7 +161,7 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
     this.telemetry = new Telemetry(config, transport);
     /**
      * Instrument the instance and all the models with telemetry.
-    */
+     */
     this.telemetry.instrumentTelemetry(this);
     this.telemetry.instrumentTelemetry(this.tools);
     this.telemetry.instrumentTelemetry(this.toolkits);
@@ -188,9 +186,7 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
    */
   getClient(): ComposioClient {
     if (!this.client) {
-      throw new Error(
-        "Composio client is not initialized. Please initialize it first."
-      );
+      throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
   }
@@ -199,8 +195,8 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
    * Generic function to get all the tools
    * @returns {Promise<ReturnType<TToolset["getTool"]>>} Promise with list of tools
    */
-  async getTool(slug: string): Promise<ReturnType<TToolset["getTool"]>> {
-    return this.toolset.getTool(slug) as Promise<ReturnType<TToolset["getTool"]>>;
+  async getTool(slug: string): Promise<ReturnType<TToolset['getTool']>> {
+    return this.toolset.getTool(slug) as Promise<ReturnType<TToolset['getTool']>>;
   }
 
   /**
@@ -208,8 +204,7 @@ export class Composio<TToolset extends BaseComposioToolset<any, any> = OpenAIToo
    * @param query - Query parameters for the tools
    * @returns {Promise<ReturnType<TToolset["getTools">} Promise with list/records of tools
    */
-  async getTools(query?: ToolListParams): Promise<ReturnType<TToolset["getTools"]>> {
-    return this.toolset.getTools(query) as Promise<ReturnType<TToolset["getTools"]>>;
+  async getTools(query?: ToolListParams): Promise<ReturnType<TToolset['getTools']>> {
+    return this.toolset.getTools(query) as Promise<ReturnType<TToolset['getTools']>>;
   }
-
 }
