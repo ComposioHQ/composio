@@ -79,10 +79,10 @@ export class Telemetry<U extends InstrumentedInstance> {
     });
 
     for (const name of methodNames) {
-      const originalMethod = (instance as InstrumentedInstance)[name] as (
+      const originalMethod = (instance as unknown as Record<string, Function>)[name] as (
         ...args: unknown[]
       ) => Promise<unknown>;
-      (instance as InstrumentedInstance)[name] = async (...args: unknown[]) => {
+      (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
         const telemetryPayload: TelemetryPayload = {
           eventName: TELEMETRY_EVENTS.SDK_METHOD_INVOKED,
           data: {

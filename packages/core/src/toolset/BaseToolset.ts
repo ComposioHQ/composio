@@ -19,7 +19,6 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
   protected client: Composio<this> | undefined;
   abstract FILE_NAME: string;
   protected DEFAULT_ENTITY_ID = 'default';
-  [key: string]: unknown; // This is used for type inference
 
   /**
    * Set the client for the toolset. This is automatically done by the Composio class.

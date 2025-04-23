@@ -13,8 +13,6 @@ export type TelemetryEvent = (typeof TELEMETRY_EVENTS)[keyof typeof TELEMETRY_EV
  */
 export interface InstrumentedInstance {
   FILE_NAME: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
 }
 
 /**
