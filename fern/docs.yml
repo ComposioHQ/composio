@@ -37,8 +37,7 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message:
-    '⚠️ Deprecating the initiate connection API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
+  message: '⚠️ Deprecating the initiate connection API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
     to learn more.'
 
 layout:
