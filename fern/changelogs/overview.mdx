@@ -9,6 +9,51 @@ This page tracks important updates, new features, deprecations, and migration in
 
 Keep up-to-date with the latest releases, deprecations, and announcements.
 
+### [2025-04-22] Deprecation: V1/V2 Projects and API Keys APIs
+
+The **V1/V2 Projects and API Keys APIs** are now deprecated as of **April 22nd, 2025**. They will be fully removed by **June 22nd, 2025**. These APIs have been replaced by the improved **V3 Organization API** structure.
+
+Endpoints deprecated:
+* **V1 Projects APIs:** 
+  * [`/api/v1/client/auth/project/add`](/api-reference/v-1/projects/add-project)
+  * [`/api/v1/client/auth/project/delete/{projectId}`](/api-reference/v-1/projects/delete-project)
+  * [`/api/v1/client/auth/projects`](/api-reference/v-1/projects/get-projects)
+  * [`/api/v1/org/projects`](/api-reference/v-1/projects/list-projects)
+  * [`/api/v1/org/projects/create`](/api-reference/v-1/projects/create-project)
+  * [`/api/v1/org/projects/{projectId}`](/api-reference/v-1/projects/get-project)
+  * [`/api/v1/org/projects/{projectId}/api-key/regenerate`](/api-reference/v-1/projects/regenerate-api-key)
+  * [`/api/v1/org/projects/{projectId}/rename`](/api-reference/v-1/projects/rename-project)
+* **V1 API Keys APIs:**
+  * [`/api/v1/apiKeys`](/api-reference/v-1/api-keys/list-api-keys)
+  * [`/api/v1/apiKeys/generate`](/api-reference/v-1/api-keys/generate-api-key)
+  * [`/api/v1/apiKeys/{id}`](/api-reference/v-1/api-keys/delete-api-key)
+  * [`/api/v1/client/auth/orgApiKey`](/api-reference/v-1/client/get-org-api-key)
+  * [`/api/v1/client/auth/orgApiKey/regenerate`](/api-reference/v-1/client/regenerate-org-api-key)
+
+Please update your applications to use the new **V3 Organization API** to ensure continued functionality.
+
+#### Migration Table
+
+Below is a mapping between deprecated V1/V2 endpoints and their V3 replacements:
+
+| V1/V2 Endpoint | V3 Replacement |
+|----------------|----------------|
+| [Create Project](/api-reference/v-1/projects/create-project) | [Create Project](/api-reference/v-3/organization/post-api-v-3-org-project-new) |
+| [List Projects](/api-reference/v-1/projects/get-projects) | [List Projects](/api-reference/v-3/organization/get-api-v-3-org-project-list) |
+| [Get Project](/api-reference/v-1/projects/get-project) | [Get Project](/api-reference/v-3/organization/get-api-v-3-org-project-project-id) |
+| [Delete Project](/api-reference/v-1/projects/delete-project) | [Delete Project](/api-reference/v-3/organization/delete-api-v-3-org-project-delete-project-id) |
+| [List API Keys](/api-reference/v-1/api-keys/list-api-keys) | [List API Keys](/api-reference/v-3/organization/get-api-v-3-org-project-project-id-api-keys-list) |
+| [Generate API Key](/api-reference/v-1/api-keys/generate-api-key) | [Create API Key](/api-reference/v-3/organization/post-api-v-3-org-project-project-id-api-keys-create-api-key) |
+| [Delete API Key](/api-reference/v-1/api-keys/delete-api-key) | [Remove API Key](/api-reference/v-3/organization/delete-api-v-3-org-project-project-id-api-keys-remove-id) |
+| [Get Org API Key](/api-reference/v-1/client/get-org-api-key) | [Get Organization API Key](/api-reference/v-3/organization/get-api-v-3-org-api-key) |
+| [Regenerate API Key](/api-reference/v-1/client/regenerate-org-api-key) | [Regenerate API Key](/api-reference/v-3/organization/post-api-v-3-org-api-key-regenerate) |
+
+**Resources:**
+* **[V3 Organization API Reference](/api-reference/v-3/organization/)** - *Start migration here.*
+* Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for migration assistance.
+
+---
+
 ### [2025-04-21] Deprecation: V1 Initiate Connection API
 
 The **[`/v1/connectedAccounts`](/api-reference/v-1/connections/initiate-connection)** endpoint, used to start the authentication flow for connecting user accounts is deprecated as of **April 21st, 2025**. It will be fully removed by **April 28th, 2025**.
