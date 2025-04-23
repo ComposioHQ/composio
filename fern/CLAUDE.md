@@ -105,6 +105,8 @@ Directory structure of the documentation.
 
 - Before making edits, make sure to look through all the files that are actually will be rendered in the documentation in docs.yml.
 
+- After every change in the documentation, you should run `fern docs dev` and show me the changes.
+
 - After every task, make sure you update `fern/.claude/docs-notes.md` is where you will keep a track of all the gotchas and understandings about the product, Composio as you work through the docs. This file should be read before proceeding on a task and updated on every task completion.
 
 ## GitHub PR Process
