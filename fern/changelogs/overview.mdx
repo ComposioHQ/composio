@@ -48,10 +48,6 @@ Below is a mapping between deprecated V1/V2 endpoints and their V3 replacements:
 | [Get Org API Key](/api-reference/v-1/client/get-org-api-key) | [Get Organization API Key](/api-reference/v-3/organization/get-api-v-3-org-api-key) |
 | [Regenerate API Key](/api-reference/v-1/client/regenerate-org-api-key) | [Regenerate API Key](/api-reference/v-3/organization/post-api-v-3-org-api-key-regenerate) |
 
-**Resources:**
-* **[V3 Organization API Reference](/api-reference/v-3/organization/)** - *Start migration here.*
-* Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for migration assistance.
-
 ---
 
 ### [2025-04-21] Deprecation: V1 Initiate Connection API
@@ -59,10 +55,6 @@ Below is a mapping between deprecated V1/V2 endpoints and their V3 replacements:
 The **[`/v1/connectedAccounts`](/api-reference/v-1/connections/initiate-connection)** endpoint, used to start the authentication flow for connecting user accounts is deprecated as of **April 21st, 2025**. It will be fully removed by **April 28th, 2025**.
 
 The recommended endpoint to use is [`/v2/connectedAccounts/initiateConnection`](/api-reference/v-1/connectionsv-2/initiate-connection-v-2). Please update your applications to use the V2 endpoint immediately to avoid service interruption.
-
-**Resources:**
-*   **[V2 Initiate Connection API Reference](/api-reference/v-1/connectionsv-2/initiate-connection-v-2)**
-*   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for migration assistance.
 
 ---
 
@@ -100,12 +92,22 @@ Endpoints deprecated:
 
 Please update your applications to use the new **V3 Logs API** to leverage improved logging, tracing capabilities, and ensure continued functionality.
 
-**Resources:**
-*   **[V3 Logs API Reference](/api-reference/v-3/logs/)** - *Start migration here.*
-*   Contact us via [Discord](https://dub.composio.dev/discord) or [tech@composio.dev](mailto:tech@composio.dev) for assistance.
-
 ---
 {/* Future entries will be added above this line */}
+
+## Migration Resources
+
+To help with migrations mentioned in the updates above, refer to these resources:
+
+### API Migration Resources
+* **[V3 Organization API Reference](/api-reference/v-3/organization/)** - For Projects and API Keys APIs migration
+* **[V2 Initiate Connection API Reference](/api-reference/v-1/connectionsv-2/initiate-connection-v-2)** - For V1 Connection API migration
+* **[V3 Logs API Reference](/api-reference/v-3/logs/)** - For V1/V2 Logs APIs migration
+
+### Support Channels
+* [Discord Community](https://dub.composio.dev/discord) - Join our community for real-time assistance
+* [Technical Support](mailto:tech@composio.dev) - Email our team for migration assistance
+* [GitHub Issues](https://github.com/ComposioHQ/composio/issues) - Report issues or request features
 
 ## V3 API Migration Overview
 
