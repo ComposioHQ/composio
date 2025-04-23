@@ -7,18 +7,18 @@ export default [
   {
     ignores: ["packages/**/dist/**", "packages/**/node_modules/**", "node_modules/**", "examples/"]
   },
-  {files: ["packages/**/*.{ts}"]},
+  {files: ["packages/**/*.ts"]},
   {languageOptions: { globals: globals.browser }},
   ...tseslint.configs.recommended,
   {
     rules: {
-      "@typescript-eslint/no-var-requires": "off",
+      // "@typescript-eslint/no-var-requires": "off",
       "@typescript-eslint/no-require-imports": "warn",
       "@typescript-eslint/no-unsafe-function-type": "off",
       "no-prototype-builtins": "off",
       "max-lines-per-function": ["error", 250],
       "no-unused-vars": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/ban-ts-comment": "warn",
       "no-constant-condition": "off",
       "no-ex-assign": "off",
       "no-constant-binary-expression": "off",

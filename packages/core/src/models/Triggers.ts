@@ -1,5 +1,5 @@
-import ComposioClient from "@composio/client";
-import { RequestOptions } from "@composio/client/internal/request-options";
+import ComposioClient from '@composio/client';
+import { RequestOptions } from '@composio/client/internal/request-options';
 import {
   TriggerInstanceListActiveParams,
   TriggerInstanceRemoveUpsertResponse,
@@ -10,15 +10,12 @@ import {
   TriggersTypeListResponse,
   TriggersTypeRetrieveEnumResponse,
   TriggersTypeRetrieveResponse,
-} from "@composio/client/resources/index";
-import { TriggerStatusEnum, TriggerSubscribeParams } from "../types/triggers.types";
-import { InstrumentedInstance } from "../types/telemetry.types";
-import { PusherUtils, TriggerData } from "../utils/pusher";
-import logger from "../utils/logger";
-import { Session } from "./Session";
-
-
-
+} from '@composio/client/resources/index';
+import { TriggerStatusEnum, TriggerSubscribeParams } from '../types/triggers.types';
+import { InstrumentedInstance } from '../types/telemetry.types';
+import { PusherUtils, TriggerData } from '../utils/pusher';
+import logger from '../utils/logger';
+import { Session } from './Session';
 
 /**
  * Trigger (Instance) class
@@ -26,7 +23,7 @@ import { Session } from "./Session";
  *
  */
 export class Triggers implements InstrumentedInstance {
-  readonly FILE_NAME: string = "core/models/Triggers.ts";
+  readonly FILE_NAME: string = 'core/models/Triggers.ts';
   private client: ComposioClient;
 
   constructor(client: ComposioClient) {
@@ -37,10 +34,7 @@ export class Triggers implements InstrumentedInstance {
    * Fetch list of all the active triggers
    * @returns {Promise<TriggerInstance[]>} List of trigger instances
    */
-  async list(
-    query?: TriggerInstanceListActiveParams,
-    options?: RequestOptions
-  ) {
+  async list(query?: TriggerInstanceListActiveParams, options?: RequestOptions) {
     return this.client.triggerInstances.listActive(query, options);
   }
 
@@ -108,11 +102,7 @@ export class Triggers implements InstrumentedInstance {
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
   async disable(slug: string, options?: RequestOptions) {
-    return this.client.triggerInstances.updateStatus(
-      "disable",
-      { slug },
-      options
-    );
+    return this.client.triggerInstances.updateStatus('disable', { slug }, options);
   }
 
   /**
@@ -123,11 +113,7 @@ export class Triggers implements InstrumentedInstance {
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
   async enable(slug: string, options?: RequestOptions) {
-    return this.client.triggerInstances.updateStatus(
-      "enable",
-      { slug },
-      options
-    );
+    return this.client.triggerInstances.updateStatus('enable', { slug }, options);
   }
 
   /**
@@ -135,18 +121,21 @@ export class Triggers implements InstrumentedInstance {
    */
   /**
    * List all the trigger types
-   * 
+   *
    * @param {TriggersTypeListParams} query - The query parameters to filter the trigger types
    * @param {RequestOptions} options - Request options
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
-  async listTypes(query?: TriggersTypeListParams, options?: RequestOptions): Promise<TriggersTypeListResponse> {
+  async listTypes(
+    query?: TriggersTypeListParams,
+    options?: RequestOptions
+  ): Promise<TriggersTypeListResponse> {
     return this.client.triggersTypes.list(query, options);
   }
 
   /**
    * Retrieve a trigger type by its slug
-   * 
+   *
    * @param {string} slug - The slug of the trigger type
    * @param {RequestOptions} options - request options
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
@@ -157,49 +146,38 @@ export class Triggers implements InstrumentedInstance {
 
   /**
    * Fetches the list of all the available trigger enums
-   * 
+   *
    * This method is used by the CLI where filters are not required.
-   * @param options 
-   * @returns 
+   * @param options
+   * @returns
    */
   async listEnum(options?: RequestOptions): Promise<TriggersTypeRetrieveEnumResponse> {
     return this.client.triggersTypes.retrieveEnum(options);
   }
 
-  async subscribe(
-    fn: (data: TriggerData) => void,
-    filters: TriggerSubscribeParams = {}
-  ) {
-
-    if (!fn) throw new Error("Function is required for trigger subscription");
+  async subscribe(fn: (_data: TriggerData) => void, filters: TriggerSubscribeParams = {}) {
+    if (!fn) throw new Error('Function is required for trigger subscription');
 
     // @TODO: Get the client id from the backend
     const session = new Session(this.client);
     const sessionInfo = await session.getInfo();
     const clientId = sessionInfo.project?.id;
 
-    if (!clientId) throw new Error("Client ID not found");
+    if (!clientId) throw new Error('Client ID not found');
 
-    await PusherUtils.getPusherClient(
-      this.client.baseURL,
-      this.client.apiKey
-    );
+    await PusherUtils.getPusherClient(this.client.baseURL, this.client.apiKey);
 
     const shouldSendTrigger = (data: TriggerData) => {
       if (Object.keys(filters).length === 0) return true;
       else {
         return (
-          (!filters.appName ||
-            data.appName.toLowerCase() === filters.appName.toLowerCase()) &&
+          (!filters.appName || data.appName.toLowerCase() === filters.appName.toLowerCase()) &&
           (!filters.triggerId ||
-            data.metadata.id.toLowerCase() ===
-              filters.triggerId.toLowerCase()) &&
+            data.metadata.id.toLowerCase() === filters.triggerId.toLowerCase()) &&
           (!filters.connectionId ||
-            data.metadata.connectionId.toLowerCase() ===
-              filters.connectionId.toLowerCase()) &&
+            data.metadata.connectionId.toLowerCase() === filters.connectionId.toLowerCase()) &&
           (!filters.triggerName ||
-            data.metadata.triggerName.toLowerCase() ===
-              filters.triggerName.toLowerCase()) &&
+            data.metadata.triggerName.toLowerCase() === filters.triggerName.toLowerCase()) &&
           (!filters.entityId ||
             data.metadata.connection.clientUniqueUserId.toLowerCase() ===
               filters.entityId.toLowerCase()) &&
@@ -210,7 +188,7 @@ export class Triggers implements InstrumentedInstance {
       }
     };
 
-    logger.debug("Subscribing to triggers", filters);
+    logger.debug('Subscribing to triggers', filters);
     PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
       if (shouldSendTrigger(data)) {
         fn(data);
@@ -223,7 +201,7 @@ export class Triggers implements InstrumentedInstance {
     const sessionInfo = await session.getInfo();
     const clientId = sessionInfo.project?.id;
 
-    if (!clientId) throw new Error("Client ID not found");
+    if (!clientId) throw new Error('Client ID not found');
 
     PusherUtils.triggerUnsubscribe(clientId);
   }
