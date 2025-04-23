@@ -106,3 +106,23 @@ Directory structure of the documentation.
 - Before making edits, make sure to look through all the files that are actually will be rendered in the documentation in docs.yml.
 
 - After every task, make sure you update `fern/.claude/docs-notes.md` is where you will keep a track of all the gotchas and understandings about the product, Composio as you work through the docs. This file should be read before proceeding on a task and updated on every task completion.
+
+## GitHub PR Process
+
+- Create a new branch with descriptive name: `git checkout -b [username]/[feature-description]`
+- Make changes and commit them: `git add [files]` and `git commit -m "[type]: [message]"`
+- Push branch to remote: `git push -u origin [branch-name]`
+- Create PR using GitHub CLI: 
+  ```bash
+  gh pr create --title "[type]: [title]" --body "$(cat <<'EOF'
+  ## Summary
+  [Brief description of changes]
+
+  ## Test plan
+  [How to verify changes]
+
+  🤖 Generated with [Claude Code](https://claude.ai/code)
+  EOF
+  )"
+  ```
+- Use commit types: feat, fix, docs, style, refactor, test, chore
