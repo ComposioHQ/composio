@@ -16,7 +16,10 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["README.md", "dist"],
+  "files": [
+    "README.md",
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -30,7 +33,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@composio/core": "workspace:^",
+    "@composio/core": "^0.1.0-rc.1",
     "ai": "^4.3.8"
   }
 }

@@ -1,21 +1,24 @@
-import { TelemetryTransportParams } from "../../types/telemetry.types";
-import { BaseTelemetryTransport } from "../TelemetryTransport";
+import { TelemetryTransportParams } from '../../types/telemetry.types';
+import logger from '../../utils/logger';
+import { BaseTelemetryTransport } from '../TelemetryTransport';
 
 export class ProcessTelemetryTransport implements BaseTelemetryTransport {
-    send(payload: TelemetryTransportParams): Promise<void> {
-        if (typeof window !== 'undefined') {
-            return Promise.reject(new Error('ProcessTelemetryTransport can only be used in Node.js environments'));
-        }
+  send(payload: TelemetryTransportParams): Promise<void> {
+    if (typeof window !== 'undefined') {
+      return Promise.reject(
+        new Error('ProcessTelemetryTransport can only be used in Node.js environments')
+      );
+    }
 
-        return new Promise((resolve) => {
-            try {
-                const url = new URL(payload.url);
-                const protocol = url.protocol === "https:" ? "https" : "http";
-                const port = url.port || (url.protocol === "https:" ? 443 : 80);
+    return new Promise(resolve => {
+      try {
+        const url = new URL(payload.url);
+        const protocol = url.protocol === 'https:' ? 'https' : 'http';
+        const port = url.port || (url.protocol === 'https:' ? 443 : 80);
 
-                const args = [
-                    "-e",
-                    `
+        const args = [
+          '-e',
+          `
                     const http = require('${protocol}');
                     const options = {
                         hostname: '${url.hostname}',
@@ -39,18 +42,24 @@ export class ProcessTelemetryTransport implements BaseTelemetryTransport {
                     req.write(JSON.stringify(${JSON.stringify(payload.data)}));
                     req.end();
                     `,
-                ];
+        ];
 
-                const { spawn } = require("child_process");
-                spawn("node", args, {
-                    stdio: "ignore",
-                    detached: true,
-                    shell: false,
-                }).unref();
-                resolve();
-            } catch (error) {
-                resolve();
-            }
-        });
-    }
+        import('child_process')
+          .then(({ spawn }) => {
+            spawn('node', args, {
+              stdio: 'ignore',
+              detached: true,
+              shell: false,
+            }).unref();
+            resolve();
+          })
+          .catch(() => {
+            resolve();
+          });
+      } catch (error) {
+        logger.error('Error sending telemetry', error);
+        resolve();
+      }
+    });
+  }
 }

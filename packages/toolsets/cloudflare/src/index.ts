@@ -1,23 +1,26 @@
 /**
  * Cloudflare AI Toolset
- * 
+ *
  * Author: @haxzie
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/cloudflare.ts
- * 
+ *
  * This toolset provides a set of tools for interacting with Cloudflare AI.
- * 
+ *
  * @packageDocumentation
  * @module toolsets/cloudflare
  */
-import { AiTextGenerationToolInput } from "@cloudflare/workers-types";
-import { BaseComposioToolset, Tool, ToolListParams } from "@composio/core";
+import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
+import { BaseComposioToolset, Tool, ToolListParams } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
-export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiTextGenerationToolInput> {
-  readonly FILE_NAME: string = "toolsets/cloudflare/src/index.ts";
-  
-  static FRAMEWORK_NAME = "cloudflare";
+export class CloudflareToolset extends BaseComposioToolset<
+  AiToolCollection,
+  AiTextGenerationToolInput
+> {
+  readonly FILE_NAME: string = 'toolsets/cloudflare/src/index.ts';
+
+  static FRAMEWORK_NAME = 'cloudflare';
 
   /**
    * Abstract method to wrap a tool in the toolset.
@@ -26,11 +29,11 @@ export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiT
    * @returns The wrapped tool.
    */
   _wrapTool(tool: Tool): AiTextGenerationToolInput {
-    const formattedSchema: AiTextGenerationToolInput["function"] = {
+    const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
       description: tool.description!,
       parameters: tool.input_parameters as unknown as {
-        type: "object";
+        type: 'object';
         properties: {
           [key: string]: {
             type: string;
@@ -41,7 +44,7 @@ export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiT
       },
     };
     const cloudflareTool: AiTextGenerationToolInput = {
-      type: "function",
+      type: 'function',
       function: formattedSchema,
     };
     return cloudflareTool;
@@ -54,16 +57,18 @@ export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiT
    */
   override async getTools(query?: ToolListParams): Promise<AiToolCollection> {
     if (!this.client) {
-      throw new Error("Client not set");
+      throw new Error('Client not set');
     }
 
     const tools = await this.client.tools.list(query);
-    return tools.items.reduce((tools, tool) => ({
-      ...tools,
-      [tool.slug]: this._wrapTool(tool as Tool),
-    }), {});
+    return tools.items.reduce(
+      (tools, tool) => ({
+        ...tools,
+        [tool.slug]: this._wrapTool(tool as Tool),
+      }),
+      {}
+    );
   }
-
 
   /**
    * Execute a tool call.
@@ -71,23 +76,23 @@ export class CloudflareToolset extends BaseComposioToolset<AiToolCollection, AiT
    * @param userId - The user id.
    * @returns The results of the tool call.
    */
-  async executeToolCall(tool: { name: string; arguments: unknown }, userId?: string): Promise<string> {
+  async executeToolCall(
+    tool: { name: string; arguments: unknown },
+    userId?: string
+  ): Promise<string> {
     if (!this.client) {
-      throw new Error("Client not set");
+      throw new Error('Client not set');
     }
 
     const toolSchema = await this.client.tools.get(tool.name);
     const appName = toolSchema?.toolkit?.name.toLowerCase();
-    const args = typeof tool.arguments === "string"
-      ? JSON.parse(tool.arguments)
-      : tool.arguments;
+    const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
     const results = await this.client?.tools.execute(toolSchema.slug, {
       arguments: args,
-      entity_id: this.DEFAULT_ENTITY_ID,
+      entity_id: userId ?? this.DEFAULT_ENTITY_ID,
       connected_account_id: this.client?.getConnectedAccountId(appName),
     });
 
     return JSON.stringify(results);
   }
-
 }
