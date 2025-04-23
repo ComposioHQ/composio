@@ -27,7 +27,7 @@ In this example, we will use VoltAgent to star a repository on Github using Comp
     import { VercelAIProvider } from "@voltagent/vercel-ai";
     import { openai } from "@ai-sdk/openai";
 
-    const mcpConfig = new MCPConfiguration({
+    const mcp = new MCPConfiguration({
       servers: {
         github: {
           type: "http",
