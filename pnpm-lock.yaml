@@ -90,8 +90,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.8
-        version: 0.1.0-alpha.8
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9
       openai:
         specifier: ^4.94.0
         version: 4.94.0(zod@3.24.2)
@@ -131,8 +131,8 @@ importers:
   packages/toolsets/langchain:
     dependencies:
       '@composio/core':
-        specifier: 0.1.0-rc.3
-        version: 0.1.0-rc.3
+        specifier: 0.1.0-rc.5
+        version: 0.1.0-rc.5
       '@langchain/core':
         specifier: ^0.3.44
         version: 0.3.44(openai@4.94.0(zod@3.24.2))
@@ -219,11 +219,14 @@ packages:
   '@composio/client@0.1.0-alpha.7':
     resolution: {integrity: sha512-2KYo7mloXf6vplX+6cMjnuaS/Hia74HwPZd7/3RCehVptqTzaqgQFBEAGfnQ3zMBtTkLt+S7JQsZc9RE0SIMoA==}
 
-  '@composio/client@0.1.0-alpha.8':
-    resolution: {integrity: sha512-xC69tJcJMWtYjteypDdDoY7hf07NUSP9ZAOoPX8RiRu/IuI82OTKeS2SlFpK+Kao0N5p0ybvai26i1W2MaoM/w==}
+  '@composio/client@0.1.0-alpha.9':
+    resolution: {integrity: sha512-uhXW5NxIY+j5IZ7WnzOLrVmOAhSCb1FdQbvDxPCcQqpE7d78uRHS9i/aK4Xn6UNIPv+pt1BT8unR0zEdKjG3Ng==}
 
   '@composio/core@0.1.0-rc.3':
     resolution: {integrity: sha512-bwiHtZmkrY5g0+c9WorGB966FPdkDYnEBc0RTj4LpozqC7H6aR+/g9hCKb4Ls2ZnDPdmIn0EgG/uDW6Lfm/SDw==}
+
+  '@composio/core@0.1.0-rc.5':
+    resolution: {integrity: sha512-kSkkTjxJGUVABbVThsMXiNiIPZy0qNku77lG3wgDcFMGps7OLrL1vTT0t19cCL3Jl4jwJQm5qROpgCBQveFCbA==}
 
   '@esbuild/aix-ppc64@0.25.2':
     resolution: {integrity: sha512-wCIboOL2yXZym2cgm6mlA742s9QeJ8DjGVaL39dLN4rRwrOgOyYSnOaFPhKZGLb2ngj4EyfAFjsNJwPXZvseag==}
@@ -1775,11 +1778,21 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.7': {}
 
-  '@composio/client@0.1.0-alpha.8': {}
+  '@composio/client@0.1.0-alpha.9': {}
 
   '@composio/core@0.1.0-rc.3':
     dependencies:
       '@composio/client': 0.1.0-alpha.7
+      openai: 4.94.0(zod@3.24.2)
+      pusher-js: 8.4.0
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - encoding
+      - ws
+
+  '@composio/core@0.1.0-rc.5':
+    dependencies:
+      '@composio/client': 0.1.0-alpha.9
       openai: 4.94.0(zod@3.24.2)
       pusher-js: 8.4.0
       zod: 3.24.2
