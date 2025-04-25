@@ -36,8 +36,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@composio/langchain':
-        specifier: workspace:*
-        version: link:../../packages/toolsets/langchain
+        specifier: 0.1.0-rc.6
+        version: 0.1.0-rc.6(openai@4.94.0(zod@3.24.2))
       openai:
         specifier: ^4.94.0
         version: 4.94.0(zod@3.24.2)
@@ -227,6 +227,9 @@ packages:
 
   '@composio/core@0.1.0-rc.5':
     resolution: {integrity: sha512-kSkkTjxJGUVABbVThsMXiNiIPZy0qNku77lG3wgDcFMGps7OLrL1vTT0t19cCL3Jl4jwJQm5qROpgCBQveFCbA==}
+
+  '@composio/langchain@0.1.0-rc.6':
+    resolution: {integrity: sha512-nx/emBOfyltoK1TeGXdqLnwSvirZW3u+Bs0cOkwMnT+zE9FDeX1sfVgl91SrhLqSWQLcaa/mAb6MRQ9LxYv2CA==}
 
   '@esbuild/aix-ppc64@0.25.2':
     resolution: {integrity: sha512-wCIboOL2yXZym2cgm6mlA742s9QeJ8DjGVaL39dLN4rRwrOgOyYSnOaFPhKZGLb2ngj4EyfAFjsNJwPXZvseag==}
@@ -1798,6 +1801,15 @@ snapshots:
       zod: 3.24.2
     transitivePeerDependencies:
       - encoding
+      - ws
+
+  '@composio/langchain@0.1.0-rc.6(openai@4.94.0(zod@3.24.2))':
+    dependencies:
+      '@composio/core': 0.1.0-rc.5
+      '@langchain/core': 0.3.44(openai@4.94.0(zod@3.24.2))
+    transitivePeerDependencies:
+      - encoding
+      - openai
       - ws
 
   '@esbuild/aix-ppc64@0.25.2':

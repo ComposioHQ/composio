@@ -13,7 +13,7 @@
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "@composio/langchain": "workspace:*",
+    "@composio/langchain": "0.1.0-rc.6",
     "openai": "^4.94.0"
   },
   "devDependencies": {
