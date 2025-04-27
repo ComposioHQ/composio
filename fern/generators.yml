@@ -1,12 +1,12 @@
 api:
-  namespaces:
-    v1:
-      path: ./api/openapi.json
+  specs:
+    - namespace: v1
+      openapi: ./api/openapi.json
       overrides: ./api/openapi-overrides.yml
       settings:
-        use-title: false
-    v3:
-      path: ./api/openapi-v3.json
+        title-as-schema-name: false
+    - namespace: v3
+      openapi: ./api/openapi-v3.json
       overrides: ./api/openapi-v3-overrides.yml
       settings:
-        use-title: false
+        title-as-schema-name: false
