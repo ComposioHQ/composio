@@ -1,0 +1,6 @@
+api:
+  specs:
+    - openapi: ../../api/openapi.json
+      overrides: ../../api/openapi-overrides.yml
+      settings:
+        title-as-schema-name: false
