@@ -1,7 +1,4 @@
 paths:
-  /api/v1/actions/list/enums: 
-    get: 
-      x-fern-ignore: true
   /api/v3/mcp/validate/{uuid}:
     get:
       x-fern-ignore: true
