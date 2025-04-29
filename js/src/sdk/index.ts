@@ -75,11 +75,13 @@ export class Composio {
       );
     }
     ComposioSDKContext.apiKey = apiKeyParsed;
-    ComposioSDKContext.sessionId = getUUID();
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
     ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
     ComposioSDKContext.allowTracing = config?.allowTracing;
+    // by default, generate a sessionId unless allowTracing is explicitly set to false
+    ComposioSDKContext.sessionId =
+      config?.allowTracing !== false ? getUUID() : undefined;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
