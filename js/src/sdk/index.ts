@@ -61,7 +61,7 @@ export class Composio {
       baseUrl?: string;
       runtime?: string;
       allowTracing?: boolean;
-    } = { allowTracing: true }
+    } = {}
   ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
@@ -79,8 +79,9 @@ export class Composio {
     ComposioSDKContext.frameworkRuntime = config?.runtime;
     ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
     ComposioSDKContext.allowTracing = config?.allowTracing;
-    // if only allowTracing is true, generate a sessionId
-    ComposioSDKContext.sessionId = config?.allowTracing ? getUUID() : undefined;
+    // by default, generate a sessionId unless allowTracing is explicitly set to false
+    ComposioSDKContext.sessionId =
+      config?.allowTracing !== false ? getUUID() : undefined;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
