@@ -61,7 +61,7 @@ export class Composio {
       baseUrl?: string;
       runtime?: string;
       allowTracing?: boolean;
-    } = {}
+    } = { allowTracing: true }
   ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
