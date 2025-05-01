@@ -18,7 +18,7 @@ import {
   ZRequiredParamsResponse,
 } from "../types/app";
 import { AxiosBackendClient } from "./backendClient";
-import { APPURLS } from "../utils/appUrls";
+import { APP_NAMES, APPURLS } from "../utils/appUrls";
 
 // schema types generated from zod
 export type AppGetRequiredParams = z.infer<typeof ZGetRequiredParams>;
@@ -76,8 +76,8 @@ export class Apps {
       // inject the appURL to each app if it exists in the json
       const appList = data?.items.map((app) => {
         const appUrl = APPURLS[app.key];
-        const appName = APPURLS[app.name];
-        
+        const appName = APP_NAMES[app.name];
+
         return {
           ...app,
           appUrl: appUrl ?? null,
@@ -115,7 +115,7 @@ export class Apps {
       });
       if (!response) throw new Error("App not found");
       const appUrl = APPURLS[response.key];
-      const appName = APPURLS[response.name];
+      const appName = APP_NAMES[response.name];
 
       return {
         ...response,
