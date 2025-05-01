@@ -75,7 +75,7 @@ export class Apps {
       });
       // inject the appURL to each app if it exists in the json
       const appList = data?.items.map((app) => {
-        const appUrl = APPURLS[app.appId];
+        const appUrl = APPURLS[app.key];
         return {
           ...app,
           appUrl: appUrl ?? null,
@@ -111,7 +111,7 @@ export class Apps {
         },
       });
       if (!response) throw new Error("App not found");
-      const appUrl = APPURLS[response.appId];
+      const appUrl = APPURLS[response.key];
       return {
         ...response,
         appUrl: appUrl ?? null,
