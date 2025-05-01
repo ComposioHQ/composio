@@ -76,9 +76,12 @@ export class Apps {
       // inject the appURL to each app if it exists in the json
       const appList = data?.items.map((app) => {
         const appUrl = APPURLS[app.key];
+        const appName = APPURLS[app.name];
+        
         return {
           ...app,
           appUrl: appUrl ?? null,
+          name: appName ?? app.name,
         };
       });
 
@@ -112,9 +115,12 @@ export class Apps {
       });
       if (!response) throw new Error("App not found");
       const appUrl = APPURLS[response.key];
+      const appName = APPURLS[response.name];
+
       return {
         ...response,
         appUrl: appUrl ?? null,
+        name: appName ?? response.name,
       };
     } catch (error) {
       throw CEG.handleAllError(error);
