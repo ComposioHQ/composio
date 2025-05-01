@@ -12,6 +12,7 @@ export const ZRawActionSchema = z.object({
   description: z.string(),
   appKey: z.string(),
   appId: z.string(),
+  appUrl: z.string().optional(),
   appName: z.string(),
   logo: z.string(),
   enabled: z.boolean(),

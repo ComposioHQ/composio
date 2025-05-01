@@ -18,6 +18,7 @@ import {
   ZRequiredParamsResponse,
 } from "../types/app";
 import { AxiosBackendClient } from "./backendClient";
+import { APPURLS } from "../utils/appUrls";
 
 // schema types generated from zod
 export type AppGetRequiredParams = z.infer<typeof ZGetRequiredParams>;
@@ -59,7 +60,7 @@ export class Apps {
    * @returns {Promise<AppItemListResponse[]>} A promise that resolves to the list of all apps.
    * @throws {ComposioError} If the request fails.
    */
-  async list(): Promise<AppListResponse> {
+  async list(): Promise<AppListResponse  & { appUrl?: string | null }[]> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -72,7 +73,16 @@ export class Apps {
           additionalFields: "auth_schemes",
         },
       });
-      return data?.items || [];
+      // inject the appURL to each app if it exists in the json
+      const appList = data?.items.map((app) => {
+        const appUrl = APPURLS[app.appId];
+        return {
+          ...app,
+          appUrl: appUrl ?? null,
+        };
+      });
+
+      return appList || [];
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -87,7 +97,7 @@ export class Apps {
    * @returns {Promise<AppItemResponse>} A promise that resolves to the details of the app.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: AppGetDataParams): Promise<AppItemResponse> {
+  async get(data: AppGetDataParams): Promise<AppItemResponse & { appUrl?: string | null }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -101,7 +111,11 @@ export class Apps {
         },
       });
       if (!response) throw new Error("App not found");
-      return response;
+      const appUrl = APPURLS[response.appId];
+      return {
+        ...response,
+        appUrl: appUrl ?? null,
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }
