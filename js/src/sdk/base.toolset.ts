@@ -308,9 +308,10 @@ export class ComposioToolSet {
         connectionId: accountId,
       });
     }
-    if (Object.keys(this.connectedAccountIds).length > 0) {
+    const connectedAccountKeys = Object.keys(this.connectedAccountIds);
+    if (connectedAccountKeys.length > 0) {
       const actionDetails = await this.actions.get({ actionName: action });
-      const appNameKey = Object.keys(this.connectedAccountIds).find(
+      const appNameKey = connectedAccountKeys.find(
         (key) => key.toLowerCase() === actionDetails.appName
       );
       if (appNameKey) {
