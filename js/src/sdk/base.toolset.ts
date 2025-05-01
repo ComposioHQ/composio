@@ -283,8 +283,8 @@ export class ComposioToolSet {
     }
 
     // Custom actions are always executed in the host/local environment for JS SDK
+    let accountId = connectedAccountId;
     if (await this.isCustomAction(action)) {
-      let accountId = connectedAccountId;
       if (!accountId) {
         const toolName = await this.userActionRegistry.getToolName({ action });
         const connectedAccounts = await this.client.connectedAccounts.list({
@@ -308,12 +308,20 @@ export class ComposioToolSet {
         connectionId: accountId,
       });
     }
-
+    if (Object.keys(this.connectedAccountIds).length > 0) {
+      const actionDetails = await this.actions.get({ actionName: action });
+      const appNameKey = Object.keys(this.connectedAccountIds).find(
+        (key) => key.toLowerCase() === actionDetails.appName
+      );
+      if (appNameKey) {
+        accountId = this.connectedAccountIds[appNameKey];
+      }
+    }
     const data = await this.client.getEntity(entityId).execute({
       actionName: action,
       params: params,
       text: nlaText,
-      connectedAccountId: connectedAccountId,
+      connectedAccountId: accountId,
     });
 
     return this.processResponse(data, {
