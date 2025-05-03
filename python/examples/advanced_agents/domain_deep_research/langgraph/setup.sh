@@ -17,7 +17,7 @@ echo "Login to your Composio acount"
 composio login
 
 composio add tavily
-composio add perplexity
+composio add perplexityai
 composio add googledocs
 
 # Copy env backup to .env file
