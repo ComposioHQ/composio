@@ -1,0 +1,2 @@
+composio-langgraph==0.7.15
+langchain-together==0.3.0
