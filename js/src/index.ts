@@ -1,4 +1,5 @@
 import { CloudflareToolSet } from "./frameworks/cloudflare";
+import { MastraToolSet } from "./frameworks/mastra";
 import { LangchainToolSet } from "./frameworks/langchain";
 import { LangGraphToolSet } from "./frameworks/langgraph";
 import { OpenAIToolSet } from "./frameworks/openai";
@@ -26,6 +27,7 @@ export {
   ConnectionRequest,
   LangGraphToolSet,
   LangchainToolSet,
+  MastraToolSet,
   OpenAIToolSet,
   VercelAIToolSet,
 };
