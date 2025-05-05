@@ -29,7 +29,7 @@ export class Toolkits implements InstrumentedInstance {
    * This method fetches the toolkits from the Composio API.
    * @returns {Promise<Toolkit[]>} List of toolkits
    */
-  async list(
+  async getToolkits(
     query: ToolkitListParams,
     options?: RequestOptions
   ): Promise<ToolkitListResponse> {
@@ -43,7 +43,7 @@ export class Toolkits implements InstrumentedInstance {
    * @param options - Request options
    * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
    */
-  async get(
+  async getToolkitBySlug(
     slug: string,
     options?: RequestOptions
   ): Promise<ToolkitRetrieveResponse> {
