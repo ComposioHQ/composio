@@ -43,7 +43,7 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
    * @returns The tools.
    */
   async getTools(params?: ToolListParams): Promise<OpenAiToolCollection> {
-    const tools = await this.client?.tools.list(params);
+    const tools = await this.client?.tools.getTools(params);
     return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
   }
 
@@ -65,18 +65,18 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     /**
      * @TODO: This is redundant, we should be able to get the tool name from the tool call
      */
-    const toolSchema = await this.client.tools.get(tool.function.name);
-    const appName = toolSchema?.toolkit?.name.toLowerCase();
-    const connectedAccountId = this.client.getConnectedAccountId(appName);
-
+    const toolSchema = await this.client.tools.getToolBySlug(tool.function.name);
+    const appSlug = toolSchema?.toolkit?.slug.toLowerCase();
+    if (!appSlug) {
+      throw new Error("App slug not found");
+    }
+    const connectedAccountId = this.client.getConnectedAccountId(appSlug);
     const payload = {
       entity_id: userId ?? this.client.userId,
       connected_account_id: connectedAccountId,
       arguments: JSON.parse(tool.function.arguments),
     }
-
     const results = await this.client.tools.execute(toolSchema.slug, payload);
-
     return JSON.stringify(results);
   }
 

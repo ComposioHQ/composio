@@ -74,7 +74,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@composio/vercel':
-        specifier: workspace:0.1.0-rc.1
+        specifier: workspace:*
         version: link:../../packages/toolsets/vercel
       ai:
         specifier: ^4.3.8
@@ -163,8 +163,8 @@ importers:
   packages/toolsets/vercel:
     dependencies:
       '@composio/core':
-        specifier: ^0.1.0-rc.1
-        version: 0.1.0-rc.3
+        specifier: workspace:0.1.0-rc.5
+        version: link:../../core
       ai:
         specifier: ^4.3.8
         version: 4.3.8(react@19.1.0)(zod@3.24.2)

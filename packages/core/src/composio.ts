@@ -16,6 +16,7 @@ import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIToolset } from './toolset/OpenAIToolset';
 import { version } from '../package.json';
+import { Modifiers } from './models/Modifiers';
 
 export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
   {
@@ -66,6 +67,10 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   toolset: TToolset;
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
+  modifiers: Modifiers;
+  useBeforeToolExecute: Modifiers['useBeforeToolExecute'];
+  useAfterToolExecute: Modifiers['useAfterToolExecute'];
+  useTransformToolSchema: Modifiers['useTransformToolSchema'];
 
   /**
    * @param {Object} config Configuration for the Composio SDK.
@@ -122,9 +127,18 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     this.toolset.setClient(this);
 
     /**
+     * Modifiers are used to modify the tools and toolkits.
+     * Initialize the modifiers into global scope.
+     */
+    this.modifiers = new Modifiers();
+    this.useBeforeToolExecute = this.modifiers.useBeforeToolExecute;
+    this.useAfterToolExecute = this.modifiers.useAfterToolExecute;
+    this.useTransformToolSchema = this.modifiers.useTransformToolSchema;
+
+    /**
      * Initialize all the models with composio client.
      */
-    this.tools = new Tools(this.client);
+    this.tools = new Tools(this.client, this.modifiers);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -195,8 +209,8 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    * Generic function to get all the tools
    * @returns {Promise<ReturnType<TToolset["getTool"]>>} Promise with list of tools
    */
-  async getTool(slug: string): Promise<ReturnType<TToolset['getTool']>> {
-    return this.toolset.getTool(slug) as Promise<ReturnType<TToolset['getTool']>>;
+  async getToolBySlug(slug: string): Promise<ReturnType<TToolset['getToolBySlug']>> {
+    return this.toolset.getToolBySlug(slug) as Promise<ReturnType<TToolset['getToolBySlug']>>;
   }
 
   /**

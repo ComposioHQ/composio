@@ -1,5 +1,5 @@
-import { InstrumentedInstance } from "./telemetry.types";
-import { Tool, BaseTool, ToolListParams } from "./tool.types";
+import { InstrumentedInstance } from './telemetry.types';
+import { Tool, BaseTool, ToolListParams } from './tool.types';
 
 /**
  * Base toolset implementation, which needs to be implemented by the extended class.
@@ -11,12 +11,13 @@ export interface Toolset<TTool = BaseTool, TToolCollection = TTool[]> extends In
   getTools: (params?: ToolListParams) => Promise<TToolCollection>;
 }
 
-
 /**
  * This type is used to infer the wrapped tool type from the toolset.
  * It checks if the toolset has a method `_wrapTool` and infers the return type.
  */
 export type WrappedTool<TToolset> = TToolset extends {
   _wrapTool: (tool: Tool) => infer TTool;
-} ? TTool : never;
+}
+  ? TTool
+  : never;
 

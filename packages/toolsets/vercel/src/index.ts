@@ -70,7 +70,7 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
   _wrapTool(composioTool: ComposioTool): VercelTool {
     return tool({
       description: composioTool.description,
-      parameters: jsonSchema(composioTool.input_parameters),
+      parameters: jsonSchema(composioTool.input_parameters ?? {}),
       execute: async params => {
         return await this.executeToolCall(
           {

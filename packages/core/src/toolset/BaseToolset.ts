@@ -1,6 +1,7 @@
 import type { Toolset } from '../types/toolset.types';
-import type { Tool, ToolListParams } from '../types/tool.types';
+import type { CustomAuthParams, Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
+import { ComposioError } from '../utils/error';
 
 /**
  * Base toolset implementation with proper generic defaults
@@ -40,9 +41,9 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
    * @param slug - The slug of the tool.
    * @returns The tool.
    */
-  async getTool(slug: string): Promise<TTool> {
-    const tool = await this.client?.tools.get(slug);
-    return this._wrapTool(tool as Tool);
+  async getToolBySlug(slug: string): Promise<TTool> {
+    const tool = await this.getComposioClient().tools.getToolBySlug(slug);
+    return this._wrapTool(tool);
   }
 
   /**
@@ -53,14 +54,53 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
   abstract _wrapTool(tool: Tool): TTool;
 
   /**
-   * Ensure the client is initialized.
-   * This is automatically done by the Composio class.
+   * Execute an action
    */
-  protected ensureClient(): void {
+  async execute({
+    toolSlug,
+    params,
+    entityId,
+    connectedAccountId,
+    text,
+    customAuthParams,
+  }: {
+    toolSlug: string;
+    params: Record<string, unknown>;
+    entityId?: string;
+    connectedAccountId?: string;
+    text?: string;
+    customAuthParams?: CustomAuthParams;
+  }) {
+    const tool = await this.client?.tools.getToolBySlug(toolSlug);
+
+    if (!tool) {
+      throw new ComposioError(`Tool with slug ${toolSlug} not found`);
+    }
+
+    try {
+      const result = await this.getComposioClient().tools.execute(toolSlug, {
+        arguments: params,
+        userId: entityId,
+        connectedAccountId: connectedAccountId,
+        text: text,
+        customAuthParams: customAuthParams,
+      });
+      return result;
+    } catch (error) {
+      throw new ComposioError(`Error executing tool ${toolSlug}: ${error}`);
+    }
+  }
+
+  /**
+   * Get the Composio client.
+   * @returns The Composio client.
+   */
+  protected getComposioClient(): Composio<this> {
     if (!this.client) {
       throw new Error(
         'Client not initialized. Make sure the toolset is properly initialized with Composio.'
       );
     }
+    return this.client;
   }
 }

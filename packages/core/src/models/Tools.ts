@@ -1,27 +1,27 @@
-import ComposioClient from "@composio/client";
-import { Tool } from "../types/tool.types";
+import ComposioClient from '@composio/client';
+import { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import {
-  ToolExecuteParams,
-  ToolExecuteResponse,
   ToolGetInputParams,
   ToolGetInputResponse,
   ToolListParams,
   ToolListResponse,
   ToolRetrieveEnumResponse,
-} from "@composio/client/resources/tools";
-import { InstrumentedInstance } from "../types/telemetry.types";
-
+} from '@composio/client/resources/tools';
+import { InstrumentedInstance } from '../types/telemetry.types';
+import { Modifiers } from './Modifiers';
 
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
  */
 export class Tools implements InstrumentedInstance {
-  readonly FILE_NAME: string = "core/models/Tools.ts";
+  readonly FILE_NAME: string = 'core/models/Tools.ts';
   private client: ComposioClient;
-  
-  constructor(client: ComposioClient) {
+  private modifiers: Modifiers;
+
+  constructor(client: ComposioClient, modifiers?: Modifiers) {
     this.client = client;
+    this.modifiers = modifiers || new Modifiers();
   }
 
   /**
@@ -29,16 +29,16 @@ export class Tools implements InstrumentedInstance {
    * This method fetches the tools from the Composio API and wraps them using the toolset.
    * @returns {Tools[]>} List of tools
    */
-  async list(query: ToolListParams = {}): Promise<ToolListResponse> {
-      const tools = await this.client.tools.list(query);
-      if (!tools) {
-        return {
-          items: [],
-          next_cursor: null,
-          total_pages: 0,
-        };
-      }
-      return tools;
+  async getTools(query: ToolListParams = {}): Promise<ToolListResponse> {
+    const tools = await this.client.tools.list(query);
+    if (!tools) {
+      return {
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      };
+    }
+    return tools;
   }
 
   /**
@@ -46,8 +46,13 @@ export class Tools implements InstrumentedInstance {
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
    */
-  async get(slug: string): Promise<Tool> {
-    return this.client.tools.retrieve(slug);
+  async getToolBySlug(slug: string): Promise<Tool> {
+    const tool = await this.client.tools.retrieve(slug);
+    if (!tool) {
+      throw new Error(`Tool with slug ${slug} not found`);
+    }
+    const modifiedTool = this.modifiers.applyTransformToolSchema(slug, tool);
+    return modifiedTool;
   }
 
   /**
@@ -59,11 +64,11 @@ export class Tools implements InstrumentedInstance {
    * @param {ToolExecuteParams} body - The parameters to be passed to the tool
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    */
-  async execute(
-    slug: string,
-    body: ToolExecuteParams
-  ): Promise<ToolExecuteResponse> {
-    return this.client.tools.execute(slug, body);
+  async execute(slug: string, body: ToolExecuteParams): Promise<ToolExecuteResponse> {
+    const modifiedBody = this.modifiers.applyBeforeToolExecute(slug, body);
+    const result = await this.client.tools.execute(slug, modifiedBody);
+    const modifiedResult = this.modifiers.applyAfterToolExecute(slug, result);
+    return modifiedResult;
   }
 
   /**
@@ -86,10 +91,7 @@ export class Tools implements InstrumentedInstance {
    * @param {ToolGetInputParams} body - The parameters to be passed to the tool
    * @returns
    */
-  async getInput(
-    slug: string,
-    body: ToolGetInputParams
-  ): Promise<ToolGetInputResponse> {
+  async getInput(slug: string, body: ToolGetInputParams): Promise<ToolGetInputResponse> {
     return this.client.tools.getInput(slug, body);
   }
 }

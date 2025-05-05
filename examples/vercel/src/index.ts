@@ -8,7 +8,7 @@ const composio = new Composio({
     toolset: new VercelToolset()
 });
 
-const hackerNewsTool = await composio.toolset.getTool("HACKERNEWS_GET_FRONTPAGE");
+const hackerNewsTool = await composio.toolset.getToolBySlug("HACKERNEWS_GET_FRONTPAGE");
 
 const MessageRoles = {
     USER: "user",
