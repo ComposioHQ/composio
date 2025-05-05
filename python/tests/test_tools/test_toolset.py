@@ -21,10 +21,10 @@ from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
 from composio.tools.local.filetool.tool import Filetool, FindFile
 from composio.tools.toolset import ComposioToolSet
+from composio.utils.descope import DescopeAuth
 from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
-from composio.utils.descope import DescopeAuth
 
 
 def test_get_schemas() -> None:
@@ -551,7 +551,9 @@ def test_custom_descope_auth_fails_on_localtool():
         descope = DescopeAuth(project_id="project_id", management_key="management_key")
         toolset.add_auth(
             app=Filetool.enum,
-            parameters=descope.get_auth(Filetool.enum, user_id="user_id", scopes=["openid", "email"]),
+            parameters=descope.get_auth(
+                Filetool.enum, user_id="user_id", scopes=["openid", "email"]
+            ),
         )
 
         def _execute(cls, request, metadata):  # pylint: disable=unused-argument
@@ -626,7 +628,9 @@ def test_custom_descope_auth_runtime_tool():
         descope = DescopeAuth(project_id="project_id", management_key="management_key")
         toolset.add_auth(
             app="tool",
-            parameters=descope.get_auth("tool", user_id="user_id", scopes=["openid", "email"]),
+            parameters=descope.get_auth(
+                "tool", user_id="user_id", scopes=["openid", "email"]
+            ),
         )
 
         result = toolset.execute_action(action=action_descope_1, params={})
