@@ -4,7 +4,7 @@
 set -e
 
 # Define the OpenAPI specification URL and paths
-OPENAPI_URL="https://backend.composio.dev/openapi.json"
+OPENAPI_URL="https://hermes.composio.dev/openapi.json"
 OPENAPI_V3_URL="https://backend.composio.dev/api/v3/openapi.json"
 
 # Get the directory where the script is located, works in both CI and local environments
