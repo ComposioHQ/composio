@@ -58,7 +58,7 @@ class Clipboardtool(LocalTool, autoload=True):
     @classmethod
     def actions(cls) -> List[Type[LocalAction]]:
         """Return the list of actions."""
-        actions = [
+        actions: List[Type[LocalAction]] = [
             CopyText,
             PasteText,
             CopyImage,
@@ -66,5 +66,4 @@ class Clipboardtool(LocalTool, autoload=True):
             CopyFilePaths,
             PasteFilePaths,
         ]
-
         return actions
