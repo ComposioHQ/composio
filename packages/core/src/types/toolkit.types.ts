@@ -1,4 +1,4 @@
-import { optional, z } from 'zod';
+import { z } from 'zod';
 
 /**
  * Toolkit list params
