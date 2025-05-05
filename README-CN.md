@@ -1,7 +1,7 @@
 <p>
     <a href="https://github.com/composiohq/composio/blob/master/README.md">英语</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国人</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本人</a>
+        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中文</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日文</a>
 </p>
 <p align="center">
     <a href="https://composio.dev//#gh-dark-mode-only">
@@ -34,22 +34,22 @@
 </p>
 
 <h2 align="center">
-    适用于 AI 代理的生产就绪工具集
+    适用于生产环境的 AI Agnet 工具集
 </h2>
 
 <img alt="Illustration" src="./python/docs/imgs/banner.gif" style="border-radius: 5px" />
 
-<h2>什么是Composio?</h2>
-<p><strong>Composio 为 AI 代理提供可用于生产的工具集</strong>，提供：</p>
+<h2>Composio是什么?</h2>
+<p><strong>Composio 是一个专为 AI Agent 设计的工具集</strong></p>
 <ul>
-    <li>支持多个类别的 250 多种工具：
+    <li> 支持 250+ 工具, 覆盖多个领域, 例如：
         <ul>
             <li>GitHub、Notion、Linear、Gmail、Slack、Hubspot、Salesforce 等软件工具 &
                 <a href="https://app.composio.dev/apps">
                     更多
                 </a>
             </li>
-            <li>操作系统操作, 包括文件工具、shell 工具、代码分析工具 &
+            <li>操作系统相关工具, 包括文件工具、shell 工具、代码分析 &
                 <a href="https://app.composio.dev/apps">
                     更多
                 </a>
@@ -61,26 +61,26 @@
             </li>
         </ul>
     </li>
-    <li>全面的框架支持，包括 OpenAI、 Groq、Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini 以及<a
+    <li>全面的模型支持，包括 OpenAI、 Groq、Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini 以及<a
             href="https://docs.composio.dev/framework">更多</a></li>
-    <li>支持多种协议 (OAuth、API 密钥、Basic JWT) 的托管身份验证</li>
-    <li>通过优化设计将工具调用准确率提高高达 40%</li>
+    <li>支持多种身份认证方式: (OAuth、API 密钥、Basic JWT)</li>
+    <li>通过优化设计让工具调用准确率提高 40%</li>
     <li>用于后端集成的白标解决方案</li>
-    <li>支持自定义工具和扩展的可插拔架构</li>
+    <li>支持自定义工具和可插拔架构</li>
 </ul>
 
 ## 📋 目录
 
-- [Python 入门](#开始使用-python)
+- [使用 Python 开始](#开始使用-python)
     - [1. 安装](#1-安装)
     - [2. 创建代理并执行工具](#2-创建代理并执行工具)
-- [JavaScript 入门](#javascript-入门)
+- [使用 JavaScript 开始](#javascript-入门)
     - [1. 安装](#1安装)
     - [2.创建代理并执行工具](#2-创建代理并执行工具-1)
 - [示例](#示例)
     - [Python 示例](#python-示例)
     - [JavaScript 示例](#javascript-示例)
-- [Star 历史](#星号历史)
+- [Star ](#Star-历史)
 - [获取帮助](#获取帮助)
 - [贡献](#贡献)
 - [请求功能](#请求功能)
@@ -100,10 +100,10 @@ pip install composio-core
 
 ### 2. 创建代理并执行工具
 
-让我们使用 OpenAI 创建 AI 代理，并使用 Composio 的 GitHub 工具为 GitHub 存储库加注星标
+使用 OpenAI 创建 AI 代理，并使用 Composio 的 GitHub 工具 star GitHub 仓库
 
 > [!NOTE]
-> 在您的环境变量中设置您的 COMPOSIO_API_KEY 和 OPENAI_API_KEY.
+> 设置 COMPOSIO_API_KEY 和 OPENAI_API_KEY 环境变量.
 
 将你的 GitHub 帐户连接到 Composio
 ```bash
@@ -170,12 +170,11 @@ print(response_after_tool_calls)
 npm install composio-core
 ```
 
-### 2. 创建代理并执行工具
+### 2. 创建 Agent 并执行工具
 
-让我们使用 OpenAI 创建一个 AI 代理，并使用 Composio 的 GitHub 工具来加注 GitHub 存储库
-
+下面的示例展示如何使用 OpenAI 创建一个 AI 代理，并使用 Composio 的 GitHub 工具来 star GitHub 仓库
 > [!NOTE]
-> 在您的环境变量中设置您的 COMPOSIO_API_KEY 和 OPENAI_API_KEY。
+> 首先设置您的 COMPOSIO_API_KEY 和 OPENAI_API_KEY 环境变量。
 
 将你的 GitHub 帐户连接到 Composio
 ```bash
@@ -230,7 +229,7 @@ async function executeAssistantTask(openai, toolset, assistant, task) {
 
 ### [JavaScript 示例](https://docs.composio.dev/guides/javascript/)
 
-## 星号历史
+## Star 历史
 
 [![Star History
 Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
@@ -243,7 +242,7 @@ Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](ht
 
 ## 贡献
 
-我们是一个开源项目，欢迎贡献。请阅读<a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md" target="_blank"
+我们是一个开源项目，欢迎贡献代码。请先阅读<a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md" target="_blank"
     rel="noopener noreferrer">贡献指南</a>了解更多信息，并在开始之前查看我们的<a
     href="https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md" target="_blank"
     rel="noopener noreferrer">行为准则</a>。
@@ -252,9 +251,9 @@ Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](ht
 
 - 如果您有功能请求，请打开<a
     href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">问题</a>，
-发出拉取请求，或在我们的<a href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank"
+提交对应的 pull request，或在我们的<a href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank"
     rel="noopener noreferrer">功能请求频道</a>中提交。
-- 如果您有改进想法，也可以在我们的 GitHub 存储库中发起讨论。
+- 如果您有相关的改进想法，也可以在我们的 GitHub 存储库中发起讨论。
 
 ## 感谢所有贡献者
 
