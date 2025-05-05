@@ -19,7 +19,7 @@ export class ComposioToolset extends BaseComposioToolset<Array<CustomTool>, Cust
   };
 
   async getTools(params?: ToolListParams): Promise<Array<CustomTool>> {
-    const tools = await this.client?.tools.getTools(params);
+    const tools = await this.getComposio()?.tools.getTools(params);
     return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
   }
 
