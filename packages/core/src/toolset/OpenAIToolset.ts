@@ -43,7 +43,7 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
    * @returns The tools.
    */
   async getTools(params?: ToolListParams): Promise<OpenAiToolCollection> {
-    const tools = await this.client?.tools.getTools(params);
+    const tools = await this.getComposio()?.tools.getTools(params);
     return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
   }
 
@@ -57,26 +57,18 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     tool: OpenAI.ChatCompletionMessageToolCall,
     userId?: string 
   ): Promise<string> {
-
-    if (!this.client) {
-      throw new Error("Client not set");
-    }
-
-    /**
-     * @TODO: This is redundant, we should be able to get the tool name from the tool call
-     */
-    const toolSchema = await this.client.tools.getToolBySlug(tool.function.name);
+    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.function.name);
     const appSlug = toolSchema?.toolkit?.slug.toLowerCase();
     if (!appSlug) {
       throw new Error("App slug not found");
     }
-    const connectedAccountId = this.client.getConnectedAccountId(appSlug);
+    const connectedAccountId = this.getComposio().getConnectedAccountId(appSlug);
     const payload = {
-      entity_id: userId ?? this.client.userId,
+      entity_id: userId ?? this.getComposio().userId,
       connected_account_id: connectedAccountId,
       arguments: JSON.parse(tool.function.arguments),
     }
-    const results = await this.client.tools.execute(toolSchema.slug, payload);
+    const results = await this.getComposio().tools.execute(toolSchema.slug, payload);
     return JSON.stringify(results);
   }
 
@@ -148,7 +140,7 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     userId?: string) {
 
       // @TODO: Log the run stream
-      const defaultUserId = this.client?.userId;
+      const defaultUserId = this.getComposio()?.userId;
       let runId = null;
 
     // Start processing the runStream events
@@ -238,7 +230,7 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
     thread: OpenAI.Beta.Threads.Thread,
     userId?: string
   ) { 
-    const defaultUserId = this.client?.userId;
+    const defaultUserId = this.getComposio()?.userId;
     while (["queued", "in_progress", "requires_action"].includes(run.status)) {
       // logger.debug(`Current run status: ${run.status}`);
       const tool_outputs = await this.handleAssistantMessage(

@@ -17,7 +17,7 @@ import { ComposioError } from '../utils/error';
 export abstract class BaseComposioToolset<TToolCollection, TTool>
   implements Toolset<TTool, TToolCollection>
 {
-  protected client: Composio<this> | undefined;
+  protected composio: Composio<this> | undefined;
   abstract FILE_NAME: string;
   protected DEFAULT_ENTITY_ID = 'default';
 
@@ -25,8 +25,8 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
    * Set the client for the toolset. This is automatically done by the Composio class.
    * @param client - The Composio client.
    */
-  setClient(client: Composio<this>): void {
-    this.client = client;
+  setComposio(composio: Composio<this>): void {
+    this.composio = composio;
   }
 
   /**
@@ -42,7 +42,7 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
    * @returns The tool.
    */
   async getToolBySlug(slug: string): Promise<TTool> {
-    const tool = await this.getComposioClient().tools.getToolBySlug(slug);
+    const tool = await this.getComposio().tools.getToolBySlug(slug);
     return this._wrapTool(tool);
   }
 
@@ -71,14 +71,14 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
     text?: string;
     customAuthParams?: CustomAuthParams;
   }) {
-    const tool = await this.client?.tools.getToolBySlug(toolSlug);
+    const tool = await this.getComposio()?.tools.getToolBySlug(toolSlug);
 
     if (!tool) {
       throw new ComposioError(`Tool with slug ${toolSlug} not found`);
     }
 
     try {
-      const result = await this.getComposioClient().tools.execute(toolSlug, {
+      const result = await this.getComposio().tools.execute(toolSlug, {
         arguments: params,
         userId: entityId,
         connectedAccountId: connectedAccountId,
@@ -95,12 +95,12 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
    * Get the Composio client.
    * @returns The Composio client.
    */
-  protected getComposioClient(): Composio<this> {
-    if (!this.client) {
+  protected getComposio(): Composio<this> {
+    if (!this.composio) {
       throw new Error(
         'Client not initialized. Make sure the toolset is properly initialized with Composio.'
       );
     }
-    return this.client;
+    return this.composio;
   }
 }

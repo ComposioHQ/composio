@@ -27,10 +27,10 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
    * @returns The tools.
    */
   override async getTools(params?: ToolListParams): Promise<VercelToolCollection> {
-    if (!this.client) {
+    if (!this.getComposio()) {
       throw new Error('Client not initialized');
     }
-    const tools = await this.client.tools.list(params);
+    const tools = await this.getComposio().tools.getTools(params);
     return tools.items.reduce(
       (tools, tool) => ({
         ...tools,
@@ -50,18 +50,18 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
     tool: { name: string; arguments: unknown },
     userId?: string
   ): Promise<string> {
-    if (!this.client) {
+    if (!this.getComposio()) {
       throw new Error('Client not initialized');
     }
 
-    const toolSchema = await this.client.tools.get(tool.name);
+    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.name);
     const appName = toolSchema?.name.toLowerCase();
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
 
-    const results = await this.client.tools.execute(toolSchema.slug, {
+    const results = await this.getComposio().tools.execute(toolSchema.slug, {
       arguments: args,
-      entity_id: userId ?? this.client.userId,
-      connected_account_id: this.client.getConnectedAccountId(appName),
+      userId: userId ?? this.getComposio().userId,
+      connectedAccountId: this.getComposio().getConnectedAccountId(appName),
     });
 
     return JSON.stringify(results);
@@ -77,7 +77,7 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
             name: composioTool.slug,
             arguments: JSON.stringify(params),
           },
-          this.client?.userId
+          this.getComposio()?.userId
         );
       },
     });

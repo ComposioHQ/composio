@@ -28,26 +28,31 @@ export class LangchainToolset extends BaseComposioToolset<LangChainToolCollectio
     _wrapTool(tool: Tool): DynamicStructuredTool {
         const toolName = tool.slug
         const description = tool.description;
-        const appName = tool.toolkit.name?.toLowerCase();
+        const appName = tool.toolkit?.name?.toLowerCase();
+        if (!appName) {
+            throw new Error("App name is not defined");
+        }
 
         const func = async (...kwargs: unknown[]): Promise<unknown> => {
-            const connectedAccountId = this.client?.getConnectedAccountId(appName)
+            const connectedAccountId = this.getComposio()?.getConnectedAccountId(appName)
             return JSON.stringify(
-                await this.client?.tools.execute(toolName, {
+                await this.getComposio()?.tools.execute(toolName, {
                     arguments: kwargs[0] as Record<string, unknown>,
-                    entity_id: this.client.userId ?? this.DEFAULT_ENTITY_ID,
-                    connected_account_id: connectedAccountId,
+                    userId: this.getComposio().userId ?? this.DEFAULT_ENTITY_ID,
+                    connectedAccountId: connectedAccountId,
                 })
             );
         };
-
+        if (!tool.input_parameters) {
+            throw new Error("Tool input parameters are not defined");
+        }
         const parameters = jsonSchemaToModel(tool.input_parameters);
 
         // @TODO: Add escriiption an other stuff here
 
         return new DynamicStructuredTool({
             name: toolName,
-            description,
+            description: description || "",
             schema: parameters,
             func: func,
         });
@@ -59,7 +64,7 @@ export class LangchainToolset extends BaseComposioToolset<LangChainToolCollectio
      * @returns The tools.
      */
     async getTools(params?: ToolListParams): Promise<LangChainToolCollection> {
-        const tools = await this.client?.tools.list(params);
+        const tools = await this.getComposio()?.tools.getTools(params);
         return tools?.items.map((tool) => this._wrapTool(tool as Tool)) ?? [];
     }
 }

@@ -56,11 +56,11 @@ export class CloudflareToolset extends BaseComposioToolset<
    * @returns {Promise<Record<string, AiTextGenerationToolInput>>} The tools from the Cloudflare API.
    */
   override async getTools(query?: ToolListParams): Promise<AiToolCollection> {
-    if (!this.client) {
+    if (!this.getComposio()) {
       throw new Error('Client not set');
     }
 
-    const tools = await this.client.tools.list(query);
+    const tools = await this.getComposio().tools.getTools(query);
     return tools.items.reduce(
       (tools, tool) => ({
         ...tools,
@@ -80,17 +80,20 @@ export class CloudflareToolset extends BaseComposioToolset<
     tool: { name: string; arguments: unknown },
     userId?: string
   ): Promise<string> {
-    if (!this.client) {
+    if (!this.getComposio()) {
       throw new Error('Client not set');
     }
 
-    const toolSchema = await this.client.tools.get(tool.name);
+    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.name);
     const appName = toolSchema?.toolkit?.name.toLowerCase();
+    if (!appName) {
+      throw new Error('App name not found');
+    }
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
-    const results = await this.client?.tools.execute(toolSchema.slug, {
+    const results = await this.getComposio()?.tools.execute(toolSchema.slug, {
       arguments: args,
-      entity_id: userId ?? this.DEFAULT_ENTITY_ID,
-      connected_account_id: this.client?.getConnectedAccountId(appName),
+      userId: userId ?? this.DEFAULT_ENTITY_ID,
+      connectedAccountId: this.getComposio()?.getConnectedAccountId(appName),
     });
 
     return JSON.stringify(results);
