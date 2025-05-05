@@ -11,7 +11,6 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-
 // Fetch all the tools from the Composio API
 // these tools are automatically typed and wrapped with the OpenAI Toolset
 const tool = await composio.getToolBySlug('HACKERNEWS_GET_USER');

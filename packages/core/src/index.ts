@@ -1,30 +1,41 @@
 // Core exports
-import { Composio } from "./composio";
-import { ComposioToolset } from "./toolset/ComposioToolset";
-import { BaseComposioToolset } from "./toolset/BaseToolset";
-import type { Tool, ToolListParamsSchema, ToolListParams } from "./types/tool.types";
-import type { Toolset } from "./types/toolset.types";
+import { Composio } from './composio';
+import { ComposioToolset } from './toolset/ComposioToolset';
+import { BaseComposioToolset } from './toolset/BaseToolset';
+import type { Tool, ToolListParamsSchema, ToolListParams } from './types/tool.types';
+import type { Toolset } from './types/toolset.types';
 
 // Utils exports
-import { jsonSchemaToModel } from "./utils/jsonSchema";
+import { jsonSchemaToModel } from './utils/jsonSchema';
 
 // telemetry exports
-import type { InstrumentedInstance } from "./types/telemetry.types";
-import { BaseTelemetryTransport } from "./telemetry/TelemetryTransport";
+import type { InstrumentedInstance } from './types/telemetry.types';
+import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 
 // toolsets exports
-import { OpenAIToolset } from "./toolset/OpenAIToolset";
+import { OpenAIToolset } from './toolset/OpenAIToolset';
 
-export { 
-    Composio, 
-    ComposioToolset, 
-    BaseComposioToolset, 
-    Tool, 
-    ToolListParamsSchema, 
-    ToolListParams, 
-    Toolset, 
-    jsonSchemaToModel, 
-    InstrumentedInstance, 
-    BaseTelemetryTransport ,
-    OpenAIToolset
+// modifiers exports
+import type {
+  BeforeToolExecuteModifer,
+  AfterToolExecuteModifier,
+  TransformToolSchemaModifier,
+} from './types/modifiers.types';
+
+export {
+  Composio,
+  ComposioToolset,
+  BaseComposioToolset,
+  Tool,
+  ToolListParamsSchema,
+  ToolListParams,
+  Toolset,
+  jsonSchemaToModel,
+  InstrumentedInstance,
+  BaseTelemetryTransport,
+  OpenAIToolset,
+  // types
+  BeforeToolExecuteModifer,
+  AfterToolExecuteModifier,
+  TransformToolSchemaModifier,
 };
