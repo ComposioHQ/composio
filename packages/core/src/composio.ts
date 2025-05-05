@@ -124,7 +124,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
      * Set the default toolset, if not provided by the user.
      */
     this.toolset = (config.toolset ?? new ComposioToolset()) as TToolset;
-    this.toolset.setClient(this);
+    this.toolset.setComposio(this);
 
     /**
      * Modifiers are used to modify the tools and toolkits.
