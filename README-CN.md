@@ -96,14 +96,14 @@
 pip install composio-core
 ```
 
-安装“composio”包及其 openai 插件 `pip install composio-openai`.
+使用 `pip install composio-openai` 安装“composio”包及其 openai 插件。
 
 ### 2. 创建代理并执行工具
 
-使用 OpenAI 创建 AI 代理，并使用 Composio 的 GitHub 工具 star GitHub 仓库
+使用 OpenAI 创建 AI 代理，并使用 Composio 的 GitHub 工具 Star GitHub 仓库
 
 > [!NOTE]
-> 设置 COMPOSIO_API_KEY 和 OPENAI_API_KEY 环境变量.
+> 需要设置 COMPOSIO_API_KEY 和 OPENAI_API_KEY 环境变量.
 
 将你的 GitHub 帐户连接到 Composio
 ```bash
