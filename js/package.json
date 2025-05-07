@@ -40,7 +40,8 @@
     "@langchain/openai": ">=0.2.5",
     "ai": ">=3.2.22",
     "langchain": ">=0.2.11",
-    "openai": ">=4.50.0"
+    "openai": ">=4.50.0",
+    "@mastra/core": "0.9.1"
   },
   "dependencies": {
     "@composio/mcp": "1.0.3-0",

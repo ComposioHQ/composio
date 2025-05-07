@@ -1,10 +1,9 @@
+import { CoreTool, jsonSchemaToModel } from "@mastra/core";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { RawActionData } from "../types/base_toolset";
-import { jsonSchemaToModel, CoreTool } from "@mastra/core";
-import { Tool, createTool } from "@mastra/core/tools";
 
 type Optional<T> = T | null;
 
@@ -50,7 +49,7 @@ export class MastraToolSet extends BaseComposioToolSet {
       id: schema.name,
       description: schema.description,
       parameters: jsonSchemaToModel(schema["parameters"]),
-      execute: async (params: Record<string, any>, options: any) => {
+      execute: async (params) => {
         return await this.executeToolCall(
           {
             name: schema.name,
@@ -103,8 +102,11 @@ export class MastraToolSet extends BaseComposioToolSet {
     );
 
     const tools: { [key: string]: CoreTool } = {};
-    actionsList.forEach(actionSchema => {
-      tools[actionSchema.name!] = this.generateMastraTool(actionSchema, entityId);
+    actionsList.forEach((actionSchema) => {
+      tools[actionSchema.name!] = this.generateMastraTool(
+        actionSchema,
+        entityId
+      );
     });
 
     return tools;
