@@ -25,7 +25,8 @@
     "@langchain/core": ">=0.2.18",
     "@langchain/openai": ">=0.2.5",
     "langchain": ">=0.2.11",
-    "openai": ">=4.50.0"
+    "openai": ">=4.50.0",
+    "@mastra/core": "<=0.9.1"
   },
   "dependencies": {
     "chalk": "^4",
