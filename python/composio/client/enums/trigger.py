@@ -39,6 +39,7 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
 
         # TODO: client.triggers.endpoint is still v1, migrate that
         response = client.http.get(url=str(v2.triggers / self.slug)).json()
+
         # TOFIX: Return proper error code when of item is not found
         if "appName" not in response:
             return None

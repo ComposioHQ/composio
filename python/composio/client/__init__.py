@@ -67,6 +67,7 @@ class Composio:
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         runtime: t.Optional[str] = None,
+        check_cache: bool = True,
     ) -> None:
         """
         Initialize Composio SDK client
@@ -87,6 +88,13 @@ class Composio:
         self.connected_accounts = ConnectedAccounts(client=self)
         self.logs = Logs(client=self)
         _clients.append(self)
+
+        if check_cache:
+            from composio.client.utils import (  # pylint: disable=import-outside-toplevel
+                check_cache_refresh,
+            )
+
+            check_cache_refresh(self)
 
     @staticmethod
     def get_latest() -> "Composio":
