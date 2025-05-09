@@ -13,13 +13,7 @@ import {
   InputParamsSchema,
 } from '../types/customTool.types';
 import zodToJsonSchema from 'zod-to-json-schema';
-import {
-  Tool,
-  ToolExecuteParams,
-  ToolExecuteResponse,
-  ToolList,
-  ToolListResponse,
-} from '../types/tool.types';
+import { Tool, ToolExecuteResponse, ToolList } from '../types/tool.types';
 import { ToolProxyParams } from '@composio/client/resources/tools';
 
 export class CustomTools {
