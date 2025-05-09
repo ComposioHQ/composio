@@ -36,8 +36,6 @@ export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown
  */
 export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
   private readonly DEFAULT_USER_ID = 'default';
-  readonly FILE_NAME = 'core/composio.ts';
-
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -81,7 +79,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    * @param {string} config.runtime The runtime for the Composio SDK.
    * @param {boolean} config.allowTracking Whether to allow analytics / tracking. Defaults to true.
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
-   * @param {TS} config.toolset The toolset to use for this Composio instance.
+   * @param {TToolset} config.toolset The toolset to use for this Composio instance.
    */
   constructor(config: ComposioConfig<TToolset>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(

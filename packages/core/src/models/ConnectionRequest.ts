@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Connection request class for Composio SDK, used to manage an initiated connection request.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-05-05
+ * @module ConnectionRequest
+ */
 import ComposioClient from '@composio/client';
 import {
   ConnectedAccountStatus,
@@ -23,8 +30,8 @@ export class ConnectionRequest {
 
   /**
    * Transform the response from the Composio API to the SDK format
-   * @param response 
-   * @returns 
+   * @param response
+   * @returns
    */
   private async transformResponse(
     response: OriginalConnectedAccountResponse
@@ -47,10 +54,10 @@ export class ConnectionRequest {
   }
 
   /**
-   * Wait for the connection to be established. 
+   * Wait for the connection to be established.
    * The function will poll the Composio API every second until the connection is established or the timeout is reached.
    * @param {number} timeout - The time in milliseconds to wait for the connection to be established. Default is 30 seconds.
-   * @returns 
+   * @returns
    */
   async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
     if (this.connectedAccountStatus === ConnectedAccountStatuses.ACTIVE) {
@@ -78,5 +85,4 @@ export class ConnectionRequest {
       }, timeout);
     });
   }
-
 }

@@ -138,7 +138,10 @@ export class Modifiers {
   }
 
   /**
-   * Function signature for modifying the tool schema.
+   * Function signatures for modifying the tool schema.
+   * We support two ways to register modifiers:
+   * 1. useTransformToolSchema(globalModifier: GlobalTransformToolSchemaModifier): void
+   * 2. useTransformToolSchema(toolSlug: string, modifier: TransformToolSchemaModifier): void
    */
   useTransformToolSchema(globalModifier: GlobalTransformToolSchemaModifier): void;
   useTransformToolSchema(toolSlug: string, modifier: TransformToolSchemaModifier): void;

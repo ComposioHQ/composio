@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Connected accounts class for Composio SDK, used to manage connected accounts of a user.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-05-05
+ * @module ConnectedAccounts
+ */
 import ComposioClient from '@composio/client';
 import { RequestOptions } from '@composio/client/internal/request-options';
 import {

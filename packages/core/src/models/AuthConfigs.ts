@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Auth configs class for Composio SDK, used to manage authentication configurations.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-05-05
+ * @module AuthConfigs
+ */
 import ComposioClient from '@composio/client';
 import { RequestOptions } from '@composio/client/internal/request-options';
 import {

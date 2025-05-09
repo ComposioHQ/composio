@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Custom tools class for Composio SDK, used to manage custom tools created by users.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-05-05
+ * @module CustomTools
+ */
 import ComposioClient from '@composio/client';
 import {
   CustomToolOptions,
@@ -96,10 +103,10 @@ export class CustomTools {
    * @param {string} slug The slug of the tool to get
    * @returns {Tool} The tool
    */
-  async getCustomToolBySlug(slug: string): Promise<Tool> {
+  async getCustomToolBySlug(slug: string): Promise<Tool | null> {
     const tool = this.customToolsRegistry.get(slug.toLowerCase());
     if (!tool) {
-      throw new Error(`Tool with slug ${slug} not found`);
+      return null;
     }
     return tool.schema;
   }
@@ -125,6 +132,13 @@ export class CustomTools {
       : connectedAccounts.items[0];
   }
 
+  /**
+   * Execute a custom tool
+   * @param {slug} slug The slug of the tool to execute
+   * @param {Record<string, unknown>} inputParams The input parameters for the tool
+   * @param {ExecuteMetadata} metadata The metadata of the execution
+   * @returns {Promise<ToolExecuteResponse>} The response from the tool
+   */
   async executeCustomTool(
     slug: string,
     inputParams: Record<string, unknown>,
@@ -137,6 +151,7 @@ export class CustomTools {
 
     let authCredentials: Record<string, unknown> = {};
     const { toolkitSlug, execute } = tool.options;
+    // if a toolkit is used, get the connected account, and auth credentials
     if (toolkitSlug) {
       const connectedAccount = await this.getConnectedAccount(toolkitSlug, metadata);
       if (!connectedAccount) {
