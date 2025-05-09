@@ -4,7 +4,6 @@ import {
   ToolExecuteParams,
   ToolListParamsSchema,
   ToolExecuteResponse,
-  ToolListResponse,
   ToolList,
 } from '../types/tool.types';
 import {

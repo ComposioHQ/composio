@@ -1,17 +1,15 @@
-import { z, ZodObject, ZodString, ZodNumber, ZodBoolean, ZodArray, ZodOptional } from 'zod';
-import { Tool, ToolExecuteParams, ToolExecuteResponse } from './tool.types';
+import { z, ZodObject, ZodString, ZodNumber, ZodBoolean, ZodOptional } from 'zod';
+import { Tool, ToolExecuteResponse } from './tool.types';
 import { ToolProxyParams, ToolProxyResponse } from '@composio/client/resources/tools';
 import { JsonSchema7Type } from 'zod-to-json-schema';
 
-export type CustomToolInputParameter =
-  | ZodObject<{
-      [key: string]:
-        | ZodString
-        | ZodNumber
-        | ZodBoolean
-        | ZodOptional<ZodString | ZodNumber | ZodBoolean>;
-    }>
-  | ZodObject<{}>;
+export type CustomToolInputParameter = ZodObject<{
+  [key: string]:
+    | ZodString
+    | ZodNumber
+    | ZodBoolean
+    | ZodOptional<ZodString | ZodNumber | ZodBoolean>;
+}>;
 
 export type CustomToolInput<T extends CustomToolInputParameter> = {
   [K in keyof z.infer<T>]: z.infer<T>[K];
