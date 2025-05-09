@@ -335,7 +335,6 @@ class Entity:
             )
 
         latest_account = None
-        latest_creation_date = datetime.fromtimestamp(0.0)
         connected_accounts = self.client.connected_accounts.get(
             entity_ids=[self.id],
             active=True,
@@ -343,12 +342,8 @@ class Entity:
         app = str(app).lower()
         for connected_account in connected_accounts:
             if app == connected_account.appUniqueId:
-                creation_date = datetime.fromisoformat(
-                    connected_account.createdAt.replace("Z", "+00:00")
-                )
-                if latest_account is None or creation_date < latest_creation_date:
-                    latest_creation_date = creation_date
-                    latest_account = connected_account
+                latest_account = connected_account
+                break
 
         if latest_account is None:
             entity = self.id
