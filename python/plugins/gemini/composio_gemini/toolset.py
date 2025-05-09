@@ -52,7 +52,7 @@ class ComposioToolSet(
         self,
         schema: ActionModel,
         entity_id: t.Optional[str] = None,
-        skip_default: bool = False,
+        skip_default: bool = True,
     ) -> t.Callable:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
 
