@@ -11,6 +11,43 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
+composio.useBeforeToolExecute('HACKERNEWS_GET_USER', params => {
+  if (params.arguments) {
+    // Modify the arguments before executing the tool
+    params.arguments = {
+      ...params.arguments,
+      username: 'haxzie',
+    };
+  }
+  return params;
+});
+
+composio.useBeforeToolExecute((toolSlug, params) => {
+  switch (toolSlug) {
+    case 'HACKERNEWS_GET_USER':
+      if (params.arguments) {
+        // Modify the arguments before executing the tool
+        params.arguments = {
+          ...params.arguments,
+          username: 'haxzie',
+        };
+      }
+      break;
+    default:
+      break;
+  }
+  return params;
+});
+
+const connectionRequest = await composio.createConnectedAccount({
+  authConfig: {
+    id: 'HACKERNEWS',
+  },
+  connection: {},
+});
+
+const connectedAccount = await connectionRequest.waitForConnection();
+
 // Fetch all the tools from the Composio API
 // these tools are automatically typed and wrapped with the OpenAI Toolset
 const tool = await composio.getToolBySlug('HACKERNEWS_GET_USER');

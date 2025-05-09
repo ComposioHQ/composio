@@ -8,14 +8,6 @@ export const TELEMETRY_EVENTS = {
 export type TelemetryEvent = (typeof TELEMETRY_EVENTS)[keyof typeof TELEMETRY_EVENTS];
 
 /**
- * Interface for any instance that extends InstrumentedInstance.
- * Classess implementing this interface will be instrumented for telemetry.
- */
-export interface InstrumentedInstance {
-  FILE_NAME: string;
-}
-
-/**
  * Metadata for the telemetry.
  */
 export type TelemetryMetadata = {

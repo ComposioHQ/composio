@@ -1,15 +1,11 @@
-import ComposioClient from "@composio/client";
-import { RequestOptions } from "@composio/client/internal/request-options";
+import ComposioClient from '@composio/client';
+import { RequestOptions } from '@composio/client/internal/request-options';
 import {
   ToolkitListParams,
   ToolkitListResponse,
   ToolkitRetrieveCategoriesResponse,
   ToolkitRetrieveResponse,
-} from "@composio/client/resources/toolkits";
-import { InstrumentedInstance } from "../types/telemetry.types";
-
-
-
+} from '@composio/client/resources/toolkits';
 
 /**
  * Toolkits class
@@ -17,8 +13,7 @@ import { InstrumentedInstance } from "../types/telemetry.types";
  * Toolkits are a collection of tools that can be used to perform various tasks.
  * This is similar/replacement of `apps` in the Composio API.
  */
-export class Toolkits implements InstrumentedInstance {
-  readonly FILE_NAME: string = "core/models/Toolkits.ts";
+export class Toolkits {
   private client: ComposioClient;
 
   constructor(client: ComposioClient) {
@@ -43,10 +38,7 @@ export class Toolkits implements InstrumentedInstance {
    * @param options - Request options
    * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
    */
-  async getToolkitBySlug(
-    slug: string,
-    options?: RequestOptions
-  ): Promise<ToolkitRetrieveResponse> {
+  async getToolkitBySlug(slug: string, options?: RequestOptions): Promise<ToolkitRetrieveResponse> {
     return this.client.toolkits.retrieve(slug, options);
   }
 
@@ -55,9 +47,7 @@ export class Toolkits implements InstrumentedInstance {
    *
    * @returns {Promise<ToolkitRetrieveCategoriesResponse>} List of categories
    */
-  async listCategories(
-    options?: RequestOptions
-  ): Promise<ToolkitRetrieveCategoriesResponse> {
+  async listCategories(options?: RequestOptions): Promise<ToolkitRetrieveCategoriesResponse> {
     return this.client.toolkits.retrieveCategories(options);
   }
 }

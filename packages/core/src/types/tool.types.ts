@@ -9,7 +9,7 @@ import { z } from 'zod';
 export const ToolkitSchema = z.object({
   slug: z.string().describe('The slug of the toolkit'),
   name: z.string().describe('The name of the toolkit'),
-  logo: z.string().describe('The logo of the toolkit'),
+  logo: z.string().describe('The logo of the toolkit').optional(),
 });
 export type Toolkit = z.infer<typeof ToolkitSchema>;
 
@@ -23,11 +23,11 @@ export const ToolSchema = z.object({
   slug: z.string().describe('The slug of the tool. eg. "GOOGLE_SEARCH"'),
   name: z.string().describe(`The name of the tool. eg. "Google Search"`),
   description: z.string().optional().describe('The description of the tool'),
-  input_parameters: z
+  inputParameters: z
     .record(z.string(), z.unknown())
     .optional()
     .describe('The input parameters of the tool'),
-  output_parameters: z
+  outputParameters: z
     .record(z.string(), z.unknown())
     .optional()
     .describe('The output parameters of the tool'),
@@ -38,22 +38,19 @@ export const ToolSchema = z.object({
 export type Tool = z.infer<typeof ToolSchema>;
 
 /**
- * BaseTool is the base type for all tools.
+ * ToolListResponse Schema
  */
-export const BaseToolSchema = z.object({
-  name: z.string().describe('The name of the tool'),
-  description: z.string().optional().describe('The description of the tool'),
-  inpputParameters: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe('The input parameters of the tool'),
-  outputParameters: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe('The output parameters of the tool'),
+export const ToolListResponseSchema = z.object({
+  items: z.array(ToolSchema),
+  nextCursor: z.string().nullable().optional(),
+  totalPages: z.number(),
 });
-export type BaseTool = z.infer<typeof BaseToolSchema>;
-export type ToolType<T extends BaseTool> = T;
+export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
+
+/**
+ * Plain SDK level Tool List
+ */
+export type ToolList = Array<Tool>;
 
 /**
  * ToolListParams is the parameters for the list of tools.
@@ -64,6 +61,7 @@ export const ToolListParamsSchema = z.object({
   limit: z.string().optional(),
   search: z.string().optional(),
   toolkitSlug: z.string().optional(),
+  toolSlugs: z.array(z.string()).optional(),
 });
 export type ToolListParams = z.infer<typeof ToolListParamsSchema>;
 
@@ -97,7 +95,6 @@ export const ToolExecuteParamsSchema = z.object({
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
 
-
 /**
  * ToolResponse Schema
  */
@@ -105,7 +102,7 @@ export const ToolExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   successful: z.boolean(),
-  log_id: z.string().optional(),
-  session_info: z.unknown().optional(),
+  logId: z.string().optional(),
+  sessionInfo: z.unknown().optional(),
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;

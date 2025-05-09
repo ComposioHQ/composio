@@ -37,6 +37,7 @@
     "@composio/client": "0.1.0-alpha.9",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.5"
   }
 }

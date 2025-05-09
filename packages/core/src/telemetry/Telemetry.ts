@@ -1,9 +1,4 @@
-import {
-  InstrumentedInstance,
-  TELEMETRY_EVENTS,
-  TelemetryMetadata,
-  TelemetryPayload,
-} from '../types/telemetry.types';
+import { TELEMETRY_EVENTS, TelemetryMetadata, TelemetryPayload } from '../types/telemetry.types';
 import { TELEMETRY_URL } from '../utils/constants';
 import { getEnvVariable } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
@@ -27,7 +22,7 @@ import { ProcessTelemetryTransport } from './transports/ProcessTransport';
  * telemetry.instrumentTelemetry(composio.triggers);
  *
  */
-export class Telemetry<U extends InstrumentedInstance> {
+export class Telemetry {
   private telemetryMetadata: TelemetryMetadata;
   private transport: BaseTelemetryTransport;
 
@@ -66,7 +61,7 @@ export class Telemetry<U extends InstrumentedInstance> {
    * @param fileName - the file name of the instance
    * @returns
    */
-  instrumentTelemetry(instance: U, fileName?: string) {
+  instrumentTelemetry<T extends object>(instance: T, fileName?: string) {
     const proto = Object.getPrototypeOf(instance);
     const methodNames = Object.getOwnPropertyNames(proto).filter(key => {
       const descriptor = Object.getOwnPropertyDescriptor(proto, key);
@@ -77,16 +72,19 @@ export class Telemetry<U extends InstrumentedInstance> {
         descriptor.value.constructor.name === 'AsyncFunction'
       );
     });
+    // use the constructor name if available, otherwise use the file name
+    const instrumentedClassName = instance.constructor?.name || fileName || 'unknown';
 
     for (const name of methodNames) {
       const originalMethod = (instance as unknown as Record<string, Function>)[name] as (
         ...args: unknown[]
       ) => Promise<unknown>;
+
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
         const telemetryPayload: TelemetryPayload = {
           eventName: TELEMETRY_EVENTS.SDK_METHOD_INVOKED,
           data: {
-            fileName: instance.FILE_NAME ?? fileName ?? 'unknown',
+            fileName: instrumentedClassName,
             method: name,
             params: args,
           },
@@ -101,7 +99,7 @@ export class Telemetry<U extends InstrumentedInstance> {
           const telemetryPayload: TelemetryPayload = {
             eventName: TELEMETRY_EVENTS.SDK_METHOD_ERROR,
             data: {
-              fileName: instance.FILE_NAME ?? fileName ?? 'unknown',
+              fileName: instrumentedClassName,
               method: name,
               params: args,
               error: error,

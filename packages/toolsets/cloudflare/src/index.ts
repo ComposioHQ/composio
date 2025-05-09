@@ -18,10 +18,6 @@ export class CloudflareToolset extends BaseComposioToolset<
   AiToolCollection,
   AiTextGenerationToolInput
 > {
-  readonly FILE_NAME: string = 'toolsets/cloudflare/src/index.ts';
-
-  static FRAMEWORK_NAME = 'cloudflare';
-
   /**
    * Abstract method to wrap a tool in the toolset.
    * This method is implemented by the toolset.
@@ -32,7 +28,7 @@ export class CloudflareToolset extends BaseComposioToolset<
     const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
       description: tool.description!,
-      parameters: tool.input_parameters as unknown as {
+      parameters: tool.inputParameters as unknown as {
         type: 'object';
         properties: {
           [key: string]: {
@@ -61,10 +57,10 @@ export class CloudflareToolset extends BaseComposioToolset<
     }
 
     const tools = await this.getComposio().tools.getTools(query);
-    return tools.items.reduce(
+    return tools.reduce(
       (tools, tool) => ({
         ...tools,
-        [tool.slug]: this._wrapTool(tool as Tool),
+        [tool.slug]: this._wrapTool(tool),
       }),
       {}
     );

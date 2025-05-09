@@ -13,7 +13,6 @@ import {
   GlobalTransformToolSchemaModifier,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
-import { InstrumentedInstance } from '../types/telemetry.types';
 import { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 
 /**
@@ -22,8 +21,7 @@ import { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.type
  * This class is used to manage the modifiers for the tools in the Composio SDK.
  * It provides methods to add before and after execution modifiers, as well as schema transformation modifiers.
  */
-export class Modifiers implements InstrumentedInstance {
-  readonly FILE_NAME: string = 'core/models/Modifiers.ts';
+export class Modifiers {
   private beforeToolExecuteModifiers: Map<string, Set<BeforeToolExecuteModifer>> = new Map();
   private globalBeforeToolExecuteModifiers: Set<GlobalBeforeToolExecuteModifier> = new Set();
   private afterToolExecuteModifiers: Map<string, Set<AfterToolExecuteModifier>> = new Map();
@@ -149,7 +147,10 @@ export class Modifiers implements InstrumentedInstance {
    * @param {string} toolSlug slug of the tool to be modified
    * @param modifier function to modify the tool schema
    */
-  useTransformToolSchema(arg1: string | GlobalTransformToolSchemaModifier, modifier?: TransformToolSchemaModifier) {
+  useTransformToolSchema(
+    arg1: string | GlobalTransformToolSchemaModifier,
+    modifier?: TransformToolSchemaModifier
+  ) {
     if (typeof arg1 === 'string' && modifier) {
       const toolSlug = arg1;
       if (!this.transformToolSchemaModifiers.has(toolSlug)) {

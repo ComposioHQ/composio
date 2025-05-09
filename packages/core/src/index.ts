@@ -9,7 +9,6 @@ import type { Toolset } from './types/toolset.types';
 import { jsonSchemaToModel } from './utils/jsonSchema';
 
 // telemetry exports
-import type { InstrumentedInstance } from './types/telemetry.types';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 
 // toolsets exports
@@ -31,7 +30,6 @@ export {
   ToolListParams,
   Toolset,
   jsonSchemaToModel,
-  InstrumentedInstance,
   BaseTelemetryTransport,
   OpenAIToolset,
   // types

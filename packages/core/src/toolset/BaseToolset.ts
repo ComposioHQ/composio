@@ -18,7 +18,6 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
   implements Toolset<TTool, TToolCollection>
 {
   protected composio: Composio<this> | undefined;
-  abstract FILE_NAME: string;
   protected DEFAULT_ENTITY_ID = 'default';
 
   /**

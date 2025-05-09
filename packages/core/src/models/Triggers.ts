@@ -12,7 +12,6 @@ import {
   TriggersTypeRetrieveResponse,
 } from '@composio/client/resources/index';
 import { TriggerStatusEnum, TriggerSubscribeParams } from '../types/triggers.types';
-import { InstrumentedInstance } from '../types/telemetry.types';
 import { PusherUtils, TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
 import { Session } from './Session';
@@ -22,8 +21,7 @@ import { Session } from './Session';
  * /api/v3/trigger_instances
  *
  */
-export class Triggers implements InstrumentedInstance {
-  readonly FILE_NAME: string = 'core/models/Triggers.ts';
+export class Triggers {
   private client: ComposioClient;
 
   constructor(client: ComposioClient) {

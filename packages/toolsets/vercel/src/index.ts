@@ -16,9 +16,6 @@ import { jsonSchema, tool } from 'ai';
 
 type VercelToolCollection = Record<string, VercelTool>;
 export class VercelToolset extends BaseComposioToolset<VercelToolCollection, VercelTool> {
-  readonly FILE_NAME = 'toolsets/vercel/src/index.ts';
-  static readonly FRAMEWORK_NAME = 'vercel';
-
   /**
    * Get all the tools from the client.
    * Override the default implementation to return a record of tools.
@@ -31,7 +28,7 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
       throw new Error('Client not initialized');
     }
     const tools = await this.getComposio().tools.getTools(params);
-    return tools.items.reduce(
+    return tools.reduce(
       (tools, tool) => ({
         ...tools,
         [tool.slug]: this._wrapTool(tool as ComposioTool),
@@ -70,7 +67,7 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
   _wrapTool(composioTool: ComposioTool): VercelTool {
     return tool({
       description: composioTool.description,
-      parameters: jsonSchema(composioTool.input_parameters ?? {}),
+      parameters: jsonSchema(composioTool.inputParameters ?? {}),
       execute: async params => {
         return await this.executeToolCall(
           {

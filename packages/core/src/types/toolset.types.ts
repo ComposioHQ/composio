@@ -1,12 +1,11 @@
-import { InstrumentedInstance } from './telemetry.types';
-import { Tool, BaseTool, ToolListParams } from './tool.types';
+import { Tool, ToolListParams } from './tool.types';
 
 /**
  * Base toolset implementation, which needs to be implemented by the extended class.
  * This class is used to create a base toolset by implementing this class.
  * This class also extends InstrumentedInstance, so that the telemetry can be instrumented for the toolset.
  */
-export interface Toolset<TTool = BaseTool, TToolCollection = TTool[]> extends InstrumentedInstance {
+export interface Toolset<TTool = Tool, TToolCollection = TTool[]> {
   _wrapTool: (tool: Tool) => TTool;
   getTools: (params?: ToolListParams) => Promise<TToolCollection>;
 }
@@ -20,4 +19,3 @@ export type WrappedTool<TToolset> = TToolset extends {
 }
   ? TTool
   : never;
-

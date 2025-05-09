@@ -1,0 +1,163 @@
+import ComposioClient from '@composio/client';
+import {
+  CustomToolOptions,
+  CustomToolRegistry,
+  ExecuteMetadata,
+  InputParamsSchema,
+} from '../types/customTool.types';
+import zodToJsonSchema from 'zod-to-json-schema';
+import {
+  Tool,
+  ToolExecuteParams,
+  ToolExecuteResponse,
+  ToolList,
+  ToolListResponse,
+} from '../types/tool.types';
+import { ToolProxyParams } from '@composio/client/resources/tools';
+
+export class CustomTools {
+  private client: ComposioClient;
+  private customToolsRegistry: CustomToolRegistry = new Map();
+
+  constructor(client: ComposioClient) {
+    this.client = client;
+  }
+
+  /**
+   * Create a custom tool and registers it in the registry.
+   * This is just an in memory registry and is not persisted.
+   * @param {CustomToolOptions} toolOptions CustomToolOptions
+   * @returns {Tool} The tool created
+   */
+  async createTool(toolOptions: CustomToolOptions): Promise<Tool> {
+    const { slug, execute, inputParams, name, description } = toolOptions;
+    if (!slug || !execute || !inputParams || !name) {
+      throw new Error('Invalid tool options');
+    }
+    // generate the input parameters schema
+    const paramsSchema: InputParamsSchema = (await zodToJsonSchema(inputParams, {
+      name: 'input',
+    })) as InputParamsSchema;
+    const paramsSchemaJson = paramsSchema.definitions.input;
+    const toolSchema: Tool = {
+      name: name,
+      slug: slug,
+      description: description,
+      inputParameters: {
+        title: name,
+        type: 'object',
+        description: description,
+        properties: paramsSchemaJson.properties,
+        required: paramsSchemaJson.required,
+      },
+      // the output parameters are not used yet
+      outputParameters: {
+        type: 'object',
+        title: `Response for ${name}`,
+        properties: [],
+      },
+      tags: [],
+      toolkit: { name: 'custom', slug: 'custom' },
+    };
+
+    this.customToolsRegistry.set(slug.toLowerCase(), {
+      options: toolOptions,
+      schema: toolSchema,
+    });
+    return toolSchema;
+  }
+
+  /**
+   * Get all the custom tools from the registry.
+   * @param {string[]} param0.toolSlugs The slugs of the tools to get
+   * @returns {ToolList} The list of tools
+   */
+  async getCustomTools({ toolSlugs }: { toolSlugs?: string[] }): Promise<ToolList> {
+    const tools: Tool[] = [];
+
+    if (toolSlugs) {
+      // If specific slugs are provided, only return those tools
+      for (const slug of toolSlugs) {
+        const tool = this.customToolsRegistry.get(slug.toLowerCase());
+        if (tool) {
+          tools.push(tool.schema);
+        }
+      }
+    } else {
+      // If no slugs provided, return all tools
+      return Array.from(this.customToolsRegistry.values()).map(tool => tool.schema);
+    }
+
+    return tools;
+  }
+
+  /**
+   * Get a custom tool by slug from the registry.
+   * @param {string} slug The slug of the tool to get
+   * @returns {Tool} The tool
+   */
+  async getCustomToolBySlug(slug: string): Promise<Tool> {
+    const tool = this.customToolsRegistry.get(slug.toLowerCase());
+    if (!tool) {
+      throw new Error(`Tool with slug ${slug} not found`);
+    }
+    return tool.schema;
+  }
+
+  /**
+   * Get the connected account for the user and toolkit.
+   * @param {string} toolkitSlug The slug of the toolkit
+   * @param {ExecuteMetadata} metadata The metadata of the execution
+   * @returns {ConnectedAccount} The connected account
+   */
+  private async getConnectedAccount(toolkitSlug: string, metadata: ExecuteMetadata) {
+    const connectedAccounts = await this.client.connectedAccounts.list({
+      toolkit_slug: toolkitSlug,
+      user_id: metadata.userId,
+    });
+
+    if (!connectedAccounts.items.length) {
+      throw new Error(`No connected accounts found for toolkit ${toolkitSlug}`);
+    }
+
+    return metadata.connectedAccountId
+      ? connectedAccounts.items.find(item => item.id === metadata.connectedAccountId)
+      : connectedAccounts.items[0];
+  }
+
+  async executeCustomTool(
+    slug: string,
+    inputParams: Record<string, unknown>,
+    metadata: ExecuteMetadata
+  ): Promise<ToolExecuteResponse> {
+    const tool = this.customToolsRegistry.get(slug.toLowerCase());
+    if (!tool) {
+      throw new Error(`Tool with slug ${slug} not found`);
+    }
+
+    let authCredentials: Record<string, unknown> = {};
+    const { toolkitSlug, execute } = tool.options;
+    if (toolkitSlug) {
+      const connectedAccount = await this.getConnectedAccount(toolkitSlug, metadata);
+      if (!connectedAccount) {
+        throw new Error(
+          `Connected account not found for toolkit ${toolkitSlug} for user ${metadata.userId}`
+        );
+      }
+      authCredentials = connectedAccount.data?.connectionParams as Record<string, unknown>;
+    }
+
+    if (typeof execute !== 'function') {
+      throw new Error('Invalid execute function');
+    }
+    // create a tool proxy request for users to execute in case of a toolkit being used
+    const executeToolRequest = async (data: ToolProxyParams) => {
+      return this.client.tools.proxy({
+        ...data,
+        connected_account_id: metadata.connectedAccountId,
+      });
+    };
+
+    return execute(inputParams, authCredentials, executeToolRequest);
+  }
+}

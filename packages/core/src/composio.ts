@@ -9,7 +9,7 @@ import { ToolListParams } from '@composio/client/resources/tools';
 import { BaseComposioToolset } from './toolset/BaseToolset';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
-import type { InstrumentedInstance, TelemetryMetadata } from './types/telemetry.types';
+import type { TelemetryMetadata } from './types/telemetry.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -50,7 +50,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    */
   private config: ComposioConfig<TToolset>;
 
-  private telemetry: Telemetry<InstrumentedInstance> | undefined;
+  private telemetry: Telemetry | undefined;
 
   /**
    * Context variables for the Composio SDK.
@@ -66,7 +66,9 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   triggers: Triggers;
   toolset: TToolset;
   authConfigs: AuthConfigs;
+  // connected accounts
   connectedAccounts: ConnectedAccounts;
+  createConnectedAccount: ConnectedAccounts['createConnectedAccount'];
   modifiers: Modifiers;
   useBeforeToolExecute: Modifiers['useBeforeToolExecute'];
   useAfterToolExecute: Modifiers['useAfterToolExecute'];
@@ -142,7 +144,10 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
+
+    // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.createConnectedAccount = this.connectedAccounts.createConnectedAccount;
 
     /**
      * Initialize the client telemetry.
@@ -178,6 +183,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
      */
     this.telemetry.instrumentTelemetry(this);
     this.telemetry.instrumentTelemetry(this.tools);
+    this.telemetry.instrumentTelemetry(this.modifiers);
     this.telemetry.instrumentTelemetry(this.toolkits);
     this.telemetry.instrumentTelemetry(this.triggers);
     this.telemetry.instrumentTelemetry(this.authConfigs);
