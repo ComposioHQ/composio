@@ -3,7 +3,9 @@ from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.groq import Groq
 from llama_index.llms.openai import OpenAI
+from llama_index.llms.openrouter import OpenRouter
 from dotenv import load_dotenv
+import os
 
 # Load environment variables
 load_dotenv()
@@ -11,8 +13,8 @@ load_dotenv()
 # Initialize toolset and LLM
 toolset = ComposioToolSet()
 tools = toolset.get_tools(actions=[Action.EXA_SEARCH, Action.EXA_SIMILARLINK, Action.GOOGLEDOCS_CREATE_DOCUMENT])
-
-function_calling_llm = OpenAI(model="o1")
+print(os.getenv('OPENROUTER_API_KEY'))
+function_calling_llm = OpenRouter(model="qwen/qwen3-32b", api_key=os.getenv('OPENROUTER_API_KEY'))
 
 # Setup chatbot-style prefix messages
 def create_prefix_message():

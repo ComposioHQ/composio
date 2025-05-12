@@ -1,8 +1,8 @@
 """Image clipboard actions."""
 
 import base64
-import os
 import logging
+import os
 import tempfile
 import typing as t
 from pathlib import Path
@@ -16,6 +16,7 @@ from composio.tools.local.clipboardtool.actions.base_action import (
     BaseClipboardResponse,
     get_clipboard_state,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class CopyImage(LocalAction[CopyImageRequest, CopyImageResponse]):
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             temp_path = temp_file.name
             temp_file.close()
-            
+
             logger.debug(f"Saving temp file to {temp_path}")
             image.save(temp_path)  # PIL needs a file to copy to clipboard
 
