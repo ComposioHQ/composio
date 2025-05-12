@@ -1,7 +1,6 @@
 import type { Toolset } from '../types/toolset.types';
-import type { CustomAuthParams, Tool, ToolListParams } from '../types/tool.types';
+import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
-import { ComposioError } from '../utils/error';
 import { ModifiersParams } from '../types/modifiers.types';
 
 /**

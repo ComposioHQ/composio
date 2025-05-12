@@ -4,11 +4,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import {
-  BaseComposioToolset,
-  BaseAgenticToolset,
-  BaseNonAgenticToolset,
-} from './toolset/BaseToolset';
+import { BaseAgenticToolset, BaseNonAgenticToolset } from './toolset/BaseToolset';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';

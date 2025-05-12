@@ -5,7 +5,6 @@ import {
   ToolListParamsSchema,
   ToolExecuteResponse,
   ToolList,
-  ToolListResponse,
   ToolSchema,
 } from '../types/tool.types';
 import {
@@ -23,11 +22,8 @@ import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
 import {
   ExecuteToolModifiersParams,
-  GlobalAfterToolExecuteModifier,
-  GlobalBeforeToolExecuteModifier,
   GlobalTransformToolSchemaModifier,
 } from '../types/modifiers.types';
-import { ToolkitListResponse } from '@composio/client/resources/toolkits';
 
 /**
  * This class is used to manage tools in the Composio SDK.

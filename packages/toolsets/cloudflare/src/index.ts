@@ -13,7 +13,6 @@ import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
 import { BaseNonAgenticToolset, Tool, ToolListParams } from '@composio/core';
 import {
   ExecuteToolModifiersParams,
-  GlobalTransformToolSchemaModifier,
   ModifiersParams,
 } from 'packages/core/src/types/modifiers.types';
 
