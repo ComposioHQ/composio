@@ -40,7 +40,7 @@ export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
 /**
  * Base class for agentic toolsets that support full modifier capabilities
  * This is used for toolsets that need to handle tool execution modifiers
- * eg: Vercel, Cloudflare, etc.
+ * eg: Vercel, Langchain, etc.
  */
 export abstract class BaseAgenticToolset<TToolCollection, TTool>
   implements Toolset<TTool, TToolCollection>
