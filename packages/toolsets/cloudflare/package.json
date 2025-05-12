@@ -34,6 +34,6 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250416.0",
-    "@composio/core": "^0.1.0-rc.1"
+    "@composio/core": "workspace:*"
   }
 }

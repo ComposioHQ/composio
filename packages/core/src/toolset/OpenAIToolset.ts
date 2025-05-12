@@ -1,7 +1,7 @@
 /**
  * OpenAI ToolSet
  *
- * Author: @haxzie
+ * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/openai.ts
  *
  * This is a default toolset for Composio SDK.
@@ -9,24 +9,25 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseComposioToolset } from './BaseToolset';
+import { BaseNonAgenticToolset } from './BaseToolset';
 import { Tool, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
+import { ModifiersParams } from '../types/modifiers.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
-export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, OpenAiTool> {
+export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, OpenAiTool> {
   /**
    * Absract method to wrap a tool in the toolset.
    * This method is implemented by the toolset.
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  _wrapTool = (tool: Tool): OpenAiTool => {
+  override _wrapTool = (tool: Tool): OpenAiTool => {
     const formattedSchema: OpenAI.FunctionDefinition = {
-      name: tool.slug!,
-      description: tool.description!,
-      parameters: tool.inputParameters!,
+      name: tool.slug,
+      description: tool.description,
+      parameters: tool.inputParameters,
     };
     return {
       type: 'function',
@@ -37,11 +38,23 @@ export class OpenAIToolset extends BaseComposioToolset<OpenAiToolCollection, Ope
   /**
    * Get all the tools from the Composio in OpenAI format.
    * @param params - The parameters for the tool list.
+   * @param modifiers - Optional modifiers to transform tool schemas
    * @returns The tools.
    */
-  async getTools(params?: ToolListParams): Promise<OpenAiToolCollection> {
-    const tools = await this.getComposio()?.tools.getTools(params);
+  async getTools(
+    params?: ToolListParams,
+    modifiers?: Pick<ModifiersParams, 'schema'>
+  ): Promise<OpenAiToolCollection> {
+    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
     return tools?.map(tool => this._wrapTool(tool as Tool)) ?? [];
+  }
+
+  async getToolBySlug(
+    slug: string,
+    modifiers?: Pick<ModifiersParams, 'schema'>
+  ): Promise<OpenAiTool> {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this._wrapTool(tool);
   }
 
   /**

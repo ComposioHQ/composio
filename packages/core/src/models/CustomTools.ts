@@ -7,6 +7,8 @@
  */
 import ComposioClient from '@composio/client';
 import {
+  CustomToolInput,
+  CustomToolInputParameter,
   CustomToolOptions,
   CustomToolRegistry,
   ExecuteMetadata,
@@ -167,6 +169,10 @@ export class CustomTools {
       });
     };
 
-    return execute(inputParams, authCredentials, executeToolRequest);
+    return execute(
+      inputParams as CustomToolInput<CustomToolInputParameter>,
+      authCredentials,
+      executeToolRequest
+    );
   }
 }

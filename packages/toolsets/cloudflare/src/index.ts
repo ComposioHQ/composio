@@ -1,7 +1,7 @@
 /**
  * Cloudflare AI Toolset
  *
- * Author: @haxzie
+ * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/cloudflare.ts
  *
  * This toolset provides a set of tools for interacting with Cloudflare AI.
@@ -10,11 +10,16 @@
  * @module toolsets/cloudflare
  */
 import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
-import { BaseComposioToolset, Tool, ToolListParams } from '@composio/core';
+import { BaseNonAgenticToolset, Tool, ToolListParams } from '@composio/core';
+import {
+  ExecuteToolModifiersParams,
+  GlobalTransformToolSchemaModifier,
+  ModifiersParams,
+} from 'packages/core/src/types/modifiers.types';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
-export class CloudflareToolset extends BaseComposioToolset<
+export class CloudflareToolset extends BaseNonAgenticToolset<
   AiToolCollection,
   AiTextGenerationToolInput
 > {
@@ -51,12 +56,15 @@ export class CloudflareToolset extends BaseComposioToolset<
    * @param {ToolListParams} query - The query parameters for the tools.
    * @returns {Promise<Record<string, AiTextGenerationToolInput>>} The tools from the Cloudflare API.
    */
-  override async getTools(query?: ToolListParams): Promise<AiToolCollection> {
+  override async getTools(
+    query?: ToolListParams,
+    modifiers?: Pick<ModifiersParams, 'schema'>
+  ): Promise<AiToolCollection> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
     }
 
-    const tools = await this.getComposio().tools.getTools(query);
+    const tools = await this.getComposio().tools.getTools(query, modifiers?.schema);
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
@@ -64,6 +72,17 @@ export class CloudflareToolset extends BaseComposioToolset<
       }),
       {}
     );
+  }
+
+  override async getToolBySlug(
+    slug: string,
+    modifiers?: Pick<ModifiersParams, 'schema'>
+  ): Promise<AiTextGenerationToolInput> {
+    if (!this.getComposio()) {
+      throw new Error('Client not set');
+    }
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this._wrapTool(tool);
   }
 
   /**
@@ -74,7 +93,8 @@ export class CloudflareToolset extends BaseComposioToolset<
    */
   async executeToolCall(
     tool: { name: string; arguments: unknown },
-    userId?: string
+    userId?: string,
+    modifiers?: ExecuteToolModifiersParams
   ): Promise<string> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
@@ -86,11 +106,15 @@ export class CloudflareToolset extends BaseComposioToolset<
       throw new Error('App name not found');
     }
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
-    const results = await this.getComposio()?.tools.execute(toolSchema.slug, {
-      arguments: args,
-      userId: userId ?? this.DEFAULT_ENTITY_ID,
-      connectedAccountId: this.getComposio()?.getConnectedAccountId(appName),
-    });
+    const results = await this.getComposio()?.tools.execute(
+      toolSchema.slug,
+      {
+        arguments: args,
+        userId: userId ?? this.DEFAULT_ENTITY_ID,
+        connectedAccountId: this.getComposio()?.getConnectedAccountId(appName),
+      },
+      modifiers
+    );
 
     return JSON.stringify(results);
   }

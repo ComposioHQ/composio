@@ -1,7 +1,7 @@
 /**
  * Langchain Toolset
  *
- * Author: @haxzie
+ * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/langchain.ts
  *
  * This toolset provides a set of tools for interacting with Langchain.
@@ -9,12 +9,12 @@
  * @packageDocumentation
  * @module toolsets/langchain
  */
-import { BaseComposioToolset, jsonSchemaToModel } from '@composio/core';
-import type { Tool, ToolListParams } from '@composio/core';
+import { BaseAgenticToolset, jsonSchemaToModel, Tool, ToolListParams } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
+import { ModifiersParams } from 'packages/core/src/types/modifiers.types';
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
-export class LangchainToolset extends BaseComposioToolset<
+export class LangchainToolset extends BaseAgenticToolset<
   LangChainToolCollection,
   DynamicStructuredTool
 > {
@@ -24,7 +24,7 @@ export class LangchainToolset extends BaseComposioToolset<
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  _wrapTool(tool: Tool): DynamicStructuredTool {
+  _wrapTool(tool: Tool, modifiers?: ModifiersParams): DynamicStructuredTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
@@ -35,11 +35,15 @@ export class LangchainToolset extends BaseComposioToolset<
     const func = async (...kwargs: unknown[]): Promise<unknown> => {
       const connectedAccountId = this.getComposio()?.getConnectedAccountId(appName);
       return JSON.stringify(
-        await this.getComposio()?.tools.execute(toolName, {
-          arguments: kwargs[0] as Record<string, unknown>,
-          userId: this.getComposio().userId ?? this.DEFAULT_ENTITY_ID,
-          connectedAccountId: connectedAccountId,
-        })
+        await this.getComposio()?.tools.execute(
+          toolName,
+          {
+            arguments: kwargs[0] as Record<string, unknown>,
+            userId: this.getComposio().userId ?? this.DEFAULT_ENTITY_ID,
+            connectedAccountId: connectedAccountId,
+          },
+          modifiers
+        )
       );
     };
     if (!tool.inputParameters) {
@@ -62,8 +66,19 @@ export class LangchainToolset extends BaseComposioToolset<
    * @param params - The parameters for the tool list.
    * @returns The tools.
    */
-  async getTools(params?: ToolListParams): Promise<LangChainToolCollection> {
-    const tools = await this.getComposio()?.tools.getTools(params);
-    return tools?.map(tool => this._wrapTool(tool)) ?? [];
+  override async getTools(
+    params?: ToolListParams,
+    modifiers?: ModifiersParams
+  ): Promise<LangChainToolCollection> {
+    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
+    return tools?.map(tool => this._wrapTool(tool, modifiers)) ?? [];
+  }
+
+  override async getToolBySlug(
+    slug: string,
+    modifiers?: ModifiersParams
+  ): Promise<DynamicStructuredTool> {
+    const tool = await this.getComposio()?.tools.getToolBySlug(slug, modifiers?.schema);
+    return this._wrapTool(tool as Tool, modifiers);
   }
 }

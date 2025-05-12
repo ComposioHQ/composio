@@ -2,7 +2,7 @@
  * Vercel AI Toolset
  * To be used with the Vercel AI SDK
  *
- * Author: @haxzie
+ * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/vercel.ts
  *
  * This toolset provides a set of tools for interacting with Vercel AI SDK.
@@ -10,20 +10,28 @@
  * @packageDocumentation
  * @module toolsets/vercel
  */
-import { BaseComposioToolset, Tool as ComposioTool, ToolListParams } from '@composio/core';
+import { BaseAgenticToolset, Tool as ComposioTool, ToolListParams } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
+import {
+  ExecuteToolModifiersParams,
+  ModifiersParams,
+} from 'packages/core/src/types/modifiers.types';
 
 type VercelToolCollection = Record<string, VercelTool>;
-export class VercelToolset extends BaseComposioToolset<VercelToolCollection, VercelTool> {
+export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, VercelTool> {
   /**
    * Get all the tools from the client.
    * Override the default implementation to return a record of tools.
    *
    * @param params - The parameters for the tool list.
+   * @param modifiers - The modifiers for the tool list.
    * @returns The tools.
    */
-  override async getTools(params?: ToolListParams): Promise<VercelToolCollection> {
+  override async getTools(
+    params?: ToolListParams,
+    modifiers?: ModifiersParams
+  ): Promise<VercelToolCollection> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
     }
@@ -31,10 +39,15 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
-        [tool.slug]: this._wrapTool(tool as ComposioTool),
+        [tool.slug]: this._wrapTool(tool as ComposioTool, modifiers),
       }),
       {}
     );
+  }
+
+  override async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<VercelTool> {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this._wrapTool(tool as ComposioTool, modifiers);
   }
 
   /**
@@ -45,7 +58,8 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
    */
   async executeToolCall(
     tool: { name: string; arguments: unknown },
-    userId?: string
+    userId?: string,
+    modifiers?: ExecuteToolModifiersParams
   ): Promise<string> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
@@ -55,16 +69,20 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
     const appName = toolSchema?.name.toLowerCase();
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
 
-    const results = await this.getComposio().tools.execute(toolSchema.slug, {
-      arguments: args,
-      userId: userId ?? this.getComposio().userId,
-      connectedAccountId: this.getComposio().getConnectedAccountId(appName),
-    });
+    const results = await this.getComposio().tools.execute(
+      toolSchema.slug,
+      {
+        arguments: args,
+        userId: userId ?? this.getComposio().userId,
+        connectedAccountId: this.getComposio().getConnectedAccountId(appName),
+      },
+      modifiers
+    );
 
     return JSON.stringify(results);
   }
 
-  _wrapTool(composioTool: ComposioTool): VercelTool {
+  _wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiersParams): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema(composioTool.inputParameters ?? {}),
@@ -74,7 +92,8 @@ export class VercelToolset extends BaseComposioToolset<VercelToolCollection, Ver
             name: composioTool.slug,
             arguments: JSON.stringify(params),
           },
-          this.getComposio()?.userId
+          this.getComposio()?.userId,
+          modifiers
         );
       },
     });

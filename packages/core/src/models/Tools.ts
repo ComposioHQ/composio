@@ -5,6 +5,8 @@ import {
   ToolListParamsSchema,
   ToolExecuteResponse,
   ToolList,
+  ToolListResponse,
+  ToolSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -13,10 +15,19 @@ import {
   ToolProxyParams,
   ToolProxyResponse,
   ToolRetrieveEnumResponse,
+  ToolRetrieveResponse,
+  ToolListResponse as ComposioToolListResponse,
 } from '@composio/client/resources/tools';
 import { Modifiers } from './Modifiers';
 import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
+import {
+  ExecuteToolModifiersParams,
+  GlobalAfterToolExecuteModifier,
+  GlobalBeforeToolExecuteModifier,
+  GlobalTransformToolSchemaModifier,
+} from '../types/modifiers.types';
+import { ToolkitListResponse } from '@composio/client/resources/toolkits';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -33,12 +44,25 @@ export class Tools {
     this.customTools = new CustomTools(client);
   }
 
+  private transformToolCases(
+    tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0]
+  ): Tool {
+    return ToolSchema.parse({
+      ...tool,
+      inputParameters: tool.input_parameters,
+      outputParameters: tool.output_parameters,
+    });
+  }
+
   /**
    * Lists all tools available in the Composio SDK as well as custom tools.
    * This method fetches the tools from the Composio API and wraps them using the toolset.
-   * @returns {Tools[]>} List of tools
+   * @returns {ToolList} List of tools
    */
-  async getTools(query: ToolListParams = {}): Promise<ToolList> {
+  async getTools(
+    query: ToolListParams = {},
+    modifier?: GlobalTransformToolSchemaModifier
+  ): Promise<ToolList> {
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
       throw new Error(JSON.stringify(queryParams.error.flatten()));
@@ -60,21 +84,28 @@ export class Tools {
     });
 
     const composioToolList = [
-      ...tools.items.map(tool => ({
-        ...tool,
-        inputParameters: tool.input_parameters,
-        outputParameters: tool.output_parameters,
-      })),
+      ...tools.items.map(tool => this.transformToolCases(tool)),
       ...customTools,
     ];
 
-    const modifiedTools = composioToolList.map(tool => {
+    let modifiedTools = composioToolList.map(tool => {
       return this.modifiers.applyTransformToolSchema(tool.slug, {
         ...tool,
         inputParameters: tool.inputParameters,
         outputParameters: tool.outputParameters,
       });
     });
+
+    // apply local modifiers if they are provided
+    if (modifier) {
+      if (typeof modifier === 'function') {
+        modifiedTools = modifiedTools.map(tool => {
+          return modifier(tool.slug, tool);
+        });
+      } else {
+        throw new Error('Invalid schema modifier. Not a function.');
+      }
+    }
 
     return modifiedTools;
   }
@@ -84,7 +115,7 @@ export class Tools {
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
    */
-  async getToolBySlug(slug: string): Promise<Tool> {
+  async getToolBySlug(slug: string, modifier?: GlobalTransformToolSchemaModifier): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -95,7 +126,18 @@ export class Tools {
     if (!tool) {
       throw new Error(`Tool with slug ${slug} not found`);
     }
-    const modifiedTool = this.modifiers.applyTransformToolSchema(slug, tool);
+    // change the case of the tool to camel case
+    const casedTool = this.transformToolCases(tool);
+    // apply the global modifiers
+    let modifiedTool = this.modifiers.applyTransformToolSchema(slug, casedTool);
+    // apply local modifiers if they are provided
+    if (modifier) {
+      if (typeof modifier === 'function') {
+        modifiedTool = modifier(slug, modifiedTool);
+      } else {
+        throw new Error('Invalid schema modifier. Not a function.');
+      }
+    }
     return modifiedTool;
   }
 
@@ -108,10 +150,24 @@ export class Tools {
    * @param {ToolExecuteParams} body - The parameters to be passed to the tool
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    */
-  async execute(slug: string, body: ToolExecuteParams): Promise<ToolExecuteResponse> {
-    // before tool execute modifier
-    const modifiedBody = this.modifiers.applyBeforeToolExecute(slug, body);
-    const result = await this.client.tools.execute(slug, {
+  async execute(
+    slug: string,
+    body: ToolExecuteParams,
+    modifiers?: ExecuteToolModifiersParams
+  ): Promise<ToolExecuteResponse> {
+    // before tool execute modifier, apply all the global modifiers
+    let modifiedBody = this.modifiers.applyBeforeToolExecute(slug, body);
+
+    // apply local modifiers if they are provided
+    if (modifiers && modifiers.beforeToolExecute) {
+      if (typeof modifiers.beforeToolExecute === 'function') {
+        modifiedBody = modifiers.beforeToolExecute(slug, modifiedBody);
+      } else {
+        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+      }
+    }
+
+    let result = await this.client.tools.execute(slug, {
       allow_tracing: modifiedBody.allowTracing,
       connected_account_id: modifiedBody.connectedAccountId,
       custom_auth_params: modifiedBody.customAuthParams,
@@ -120,14 +176,25 @@ export class Tools {
       version: modifiedBody.version,
       text: modifiedBody.text,
     });
-    // after tool execute modifier
-    return this.modifiers.applyAfterToolExecute(slug, {
+    // apply gloafter tool execute modifier
+    result = this.modifiers.applyAfterToolExecute(slug, {
       data: result.data,
       error: result.error,
       successful: result.successful,
       logId: result.log_id,
       sessionInfo: result.session_info,
     });
+
+    // apply local modifiers if they are provided
+    if (modifiers && modifiers.afterToolExecute) {
+      if (typeof modifiers.afterToolExecute === 'function') {
+        result = modifiers.afterToolExecute(slug, result);
+      } else {
+        throw new Error('Invalid afterToolExecute modifier. Not a function.');
+      }
+    }
+
+    return result;
   }
 
   /**

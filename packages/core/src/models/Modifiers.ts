@@ -33,6 +33,9 @@ export class Modifiers {
 
   /**
    * Function signature for modifying the tool execution parameters.
+   * We support two ways to register modifiers:
+   * 1. useBeforeToolExecute(globalModifier: GlobalBeforeToolExecuteModifier): void
+   * 2. useBeforeToolExecute(toolSlug: string, modifier: BeforeToolExecuteModifer): void
    */
   useBeforeToolExecute(globalModifier: GlobalBeforeToolExecuteModifier): void;
   useBeforeToolExecute(toolSlug: string, modifier: BeforeToolExecuteModifer): void;

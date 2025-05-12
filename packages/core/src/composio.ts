@@ -2,14 +2,18 @@ import ComposioClient from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
-import { ComposioToolset } from './toolset/ComposioToolset';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { ToolListParams } from '@composio/client/resources/tools';
-import { BaseComposioToolset } from './toolset/BaseToolset';
+import {
+  BaseComposioToolset,
+  BaseAgenticToolset,
+  BaseNonAgenticToolset,
+} from './toolset/BaseToolset';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
+import type { ModifiersParams } from './types/modifiers.types';
+import type { ToolListParams } from './types/tool.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -18,23 +22,37 @@ import { OpenAIToolset } from './toolset/OpenAIToolset';
 import { version } from '../package.json';
 import { Modifiers } from './models/Modifiers';
 
-export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
-  {
-    apiKey?: string;
-    baseURL?: string;
-    allowTracking?: boolean;
-    allowTracing?: boolean;
-    toolset?: TToolset;
-    userId?: string;
-    connectedAccountIds?: Record<string, string>;
-    telemetryTransport?: BaseTelemetryTransport;
-  };
+export type ComposioConfig<
+  TToolset extends
+    | BaseAgenticToolset<unknown, unknown>
+    | BaseNonAgenticToolset<unknown, unknown> = OpenAIToolset,
+> = {
+  apiKey?: string;
+  baseURL?: string;
+  allowTracking?: boolean;
+  allowTracing?: boolean;
+  toolset?: TToolset;
+  userId?: string;
+  connectedAccountIds?: Record<string, string>;
+  telemetryTransport?: BaseTelemetryTransport;
+};
+
+type ToolsetModifierType<
+  T extends BaseAgenticToolset<unknown, unknown> | BaseNonAgenticToolset<unknown, unknown>,
+> =
+  T extends BaseAgenticToolset<unknown, unknown>
+    ? ModifiersParams
+    : Pick<ModifiersParams, 'schema'>;
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
+export class Composio<
+  TToolset extends
+    | BaseAgenticToolset<unknown, unknown>
+    | BaseNonAgenticToolset<unknown, unknown> = OpenAIToolset,
+> {
   private readonly DEFAULT_USER_ID = 'default';
   /**
    * The Composio API client.
@@ -67,10 +85,22 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   // connected accounts
   connectedAccounts: ConnectedAccounts;
   createConnectedAccount: ConnectedAccounts['createConnectedAccount'];
+  // global modifiers
   modifiers: Modifiers;
   useBeforeToolExecute: Modifiers['useBeforeToolExecute'];
   useAfterToolExecute: Modifiers['useAfterToolExecute'];
   useTransformToolSchema: Modifiers['useTransformToolSchema'];
+  // toolset modifiers
+  getToolBySlug!: <T extends TToolset>(
+    slug: string,
+    modifiers?: ToolsetModifierType<T>
+  ) => Promise<ReturnType<T['getToolBySlug']>>;
+  getTools!: <T extends TToolset>(
+    params?: ToolListParams,
+    modifiers?: ToolsetModifierType<T>
+  ) => Promise<ReturnType<T['getTools']>>;
+  // getToolBySlug: TToolset['getToolBySlug'];
+  // getTools: TToolset['getTools'];
 
   /**
    * @param {Object} config Configuration for the Composio SDK.
@@ -123,8 +153,22 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     /**
      * Set the default toolset, if not provided by the user.
      */
-    this.toolset = (config.toolset ?? new ComposioToolset()) as TToolset;
+    this.toolset = (config.toolset ?? new OpenAIToolset()) as TToolset;
     this.toolset.setComposio(this);
+
+    this.getToolBySlug = (async <T extends TToolset>(
+      slug: string,
+      modifiers?: ToolsetModifierType<T>
+    ) => {
+      return this.toolset.getToolBySlug(slug, modifiers as ToolsetModifierType<TToolset>);
+    }) as typeof this.getToolBySlug;
+
+    this.getTools = (async <T extends TToolset>(
+      params?: ToolListParams,
+      modifiers?: ToolsetModifierType<T>
+    ) => {
+      return this.toolset.getTools(params, modifiers as ToolsetModifierType<TToolset>);
+    }) as typeof this.getTools;
 
     /**
      * Modifiers are used to modify the tools and toolkits.
@@ -207,22 +251,5 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
       throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
-  }
-
-  /**
-   * Generic function to get all the tools
-   * @returns {Promise<ReturnType<TToolset["getTool"]>>} Promise with list of tools
-   */
-  async getToolBySlug(slug: string): Promise<ReturnType<TToolset['getToolBySlug']>> {
-    return this.toolset.getToolBySlug(slug) as Promise<ReturnType<TToolset['getToolBySlug']>>;
-  }
-
-  /**
-   * Generic function to get all the tools
-   * @param query - Query parameters for the tools
-   * @returns {Promise<ReturnType<TToolset["getTools">} Promise with list/records of tools
-   */
-  async getTools(query?: ToolListParams): Promise<ReturnType<TToolset['getTools']>> {
-    return this.toolset.getTools(query) as Promise<ReturnType<TToolset['getTools']>>;
   }
 }

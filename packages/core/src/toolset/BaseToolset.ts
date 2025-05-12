@@ -2,99 +2,33 @@ import type { Toolset } from '../types/toolset.types';
 import type { CustomAuthParams, Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
 import { ComposioError } from '../utils/error';
+import { ModifiersParams } from '../types/modifiers.types';
 
 /**
- * Base toolset implementation with proper generic defaults
- * This class is used to create a different toolsets by extending this class.
- *
- * This class provides basic functionality to get tools, pre-process and post-process tools.
- * Every toolset should extend this class and implement the `_wrapTool` method,
- * these extended toolsets can add their own functionality/methods to the toolset.
- *
- * eg:
- * class YourToolSet extends BaseComposioToolset<CustomToolCollection, CustomTool> {}
+ * Base class for non-agentic toolsets that only support schema modifiers
+ * This is used for toolsets that don't need to handle tool execution modifiers
+ * eg: OpenAI, Langchain, etc.
  */
-export abstract class BaseComposioToolset<TToolCollection, TTool>
+export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
   implements Toolset<TTool, TToolCollection>
 {
-  protected composio: Composio<this> | undefined;
+  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
   protected DEFAULT_ENTITY_ID = 'default';
 
-  /**
-   * Set the client for the toolset. This is automatically done by the Composio class.
-   * @param client - The Composio client.
-   */
-  setComposio(composio: Composio<this>): void {
+  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
     this.composio = composio;
   }
 
-  /**
-   * Get all the tools from the client.
-   * @param params - The parameters for the tool list.
-   * @returns The tools.
-   */
-  abstract getTools(params?: ToolListParams): Promise<TToolCollection>;
+  abstract getTools(
+    params?: ToolListParams,
+    modifiers?: Pick<ModifiersParams, 'schema'>
+  ): Promise<TToolCollection>;
 
-  /**
-   * Get a tool from the client.
-   * @param slug - The slug of the tool.
-   * @returns The tool.
-   */
-  async getToolBySlug(slug: string): Promise<TTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug);
-    return this._wrapTool(tool);
-  }
+  abstract getToolBySlug(slug: string, modifiers?: Pick<ModifiersParams, 'schema'>): Promise<TTool>;
 
-  /**
-   * Wrap a tool in the toolset.
-   * @param tool - The tool to wrap.
-   * @returns The wrapped tool.
-   */
   abstract _wrapTool(tool: Tool): TTool;
 
-  /**
-   * Execute an action
-   */
-  async execute({
-    toolSlug,
-    params,
-    entityId,
-    connectedAccountId,
-    text,
-    customAuthParams,
-  }: {
-    toolSlug: string;
-    params: Record<string, unknown>;
-    entityId?: string;
-    connectedAccountId?: string;
-    text?: string;
-    customAuthParams?: CustomAuthParams;
-  }) {
-    const tool = await this.getComposio()?.tools.getToolBySlug(toolSlug);
-
-    if (!tool) {
-      throw new ComposioError(`Tool with slug ${toolSlug} not found`);
-    }
-
-    try {
-      const result = await this.getComposio().tools.execute(toolSlug, {
-        arguments: params,
-        userId: entityId,
-        connectedAccountId: connectedAccountId,
-        text: text,
-        customAuthParams: customAuthParams,
-      });
-      return result;
-    } catch (error) {
-      throw new ComposioError(`Error executing tool ${toolSlug}: ${error}`);
-    }
-  }
-
-  /**
-   * Get the Composio client.
-   * @returns The Composio client.
-   */
-  protected getComposio(): Composio<this> {
+  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
     if (!this.composio) {
       throw new Error(
         'Client not initialized. Make sure the toolset is properly initialized with Composio.'
@@ -103,3 +37,39 @@ export abstract class BaseComposioToolset<TToolCollection, TTool>
     return this.composio;
   }
 }
+
+/**
+ * Base class for agentic toolsets that support full modifier capabilities
+ * This is used for toolsets that need to handle tool execution modifiers
+ * eg: Vercel, Cloudflare, etc.
+ */
+export abstract class BaseAgenticToolset<TToolCollection, TTool>
+  implements Toolset<TTool, TToolCollection>
+{
+  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
+  protected DEFAULT_ENTITY_ID = 'default';
+
+  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
+    this.composio = composio;
+  }
+
+  abstract getTools(params?: ToolListParams, modifiers?: ModifiersParams): Promise<TToolCollection>;
+
+  abstract getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<TTool>;
+
+  abstract _wrapTool(tool: Tool): TTool;
+
+  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
+    if (!this.composio) {
+      throw new Error(
+        'Client not initialized. Make sure the toolset is properly initialized with Composio.'
+      );
+    }
+    return this.composio;
+  }
+}
+
+// Type for backward compatibility and type constraints
+export type BaseComposioToolset<TToolCollection, TTool> =
+  | BaseNonAgenticToolset<TToolCollection, TTool>
+  | BaseAgenticToolset<TToolCollection, TTool>;
