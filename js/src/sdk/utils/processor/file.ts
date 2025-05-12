@@ -30,7 +30,7 @@ const convertFileSchemaProperty = (
   };
 };
 
-const processFileUpload = async (
+export const processFileUpload = async (
   params: Record<string, unknown>,
   actionName: string,
   client: Client
@@ -41,8 +41,15 @@ const processFileUpload = async (
     if (!key.endsWith(FILE_SUFFIX)) continue;
 
     const originalKey = key.replace(FILE_SUFFIX, "");
+    const filePath = value as string;
+    
+    // Add validation for empty paths
+    if (!filePath || filePath.trim() === '') {
+      throw new Error('File path cannot be empty');
+    }
+    
     const fileData = await getFileDataAfterUploadingToS3(
-      value as string,
+      filePath,
       actionName,
       client
     );
