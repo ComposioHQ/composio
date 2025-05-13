@@ -1,12 +1,12 @@
 import type { Toolset } from '../types/toolset.types';
 import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
-import { ModifiersParams } from '../types/modifiers.types';
+import { ModifiersParams, SchemaModifiersParams } from '../types/modifiers.types';
 
 /**
  * Base class for non-agentic toolsets that only support schema modifiers
  * This is used for toolsets that don't need to handle tool execution modifiers
- * eg: OpenAI, Langchain, etc.
+ * eg: OpenAI, Anthropic, etc.
  */
 export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
   implements Toolset<TTool, TToolCollection>
@@ -20,10 +20,10 @@ export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
 
   abstract getTools(
     params?: ToolListParams,
-    modifiers?: Pick<ModifiersParams, 'schema'>
+    modifiers?: SchemaModifiersParams
   ): Promise<TToolCollection>;
 
-  abstract getToolBySlug(slug: string, modifiers?: Pick<ModifiersParams, 'schema'>): Promise<TTool>;
+  abstract getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<TTool>;
 
   abstract wrapTool(tool: Tool): TTool;
 
