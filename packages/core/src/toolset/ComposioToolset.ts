@@ -1,4 +1,4 @@
-import { ModifiersParams, SchemaModifiersParams } from '../types/modifiers.types';
+import { SchemaModifiersParams } from '../types/modifiers.types';
 import { Tool, ToolListParams } from '../types/tool.types';
 import { BaseNonAgenticToolset } from './BaseToolset';
 
