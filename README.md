@@ -13,10 +13,122 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 
 ## Toolsets
 
-Composio SDK supports two types of toolsets:
+Composio SDK supports two types of toolsets, each with different modifier capabilities:
 
-1. **Non-Agentic Toolsets**: These toolsets only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
-2. **Agentic Toolsets**: These toolsets support full modifier capabilities including tool execution modifiers, schema modifiers, and custom modifiers. They are suitable for more complex integrations like Vercel, Langchain, etc.
+### 1. Non-Agentic Toolsets
+
+These toolsets only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
+
+Schema modifiers allow you to transform tool schemas using the `TransformToolSchemaModifier` function:
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai-toolset';
+import type { Tool } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Get a tool with schema modifiers
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+});
+```
+
+### 2. Agentic Toolsets
+
+These toolsets support full modifier capabilities, making them suitable for complex integrations like Vercel, Langchain, etc. They support:
+
+1. **Schema Modifiers**: Transform tool schemas using `TransformToolSchemaModifier`
+2. **Execution Modifiers**: Transform tool execution behavior
+   - `beforeToolExecute`: Transform input parameters before execution
+   - `afterToolExecute`: Transform output after execution
+
+Example:
+
+```typescript
+import { Composio } from '@composio/core';
+import { VercelToolset } from '@composio/vercel-toolset';
+import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new VercelToolset(),
+});
+
+// Get a tool with full modifier support
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  // Schema modifier
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+  // Execution modifiers
+  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+    ...params,
+    arguments: {
+      ...params.arguments,
+      limit: Math.min((params.arguments?.limit as number) || 10, 100),
+    },
+  }),
+  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+    ...response,
+    data: {
+      ...response.data,
+      posts: (response.data?.posts as any[]).map(post => ({
+        ...post,
+        url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+      })),
+    },
+  }),
+});
+
+// Execute the tool with execution modifiers
+const result = await composio.toolset.executeTool(
+  tool,
+  {
+    arguments: { query: 'AI', limit: 20 },
+  },
+  {
+    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+      ...params,
+      arguments: {
+        ...params.arguments,
+        limit: Math.min((params.arguments?.limit as number) || 10, 100),
+      },
+    }),
+    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+      ...response,
+      data: {
+        ...response.data,
+        posts: (response.data?.posts as any[]).map(post => ({
+          ...post,
+          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+        })),
+      },
+    }),
+  }
+);
+```
 
 ## Usage
 
@@ -24,13 +136,27 @@ Composio SDK supports two types of toolsets:
 
 ```typescript
 import { Composio } from '@composio/core';
+import type { Tool } from '@composio/core';
 
 // By default composio ships with OpenAI toolset (non-agentic)
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS');
+// Get a tool with schema modifiers
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+});
 console.log(tool);
 ```
 
@@ -45,14 +171,48 @@ import { Composio } from '@composio/core';
 import { VercelToolset } from '@composio/vercel-toolset'; // Agentic toolset
 // or
 import { OpenAIToolset } from '@composio/openai-toolset'; // Non-agentic toolset
+import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   toolset: new VercelToolset(), // or new OpenAIToolset()
 });
 
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS');
-console.log(tool);
+// Get a tool with appropriate modifiers based on toolset type
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  // Schema modifiers (supported by both types)
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+  // Execution modifiers (only for agentic toolsets)
+  ...(composio.toolset instanceof VercelToolset && {
+    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+      ...params,
+      arguments: {
+        ...params.arguments,
+        limit: Math.min((params.arguments?.limit as number) || 10, 100),
+      },
+    }),
+    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+      ...response,
+      data: {
+        ...response.data,
+        posts: (response.data?.posts as any[]).map(post => ({
+          ...post,
+          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+        })),
+      },
+    }),
+  }),
+});
 ```
 
 ## Creating a new toolset

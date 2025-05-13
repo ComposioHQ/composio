@@ -1,88 +1,111 @@
 # Composio Toolsets
 
-This package contains various toolsets that integrate with Composio's core functionality. Each toolset provides a collection of tools that can be used to interact with different services and APIs.
+This directory contains various toolsets that implement the Composio SDK for different platforms and frameworks. Each toolset provides a way to interact with the Composio Platform using the specific platform's conventions and requirements.
 
 ## Types of Toolsets
 
-Composio SDK supports two types of toolsets:
+Composio SDK supports two types of toolsets, each with different modifier capabilities:
 
 ### 1. Non-Agentic Toolsets
 
 These toolsets only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
 
+Example implementation:
+
 ```typescript
 import { BaseNonAgenticToolset } from '@composio/core';
-import type { Tool, ToolListParams, SchemaModifiersParams } from '@composio/core';
+import type { Tool, SchemaModifiersParams } from '@composio/core';
 
-interface ToolType {
-  // Define your tool type here
-}
+export class NonAgenticToolset extends BaseNonAgenticToolset {
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool> {
+    // Apply schema modifiers if provided
+    if (modifiers?.schema) {
+      return modifiers.schema(toolSlug, tool);
+    }
+    return tool;
+  }
 
-interface ToolCollection {
-  // Define your tool collection here
-}
+  async getTools(): Promise<Tool[]> {
+    // Fetch tools from Composio API
+    const response = await this.client.getTools();
+    return response.data;
+  }
 
-export class NonAgenticToolset extends BaseNonAgenticToolset<ToolCollection, ToolType> {
-  static FRAMEWORK_NAME = 'non-agentic-toolset';
-  readonly FILE_NAME: string = 'toolsets/non-agentic-toolset/src/index.ts';
-
-  wrapTool = (tool: Tool): ToolType => {
-    // Implement tool wrapping logic
-    return tool as ToolType;
-  };
-
-  getTools = async (
-    params?: ToolListParams,
-    modifiers?: SchemaModifiersParams
-  ): Promise<ToolCollection> => {
-    // Implement tool collection logic
-    return [];
-  };
-
-  getToolBySlug = async (slug: string, modifiers?: SchemaModifiersParams): Promise<ToolType> => {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this.wrapTool(tool);
-  };
+  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool> {
+    // Fetch tool from Composio API
+    const response = await this.client.getToolBySlug(slug);
+    // Apply schema modifiers if provided
+    return this.wrapTool(slug, response.data, modifiers);
+  }
 }
 ```
 
 ### 2. Agentic Toolsets
 
-These toolsets support full modifier capabilities including tool execution modifiers, schema modifiers, and custom modifiers. They are suitable for more complex integrations like Vercel, Langchain, etc.
+These toolsets support full modifier capabilities, making them suitable for complex integrations like Vercel, Langchain, etc. They support:
+
+1. **Schema Modifiers**: Transform tool schemas using `TransformToolSchemaModifier`
+2. **Execution Modifiers**: Transform tool execution behavior
+   - `beforeToolExecute`: Transform input parameters before execution
+   - `afterToolExecute`: Transform output after execution
+3. **Execute Modifiers**: Used during tool execution
+   - `beforeToolExecute`: Transform input parameters
+   - `afterToolExecute`: Transform output
+
+Example implementation:
 
 ```typescript
 import { BaseAgenticToolset } from '@composio/core';
-import type { Tool, ToolListParams, ModifiersParams } from '@composio/core';
+import type { Tool, ModifiersParams, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
 
-interface ToolType {
-  // Define your tool type here
-}
+export class AgenticToolset extends BaseAgenticToolset {
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool> {
+    let wrappedTool = tool;
 
-interface ToolCollection {
-  // Define your tool collection here
-}
+    // Apply schema modifiers if provided
+    if (modifiers?.schema) {
+      wrappedTool = modifiers.schema(toolSlug, wrappedTool);
+    }
 
-export class AgenticToolset extends BaseAgenticToolset<ToolCollection, ToolType> {
-  static FRAMEWORK_NAME = 'agentic-toolset';
-  readonly FILE_NAME: string = 'toolsets/agentic-toolset/src/index.ts';
+    return wrappedTool;
+  }
 
-  wrapTool = (tool: Tool): ToolType => {
-    // Implement tool wrapping logic
-    return tool as ToolType;
-  };
+  async getTools(modifiers?: ModifiersParams): Promise<Tool[]> {
+    // Fetch tools from Composio API
+    const response = await this.client.getTools();
+    // Apply modifiers to each tool
+    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
+  }
 
-  getTools = async (
-    params?: ToolListParams,
+  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool> {
+    // Fetch tool from Composio API
+    const response = await this.client.getToolBySlug(slug);
+    // Apply modifiers
+    return this.wrapTool(slug, response.data, modifiers);
+  }
+
+  async executeTool(
+    tool: Tool,
+    params: ToolExecuteParams,
     modifiers?: ModifiersParams
-  ): Promise<ToolCollection> => {
-    // Implement tool collection logic with full modifier support
-    return [];
-  };
+  ): Promise<ToolExecuteResponse> {
+    let executeParams = params;
 
-  getToolBySlug = async (slug: string, modifiers?: ModifiersParams): Promise<ToolType> => {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this.wrapTool(tool);
-  };
+    // Apply beforeToolExecute modifier if provided
+    if (modifiers?.beforeToolExecute) {
+      executeParams = modifiers.beforeToolExecute(tool.slug, executeParams);
+    }
+
+    // Execute the tool
+    const response = await this.client.executeTool(tool.slug, executeParams);
+
+    // Apply afterToolExecute modifier if provided
+    if (modifiers?.afterToolExecute) {
+      return modifiers.afterToolExecute(tool.slug, response.data);
+    }
+
+    return response.data;
+  }
 }
 ```
 
@@ -92,13 +115,13 @@ To create a new toolset, you can use the provided script:
 
 ```bash
 # Create a non-agentic toolset (default)
-pnpm run create-toolset <toolset-name>
+pnpm run create-toolset <your-toolset-name>
 
 # Create an agentic toolset
-pnpm run create-toolset <toolset-name> --agentic
+pnpm run create-toolset <your-toolset-name> --agentic
 ```
 
-This will create a new toolset with the following structure:
+The script will create a new toolset with the following structure:
 
 ```
 <toolset-name>/
@@ -110,93 +133,275 @@ This will create a new toolset with the following structure:
 └── README.md         # Toolset documentation
 ```
 
-### Required Methods
+## Required Methods
 
-1. `wrapTool`: This method is responsible for wrapping a tool in the toolset's specific format.
-2. `getTools`: This method retrieves all available tools from the Composio API.
-3. `getToolBySlug`: This method retrieves a specific tool by its slug.
+Each toolset must implement the following methods:
 
-### Configuration
+### For Non-Agentic Toolsets
 
-Each toolset comes with the following configuration files:
+```typescript
+class NonAgenticToolset extends BaseNonAgenticToolset {
+  // Wrap a tool with schema modifiers
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool>;
 
-- `package.json`: Contains dependencies and build scripts
-- `tsconfig.json`: TypeScript configuration
-- `tsup.config.ts`: Build configuration for the toolset
+  // Get all available tools
+  async getTools(modifiers?: SchemaModifiersParams): Promise<Tool[]>;
 
-## Building and Testing
+  // Get a specific tool by slug
+  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool>;
+}
+```
 
-To build your toolset:
+### For Agentic Toolsets
 
-```bash
-cd packages/toolsets/<toolset-name>
-pnpm build
+```typescript
+class AgenticToolset extends BaseAgenticToolset {
+  // Wrap a tool with modifiers
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool>;
+
+  // Get all available tools
+  async getTools(modifiers?: ModifiersParams): Promise<Tool[]>;
+
+  // Get a specific tool by slug
+  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool>;
+
+  // Execute a tool with modifiers
+  async executeTool(
+    tool: Tool,
+    params: ToolExecuteParams,
+    modifiers?: ModifiersParams
+  ): Promise<ToolExecuteResponse>;
+}
+```
+
+## Modifier Types
+
+### Schema Modifiers (Both Types)
+
+```typescript
+type SchemaModifiersParams = {
+  schema?: TransformToolSchemaModifier;
+};
+
+type TransformToolSchemaModifier = (toolSlug: string, tool: Tool) => Tool;
+```
+
+### Execution Modifiers (Agentic Only)
+
+```typescript
+type ModifiersParams = {
+  schema?: TransformToolSchemaModifier;
+  beforeToolExecute?: BeforeToolExecuteModifier;
+  afterToolExecute?: AfterToolExecuteModifier;
+};
+
+type BeforeToolExecuteModifier = (toolSlug: string, params: ToolExecuteParams) => ToolExecuteParams;
+type AfterToolExecuteModifier = (
+  toolSlug: string,
+  response: ToolExecuteResponse
+) => ToolExecuteResponse;
 ```
 
 ## Best Practices
 
-1. **Type Safety**: Always define proper TypeScript interfaces for your tools and collections
-2. **Error Handling**: Implement proper error handling in your tool methods
-3. **Documentation**: Document your tools and their parameters clearly
-4. **Testing**: Write unit tests for your toolset functionality
+1. **Type Safety**: Always use TypeScript and ensure proper type definitions for all methods and parameters.
+2. **Error Handling**: Implement proper error handling for API calls and tool execution.
+3. **Documentation**: Document your toolset's features, requirements, and usage examples.
+4. **Testing**: Write tests for your toolset implementation.
 5. **Modifier Support**:
    - For non-agentic toolsets, implement schema modifiers to transform tool schemas
-   - For agentic toolsets, implement full modifier support including execution and custom modifiers
+   - For agentic toolsets, implement both schema and execution modifiers for full control over tool behavior
 
 ## Example Implementation
 
-Here's a simple example of implementing a non-agentic toolset:
+Here's a complete example of a non-agentic toolset implementation:
 
 ```typescript
-interface MyToolType {
-  name: string;
-  description: string;
-  execute: (params: any) => Promise<any>;
-}
+import { BaseNonAgenticToolset } from '@composio/core';
+import type { Tool, SchemaModifiersParams } from '@composio/core';
 
-interface MyToolCollection {
-  [key: string]: MyToolType;
-}
+export class OpenAIToolset extends BaseNonAgenticToolset {
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool> {
+    // Apply schema modifiers if provided
+    if (modifiers?.schema) {
+      return modifiers.schema(toolSlug, tool);
+    }
+    return tool;
+  }
 
-export class MyNonAgenticToolset extends BaseNonAgenticToolset<MyToolCollection, MyToolType> {
-  static FRAMEWORK_NAME = 'my-toolset';
-  readonly FILE_NAME: string = 'toolsets/my-toolset/src/index.ts';
+  async getTools(modifiers?: SchemaModifiersParams): Promise<Tool[]> {
+    // Fetch tools from Composio API
+    const response = await this.client.getTools();
+    // Apply modifiers to each tool
+    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
+  }
 
-  wrapTool = (tool: Tool): MyToolType => {
-    return {
-      name: tool.name,
-      description: tool.description,
-      execute: async params => {
-        // Implement tool execution logic
-        return await this.getComposio().tools.execute(tool.slug, params);
-      },
-    };
-  };
-
-  getTools = async (
-    params?: ToolListParams,
-    modifiers?: SchemaModifiersParams
-  ): Promise<MyToolCollection> => {
-    const tools = await this.getComposio().tools.getTools(params, modifiers?.schema);
-    return tools.reduce((acc, tool) => {
-      acc[tool.slug] = this.wrapTool(tool);
-      return acc;
-    }, {} as MyToolCollection);
-  };
-
-  getToolBySlug = async (slug: string, modifiers?: SchemaModifiersParams): Promise<MyToolType> => {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this.wrapTool(tool);
-  };
+  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool> {
+    // Fetch tool from Composio API
+    const response = await this.client.getToolBySlug(slug);
+    // Apply modifiers
+    return this.wrapTool(slug, response.data, modifiers);
+  }
 }
 ```
 
-## Contributing
+And here's a complete example of an agentic toolset implementation:
 
-When contributing a new toolset:
+```typescript
+import { BaseAgenticToolset } from '@composio/core';
+import type { Tool, ModifiersParams, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
 
-1. Follow the existing code style and patterns
-2. Include proper documentation
-3. Add tests for your implementation
-4. Update this README if necessary
-5. Choose the appropriate base class (agentic or non-agentic) based on your toolset's needs
+export class VercelToolset extends BaseAgenticToolset {
+  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool> {
+    let wrappedTool = tool;
+
+    // Apply schema modifiers if provided
+    if (modifiers?.schema) {
+      wrappedTool = modifiers.schema(toolSlug, wrappedTool);
+    }
+
+    return wrappedTool;
+  }
+
+  async getTools(modifiers?: ModifiersParams): Promise<Tool[]> {
+    // Fetch tools from Composio API
+    const response = await this.client.getTools();
+    // Apply modifiers to each tool
+    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
+  }
+
+  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool> {
+    // Fetch tool from Composio API
+    const response = await this.client.getToolBySlug(slug);
+    // Apply modifiers
+    return this.wrapTool(slug, response.data, modifiers);
+  }
+
+  async executeTool(
+    tool: Tool,
+    params: ToolExecuteParams,
+    modifiers?: ModifiersParams
+  ): Promise<ToolExecuteResponse> {
+    let executeParams = params;
+
+    // Apply beforeToolExecute modifier if provided
+    if (modifiers?.beforeToolExecute) {
+      executeParams = modifiers.beforeToolExecute(tool.slug, executeParams);
+    }
+
+    // Execute the tool
+    const response = await this.client.executeTool(tool.slug, executeParams);
+
+    // Apply afterToolExecute modifier if provided
+    if (modifiers?.afterToolExecute) {
+      return modifiers.afterToolExecute(tool.slug, response.data);
+    }
+
+    return response.data;
+  }
+}
+```
+
+## Usage Examples
+
+### Using a Non-Agentic Toolset
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai-toolset';
+import type { Tool } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Get a tool with schema modifiers
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+});
+```
+
+### Using an Agentic Toolset
+
+```typescript
+import { Composio } from '@composio/core';
+import { VercelToolset } from '@composio/vercel-toolset';
+import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new VercelToolset(),
+});
+
+// Get a tool with full modifier support
+const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+  // Schema modifier
+  schema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Search HackerNews posts with improved description',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+      },
+    },
+  }),
+  // Execution modifiers
+  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+    ...params,
+    arguments: {
+      ...params.arguments,
+      limit: Math.min((params.arguments?.limit as number) || 10, 100),
+    },
+  }),
+  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+    ...response,
+    data: {
+      ...response.data,
+      posts: (response.data?.posts as any[]).map(post => ({
+        ...post,
+        url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+      })),
+    },
+  }),
+});
+
+// Execute the tool with execution modifiers
+const result = await composio.toolset.executeTool(
+  tool,
+  {
+    arguments: { query: 'AI', limit: 20 },
+  },
+  {
+    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+      ...params,
+      arguments: {
+        ...params.arguments,
+        limit: Math.min((params.arguments?.limit as number) || 10, 100),
+      },
+    }),
+    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+      ...response,
+      data: {
+        ...response.data,
+        posts: (response.data?.posts as any[]).map(post => ({
+          ...post,
+          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+        })),
+      },
+    }),
+  }
+);
+```
