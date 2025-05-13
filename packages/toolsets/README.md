@@ -2,61 +2,119 @@
 
 This package contains various toolsets that integrate with Composio's core functionality. Each toolset provides a collection of tools that can be used to interact with different services and APIs.
 
+## Types of Toolsets
+
+Composio SDK supports two types of toolsets:
+
+### 1. Non-Agentic Toolsets
+
+These toolsets only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
+
+```typescript
+import { BaseNonAgenticToolset } from '@composio/core';
+import type { Tool, ToolListParams, SchemaModifiersParams } from '@composio/core';
+
+interface ToolType {
+  // Define your tool type here
+}
+
+interface ToolCollection {
+  // Define your tool collection here
+}
+
+export class NonAgenticToolset extends BaseNonAgenticToolset<ToolCollection, ToolType> {
+  static FRAMEWORK_NAME = 'non-agentic-toolset';
+  readonly FILE_NAME: string = 'toolsets/non-agentic-toolset/src/index.ts';
+
+  wrapTool = (tool: Tool): ToolType => {
+    // Implement tool wrapping logic
+    return tool as ToolType;
+  };
+
+  getTools = async (
+    params?: ToolListParams,
+    modifiers?: SchemaModifiersParams
+  ): Promise<ToolCollection> => {
+    // Implement tool collection logic
+    return [];
+  };
+
+  getToolBySlug = async (slug: string, modifiers?: SchemaModifiersParams): Promise<ToolType> => {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this.wrapTool(tool);
+  };
+}
+```
+
+### 2. Agentic Toolsets
+
+These toolsets support full modifier capabilities including tool execution modifiers, schema modifiers, and custom modifiers. They are suitable for more complex integrations like Vercel, Langchain, etc.
+
+```typescript
+import { BaseAgenticToolset } from '@composio/core';
+import type { Tool, ToolListParams, ModifiersParams } from '@composio/core';
+
+interface ToolType {
+  // Define your tool type here
+}
+
+interface ToolCollection {
+  // Define your tool collection here
+}
+
+export class AgenticToolset extends BaseAgenticToolset<ToolCollection, ToolType> {
+  static FRAMEWORK_NAME = 'agentic-toolset';
+  readonly FILE_NAME: string = 'toolsets/agentic-toolset/src/index.ts';
+
+  wrapTool = (tool: Tool): ToolType => {
+    // Implement tool wrapping logic
+    return tool as ToolType;
+  };
+
+  getTools = async (
+    params?: ToolListParams,
+    modifiers?: ModifiersParams
+  ): Promise<ToolCollection> => {
+    // Implement tool collection logic with full modifier support
+    return [];
+  };
+
+  getToolBySlug = async (slug: string, modifiers?: ModifiersParams): Promise<ToolType> => {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this.wrapTool(tool);
+  };
+}
+```
+
 ## Creating a New Toolset
 
 To create a new toolset, you can use the provided script:
 
 ```bash
-npm run create-toolset <toolset-name>
+# Create a non-agentic toolset (default)
+pnpm run create-toolset <toolset-name>
+
+# Create an agentic toolset
+pnpm run create-toolset <toolset-name> --agentic
 ```
 
 This will create a new toolset with the following structure:
+
 ```
 <toolset-name>/
 ├── src/
-│   └── index.ts
-├── package.json
-├── tsconfig.json
-└── tsup.config.ts
-```
-
-## Toolset Implementation
-
-Each toolset extends the `BaseComposioToolset` class from `@composio/core`. Here's a basic structure of a toolset:
-
-```typescript
-import { BaseComposioToolset } from "@composio/core";
-import type { Tool, ToolListParams } from "@composio/core";
-
-interface ToolType {
-    // Define your tool type here
-}
-
-interface ToolCollection {
-    // Define your tool collection here
-}
-
-export class YourToolset extends BaseComposioToolset<ToolCollection, ToolType> {
-    static FRAMEWORK_NAME = "your-toolset";
-    private DEFAULT_ENTITY_ID = "default";
-    readonly FILE_NAME: string = "toolsets/your-toolset/src/index.ts";
-
-    _wrapTool = (tool: Tool): ToolType => {
-        // Implement tool wrapping logic
-        return tool as ToolType;
-    }
-
-    getTools = async (query?: ToolListParams): Promise<ToolCollection> => {
-        // Implement tool collection logic
-        return [];
-    }
-}
+│   └── index.ts      # Toolset implementation
+├── package.json      # Package configuration
+├── tsconfig.json     # TypeScript configuration
+├── tsup.config.ts    # Build configuration
+└── README.md         # Toolset documentation
 ```
 
 ### Required Methods
 
-1. `_wrapTool`: This method is responsible for wrapping a tool in the toolset's specific format.
+1. `wrapTool`: This method is responsible for wrapping a tool in the toolset's specific format.
 2. `getTools`: This method retrieves all available tools from the Composio API.
+3. `getToolBySlug`: This method retrieves a specific tool by its slug.
 
 ### Configuration
 
@@ -81,44 +139,55 @@ pnpm build
 2. **Error Handling**: Implement proper error handling in your tool methods
 3. **Documentation**: Document your tools and their parameters clearly
 4. **Testing**: Write unit tests for your toolset functionality
+5. **Modifier Support**:
+   - For non-agentic toolsets, implement schema modifiers to transform tool schemas
+   - For agentic toolsets, implement full modifier support including execution and custom modifiers
 
 ## Example Implementation
 
-Here's a simple example of implementing a toolset:
+Here's a simple example of implementing a non-agentic toolset:
 
 ```typescript
 interface MyToolType {
-    name: string;
-    description: string;
-    execute: (params: any) => Promise<any>;
+  name: string;
+  description: string;
+  execute: (params: any) => Promise<any>;
 }
 
 interface MyToolCollection {
-    [key: string]: MyToolType;
+  [key: string]: MyToolType;
 }
 
-export class MyToolset extends BaseComposioToolset<MyToolCollection, MyToolType> {
-    static FRAMEWORK_NAME = "my-toolset";
-    readonly FILE_NAME:string = "toolsets/MyToolset/src/index.ts"
-    
-    _wrapTool = (tool: Tool): MyToolType => {
-        return {
-            name: tool.name,
-            description: tool.description,
-            execute: async (params) => {
-                // Implement tool execution logic
-                return await this.executeTool(tool, params);
-            }
-        };
-    }
+export class MyNonAgenticToolset extends BaseNonAgenticToolset<MyToolCollection, MyToolType> {
+  static FRAMEWORK_NAME = 'my-toolset';
+  readonly FILE_NAME: string = 'toolsets/my-toolset/src/index.ts';
 
-    getTools = async (query?: ToolListParams): Promise<MyToolCollection> => {
-        const tools = await this.listTools(query);
-        return tools.reduce((acc, tool) => {
-            acc[tool.name] = this._wrapTool(tool);
-            return acc;
-        }, {} as MyToolCollection);
-    }
+  wrapTool = (tool: Tool): MyToolType => {
+    return {
+      name: tool.name,
+      description: tool.description,
+      execute: async params => {
+        // Implement tool execution logic
+        return await this.getComposio().tools.execute(tool.slug, params);
+      },
+    };
+  };
+
+  getTools = async (
+    params?: ToolListParams,
+    modifiers?: SchemaModifiersParams
+  ): Promise<MyToolCollection> => {
+    const tools = await this.getComposio().tools.getTools(params, modifiers?.schema);
+    return tools.reduce((acc, tool) => {
+      acc[tool.slug] = this.wrapTool(tool);
+      return acc;
+    }, {} as MyToolCollection);
+  };
+
+  getToolBySlug = async (slug: string, modifiers?: SchemaModifiersParams): Promise<MyToolType> => {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+    return this.wrapTool(tool);
+  };
 }
 ```
 
@@ -130,3 +199,4 @@ When contributing a new toolset:
 2. Include proper documentation
 3. Add tests for your implementation
 4. Update this README if necessary
+5. Choose the appropriate base class (agentic or non-agentic) based on your toolset's needs
