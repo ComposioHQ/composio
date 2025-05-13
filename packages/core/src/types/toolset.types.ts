@@ -1,3 +1,4 @@
+import { Composio } from '../composio';
 import { Tool, ToolListParams } from './tool.types';
 
 /**
@@ -5,8 +6,8 @@ import { Tool, ToolListParams } from './tool.types';
  * This class is used to create a base toolset by implementing this class.
  * This class also extends InstrumentedInstance, so that the telemetry can be instrumented for the toolset.
  */
-export interface Toolset<TTool = Tool, TToolCollection = TTool[]> {
-  _wrapTool: (tool: Tool) => TTool;
+export interface Toolset<TTool, TToolCollection> {
+  wrapTool: (tool: Tool) => TTool;
   getTools: (params?: ToolListParams) => Promise<TToolCollection>;
 }
 

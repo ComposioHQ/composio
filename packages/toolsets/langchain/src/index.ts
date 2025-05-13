@@ -24,7 +24,7 @@ export class LangchainToolset extends BaseAgenticToolset<
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  _wrapTool(tool: Tool, modifiers?: ModifiersParams): DynamicStructuredTool {
+  wrapTool(tool: Tool, modifiers?: ModifiersParams): DynamicStructuredTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
@@ -71,7 +71,7 @@ export class LangchainToolset extends BaseAgenticToolset<
     modifiers?: ModifiersParams
   ): Promise<LangChainToolCollection> {
     const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
-    return tools?.map(tool => this._wrapTool(tool, modifiers)) ?? [];
+    return tools?.map(tool => this.wrapTool(tool, modifiers)) ?? [];
   }
 
   override async getToolBySlug(
@@ -79,6 +79,6 @@ export class LangchainToolset extends BaseAgenticToolset<
     modifiers?: ModifiersParams
   ): Promise<DynamicStructuredTool> {
     const tool = await this.getComposio()?.tools.getToolBySlug(slug, modifiers?.schema);
-    return this._wrapTool(tool as Tool, modifiers);
+    return this.wrapTool(tool as Tool, modifiers);
   }
 }

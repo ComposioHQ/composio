@@ -12,7 +12,11 @@ import { Stream } from 'openai/streaming';
 import { BaseNonAgenticToolset } from './BaseToolset';
 import { Tool, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
-import { ExecuteToolModifiersParams, ModifiersParams } from '../types/modifiers.types';
+import {
+  ExecuteToolModifiersParams,
+  ModifiersParams,
+  SchemaModifiersParams,
+} from '../types/modifiers.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -23,7 +27,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  override _wrapTool = (tool: Tool): OpenAiTool => {
+  override wrapTool = (tool: Tool): OpenAiTool => {
     const formattedSchema: OpenAI.FunctionDefinition = {
       name: tool.slug,
       description: tool.description,
@@ -43,18 +47,15 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    */
   async getTools(
     params?: ToolListParams,
-    modifiers?: Pick<ModifiersParams, 'schema'>
+    modifiers?: SchemaModifiersParams
   ): Promise<OpenAiToolCollection> {
     const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
-    return tools?.map(tool => this._wrapTool(tool as Tool)) ?? [];
+    return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
   }
 
-  async getToolBySlug(
-    slug: string,
-    modifiers?: Pick<ModifiersParams, 'schema'>
-  ): Promise<OpenAiTool> {
+  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<OpenAiTool> {
     const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this._wrapTool(tool);
+    return this.wrapTool(tool);
   }
 
   /**

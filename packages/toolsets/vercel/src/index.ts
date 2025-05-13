@@ -39,7 +39,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
-        [tool.slug]: this._wrapTool(tool as ComposioTool, modifiers),
+        [tool.slug]: this.wrapTool(tool as ComposioTool, modifiers),
       }),
       {}
     );
@@ -47,7 +47,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
 
   override async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<VercelTool> {
     const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this._wrapTool(tool as ComposioTool, modifiers);
+    return this.wrapTool(tool as ComposioTool, modifiers);
   }
 
   /**
@@ -82,7 +82,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     return JSON.stringify(results);
   }
 
-  _wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiersParams): VercelTool {
+  wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiersParams): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema(composioTool.inputParameters ?? {}),

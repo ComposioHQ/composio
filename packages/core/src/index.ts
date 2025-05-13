@@ -7,11 +7,10 @@ export { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToModel } from './utils/jsonSchema';
 export { Tool, ToolListParams, ToolListParamsSchema } from './types/tool.types';
 export { Toolset } from './types/toolset.types';
-
 // Type exports
 export type {
   ModifiersParams,
   TransformToolSchemaModifier,
-  BeforeToolExecuteModifer,
+  BeforeToolExecuteModifier,
   AfterToolExecuteModifier,
 } from './types/modifiers.types';

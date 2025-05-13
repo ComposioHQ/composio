@@ -6,6 +6,7 @@ import {
   ToolExecuteResponse,
   ToolList,
   ToolSchema,
+  ToolExecuteResponseSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -16,14 +17,11 @@ import {
   ToolRetrieveEnumResponse,
   ToolRetrieveResponse,
   ToolListResponse as ComposioToolListResponse,
+  ToolExecuteResponse as ComposioToolExecuteResponse,
 } from '@composio/client/resources/tools';
-import { Modifiers } from './Modifiers';
 import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
-import {
-  ExecuteToolModifiersParams,
-  GlobalTransformToolSchemaModifier,
-} from '../types/modifiers.types';
+import { ExecuteToolModifiersParams, TransformToolSchemaModifier } from '../types/modifiers.types';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -31,12 +29,10 @@ import {
  */
 export class Tools {
   private client: ComposioClient;
-  private modifiers: Modifiers;
-  private customTools: CustomTools;
+  customTools: CustomTools;
 
-  constructor(client: ComposioClient, modifiers: Modifiers) {
+  constructor(client: ComposioClient) {
     this.client = client;
-    this.modifiers = modifiers || new Modifiers();
     this.customTools = new CustomTools(client);
   }
 
@@ -50,6 +46,16 @@ export class Tools {
     });
   }
 
+  private transformToolExecuteResponse(response: ComposioToolExecuteResponse): ToolExecuteResponse {
+    return ToolExecuteResponseSchema.parse({
+      data: response.data,
+      error: response.error,
+      successful: response.successful,
+      logId: response.log_id,
+      sessionInfo: response.session_info,
+    });
+  }
+
   /**
    * Lists all tools available in the Composio SDK as well as custom tools.
    * This method fetches the tools from the Composio API and wraps them using the toolset.
@@ -57,7 +63,7 @@ export class Tools {
    */
   async getTools(
     query: ToolListParams = {},
-    modifier?: GlobalTransformToolSchemaModifier
+    modifier?: TransformToolSchemaModifier
   ): Promise<ToolList> {
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
@@ -79,18 +85,7 @@ export class Tools {
       toolSlugs: queryParams.data.toolSlugs,
     });
 
-    const composioToolList = [
-      ...tools.items.map(tool => this.transformToolCases(tool)),
-      ...customTools,
-    ];
-
-    let modifiedTools = composioToolList.map(tool => {
-      return this.modifiers.applyTransformToolSchema(tool.slug, {
-        ...tool,
-        inputParameters: tool.inputParameters,
-        outputParameters: tool.outputParameters,
-      });
-    });
+    let modifiedTools = [...tools.items.map(tool => this.transformToolCases(tool)), ...customTools];
 
     // apply local modifiers if they are provided
     if (modifier) {
@@ -111,7 +106,7 @@ export class Tools {
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
    */
-  async getToolBySlug(slug: string, modifier?: GlobalTransformToolSchemaModifier): Promise<Tool> {
+  async getToolBySlug(slug: string, modifier?: TransformToolSchemaModifier): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -123,18 +118,16 @@ export class Tools {
       throw new Error(`Tool with slug ${slug} not found`);
     }
     // change the case of the tool to camel case
-    const casedTool = this.transformToolCases(tool);
-    // apply the global modifiers
-    let modifiedTool = this.modifiers.applyTransformToolSchema(slug, casedTool);
+    let modifiedToool = this.transformToolCases(tool);
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedTool = modifier(slug, modifiedTool);
+        modifiedToool = modifier(slug, modifiedToool);
       } else {
         throw new Error('Invalid schema modifier. Not a function.');
       }
     }
-    return modifiedTool;
+    return modifiedToool;
   }
 
   /**
@@ -151,35 +144,26 @@ export class Tools {
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiersParams
   ): Promise<ToolExecuteResponse> {
-    // before tool execute modifier, apply all the global modifiers
-    let modifiedBody = this.modifiers.applyBeforeToolExecute(slug, body);
-
     // apply local modifiers if they are provided
     if (modifiers && modifiers.beforeToolExecute) {
       if (typeof modifiers.beforeToolExecute === 'function') {
-        modifiedBody = modifiers.beforeToolExecute(slug, modifiedBody);
+        body = modifiers.beforeToolExecute(slug, body);
       } else {
         throw new Error('Invalid beforeToolExecute modifier. Not a function.');
       }
     }
 
     let result = await this.client.tools.execute(slug, {
-      allow_tracing: modifiedBody.allowTracing,
-      connected_account_id: modifiedBody.connectedAccountId,
-      custom_auth_params: modifiedBody.customAuthParams,
-      arguments: modifiedBody.arguments,
-      entity_id: modifiedBody.userId,
-      version: modifiedBody.version,
-      text: modifiedBody.text,
+      allow_tracing: body.allowTracing,
+      connected_account_id: body.connectedAccountId,
+      custom_auth_params: body.customAuthParams,
+      arguments: body.arguments,
+      entity_id: body.userId,
+      version: body.version,
+      text: body.text,
     });
-    // apply gloafter tool execute modifier
-    result = this.modifiers.applyAfterToolExecute(slug, {
-      data: result.data,
-      error: result.error,
-      successful: result.successful,
-      logId: result.log_id,
-      sessionInfo: result.session_info,
-    });
+    // apply transformations to the response
+    result = this.transformToolExecuteResponse(result);
 
     // apply local modifiers if they are provided
     if (modifiers && modifiers.afterToolExecute) {

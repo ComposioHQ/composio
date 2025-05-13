@@ -25,7 +25,7 @@ export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
 
   abstract getToolBySlug(slug: string, modifiers?: Pick<ModifiersParams, 'schema'>): Promise<TTool>;
 
-  abstract _wrapTool(tool: Tool): TTool;
+  abstract wrapTool(tool: Tool): TTool;
 
   protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
     if (!this.composio) {
@@ -56,7 +56,7 @@ export abstract class BaseAgenticToolset<TToolCollection, TTool>
 
   abstract getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<TTool>;
 
-  abstract _wrapTool(tool: Tool): TTool;
+  abstract wrapTool(tool: Tool): TTool;
 
   protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
     if (!this.composio) {

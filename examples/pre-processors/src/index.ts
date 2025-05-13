@@ -8,6 +8,12 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
+const tools = await composio.getTools(
+  {
+    toolkitSlug: 'HACKERNEWS',
+  },
+  {}
+);
 // Local modifiers
 const tool = await composio.getToolBySlug('HACKERNEWS_GET_USER', {
   schema: (toolSlug, toolSchema) => {
@@ -26,19 +32,6 @@ composio.toolset.handleToolCall({}, '', {
     return toolExecuteParams;
   },
 });
-// global modifiers, with toolslug as helper
-composio.useTransformToolSchema('HACKERNEWS_GET_USER', toolSchema => {
-  toolSchema.inputParameters = {};
-  return toolSchema;
-});
-
-// global modifiers
-composio.useTransformToolSchema((toolSlug, toolSchema) => {
-  if (toolSlug === 'HACKERNEWS_GET_USER') {
-    toolSchema.inputParameters = {};
-  }
-  return toolSchema;
-});
 
 /**
  * Agentic toolset
@@ -48,7 +41,7 @@ const vercelComposio = new Composio({
   toolset: new VercelToolset(),
 });
 
-const tools = await vercelComposio.getTools(
+const verceltools = await vercelComposio.getTools(
   {
     toolkitSlug: 'HACKERNEWS',
   },
@@ -67,3 +60,4 @@ const tools = await vercelComposio.getTools(
     },
   }
 );
+console.log(verceltools);

@@ -4,11 +4,11 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseAgenticToolset, BaseNonAgenticToolset } from './toolset/BaseToolset';
+import { BaseComposioToolset } from './toolset/BaseToolset';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
-import type { ModifiersParams } from './types/modifiers.types';
+import type { ToolsetModifierType } from './types/modifiers.types';
 import type { ToolListParams } from './types/tool.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
@@ -16,39 +16,24 @@ import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIToolset } from './toolset/OpenAIToolset';
 import { version } from '../package.json';
-import { Modifiers } from './models/Modifiers';
 
-export type ComposioConfig<
-  TToolset extends
-    | BaseAgenticToolset<unknown, unknown>
-    | BaseNonAgenticToolset<unknown, unknown> = OpenAIToolset,
-> = {
-  apiKey?: string;
-  baseURL?: string;
-  allowTracking?: boolean;
-  allowTracing?: boolean;
-  toolset?: TToolset;
-  userId?: string;
-  connectedAccountIds?: Record<string, string>;
-  telemetryTransport?: BaseTelemetryTransport;
-};
-
-type ToolsetModifierType<
-  T extends BaseAgenticToolset<unknown, unknown> | BaseNonAgenticToolset<unknown, unknown>,
-> =
-  T extends BaseAgenticToolset<unknown, unknown>
-    ? ModifiersParams
-    : Pick<ModifiersParams, 'schema'>;
+export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
+  {
+    apiKey?: string;
+    baseURL?: string;
+    allowTracking?: boolean;
+    allowTracing?: boolean;
+    toolset?: TToolset;
+    userId?: string;
+    connectedAccountIds?: Record<string, string>;
+    telemetryTransport?: BaseTelemetryTransport;
+  };
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<
-  TToolset extends
-    | BaseAgenticToolset<unknown, unknown>
-    | BaseNonAgenticToolset<unknown, unknown> = OpenAIToolset,
-> {
+export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
   private readonly DEFAULT_USER_ID = 'default';
   /**
    * The Composio API client.
@@ -81,22 +66,6 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
   createConnectedAccount: ConnectedAccounts['createConnectedAccount'];
-  // global modifiers
-  modifiers: Modifiers;
-  useBeforeToolExecute: Modifiers['useBeforeToolExecute'];
-  useAfterToolExecute: Modifiers['useAfterToolExecute'];
-  useTransformToolSchema: Modifiers['useTransformToolSchema'];
-  // toolset modifiers
-  getToolBySlug!: <T extends TToolset>(
-    slug: string,
-    modifiers?: ToolsetModifierType<T>
-  ) => Promise<ReturnType<T['getToolBySlug']>>;
-  getTools!: <T extends TToolset>(
-    params?: ToolListParams,
-    modifiers?: ToolsetModifierType<T>
-  ) => Promise<ReturnType<T['getTools']>>;
-  // getToolBySlug: TToolset['getToolBySlug'];
-  // getTools: TToolset['getTools'];
 
   /**
    * @param {Object} config Configuration for the Composio SDK.
@@ -151,34 +120,10 @@ export class Composio<
      */
     this.toolset = (config.toolset ?? new OpenAIToolset()) as TToolset;
     this.toolset.setComposio(this);
-
-    this.getToolBySlug = (async <T extends TToolset>(
-      slug: string,
-      modifiers?: ToolsetModifierType<T>
-    ) => {
-      return this.toolset.getToolBySlug(slug, modifiers as ToolsetModifierType<TToolset>);
-    }) as typeof this.getToolBySlug;
-
-    this.getTools = (async <T extends TToolset>(
-      params?: ToolListParams,
-      modifiers?: ToolsetModifierType<T>
-    ) => {
-      return this.toolset.getTools(params, modifiers as ToolsetModifierType<TToolset>);
-    }) as typeof this.getTools;
-
-    /**
-     * Modifiers are used to modify the tools and toolkits.
-     * Initialize the modifiers into global scope.
-     */
-    this.modifiers = new Modifiers();
-    this.useBeforeToolExecute = this.modifiers.useBeforeToolExecute;
-    this.useAfterToolExecute = this.modifiers.useAfterToolExecute;
-    this.useTransformToolSchema = this.modifiers.useTransformToolSchema;
-
     /**
      * Initialize all the models with composio client.
      */
-    this.tools = new Tools(this.client, this.modifiers);
+    this.tools = new Tools(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -221,7 +166,6 @@ export class Composio<
      */
     this.telemetry.instrumentTelemetry(this);
     this.telemetry.instrumentTelemetry(this.tools);
-    this.telemetry.instrumentTelemetry(this.modifiers);
     this.telemetry.instrumentTelemetry(this.toolkits);
     this.telemetry.instrumentTelemetry(this.triggers);
     this.telemetry.instrumentTelemetry(this.authConfigs);
@@ -247,5 +191,31 @@ export class Composio<
       throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
+  }
+
+  /**
+   * Fetch all the tools from Composio.
+   * @param {ToolListParams} params Parameters to fetch the tools.
+   * @param {ToolsetModifierType<TToolset>} modifiers Modifiers to apply to the tools.
+   * @returns {Promise<ReturnType<TToolset['getTools']>>} The tools from the toolset.
+   */
+  getTools<T extends TToolset>(
+    params?: ToolListParams,
+    modifiers?: ToolsetModifierType<T>
+  ): Promise<ReturnType<T['getTools']>> {
+    return this.toolset.getTools(params, modifiers) as Promise<ReturnType<T['getTools']>>;
+  }
+
+  /**
+   * Fetch a tool from Composio by its slug.
+   * @param {string} slug slug of the tool
+   * @param {ToolsetModifierType<TToolset>} modifiers to be applied to the tool
+   * @returns {Promise<ReturnType<TToolset['getToolBySlug']>>} The tool from the toolset.
+   */
+  getToolBySlug<T extends TToolset>(
+    slug: string,
+    modifiers?: ToolsetModifierType<T>
+  ): Promise<ReturnType<T['getToolBySlug']>> {
+    return this.toolset.getToolBySlug(slug, modifiers) as Promise<ReturnType<T['getToolBySlug']>>;
   }
 }

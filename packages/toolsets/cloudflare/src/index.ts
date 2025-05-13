@@ -13,7 +13,7 @@ import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
 import { BaseNonAgenticToolset, Tool, ToolListParams } from '@composio/core';
 import {
   ExecuteToolModifiersParams,
-  ModifiersParams,
+  SchemaModifiersParams,
 } from 'packages/core/src/types/modifiers.types';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -28,7 +28,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  _wrapTool(tool: Tool): AiTextGenerationToolInput {
+  wrapTool(tool: Tool): AiTextGenerationToolInput {
     const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
       description: tool.description!,
@@ -57,7 +57,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    */
   override async getTools(
     query?: ToolListParams,
-    modifiers?: Pick<ModifiersParams, 'schema'>
+    modifiers?: SchemaModifiersParams
   ): Promise<AiToolCollection> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
@@ -67,7 +67,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
-        [tool.slug]: this._wrapTool(tool),
+        [tool.slug]: this.wrapTool(tool),
       }),
       {}
     );
@@ -75,13 +75,13 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
 
   override async getToolBySlug(
     slug: string,
-    modifiers?: Pick<ModifiersParams, 'schema'>
+    modifiers?: SchemaModifiersParams
   ): Promise<AiTextGenerationToolInput> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
     }
     const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this._wrapTool(tool);
+    return this.wrapTool(tool);
   }
 
   /**

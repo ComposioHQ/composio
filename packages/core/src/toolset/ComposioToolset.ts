@@ -19,13 +19,13 @@ export class ComposioToolset extends BaseNonAgenticToolset<Array<CustomTool>, Cu
     super();
   }
 
-  _wrapTool = (tool: Tool): CustomTool => {
+  wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };
 
   async getTools(params?: ToolListParams): Promise<Array<CustomTool>> {
     const tools = await this.getComposio().tools.getTools(params);
-    return tools?.map(tool => this._wrapTool(tool as Tool)) ?? [];
+    return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
   }
 
   async getToolBySlug(
@@ -33,7 +33,7 @@ export class ComposioToolset extends BaseNonAgenticToolset<Array<CustomTool>, Cu
     modifiers?: Pick<ModifiersParams, 'schema'>
   ): Promise<CustomTool> {
     const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this._wrapTool(tool as Tool);
+    return this.wrapTool(tool as Tool);
   }
 
   async test() {}
