@@ -1,6 +1,5 @@
 import logger from './logger';
 import { IS_DEVELOPMENT_OR_CI } from './constants';
-import { version } from '../../package.json';
 
 /**
  * Compares two semantic versions and returns true if the first version is newer than the second.
@@ -23,10 +22,10 @@ export function isNewerVersion(version1: string, version2: string): boolean {
  * Checks for the latest version of the Composio SDK from NPM.
  * If a newer version is available, it logs a warning to the console.
  */
-export async function checkForLatestVersionFromNPM() {
+export async function checkForLatestVersionFromNPM(currentVersion: string) {
   try {
     const packageName = 'composio-core';
-    const currentVersionFromPackageJson = version;
+    const currentVersionFromPackageJson = currentVersion;
 
     // @TODO: Check if fetch is available, if not use node-fetch
     const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`);

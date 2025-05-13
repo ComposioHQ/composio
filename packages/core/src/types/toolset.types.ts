@@ -1,4 +1,3 @@
-import { Composio } from '../composio';
 import { Tool, ToolListParams } from './tool.types';
 
 /**

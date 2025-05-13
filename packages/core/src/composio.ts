@@ -151,7 +151,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     }
 
     // Check for the latest version of the Composio SDK from NPM.
-    checkForLatestVersionFromNPM();
+    checkForLatestVersionFromNPM(version);
   }
 
   /**

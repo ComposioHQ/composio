@@ -12,11 +12,7 @@ import { Stream } from 'openai/streaming';
 import { BaseNonAgenticToolset } from './BaseToolset';
 import { Tool, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
-import {
-  ExecuteToolModifiersParams,
-  ModifiersParams,
-  SchemaModifiersParams,
-} from '../types/modifiers.types';
+import { ExecuteToolModifiersParams, SchemaModifiersParams } from '../types/modifiers.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
