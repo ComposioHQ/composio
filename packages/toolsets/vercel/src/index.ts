@@ -77,7 +77,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     }
 
     const toolSchema = await this.getComposio().tools.getComposioToolBySlug(userId, tool.name);
-    const appName = toolSchema?.name.toLowerCase();
+    // const appName = toolSchema?.name.toLowerCase();
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
 
     const results = await this.getComposio().tools.execute(
@@ -85,7 +85,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
       {
         arguments: args,
         userId: userId,
-        connectedAccountId: this.getComposio().getConnectedAccountId(appName),
+        // connectedAccountId: this.getComposio().getConnectedAccountId(appName),
       },
       modifiers
     );

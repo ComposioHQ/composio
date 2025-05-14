@@ -82,10 +82,8 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     if (!appSlug) {
       throw new Error('App slug not found');
     }
-    const connectedAccountId = this.getComposio().getConnectedAccountId(appSlug);
     const payload: ToolExecuteParams = {
-      userId: userId ?? this.getComposio().userId,
-      connectedAccountId: connectedAccountId,
+      userId: userId,
       arguments: JSON.parse(tool.function.arguments),
     };
     const results = await this.getComposio().tools.execute(toolSchema.slug, payload, modifiers);

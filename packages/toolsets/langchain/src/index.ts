@@ -15,6 +15,7 @@ import {
   Tool,
   ToolListParams,
   AgenticToolOptions,
+  ExecuteMetadata,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
@@ -38,14 +39,13 @@ export class LangchainToolset extends BaseAgenticToolset<
     }
 
     const func = async (...kwargs: unknown[]): Promise<unknown> => {
-      const connectedAccountId = this.getComposio()?.getConnectedAccountId(appName);
       return JSON.stringify(
         await this.getComposio()?.tools.execute(
           toolName,
           {
             arguments: kwargs[0] as Record<string, unknown>,
-            userId,
-            connectedAccountId: connectedAccountId,
+            userId: userId,
+            // connectedAccountId: connectedAccountId,
           },
           modifiers
         )

@@ -16,6 +16,7 @@ import {
   ExecuteToolModifiers,
   ToolOptions,
   BaseNonAgenticToolset,
+  ExecuteMetadata,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -103,7 +104,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    * @returns The results of the tool call.
    */
   async executeToolCall(
-    userId: string,
+    executeMetadata: ExecuteMetadata,
     tool: { name: string; arguments: unknown },
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
@@ -111,7 +112,10 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
       throw new Error('Client not set');
     }
 
-    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(userId, tool.name);
+    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(
+      executeMetadata.userId,
+      tool.name
+    );
     const appName = toolSchema?.toolkit?.name.toLowerCase();
     if (!appName) {
       throw new Error('App name not found');
@@ -121,8 +125,8 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
       toolSchema.slug,
       {
         arguments: args,
-        userId,
-        connectedAccountId: this.getComposio()?.getConnectedAccountId(appName),
+        userId: executeMetadata.userId,
+        connectedAccountId: executeMetadata.connectedAccountId,
       },
       modifiers
     );
