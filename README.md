@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/composiohq-composio-badge.png)](https://mseep.ai/app/composiohq-composio)
+
 <p>
   <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a
     href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a
