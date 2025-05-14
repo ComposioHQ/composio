@@ -1,7 +1,7 @@
 import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
 import { AgenticToolOptions, ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
-import { ExecuteMetadata } from '../types/customTool.types';
+// import { ExecuteMetadata } from '../types/customTool.types';
 
 // Type for backward compatibility and type constraints
 export abstract class BaseNonAgenticToolset<TToolCollection, TTool> {

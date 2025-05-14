@@ -15,7 +15,7 @@ import {
   Tool,
   ToolListParams,
   AgenticToolOptions,
-  ExecuteMetadata,
+  // ExecuteMetadata,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
