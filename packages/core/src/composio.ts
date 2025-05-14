@@ -16,6 +16,7 @@ import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIToolset } from './toolset/OpenAIToolset';
 import { version } from '../package.json';
+import { getRandomUUID } from './utils/uuid';
 
 export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
   {
@@ -24,8 +25,6 @@ export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown
     allowTracking?: boolean;
     allowTracing?: boolean;
     toolset?: TToolset;
-    userId?: string;
-    connectedAccountIds?: Record<string, string>;
     telemetryTransport?: BaseTelemetryTransport;
   };
 
@@ -48,12 +47,6 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   private config: ComposioConfig<TToolset>;
 
   private telemetry: Telemetry | undefined;
-
-  /**
-   * Context variables for the Composio SDK.
-   */
-  userId?: string;
-  connectedAccountIds?: Record<string, string>;
 
   /**
    * Core models for Composio.
@@ -85,11 +78,6 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     if (IS_DEVELOPMENT_OR_CI) {
       logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
-    if (config.userId && config.connectedAccountIds) {
-      logger.warn(
-        'When both userId and connectedAccountIds are provided, preference will be given to connectedAccountIds'
-      );
-    }
 
     /**
      * Initialize the Composio SDK client.
@@ -108,12 +96,6 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
       ...config,
       allowTracking: config.allowTracking ?? true,
     };
-
-    /**
-     * Set the context variables for the Composio SDK.
-     */
-    this.userId = config.userId ?? this.DEFAULT_USER_ID; // entity id of the user
-    this.connectedAccountIds = config.connectedAccountIds ?? {}; // app name -> account id of the connected account
 
     /**
      * Set the default toolset, if not provided by the user.
@@ -142,9 +124,9 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
           baseUrl: baseURLParsed ?? '',
           frameworkRuntime: 'node',
           source: 'node', // @TODO: get the source
-          sessionId: this.userId,
           composioVersion: version,
           isBrowser: typeof window !== 'undefined',
+          sessionId: getRandomUUID(), // @TODO: get the session id
         },
         config.telemetryTransport
       );
@@ -171,15 +153,6 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     this.telemetry.instrumentTelemetry(this.authConfigs);
     this.telemetry.instrumentTelemetry(this.connectedAccounts);
     this.telemetry.instrumentTelemetry(this.toolset);
-  }
-
-  /**
-   * Get the connected account id for the given app name.
-   * @param appName - The name of the app.
-   * @returns {string | undefined} The connected account id for the given app name.
-   */
-  getConnectedAccountId(appName: string): string | undefined {
-    return this.connectedAccountIds?.[appName];
   }
 
   /**

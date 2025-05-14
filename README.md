@@ -11,6 +11,34 @@ The core Composio SDK which allows users to interact with the Composio Platform.
 - **ConnectedAccounts**: Manage third-party service connections. Includes functionality to create, list, refresh, and manage the status of connected accounts.
 - **ActionExecution**: Track and manage the execution of actions within the platform.
 
+## Installation
+
+```bash
+npm install @composio/core
+# or
+yarn add @composio/core
+# or
+pnpm add @composio/core
+```
+
+## Configuration
+
+```typescript
+interface ComposioConfig {
+  apiKey?: string; // Your Composio API key
+  baseURL?: string; // Custom API base URL (optional)
+  allowTracking?: boolean; // Enable/disable telemetry (default: true)
+  allowTracing?: boolean; // Enable/disable tracing (default: true)
+  toolset?: TToolset; // Custom toolset (default: OpenAIToolset)
+  telemetryTransport?: BaseTelemetryTransport; // Custom telemetry transport
+}
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(), // Optional: defaults to OpenAIToolset
+});
+```
+
 ## Toolsets
 
 Composio SDK supports two types of toolsets, each with different modifier capabilities:
@@ -18,8 +46,6 @@ Composio SDK supports two types of toolsets, each with different modifier capabi
 ### 1. Non-Agentic Toolsets
 
 These toolsets only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
-
-Schema modifiers allow you to transform tool schemas using the `TransformToolSchemaModifier` function:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -32,8 +58,8 @@ const composio = new Composio({
 });
 
 // Get a tool with schema modifiers
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
-  schema: (toolSlug: string, tool: Tool) => ({
+const tool = await composio.getToolBySlug('user123', 'HACKERNEWS_SEARCH_POSTS', {
+  modifyToolSchema: (toolSlug: string, tool: Tool) => ({
     ...tool,
     description: 'Search HackerNews posts with improved description',
     inputParameters: {
@@ -51,7 +77,7 @@ const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
 
 These toolsets support full modifier capabilities, making them suitable for complex integrations like Vercel, Langchain, etc. They support:
 
-1. **Schema Modifiers**: Transform tool schemas using `TransformToolSchemaModifier`
+1. **Schema Modifiers**: Transform tool schemas using `modifyToolSchema`
 2. **Execution Modifiers**: Transform tool execution behavior
    - `beforeToolExecute`: Transform input parameters before execution
    - `afterToolExecute`: Transform output after execution
@@ -69,9 +95,9 @@ const composio = new Composio({
 });
 
 // Get a tool with full modifier support
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
+const tool = await composio.getToolBySlug('user123', 'HACKERNEWS_SEARCH_POSTS', {
   // Schema modifier
-  schema: (toolSlug: string, tool: Tool) => ({
+  modifyToolSchema: (toolSlug: string, tool: Tool) => ({
     ...tool,
     description: 'Search HackerNews posts with improved description',
     inputParameters: {
@@ -101,125 +127,56 @@ const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
     },
   }),
 });
+```
 
-// Execute the tool with execution modifiers
-const result = await composio.toolset.executeTool(
-  tool,
-  {
-    arguments: { query: 'AI', limit: 20 },
-  },
-  {
-    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
-      ...params,
-      arguments: {
-        ...params.arguments,
-        limit: Math.min((params.arguments?.limit as number) || 10, 100),
-      },
-    }),
-    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
-      ...response,
-      data: {
-        ...response.data,
-        posts: (response.data?.posts as any[]).map(post => ({
-          ...post,
-          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
-        })),
-      },
-    }),
+## Creating a Custom Toolset
+
+To create a new toolset, extend either `BaseNonAgenticToolset` or `BaseAgenticToolset` from `@composio/core`:
+
+```typescript
+import { BaseNonAgenticToolset } from '@composio/core';
+import type { Tool, ToolListParams, ToolOptions } from '@composio/core';
+
+interface CustomTool {
+  name: string;
+  // ... custom tool properties
+}
+
+export class CustomToolset extends BaseNonAgenticToolset<Array<CustomTool>, CustomTool> {
+  readonly FILE_NAME: string = 'custom/toolset.ts';
+
+  wrapTool = (tool: Tool): CustomTool => {
+    return {
+      name: tool.name,
+      // ... map other properties
+    };
+  };
+
+  async getTools(
+    userId: string,
+    params?: ToolListParams,
+    options?: ToolOptions
+  ): Promise<Array<CustomTool>> {
+    const tools = await this.getComposio().tools.getComposioTools(
+      userId,
+      params,
+      options?.modifyToolSchema
+    );
+    return tools?.map(tool => this.wrapTool(tool)) ?? [];
   }
-);
+
+  async getToolBySlug(userId: string, slug: string, options?: ToolOptions): Promise<CustomTool> {
+    const tool = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      slug,
+      options?.modifyToolSchema
+    );
+    return this.wrapTool(tool);
+  }
+}
 ```
 
-## Usage
-
-@composio/core ships with OpenAI toolset by default. You can directly use the tools from composio in `openai` methods.
-
-```typescript
-import { Composio } from '@composio/core';
-import type { Tool } from '@composio/core';
-
-// By default composio ships with OpenAI toolset (non-agentic)
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-// Get a tool with schema modifiers
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
-  schema: (toolSlug: string, tool: Tool) => ({
-    ...tool,
-    description: 'Search HackerNews posts with improved description',
-    inputParameters: {
-      ...tool.inputParameters,
-      limit: {
-        type: 'number',
-        description: 'Maximum number of posts to return',
-      },
-    },
-  }),
-});
-console.log(tool);
-```
-
-For more examples, please check the `/examples` directory.
-
-## Using with a different toolset
-
-To use a different toolset, please install the recommended toolset packages.
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelToolset } from '@composio/vercel-toolset'; // Agentic toolset
-// or
-import { OpenAIToolset } from '@composio/openai-toolset'; // Non-agentic toolset
-import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new VercelToolset(), // or new OpenAIToolset()
-});
-
-// Get a tool with appropriate modifiers based on toolset type
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
-  // Schema modifiers (supported by both types)
-  schema: (toolSlug: string, tool: Tool) => ({
-    ...tool,
-    description: 'Search HackerNews posts with improved description',
-    inputParameters: {
-      ...tool.inputParameters,
-      limit: {
-        type: 'number',
-        description: 'Maximum number of posts to return',
-      },
-    },
-  }),
-  // Execution modifiers (only for agentic toolsets)
-  ...(composio.toolset instanceof VercelToolset && {
-    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
-      ...params,
-      arguments: {
-        ...params.arguments,
-        limit: Math.min((params.arguments?.limit as number) || 10, 100),
-      },
-    }),
-    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
-      ...response,
-      data: {
-        ...response.data,
-        posts: (response.data?.posts as any[]).map(post => ({
-          ...post,
-          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
-        })),
-      },
-    }),
-  }),
-});
-```
-
-## Creating a new toolset
-
-To create a new Toolset, you need to extend either `BaseNonAgenticToolset` or `BaseAgenticToolset` from `@composio/core` and implement the required methods.
-
-To quickly create a toolset project, execute the following command from the root of the project:
+To quickly create a toolset project, use the provided script:
 
 ```bash
 # Create a non-agentic toolset (default)
@@ -229,40 +186,22 @@ pnpm run create-toolset <your-toolset-name>
 pnpm run create-toolset <your-toolset-name> --agentic
 ```
 
-For example:
+## Environment Variables
 
-```bash
-# Create a non-agentic toolset for Anthropic
-pnpm run create-toolset anthropic
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `COMPOSIO_BASE_URL`: Custom API base URL
+- `COMPOSIO_LOGGING_LEVEL`: Logging level (silent, error, warn, info, debug)
+- `DEVELOPMENT`: Development mode flag
+- `CI`: CI environment flag
 
-# Create an agentic toolset for Langchain
-pnpm run create-toolset langchain --agentic
-```
+## Contributing
 
-The script will create a new toolset with the following structure:
+We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
 
-```
-<toolset-name>/
-├── src/
-│   └── index.ts      # Toolset implementation
-├── package.json      # Package configuration
-├── tsconfig.json     # TypeScript configuration
-├── tsup.config.ts    # Build configuration
-└── README.md         # Toolset documentation
-```
+## License
 
-## Internal
+ISC License
 
-What's not included from @composio/client
+## Support
 
-- [x] Org/Project Mangement with API Keys
-- [x] Trigger Subscriptions
-- [ ] Zod Schemas for type checking `Ideally strike a minimal balance, since backend has most`
-- [ ] Action Execution
-- [ ] CLI `Do we need this in the core SDK?`
-- [ ] MCP `Not required as this is not necessary`
-- [ ] Team Members
-- [ ] File uploads/user files
-- [ ] Tests
-
-These models can be still be accessed via the SDK explicitly by using the `@composio/client`.
+For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
