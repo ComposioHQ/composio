@@ -16,7 +16,7 @@ const tools = await composio.getTools(
 );
 // Local modifiers
 const tool = await composio.getToolBySlug('HACKERNEWS_GET_USER', {
-  schema: (toolSlug, toolSchema) => {
+  modifyToolSchema: (toolSlug, toolSchema) => {
     toolSchema.inputParameters = {};
     return toolSchema;
   },
