@@ -153,17 +153,27 @@ export class Tools {
       }
     }
 
-    let result = await this.client.tools.execute(slug, {
-      allow_tracing: body.allowTracing,
-      connected_account_id: body.connectedAccountId,
-      custom_auth_params: body.customAuthParams,
-      arguments: body.arguments,
-      entity_id: body.userId,
-      version: body.version,
-      text: body.text,
-    });
-    // apply transformations to the response
-    result = this.transformToolExecuteResponse(result);
+    let result: ToolExecuteResponse;
+    // check if the tool is a custom tool
+    const customTool = await this.customTools.getCustomToolBySlug(slug);
+    if (customTool) {
+      result = await this.customTools.executeCustomTool(slug, body, {
+        userId: body.userId || 'default',
+        connectedAccountId: body.connectedAccountId,
+      });
+    } else {
+      result = await this.client.tools.execute(slug, {
+        allow_tracing: body.allowTracing,
+        connected_account_id: body.connectedAccountId,
+        custom_auth_params: body.customAuthParams,
+        arguments: body.arguments,
+        entity_id: body.userId,
+        version: body.version,
+        text: body.text,
+      });
+      // apply transformations to the response
+      result = this.transformToolExecuteResponse(result);
+    }
 
     // apply local modifiers if they are provided
     if (modifiers && modifiers.afterToolExecute) {
