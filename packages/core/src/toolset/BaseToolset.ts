@@ -64,36 +64,3 @@ export abstract class BaseAgenticToolset<TToolCollection, TTool> {
 export type BaseComposioToolset<TToolCollection, TTool> =
   | BaseNonAgenticToolset<TToolCollection, TTool>
   | BaseAgenticToolset<TToolCollection, TTool>;
-
-// export abstract class BaseComposioToolset<
-//   TToolCollection,
-//   TTool,
-//   TToolOptions extends ToolOptions | AgenticToolOptions,
-// > {
-//   protected composio:
-//     | Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>>
-//     | undefined;
-
-//   setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>>): void {
-//     this.composio = composio;
-//   }
-
-//   abstract getTools(
-//     userId: string,
-//     params?: ToolListParams,
-//     options?: TToolOptions
-//   ): Promise<TToolCollection>;
-
-//   abstract getToolBySlug(userId: string, slug: string, options?: TToolOptions): Promise<TTool>;
-
-//   abstract wrapTool(userId: string, tool: Tool): TTool;
-
-//   protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>> {
-//     if (!this.composio) {
-//       throw new Error(
-//         'Client not initialized. Make sure the toolset is properly initialized with Composio.'
-//       );
-//     }
-//     return this.composio;
-//   }
-// }
