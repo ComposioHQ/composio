@@ -10,13 +10,15 @@
  * @packageDocumentation
  * @module toolsets/vercel
  */
-import { BaseAgenticToolset, Tool as ComposioTool, ToolListParams } from '@composio/core';
+import {
+  BaseAgenticToolset,
+  Tool as ComposioTool,
+  ToolListParams,
+  ExecuteToolModifiers,
+  AgenticToolOptions,
+} from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
-import {
-  ExecuteToolModifiersParams,
-  ModifiersParams,
-} from 'packages/core/src/types/modifiers.types';
 
 type VercelToolCollection = Record<string, VercelTool>;
 export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, VercelTool> {
@@ -30,7 +32,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
    */
   override async getTools(
     params?: ToolListParams,
-    modifiers?: ModifiersParams
+    modifiers?: AgenticToolOptions
   ): Promise<VercelToolCollection> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
@@ -45,8 +47,8 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     );
   }
 
-  override async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<VercelTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+  override async getToolBySlug(slug: string, modifiers?: AgenticToolOptions): Promise<VercelTool> {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
     return this.wrapTool(tool as ComposioTool, modifiers);
   }
 
@@ -59,7 +61,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
   async executeToolCall(
     tool: { name: string; arguments: unknown },
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
@@ -82,7 +84,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     return JSON.stringify(results);
   }
 
-  wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiersParams): VercelTool {
+  wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiers): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema(composioTool.inputParameters ?? {}),

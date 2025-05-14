@@ -26,31 +26,34 @@ export type AfterToolExecuteModifier = (
 export type TransformToolSchemaModifier = (toolSlug: string, toolSchema: Tool) => Tool;
 
 /**
- * Modifiers for the toolset
- * This is used by Agentic toolsets
+ * Non Agentic tool options. These are used by Non-Agentic toolsets
  */
-export type ModifiersParams = {
-  beforeToolExecute?: BeforeToolExecuteModifier;
-  afterToolExecute?: AfterToolExecuteModifier;
-  schema?: TransformToolSchemaModifier;
-};
-
-/**
- * Modifiers for the tool schema
- * This is used by Non-Agentic toolsets
- */
-export type SchemaModifiersParams = {
-  schema?: TransformToolSchemaModifier;
+export type ToolOptions = {
+  /**
+   * Transform tool schema modifier
+   */
+  modifyToolSchema?: TransformToolSchemaModifier;
 };
 
 /**
  * Modifiers for the tool execution
  * This is used by execute call and handleToolCall of Non-Agentic toolsets
  */
-export type ExecuteToolModifiersParams = {
+export type ExecuteToolModifiers = {
+  /**
+   * Before tool execute modifier
+   */
   beforeToolExecute?: BeforeToolExecuteModifier;
+  /**
+   * After tool execute modifier
+   */
   afterToolExecute?: AfterToolExecuteModifier;
 };
 
-export type ToolsetModifierType<T extends BaseComposioToolset<unknown, unknown>> =
-  T extends BaseAgenticToolset<unknown, unknown> ? ModifiersParams : SchemaModifiersParams;
+/**
+ * Agentic tool options. These are used by Agentic toolsets
+ */
+export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
+
+export type ToolsetOptions<T extends BaseComposioToolset<unknown, unknown>> =
+  T extends BaseAgenticToolset<unknown, unknown> ? AgenticToolOptions : ToolOptions;

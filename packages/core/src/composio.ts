@@ -8,7 +8,7 @@ import { BaseComposioToolset } from './toolset/BaseToolset';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
-import type { ToolsetModifierType } from './types/modifiers.types';
+import type { ToolsetOptions } from './types/modifiers.types';
 import type { ToolListParams } from './types/tool.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
@@ -196,12 +196,12 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   /**
    * Fetch all the tools from Composio.
    * @param {ToolListParams} params Parameters to fetch the tools.
-   * @param {ToolsetModifierType<TToolset>} modifiers Modifiers to apply to the tools.
+   * @param {ToolsetOptions<TToolset>} modifiers Modifiers to apply to the tools.
    * @returns {Promise<ReturnType<TToolset['getTools']>>} The tools from the toolset.
    */
   getTools<T extends TToolset>(
     params?: ToolListParams,
-    modifiers?: ToolsetModifierType<T>
+    modifiers?: ToolsetOptions<T>
   ): Promise<ReturnType<T['getTools']>> {
     return this.toolset.getTools(params, modifiers) as Promise<ReturnType<T['getTools']>>;
   }
@@ -209,12 +209,12 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   /**
    * Fetch a tool from Composio by its slug.
    * @param {string} slug slug of the tool
-   * @param {ToolsetModifierType<TToolset>} modifiers to be applied to the tool
+   * @param {ToolsetOptions<TToolset>} modifiers to be applied to the tool
    * @returns {Promise<ReturnType<TToolset['getToolBySlug']>>} The tool from the toolset.
    */
   getToolBySlug<T extends TToolset>(
     slug: string,
-    modifiers?: ToolsetModifierType<T>
+    modifiers?: ToolsetOptions<T>
   ): Promise<ReturnType<T['getToolBySlug']>> {
     return this.toolset.getToolBySlug(slug, modifiers) as Promise<ReturnType<T['getToolBySlug']>>;
   }

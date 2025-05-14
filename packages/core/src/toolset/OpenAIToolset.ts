@@ -10,9 +10,9 @@
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
 import { BaseNonAgenticToolset } from './BaseToolset';
-import { Tool, ToolListParams } from '../types/tool.types';
+import { Tool, ToolExecuteParams, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
-import { ExecuteToolModifiersParams, SchemaModifiersParams } from '../types/modifiers.types';
+import { ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -41,16 +41,13 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @param modifiers - Optional modifiers to transform tool schemas
    * @returns The tools.
    */
-  async getTools(
-    params?: ToolListParams,
-    modifiers?: SchemaModifiersParams
-  ): Promise<OpenAiToolCollection> {
-    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
+  async getTools(params?: ToolListParams, modifiers?: ToolOptions): Promise<OpenAiToolCollection> {
+    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.modifyToolSchema);
     return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
   }
 
-  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<OpenAiTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+  async getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<OpenAiTool> {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
     return this.wrapTool(tool);
   }
 
@@ -63,7 +60,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async executeToolCall(
     tool: OpenAI.ChatCompletionMessageToolCall,
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const toolSchema = await this.getComposio().tools.getToolBySlug(tool.function.name);
     const appSlug = toolSchema?.toolkit?.slug.toLowerCase();
@@ -71,9 +68,9 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
       throw new Error('App slug not found');
     }
     const connectedAccountId = this.getComposio().getConnectedAccountId(appSlug);
-    const payload = {
-      entity_id: userId ?? this.getComposio().userId,
-      connected_account_id: connectedAccountId,
+    const payload: ToolExecuteParams = {
+      userId: userId ?? this.getComposio().userId,
+      connectedAccountId: connectedAccountId,
       arguments: JSON.parse(tool.function.arguments),
     };
     const results = await this.getComposio().tools.execute(toolSchema.slug, payload, modifiers);
@@ -90,7 +87,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleToolCall(
     chatCompletion: OpenAI.ChatCompletion,
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ) {
     const outputs: string[] = [];
     for (const message of chatCompletion.choices) {
@@ -111,7 +108,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleAssistantMessage(
     run: OpenAI.Beta.Threads.Run,
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ) {
     const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
     const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> =
@@ -151,7 +148,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ) {
     // @TODO: Log the run stream
     const defaultUserId = this.getComposio()?.userId;
@@ -238,7 +235,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     run: OpenAI.Beta.Threads.Run,
     thread: OpenAI.Beta.Threads.Thread,
     userId?: string,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ) {
     const defaultUserId = this.getComposio()?.userId;
     while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {

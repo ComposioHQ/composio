@@ -9,9 +9,14 @@
  * @packageDocumentation
  * @module toolsets/langchain
  */
-import { BaseAgenticToolset, jsonSchemaToModel, Tool, ToolListParams } from '@composio/core';
+import {
+  BaseAgenticToolset,
+  jsonSchemaToModel,
+  Tool,
+  ToolListParams,
+  AgenticToolOptions,
+} from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { ModifiersParams } from 'packages/core/src/types/modifiers.types';
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainToolset extends BaseAgenticToolset<
@@ -24,7 +29,7 @@ export class LangchainToolset extends BaseAgenticToolset<
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  wrapTool(tool: Tool, modifiers?: ModifiersParams): DynamicStructuredTool {
+  wrapTool(tool: Tool, modifiers?: AgenticToolOptions): DynamicStructuredTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
@@ -68,17 +73,17 @@ export class LangchainToolset extends BaseAgenticToolset<
    */
   override async getTools(
     params?: ToolListParams,
-    modifiers?: ModifiersParams
+    modifiers?: AgenticToolOptions
   ): Promise<LangChainToolCollection> {
-    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.schema);
+    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.modifyToolSchema);
     return tools?.map(tool => this.wrapTool(tool, modifiers)) ?? [];
   }
 
   override async getToolBySlug(
     slug: string,
-    modifiers?: ModifiersParams
+    modifiers?: AgenticToolOptions
   ): Promise<DynamicStructuredTool> {
-    const tool = await this.getComposio()?.tools.getToolBySlug(slug, modifiers?.schema);
+    const tool = await this.getComposio()?.tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
     return this.wrapTool(tool as Tool, modifiers);
   }
 }

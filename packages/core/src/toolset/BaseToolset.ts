@@ -1,7 +1,7 @@
 import type { Toolset } from '../types/toolset.types';
 import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
-import { ModifiersParams, SchemaModifiersParams } from '../types/modifiers.types';
+import { AgenticToolOptions, ToolOptions } from '../types/modifiers.types';
 
 /**
  * Base class for non-agentic toolsets that only support schema modifiers
@@ -18,12 +18,9 @@ export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
     this.composio = composio;
   }
 
-  abstract getTools(
-    params?: ToolListParams,
-    modifiers?: SchemaModifiersParams
-  ): Promise<TToolCollection>;
+  abstract getTools(params?: ToolListParams, modifiers?: ToolOptions): Promise<TToolCollection>;
 
-  abstract getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<TTool>;
+  abstract getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<TTool>;
 
   abstract wrapTool(tool: Tool): TTool;
 
@@ -52,9 +49,12 @@ export abstract class BaseAgenticToolset<TToolCollection, TTool>
     this.composio = composio;
   }
 
-  abstract getTools(params?: ToolListParams, modifiers?: ModifiersParams): Promise<TToolCollection>;
+  abstract getTools(
+    params?: ToolListParams,
+    modifiers?: AgenticToolOptions
+  ): Promise<TToolCollection>;
 
-  abstract getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<TTool>;
+  abstract getToolBySlug(slug: string, modifiers?: AgenticToolOptions): Promise<TTool>;
 
   abstract wrapTool(tool: Tool): TTool;
 

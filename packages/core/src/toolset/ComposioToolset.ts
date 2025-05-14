@@ -1,4 +1,4 @@
-import { SchemaModifiersParams } from '../types/modifiers.types';
+import { ToolOptions } from '../types/modifiers.types';
 import { Tool, ToolListParams } from '../types/tool.types';
 import { BaseNonAgenticToolset } from './BaseToolset';
 
@@ -28,8 +28,8 @@ export class ComposioToolset extends BaseNonAgenticToolset<Array<CustomTool>, Cu
     return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
   }
 
-  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<CustomTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
+  async getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<CustomTool> {
+    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
     return this.wrapTool(tool as Tool);
   }
 

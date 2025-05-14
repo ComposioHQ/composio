@@ -21,7 +21,7 @@ import {
 } from '@composio/client/resources/tools';
 import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
-import { ExecuteToolModifiersParams, TransformToolSchemaModifier } from '../types/modifiers.types';
+import { ExecuteToolModifiers, TransformToolSchemaModifier } from '../types/modifiers.types';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -142,7 +142,7 @@ export class Tools {
   async execute(
     slug: string,
     body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiersParams
+    modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
     // apply local modifiers if they are provided
     if (modifiers && modifiers.beforeToolExecute) {

@@ -9,7 +9,9 @@ export { Tool, ToolListParams, ToolListParamsSchema } from './types/tool.types';
 export { Toolset } from './types/toolset.types';
 // Type exports
 export type {
-  ModifiersParams,
+  ExecuteToolModifiers,
+  AgenticToolOptions,
+  ToolOptions,
   TransformToolSchemaModifier,
   BeforeToolExecuteModifier,
   AfterToolExecuteModifier,
