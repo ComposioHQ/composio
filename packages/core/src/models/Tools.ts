@@ -27,6 +27,7 @@ import {
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
 import { BaseComposioToolset } from '../toolset/BaseToolset';
+import logger from '../utils/logger';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -124,9 +125,7 @@ export class Tools<
     // check if each tool's toolkit has a connected account
     for (const tool of Object.keys(toolSlugs)) {
       if (!connectedToolkitSlugs[tool]) {
-        console.warn(
-          `Tool ${tool} requires a connected account but no connected account was found`
-        );
+        logger.warn(`Tool ${tool} requires a connected account but no connected account was found`);
         return false;
       }
     }
@@ -169,7 +168,7 @@ export class Tools<
       }
       // by default, use the first connected account
       // @TODO: Add support for multiple connected accounts
-      console.warn(
+      logger.warn(
         `Using the first connected account for tool ${toolSlug}. To change this behaviour please explicitly pass a connectedAccountId for the tool`
       );
       return connectedAccounts.items[0].id;
