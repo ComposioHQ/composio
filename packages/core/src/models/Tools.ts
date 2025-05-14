@@ -21,19 +21,32 @@ import {
 } from '@composio/client/resources/tools';
 import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
-import { ExecuteToolModifiers, TransformToolSchemaModifier } from '../types/modifiers.types';
+import {
+  AgenticToolOptions,
+  ExecuteToolModifiers,
+  ToolOptions,
+  ToolsetOptions,
+  TransformToolSchemaModifier,
+} from '../types/modifiers.types';
+import { BaseComposioToolset } from '../toolset/BaseToolset';
 
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
  */
-export class Tools {
+export class Tools<
+  TToolCollection,
+  TTool,
+  TToolset extends BaseComposioToolset<TToolCollection, TTool>,
+> {
   private client: ComposioClient;
   customTools: CustomTools;
+  private toolset: TToolset;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, toolset: TToolset) {
     this.client = client;
     this.customTools = new CustomTools(client);
+    this.toolset = toolset;
   }
 
   private transformToolCases(
@@ -61,7 +74,8 @@ export class Tools {
    * This method fetches the tools from the Composio API and wraps them using the toolset.
    * @returns {ToolList} List of tools
    */
-  async getTools(
+  async getComposioTools(
+    userId: string,
     query: ToolListParams = {},
     modifier?: TransformToolSchemaModifier
   ): Promise<ToolList> {
@@ -106,7 +120,11 @@ export class Tools {
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
    */
-  async getToolBySlug(slug: string, modifier?: TransformToolSchemaModifier): Promise<Tool> {
+  async getComposioToolBySlug(
+    userId: string,
+    slug: string,
+    modifier?: TransformToolSchemaModifier
+  ): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -128,6 +146,24 @@ export class Tools {
       }
     }
     return modifiedToool;
+  }
+
+  async get(userId: string, slug: string, options?: ToolsetOptions<TToolset>): Promise<TTool>;
+  async get(
+    userId: string,
+    filters: ToolListParams,
+    options?: ToolsetOptions<TToolset>
+  ): Promise<TToolCollection>;
+  async get(
+    userId: string,
+    arg1: ToolListParams | string,
+    options?: ToolsetOptions<TToolset>
+  ): Promise<TTool | TToolCollection> {
+    if (typeof arg1 === 'string') {
+      return this.toolset.getToolBySlug(userId, arg1, options);
+    } else {
+      return this.toolset.getTools(userId, arg1, options);
+    }
   }
 
   /**
@@ -162,6 +198,25 @@ export class Tools {
         connectedAccountId: body.connectedAccountId,
       });
     } else {
+      // fetch connected accounts if doesn't exist
+      let connectedAccountId = body.connectedAccountId;
+      if (!connectedAccountId) {
+        const tool = await this.getComposioToolBySlug(body.userId, slug);
+        if (!tool.toolkit) {
+          throw new Error(`Unable to find toolkit for tool ${slug}`);
+        }
+        const connectedAccounts = await this.client.connectedAccounts.list({
+          user_id: body.userId,
+          toolkit_slug: tool.toolkit.slug,
+        });
+        // if no connected accounts, throw an error
+        if (connectedAccounts.items.length === 0) {
+          throw new Error('No connected accounts found');
+        }
+        // by default, use the first connected account
+        connectedAccountId = connectedAccounts.items[0].id;
+      }
+
       result = await this.client.tools.execute(slug, {
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,

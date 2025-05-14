@@ -9,7 +9,7 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseNonAgenticToolset } from './BaseToolset';
+import { BaseComposioToolset, BaseNonAgenticToolset } from './BaseToolset';
 import { Tool, ToolExecuteParams, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
@@ -41,13 +41,25 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @param modifiers - Optional modifiers to transform tool schemas
    * @returns The tools.
    */
-  async getTools(params?: ToolListParams, modifiers?: ToolOptions): Promise<OpenAiToolCollection> {
-    const tools = await this.getComposio()?.tools.getTools(params, modifiers?.modifyToolSchema);
-    return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
+  async getTools(
+    userId: string,
+    params?: ToolListParams,
+    modifiers?: ToolOptions
+  ): Promise<OpenAiToolCollection> {
+    const tools = await this.getComposio()?.tools.getComposioTools(
+      userId,
+      params,
+      modifiers?.modifyToolSchema
+    );
+    return tools?.map(tool => this.wrapTool(tool)) ?? [];
   }
 
-  async getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<OpenAiTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
+  async getToolBySlug(userId: string, slug: string, modifiers?: ToolOptions): Promise<OpenAiTool> {
+    const tool = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      slug,
+      modifiers?.modifyToolSchema
+    );
     return this.wrapTool(tool);
   }
 
@@ -58,11 +70,14 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @returns {Promise<string>} The result of the tool call.
    */
   async executeToolCall(
+    userId: string,
     tool: OpenAI.ChatCompletionMessageToolCall,
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.function.name);
+    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      tool.function.name
+    );
     const appSlug = toolSchema?.toolkit?.slug.toLowerCase();
     if (!appSlug) {
       throw new Error('App slug not found');
@@ -85,14 +100,14 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @returns {Promise<string[]>} The results of the tool call.
    */
   async handleToolCall(
+    userId: string,
     chatCompletion: OpenAI.ChatCompletion,
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ) {
     const outputs: string[] = [];
     for (const message of chatCompletion.choices) {
       if (message.message.tool_calls) {
-        outputs.push(await this.executeToolCall(message.message.tool_calls[0], userId, modifiers));
+        outputs.push(await this.executeToolCall(userId, message.message.tool_calls[0], modifiers));
       }
     }
     return outputs;
@@ -106,8 +121,8 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} The tool outputs.
    */
   async handleAssistantMessage(
+    userId: string,
     run: OpenAI.Beta.Threads.Run,
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ) {
     const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
@@ -118,8 +133,8 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
 
           // Execute each tool call and get the response
           const tool_response = await this.executeToolCall(
-            tool_call as OpenAI.ChatCompletionMessageToolCall,
             userId,
+            tool_call as OpenAI.ChatCompletionMessageToolCall,
             modifiers
           );
 
@@ -144,14 +159,13 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @returns {AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>} The run stream.
    */
   async *waitAndHandleAssistantStreamToolCalls(
+    userId: string,
     client: OpenAI,
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ) {
     // @TODO: Log the run stream
-    const defaultUserId = this.getComposio()?.userId;
     let runId = null;
 
     // Start processing the runStream events
@@ -169,11 +183,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
 
       // Handle the 'requires_action' event
       if (event.event === 'thread.run.requires_action') {
-        const toolOutputs = await this.handleAssistantMessage(
-          event.data,
-          userId ?? defaultUserId,
-          modifiers
-        );
+        const toolOutputs = await this.handleAssistantMessage(userId, event.data, modifiers);
 
         // Submit the tool outputs
         await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
@@ -203,11 +213,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
 
     while (['queued', 'in_progress', 'requires_action'].includes(finalRun.status)) {
       if (finalRun.status === 'requires_action') {
-        const toolOutputs = await this.handleAssistantMessage(
-          finalRun,
-          userId ?? defaultUserId,
-          modifiers
-        );
+        const toolOutputs = await this.handleAssistantMessage(userId, finalRun, modifiers);
 
         // Submit tool outputs
         finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
@@ -231,20 +237,15 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
    * @returns {Promise<OpenAI.Beta.Threads.Run>} The run object.
    */
   async waitAndHandleAssistantToolCalls(
+    userId: string,
     client: OpenAI,
     run: OpenAI.Beta.Threads.Run,
     thread: OpenAI.Beta.Threads.Thread,
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ) {
-    const defaultUserId = this.getComposio()?.userId;
     while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
       // logger.debug(`Current run status: ${run.status}`);
-      const tool_outputs = await this.handleAssistantMessage(
-        run,
-        userId ?? defaultUserId,
-        modifiers
-      );
+      const tool_outputs = await this.handleAssistantMessage(userId, run, modifiers);
       if (run.status === 'requires_action') {
         // logger.debug(
         //   `Submitting tool outputs for run ID: ${run.id} in thread ID: ${thread.id}`

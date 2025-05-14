@@ -1,7 +1,11 @@
 // Core exports
 export { Composio } from './composio';
 export { ComposioToolset } from './toolset/ComposioToolset';
-export { BaseAgenticToolset, BaseNonAgenticToolset } from './toolset/BaseToolset';
+export {
+  BaseComposioToolset,
+  BaseAgenticToolset,
+  BaseNonAgenticToolset,
+} from './toolset/BaseToolset';
 export { OpenAIToolset } from './toolset/OpenAIToolset';
 export { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToModel } from './utils/jsonSchema';

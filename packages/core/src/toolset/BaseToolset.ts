@@ -1,60 +1,23 @@
 import type { Toolset } from '../types/toolset.types';
 import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
-import { AgenticToolOptions, ToolOptions } from '../types/modifiers.types';
+import { AgenticToolOptions, ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
 
-/**
- * Base class for non-agentic toolsets that only support schema modifiers
- * This is used for toolsets that don't need to handle tool execution modifiers
- * eg: OpenAI, Anthropic, etc.
- */
-export abstract class BaseNonAgenticToolset<TToolCollection, TTool>
-  implements Toolset<TTool, TToolCollection>
-{
+// Type for backward compatibility and type constraints
+export abstract class BaseNonAgenticToolset<TToolCollection, TTool> {
   protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
-  protected DEFAULT_ENTITY_ID = 'default';
-
-  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
-    this.composio = composio;
-  }
-
-  abstract getTools(params?: ToolListParams, modifiers?: ToolOptions): Promise<TToolCollection>;
-
-  abstract getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<TTool>;
-
-  abstract wrapTool(tool: Tool): TTool;
-
-  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
-    if (!this.composio) {
-      throw new Error(
-        'Client not initialized. Make sure the toolset is properly initialized with Composio.'
-      );
-    }
-    return this.composio;
-  }
-}
-
-/**
- * Base class for agentic toolsets that support full modifier capabilities
- * This is used for toolsets that need to handle tool execution modifiers
- * eg: Vercel, Langchain, etc.
- */
-export abstract class BaseAgenticToolset<TToolCollection, TTool>
-  implements Toolset<TTool, TToolCollection>
-{
-  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
-  protected DEFAULT_ENTITY_ID = 'default';
 
   setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
     this.composio = composio;
   }
 
   abstract getTools(
-    params?: ToolListParams,
-    modifiers?: AgenticToolOptions
+    userId: string,
+    params: ToolListParams,
+    options?: ToolOptions
   ): Promise<TToolCollection>;
 
-  abstract getToolBySlug(slug: string, modifiers?: AgenticToolOptions): Promise<TTool>;
+  abstract getToolBySlug(userId: string, slug: string, options?: ToolOptions): Promise<TTool>;
 
   abstract wrapTool(tool: Tool): TTool;
 
@@ -68,7 +31,70 @@ export abstract class BaseAgenticToolset<TToolCollection, TTool>
   }
 }
 
-// Type for backward compatibility and type constraints
+export abstract class BaseAgenticToolset<TToolCollection, TTool> {
+  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
+
+  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
+    this.composio = composio;
+  }
+
+  abstract getToolBySlug(
+    userId: string,
+    slug: string,
+    options?: AgenticToolOptions
+  ): Promise<TTool>;
+
+  abstract getTools(
+    userId: string,
+    params: ToolListParams,
+    options?: AgenticToolOptions
+  ): Promise<TToolCollection>;
+
+  abstract wrapTool(userId: string, tool: Tool, modifers?: ExecuteToolModifiers): TTool;
+
+  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
+    if (!this.composio) {
+      throw new Error(
+        'Client not initialized. Make sure the toolset is properly initialized with Composio.'
+      );
+    }
+    return this.composio;
+  }
+}
+
 export type BaseComposioToolset<TToolCollection, TTool> =
   | BaseNonAgenticToolset<TToolCollection, TTool>
   | BaseAgenticToolset<TToolCollection, TTool>;
+
+// export abstract class BaseComposioToolset<
+//   TToolCollection,
+//   TTool,
+//   TToolOptions extends ToolOptions | AgenticToolOptions,
+// > {
+//   protected composio:
+//     | Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>>
+//     | undefined;
+
+//   setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>>): void {
+//     this.composio = composio;
+//   }
+
+//   abstract getTools(
+//     userId: string,
+//     params?: ToolListParams,
+//     options?: TToolOptions
+//   ): Promise<TToolCollection>;
+
+//   abstract getToolBySlug(userId: string, slug: string, options?: TToolOptions): Promise<TTool>;
+
+//   abstract wrapTool(userId: string, tool: Tool): TTool;
+
+//   protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool, TToolOptions>> {
+//     if (!this.composio) {
+//       throw new Error(
+//         'Client not initialized. Make sure the toolset is properly initialized with Composio.'
+//       );
+//     }
+//     return this.composio;
+//   }
+// }

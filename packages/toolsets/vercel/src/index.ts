@@ -31,25 +31,34 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
    * @returns The tools.
    */
   override async getTools(
+    userId: string,
     params?: ToolListParams,
     modifiers?: AgenticToolOptions
   ): Promise<VercelToolCollection> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
     }
-    const tools = await this.getComposio().tools.getTools(params);
+    const tools = await this.getComposio().tools.getComposioTools(userId, params);
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
-        [tool.slug]: this.wrapTool(tool as ComposioTool, modifiers),
+        [tool.slug]: this.wrapTool(userId, tool, modifiers),
       }),
       {}
     );
   }
 
-  override async getToolBySlug(slug: string, modifiers?: AgenticToolOptions): Promise<VercelTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
-    return this.wrapTool(tool as ComposioTool, modifiers);
+  override async getToolBySlug(
+    userId: string,
+    slug: string,
+    modifiers?: AgenticToolOptions
+  ): Promise<VercelTool> {
+    const tool = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      slug,
+      modifiers?.modifyToolSchema
+    );
+    return this.wrapTool(userId, tool, modifiers);
   }
 
   /**
@@ -59,15 +68,15 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
    * @returns {Promise<string>} The result of the tool call.
    */
   async executeToolCall(
+    userId: string,
     tool: { name: string; arguments: unknown },
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     if (!this.getComposio()) {
       throw new Error('Client not initialized');
     }
 
-    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.name);
+    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(userId, tool.name);
     const appName = toolSchema?.name.toLowerCase();
     const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
 
@@ -75,7 +84,7 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
       toolSchema.slug,
       {
         arguments: args,
-        userId: userId ?? this.getComposio().userId,
+        userId: userId,
         connectedAccountId: this.getComposio().getConnectedAccountId(appName),
       },
       modifiers
@@ -84,17 +93,21 @@ export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, Verc
     return JSON.stringify(results);
   }
 
-  wrapTool(composioTool: ComposioTool, modifiers?: ExecuteToolModifiers): VercelTool {
+  wrapTool(
+    userId: string,
+    composioTool: ComposioTool,
+    modifiers?: ExecuteToolModifiers
+  ): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema(composioTool.inputParameters ?? {}),
       execute: async params => {
         return await this.executeToolCall(
+          userId,
           {
             name: composioTool.slug,
             arguments: JSON.stringify(params),
           },
-          this.getComposio()?.userId,
           modifiers
         );
       },

@@ -11,11 +11,11 @@
  */
 import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
 import {
-  BaseNonAgenticToolset,
   Tool,
   ToolListParams,
   ExecuteToolModifiers,
   ToolOptions,
+  BaseNonAgenticToolset,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -58,6 +58,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    * @returns {Promise<Record<string, AiTextGenerationToolInput>>} The tools from the Cloudflare API.
    */
   override async getTools(
+    userId: string,
     query?: ToolListParams,
     modifiers?: ToolOptions
   ): Promise<AiToolCollection> {
@@ -65,7 +66,11 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
       throw new Error('Client not set');
     }
 
-    const tools = await this.getComposio().tools.getTools(query, modifiers?.modifyToolSchema);
+    const tools = await this.getComposio().tools.getComposioTools(
+      userId,
+      query,
+      modifiers?.modifyToolSchema
+    );
     return tools.reduce(
       (tools, tool) => ({
         ...tools,
@@ -76,13 +81,18 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
   }
 
   override async getToolBySlug(
+    userId: string,
     slug: string,
     modifiers?: ToolOptions
   ): Promise<AiTextGenerationToolInput> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
     }
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
+    const tool = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      slug,
+      modifiers?.modifyToolSchema
+    );
     return this.wrapTool(tool);
   }
 
@@ -93,15 +103,15 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    * @returns The results of the tool call.
    */
   async executeToolCall(
+    userId: string,
     tool: { name: string; arguments: unknown },
-    userId?: string,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     if (!this.getComposio()) {
       throw new Error('Client not set');
     }
 
-    const toolSchema = await this.getComposio().tools.getToolBySlug(tool.name);
+    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(userId, tool.name);
     const appName = toolSchema?.toolkit?.name.toLowerCase();
     if (!appName) {
       throw new Error('App name not found');
@@ -111,7 +121,7 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
       toolSchema.slug,
       {
         arguments: args,
-        userId: userId ?? this.DEFAULT_ENTITY_ID,
+        userId,
         connectedAccountId: this.getComposio()?.getConnectedAccountId(appName),
       },
       modifiers

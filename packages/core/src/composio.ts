@@ -10,6 +10,7 @@ import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
 import type { ToolsetOptions } from './types/modifiers.types';
 import type { ToolListParams } from './types/tool.types';
+import type { ToolOptions, AgenticToolOptions } from './types/modifiers.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -58,7 +59,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   /**
    * Core models for Composio.
    */
-  tools: Tools;
+  tools: Tools<unknown, unknown, TToolset>;
   toolkits: Toolkits;
   triggers: Triggers;
   toolset: TToolset;
@@ -123,7 +124,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     /**
      * Initialize all the models with composio client.
      */
-    this.tools = new Tools(this.client);
+    this.tools = new Tools(this.client, this.toolset);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -200,10 +201,11 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    * @returns {Promise<ReturnType<TToolset['getTools']>>} The tools from the toolset.
    */
   getTools<T extends TToolset>(
-    params?: ToolListParams,
+    userId: string,
+    filters: ToolListParams,
     modifiers?: ToolsetOptions<T>
   ): Promise<ReturnType<T['getTools']>> {
-    return this.toolset.getTools(params, modifiers) as Promise<ReturnType<T['getTools']>>;
+    return this.tools.get(userId, filters, modifiers) as Promise<ReturnType<T['getTools']>>;
   }
 
   /**
@@ -213,9 +215,10 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    * @returns {Promise<ReturnType<TToolset['getToolBySlug']>>} The tool from the toolset.
    */
   getToolBySlug<T extends TToolset>(
+    userId: string,
     slug: string,
     modifiers?: ToolsetOptions<T>
   ): Promise<ReturnType<T['getToolBySlug']>> {
-    return this.toolset.getToolBySlug(slug, modifiers) as Promise<ReturnType<T['getToolBySlug']>>;
+    return this.tools.get(userId, slug, modifiers) as Promise<ReturnType<T['getToolBySlug']>>;
   }
 }

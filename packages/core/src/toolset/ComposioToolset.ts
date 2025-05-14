@@ -1,6 +1,6 @@
 import { ToolOptions } from '../types/modifiers.types';
 import { Tool, ToolListParams } from '../types/tool.types';
-import { BaseNonAgenticToolset } from './BaseToolset';
+import { BaseComposioToolset, BaseNonAgenticToolset } from './BaseToolset';
 
 /**
  * This is a default toolset implementation for Composio.
@@ -23,14 +23,26 @@ export class ComposioToolset extends BaseNonAgenticToolset<Array<CustomTool>, Cu
     return tool as CustomTool;
   };
 
-  async getTools(params?: ToolListParams): Promise<Array<CustomTool>> {
-    const tools = await this.getComposio().tools.getTools(params);
-    return tools?.map(tool => this.wrapTool(tool as Tool)) ?? [];
+  async getTools(
+    userId: string,
+    params?: ToolListParams,
+    options?: ToolOptions
+  ): Promise<Array<CustomTool>> {
+    const tools = await this.getComposio().tools.getComposioTools(
+      userId,
+      params,
+      options?.modifyToolSchema
+    );
+    return tools?.map(tool => this.wrapTool(tool)) ?? [];
   }
 
-  async getToolBySlug(slug: string, modifiers?: ToolOptions): Promise<CustomTool> {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.modifyToolSchema);
-    return this.wrapTool(tool as Tool);
+  async getToolBySlug(userId: string, slug: string, modifiers?: ToolOptions): Promise<CustomTool> {
+    const tool = await this.getComposio().tools.getComposioToolBySlug(
+      userId,
+      slug,
+      modifiers?.modifyToolSchema
+    );
+    return this.wrapTool(tool);
   }
 
   async test() {}
