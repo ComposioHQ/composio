@@ -8,19 +8,6 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const userId = 'default';
+const toolkit = await composio.toolkits.getToolkitBySlug('HACKERNEWS');
 
-const tools = composio.tools.get(userId, 'HACKERNEWS_GET_USER', {
-  modifyToolSchema: (toolSlug, tool) => {
-    return {
-      ...tool,
-      description: 'This is a modified description',
-    };
-  },
-});
-
-const vercelComposio = new Composio({
-  toolset: new VercelToolset(),
-});
-
-const vercelTools = vercelComposio.tools.get('default', {}, {});
+console.log(toolkit);

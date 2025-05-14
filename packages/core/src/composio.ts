@@ -43,7 +43,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
 
   /**
    * The configuration for the Composio SDK.
-   * @type {ComposioConfig<TTool, TToolset>}
+   * @type {ComposioConfig<TToolset>}
    */
   private config: ComposioConfig<TToolset>;
 

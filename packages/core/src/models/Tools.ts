@@ -47,6 +47,11 @@ export class Tools<
     this.toolset = toolset;
   }
 
+  /**
+   * Transform the tool cases
+   * @param {ToolRetrieveResponse | ComposioToolListResponse['items'][0]} tool - The tool to transform
+   * @returns {Tool} The transformed tool
+   */
   private transformToolCases(
     tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0]
   ): Tool {
@@ -57,6 +62,11 @@ export class Tools<
     });
   }
 
+  /**
+   * Transform the tool execute response to camelcase
+   * @param {ComposioToolExecuteResponse} response - The response to transform
+   * @returns {ToolExecuteResponse} The transformed response
+   */
   private transformToolExecuteResponse(response: ComposioToolExecuteResponse): ToolExecuteResponse {
     return ToolExecuteResponseSchema.parse({
       data: response.data,
@@ -65,6 +75,107 @@ export class Tools<
       logId: response.log_id,
       sessionInfo: response.session_info,
     });
+  }
+
+  /**
+   * Check if the connected account exists for the given tools.
+   * @param {string} userId - The user id.
+   * @param {ToolList} tools - The tools to check.
+   * @returns {Promise<boolean>} True if the connected account exists for the given tools, false otherwise.
+   */
+  private async checkIfConnectedAccountExistsForTools(
+    userId: string,
+    tools: ToolList
+  ): Promise<boolean> {
+    // @TODO: Filter out tools that don't require a connected account
+
+    // if no tools, return true as no connections needed
+    if (!tools.length) {
+      return true;
+    }
+    const connectedAccounts = await this.client.connectedAccounts.list({
+      user_id: userId,
+    });
+    // if no connected accounts, return false
+    if (connectedAccounts.items.length === 0) {
+      return false;
+    }
+
+    // create a map of toolkit slugs that have connected accounts
+    const connectedToolkitSlugs = connectedAccounts.items.reduce(
+      (acc, account) => {
+        if (account.toolkit.slug) {
+          acc[account.toolkit.slug] = true;
+        }
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
+
+    // create a map of tool slugs
+    const toolSlugs = tools.reduce(
+      (acc, tool) => {
+        acc[tool.slug] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
+
+    // check if each tool's toolkit has a connected account
+    for (const tool of Object.keys(toolSlugs)) {
+      if (!connectedToolkitSlugs[tool]) {
+        console.warn(
+          `Tool ${tool} requires a connected account but no connected account was found`
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Get the connected account id for a given tool
+   * @param {string} userId - The user id
+   * @param {string} toolSlug - The tool slug
+   * @returns {Promise<string | null>} The connected account id or null if the toolkit is a no auth app
+   */
+  private async getConnectedAccountIdForTool(
+    userId: string,
+    toolSlug: string
+  ): Promise<string | null> {
+    const tool = await this.getComposioToolBySlug(userId, toolSlug);
+    if (!tool.toolkit) {
+      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
+    }
+
+    const toolkit = await this.client.toolkits.retrieve(tool.toolkit.slug);
+    if (!toolkit) {
+      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
+    }
+
+    // check if the toolkit is a no auth app
+    const isNoAuthApp = toolkit.auth_config_details?.some(
+      authConfigDetails => authConfigDetails.mode === 'NO_AUTH'
+    );
+    // if the toolkit is not a no auth app, fetch connected accounts
+    if (!isNoAuthApp) {
+      const connectedAccounts = await this.client.connectedAccounts.list({
+        user_id: userId,
+        toolkit_slug: tool.toolkit.slug,
+      });
+      // if no connected accounts, throw an error
+      if (connectedAccounts.items.length === 0) {
+        throw new Error('No connected accounts found');
+      }
+      // by default, use the first connected account
+      // @TODO: Add support for multiple connected accounts
+      console.warn(
+        `Using the first connected account for tool ${toolSlug}. To change this behaviour please explicitly pass a connectedAccountId for the tool`
+      );
+      return connectedAccounts.items[0].id;
+    }
+    // if the toolkit is a no auth app, return null
+    return null;
   }
 
   /**
@@ -93,11 +204,21 @@ export class Tools<
     if (!tools) {
       return [];
     }
+    const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
+    // @TODO add checks for connectedAccounts for fetched tools
+    // const connectedAccountExists = await this.checkIfConnectedAccountExistsForTools(
+    //   userId,
+    //   caseTransformedTools
+    // );
+    // if (!connectedAccountExists) {
+    //   console.warn('No connected accounts found for the given tools');
+    // }
+
     const customTools = await this.customTools.getCustomTools({
       toolSlugs: queryParams.data.toolSlugs,
     });
 
-    let modifiedTools = [...tools.items.map(tool => this.transformToolCases(tool)), ...customTools];
+    let modifiedTools = [...caseTransformedTools, ...customTools];
 
     // apply local modifiers if they are provided
     if (modifier) {
@@ -199,20 +320,8 @@ export class Tools<
       // fetch connected accounts if doesn't exist
       let connectedAccountId = body.connectedAccountId;
       if (!connectedAccountId) {
-        const tool = await this.getComposioToolBySlug(body.userId, slug);
-        if (!tool.toolkit) {
-          throw new Error(`Unable to find toolkit for tool ${slug}`);
-        }
-        const connectedAccounts = await this.client.connectedAccounts.list({
-          user_id: body.userId,
-          toolkit_slug: tool.toolkit.slug,
-        });
-        // if no connected accounts, throw an error
-        if (connectedAccounts.items.length === 0) {
-          throw new Error('No connected accounts found');
-        }
-        // by default, use the first connected account
-        connectedAccountId = connectedAccounts.items[0].id;
+        connectedAccountId =
+          (await this.getConnectedAccountIdForTool(body.userId, slug)) || undefined;
       }
 
       result = await this.client.tools.execute(slug, {
