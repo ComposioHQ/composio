@@ -1,6 +1,6 @@
 import { ToolOptions } from '../types/modifiers.types';
 import { Tool, ToolListParams } from '../types/tool.types';
-import { BaseComposioToolset, BaseNonAgenticToolset } from './BaseToolset';
+import { BaseNonAgenticToolset } from './BaseToolset';
 
 /**
  * This is a default toolset implementation for Composio.

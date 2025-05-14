@@ -22,9 +22,7 @@ import {
 import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
 import {
-  AgenticToolOptions,
   ExecuteToolModifiers,
-  ToolOptions,
   ToolsetOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';

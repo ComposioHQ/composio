@@ -9,7 +9,7 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseComposioToolset, BaseNonAgenticToolset } from './BaseToolset';
+import { BaseNonAgenticToolset } from './BaseToolset';
 import { Tool, ToolExecuteParams, ToolListParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';

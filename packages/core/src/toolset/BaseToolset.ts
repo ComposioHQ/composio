@@ -1,4 +1,3 @@
-import type { Toolset } from '../types/toolset.types';
 import type { Tool, ToolListParams } from '../types/tool.types';
 import type { Composio } from '../composio';
 import { AgenticToolOptions, ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';

@@ -10,7 +10,6 @@ import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
 import type { ToolsetOptions } from './types/modifiers.types';
 import type { ToolListParams } from './types/tool.types';
-import type { ToolOptions, AgenticToolOptions } from './types/modifiers.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
