@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.6-alpha.0",
+  "version": "0.1.7-alpha.0",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -34,8 +34,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "openai": "^4.94.0",
     "@composio/client": "0.1.0-alpha.9",
+    "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.2",
