@@ -9,8 +9,8 @@ export {
 export { OpenAIToolset } from './toolset/OpenAIToolset';
 export { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToModel } from './utils/jsonSchema';
-export { Tool, ToolListParams, ToolListParamsSchema } from './types/tool.types';
-export { Toolset } from './types/toolset.types';
+export { Tool, ToolListParams, ToolListParamsSchema, ToolExecuteParams } from './types/tool.types';
+export { Toolset, ExecuteToolFn, ExecuteToolFnOptions } from './types/toolset.types';
 export { ExecuteMetadata } from './types/customTool.types';
 // Type exports
 export type {

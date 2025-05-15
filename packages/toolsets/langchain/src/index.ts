@@ -9,9 +9,8 @@
  * @packageDocumentation
  * @module toolsets/langchain
  */
-import { BaseAgenticToolset, jsonSchemaToModel, Tool } from '@composio/core';
+import { BaseAgenticToolset, jsonSchemaToModel, Tool, ExecuteToolFn } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { ExecuteToolFn } from 'packages/core/src/types/toolset.types';
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainToolset extends BaseAgenticToolset<

@@ -10,10 +10,9 @@
  * @packageDocumentation
  * @module toolsets/vercel
  */
-import { BaseAgenticToolset, Tool as ComposioTool } from '@composio/core';
+import { BaseAgenticToolset, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
-import { ExecuteToolFn } from 'packages/core/src/types/toolset.types';
 
 type VercelToolCollection = Record<string, VercelTool>;
 export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, VercelTool> {
