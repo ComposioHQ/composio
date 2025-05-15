@@ -39,11 +39,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigListResponse>} List of auth configs
    */
-  async list(
-    query?: AuthConfigListParams,
-    options?: RequestOptions
-  ): Promise<AuthConfigListResponse> {
-    return this.client.authConfigs.list(query, options);
+  async list(query?: AuthConfigListParams): Promise<AuthConfigListResponse> {
+    return this.client.authConfigs.list(query);
   }
 
   /**
@@ -52,11 +49,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigCreateResponse>} Created auth config
    */
-  async create(
-    data: AuthConfigCreateParams,
-    options?: RequestOptions
-  ): Promise<AuthConfigCreateResponse> {
-    return this.client.authConfigs.create(data, options);
+  async create(data: AuthConfigCreateParams): Promise<AuthConfigCreateResponse> {
+    return this.client.authConfigs.create(data);
   }
 
   /**
@@ -65,8 +59,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigRetrieveResponse>} Auth config details
    */
-  async get(nanoid: string, options?: RequestOptions): Promise<AuthConfigRetrieveResponse> {
-    return this.client.authConfigs.retrieve(nanoid, options);
+  async get(nanoid: string): Promise<AuthConfigRetrieveResponse> {
+    return this.client.authConfigs.retrieve(nanoid);
   }
 
   /**
@@ -76,12 +70,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigUpdateResponse>} Updated auth config
    */
-  async update(
-    nanoid: string,
-    data: AuthConfigUpdateParams,
-    options?: RequestOptions
-  ): Promise<AuthConfigUpdateResponse> {
-    return this.client.authConfigs.update(nanoid, data, options);
+  async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
+    return this.client.authConfigs.update(nanoid, data);
   }
 
   /**
@@ -90,8 +80,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigDeleteResponse>} Response from deletion
    */
-  async delete(nanoid: string, options?: RequestOptions): Promise<AuthConfigDeleteResponse> {
-    return this.client.authConfigs.delete(nanoid, options);
+  async delete(nanoid: string): Promise<AuthConfigDeleteResponse> {
+    return this.client.authConfigs.delete(nanoid);
   }
 
   /**
@@ -103,10 +93,9 @@ export class AuthConfigs {
    */
   async updateStatus(
     status: 'ENABLED' | 'DISABLED',
-    nanoid: string,
-    options?: RequestOptions
+    nanoid: string
   ): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus(status, { nanoid }, options);
+    return this.client.authConfigs.updateStatus(status, { nanoid });
   }
 
   /**
@@ -115,8 +104,8 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
    */
-  async enable(nanoid: string, options?: RequestOptions): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus('ENABLED', { nanoid }, options);
+  async enable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
+    return this.client.authConfigs.updateStatus('ENABLED', { nanoid });
   }
 
   /**
@@ -125,7 +114,7 @@ export class AuthConfigs {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
    */
-  async disable(nanoid: string, options?: RequestOptions): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus('DISABLED', { nanoid }, options);
+  async disable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
+    return this.client.authConfigs.updateStatus('DISABLED', { nanoid });
   }
 }

@@ -36,6 +36,5 @@
     "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
-  },
-  "gitHead": "409e5f7d2e3e5e921231cbabd538484245f7ab0e"
+  }
 }
