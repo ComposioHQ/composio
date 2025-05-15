@@ -33,7 +33,7 @@
     "@langchain/core": "^0.3.44"
   },
   "devDependencies": {
-    "@composio/core": "0.1.6-alpha.0",
+    "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },
