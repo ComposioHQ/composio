@@ -187,7 +187,7 @@ export class CustomAgenticToolset extends BaseAgenticToolset<CustomTool[], Custo
   async executeToolCall(
     userId: string,
     tool: { name: string; arguments: unknown },
-    options: ExecuteToolFnOptions,
+    options: pppppp,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const result = await this.executeTool(

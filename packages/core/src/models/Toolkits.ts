@@ -1,11 +1,16 @@
 import ComposioClient from '@composio/client';
-import { RequestOptions } from '@composio/client/internal/request-options';
 import {
+  ToolKitItemSchema,
   ToolkitListParams,
-  ToolkitListResponse,
-  ToolkitRetrieveCategoriesResponse,
+  ToolKitListResponse,
+  ToolKitListResponseSchema,
   ToolkitRetrieveResponse,
-} from '@composio/client/resources/toolkits';
+  ToolkitRetrieveResponseSchema,
+  ToolkitsListParamsSchema,
+  ToolkitRetrieveCategoriesResponse,
+  ToolkitRetrieveCategoriesResponseSchema,
+  ToolkitCategorySchema,
+} from '../types/toolkit.types';
 
 /**
  * Toolkits class
@@ -24,11 +29,33 @@ export class Toolkits {
    * This method fetches the toolkits from the Composio API.
    * @returns {Promise<Toolkit[]>} List of toolkits
    */
-  async getToolkits(
-    query: ToolkitListParams,
-    options?: RequestOptions
-  ): Promise<ToolkitListResponse> {
-    return this.client.toolkits.list(query, options);
+  async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
+    const parsedQuery = ToolkitsListParamsSchema.parse(query);
+    const result = await this.client.toolkits.list({
+      category: parsedQuery.category,
+      is_local: parsedQuery.isLocal,
+      managed_by: parsedQuery.managedBy,
+      sort_by: parsedQuery.sortBy,
+    });
+
+    const parsedResult = ToolKitListResponseSchema.parse({
+      items: result.items.map(item => {
+        const parsedItem = ToolKitItemSchema.parse({
+          name: item.name,
+          slug: item.slug,
+          meta: item.meta,
+          isLocalToolkit: item.is_local_toolkit,
+          authSchemes: item.auth_schemes,
+          composioManagedAuthSchemes: item.composio_managed_auth_schemes,
+          noAuth: item.no_auth,
+        });
+        return parsedItem;
+      }),
+      nextCursor: result.next_cursor,
+      totalPages: result.total_pages,
+    });
+
+    return parsedResult;
   }
 
   /**
@@ -38,8 +65,17 @@ export class Toolkits {
    * @param options - Request options
    * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
    */
-  async getToolkitBySlug(slug: string, options?: RequestOptions): Promise<ToolkitRetrieveResponse> {
-    return this.client.toolkits.retrieve(slug, options);
+  async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+    const result = await this.client.toolkits.retrieve(slug);
+    const parsedResult = ToolkitRetrieveResponseSchema.parse({
+      name: result.name,
+      slug: result.slug,
+      meta: result.meta,
+      isLocalToolkit: result.is_local_toolkit,
+      composioManagedAuthSchemes: result.composio_managed_auth_schemes,
+      authConfigDetails: result.auth_config_details,
+    });
+    return parsedResult;
   }
 
   /**
@@ -47,7 +83,19 @@ export class Toolkits {
    *
    * @returns {Promise<ToolkitRetrieveCategoriesResponse>} List of categories
    */
-  async listCategories(options?: RequestOptions): Promise<ToolkitRetrieveCategoriesResponse> {
-    return this.client.toolkits.retrieveCategories(options);
+  async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
+    const result = await this.client.toolkits.retrieveCategories();
+    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.parse({
+      items: result.items.map(item => {
+        const parsedItem = ToolkitCategorySchema.parse({
+          id: item.id,
+          name: item.name,
+        });
+        return parsedItem;
+      }),
+      nextCursor: result.next_cursor,
+      totalPages: result.total_pages,
+    });
+    return parsedResult;
   }
 }
