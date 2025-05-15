@@ -1,14 +1,15 @@
 # @composio/openai
 
-The OpenAI toolset for Composio SDK, providing seamless integration with OpenAI's API and tools.
+The OpenAI toolset for Composio SDK, providing seamless integration with OpenAI's models and function calling capabilities.
 
 ## Features
 
-- **OpenAI Tool Integration**: Seamlessly integrate OpenAI tools with Composio
-- **Tool Execution**: Execute OpenAI tools with proper parameter handling
-- **Stream Support**: Handle streaming responses from OpenAI
-- **Assistant Integration**: Work with OpenAI Assistants and their tool calls
-- **Thread Management**: Manage OpenAI threads and runs
+- **OpenAI Integration**: Seamless integration with OpenAI's models
+- **Streaming Support**: First-class support for streaming responses
+- **Function Calling**: Support for OpenAI's function calling feature
+- **Tool Execution**: Execute tools with proper parameter handling
+- **Type Safety**: Full TypeScript support with proper type definitions
+- **Model Support**: Support for all OpenAI models (GPT-4, GPT-3.5-turbo, etc.)
 
 ## Installation
 
@@ -29,14 +30,171 @@ import { OpenAIToolset } from '@composio/openai';
 // Initialize Composio with OpenAI toolset
 const composio = new Composio({
   apiKey: 'your-composio-api-key',
-  toolset: new OpenAIToolset()
+  toolset: new OpenAIToolset(),
 });
 
-// Get available tools in OpenAI format
-const tools = await composio.getTools();
+// Get available tools
+const tools = await composio.tools.get('user123', {
+  apps: ['gmail', 'googlecalendar'],
+  limit: 10,
+});
 
-// Execute a tool call
-const result = await composio.toolset.executeToolCall(toolCall, 'user-id');
+// Get a specific tool
+const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
+```
+
+## Usage Examples
+
+### Basic Chat Completion with Streaming
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai';
+import OpenAI from 'openai';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Example API route
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const tools = await composio.tools.get('user123', {
+    apps: ['gmail'],
+  });
+
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages,
+    tools,
+    stream: true,
+  });
+
+  return new Response(stream, {
+    headers: {
+      'content-type': 'text/event-stream',
+    },
+  });
+}
+```
+
+### Tool Execution with Streaming
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai';
+import OpenAI from 'openai';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Example API route that handles tool execution
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const tools = await composio.tools.get('user123', {
+    apps: ['gmail', 'googlecalendar'],
+  });
+
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages,
+    tools,
+    tool_choice: 'auto',
+    stream: true,
+  });
+
+  const chunks = [];
+  for await (const chunk of stream) {
+    if (chunk.choices[0]?.delta?.tool_calls) {
+      const toolCall = chunk.choices[0].delta.tool_calls[0];
+      const result = await composio.toolset.executeToolCall(toolCall);
+      // Handle tool execution result
+      chunks.push(result);
+    } else {
+      chunks.push(chunk.choices[0]?.delta?.content || '');
+    }
+  }
+
+  return new Response(chunks.join(''), {
+    headers: {
+      'content-type': 'text/plain',
+    },
+  });
+}
+```
+
+### JSON Mode Example
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai';
+import OpenAI from 'openai';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Example API route that returns JSON
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const tools = await composio.tools.get('user123', {
+    apps: ['gmail'],
+  });
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages,
+    tools,
+    response_format: { type: 'json_object' },
+  });
+
+  return Response.json(JSON.parse(completion.choices[0].message.content || '{}'));
+}
+```
+
+### Vision Example
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai';
+import OpenAI from 'openai';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new OpenAIToolset(),
+});
+
+// Example API route that handles image analysis
+export async function POST(req: Request) {
+  const { messages, image } = await req.json();
+  const tools = await composio.tools.get('user123', {
+    apps: ['gmail'],
+  });
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4-vision-preview',
+    messages: [
+      ...messages,
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What do you see in this image?' },
+          { type: 'image_url', image_url: image },
+        ],
+      },
+    ],
+    tools,
+    max_tokens: 500,
+  });
+
+  return Response.json({
+    content: completion.choices[0].message.content,
+  });
+}
 ```
 
 ## API Reference
@@ -47,120 +205,12 @@ The `OpenAIToolset` class extends `BaseComposioToolset` and provides OpenAI-spec
 
 #### Methods
 
-##### `executeToolCall(tool: OpenAI.ChatCompletionMessageToolCall, userId?: string): Promise<string>`
-Executes a tool call from OpenAI and returns the result.
+##### `executeToolCall(tool: ToolCall): Promise<string>`
+
+Executes a tool call and returns the result.
 
 ```typescript
-const result = await toolset.executeToolCall(toolCall, 'user-id');
-```
-
-##### `handleToolCall(chatCompletion: OpenAI.ChatCompletion, userId?: string): Promise<string[]>`
-Handles tool calls from a chat completion.
-
-```typescript
-const outputs = await toolset.handleToolCall(chatCompletion, 'user-id');
-```
-
-##### `handleAssistantMessage(run: OpenAI.Beta.Threads.Run, userId?: string): Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>`
-Handles tool calls from an assistant message.
-
-```typescript
-const toolOutputs = await toolset.handleAssistantMessage(run, 'user-id');
-```
-
-##### `waitAndHandleAssistantStreamToolCalls(client: OpenAI, runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>, thread: OpenAI.Beta.Threads.Thread, userId?: string): AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>`
-Waits for and handles tool calls from an assistant stream.
-
-```typescript
-for await (const event of toolset.waitAndHandleAssistantStreamToolCalls(client, runStream, thread, 'user-id')) {
-  // Handle events
-}
-```
-
-##### `waitAndHandleAssistantToolCalls(client: OpenAI, run: OpenAI.Beta.Threads.Run, thread: OpenAI.Beta.Threads.Thread, userId?: string): Promise<OpenAI.Beta.Threads.Run>`
-Waits for and handles tool calls from an assistant.
-
-```typescript
-const finalRun = await toolset.waitAndHandleAssistantToolCalls(client, run, thread, 'user-id');
-```
-
-## Examples
-
-### Basic Tool Execution
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIToolset } from '@composio/openai';
-import OpenAI from 'openai';
-
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  toolset: new OpenAIToolset()
-});
-
-const openai = new OpenAI({
-  apiKey: 'your-openai-api-key'
-});
-
-// Get available tools
-const tools = await composio.getTools();
-
-// Create a chat completion with tools
-const completion = await openai.chat.completions.create({
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'What can you do?' }],
-  tools: tools
-});
-
-// Handle tool calls
-if (completion.choices[0].message.tool_calls) {
-  const result = await composio.toolset.executeToolCall(
-    completion.choices[0].message.tool_calls[0],
-    'user-id'
-  );
-  console.log(result);
-}
-```
-
-### Working with Assistants
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIToolset } from '@composio/openai';
-import OpenAI from 'openai';
-
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  toolset: new OpenAIToolset()
-});
-
-const openai = new OpenAI({
-  apiKey: 'your-openai-api-key'
-});
-
-// Create an assistant with tools
-const assistant = await openai.beta.assistants.create({
-  name: 'Composio Assistant',
-  instructions: 'You are a helpful assistant that can use Composio tools.',
-  model: 'gpt-4',
-  tools: await composio.getTools()
-});
-
-// Create a thread
-const thread = await openai.beta.threads.create();
-
-// Create a run
-const run = await openai.beta.threads.runs.create(thread.id, {
-  assistant_id: assistant.id
-});
-
-// Wait for and handle tool calls
-const finalRun = await composio.toolset.waitAndHandleAssistantToolCalls(
-  openai,
-  run,
-  thread,
-  'user-id'
-);
+const result = await toolset.executeToolCall(toolCall);
 ```
 
 ## Contributing
