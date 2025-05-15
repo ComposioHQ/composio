@@ -6,12 +6,12 @@ import {
   ToolExecuteResponse,
   ToolList,
   ToolSchema,
+  ToolListParams,
   ToolExecuteResponseSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
   ToolGetInputResponse,
-  ToolListParams,
   ToolProxyParams,
   ToolProxyResponse,
   ToolRetrieveEnumResponse,
@@ -198,8 +198,8 @@ export class Tools<
       important: queryParams.data.important,
       limit: queryParams.data.limit,
       search: queryParams.data.search,
-      toolkit_slug: queryParams.data.toolkitSlug,
-      tool_slugs: queryParams.data.toolSlugs?.join(','),
+      toolkit_slug: queryParams.data.toolkits,
+      tool_slugs: queryParams.data.tools?.join(','),
     });
     if (!tools) {
       return [];
@@ -215,7 +215,7 @@ export class Tools<
     // }
 
     const customTools = await this.customTools.getCustomTools({
-      toolSlugs: queryParams.data.toolSlugs,
+      toolSlugs: queryParams.data.tools,
     });
 
     let modifiedTools = [...caseTransformedTools, ...customTools];

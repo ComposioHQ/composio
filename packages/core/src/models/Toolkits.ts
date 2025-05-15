@@ -29,7 +29,7 @@ export class Toolkits {
    * This method fetches the toolkits from the Composio API.
    * @returns {Promise<Toolkit[]>} List of toolkits
    */
-  async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
+  private async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
     const parsedQuery = ToolkitsListParamsSchema.parse(query);
     const result = await this.client.toolkits.list({
       category: parsedQuery.category,
@@ -65,7 +65,7 @@ export class Toolkits {
    * @param options - Request options
    * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
    */
-  async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+  private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
     const result = await this.client.toolkits.retrieve(slug);
     const parsedResult = ToolkitRetrieveResponseSchema.parse({
       name: result.name,
@@ -76,6 +76,35 @@ export class Toolkits {
       authConfigDetails: result.auth_config_details,
     });
     return parsedResult;
+  }
+
+  /**
+   * @overload
+   * Fetches a toolkit by its Slug or a list of toolkits.
+   * @param slug - The ID of the toolkit to be retrieved
+   * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
+   */
+  async get(slug: string): Promise<ToolkitRetrieveResponse>;
+  /**
+   * @overload
+   * Fetches a list of toolkits.
+   * @param query - The parameters to fetch the toolkits
+   * @returns {Promise<ToolKitListResponse>} The list of toolkits
+   */
+  async get(query: ToolkitListParams): Promise<ToolKitListResponse>;
+  /**
+   * Fetches a toolkit by its Slug or a list of toolkits.
+   * This method retrieves the toolkit from the Composio API.
+   * @param arg - The ID of the toolkit to be retrieved or a list of parameters
+   * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit object or a list of toolkits
+   */
+  async get(
+    arg: string | ToolkitListParams
+  ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
+    if (typeof arg === 'string') {
+      return this.getToolkitBySlug(arg);
+    }
+    return this.getToolkits(arg);
   }
 
   /**

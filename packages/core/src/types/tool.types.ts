@@ -60,8 +60,8 @@ export const ToolListParamsSchema = z.object({
   important: z.string().optional(),
   limit: z.string().optional(),
   search: z.string().optional(),
-  toolkitSlug: z.string().optional(),
-  toolSlugs: z.array(z.string()).optional(),
+  toolkits: z.string().optional(),
+  tools: z.array(z.string()).optional(),
 });
 export type ToolListParams = z.infer<typeof ToolListParamsSchema>;
 

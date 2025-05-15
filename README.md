@@ -139,6 +139,83 @@ const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
 });
 ```
 
+## Connected Accounts
+
+Composio SDK provides a powerful way to manage third-party service connections through Connected Accounts. This feature allows you to authenticate with various services and maintain those connections.
+
+### Creating a Connected Account
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// Create a connected account
+const connectionRequest = await composio.createConnectedAccount(
+  'user123', // userId
+  'HACKERNEWS', // authConfigId
+  {
+    redirectUrl: 'https://your-app.com/callback',
+    data: {
+      // Additional data for the connection
+      scope: ['read', 'write'],
+    },
+  }
+);
+
+// Wait for the connection to be established
+// Default timeout is 60 seconds
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+
+### Managing Connected Accounts
+
+```typescript
+// List all connected accounts
+const accounts = await composio.connectedAccounts.list({
+  userId: 'user123',
+});
+
+// Get a specific connected account
+const account = await composio.connectedAccounts.get('account_id');
+
+// Enable/Disable a connected account
+await composio.connectedAccounts.enable('account_id');
+await composio.connectedAccounts.disable('account_id');
+
+// Refresh credentials
+await composio.connectedAccounts.refresh('account_id');
+
+// Delete a connected account
+await composio.connectedAccounts.delete('account_id');
+```
+
+### Connection Statuses
+
+Connected accounts can have the following statuses:
+
+- `ACTIVE`: Connection is established and working
+- `INACTIVE`: Connection is temporarily disabled
+- `PENDING`: Connection is being processed
+- `INITIATED`: Connection request has started
+- `EXPIRED`: Connection credentials have expired
+- `FAILED`: Connection attempt failed
+
+### Authentication Schemes
+
+Composio supports various authentication schemes:
+
+- OAuth2
+- OAuth1
+- OAuth1a
+- API Key
+- Basic Auth
+- Bearer Token
+- Google Service Account
+- And more...
+
 ## Development
 
 ### Creating Custom Toolsets
