@@ -14,6 +14,7 @@ import {
 } from '../types/connectedAccounts.types';
 import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
 import { ZodError } from 'zod';
+import logger from '../utils/logger';
 export class ConnectionRequest {
   private client: ComposioClient;
   private connectedAccountId: string;
@@ -24,7 +25,6 @@ export class ConnectionRequest {
     connectedAccountId: string,
     connectedAccountStatus: ConnectedAccountStatus
   ) {
-    console.log('ConnectionRequest constructor', connectedAccountId, connectedAccountStatus);
     this.client = client;
     this.connectedAccountId = connectedAccountId;
     this.connectedAccountStatus = connectedAccountStatus;
@@ -56,11 +56,10 @@ export class ConnectionRequest {
       });
       return parsedResponse;
     } catch (error) {
-      console.error('Error transforming response', error);
+      logger.error('Error transforming response', error);
       if (error instanceof ZodError) {
-        console.error(JSON.stringify(error.errors, null, 2));
+        logger.error(JSON.stringify(error.errors, null, 2));
       }
-      console.error(JSON.stringify(response, null, 2));
       throw error;
     }
   }
