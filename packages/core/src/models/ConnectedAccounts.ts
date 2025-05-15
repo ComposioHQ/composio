@@ -6,7 +6,6 @@
  * @module ConnectedAccounts
  */
 import ComposioClient from '@composio/client';
-import { RequestOptions } from '@composio/client/internal/request-options';
 import {
   ConnectedAccountListParams,
   ConnectedAccountListResponse,
@@ -18,10 +17,7 @@ import {
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
 } from '@composio/client/resources/connected-accounts';
-import {
-  CreateConnectedAccountOptions,
-  CreateConnectedAccountParamsSchema,
-} from '../types/connectedAccounts.types';
+import { CreateConnectedAccountOptions } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
 
 /**
