@@ -43,11 +43,8 @@ export class ConnectedAccounts {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountListResponse>} List of connected accounts
    */
-  async list(
-    query?: ConnectedAccountListParams,
-    options?: RequestOptions
-  ): Promise<ConnectedAccountListResponse> {
-    return this.client.connectedAccounts.list(query, options);
+  async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse> {
+    return this.client.connectedAccounts.list(query);
   }
 
   /**
@@ -56,11 +53,8 @@ export class ConnectedAccounts {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountCreateResponse>} Created connected account
    */
-  async create(
-    data: ConnectedAccountCreateParams,
-    options?: RequestOptions
-  ): Promise<ConnectedAccountCreateResponse> {
-    return this.client.connectedAccounts.create(data, options);
+  async create(data: ConnectedAccountCreateParams): Promise<ConnectedAccountCreateResponse> {
+    return this.client.connectedAccounts.create(data);
   }
 
   /**
@@ -89,10 +83,7 @@ export class ConnectedAccounts {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountRefreshResponse>} Refreshed connected account details
    */
-  async refresh(
-    nanoid: string,
-    options?: RequestOptions
-  ): Promise<ConnectedAccountRefreshResponse> {
+  async refresh(nanoid: string): Promise<ConnectedAccountRefreshResponse> {
     return this.client.connectedAccounts.refresh(nanoid);
   }
 
@@ -105,8 +96,7 @@ export class ConnectedAccounts {
    */
   async updateStatus(
     nanoid: string,
-    params: ConnectedAccountUpdateStatusParams,
-    options?: RequestOptions
+    params: ConnectedAccountUpdateStatusParams
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, params);
   }
@@ -117,10 +107,7 @@ export class ConnectedAccounts {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
    */
-  async enable(
-    nanoid: string,
-    options?: RequestOptions
-  ): Promise<ConnectedAccountUpdateStatusResponse> {
+  async enable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
   }
 
@@ -130,10 +117,7 @@ export class ConnectedAccounts {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
    */
-  async disable(
-    nanoid: string,
-    options?: RequestOptions
-  ): Promise<ConnectedAccountUpdateStatusResponse> {
+  async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
   }
 
