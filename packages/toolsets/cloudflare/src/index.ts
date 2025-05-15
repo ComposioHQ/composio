@@ -10,14 +10,7 @@
  * @module toolsets/cloudflare
  */
 import { AiTextGenerationToolInput } from '@cloudflare/workers-types';
-import {
-  Tool,
-  ToolListParams,
-  ExecuteToolModifiers,
-  ToolOptions,
-  BaseNonAgenticToolset,
-  ExecuteMetadata,
-} from '@composio/core';
+import { Tool, ExecuteToolModifiers, BaseNonAgenticToolset } from '@composio/core';
 import { ToolExecuteParams } from 'packages/core/src/types/tool.types';
 import { ExecuteToolFnOptions } from 'packages/core/src/types/toolset.types';
 

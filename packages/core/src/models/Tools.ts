@@ -7,7 +7,6 @@ import {
   ToolList,
   ToolSchema,
   ToolExecuteResponseSchema,
-  CustomAuthParams,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,

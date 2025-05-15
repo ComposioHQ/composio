@@ -1,5 +1,4 @@
-import { ToolOptions } from '../types/modifiers.types';
-import { Tool, ToolListParams } from '../types/tool.types';
+import { Tool } from '../types/tool.types';
 import { BaseNonAgenticToolset } from './BaseToolset';
 
 /**

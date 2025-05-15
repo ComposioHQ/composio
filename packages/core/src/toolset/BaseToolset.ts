@@ -1,13 +1,13 @@
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
-import { ExecuteToolFn, ExecuteToolFnOptions, GlobalExecuteToolFn } from '../types/toolset.types';
+import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/toolset.types';
 
 /**
  * @internal
  * Base class for all toolsets.
  * This class is not meant to be used directly, but rather to be extended by different toolset implementations.
  */
-abstract class BaseToolset<TToolCollection, TTool> {
+abstract class BaseToolset {
   /**
    * @public
    * The name of the toolset.
@@ -58,10 +58,7 @@ abstract class BaseToolset<TToolCollection, TTool> {
  * Base class for all non-agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete toolset implementations.
  */
-export abstract class BaseNonAgenticToolset<TToolCollection, TTool> extends BaseToolset<
-  TToolCollection,
-  TTool
-> {
+export abstract class BaseNonAgenticToolset<TToolCollection, TTool> extends BaseToolset {
   override readonly _isAgentic = false;
 
   /**
@@ -83,10 +80,7 @@ export abstract class BaseNonAgenticToolset<TToolCollection, TTool> extends Base
  * Base class for all agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete toolset implementations.
  */
-export abstract class BaseAgenticToolset<TToolCollection, TTool> extends BaseToolset<
-  TToolCollection,
-  TTool
-> {
+export abstract class BaseAgenticToolset<TToolCollection, TTool> extends BaseToolset {
   override readonly _isAgentic = true;
 
   /**
