@@ -42,5 +42,6 @@
     "uuid": "^11.1.0",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.5"
-  }
+  },
+  "gitHead": "8b61c4dbbd013f3e17be4b2e4018e66f69e3c2f9"
 }
