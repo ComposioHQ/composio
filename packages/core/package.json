@@ -43,5 +43,5 @@
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.5"
   },
-  "gitHead": "8b61c4dbbd013f3e17be4b2e4018e66f69e3c2f9"
+  "gitHead": "409e5f7d2e3e5e921231cbabd538484245f7ab0e"
 }
