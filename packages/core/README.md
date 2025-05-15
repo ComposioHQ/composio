@@ -1,26 +1,15 @@
 # @composio/core
 
-The core package of Composio SDK, providing essential functionality for building and managing AI-powered tools and toolsets.
+The core Composio SDK which allows users to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various platforms and frameworks.
 
-## Features
+## Core Features
 
-### 1. Core Functionality
-- **Composio Client Integration**: Seamless integration with Composio API
-- **Tool Management**: Create, manage, and execute tools
-- **Toolkit Support**: Organize tools into toolsets
-- **Authentication & Authorization**: Built-in auth configuration and management
-- **Connected Accounts**: Manage multiple account connections
-
-### 2. Toolsets
-- **Default OpenAI Toolset**: Ships with built-in OpenAI integration
-- **Extensible Base Toolset**: Create custom toolsets by extending `BaseComposioToolset`
-- **Tool Wrapping**: Standardized tool wrapping and execution
-
-### 3. Advanced Features
-- **Telemetry**: Built-in telemetry for monitoring and debugging
-- **Logging**: Configurable logging system with multiple levels
-- **Environment Management**: Flexible configuration through environment variables
-- **Version Management**: Automatic version checking and updates
+- **Tools**: Manage and execute tools within the Composio ecosystem. Includes functionality to list, retrieve, and execute tools.
+- **Toolkits**: Organize and manage collections of tools for specific use cases.
+- **Triggers**: Create and manage event triggers that can execute tools based on specific conditions.
+- **AuthConfigs**: Configure authentication providers and settings.
+- **ConnectedAccounts**: Manage third-party service connections.
+- **ActionExecution**: Track and manage the execution of actions within the platform.
 
 ## Installation
 
@@ -32,23 +21,27 @@ yarn add @composio/core
 pnpm add @composio/core
 ```
 
-## Quick Start
+## Getting Started
+
+### Basic Usage with OpenAI Toolset
 
 ```typescript
 import { Composio } from '@composio/core';
+import { OpenAIToolset } from '@composio/openai-toolset';
 
-// Initialize Composio with default OpenAI toolset
 const composio = new Composio({
-  apiKey: 'your-api-key',
-  baseURL: 'https://api.composio.dev', // optional
+  apiKey: process.env.COMPOSIO_API_KEY,
+  // OpenAIToolset is the default, so this is optional
+  toolset: new OpenAIToolset(),
 });
 
-// Get available tools
-const tools = await composio.getTools();
+// Fetch a single tool
+const searchTool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS');
 
-// Execute a specific tool
-const result = await composio.tools.execute('tool-slug', {
-  // tool parameters
+// Fetch multiple tools
+const tools = await composio.tools.get('user123', {
+  category: 'search',
+  limit: 10,
 });
 ```
 
@@ -58,52 +51,145 @@ The Composio constructor accepts the following configuration options:
 
 ```typescript
 interface ComposioConfig {
-  apiKey?: string;              // Your Composio API key
-  baseURL?: string;             // Custom API base URL (optional)
-  allowTracking?: boolean;      // Enable/disable telemetry (default: true)
-  allowTracing?: boolean;       // Enable/disable tracing (default: true)
-  toolset?: TToolset;          // Custom toolset (default: OpenAIToolset)
-  userId?: string;             // Custom user ID
-  connectedAccountIds?: Record<string, string>; // Connected account mappings
+  apiKey?: string; // Your Composio API key
+  baseURL?: string; // Custom API base URL (optional)
+  allowTracking?: boolean; // Enable/disable telemetry (default: true)
+  allowTracing?: boolean; // Enable/disable tracing (default: true)
+  toolset?: TToolset; // Custom toolset (default: OpenAIToolset)
   telemetryTransport?: BaseTelemetryTransport; // Custom telemetry transport
 }
 ```
 
-## Toolsets
+## Modifiers
 
-### Default OpenAI Toolset
+Composio SDK supports powerful modifiers to transform tool schemas and execution behavior.
 
-The core package ships with OpenAI toolset by default. For more information about the OpenAI toolset and its capabilities, check out the [OpenAI Toolset Documentation](./toolset/OpenAIToolset.md).
+### Schema Modifiers
 
-### Creating Custom Toolsets
-
-You can create custom toolsets by extending the `BaseComposioToolset`:
+Schema modifiers allow you to transform tool schemas before they are used:
 
 ```typescript
-import { BaseComposioToolset, Tool } from '@composio/core';
-
-interface CustomTool {
-  name: string;
-  // ... custom tool properties
-}
-
-class CustomToolset extends BaseComposioToolset<CustomTool[], CustomTool> {
-  readonly FILE_NAME = 'custom/toolset.ts';
-  
-  _wrapTool = (tool: Tool): CustomTool => {
-    // Implement tool wrapping logic
-    return {
-      name: tool.name,
-      // ... map other properties
-    };
-  };
-
-  async getTools() {
-    const tools = await this.client?.tools.list();
-    return tools?.items.map(tool => this._wrapTool(tool)) ?? [];
-  }
-}
+const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
+  modifyToolSchema: (toolSlug: string, tool: Tool) => ({
+    ...tool,
+    description: 'Enhanced HackerNews search with additional features',
+    inputParameters: {
+      ...tool.inputParameters,
+      limit: {
+        type: 'number',
+        description: 'Maximum number of posts to return',
+        default: 10,
+      },
+    },
+  }),
+});
 ```
+
+### Execution Modifiers
+
+For agentic toolsets (like Vercel AI and Langchain), you can also modify tool execution behavior:
+
+```typescript
+const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
+  // Transform input before execution
+  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+    ...params,
+    arguments: {
+      ...params.arguments,
+      limit: Math.min((params.arguments?.limit as number) || 10, 100),
+    },
+  }),
+
+  // Transform output after execution
+  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+    ...response,
+    data: {
+      ...response.data,
+      posts: (response.data?.posts as any[]).map(post => ({
+        ...post,
+        url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
+      })),
+    },
+  }),
+});
+```
+
+## Connected Accounts
+
+Composio SDK provides a powerful way to manage third-party service connections through Connected Accounts. This feature allows you to authenticate with various services and maintain those connections.
+
+### Creating a Connected Account
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// Create a connected account
+const connectionRequest = await composio.createConnectedAccount(
+  'user123', // userId
+  'HACKERNEWS', // authConfigId
+  {
+    redirectUrl: 'https://your-app.com/callback',
+    data: {
+      // Additional data for the connection
+      scope: ['read', 'write'],
+    },
+  }
+);
+
+// Wait for the connection to be established
+// Default timeout is 60 seconds
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+
+### Managing Connected Accounts
+
+```typescript
+// List all connected accounts
+const accounts = await composio.connectedAccounts.list({
+  userId: 'user123',
+});
+
+// Get a specific connected account
+const account = await composio.connectedAccounts.get('account_id');
+
+// Enable/Disable a connected account
+await composio.connectedAccounts.enable('account_id');
+await composio.connectedAccounts.disable('account_id');
+
+// Refresh credentials
+await composio.connectedAccounts.refresh('account_id');
+
+// Delete a connected account
+await composio.connectedAccounts.delete('account_id');
+```
+
+### Connection Statuses
+
+Connected accounts can have the following statuses:
+
+- `ACTIVE`: Connection is established and working
+- `INACTIVE`: Connection is temporarily disabled
+- `PENDING`: Connection is being processed
+- `INITIATED`: Connection request has started
+- `EXPIRED`: Connection credentials have expired
+- `FAILED`: Connection attempt failed
+
+### Authentication Schemes
+
+Composio supports various authentication schemes:
+
+- OAuth2
+- OAuth1
+- OAuth1a
+- API Key
+- Basic Auth
+- Bearer Token
+- Google Service Account
+- And more...
 
 ## Environment Variables
 
