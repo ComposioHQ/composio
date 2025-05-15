@@ -28,6 +28,9 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "openai": "^4.94.0"
+  },
   "devDependencies": {
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
@@ -35,7 +38,6 @@
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.9",
-    "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.2",

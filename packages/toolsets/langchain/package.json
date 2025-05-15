@@ -28,12 +28,13 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "@langchain/core": "^0.3.44",
+    "@composio/core": "^0.1.0-alpha.0"
+  },
   "devDependencies": {
     "tsup": "^8.4.0",
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@composio/core": "workspace:*",
-    "@langchain/core": "^0.3.44"
+    "typescript": "^5.8.3",
+    "@composio/core": "workspace:*"
   }
 }

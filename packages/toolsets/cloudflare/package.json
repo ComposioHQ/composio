@@ -28,12 +28,13 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "@cloudflare/workers-types": "^4.20250416.0",
+    "@composio/core": "^0.1.0-alpha.0"
+  },
   "devDependencies": {
     "tsup": "^8.4.0",
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@cloudflare/workers-types": "^4.20250416.0",
+    "typescript": "^5.8.3",
     "@composio/core": "workspace:*"
   }
 }
