@@ -1,5 +1,10 @@
 {
   "$schema": "node_modules/lerna/schemas/lerna-schema.json",
   "version": "0.1.1-alpha.0",
-  "npmClient": "pnpm"
+  "npmClient": "pnpm",
+  "command": {
+    "publish": {
+      "ignore": "examples/**"
+    }
+  }
 }
