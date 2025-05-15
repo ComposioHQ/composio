@@ -1,6 +1,6 @@
 {
   "name": "@composio/langchain",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-alpha.0",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -33,7 +33,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@composio/core": "^0.1.0-rc.7",
+    "@composio/core": "^0.1.0-alpha.0",
     "@langchain/core": "^0.3.44"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-alpha.0",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
