@@ -44,13 +44,28 @@ export class ConnectedAccounts {
   }
 
   /**
-   * Create a new connected account
-   * @param {ConnectedAccountCreateParams} data - Data for creating a new connected account
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<ConnectedAccountCreateResponse>} Created connected account
+   * Compound function to create a new connected account.
+   * This function creates a new connected account and returns a connection request.
+   * Users can then wait for the connection to be established using the `waitForConnection` method.
+   * @param {CreateConnectedAccountParams} data - Data for creating a new connected account
+   * @returns {Promise<ConnectionRequest>} Connection request object
    */
-  async create(data: ConnectedAccountCreateParams): Promise<ConnectedAccountCreateResponse> {
-    return this.client.connectedAccounts.create(data);
+  async create(
+    userId: string,
+    authConfigId: string,
+    options?: CreateConnectedAccountOptions
+  ): Promise<ConnectionRequest> {
+    const response = await this.client.connectedAccounts.create({
+      auth_config: {
+        id: authConfigId,
+      },
+      connection: {
+        data: options?.data,
+        redirect_uri: options?.redirectUrl,
+        user_id: userId,
+      },
+    });
+    return new ConnectionRequest(this.client, response.id, response.status);
   }
 
   /**
@@ -115,30 +130,5 @@ export class ConnectedAccounts {
    */
   async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
-  }
-
-  /**
-   * Compound function to create a new connected account.
-   * This function creates a new connected account and returns a connection request.
-   * Users can then wait for the connection to be established using the `waitForConnection` method.
-   * @param {CreateConnectedAccountParams} data - Data for creating a new connected account
-   * @returns {Promise<ConnectionRequest>} Connection request object
-   */
-  async createConnectedAccount(
-    userId: string,
-    authConfigId: string,
-    options?: CreateConnectedAccountOptions
-  ): Promise<ConnectionRequest> {
-    const response = await this.create({
-      auth_config: {
-        id: authConfigId,
-      },
-      connection: {
-        data: options?.data,
-        redirect_uri: options?.redirectUrl,
-        user_id: userId,
-      },
-    });
-    return new ConnectionRequest(this.client, response.id, response.status);
   }
 }

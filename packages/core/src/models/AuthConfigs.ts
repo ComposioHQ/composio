@@ -7,16 +7,24 @@
  */
 import ComposioClient from '@composio/client';
 import {
-  AuthConfigListParams,
-  AuthConfigListResponse,
-  AuthConfigCreateParams,
-  AuthConfigCreateResponse,
+  AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,
-  AuthConfigRetrieveResponse,
-  AuthConfigUpdateParams,
   AuthConfigUpdateResponse,
   AuthConfigUpdateStatusResponse,
 } from '@composio/client/resources/auth-configs';
+import {
+  AuthConfigListParams,
+  AuthConfigListParamsSchema,
+  AuthConfigListResponse,
+  AuthConfigListResponseSchema,
+  AuthConfigRetrieveResponse,
+  AuthConfigRetrieveResponseSchema,
+  AuthConfigUpdateParams,
+  CreateAuthConfigParams,
+  CreateAuthConfigParamsSchema,
+  CreateAuthConfigResponse,
+  CreateAuthConfigResponseSchema,
+} from '../types/authConfigs.types';
 
 /**
  * AuthConfigs class
@@ -25,11 +33,33 @@ import {
  * Auth configs are used to configure authentication providers and settings.
  */
 export class AuthConfigs {
-  readonly FILE_NAME: string = 'core/models/AuthConfigs.ts';
   private client: ComposioClient;
 
   constructor(client: ComposioClient) {
     this.client = client;
+  }
+
+  private parseAuthConfigRetrieveResponse(
+    authConfig: ComposioAuthConfigRetrieveResponse
+  ): AuthConfigRetrieveResponse {
+    return AuthConfigRetrieveResponseSchema.parse({
+      id: authConfig.id,
+      name: authConfig.name,
+      noOfConnections: authConfig.no_of_connections,
+      status: authConfig.status,
+      toolkit: {
+        logo: authConfig.toolkit.logo,
+        slug: authConfig.toolkit.slug,
+      },
+      uuid: authConfig.uuid,
+      authScheme: authConfig.auth_scheme,
+      credentials: authConfig.credentials,
+      expectedInputFields: authConfig.expected_input_fields,
+      isComposioManaged: authConfig.is_composio_managed,
+      createdBy: authConfig.created_by,
+      createdAt: authConfig.created_at,
+      lastUpdatedAt: authConfig.last_updated_at,
+    });
   }
 
   /**
@@ -39,17 +69,55 @@ export class AuthConfigs {
    * @returns {Promise<AuthConfigListResponse>} List of auth configs
    */
   async list(query?: AuthConfigListParams): Promise<AuthConfigListResponse> {
-    return this.client.authConfigs.list(query);
+    const parsedQuery = query ? AuthConfigListParamsSchema.parse(query) : undefined;
+    const result = await this.client.authConfigs.list({
+      cursor: parsedQuery?.cursor,
+      is_composio_managed: parsedQuery?.isComposioManaged,
+      limit: parsedQuery?.limit?.toString(),
+      toolkit_slug: parsedQuery?.toolkitSlug,
+    });
+    return AuthConfigListResponseSchema.parse({
+      items: result.items.map(item => this.parseAuthConfigRetrieveResponse(item)),
+      nextCursor: result.next_cursor,
+      totalPages: result.total_pages,
+    });
   }
 
   /**
    * Create a new auth config
-   * @param {AuthConfigCreateParams} data - Data for creating a new auth config
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigCreateResponse>} Created auth config
+   * @param {string} toolkit - Unique identifier of the toolkit
+   * @param {CreateAuthConfigParams} options - Options for creating a new auth config
+   * @returns {Promise<CreateAuthConfigResponse>} Created auth config
+   *
+   * @example
+   * const authConfig = await authConfigs.create('my-toolkit', {
+   *   type: AuthConfigTypes.CUSTOM,
+   *   name: 'My Custom Auth Config',
+   *   authScheme: AuthSchemeTypes.API_KEY,
+   *   credentials: {
+   *     apiKey: '1234567890',
+   *   },
+   * });
+   *
+   * @link https://docs.composio.dev/reference/auth-configs/create-auth-config
    */
-  async create(data: AuthConfigCreateParams): Promise<AuthConfigCreateResponse> {
-    return this.client.authConfigs.create(data);
+  async create(
+    toolkit: string,
+    options: CreateAuthConfigParams
+  ): Promise<CreateAuthConfigResponse> {
+    const parsedOptions = CreateAuthConfigParamsSchema.parse(options);
+    const result = await this.client.authConfigs.create({
+      toolkit: {
+        slug: toolkit,
+      },
+      auth_config: parsedOptions,
+    });
+    return CreateAuthConfigResponseSchema.parse({
+      id: result.auth_config.id,
+      authScheme: result.auth_config.auth_scheme,
+      isComposioManaged: result.auth_config.is_composio_managed,
+      toolkit: result.toolkit.slug,
+    });
   }
 
   /**
@@ -59,7 +127,8 @@ export class AuthConfigs {
    * @returns {Promise<AuthConfigRetrieveResponse>} Auth config details
    */
   async get(nanoid: string): Promise<AuthConfigRetrieveResponse> {
-    return this.client.authConfigs.retrieve(nanoid);
+    const result = await this.client.authConfigs.retrieve(nanoid);
+    return this.parseAuthConfigRetrieveResponse(result);
   }
 
   /**
@@ -70,7 +139,11 @@ export class AuthConfigs {
    * @returns {Promise<AuthConfigUpdateResponse>} Updated auth config
    */
   async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
-    return this.client.authConfigs.update(nanoid, data);
+    return this.client.authConfigs.update(nanoid, {
+      auth_config: {
+        credentials: data.credentials,
+      },
+    });
   }
 
   /**
