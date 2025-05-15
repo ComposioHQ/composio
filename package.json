@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "workspaces": [
-    "packages/*"
+    "packages/core",
+    "packages/toolsets/*"
   ],
   "scripts": {
     "build": "turbo build",
@@ -21,6 +22,7 @@
     "eslint": "^9.25.1",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
+    "lerna": "^8.2.2",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
     "turbo": "^2.5.0",
