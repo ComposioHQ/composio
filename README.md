@@ -59,7 +59,7 @@ composio/
    pnpm format
 
    # Create a new toolset
-   pnpm create-toolset <toolset-name> [--agentic]
+   pnpm create:toolset <toolset-name> [--agentic]
 
    # Check peer dependencies
    pnpm check:peer-deps
@@ -70,10 +70,10 @@ composio/
 
 ## Creating a New Toolset
 
-1. Use the create-toolset script:
+1. Use the create:toolset script:
 
    ```bash
-   pnpm create-toolset my-toolset [--agentic]
+   pnpm create:toolset my-toolset [--agentic]
    ```
 
 2. The script will create a new toolset in `packages/toolsets/my-toolset` with:
@@ -411,10 +411,10 @@ To quickly create a new toolset project, use the provided script:
 
 ```bash
 # Create a non-agentic toolset
-pnpm create-toolset my-toolset
+pnpm create:toolset my-toolset
 
 # Create an agentic toolset
-pnpm create-toolset my-toolset --agentic
+pnpm create:toolset my-toolset --agentic
 ```
 
 ## Environment Variables
