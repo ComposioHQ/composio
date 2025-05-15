@@ -8,7 +8,7 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const toolkit = await composio.toolkits.getToolkitBySlug('HACKERNEWS');
+const toolkit = await composio.toolkits.get('HACKERNEWS');
 
 console.log(toolkit);
 
