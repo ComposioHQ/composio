@@ -18,7 +18,10 @@ import {
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
 } from '@composio/client/resources/connected-accounts';
-import { CreateConnectedAccountParams } from '../types/connectedAccounts.types';
+import {
+  CreateConnectedAccountOptions,
+  CreateConnectedAccountParams,
+} from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
 
 /**
@@ -141,16 +144,20 @@ export class ConnectedAccounts {
    * @param {CreateConnectedAccountParams} data - Data for creating a new connected account
    * @returns {Promise<ConnectionRequest>} Connection request object
    */
-  async createConnectedAccount(data: CreateConnectedAccountParams): Promise<ConnectionRequest> {
-    const { authConfig, connection } = data;
+  async createConnectedAccount(
+    userId: string,
+    authConfigId: string,
+    options: CreateConnectedAccountOptions
+  ): Promise<ConnectionRequest> {
+    const { redirectUrl, data } = options;
     const response = await this.create({
       auth_config: {
-        id: authConfig.id,
+        id: authConfigId,
       },
       connection: {
-        data: connection.data,
-        redirect_uri: connection.rediretUrl,
-        user_id: connection.userId,
+        data: data,
+        redirect_uri: redirectUrl,
+        user_id: userId,
       },
     });
     return new ConnectionRequest(this.client, response.id, response.status);

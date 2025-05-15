@@ -29,11 +29,19 @@ export const CreateConnectedAccountParamsSchema = z.object({
   }),
   connection: z.object({
     data: z.record(z.string(), z.unknown()).optional(),
-    rediretUrl: z.string().optional(),
+    redirectUrl: z.string().optional(),
     userId: z.string().optional(),
   }),
 });
+export const CreateConnectedAccountOptionsSchema = z.object({
+  redirectUrl: z.string().optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;
 export type CreateConnectedAccountParams = z.infer<typeof CreateConnectedAccountParamsSchema>;
+export type CreateConnectedAccountOptionsSchema = z.infer<
+  typeof CreateConnectedAccountOptionsSchema
+>;
 
 /**
  * Connected Account create response
@@ -103,4 +111,6 @@ export const ConnectedAccountRetrieveResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-export type ConnectedAccountRetrieveResponse = z.infer<typeof ConnectedAccountRetrieveResponseSchema>;
+export type ConnectedAccountRetrieveResponse = z.infer<
+  typeof ConnectedAccountRetrieveResponseSchema
+>;

@@ -10,6 +10,7 @@ import {
   ConnectedAccountStatus,
   ConnectedAccountStatuses,
   ConnectedAccountRetrieveResponse,
+  ConnectedAccountRetrieveResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
 export class ConnectionRequest {
@@ -36,7 +37,7 @@ export class ConnectionRequest {
   private async transformResponse(
     response: OriginalConnectedAccountResponse
   ): Promise<ConnectedAccountRetrieveResponse> {
-    return {
+    const parsedResponse = ConnectedAccountRetrieveResponseSchema.parse({
       ...response,
       userId: response.user_id, // Add the missing userId property
       authConfig: {
@@ -50,7 +51,8 @@ export class ConnectionRequest {
       createdAt: response.created_at,
       updatedAt: response.updated_at,
       testRequestEndpoint: response.test_request_endpoint,
-    };
+    });
+    return parsedResponse;
   }
 
   /**
