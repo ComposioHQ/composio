@@ -1,6 +1,132 @@
-# @composio/core
+# Composio SDK
 
 The core Composio SDK which allows users to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various platforms and frameworks.
+
+## Project Structure
+
+```
+composio/
+├── packages/                  # Main packages directory
+│   ├── core/                 # Core SDK package
+│   │   └── core/            # Core SDK package
+│   ├── toolsets/             # Toolset implementations
+│   │   ├── openai/          # OpenAI toolset
+│   │   ├── vercel/          # Vercel AI toolset
+│   │   ├── langchain/       # LangChain toolset
+│   │   └── cloudflare/      # Cloudflare toolset
+│   └── wrappers/            # Runtime-specific wrappers
+├── examples/                 # Example implementations
+│   ├── langchain/           # LangChain example
+│   ├── openai/              # OpenAI example
+│   ├── pre-processors/      # Pre-processors example
+│   └── vercel/              # Vercel AI example
+├── scripts/                  # Development and build scripts
+└── .github/                  # GitHub configuration
+```
+
+## Development Setup
+
+1. **Prerequisites**
+
+   - Node.js (Latest LTS version recommended)
+   - [pnpm](https://pnpm.io/) (v10.8.0 or later)
+   - [bun](https://bun.sh) for productivity (optional)
+
+2. **Clone and Install**
+
+   ```bash
+   git clone https://github.com/ComposioHQ/sdk-v3-ts.git
+   cd composio
+   pnpm install
+   ```
+
+3. **Build**
+
+   ```bash
+   pnpm build
+   ```
+
+4. **Development Commands**
+
+   ```bash
+   # Lint code
+   pnpm lint
+
+   # Fix linting issues
+   pnpm lint:fix
+
+   # Format code
+   pnpm format
+
+   # Create a new toolset
+   pnpm create-toolset <toolset-name> [--agentic]
+
+   # Check peer dependencies
+   pnpm check:peer-deps
+
+   # Update peer dependencies
+   pnpm update:peer-deps
+   ```
+
+## Creating a New Toolset
+
+1. Use the create-toolset script:
+
+   ```bash
+   pnpm create-toolset my-toolset [--agentic]
+   ```
+
+2. The script will create a new toolset in `packages/toolsets/my-toolset` with:
+
+   - Basic toolset implementation
+   - TypeScript configuration
+   - Package configuration
+   - README template
+
+3. Implement the required methods in `src/index.ts`:
+   - For non-agentic toolsets: `wrapTool` and `wrapTools`
+   - For agentic toolsets: `wrapTool`, `wrapTools`, and execution handlers
+
+## Release Process
+
+1. **Prepare for Release**
+
+   - Ensure all changes are committed
+   - Run tests and checks:
+     ```bash
+     pnpm build
+     pnpm check:peer-deps
+     ```
+
+2. **Create Changeset**
+
+   ```bash
+   pnpm changeset
+   ```
+
+   - Follow the prompts to describe your changes
+   - Commit the generated changeset file
+
+3. **Publish**
+   ```bash
+   # This will:
+   # 1. Build all packages
+   # 2. Check peer dependencies
+   # 3. Publish packages to npm
+   pnpm run publish
+   ```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
+
+## License
+
+ISC License
+
+## Support
+
+For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
 
 ## Core Features
 
@@ -298,11 +424,3 @@ pnpm create-toolset my-toolset --agentic
 - `COMPOSIO_LOGGING_LEVEL`: Logging level (silent, error, warn, info, debug)
 - `DEVELOPMENT`: Development mode flag
 - `CI`: CI environment flag
-
-## License
-
-ISC License
-
-## Support
-
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).

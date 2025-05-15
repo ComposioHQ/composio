@@ -23,9 +23,9 @@ mkdir -p "$TOOLSET_PATH/src"
 # Create package.json
 cat > "$TOOLSET_PATH/package.json" << EOL
 {
-  "name": "@composio/${TOOLSET_NAME}-toolset",
-  "version": "1.0.0",
-  "description": "${IS_AGENTIC:+Agentic }Toolset for ${TOOLSET_NAME}",
+  "name": "@composio/${TOOLSET_NAME}",
+  "version": "0.1.0",
+  "description": "${IS_AGENTIC:+Agentic }Toolset for ${TOOLSET_NAME} in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
   "publishConfig": {
@@ -40,6 +40,10 @@ cat > "$TOOLSET_PATH/package.json" << EOL
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "README.md",
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "echo \\"Error: no test specified\\" && exit 1"
@@ -48,12 +52,13 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "@composio/core": "^0.1.0"
+  },
   "devDependencies": {
+    "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@composio/core": "workspace:^"
   }
 }
 EOL
@@ -61,17 +66,18 @@ EOL
 # Create tsconfig.json
 cat > "$TOOLSET_PATH/tsconfig.json" << EOL
 {
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
     "declaration": true,
     "declarationDir": "./dist",
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": ["src"]
 }
@@ -93,119 +99,152 @@ EOL
 
 # Create src/index.ts
 cat > "$TOOLSET_PATH/src/index.ts" << EOL
-import { ${IS_AGENTIC:+BaseAgenticToolset}${!IS_AGENTIC:+BaseNonAgenticToolset} } from "@composio/core";
-import type { Tool, ToolListParams } from "@composio/core";
-import type { ${IS_AGENTIC:+ModifiersParams}${!IS_AGENTIC:+SchemaModifiersParams} } from "@composio/core";
-
-interface ToolType {
-    // Add your tool type here
-}
-
-interface ToolCollection {
-  // Add your tool collection here
-}
-
 /**
  * ${CAPITAL_TOOLSET_NAME} Toolset
- * ${IS_AGENTIC:+This is an agentic toolset that supports full modifier capabilities.}
-${!IS_AGENTIC:+This is a non-agentic toolset that only supports schema modifiers.}
- * 
- * @example
- * \`\`\`typescript
- * import { Composio } from "@composio/core";
- * import { ${CAPITAL_TOOLSET_NAME}Toolset } from "@composio/${TOOLSET_NAME}-toolset";
- * 
- * const composio = new Composio({
- *   apiKey: "your-api-key",
- *   toolset: new ${CAPITAL_TOOLSET_NAME}Toolset()
- * });
- * \`\`\`
+ *
+ * This toolset provides a set of tools for interacting with ${CAPITAL_TOOLSET_NAME}.
+ *
+ * @packageDocumentation
+ * @module toolsets/${TOOLSET_NAME}
  */
-export class ${CAPITAL_TOOLSET_NAME}Toolset extends ${IS_AGENTIC:+BaseAgenticToolset}${!IS_AGENTIC:+BaseNonAgenticToolset}<ToolCollection, ToolType> {
-  static FRAMEWORK_NAME = "${TOOLSET_NAME}";
-  readonly FILE_NAME: string = "toolsets/${TOOLSET_NAME}/src/index.ts";
+import { ${IS_AGENTIC:+BaseAgenticToolset}${!IS_AGENTIC:+BaseNonAgenticToolset}, Tool${IS_AGENTIC:+, ExecuteToolFn} } from '@composio/core';
+
+${IS_AGENTIC:+interface ${CAPITAL_TOOLSET_NAME}Tool {
+  // Add your tool type here
+}}${!IS_AGENTIC:+interface ${CAPITAL_TOOLSET_NAME}Tool {
+  // Add your tool type here
+}}
+
+${IS_AGENTIC:+interface ${CAPITAL_TOOLSET_NAME}ToolCollection {
+  // Add your tool collection type here
+}}${!IS_AGENTIC:+type ${CAPITAL_TOOLSET_NAME}ToolCollection = Array<${CAPITAL_TOOLSET_NAME}Tool>}
+
+export class ${CAPITAL_TOOLSET_NAME}Toolset extends ${IS_AGENTIC:+BaseAgenticToolset}${!IS_AGENTIC:+BaseNonAgenticToolset}<${CAPITAL_TOOLSET_NAME}ToolCollection, ${CAPITAL_TOOLSET_NAME}Tool> {
+  readonly name = '${TOOLSET_NAME}';
 
   /**
-   * Wraps a tool in the toolset format.
-   * This method is implemented by the toolset.
+   * Wrap a tool in the ${TOOLSET_NAME} format.
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  wrapTool = (tool: Tool): ToolType => {
-    return tool as ToolType;
-  }
+  ${IS_AGENTIC:+wrapTool(tool: Tool, executeTool: ExecuteToolFn): ${CAPITAL_TOOLSET_NAME}Tool {
+    return {
+      // Implement your tool wrapping logic here
+    } as ${CAPITAL_TOOLSET_NAME}Tool;
+  }}${!IS_AGENTIC:+wrapTool(tool: Tool): ${CAPITAL_TOOLSET_NAME}Tool {
+    return {
+      // Implement your tool wrapping logic here
+    } as ${CAPITAL_TOOLSET_NAME}Tool;
+  }}
 
   /**
-   * Get all the tools from the Composio API
-   * @param params - The query parameters to get the tools
-   * @param modifiers - ${IS_AGENTIC:+Full modifiers to apply to the tools}${!IS_AGENTIC:+Schema modifiers to apply to the tools}
-   * @returns The tools
+   * Wrap a list of tools in the ${TOOLSET_NAME} format.
+   * @param tools - The tools to wrap.
+   * @returns The wrapped tools.
    */
-  getTools = async (
-    params?: ToolListParams,
-    modifiers?: ${IS_AGENTIC:+ModifiersParams}${!IS_AGENTIC:+SchemaModifiersParams}
-  ): Promise<ToolCollection> => {
-    return [];
-  }
-
-  /**
-   * Get a tool from the Composio API by its slug
-   * @param slug - The slug of the tool to get
-   * @param modifiers - ${IS_AGENTIC:+Full modifiers to apply to the tool}${!IS_AGENTIC:+Schema modifiers to apply to the tool}
-   * @returns The tool
-   */
-  getToolBySlug = async (
-    slug: string,
-    modifiers?: ${IS_AGENTIC:+ModifiersParams}${!IS_AGENTIC:+SchemaModifiersParams}
-  ): Promise<ToolType> => {
-    const tool = await this.getComposio().tools.getToolBySlug(slug, modifiers?.schema);
-    return this.wrapTool(tool);
-  }
+  ${IS_AGENTIC:+wrapTools(tools: Tool[], executeTool: ExecuteToolFn): ${CAPITAL_TOOLSET_NAME}ToolCollection {
+    return tools.reduce((acc, tool) => {
+      // Implement your tool collection wrapping logic here
+      return acc;
+    }, {} as ${CAPITAL_TOOLSET_NAME}ToolCollection);
+  }}${!IS_AGENTIC:+wrapTools(tools: Tool[]): ${CAPITAL_TOOLSET_NAME}ToolCollection {
+    return tools.map(tool => this.wrapTool(tool));
+  }}
 }
 EOL
 
 # Create README.md
 cat > "$TOOLSET_PATH/README.md" << EOL
-# @composio/${TOOLSET_NAME}-toolset
+# @composio/${TOOLSET_NAME}
 
-${IS_AGENTIC:+Agentic }Toolset for ${TOOLSET_NAME} in Composio SDK.
+${IS_AGENTIC:+Agentic }Toolset for ${CAPITAL_TOOLSET_NAME} in Composio SDK.
+
+## Features
+
+${IS_AGENTIC:+- **Full Modifier Support**: Support for both schema and execution modifiers
+- **Tool Execution**: Execute tools with proper parameter handling
+- **Type Safety**: Full TypeScript support with proper type definitions}${!IS_AGENTIC:+- **Schema Modifiers**: Support for transforming tool schemas
+- **Type Safety**: Full TypeScript support with proper type definitions}
 
 ## Installation
 
 \`\`\`bash
-pnpm add @composio/${TOOLSET_NAME}-toolset
+npm install @composio/${TOOLSET_NAME}
+# or
+yarn add @composio/${TOOLSET_NAME}
+# or
+pnpm add @composio/${TOOLSET_NAME}
 \`\`\`
 
-## Usage
+## Quick Start
 
 \`\`\`typescript
-import { Composio } from "@composio/core";
-import { ${CAPITAL_TOOLSET_NAME}Toolset } from "@composio/${TOOLSET_NAME}-toolset";
+import { Composio } from '@composio/core';
+import { ${CAPITAL_TOOLSET_NAME}Toolset } from '@composio/${TOOLSET_NAME}';
 
+// Initialize Composio with ${CAPITAL_TOOLSET_NAME} toolset
 const composio = new Composio({
-  apiKey: "your-api-key",
-  toolset: new ${CAPITAL_TOOLSET_NAME}Toolset()
+  apiKey: 'your-composio-api-key',
+  toolset: new ${CAPITAL_TOOLSET_NAME}Toolset(),
 });
 
-// Get all tools
-const tools = await composio.getTools();
-
-// Get a specific tool by slug
-const tool = await composio.getToolBySlug("tool-slug");
+// Get available tools
+const tools = await composio.tools.get('user123', {
+  apps: ['gmail', 'googlecalendar'],
+  limit: 10,
+});
 \`\`\`
 
-## Features
+## Usage Examples
 
-${IS_AGENTIC:+This is an agentic toolset that supports full modifier capabilities, including:
-- Tool execution modifiers
-- Schema modifiers
-- Custom modifiers
+### Basic Example
 
-}${!IS_AGENTIC:+This is a non-agentic toolset that supports schema modifiers for transforming tool schemas.}
+\`\`\`typescript
+import { Composio } from '@composio/core';
+import { ${CAPITAL_TOOLSET_NAME}Toolset } from '@composio/${TOOLSET_NAME}';
+
+// Initialize Composio
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolset: new ${CAPITAL_TOOLSET_NAME}Toolset(),
+});
+
+// Get tools
+const tools = await composio.tools.get('user123', {
+  apps: ['gmail'],
+});
+
+// Use tools with ${CAPITAL_TOOLSET_NAME}
+// Add your usage example here
+\`\`\`
+
+## API Reference
+
+### ${CAPITAL_TOOLSET_NAME}Toolset Class
+
+The \`${CAPITAL_TOOLSET_NAME}Toolset\` class extends \`${IS_AGENTIC:+BaseAgenticToolset}${!IS_AGENTIC:+BaseNonAgenticToolset}\` and provides ${TOOLSET_NAME}-specific functionality.
+
+#### Methods
+
+##### \`wrapTool(tool: Tool${IS_AGENTIC:+, executeTool: ExecuteToolFn}): ${CAPITAL_TOOLSET_NAME}Tool\`
+
+Wraps a tool in the ${TOOLSET_NAME} format.
+
+\`\`\`typescript
+const tool = toolset.wrapTool(composioTool${IS_AGENTIC:+, executeTool});
+\`\`\`
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
 
 ## License
 
-ISC
+ISC License
+
+## Support
+
+For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
 EOL
 
 # Make the script executable
