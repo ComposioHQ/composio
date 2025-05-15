@@ -6,7 +6,6 @@
  * @module AuthConfigs
  */
 import ComposioClient from '@composio/client';
-import { RequestOptions } from '@composio/client/internal/request-options';
 import {
   AuthConfigListParams,
   AuthConfigListResponse,
