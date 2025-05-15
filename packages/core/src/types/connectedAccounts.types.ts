@@ -106,7 +106,6 @@ export const ConnectedAccountAuthConfigSchema = z.object({
 
 export const ConnectedAccountRetrieveResponseSchema = z.object({
   id: z.string(),
-  uuid: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
   userId: z.string(),
   data: z.record(z.string(), z.unknown()),

@@ -13,8 +13,8 @@ import {
   ConnectedAccountRetrieveResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
+import { ZodError } from 'zod';
 export class ConnectionRequest {
-  readonly FILE_NAME: string = 'core/models/ConnectionRequest.ts';
   private client: ComposioClient;
   private connectedAccountId: string;
   private connectedAccountStatus: ConnectedAccountStatus;
@@ -24,6 +24,7 @@ export class ConnectionRequest {
     connectedAccountId: string,
     connectedAccountStatus: ConnectedAccountStatus
   ) {
+    console.log('ConnectionRequest constructor', connectedAccountId, connectedAccountStatus);
     this.client = client;
     this.connectedAccountId = connectedAccountId;
     this.connectedAccountStatus = connectedAccountStatus;
@@ -37,22 +38,31 @@ export class ConnectionRequest {
   private async transformResponse(
     response: OriginalConnectedAccountResponse
   ): Promise<ConnectedAccountRetrieveResponse> {
-    const parsedResponse = ConnectedAccountRetrieveResponseSchema.parse({
-      ...response,
-      userId: response.user_id, // Add the missing userId property
-      authConfig: {
-        ...response.auth_config,
-        authScheme: response.auth_config.auth_scheme,
-        isComposioManaged: response.auth_config.is_composio_managed,
-        isDisabled: response.auth_config.is_disabled,
-      },
-      statusReason: response.status_reason,
-      isDisabled: response.is_disabled,
-      createdAt: response.created_at,
-      updatedAt: response.updated_at,
-      testRequestEndpoint: response.test_request_endpoint,
-    });
-    return parsedResponse;
+    try {
+      const parsedResponse = ConnectedAccountRetrieveResponseSchema.parse({
+        ...response,
+        userId: response.user_id, // Add the missing userId property
+        authConfig: {
+          ...response.auth_config,
+          authScheme: response.auth_config.auth_scheme,
+          isComposioManaged: response.auth_config.is_composio_managed,
+          isDisabled: response.auth_config.is_disabled,
+        },
+        statusReason: response.status_reason,
+        isDisabled: response.is_disabled,
+        createdAt: response.created_at,
+        updatedAt: response.updated_at,
+        testRequestEndpoint: response.test_request_endpoint,
+      });
+      return parsedResponse;
+    } catch (error) {
+      console.error('Error transforming response', error);
+      if (error instanceof ZodError) {
+        console.error(JSON.stringify(error.errors, null, 2));
+      }
+      console.error(JSON.stringify(response, null, 2));
+      throw error;
+    }
   }
 
   /**

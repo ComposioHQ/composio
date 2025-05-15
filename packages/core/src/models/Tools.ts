@@ -198,7 +198,7 @@ export class Tools<
       important: queryParams.data.important,
       limit: queryParams.data.limit,
       search: queryParams.data.search,
-      toolkit_slug: queryParams.data.toolkits,
+      toolkit_slug: queryParams.data.toolkits?.join(','),
       tool_slugs: queryParams.data.tools?.join(','),
     });
     if (!tools) {

@@ -281,7 +281,7 @@ const composio = new Composio({
 // Create a connected account
 const connectionRequest = await composio.createConnectedAccount(
   'user123', // userId
-  'HACKERNEWS', // authConfigId
+  'id-of-auth-config', // authConfigId
   {
     redirectUrl: 'https://your-app.com/callback',
     data: {

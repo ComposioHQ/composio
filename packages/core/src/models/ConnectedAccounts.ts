@@ -127,16 +127,15 @@ export class ConnectedAccounts {
   async createConnectedAccount(
     userId: string,
     authConfigId: string,
-    options: CreateConnectedAccountOptions
+    options?: CreateConnectedAccountOptions
   ): Promise<ConnectionRequest> {
-    const { redirectUrl, data } = options;
     const response = await this.create({
       auth_config: {
         id: authConfigId,
       },
       connection: {
-        data: data,
-        redirect_uri: redirectUrl,
+        data: options?.data,
+        redirect_uri: options?.redirectUrl,
         user_id: userId,
       },
     });

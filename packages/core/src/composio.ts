@@ -108,7 +108,9 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
 
     // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
-    this.createConnectedAccount = this.connectedAccounts.createConnectedAccount;
+    this.createConnectedAccount = this.connectedAccounts.createConnectedAccount.bind(
+      this.connectedAccounts
+    );
 
     /**
      * Initialize the client telemetry.
