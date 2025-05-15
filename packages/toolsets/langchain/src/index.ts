@@ -18,46 +18,35 @@ import {
   // ExecuteMetadata,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
+import { ExecuteToolFn } from 'packages/core/src/types/toolset.types';
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainToolset extends BaseAgenticToolset<
   LangChainToolCollection,
   DynamicStructuredTool
 > {
+  readonly name = 'langchain';
   /**
    * Abstract method to wrap a tool in the toolset.
    * This method is implemented by the toolset.
    * @param tool - The tool to wrap.
    * @returns The wrapped tool.
    */
-  wrapTool(userId: string, tool: Tool, modifiers?: AgenticToolOptions): DynamicStructuredTool {
+  wrapTool(tool: Tool, executeTool: ExecuteToolFn): DynamicStructuredTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
     if (!appName) {
       throw new Error('App name is not defined');
     }
-
-    const func = async (...kwargs: unknown[]): Promise<unknown> => {
-      return JSON.stringify(
-        await this.getComposio()?.tools.execute(
-          toolName,
-          {
-            arguments: kwargs[0] as Record<string, unknown>,
-            userId: userId,
-            // connectedAccountId: connectedAccountId,
-          },
-          modifiers
-        )
-      );
+    const func = async (...args: unknown[]): Promise<unknown> => {
+      const result = await executeTool(toolName, args[0] as Record<string, unknown>);
+      return JSON.stringify(result);
     };
     if (!tool.inputParameters) {
       throw new Error('Tool input parameters are not defined');
     }
     const parameters = jsonSchemaToModel(tool.inputParameters);
-
-    // @TODO: Add escriiption an other stuff here
-
     return new DynamicStructuredTool({
       name: toolName,
       description: description || '',
@@ -66,34 +55,7 @@ export class LangchainToolset extends BaseAgenticToolset<
     });
   }
 
-  /**
-   * Get all the tools from the Composio in Langchain format.
-   * @param params - The parameters for the tool list.
-   * @returns The tools.
-   */
-  override async getTools(
-    userId: string,
-    params?: ToolListParams,
-    modifiers?: AgenticToolOptions
-  ): Promise<LangChainToolCollection> {
-    const tools = await this.getComposio()?.tools.getComposioTools(
-      userId,
-      params,
-      modifiers?.modifyToolSchema
-    );
-    return tools?.map(tool => this.wrapTool(userId, tool, modifiers)) ?? [];
-  }
-
-  override async getToolBySlug(
-    userId: string,
-    slug: string,
-    modifiers?: AgenticToolOptions
-  ): Promise<DynamicStructuredTool> {
-    const tool = await this.getComposio()?.tools.getComposioToolBySlug(
-      userId,
-      slug,
-      modifiers?.modifyToolSchema
-    );
-    return this.wrapTool(userId, tool, modifiers);
+  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): LangChainToolCollection {
+    return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 }

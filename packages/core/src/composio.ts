@@ -33,7 +33,6 @@ export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
-  private readonly DEFAULT_USER_ID = 'default';
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -101,11 +100,8 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
      * Set the default toolset, if not provided by the user.
      */
     this.toolset = (config.toolset ?? new OpenAIToolset()) as TToolset;
-    this.toolset.setComposio(this);
-    /**
-     * Initialize all the models with composio client.
-     */
     this.tools = new Tools(this.client, this.toolset);
+    this.toolset._setExecuteToolFn(this.tools.execute);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -176,8 +172,8 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     userId: string,
     filters: ToolListParams,
     modifiers?: ToolsetOptions<T>
-  ): Promise<ReturnType<T['getTools']>> {
-    return this.tools.get(userId, filters, modifiers) as Promise<ReturnType<T['getTools']>>;
+  ): Promise<ReturnType<T['wrapTools']>> {
+    return this.tools.get(userId, filters, modifiers) as Promise<ReturnType<T['wrapTools']>>;
   }
 
   /**
@@ -190,7 +186,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     userId: string,
     slug: string,
     modifiers?: ToolsetOptions<T>
-  ): Promise<ReturnType<T['getToolBySlug']>> {
-    return this.tools.get(userId, slug, modifiers) as Promise<ReturnType<T['getToolBySlug']>>;
+  ): Promise<ReturnType<T['wrapTool']>> {
+    return this.tools.get(userId, slug, modifiers) as Promise<ReturnType<T['wrapTool']>>;
   }
 }

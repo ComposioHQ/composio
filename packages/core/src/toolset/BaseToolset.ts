@@ -1,67 +1,113 @@
-import type { Tool, ToolListParams } from '../types/tool.types';
-import type { Composio } from '../composio';
-import { AgenticToolOptions, ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
-// import { ExecuteMetadata } from '../types/customTool.types';
+import { ExecuteToolModifiers } from '../types/modifiers.types';
+import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
+import { ExecuteToolFn, ExecuteToolFnOptions, GlobalExecuteToolFn } from '../types/toolset.types';
 
-// Type for backward compatibility and type constraints
-export abstract class BaseNonAgenticToolset<TToolCollection, TTool> {
-  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
-
-  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
-    this.composio = composio;
+/**
+ * @internal
+ * Base class for all toolsets.
+ * This class is not meant to be used directly, but rather to be extended by different toolset implementations.
+ */
+abstract class BaseToolset<TToolCollection, TTool> {
+  /**
+   * @public
+   * The name of the toolset.
+   * Used to identify the toolset in the telemetry.
+   */
+  abstract readonly name: string;
+  /**
+   * @internal
+   * Whether the toolset is agentic.
+   * This is set automatically set by the core SDK implementation for different toolset types.
+   */
+  abstract readonly _isAgentic: boolean;
+  /**
+   * @internal
+   * The function to execute a tool.
+   * This is set automatically injected by the core SDK.
+   */
+  private _globalExecuteToolFn!: GlobalExecuteToolFn;
+  /**
+   * @internal
+   * Set the function to execute a tool.
+   * This is set automatically injected by the core SDK.
+   */
+  _setExecuteToolFn(executeToolFn: GlobalExecuteToolFn): void {
+    this._globalExecuteToolFn = executeToolFn;
   }
 
-  abstract getTools(
-    userId: string,
-    params: ToolListParams,
-    options?: ToolOptions
-  ): Promise<TToolCollection>;
+  /**
+   * @public
+   * Gloabl function to execute a tool.
+   * This function is used by toolset providers to implement helper functions to execute tools.
+   * This is a 1:1 mapping of the `execute` method in the `Tools` class.
+   * @param {string} toolSlug - The slug of the tool to execute.
+   * @param {Record<string, unknown>} input - The input to the tool.
+   * @returns {Promise<string>} The result of the tool execution.
+   */
+  executeTool(
+    toolSlug: string,
+    body: ToolExecuteParams,
+    modifers?: ExecuteToolModifiers
+  ): Promise<ToolExecuteResponse> {
+    return this._globalExecuteToolFn(toolSlug, body, modifers);
+  }
+}
 
-  abstract getToolBySlug(userId: string, slug: string, options?: ToolOptions): Promise<TTool>;
+/**
+ * @public
+ * Base class for all non-agentic toolsets.
+ * This class is not meant to be used directly, but rather to be extended by concrete toolset implementations.
+ */
+export abstract class BaseNonAgenticToolset<TToolCollection, TTool> extends BaseToolset<
+  TToolCollection,
+  TTool
+> {
+  override readonly _isAgentic = false;
 
+  /**
+   * Wrap a tool in the provider specific format.
+   * @param tool - The tool to wrap.
+   * @returns The wrapped tool.
+   */
   abstract wrapTool(tool: Tool): TTool;
-
-  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
-    if (!this.composio) {
-      throw new Error(
-        'Client not initialized. Make sure the toolset is properly initialized with Composio.'
-      );
-    }
-    return this.composio;
-  }
+  /**
+   * Wrap a list of tools in the provider specific format.
+   * @param tools - The tools to wrap.
+   * @returns The wrapped tools.
+   */
+  abstract wrapTools(tools: Tool[]): TToolCollection;
 }
 
-export abstract class BaseAgenticToolset<TToolCollection, TTool> {
-  protected composio: Composio<BaseComposioToolset<TToolCollection, TTool>> | undefined;
+/**
+ * @public
+ * Base class for all agentic toolsets.
+ * This class is not meant to be used directly, but rather to be extended by concrete toolset implementations.
+ */
+export abstract class BaseAgenticToolset<TToolCollection, TTool> extends BaseToolset<
+  TToolCollection,
+  TTool
+> {
+  override readonly _isAgentic = true;
 
-  setComposio(composio: Composio<BaseComposioToolset<TToolCollection, TTool>>): void {
-    this.composio = composio;
-  }
-
-  abstract getToolBySlug(
-    userId: string,
-    slug: string,
-    options?: AgenticToolOptions
-  ): Promise<TTool>;
-
-  abstract getTools(
-    userId: string,
-    params: ToolListParams,
-    options?: AgenticToolOptions
-  ): Promise<TToolCollection>;
-
-  abstract wrapTool(userId: string, tool: Tool, modifers?: ExecuteToolModifiers): TTool;
-
-  protected getComposio(): Composio<BaseComposioToolset<TToolCollection, TTool>> {
-    if (!this.composio) {
-      throw new Error(
-        'Client not initialized. Make sure the toolset is properly initialized with Composio.'
-      );
-    }
-    return this.composio;
-  }
+  /**
+   * Wrap a tool in the provider specific format.
+   * @param tool - The tool to wrap.
+   * @returns The wrapped tool.
+   */
+  abstract wrapTool(tool: Tool, executeTool: ExecuteToolFn): TTool;
+  /**
+   * Wrap a list of tools in the provider specific format.
+   * @param tools - The tools to wrap.
+   * @returns The wrapped tools.
+   */
+  abstract wrapTools(tools: Tool[], executeTool: ExecuteToolFn): TToolCollection;
 }
 
+/**
+ * @internal
+ * Base type for all toolsets.
+ * This type is used to infer the type of the toolset from the toolset implementation.
+ */
 export type BaseComposioToolset<TToolCollection, TTool> =
   | BaseNonAgenticToolset<TToolCollection, TTool>
   | BaseAgenticToolset<TToolCollection, TTool>;

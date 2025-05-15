@@ -13,37 +13,13 @@ interface CustomTool {
   name: string;
 }
 export class ComposioToolset extends BaseNonAgenticToolset<Array<CustomTool>, CustomTool> {
-  readonly FILE_NAME: string = 'core/toolset/ComposioToolset.ts';
-
-  constructor() {
-    super();
-  }
+  readonly name = 'ComposioToolset';
 
   wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };
 
-  async getTools(
-    userId: string,
-    params?: ToolListParams,
-    options?: ToolOptions
-  ): Promise<Array<CustomTool>> {
-    const tools = await this.getComposio().tools.getComposioTools(
-      userId,
-      params,
-      options?.modifyToolSchema
-    );
-    return tools?.map(tool => this.wrapTool(tool)) ?? [];
+  wrapTools(tools: Tool[]): CustomTool[] {
+    return tools.map(tool => this.wrapTool(tool));
   }
-
-  async getToolBySlug(userId: string, slug: string, modifiers?: ToolOptions): Promise<CustomTool> {
-    const tool = await this.getComposio().tools.getComposioToolBySlug(
-      userId,
-      slug,
-      modifiers?.modifyToolSchema
-    );
-    return this.wrapTool(tool);
-  }
-
-  async test() {}
 }

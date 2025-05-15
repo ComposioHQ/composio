@@ -18,6 +18,8 @@ import {
   BaseNonAgenticToolset,
   ExecuteMetadata,
 } from '@composio/core';
+import { ToolExecuteParams } from 'packages/core/src/types/tool.types';
+import { ExecuteToolFnOptions } from 'packages/core/src/types/toolset.types';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
@@ -25,12 +27,8 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
   AiToolCollection,
   AiTextGenerationToolInput
 > {
-  /**
-   * Abstract method to wrap a tool in the toolset.
-   * This method is implemented by the toolset.
-   * @param tool - The tool to wrap.
-   * @returns The wrapped tool.
-   */
+  readonly name = 'cloudflare';
+
   wrapTool(tool: Tool): AiTextGenerationToolInput {
     const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
@@ -53,48 +51,14 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
     return cloudflareTool;
   }
 
-  /**
-   * Get all the tools from the Cloudflare API.
-   * @param {ToolListParams} query - The query parameters for the tools.
-   * @returns {Promise<Record<string, AiTextGenerationToolInput>>} The tools from the Cloudflare API.
-   */
-  override async getTools(
-    userId: string,
-    query?: ToolListParams,
-    modifiers?: ToolOptions
-  ): Promise<AiToolCollection> {
-    if (!this.getComposio()) {
-      throw new Error('Client not set');
-    }
-
-    const tools = await this.getComposio().tools.getComposioTools(
-      userId,
-      query,
-      modifiers?.modifyToolSchema
-    );
+  wrapTools(tools: Tool[]): AiToolCollection {
     return tools.reduce(
-      (tools, tool) => ({
-        ...tools,
+      (acc, tool) => ({
+        ...acc,
         [tool.slug]: this.wrapTool(tool),
       }),
       {}
     );
-  }
-
-  override async getToolBySlug(
-    userId: string,
-    slug: string,
-    modifiers?: ToolOptions
-  ): Promise<AiTextGenerationToolInput> {
-    if (!this.getComposio()) {
-      throw new Error('Client not set');
-    }
-    const tool = await this.getComposio().tools.getComposioToolBySlug(
-      userId,
-      slug,
-      modifiers?.modifyToolSchema
-    );
-    return this.wrapTool(tool);
   }
 
   /**
@@ -104,33 +68,19 @@ export class CloudflareToolset extends BaseNonAgenticToolset<
    * @returns The results of the tool call.
    */
   async executeToolCall(
-    executeMetadata: ExecuteMetadata,
+    userId: string,
     tool: { name: string; arguments: unknown },
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    if (!this.getComposio()) {
-      throw new Error('Client not set');
-    }
+    const payload: ToolExecuteParams = {
+      arguments: typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments,
+      connectedAccountId: options.connectedAccountId,
+      customAuthParams: options.customAuthParams,
+      userId: userId,
+    };
 
-    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(
-      executeMetadata.userId,
-      tool.name
-    );
-    const appName = toolSchema?.toolkit?.name.toLowerCase();
-    if (!appName) {
-      throw new Error('App name not found');
-    }
-    const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
-    const results = await this.getComposio()?.tools.execute(
-      toolSchema.slug,
-      {
-        arguments: args,
-        userId: executeMetadata.userId,
-        connectedAccountId: executeMetadata.connectedAccountId,
-      },
-      modifiers
-    );
-
-    return JSON.stringify(results);
+    const result = await this.executeTool(tool.name, payload, modifiers);
+    return JSON.stringify(result);
   }
 }

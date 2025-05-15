@@ -11,3 +11,24 @@ const composio = new Composio({
 const toolkit = await composio.toolkits.getToolkitBySlug('HACKERNEWS');
 
 console.log(toolkit);
+
+const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
+  modifyToolSchema: (toolSlug, toolSchema) => {
+    if (toolSlug === 'HACKERNEWS_GET_USER') {
+      toolSchema = {
+        ...toolSchema,
+        inputParameters: {
+          ...toolSchema.inputParameters,
+          userId: {
+            type: 'string',
+            description: 'The user ID to get the user for',
+          },
+        },
+      };
+    }
+
+    return toolSchema;
+  },
+});
+
+console.log(tools);

@@ -7,6 +7,7 @@ import {
   ToolList,
   ToolSchema,
   ToolExecuteResponseSchema,
+  CustomAuthParams,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -28,6 +29,7 @@ import {
 } from '../types/modifiers.types';
 import { BaseComposioToolset } from '../toolset/BaseToolset';
 import logger from '../utils/logger';
+import { ExecuteToolFn } from '../types/toolset.types';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -274,14 +276,41 @@ export class Tools<
   ): Promise<TToolCollection>;
   async get(
     userId: string,
-    arg1: ToolListParams | string,
+    arg2: ToolListParams | string,
     options?: ToolsetOptions<TToolset>
   ): Promise<TTool | TToolCollection> {
-    if (typeof arg1 === 'string') {
-      return this.toolset.getToolBySlug(userId, arg1, options);
+    // create the execute tool function
+    const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
+    // if the first argument is a string, get a single tool
+    if (typeof arg2 === 'string') {
+      const tool = await this.getComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
+      return this.toolset.wrapTool(tool, executeToolFn);
     } else {
-      return this.toolset.getTools(userId, arg1, options);
+      // if the first argument is an object, get a list of tools
+      const tools = await this.getComposioTools(userId, arg2, options?.modifyToolSchema);
+      return this.toolset.wrapTools(tools, executeToolFn);
     }
+  }
+
+  /**
+   * Creates a function that executes a tool.
+   * This function is used by agentic the toolsets to execute the tool
+   * @param {string} userId - The user id
+   * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
+   * @returns {ExecuteToolFn} The execute tool function
+   */
+  private createExecuteToolFn(userId: string, modifiers?: ExecuteToolModifiers): ExecuteToolFn {
+    const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {
+      return await this.execute(
+        toolSlug,
+        {
+          userId,
+          arguments: input,
+        },
+        modifiers
+      );
+    };
+    return executeToolFn;
   }
 
   /**

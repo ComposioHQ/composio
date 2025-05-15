@@ -10,13 +10,15 @@
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
 import { BaseNonAgenticToolset } from './BaseToolset';
-import { Tool, ToolExecuteParams, ToolListParams } from '../types/tool.types';
+import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
-import { ExecuteToolModifiers, ToolOptions } from '../types/modifiers.types';
+import { ExecuteToolModifiers } from '../types/modifiers.types';
+import { ExecuteToolFnOptions } from '../types/toolset.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, OpenAiTool> {
+  readonly name = 'openai';
   /**
    * Absract method to wrap a tool in the toolset.
    * This method is implemented by the toolset.
@@ -35,33 +37,9 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     };
   };
 
-  /**
-   * Get all the tools from the Composio in OpenAI format.
-   * @param params - The parameters for the tool list.
-   * @param modifiers - Optional modifiers to transform tool schemas
-   * @returns The tools.
-   */
-  async getTools(
-    userId: string,
-    params?: ToolListParams,
-    modifiers?: ToolOptions
-  ): Promise<OpenAiToolCollection> {
-    const tools = await this.getComposio()?.tools.getComposioTools(
-      userId,
-      params,
-      modifiers?.modifyToolSchema
-    );
-    return tools?.map(tool => this.wrapTool(tool)) ?? [];
-  }
-
-  async getToolBySlug(userId: string, slug: string, modifiers?: ToolOptions): Promise<OpenAiTool> {
-    const tool = await this.getComposio().tools.getComposioToolBySlug(
-      userId,
-      slug,
-      modifiers?.modifyToolSchema
-    );
-    return this.wrapTool(tool);
-  }
+  override wrapTools = (tools: Tool[]): OpenAiToolCollection => {
+    return tools.map(tool => this.wrapTool(tool));
+  };
 
   /**
    * Execute a tool call.
@@ -72,22 +50,17 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async executeToolCall(
     userId: string,
     tool: OpenAI.ChatCompletionMessageToolCall,
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
-    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(
-      userId,
-      tool.function.name
-    );
-    const appSlug = toolSchema?.toolkit?.slug.toLowerCase();
-    if (!appSlug) {
-      throw new Error('App slug not found');
-    }
     const payload: ToolExecuteParams = {
-      userId: userId,
       arguments: JSON.parse(tool.function.arguments),
+      connectedAccountId: options.connectedAccountId,
+      customAuthParams: options.customAuthParams,
+      userId: userId,
     };
-    const results = await this.getComposio().tools.execute(toolSchema.slug, payload, modifiers);
-    return JSON.stringify(results);
+    const result = await this.executeTool(tool.function.name, payload, modifiers);
+    return JSON.stringify(result);
   }
 
   /**
@@ -100,12 +73,15 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleToolCall(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     const outputs: string[] = [];
     for (const message of chatCompletion.choices) {
       if (message.message.tool_calls) {
-        outputs.push(await this.executeToolCall(userId, message.message.tool_calls[0], modifiers));
+        outputs.push(
+          await this.executeToolCall(userId, message.message.tool_calls[0], options, modifiers)
+        );
       }
     }
     return outputs;
@@ -121,6 +97,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleAssistantMessage(
     userId: string,
     run: OpenAI.Beta.Threads.Run,
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
@@ -133,6 +110,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
           const tool_response = await this.executeToolCall(
             userId,
             tool_call as OpenAI.ChatCompletionMessageToolCall,
+            options,
             modifiers
           );
 
@@ -161,6 +139,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     client: OpenAI,
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     // @TODO: Log the run stream
@@ -181,7 +160,12 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
 
       // Handle the 'requires_action' event
       if (event.event === 'thread.run.requires_action') {
-        const toolOutputs = await this.handleAssistantMessage(userId, event.data, modifiers);
+        const toolOutputs = await this.handleAssistantMessage(
+          userId,
+          event.data,
+          options,
+          modifiers
+        );
 
         // Submit the tool outputs
         await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
@@ -211,7 +195,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
 
     while (['queued', 'in_progress', 'requires_action'].includes(finalRun.status)) {
       if (finalRun.status === 'requires_action') {
-        const toolOutputs = await this.handleAssistantMessage(userId, finalRun, modifiers);
+        const toolOutputs = await this.handleAssistantMessage(userId, finalRun, options, modifiers);
 
         // Submit tool outputs
         finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
@@ -239,11 +223,12 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     client: OpenAI,
     run: OpenAI.Beta.Threads.Run,
     thread: OpenAI.Beta.Threads.Thread,
+    options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
       // logger.debug(`Current run status: ${run.status}`);
-      const tool_outputs = await this.handleAssistantMessage(userId, run, modifiers);
+      const tool_outputs = await this.handleAssistantMessage(userId, run, options, modifiers);
       if (run.status === 'requires_action') {
         // logger.debug(
         //   `Submitting tool outputs for run ID: ${run.id} in thread ID: ${thread.id}`

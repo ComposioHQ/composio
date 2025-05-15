@@ -10,107 +10,40 @@
  * @packageDocumentation
  * @module toolsets/vercel
  */
-import {
-  BaseAgenticToolset,
-  Tool as ComposioTool,
-  ToolListParams,
-  ExecuteToolModifiers,
-  AgenticToolOptions,
-} from '@composio/core';
+import { BaseAgenticToolset, Tool as ComposioTool } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
+import { ExecuteToolFn } from 'packages/core/src/types/toolset.types';
 
 type VercelToolCollection = Record<string, VercelTool>;
 export class VercelToolset extends BaseAgenticToolset<VercelToolCollection, VercelTool> {
-  /**
-   * Get all the tools from the client.
-   * Override the default implementation to return a record of tools.
-   *
-   * @param params - The parameters for the tool list.
-   * @param modifiers - The modifiers for the tool list.
-   * @returns The tools.
-   */
-  override async getTools(
-    userId: string,
-    params?: ToolListParams,
-    modifiers?: AgenticToolOptions
-  ): Promise<VercelToolCollection> {
-    if (!this.getComposio()) {
-      throw new Error('Client not initialized');
-    }
-    const tools = await this.getComposio().tools.getComposioTools(userId, params);
-    return tools.reduce(
-      (tools, tool) => ({
-        ...tools,
-        [tool.slug]: this.wrapTool(userId, tool, modifiers),
-      }),
-      {}
-    );
-  }
-
-  override async getToolBySlug(
-    userId: string,
-    slug: string,
-    modifiers?: AgenticToolOptions
-  ): Promise<VercelTool> {
-    const tool = await this.getComposio().tools.getComposioToolBySlug(
-      userId,
-      slug,
-      modifiers?.modifyToolSchema
-    );
-    return this.wrapTool(userId, tool, modifiers);
-  }
+  readonly name = 'vercel';
 
   /**
-   * Execute a tool call.
-   * @param tool - The tool to execute.
-   * @param userId - The user id.
-   * @returns {Promise<string>} The result of the tool call.
+   * Wrap a Composio tool in a Vercel tool.
+   * @param {ComposioTool} composioTool - The Composio tool to wrap.
+   * @returns {VercelTool} The wrapped Vercel tool.
    */
-  async executeToolCall(
-    userId: string,
-    tool: { name: string; arguments: unknown },
-    modifiers?: ExecuteToolModifiers
-  ): Promise<string> {
-    if (!this.getComposio()) {
-      throw new Error('Client not initialized');
-    }
-
-    const toolSchema = await this.getComposio().tools.getComposioToolBySlug(userId, tool.name);
-    // const appName = toolSchema?.name.toLowerCase();
-    const args = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments;
-
-    const results = await this.getComposio().tools.execute(
-      toolSchema.slug,
-      {
-        arguments: args,
-        userId: userId,
-        // connectedAccountId: this.getComposio().getConnectedAccountId(appName),
-      },
-      modifiers
-    );
-
-    return JSON.stringify(results);
-  }
-
-  wrapTool(
-    userId: string,
-    composioTool: ComposioTool,
-    modifiers?: ExecuteToolModifiers
-  ): VercelTool {
+  wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema(composioTool.inputParameters ?? {}),
       execute: async params => {
-        return await this.executeToolCall(
-          userId,
-          {
-            name: composioTool.slug,
-            arguments: JSON.stringify(params),
-          },
-          modifiers
-        );
+        const input = typeof params === 'string' ? JSON.parse(params) : params;
+        return await executeTool(composioTool.slug, input);
       },
     });
+  }
+
+  /**
+   * Wrap a list of Composio tools as a Vercel tool collection.
+   * @param {ComposioTool[]} tools - The list of Composio tools to wrap.
+   * @returns {VercelToolCollection} The wrapped Vercel tool collection.
+   */
+  wrapTools(tools: ComposioTool[], executeTool: ExecuteToolFn): VercelToolCollection {
+    return tools.reduce((acc, tool) => {
+      acc[tool.slug] = this.wrapTool(tool, executeTool);
+      return acc;
+    }, {} as VercelToolCollection);
   }
 }
