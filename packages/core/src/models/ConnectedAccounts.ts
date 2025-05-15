@@ -9,8 +9,6 @@ import ComposioClient from '@composio/client';
 import {
   ConnectedAccountListParams,
   ConnectedAccountListResponse,
-  ConnectedAccountCreateParams,
-  ConnectedAccountCreateResponse,
   ConnectedAccountDeleteResponse,
   ConnectedAccountRetrieveResponse,
   ConnectedAccountRefreshResponse,
@@ -47,8 +45,19 @@ export class ConnectedAccounts {
    * Compound function to create a new connected account.
    * This function creates a new connected account and returns a connection request.
    * Users can then wait for the connection to be established using the `waitForConnection` method.
-   * @param {CreateConnectedAccountParams} data - Data for creating a new connected account
+   * @param {string} userId - User ID of the connected account
+   * @param {string} authConfigId - Auth config ID of the connected account
+   * @param {CreateConnectedAccountOptions} data - Data for creating a new connected account
    * @returns {Promise<ConnectionRequest>} Connection request object
+   *
+   * @example
+   * const connectionRequest = await composio.createConnectedAccount('user_123', 'auth_config_123', {
+   *   data: {
+   *     name: 'My Connected Account',
+   *   },
+   * });
+   *
+   * @link https://docs.composio.dev/reference/connected-accounts/create-connected-account
    */
   async create(
     userId: string,
