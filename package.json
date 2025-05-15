@@ -16,7 +16,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prepare": "husky",
     "check:peer-deps": "tsx scripts/check-peer-deps.ts",
-    "update:peer-deps": "tsx scripts/update-peer-deps.ts"
+    "update:peer-deps": "tsx scripts/update-peer-deps.ts",
+    "publish": "lerna publish --no-private"
   },
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
