@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.7-alpha.0",
+  "version": "0.1.6-alpha.0",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -40,6 +40,5 @@
     "uuid": "^11.1.0",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.5"
-  },
-  "gitHead": "409e5f7d2e3e5e921231cbabd538484245f7ab0e"
+  }
 }
