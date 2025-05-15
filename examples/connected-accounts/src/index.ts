@@ -1,4 +1,4 @@
-import { Composio } from '@composio/core';
+import { AuthConfigTypes, AuthSchemeTypes, Composio } from '@composio/core';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
@@ -15,14 +15,21 @@ const tools = await composio.tools.get('user123', {
   tools: ['HACKERNEWS_GET_USER'],
 });
 
-const ConnectionRequest = await composio.createConnectedAccount('default', 'ac_rjfaMZTL4RzX', {});
+/**
+ * Create a new auth config
+ */
+const authConfig = await composio.createAuthConfig('my-toolkit', {
+  type: AuthConfigTypes.CUSTOM,
+  authScheme: AuthSchemeTypes.API_KEY,
+  credentials: {
+    apiKey: '1234567890',
+  },
+});
 
-console.log(ConnectionRequest);
-
+/**
+ * Create a new connected account
+ */
+const ConnectionRequest = await composio.createConnectedAccount('default', authConfig.id);
 const connectedAccount = await ConnectionRequest.waitForConnection();
 
 console.log(connectedAccount);
-
-// const connectedAccount = await composio.connectedAccounts.get('ca_yAflyFVJs0p4');
-
-// console.log(connectedAccount);
