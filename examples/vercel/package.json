@@ -1,7 +1,7 @@
 {
   "name": "vercel-example",
   "private": true,
-  "version": "0.1.1-alpha.0",
+  "version": "0.1.2-alpha.0",
   "description": "",
   "main": "src/index.ts",
   "scripts": {
