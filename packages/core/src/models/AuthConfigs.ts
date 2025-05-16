@@ -124,7 +124,6 @@ export class AuthConfigs {
       },
       auth_config: parsedOptions.data,
     });
-    console.log(JSON.stringify(result, null, 2));
     const parsedResult = CreateAuthConfigResponseSchema.safeParse({
       id: result.auth_config.id,
       authScheme: result.auth_config.auth_scheme,
