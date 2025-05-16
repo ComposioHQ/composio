@@ -5,6 +5,6 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tool = await composio.getToolBySlug('HACKERNEWS_GET_USER');
+const tool = await composio.getToolBySlug('test-user-id', 'HACKERNEWS_GET_USER');
 
 console.log(tool);
