@@ -33,9 +33,9 @@
     "@composio/core": "^0.1.9-alpha.0"
   },
   "devDependencies": {
-    "@composio/core": "workspace:*",
+    "@composio/core": "0.1.9-alpha.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },
-  "gitHead": "1f47c2a021338479c261ccde1ac6eb538ead47fd"
+  "gitHead": "f1d3e98644b917030fe9b4cc43db84d21934894a"
 }
