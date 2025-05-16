@@ -59,7 +59,7 @@ export class ConnectedAccounts {
    *
    * @link https://docs.composio.dev/reference/connected-accounts/create-connected-account
    */
-  async create(
+  async initiate(
     userId: string,
     authConfigId: string,
     options?: CreateConnectedAccountOptions

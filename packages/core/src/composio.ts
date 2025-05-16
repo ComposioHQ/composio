@@ -59,7 +59,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   createAuthConfig: AuthConfigs['create'];
   // connected accounts
   connectedAccounts: ConnectedAccounts;
-  createConnectedAccount: ConnectedAccounts['create'];
+  initiateConnection: ConnectedAccounts['initiate'];
 
   /**
    * @param {Object} config Configuration for the Composio SDK.
@@ -111,7 +111,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
 
     // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
-    this.createConnectedAccount = this.connectedAccounts.create.bind(this.connectedAccounts);
+    this.initiateConnection = this.connectedAccounts.initiate.bind(this.connectedAccounts);
 
     /**
      * Initialize the client telemetry.

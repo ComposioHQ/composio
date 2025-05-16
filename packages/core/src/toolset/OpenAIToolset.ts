@@ -50,13 +50,13 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async executeToolCall(
     userId: string,
     tool: OpenAI.ChatCompletionMessageToolCall,
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
       arguments: JSON.parse(tool.function.arguments),
-      connectedAccountId: options.connectedAccountId,
-      customAuthParams: options.customAuthParams,
+      connectedAccountId: options?.connectedAccountId,
+      customAuthParams: options?.customAuthParams,
       userId: userId,
     };
     const result = await this.executeTool(tool.function.name, payload, modifiers);
@@ -73,7 +73,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleToolCall(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     const outputs: string[] = [];
@@ -97,7 +97,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
   async handleAssistantMessage(
     userId: string,
     run: OpenAI.Beta.Threads.Run,
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
@@ -139,7 +139,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     client: OpenAI,
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     // @TODO: Log the run stream
@@ -223,7 +223,7 @@ export class OpenAIToolset extends BaseNonAgenticToolset<OpenAiToolCollection, O
     client: OpenAI,
     run: OpenAI.Beta.Threads.Run,
     thread: OpenAI.Beta.Threads.Thread,
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ) {
     while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {

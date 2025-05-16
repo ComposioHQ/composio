@@ -40,13 +40,25 @@ export class Tools<
   TToolset extends BaseComposioToolset<TToolCollection, TTool>,
 > {
   private client: ComposioClient;
-  customTools: CustomTools;
+  private readonly customTools: CustomTools;
   private toolset: TToolset;
 
   constructor(client: ComposioClient, toolset: TToolset) {
+    if (!client) {
+      throw new Error('ComposioClient is required');
+    }
+    if (!toolset) {
+      throw new Error('Toolset is required');
+    }
+
     this.client = client;
     this.customTools = new CustomTools(client);
     this.toolset = toolset;
+
+    // Bind methods that use customTools to ensure correct 'this' context
+    this.execute = this.execute.bind(this);
+    this.getComposioToolBySlug = this.getComposioToolBySlug.bind(this);
+    this.getComposioTools = this.getComposioTools.bind(this);
   }
 
   /**
@@ -267,12 +279,16 @@ export class Tools<
     return modifiedToool;
   }
 
-  async get(userId: string, slug: string, options?: ToolsetOptions<TToolset>): Promise<TTool>;
-  async get(
+  async get<T extends TToolset>(
+    userId: string,
+    slug: string,
+    options?: ToolsetOptions<TToolset>
+  ): Promise<ReturnType<T['wrapTool']>>;
+  async get<T extends TToolset>(
     userId: string,
     filters: ToolListParams,
     options?: ToolsetOptions<TToolset>
-  ): Promise<TToolCollection>;
+  ): Promise<ReturnType<T['wrapTools']>>;
   async get(
     userId: string,
     arg2: ToolListParams | string,
@@ -283,11 +299,11 @@ export class Tools<
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
-      return this.toolset.wrapTool(tool, executeToolFn);
+      return this.toolset.wrapTool(tool, executeToolFn) as TTool;
     } else {
       // if the first argument is an object, get a list of tools
       const tools = await this.getComposioTools(userId, arg2, options?.modifyToolSchema);
-      return this.toolset.wrapTools(tools, executeToolFn);
+      return this.toolset.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
 
@@ -326,54 +342,65 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    // apply local modifiers if they are provided
-    if (modifiers && modifiers.beforeToolExecute) {
-      if (typeof modifiers.beforeToolExecute === 'function') {
-        body = modifiers.beforeToolExecute(slug, body);
+    if (!this.customTools) {
+      throw new Error(
+        'CustomTools not initialized. Make sure Tools class is properly constructed.'
+      );
+    }
+
+    try {
+      // apply local modifiers if they are provided
+      if (modifiers?.beforeToolExecute) {
+        if (typeof modifiers.beforeToolExecute === 'function') {
+          body = modifiers.beforeToolExecute(slug, body);
+        } else {
+          throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+        }
+      }
+
+      let result: ToolExecuteResponse;
+      // check if the tool is a custom tool
+      const customTool = await this.customTools.getCustomToolBySlug(slug);
+      if (customTool) {
+        result = await this.customTools.executeCustomTool(slug, body, {
+          userId: body.userId || 'default',
+          connectedAccountId: body.connectedAccountId,
+        });
       } else {
-        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+        // fetch connected accounts if doesn't exist
+        let connectedAccountId = body.connectedAccountId;
+        if (!connectedAccountId) {
+          connectedAccountId =
+            (await this.getConnectedAccountIdForTool(body.userId, slug)) || undefined;
+        }
+
+        result = await this.client.tools.execute(slug, {
+          allow_tracing: body.allowTracing,
+          connected_account_id: body.connectedAccountId,
+          custom_auth_params: body.customAuthParams,
+          arguments: body.arguments,
+          entity_id: body.userId,
+          version: body.version,
+          text: body.text,
+        });
+        // apply transformations to the response
+        result = this.transformToolExecuteResponse(result);
       }
-    }
 
-    let result: ToolExecuteResponse;
-    // check if the tool is a custom tool
-    const customTool = await this.customTools.getCustomToolBySlug(slug);
-    if (customTool) {
-      result = await this.customTools.executeCustomTool(slug, body, {
-        userId: body.userId || 'default',
-        connectedAccountId: body.connectedAccountId,
-      });
-    } else {
-      // fetch connected accounts if doesn't exist
-      let connectedAccountId = body.connectedAccountId;
-      if (!connectedAccountId) {
-        connectedAccountId =
-          (await this.getConnectedAccountIdForTool(body.userId, slug)) || undefined;
+      // apply local modifiers if they are provided
+      if (modifiers?.afterToolExecute) {
+        if (typeof modifiers.afterToolExecute === 'function') {
+          result = modifiers.afterToolExecute(slug, result);
+        } else {
+          throw new Error('Invalid afterToolExecute modifier. Not a function.');
+        }
       }
 
-      result = await this.client.tools.execute(slug, {
-        allow_tracing: body.allowTracing,
-        connected_account_id: body.connectedAccountId,
-        custom_auth_params: body.customAuthParams,
-        arguments: body.arguments,
-        entity_id: body.userId,
-        version: body.version,
-        text: body.text,
-      });
-      // apply transformations to the response
-      result = this.transformToolExecuteResponse(result);
+      return result;
+    } catch (error) {
+      logger.error(`Error executing tool ${slug}: ${error}`);
+      throw error;
     }
-
-    // apply local modifiers if they are provided
-    if (modifiers && modifiers.afterToolExecute) {
-      if (typeof modifiers.afterToolExecute === 'function') {
-        result = modifiers.afterToolExecute(slug, result);
-      } else {
-        throw new Error('Invalid afterToolExecute modifier. Not a function.');
-      }
-    }
-
-    return result;
   }
 
   /**

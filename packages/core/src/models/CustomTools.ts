@@ -17,13 +17,18 @@ import {
 import zodToJsonSchema from 'zod-to-json-schema';
 import { Tool, ToolExecuteResponse, ToolList } from '../types/tool.types';
 import { ToolProxyParams } from '@composio/client/resources/tools';
+import logger from '../utils/logger';
 
 export class CustomTools {
-  private client: ComposioClient;
-  private customToolsRegistry: CustomToolRegistry = new Map();
+  private readonly client: ComposioClient;
+  private readonly customToolsRegistry: CustomToolRegistry;
 
   constructor(client: ComposioClient) {
+    if (!client) {
+      throw new Error('ComposioClient is required');
+    }
     this.client = client;
+    this.customToolsRegistry = new Map();
   }
 
   /**
@@ -99,12 +104,18 @@ export class CustomTools {
    * @param {string} slug The slug of the tool to get
    * @returns {Tool} The tool
    */
-  async getCustomToolBySlug(slug: string): Promise<Tool | null> {
-    const tool = this.customToolsRegistry.get(slug.toLowerCase());
-    if (!tool) {
-      return null;
+  async getCustomToolBySlug(slug: string): Promise<Tool | undefined> {
+    if (!slug) {
+      throw new Error('Tool slug is required');
     }
-    return tool.schema;
+
+    try {
+      const tool = this.customToolsRegistry.get(slug.toLowerCase());
+      return tool?.schema;
+    } catch (error) {
+      logger.error(`Error getting custom tool: ${error}`);
+      return undefined;
+    }
   }
 
   /**
