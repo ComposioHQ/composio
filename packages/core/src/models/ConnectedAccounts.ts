@@ -74,7 +74,7 @@ export class ConnectedAccounts {
         user_id: userId,
       },
     });
-    return new ConnectionRequest(this.client, response.id, response.status);
+    return new ConnectionRequest(this.client, response.id, response.status, response.redirect_uri);
   }
 
   /**

@@ -30,11 +30,13 @@ export class ValidationError extends ComposioError {
     super(message, {
       code: ValidationErrorCodes.VALIDATION_ERROR,
       meta: {
-        issues: zodErrorInstance.issues.map(issue => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-          code: issue.code,
-        })),
+        issues: JSON.stringify(
+          zodErrorInstance.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            code: issue.code,
+          }))
+        ),
       },
       cause: zodErrorInstance,
     });

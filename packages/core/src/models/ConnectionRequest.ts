@@ -20,15 +20,18 @@ export class ConnectionRequest {
   private client: ComposioClient;
   private connectedAccountId: string;
   private connectedAccountStatus: ConnectedAccountStatus;
+  public redirectUrl?: string | null;
 
   constructor(
     client: ComposioClient,
     connectedAccountId: string,
-    connectedAccountStatus: ConnectedAccountStatus
+    connectedAccountStatus: ConnectedAccountStatus,
+    redirectUrl?: string | null
   ) {
     this.client = client;
     this.connectedAccountId = connectedAccountId;
     this.connectedAccountStatus = connectedAccountStatus;
+    this.redirectUrl = redirectUrl;
   }
 
   /**

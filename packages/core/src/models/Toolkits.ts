@@ -14,6 +14,10 @@ import {
 import { ComposioToolNotFoundError } from '../errors/ToolErrors';
 import { ZodError } from 'zod';
 import { ValidationError } from '../errors/ValidationError';
+import { AuthConfigs } from './AuthConfigs';
+import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
+import { ConnectedAccounts } from './ConnectedAccounts';
+import { ConnectionRequest } from './ConnectionRequest';
 
 /**
  * Toolkits class
@@ -26,6 +30,7 @@ export class Toolkits {
 
   constructor(client: ComposioClient) {
     this.client = client;
+    this.authorize = this.authorize.bind(this);
   }
   /**
    * List all toolkits available in the Composio SDK.
@@ -74,10 +79,27 @@ export class Toolkits {
       const parsedResult = ToolkitRetrieveResponseSchema.parse({
         name: result.name,
         slug: result.slug,
-        meta: result.meta,
+        meta: {
+          ...result.meta,
+          createdAt: result.meta.created_at,
+          updatedAt: result.meta.updated_at,
+          toolsCount: result.meta.tools_count,
+          triggersCount: result.meta.triggers_count,
+          // appUrl: result.meta.app_url, @TODO Update the client type to include this
+        },
         isLocalToolkit: result.is_local_toolkit,
         composioManagedAuthSchemes: result.composio_managed_auth_schemes,
-        authConfigDetails: result.auth_config_details,
+        authConfigDetails: result.auth_config_details?.map(authConfig => ({
+          name: authConfig.name,
+          mode: authConfig.mode,
+          fields: {
+            authConfigCreation: authConfig.fields.auth_config_creation,
+            connectedAccountInitiation: authConfig.fields.connected_account_initiation,
+          },
+          proxy: {
+            baseUrl: authConfig.proxy?.base_url,
+          },
+        })),
       });
       return parsedResult;
     } catch (error) {
@@ -138,5 +160,43 @@ export class Toolkits {
       totalPages: result.total_pages,
     });
     return parsedResult;
+  }
+
+  /**
+   * Authorizes a user to use a toolkit.
+   * This method will create an auth config if one doesn't exist and initiate a connection request.
+   * @param {string} userId - The user id of the user to authorize
+   * @param {string} toolkitSlug - The slug of the toolkit to authorize
+   * @param {string} authConfigId - The id of the auth config to use
+   * @returns {Promise<ConnectionRequest>} The connection request object
+   */
+  async authorize(
+    userId: string,
+    toolkitSlug: string,
+    authConfigId?: string
+  ): Promise<ConnectionRequest> {
+    const toolkit = await this.getToolkitBySlug(toolkitSlug);
+    const composioAuthConfig = new AuthConfigs(this.client);
+    let authConfigIdToUse: string;
+    if (authConfigId) {
+      const authConfig = await composioAuthConfig.get(authConfigId);
+      authConfigIdToUse = authConfig.id;
+    } else {
+      // create authConfig using composioManagedAuthSchemes
+      if (toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0) {
+        const authConfig = await composioAuthConfig.create(toolkitSlug, {
+          type: 'use_composio_managed_auth',
+          name: `${toolkit.name} Auth Config`,
+        });
+        authConfigIdToUse = authConfig.id;
+      } else {
+        throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
+          toolkitSlug,
+        });
+      }
+    }
+    // create the auth config
+    const composioConnectedAccount = new ConnectedAccounts(this.client);
+    return await composioConnectedAccount.initiate(userId, authConfigIdToUse);
   }
 }

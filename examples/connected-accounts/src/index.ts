@@ -1,24 +1,9 @@
 import { AuthConfigTypes, AuthSchemeTypes, Composio } from '@composio/core';
-import { OpenAI } from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Initialize Composio
 // OpenAI Toolset is automatically installed and initialized
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-// i think this should be a discriminated union, like only tools or toolkits or search can be there, inside the filter
-// the other ones should be third object {} options
-const tools = await composio.tools.get('user123', {
-  tools: ['HACKERNEWS_GET_USER'],
-  cursor: '123',
-  important: '', // what is this doing do we need it can we remove it?
-  limit: '10',
-  toolkits: ['HACKERNEWS'],
 });
 
 /**

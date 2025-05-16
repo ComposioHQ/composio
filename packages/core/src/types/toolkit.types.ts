@@ -20,19 +20,23 @@ export type ToolkitListParams = z.infer<typeof ToolkitsListParamsSchema>;
  * Toolkits response
  */
 export const ToolKitMetaSchema = z.object({
-  categories: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-    })
-  ),
-  createdAt: z.string(),
-  description: z.string(),
-  logo: z.string(),
-  toolsCount: z.number(),
-  triggersCount: z.number(),
-  updatedAt: z.string(),
+  categories: z
+    .array(
+      z.object({
+        slug: z.string(),
+        name: z.string(),
+      })
+    )
+    .optional(),
+  appUrl: z.string().optional(),
+  createdAt: z.string().optional(),
+  description: z.string().optional(),
+  logo: z.string().optional(),
+  toolsCount: z.number().optional(),
+  triggersCount: z.number().optional(),
+  updatedAt: z.string().optional(),
 });
+
 export const ToolKitItemSchema = z.object({
   name: z.string(),
   slug: z.string(),
@@ -65,20 +69,18 @@ export const ToolkitAuthFieldSchema = z.object({
 export const ToolkitAuthConfigDetailsSchema = z.object({
   name: z.string(),
   mode: z.string(),
-  fields: z.array(
-    z.object({
-      authConfigCreation: z.object({
-        optional: z.array(ToolkitAuthFieldSchema),
-        required: z.array(ToolkitAuthFieldSchema),
-      }),
-      connectedAccountInitiation: z.object({
-        optional: z.array(ToolkitAuthFieldSchema),
-        required: z.array(ToolkitAuthFieldSchema),
-      }),
-    })
-  ),
+  fields: z.object({
+    authConfigCreation: z.object({
+      optional: z.array(ToolkitAuthFieldSchema),
+      required: z.array(ToolkitAuthFieldSchema),
+    }),
+    connectedAccountInitiation: z.object({
+      optional: z.array(ToolkitAuthFieldSchema),
+      required: z.array(ToolkitAuthFieldSchema),
+    }),
+  }),
   proxy: z.object({
-    baseUrul: z.string(),
+    baseUrl: z.string(),
   }),
 });
 
