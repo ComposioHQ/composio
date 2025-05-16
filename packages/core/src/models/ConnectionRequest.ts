@@ -15,6 +15,7 @@ import {
 import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
 import { ZodError } from 'zod';
 import logger from '../utils/logger';
+import { ConnectionRequestTimeoutError } from '../errors/ConnectionRequestError';
 export class ConnectionRequest {
   private client: ComposioClient;
   private connectedAccountId: string;
@@ -92,7 +93,11 @@ export class ConnectionRequest {
 
       setTimeout(() => {
         clearInterval(interval);
-        reject(new Error('Connection request timed out'));
+        reject(
+          new ConnectionRequestTimeoutError(
+            `Connection request timed out for ${this.connectedAccountId}`
+          )
+        );
       }, timeout);
     });
   }

@@ -18,6 +18,12 @@ import zodToJsonSchema from 'zod-to-json-schema';
 import { Tool, ToolExecuteResponse, ToolList } from '../types/tool.types';
 import { ToolProxyParams } from '@composio/client/resources/tools';
 import logger from '../utils/logger';
+import {
+  ComposioInvalidExecuteFunctionError,
+  ComposioToolNotFoundError,
+} from '../errors/ToolErrors';
+import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+import { ComposioError } from '../errors/ComposioError';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -25,7 +31,7 @@ export class CustomTools {
 
   constructor(client: ComposioClient) {
     if (!client) {
-      throw new Error('ComposioClient is required');
+      throw new ComposioError('ComposioClient is required');
     }
     this.client = client;
     this.customToolsRegistry = new Map();
@@ -125,13 +131,25 @@ export class CustomTools {
    * @returns {ConnectedAccount} The connected account
    */
   private async getConnectedAccount(toolkitSlug: string, metadata: ExecuteMetadata) {
+    try {
+      await this.client.toolkits.retrieve(toolkitSlug);
+    } catch (error) {
+      throw new ComposioToolNotFoundError(`Toolkit with slug ${toolkitSlug} not found`, {
+        toolkitSlug,
+      });
+    }
     const connectedAccounts = await this.client.connectedAccounts.list({
       toolkit_slug: toolkitSlug,
       user_id: metadata.userId,
     });
 
     if (!connectedAccounts.items.length) {
-      throw new Error(`No connected accounts found for toolkit ${toolkitSlug}`);
+      throw new ComposioConnectedAccountNotFoundError(
+        `No connected accounts found for toolkit ${toolkitSlug}`,
+        {
+          toolkitSlug,
+        }
+      );
     }
 
     return metadata.connectedAccountId
@@ -153,24 +171,32 @@ export class CustomTools {
   ): Promise<ToolExecuteResponse> {
     const tool = this.customToolsRegistry.get(slug.toLowerCase());
     if (!tool) {
-      throw new Error(`Tool with slug ${slug} not found`);
+      throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
+        toolSlug: slug,
+      });
     }
 
     let authCredentials: Record<string, unknown> = {};
     const { toolkitSlug, execute } = tool.options;
     // if a toolkit is used, get the connected account, and auth credentials
-    if (toolkitSlug) {
+    if (toolkitSlug && toolkitSlug !== 'custom') {
       const connectedAccount = await this.getConnectedAccount(toolkitSlug, metadata);
       if (!connectedAccount) {
-        throw new Error(
-          `Connected account not found for toolkit ${toolkitSlug} for user ${metadata.userId}`
+        throw new ComposioConnectedAccountNotFoundError(
+          `Connected account not found for toolkit ${toolkitSlug} for user ${metadata.userId}`,
+          {
+            toolkitSlug,
+            userId: metadata.userId,
+          }
         );
       }
       authCredentials = connectedAccount.data?.connectionParams as Record<string, unknown>;
     }
 
     if (typeof execute !== 'function') {
-      throw new Error('Invalid execute function');
+      throw new ComposioInvalidExecuteFunctionError('Invalid execute function', {
+        toolSlug: slug,
+      });
     }
     // create a tool proxy request for users to execute in case of a toolkit being used
     const executeToolRequest = async (data: ToolProxyParams) => {

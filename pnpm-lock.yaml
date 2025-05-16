@@ -130,6 +130,28 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/toolkits:
+    dependencies:
+      '@ai-sdk/openai':
+        specifier: ^1.3.16
+        version: 1.3.22(zod@3.24.4)
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@composio/vercel':
+        specifier: workspace:*
+        version: link:../../packages/toolsets/vercel
+      ai:
+        specifier: ^4.3.8
+        version: 4.3.15(react@19.1.0)(zod@3.24.4)
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/vercel:
     dependencies:
       '@ai-sdk/openai':

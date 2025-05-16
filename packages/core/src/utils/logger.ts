@@ -1,4 +1,4 @@
-import { getEnvVariable } from "./env";
+import { getEnvVariable } from './env';
 
 // Define log levels with corresponding priorities
 export const LOG_LEVELS = {
@@ -17,13 +17,8 @@ export type LogLevel = keyof typeof LOG_LEVELS;
  * @returns {LogLevel} The current log level
  */
 export const getLogLevel = (): LogLevel => {
-  const envLevel = getEnvVariable(
-    "COMPOSIO_LOGGING_LEVEL",
-    "info"
-  )?.toLowerCase();
-  return envLevel && envLevel in LOG_LEVELS
-    ? (envLevel as LogLevel)
-    : "info";
+  const envLevel = getEnvVariable('COMPOSIO_LOGGING_LEVEL', 'info')?.toLowerCase();
+  return envLevel && envLevel in LOG_LEVELS ? (envLevel as LogLevel) : 'info';
 };
 
 interface LoggerOptions {
@@ -44,8 +39,8 @@ class Logger {
 
   private formatMessage(args: unknown[]): string {
     const formattedArgs = args
-      .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
-      .join(" ");
+      .map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+      .join('\n');
 
     if (!this.includeTimestamp) {
       return formattedArgs;
@@ -60,25 +55,25 @@ class Logger {
   }
 
   error(...args: unknown[]): void {
-    if (this.shouldLog("error")) {
+    if (this.shouldLog('error')) {
       this.console.error(this.formatMessage(args));
     }
   }
 
   warn(...args: unknown[]): void {
-    if (this.shouldLog("warn")) {
+    if (this.shouldLog('warn')) {
       this.console.warn(this.formatMessage(args));
     }
   }
 
   info(...args: unknown[]): void {
-    if (this.shouldLog("info")) {
+    if (this.shouldLog('info')) {
       this.console.info(this.formatMessage(args));
     }
   }
 
   debug(...args: unknown[]): void {
-    if (this.shouldLog("debug")) {
+    if (this.shouldLog('debug')) {
       this.console.debug(this.formatMessage(args));
     }
   }

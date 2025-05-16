@@ -8,10 +8,6 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const toolkit = await composio.toolkits.get('HACKERNEWS');
-
-console.log(toolkit);
-
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
   // toolkit slug too
   modifyToolSchema: (toolSlug, toolkitSlug, toolSchema) => {
@@ -34,6 +30,9 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
 
 console.log(tools);
 
+/**
+ * Agentic toolset
+ */
 const vercel = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   // calling this provider now no? or what? or toolProvider or toolManager?

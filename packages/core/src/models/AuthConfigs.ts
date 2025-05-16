@@ -5,7 +5,7 @@
  * @date 2025-05-05
  * @module AuthConfigs
  */
-import ComposioClient from '@composio/client';
+import ComposioClient, { ComposioError } from '@composio/client';
 import {
   AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,
@@ -25,6 +25,8 @@ import {
   CreateAuthConfigResponse,
   CreateAuthConfigResponseSchema,
 } from '../types/authConfigs.types';
+import { ZodError } from 'zod';
+import { ValidationError } from '../errors/ValidationError';
 
 /**
  * AuthConfigs class
@@ -42,7 +44,7 @@ export class AuthConfigs {
   private parseAuthConfigRetrieveResponse(
     authConfig: ComposioAuthConfigRetrieveResponse
   ): AuthConfigRetrieveResponse {
-    return AuthConfigRetrieveResponseSchema.parse({
+    const result = AuthConfigRetrieveResponseSchema.safeParse({
       id: authConfig.id,
       name: authConfig.name,
       noOfConnections: authConfig.no_of_connections,
@@ -60,6 +62,10 @@ export class AuthConfigs {
       createdAt: authConfig.created_at,
       lastUpdatedAt: authConfig.last_updated_at,
     });
+    if (result.error) {
+      throw new ValidationError(result.error);
+    }
+    return result.data;
   }
 
   /**
@@ -76,11 +82,15 @@ export class AuthConfigs {
       limit: parsedQuery?.limit?.toString(),
       toolkit_slug: parsedQuery?.toolkitSlug,
     });
-    return AuthConfigListResponseSchema.parse({
+    const parsedResult = AuthConfigListResponseSchema.safeParse({
       items: result.items.map(item => this.parseAuthConfigRetrieveResponse(item)),
       nextCursor: result.next_cursor,
       totalPages: result.total_pages,
     });
+    if (parsedResult.error) {
+      throw new ValidationError(parsedResult.error);
+    }
+    return parsedResult.data;
   }
 
   /**
@@ -105,19 +115,26 @@ export class AuthConfigs {
     toolkit: string,
     options: CreateAuthConfigParams
   ): Promise<CreateAuthConfigResponse> {
-    const parsedOptions = CreateAuthConfigParamsSchema.parse(options);
+    const parsedOptions = CreateAuthConfigParamsSchema.safeParse(options);
+    if (parsedOptions.error) {
+      throw new ValidationError(parsedOptions.error);
+    }
     const result = await this.client.authConfigs.create({
       toolkit: {
         slug: toolkit,
       },
-      auth_config: parsedOptions,
+      auth_config: parsedOptions.data,
     });
-    return CreateAuthConfigResponseSchema.parse({
+    const parsedResult = CreateAuthConfigResponseSchema.safeParse({
       id: result.auth_config.id,
       authScheme: result.auth_config.auth_scheme,
       isComposioManaged: result.auth_config.is_composio_managed,
       toolkit: result.toolkit.slug,
     });
+    if (parsedResult.error) {
+      throw new ValidationError(parsedResult.error);
+    }
+    return parsedResult.data;
   }
 
   /**

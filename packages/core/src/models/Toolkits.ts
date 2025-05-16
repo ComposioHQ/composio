@@ -1,4 +1,4 @@
-import ComposioClient from '@composio/client';
+import ComposioClient, { ComposioError } from '@composio/client';
 import {
   ToolKitItemSchema,
   ToolkitListParams,
@@ -11,6 +11,9 @@ import {
   ToolkitRetrieveCategoriesResponseSchema,
   ToolkitCategorySchema,
 } from '../types/toolkit.types';
+import { ComposioToolNotFoundError } from '../errors/ToolErrors';
+import { ZodError } from 'zod';
+import { ValidationError } from '../errors/ValidationError';
 
 /**
  * Toolkits class
@@ -66,16 +69,25 @@ export class Toolkits {
    * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
    */
   private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
-    const result = await this.client.toolkits.retrieve(slug);
-    const parsedResult = ToolkitRetrieveResponseSchema.parse({
-      name: result.name,
-      slug: result.slug,
-      meta: result.meta,
-      isLocalToolkit: result.is_local_toolkit,
-      composioManagedAuthSchemes: result.composio_managed_auth_schemes,
-      authConfigDetails: result.auth_config_details,
-    });
-    return parsedResult;
+    try {
+      const result = await this.client.toolkits.retrieve(slug);
+      const parsedResult = ToolkitRetrieveResponseSchema.parse({
+        name: result.name,
+        slug: result.slug,
+        meta: result.meta,
+        isLocalToolkit: result.is_local_toolkit,
+        composioManagedAuthSchemes: result.composio_managed_auth_schemes,
+        authConfigDetails: result.auth_config_details,
+      });
+      return parsedResult;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError(error);
+      }
+      throw new ComposioToolNotFoundError(`Toolkit with slug ${slug} not found`, {
+        slug,
+      });
+    }
   }
 
   /**

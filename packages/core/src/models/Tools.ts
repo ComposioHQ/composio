@@ -29,6 +29,14 @@ import {
 import { BaseComposioToolset } from '../toolset/BaseToolset';
 import logger from '../utils/logger';
 import { ExecuteToolFn } from '../types/toolset.types';
+import {
+  ComposioCustomToolsNotInitializedError,
+  ComposioInvalidModifierError,
+  ComposioToolExecutionError,
+  ComposioToolNotFoundError,
+  ComposioToolsetNotDefinedError,
+} from '../errors/ToolErrors';
+import { ValidationError } from '../errors/ValidationError';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -48,7 +56,7 @@ export class Tools<
       throw new Error('ComposioClient is required');
     }
     if (!toolset) {
-      throw new Error('Toolset is required');
+      throw new ComposioToolsetNotDefinedError('Toolset not passed into Tools instance');
     }
 
     this.client = client;
@@ -202,7 +210,7 @@ export class Tools<
   ): Promise<ToolList> {
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
-      throw new Error(JSON.stringify(queryParams.error.flatten()));
+      throw new ValidationError(queryParams.error);
     }
 
     const tools = await this.client.tools.list({
@@ -240,7 +248,7 @@ export class Tools<
           return modifier(tool.slug, tool.toolkit?.slug || 'unkown', tool);
         });
       } else {
-        throw new Error('Invalid schema modifier. Not a function.');
+        throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
     }
 
@@ -265,7 +273,7 @@ export class Tools<
     // if not, fetch the tool from the Composio API
     const tool = await this.client.tools.retrieve(slug);
     if (!tool) {
-      throw new Error(`Tool with slug ${slug} not found`);
+      throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
     }
     // change the case of the tool to camel case
     let modifiedToool = this.transformToolCases(tool);
@@ -274,7 +282,7 @@ export class Tools<
       if (typeof modifier === 'function') {
         modifiedToool = modifier(slug, modifiedToool.toolkit?.slug || 'unkown', modifiedToool);
       } else {
-        throw new Error('Invalid schema modifier. Not a function.');
+        throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
     }
     return modifiedToool;
@@ -338,7 +346,9 @@ export class Tools<
       if (typeof modifiers.beforeToolExecute === 'function') {
         body = modifiers.beforeToolExecute(tool.slug, 'unkown', body);
       } else {
-        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+        throw new ComposioInvalidModifierError(
+          'Invalid beforeToolExecute modifier. Not a function.'
+        );
       }
     }
 
@@ -350,6 +360,10 @@ export class Tools<
     if (modifiers?.afterToolExecute) {
       if (typeof modifiers.afterToolExecute === 'function') {
         result = modifiers.afterToolExecute(tool.slug, 'unkown', result);
+      } else {
+        throw new ComposioInvalidModifierError(
+          'Invalid afterToolExecute modifier. Not a function.'
+        );
       }
     }
 
@@ -365,7 +379,9 @@ export class Tools<
       if (typeof modifiers.beforeToolExecute === 'function') {
         body = modifiers.beforeToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', body);
       } else {
-        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+        throw new ComposioInvalidModifierError(
+          'Invalid beforeToolExecute modifier. Not a function.'
+        );
       }
     }
     // fetch connected accounts if doesn't exist
@@ -392,7 +408,9 @@ export class Tools<
       if (typeof modifiers.afterToolExecute === 'function') {
         result = modifiers.afterToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', result);
       } else {
-        throw new Error('Invalid afterToolExecute modifier. Not a function.');
+        throw new ComposioInvalidModifierError(
+          'Invalid afterToolExecute modifier. Not a function.'
+        );
       }
     }
     return result;
@@ -413,7 +431,7 @@ export class Tools<
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
     if (!this.customTools) {
-      throw new Error(
+      throw new ComposioCustomToolsNotInitializedError(
         'CustomTools not initialized. Make sure Tools class is properly constructed.'
       );
     }
@@ -427,13 +445,15 @@ export class Tools<
         // handle composio tool execution
         const composioTool = await this.getComposioToolBySlug(body.userId, slug);
         if (!composioTool) {
-          throw new Error(`Tool with slug ${slug} not found`);
+          throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
         }
         return this.handleComposioToolExecution(composioTool, body, modifiers);
       }
     } catch (error) {
-      logger.error(`Error executing tool ${slug}: ${error}`);
-      throw error;
+      throw new ComposioToolExecutionError(error as Error, `Error executing tool ${slug}`, {
+        toolSlug: slug,
+        body,
+      });
     }
   }
 
