@@ -6,6 +6,9 @@
   "main": "index.js",
   "scripts": {
     "start": "bun src/index.ts",
+    "chat": "bun src/chat-completions.ts",
+    "assistant": "bun src/assistants.ts",
+    "examples": "bun src/examples.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,6 +17,7 @@
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "@composio/core": "workspace:*",
+    "dotenv": "^16.4.1",
     "openai": "^4.94.0"
   },
   "devDependencies": {
