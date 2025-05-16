@@ -17,11 +17,11 @@ const composio = new Composio({
  * Get the tool by slug
  * This tool is automatically typed and wrapped with the OpenAI Toolset
  */
-const tool = await composio.getToolBySlug('default', 'HACKERNEWS_GET_USER');
+const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 /**
  * Define a task for the assistant based on the tools in hand
  */
-const task = "Fetch the details of the user 'haxzie'";
+const task = "Fetch the details of the user 'pg'";
 
 /**
  * Define the messages for the assistant
