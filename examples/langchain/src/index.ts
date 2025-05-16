@@ -11,6 +11,7 @@ const composio = new Composio({
 });
 
 // fetch the tool
+console.log(`🔄 Fetching the tool...`);
 const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 
 // Define the tools for the agent to use
@@ -37,6 +38,7 @@ function shouldContinue({ messages }: typeof MessagesAnnotation.State) {
 
 // Define the function that calls the model
 async function callModel(state: typeof MessagesAnnotation.State) {
+  console.log(`🔄 Calling the model...`);
   const response = await model.invoke(state.messages);
 
   // We return a list, because this will get added to the existing list
@@ -58,6 +60,7 @@ const app = workflow.compile();
 const finalState = await app.invoke({
   messages: [new HumanMessage('Find the details of the user `pg` on HackerNews')],
 });
+console.log(`✅ Message recieved from the model`);
 console.log(finalState.messages[finalState.messages.length - 1].content);
 
 const nextState = await app.invoke({
@@ -65,4 +68,5 @@ const nextState = await app.invoke({
   // This way it knows we're asking about the weather in NY
   messages: [...finalState.messages, new HumanMessage('what about haxzie')],
 });
+console.log(`✅ Message recieved from the model`);
 console.log(nextState.messages[nextState.messages.length - 1].content);
