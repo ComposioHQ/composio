@@ -206,13 +206,14 @@ export class Tools<
     }
 
     const tools = await this.client.tools.list({
+      tool_slugs: queryParams.data.tools?.join(','),
+      toolkit_slug: queryParams.data.toolkits?.join(','),
       cursor: queryParams.data.cursor,
       important: queryParams.data.important,
       limit: queryParams.data.limit,
       search: queryParams.data.search,
-      toolkit_slug: queryParams.data.toolkits?.join(','),
-      tool_slugs: queryParams.data.tools?.join(','),
     });
+
     if (!tools) {
       return [];
     }

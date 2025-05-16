@@ -40,21 +40,24 @@ const vercel = new Composio({
   toolset: new VercelToolset(),
 });
 
-vercel.tools.get(
-  'user-id',
+const agenticTools = await vercel.tools.get(
+  'default',
   // what is the type error i am getting here?
-  { toolkits: [''] },
+  { tools: ['HACKERNEWS_GET_USER'] },
   {
-    // here for toolkitSlug and toolSlug before the generation mapping thing comes we should have basic generic that gets from the input type itself
-    // so if i have toolkits then i get toolkit name and if i have tools then i get tool name
-    modifyToolSchema: (toolSlug, toolSchema) => {
-      return toolSchema;
-    },
     afterToolExecute: (toolSlug, result) => {
-      // hmm i wonder about this
+      // modify the result
+      return result;
     },
     beforeToolExecute: (toolSlug, params) => {
-      // here we should give a subset of params like userId should not be mutable here
+      // modify the params
+      return params;
+    },
+    modifyToolSchema: (toolSlug, toolSchema) => {
+      // modify the tool schema
+      return toolSchema;
     },
   }
 );
+
+console.log(agenticTools);

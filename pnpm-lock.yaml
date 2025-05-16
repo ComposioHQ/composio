@@ -123,8 +123,8 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: ^0.1.8-alpha.0
-        version: 0.1.8-alpha.0(encoding@0.1.13)(ws@8.18.2)
+        specifier: workspace:*
+        version: link:../../packages/core
       '@composio/vercel':
         specifier: workspace:*
         version: link:../../packages/toolsets/vercel
@@ -6289,10 +6289,10 @@ snapshots:
       - encoding
       - ws
 
-  '@composio/langchain@0.1.0-rc.6(encoding@0.1.13)(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))':
+  '@composio/langchain@0.1.0-rc.6(encoding@0.1.13)(openai@4.94.0(encoding@0.1.13)(ws@8.18.2)(zod@3.24.2))(ws@8.18.2)':
     dependencies:
-      '@composio/core': 0.1.0-rc.5(encoding@0.1.13)
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@composio/core': 0.1.0-rc.5(encoding@0.1.13)(ws@8.18.2)
+      '@langchain/core': 0.3.44(openai@4.94.0(encoding@0.1.13)(ws@8.18.2)(zod@3.24.2))
     transitivePeerDependencies:
       - encoding
       - openai

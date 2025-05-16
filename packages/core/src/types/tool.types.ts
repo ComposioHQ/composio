@@ -56,12 +56,12 @@ export type ToolList = Array<Tool>;
  * ToolListParams is the parameters for the list of tools.
  */
 export const ToolListParamsSchema = z.object({
+  tools: z.array(z.string()).optional(),
   cursor: z.string().optional(),
   important: z.string().optional(),
   limit: z.string().optional(),
   search: z.string().optional(),
   toolkits: z.array(z.string()).optional(),
-  tools: z.array(z.string()).optional(),
 });
 export type ToolListParams = z.infer<typeof ToolListParamsSchema>;
 
