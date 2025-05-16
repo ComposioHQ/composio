@@ -7,6 +7,7 @@ import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
  */
 export type BeforeToolExecuteModifier = (
   toolSlug: string,
+  toolkitSlug: string,
   toolExecuteParams: ToolExecuteParams
 ) => ToolExecuteParams;
 
@@ -16,6 +17,7 @@ export type BeforeToolExecuteModifier = (
  */
 export type AfterToolExecuteModifier = (
   toolSlug: string,
+  toolkitSlug: string,
   toolExecuteResponse: ToolExecuteResponse
 ) => ToolExecuteResponse;
 
@@ -23,7 +25,11 @@ export type AfterToolExecuteModifier = (
  * Modifier for altering the tool schema
  * Called after the tool schema is retrieved
  */
-export type TransformToolSchemaModifier = (toolSlug: string, toolSchema: Tool) => Tool;
+export type TransformToolSchemaModifier = (
+  toolSlug: string,
+  toolkitSlug: string,
+  toolSchema: Tool
+) => Tool;
 
 /**
  * Non Agentic tool options. These are used by Non-Agentic toolsets

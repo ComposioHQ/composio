@@ -38,7 +38,7 @@ const authConfig = await composio.createAuthConfig('my-toolkit', {
  */
 // hmm so the createConnectedAccount here doesn't feel like i am initiating a connection request -> that is probably why it was called initiateConnection
 // connectedAccounts.initiate or initialize work
-const ConnectionRequest = await composio.createConnectedAccount('default', authConfig.id);
+const ConnectionRequest = await composio.initiateConnection('default', authConfig.id);
 const connectedAccount = await ConnectionRequest.waitForConnection();
 
 console.log(connectedAccount);

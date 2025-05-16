@@ -237,7 +237,7 @@ export class Tools<
     if (modifier) {
       if (typeof modifier === 'function') {
         modifiedTools = modifiedTools.map(tool => {
-          return modifier(tool.slug, tool);
+          return modifier(tool.slug, tool.toolkit?.slug || 'unkown', tool);
         });
       } else {
         throw new Error('Invalid schema modifier. Not a function.');
@@ -272,7 +272,7 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedToool = modifier(slug, modifiedToool);
+        modifiedToool = modifier(slug, modifiedToool.toolkit?.slug || 'unkown', modifiedToool);
       } else {
         throw new Error('Invalid schema modifier. Not a function.');
       }
@@ -329,6 +329,75 @@ export class Tools<
     return executeToolFn;
   }
 
+  private async handleCustomToolExecution(
+    tool: Tool,
+    body: ToolExecuteParams,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<ToolExecuteResponse> {
+    if (modifiers?.beforeToolExecute) {
+      if (typeof modifiers.beforeToolExecute === 'function') {
+        body = modifiers.beforeToolExecute(tool.slug, 'unkown', body);
+      } else {
+        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+      }
+    }
+
+    let result = await this.customTools.executeCustomTool(tool.slug, body, {
+      userId: body.userId || 'default',
+      connectedAccountId: body.connectedAccountId,
+    });
+
+    if (modifiers?.afterToolExecute) {
+      if (typeof modifiers.afterToolExecute === 'function') {
+        result = modifiers.afterToolExecute(tool.slug, 'unkown', result);
+      }
+    }
+
+    return result;
+  }
+
+  private async handleComposioToolExecution(
+    tool: Tool,
+    body: ToolExecuteParams,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<ToolExecuteResponse> {
+    if (modifiers?.beforeToolExecute) {
+      if (typeof modifiers.beforeToolExecute === 'function') {
+        body = modifiers.beforeToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', body);
+      } else {
+        throw new Error('Invalid beforeToolExecute modifier. Not a function.');
+      }
+    }
+    // fetch connected accounts if doesn't exist
+    let connectedAccountId = body.connectedAccountId;
+    if (!connectedAccountId) {
+      connectedAccountId =
+        (await this.getConnectedAccountIdForTool(body.userId, tool.slug)) || undefined;
+    }
+
+    let result = await this.client.tools.execute(tool.slug, {
+      allow_tracing: body.allowTracing,
+      connected_account_id: body.connectedAccountId,
+      custom_auth_params: body.customAuthParams,
+      arguments: body.arguments,
+      entity_id: body.userId,
+      version: body.version,
+      text: body.text,
+    });
+    // apply transformations to the response
+    result = this.transformToolExecuteResponse(result);
+
+    // apply local modifiers if they are provided
+    if (modifiers?.afterToolExecute) {
+      if (typeof modifiers.afterToolExecute === 'function') {
+        result = modifiers.afterToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', result);
+      } else {
+        throw new Error('Invalid afterToolExecute modifier. Not a function.');
+      }
+    }
+    return result;
+  }
+
   /**
    * Exectes a given tool with the provided parameters.
    *
@@ -350,54 +419,18 @@ export class Tools<
     }
 
     try {
-      // apply local modifiers if they are provided
-      if (modifiers?.beforeToolExecute) {
-        if (typeof modifiers.beforeToolExecute === 'function') {
-          body = modifiers.beforeToolExecute(slug, body);
-        } else {
-          throw new Error('Invalid beforeToolExecute modifier. Not a function.');
-        }
-      }
-
-      let result: ToolExecuteResponse;
-      // check if the tool is a custom tool
       const customTool = await this.customTools.getCustomToolBySlug(slug);
       if (customTool) {
-        result = await this.customTools.executeCustomTool(slug, body, {
-          userId: body.userId || 'default',
-          connectedAccountId: body.connectedAccountId,
-        });
+        // handle custom tool execution
+        return this.handleCustomToolExecution(customTool, body, modifiers);
       } else {
-        // fetch connected accounts if doesn't exist
-        let connectedAccountId = body.connectedAccountId;
-        if (!connectedAccountId) {
-          connectedAccountId =
-            (await this.getConnectedAccountIdForTool(body.userId, slug)) || undefined;
+        // handle composio tool execution
+        const composioTool = await this.getComposioToolBySlug(body.userId, slug);
+        if (!composioTool) {
+          throw new Error(`Tool with slug ${slug} not found`);
         }
-
-        result = await this.client.tools.execute(slug, {
-          allow_tracing: body.allowTracing,
-          connected_account_id: body.connectedAccountId,
-          custom_auth_params: body.customAuthParams,
-          arguments: body.arguments,
-          entity_id: body.userId,
-          version: body.version,
-          text: body.text,
-        });
-        // apply transformations to the response
-        result = this.transformToolExecuteResponse(result);
+        return this.handleComposioToolExecution(composioTool, body, modifiers);
       }
-
-      // apply local modifiers if they are provided
-      if (modifiers?.afterToolExecute) {
-        if (typeof modifiers.afterToolExecute === 'function') {
-          result = modifiers.afterToolExecute(slug, result);
-        } else {
-          throw new Error('Invalid afterToolExecute modifier. Not a function.');
-        }
-      }
-
-      return result;
     } catch (error) {
       logger.error(`Error executing tool ${slug}: ${error}`);
       throw error;
