@@ -259,6 +259,11 @@ export class Tools<
    * Retrieves a tool by its Slug.
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
+   *
+   * @example
+   * ```ts
+   * const tool = await composio.tools.getComposioToolBySlug('default', 'github');
+   * ```
    */
   async getComposioToolBySlug(
     userId: string,
@@ -288,16 +293,51 @@ export class Tools<
     return modifiedToool;
   }
 
+  /**
+   * Get a tool by its slug
+   * @param userId - The user id
+   * @param slug - The slug of the tool
+   * @param options - The options for the tool
+   * @returns The tool
+   *
+   * @example
+   * ```ts
+   * const tool = await composio.tools.get('default', 'github');
+   * ```
+   */
   async get<T extends TToolset>(
     userId: string,
     slug: string,
     options?: ToolsetOptions<TToolset>
   ): Promise<ReturnType<T['wrapTool']>>;
+
+  /**
+   * Get a list of tools by their slugs
+   * @param userId - The user id
+   * @param filters - The filters for the tools
+   * @param options - The options for the tools
+   * @returns The tools
+   *
+   * @example
+   * ```ts
+   * const tools = await composio.tools.get('default', {
+   *   tools: ['github'],
+   * });
+   * ```
+   */
   async get<T extends TToolset>(
     userId: string,
     filters: ToolListParams,
     options?: ToolsetOptions<TToolset>
   ): Promise<ReturnType<T['wrapTools']>>;
+
+  /**
+   * Get a tool by its slug
+   * @param userId - The user id
+   * @param arg2 - The slug of the tool or the filters for the tools
+   * @param options - The options for the tools
+   * @returns The tool or the tools
+   */
   async get(
     userId: string,
     arg2: ToolListParams | string,
@@ -317,6 +357,7 @@ export class Tools<
   }
 
   /**
+   * @internal
    * Creates a function that executes a tool.
    * This function is used by agentic the toolsets to execute the tool
    * @param {string} userId - The user id
@@ -337,6 +378,14 @@ export class Tools<
     return executeToolFn;
   }
 
+  /**
+   * @internal
+   * Handles the execution of a custom tool
+   * @param tool - The tool to execute
+   * @param body - The body of the tool execution
+   * @param modifiers - The modifiers to be applied to the tool execution
+   * @returns The response from the tool execution
+   */
   private async handleCustomToolExecution(
     tool: Tool,
     body: ToolExecuteParams,
@@ -370,6 +419,14 @@ export class Tools<
     return result;
   }
 
+  /**
+   * @internal
+   * Handles the execution of a composio tool
+   * @param tool - The tool to execute
+   * @param body - The body of the tool execution
+   * @param modifiers - The modifiers to be applied to the tool execution
+   * @returns The response from the tool execution
+   */
   private async handleComposioToolExecution(
     tool: Tool,
     body: ToolExecuteParams,
