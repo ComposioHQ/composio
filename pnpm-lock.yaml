@@ -64,8 +64,20 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@composio/langchain':
-        specifier: 0.1.0-rc.6
-        version: 0.1.0-rc.6(encoding@0.1.13)(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+        specifier: workspace:*
+        version: link:../../packages/toolsets/langchain
+      '@langchain/core':
+        specifier: ^0.3.56
+        version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/langgraph':
+        specifier: ^0.2.72
+        version: 0.2.72(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))
+      '@langchain/openai':
+        specifier: ^0.5.10
+        version: 0.5.10(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(encoding@0.1.13)
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
       openai:
         specifier: ^4.94.0
         version: 4.98.0(encoding@0.1.13)(zod@3.24.4)
@@ -288,12 +300,6 @@ packages:
 
   '@composio/client@0.1.0-alpha.9':
     resolution: {integrity: sha512-uhXW5NxIY+j5IZ7WnzOLrVmOAhSCb1FdQbvDxPCcQqpE7d78uRHS9i/aK4Xn6UNIPv+pt1BT8unR0zEdKjG3Ng==}
-
-  '@composio/core@0.1.0-rc.5':
-    resolution: {integrity: sha512-kSkkTjxJGUVABbVThsMXiNiIPZy0qNku77lG3wgDcFMGps7OLrL1vTT0t19cCL3Jl4jwJQm5qROpgCBQveFCbA==}
-
-  '@composio/langchain@0.1.0-rc.6':
-    resolution: {integrity: sha512-nx/emBOfyltoK1TeGXdqLnwSvirZW3u+Bs0cOkwMnT+zE9FDeX1sfVgl91SrhLqSWQLcaa/mAb6MRQ9LxYv2CA==}
 
   '@emnapi/core@1.4.3':
     resolution: {integrity: sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g==}
@@ -548,6 +554,39 @@ packages:
   '@langchain/core@0.3.56':
     resolution: {integrity: sha512-eF9MyInM9RLNisAygiCrzHnqzOnuzGWy4f1SAqAis+XIMhcA98WuZDNWxyX9pP3aKQGc47FAJ/9XWJwv5KiquA==}
     engines: {node: '>=18'}
+
+  '@langchain/langgraph-checkpoint@0.0.17':
+    resolution: {integrity: sha512-6b3CuVVYx+7x0uWLG+7YXz9j2iBa+tn2AXvkLxzEvaAsLE6Sij++8PPbS2BZzC+S/FPJdWsz6I5bsrqL0BYrCA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.31 <0.4.0'
+
+  '@langchain/langgraph-sdk@0.0.74':
+    resolution: {integrity: sha512-IUN0m4BYkGWdviFd4EaWDcQgxNq8z+1LIwXajCSt9B+Cb/pz0ZNpIPdu5hAIsf6a0RWu5yRUhzL1L40t7vu3Zg==}
+    peerDependencies:
+      '@langchain/core': '>=0.2.31 <0.4.0'
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@langchain/core':
+        optional: true
+      react:
+        optional: true
+
+  '@langchain/langgraph@0.2.72':
+    resolution: {integrity: sha512-2Rs79mLSx0Yxr/omiWOXBlaS+eywZ9KACe06pI6XkA3hT2hwqjMlXYMvbeD7mxZlKrPtLsQaHWvL9IO2VAa+lQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0'
+      zod-to-json-schema: ^3.x
+    peerDependenciesMeta:
+      zod-to-json-schema:
+        optional: true
+
+  '@langchain/openai@0.5.10':
+    resolution: {integrity: sha512-hBQIWjcVxGS7tgVvgBBmrZ5jSaJ8nu9g6V64/Tx6KGjkW7VdGmUvqCO+koiQCOZVL7PBJkHWAvDsbghPYXiZEA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.3.48 <0.4.0'
 
   '@lerna/create@8.2.2':
     resolution: {integrity: sha512-1yn1MvWn2Yz0SFgTTQnef2m1YedF7KwqLLVIOrGkgQrkVHzsveAIk1A1RcRa2yyUh+siKI1YcJ7lUZIEt+qQ3Q==}
@@ -3569,6 +3608,10 @@ packages:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
+  uuid@9.0.1:
+    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    hasBin: true
+
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
@@ -3749,25 +3792,6 @@ snapshots:
   '@cloudflare/workers-types@4.20250515.0': {}
 
   '@composio/client@0.1.0-alpha.9': {}
-
-  '@composio/core@0.1.0-rc.5(encoding@0.1.13)':
-    dependencies:
-      '@composio/client': 0.1.0-alpha.9
-      openai: 4.98.0(encoding@0.1.13)(zod@3.24.4)
-      pusher-js: 8.4.0
-      zod: 3.24.4
-    transitivePeerDependencies:
-      - encoding
-      - ws
-
-  '@composio/langchain@0.1.0-rc.6(encoding@0.1.13)(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))':
-    dependencies:
-      '@composio/core': 0.1.0-rc.5(encoding@0.1.13)
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
-    transitivePeerDependencies:
-      - encoding
-      - openai
-      - ws
 
   '@emnapi/core@1.4.3':
     dependencies:
@@ -3964,6 +3988,44 @@ snapshots:
       zod-to-json-schema: 3.24.5(zod@3.24.4)
     transitivePeerDependencies:
       - openai
+
+  '@langchain/langgraph-checkpoint@0.0.17(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))':
+    dependencies:
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      uuid: 10.0.0
+
+  '@langchain/langgraph-sdk@0.0.74(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)':
+    dependencies:
+      '@types/json-schema': 7.0.15
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      uuid: 9.0.1
+    optionalDependencies:
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      react: 19.1.0
+
+  '@langchain/langgraph@0.2.72(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))':
+    dependencies:
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/langgraph-checkpoint': 0.0.17(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))
+      '@langchain/langgraph-sdk': 0.0.74(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)
+      uuid: 10.0.0
+      zod: 3.24.4
+    optionalDependencies:
+      zod-to-json-schema: 3.24.5(zod@3.24.4)
+    transitivePeerDependencies:
+      - react
+
+  '@langchain/openai@0.5.10(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(encoding@0.1.13)':
+    dependencies:
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      js-tiktoken: 1.0.20
+      openai: 4.98.0(encoding@0.1.13)(zod@3.24.4)
+      zod: 3.24.4
+      zod-to-json-schema: 3.24.5(zod@3.24.4)
+    transitivePeerDependencies:
+      - encoding
+      - ws
 
   '@lerna/create@8.2.2(encoding@0.1.13)(typescript@5.8.3)':
     dependencies:
@@ -7288,6 +7350,8 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@11.1.0: {}
+
+  uuid@9.0.1: {}
 
   validate-npm-package-license@3.0.4:
     dependencies:
