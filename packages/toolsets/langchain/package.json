@@ -29,12 +29,13 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
-    "@composio/core": "^0.1.8-alpha.0",
+    "@composio/core": "^0.1.9-alpha.0",
     "@langchain/core": "^0.3.44"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
-  }
+  },
+  "gitHead": "1f47c2a021338479c261ccde1ac6eb538ead47fd"
 }

@@ -30,11 +30,12 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@cloudflare/workers-types": "^4.20250416.0",
-    "@composio/core": "^0.1.8-alpha.0"
+    "@composio/core": "^0.1.9-alpha.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
-  }
+  },
+  "gitHead": "1f47c2a021338479c261ccde1ac6eb538ead47fd"
 }
