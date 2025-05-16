@@ -136,6 +136,7 @@ export class CustomTools {
     } catch (error) {
       throw new ComposioToolNotFoundError(`Toolkit with slug ${toolkitSlug} not found`, {
         toolkitSlug,
+        error,
       });
     }
     const connectedAccounts = await this.client.connectedAccounts.list({

@@ -2,7 +2,6 @@
 
 import { ZodError } from 'zod';
 import { ComposioError } from './ComposioError';
-import { error } from 'console';
 
 /**
  * Represents an input validation error using Zod.

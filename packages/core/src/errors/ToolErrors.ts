@@ -1,5 +1,4 @@
 import { ComposioError } from './ComposioError';
-import { ComposioError as ComposioClientError } from '@composio/client';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',

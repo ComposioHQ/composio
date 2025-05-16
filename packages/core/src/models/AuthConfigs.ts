@@ -5,7 +5,7 @@
  * @date 2025-05-05
  * @module AuthConfigs
  */
-import ComposioClient, { ComposioError } from '@composio/client';
+import ComposioClient from '@composio/client';
 import {
   AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,
@@ -25,7 +25,6 @@ import {
   CreateAuthConfigResponse,
   CreateAuthConfigResponseSchema,
 } from '../types/authConfigs.types';
-import { ZodError } from 'zod';
 import { ValidationError } from '../errors/ValidationError';
 
 /**

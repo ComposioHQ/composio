@@ -1,4 +1,4 @@
-import ComposioClient, { ComposioError } from '@composio/client';
+import ComposioClient from '@composio/client';
 import {
   ToolKitItemSchema,
   ToolkitListParams,
