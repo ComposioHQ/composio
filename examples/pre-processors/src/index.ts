@@ -14,7 +14,7 @@ console.log(toolkit);
 
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
   // toolkit slug too
-  modifyToolSchema: (toolSlug, toolSchema) => {
+  modifyToolSchema: (toolSlug, toolkitSlug, toolSchema) => {
     if (toolSlug === 'HACKERNEWS_GET_USER') {
       toolSchema = {
         ...toolSchema,
@@ -45,15 +45,15 @@ const agenticTools = await vercel.tools.get(
   // what is the type error i am getting here?
   { tools: ['HACKERNEWS_GET_USER'] },
   {
-    afterToolExecute: (toolSlug, result) => {
+    afterToolExecute: (toolSlug, toolkitSlug, result) => {
       // modify the result
       return result;
     },
-    beforeToolExecute: (toolSlug, params) => {
+    beforeToolExecute: (toolSlug, toolkitSlug, params) => {
       // modify the params
       return params;
     },
-    modifyToolSchema: (toolSlug, toolSchema) => {
+    modifyToolSchema: (toolSlug, toolkitSlug, toolSchema) => {
       // modify the tool schema
       return toolSchema;
     },

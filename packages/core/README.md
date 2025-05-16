@@ -70,7 +70,7 @@ Schema modifiers allow you to transform tool schemas before they are used:
 
 ```typescript
 const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
-  modifyToolSchema: (toolSlug: string, tool: Tool) => ({
+  modifyToolSchema: (toolSlug: string, toolkitSlug: string, tool: Tool) => ({
     ...tool,
     description: 'Enhanced HackerNews search with additional features',
     inputParameters: {
@@ -92,7 +92,7 @@ For agentic toolsets (like Vercel AI and Langchain), you can also modify tool ex
 ```typescript
 const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   // Transform input before execution
-  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+  beforeToolExecute: (toolSlug: string, toolkitSlug: string, params: ToolExecuteParams) => ({
     ...params,
     arguments: {
       ...params.arguments,
@@ -101,7 +101,7 @@ const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   }),
 
   // Transform output after execution
-  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+  afterToolExecute: (toolSlug: string, toolkitSlug: string, response: ToolExecuteResponse) => ({
     ...response,
     data: {
       ...response.data,
