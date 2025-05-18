@@ -1,0 +1,5 @@
+api:
+  specs:
+    - openapi: ../../api/openapi-mcp.json
+      settings:
+        title-as-schema-name: false
