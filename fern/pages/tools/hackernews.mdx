@@ -1,0 +1,181 @@
+---
+title: "Hackernews"
+subtitle: "Learn how to use Hackernews with Composio"
+---
+
+
+## Overview
+
+### Enum
+`HACKERNEWS`
+
+### Description
+Hacker News is a tech-focused news aggregator by Y Combinator, featuring user-submitted stories and discussions on startups, programming, and emerging trends
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="HACKERNEWS_GET_LATEST_POSTS">
+Get the latest posts from hacker news based on optional filters. results can be limited using the size parameter.
+
+**Action Parameters**
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="size" type="integer" default="5">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="HACKERNEWS_GET_FRONTPAGE">
+Get the frontpage posts of hacker news.
+
+**Action Parameters**
+
+<ParamField path="min_points" type="integer" default="40">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="HACKERNEWS_GET_ITEM_WITH_ID">
+Get a specific item from hacker news using its id. limits response size to prevent context overflow.
+
+**Action Parameters**
+
+<ParamField path="item_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_children" type="integer" default="10">
+</ParamField>
+
+<ParamField path="max_depth" type="integer" default="2">
+</ParamField>
+
+<ParamField path="truncate_text" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="HACKERNEWS_GET_USER">
+Get a specific user from hacker news using their username.
+
+**Action Parameters**
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="HACKERNEWS_GET_TODAYS_POSTS">
+Get today's posts from hacker news.
+
+**Action Parameters**
+
+<ParamField path="min_points" type="integer" default="200">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="HACKERNEWS_SEARCH_POSTS">
+Get relevant posts from hacker news based on a full-text query and optional filters. results can be limited using the size parameter.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="size" type="integer" default="5">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

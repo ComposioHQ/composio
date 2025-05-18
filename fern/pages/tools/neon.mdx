@@ -1,0 +1,2047 @@
+---
+title: "Neon"
+subtitle: "Learn how to use Neon with Composio"
+---
+
+
+## Overview
+
+### Enum
+`NEON`
+
+### Description
+Postgres, on a serverless platform designed to help you build reliable and scalable applications faster
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="NEON_ADD_NEW_JWKS_TO_PROJECT_ENDPOINT">
+Adds a new json web key set (jwks) to a specific endpoint of a project in the neon b2b saas integration platform. this endpoint is crucial for setting up secure authentication and authorization mechanisms, allowing seamless integration with various identity providers. use this when configuring a new authentication source or updating existing jwks information for your project. the endpoint supports multiple authentication providers and allows for branch-specific configurations and role mappings. note that a maximum of 10 role names can be associated with each jwks.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="jwks_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provider_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string">
+</ParamField>
+
+<ParamField path="jwt_audience" type="string">
+</ParamField>
+
+<ParamField path="role_names" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_START_ENDPOINT_FOR_PROJECT">
+Initiates a specific process or workflow associated with a particular endpoint within a project in the neon b2b saas integration platform. this endpoint is used to start automated tasks, data synchronization jobs, or other predefined processes that have been configured for the specified project and endpoint. it's particularly useful for triggering scheduled or on-demand integrations between different business applications. the endpoint should be used when you need to manually start a process that is usually automated or when restarting a failed process. it's important to note that this endpoint only starts the process; it does not provide information about the process status or results. separate endpoints may be required to monitor the progress or retrieve the outcomes of the started process.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_ORGANIZATION_INVITATIONS">
+Retrieves a list of all pending invitations for a specified organization. this endpoint allows organization administrators to view and manage outstanding invitations sent to potential new members. it should be used when there's a need to track who has been invited to join the organization, review invitation statuses, or perform invitation-related administrative tasks. the endpoint returns details about each invitation, which may include the invitee's email, the invitation date, and the current status. it does not provide information about active members or expired invitations.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_BRANCH_DATABASE">
+Creates a new database within a specified project and branch in the neon platform. this endpoint allows users to set up a new database with a custom name and assign an owner role, facilitating the organization and management of databases within the neon ecosystem. it should be used when initializing a new database for a specific project or when branching requires a separate database instance. the endpoint is particularly useful for developers and database administrators who need to quickly set up new databases as part of their workflow or application deployment process. note that this operation only creates the database; additional steps may be required to configure specific schemas, tables, or access permissions within the newly created database.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database__name" type="string">
+</ParamField>
+
+<ParamField path="database__owner__name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_SEND_ORGANIZATION_INVITATIONS">
+Creates and sends invitations to join an organization in the neon b2b saas integration platform. this endpoint allows administrators to invite multiple users simultaneously, specifying their email addresses and intended roles within the organization. it should be used when expanding the organization's membership or when assigning new roles to incoming members. the endpoint does not verify if the email addresses are associated with existing neon accounts; it simply sends out invitations to the specified email addresses.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="invitations" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_JWKS_BY_ID">
+Deletes a specific json web key set (jwks) associated with a given project in the neon b2b saas integration platform. this endpoint is used to remove outdated or unnecessary cryptographic keys from a project's key management system. it should be used when rotating keys, decommissioning integrations, or as part of regular key hygiene practices. the operation is irreversible, so caution should be exercised to ensure the correct jwks is being deleted. this endpoint does not provide information about the jwks being deleted or return the deleted keys for security reasons.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="jwks_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_JWKS_FOR_PROJECT">
+Retrieves the json web key set (jwks) for a specified project. this endpoint should be used when a client needs to obtain the public keys necessary for verifying json web tokens (jwts) issued by the project. the jwks contains the cryptographic keys used in the project's authentication process. it's essential for implementing secure, token-based authentication in applications integrated with the neon platform. this endpoint is typically called during the initial setup of a client application or when rotating security keys. note that the jwks should be cached by clients to reduce unnecessary api calls, but periodic refreshes are recommended to ensure up-to-date keys.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_SUSPEND_PROJECT_ENDPOINT_BY_ID">
+Suspends a specific endpoint within a project in the neon b2b saas integration platform. this operation temporarily disables the endpoint, preventing it from processing further requests until it is resumed. use this endpoint when you need to conserve resources, perform maintenance, or temporarily halt operations for a particular integration point. the suspension is reversible, allowing you to resume the endpoint's functionality when needed. this tool is particularly useful for managing resource utilization and costs in your neon project by allowing fine-grained control over individual endpoints.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_BRANCH_DATABASE_DETAILS">
+Retrieves detailed information about a specific database within a neon project and branch. this endpoint allows developers to fetch crucial metadata and configuration details for a given database, enabling them to monitor and manage their database resources effectively. it should be used when you need to inspect the current state, settings, or properties of a particular database in your neon environment. the endpoint provides a snapshot of the database's characteristics but does not modify any data or settings.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_ALL_REGIONS">
+Retrieves a list of available geographic regions supported by the neon b2b saas integration platform. this endpoint provides crucial information about the different areas where the api is accessible and optimized for service delivery. it should be used when developers need to understand the platform's global coverage, select appropriate endpoints for data localization, or implement region-specific configurations. the endpoint returns details about each region, which may include region identifiers, names, and potentially associated endpoints or data centers. this information is essential for ensuring compliance with data residency regulations and optimizing performance by choosing the most suitable region for specific integration needs.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_MODIFY_BRANCH_DETAILS_IN_PROJECT">
+Updates the details of a specific branch within a project in the neon platform. this endpoint allows you to modify the name and protection status of an existing branch. it is particularly useful when you need to rename a branch or change its protection settings without creating a new branch. the endpoint uses partial updates, so you can specify only the fields you want to change. this tool should be used when managing branch configurations in a neon project, but it cannot be used to create new branches or delete existing ones.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch__name" type="string">
+</ParamField>
+
+<ParamField path="branch__protected" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_PROJECT_OPERATIONS">
+Retrieves a list of operations associated with a specific project in the neon b2b saas integration platform. this endpoint should be used when you need to fetch all operations related to a particular project, such as for monitoring ongoing tasks, auditing completed actions, or planning future integrations. it provides a comprehensive view of the project's operational landscape, which is crucial for managing complex integration workflows. note that this endpoint only returns the operations list and may not include detailed information about each operation's current status or results; separate api calls might be necessary for such details.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_LIST_SHARED_PROJECTS">
+Retrieves a list of shared projects accessible to the authenticated user within the neon b2b saas integration platform. this endpoint is used to fetch information about projects that have been shared across different parts of the organization or with external collaborators. it provides an overview of all shared resources, enabling users to manage and access data integration workflows efficiently. the endpoint should be used when a user needs to view or manage their shared project portfolio, facilitating better collaboration and resource utilization across the platform. note that this endpoint likely returns only basic project information; detailed project data may require additional api calls.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="10">
+</ParamField>
+
+<ParamField path="search" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_UPDATE_ORGANIZATION_MEMBER_ROLE">
+Updates the role of a specific member within an organization in the neon b2b saas integration platform. this endpoint allows changing a member's role between 'admin' and 'member', which affects their permissions and access levels within the organization. use this endpoint when you need to promote a regular member to an admin role or demote an admin to a regular member role. it's crucial for managing access control and permissions within your organization. note that this operation may have significant implications on the member's ability to manage resources and other members within the organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="member_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_BRANCH_BY_ID">
+Deletes a specific branch within a project in the neon b2b saas integration platform. this endpoint permanently removes the specified branch and all associated data from the project. it should be used when a branch is no longer needed, such as after merging changes or abandoning a development path. caution should be exercised when using this endpoint, as the deletion is irreversible. it's important to ensure that any valuable data or configurations in the branch have been backed up or merged before deletion. this operation cannot be undone, so double-checking the project id and branch id before execution is crucial to avoid accidental deletions.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_PROJECT_ENDPOINT_DETAILS">
+Retrieves detailed information about a specific endpoint within a project in the neon b2b saas integration platform. this endpoint allows developers to fetch configuration, status, and other relevant details of a particular endpoint associated with a given project. use this when you need to inspect or verify the settings of an individual endpoint, such as its connection parameters, data mapping configurations, or current operational status. the endpoint is particularly useful for troubleshooting integration issues, auditing endpoint configurations, or gathering information for reporting purposes. note that this endpoint only provides read access to endpoint details and does not allow modifications.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RESTART_PROJECT_ENDPOINT">
+Restarts a specific endpoint within a project in the neon b2b saas integration platform. this endpoint is used to reinitialize or reset the state of an integration endpoint, which can be helpful for applying configuration changes, clearing cached data, or resolving issues with the endpoint's operation. the restart operation is triggered by sending a post request to the specified url with the required project and endpoint identifiers. this tool should be used when an endpoint needs to be refreshed or when troubleshooting integration problems. it's important to note that restarting an endpoint may cause a brief interruption in its availability, so it should be used judiciously and preferably during maintenance windows or low-traffic periods.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_DATABASE_FROM_BRANCH">
+Deletes a specific database from a designated branch within a project in the neon platform. this endpoint should be used when you need to permanently remove a database and all its associated data from a particular branch of a project. it's crucial to use this endpoint with caution as the deletion operation is irreversible. this tool is particularly useful for cleaning up unnecessary databases, managing storage, or removing test databases that are no longer needed. however, it should not be used for temporary data management; instead, consider using database suspension or archiving features if available. note that this operation only affects the specified branch and does not impact the database in other branches or the main project.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_PROJECTS_LIST">
+Retrieves a list of all neon projects associated with the authenticated user's account. this endpoint provides a comprehensive overview of the user's projects, enabling efficient project management and integration workflows. it should be used when you need to obtain information about multiple projects at once, such as for dashboard displays, project selection interfaces, or batch processing tasks. the endpoint returns project details in json format, which can be easily parsed and utilized in various applications or data analysis processes. note that while this endpoint gives a broad view of projects, it may not include detailed data sets or specific project contents, which might require additional api calls.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="10">
+</ParamField>
+
+<ParamField path="search" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_PERMISSION">
+Deletes a specific permission associated with a project in the neon b2b saas integration platform. this endpoint is used to remove access rights or privileges from a project, which is crucial for maintaining proper access control and security. it should be used when you need to revoke or remove a particular permission that is no longer required or valid for the project. this operation is permanent and cannot be undone, so it should be used with caution. the endpoint requires both the project id and the specific permission id to ensure precise permission management within the project context.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="permission_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_PATCH_BRANCH_DATABASE_INFORMATION">
+Updates the properties of a specific database within a project branch in the neon platform. this endpoint allows for partial modifications of database attributes, such as changing its name or owner. it should be used when you need to rename a database or transfer ownership to a different role within the same project and branch. the update is performed using the patch method, allowing for selective property changes without affecting unspecified attributes. note that this operation modifies existing database metadata and does not create new databases or alter the actual data within the database.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database__name" type="string">
+</ParamField>
+
+<ParamField path="database__owner__name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_API_KEY_BY_ID">
+Deletes a specific api key from the neon platform. this endpoint should be used when you need to revoke access for a particular api key, such as when an employee leaves the organization or when you suspect the key has been compromised. the operation is irreversible, so use it with caution. once deleted, any applications or services using this api key will lose access to neon's api. this endpoint helps maintain the security of your neon account by allowing you to manage and control api key access effectively.
+
+**Action Parameters**
+
+<ParamField path="key_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_ORGANIZATION_MEMBER_INFO">
+Retrieves detailed information about a specific member within an organization in the neon b2b saas integration platform. this endpoint allows you to fetch comprehensive data about an individual member, including their user id, assigned role within the organization, join date, and potentially other relevant details. it's particularly useful for organization administrators who need to review or verify a member's status and permissions. the endpoint requires both the organization id and the member id to be specified, ensuring precise and secure access to member information. use this when you need to access or display detailed information about a particular member in your organization management interfaces or for auditing purposes.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="member_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_PROJECT_PERMISSIONS">
+Retrieves the current permissions settings for a specific project within the neon b2b saas integration platform. this endpoint allows users to view the access rights and roles assigned to various users or entities for the specified project. it should be used when you need to audit or review the current permission structure of a project, such as before making changes or for compliance checks. the endpoint returns a comprehensive list of permissions but does not modify any settings. it's important to note that this endpoint only provides a snapshot of permissions at the time of the call and does not reflect any pending changes or provide historical permission data.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RESTORE_PROJECT_BRANCH">
+This endpoint restores a branch to a specific state or point in time. use it to recover data, revert changes, or create new branch states based on historical data. the restoration uses either a log sequence number (lsn) or timestamp from the source branch. important: for self-restoration or branches with children, use preserve under name to save the current state. note: restoration time varies based on data volume and restoration point.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="source_branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="source_lsn" type="string">
+</ParamField>
+
+<ParamField path="source_timestamp" type="string">
+</ParamField>
+
+<ParamField path="preserve_under_name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_UPDATE_PROJECT_COMPUTE_ENDPOINT_SETTINGS">
+Updates the configuration of a specific compute endpoint within a neon project. this endpoint allows fine-tuning of various settings such as autoscaling limits, provisioner type, connection pooling, and auto-suspend behavior. it's particularly useful for optimizing performance, resource allocation, and cost management of your neon compute endpoints. the endpoint should be used when you need to modify the behavior or resources of an existing compute endpoint to better suit your application's needs or to implement changes in your infrastructure strategy. note that some parameters are deprecated, and care should be taken to use the most current features and settings.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint__branch__id" type="string">
+</ParamField>
+
+<ParamField path="endpoint__autoscaling__limit__min__cu" type="integer">
+</ParamField>
+
+<ParamField path="endpoint__autoscaling__limit__max__cu" type="integer">
+</ParamField>
+
+<ParamField path="endpoint__provisioner" type="string">
+</ParamField>
+
+<ParamField path="endpoint__settings__pg__settings" type="object">
+</ParamField>
+
+<ParamField path="endpoint__settings__pgbouncer__settings" type="object">
+</ParamField>
+
+<ParamField path="endpoint__pooler__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__pooler__mode" type="string">
+</ParamField>
+
+<ParamField path="endpoint__disabled" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__passwordless__access" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__suspend__timeout__seconds" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_ADD_ROLE_TO_BRANCH">
+Creates a new role within a specific branch of a project in the neon b2b saas integration platform. this endpoint allows for fine-grained access control by enabling the creation of custom roles at the branch level. it should be used when setting up or modifying the permission structure for a particular branch within a project. the created role can later be assigned to users, granting them specific permissions within the branch context. note that this endpoint only creates the role; additional steps may be required to assign permissions to the role or associate it with users.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role__name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_PROJECT_CONNECTION_URI">
+Retrieves the connection uri for a specified project within the neon b2b saas integration platform. this endpoint is crucial for establishing connectivity to a project's resources, enabling access to its data and functionalities. use this when you need to programmatically obtain the connection details for a specific project, which is essential for integrating with the project's data sources or services. the connection uri serves as a unique identifier and access point for the project, facilitating seamless data exchange and workflow automation between different systems and applications within the neon ecosystem.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string">
+</ParamField>
+
+<ParamField path="endpoint_id" type="string">
+</ParamField>
+
+<ParamField path="database_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pooled" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_PROJECT_WITH_QUOTA_AND_SETTINGS">
+Creates a new neon project with specified configuration settings. this endpoint allows you to set up a customized postgresql environment with various options for resource management, networking, and performance optimization. it's ideal for initializing a new database project with tailored settings for quota management, ip access control, autoscaling, and more. use this when you need to establish a new neon project with specific requirements or when you want to take advantage of neon's advanced features like logical replication or custom maintenance windows. note that some settings, once configured, may not be easily changed later, so careful consideration of your project needs is recommended before creation.
+
+**Action Parameters**
+
+<ParamField path="project__settings__quota__active__time__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__compute__time__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__written__data__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__data__transfer__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__logical__size__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__allowed__ips__ips" type="array">
+</ParamField>
+
+<ParamField path="project__settings__allowed__ips__protected__branches__only" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__enable__logical__replication" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__weekdays" type="array">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__start__time" type="string">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__end__time" type="string">
+</ParamField>
+
+<ParamField path="project__settings__block__public__connections" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__block__vpc__connections" type="boolean">
+</ParamField>
+
+<ParamField path="project__name" type="string">
+</ParamField>
+
+<ParamField path="project__branch__name" type="string">
+</ParamField>
+
+<ParamField path="project__branch__role__name" type="string">
+</ParamField>
+
+<ParamField path="project__branch__database__name" type="string">
+</ParamField>
+
+<ParamField path="project__autoscaling__limit__min__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__autoscaling__limit__max__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__provisioner" type="string">
+</ParamField>
+
+<ParamField path="project__region__id" type="string">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__pg__settings" type="object">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__pgbouncer__settings" type="object">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__autoscaling__limit__min__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__autoscaling__limit__max__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__suspend__timeout__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__pg__version" type="integer" default="16">
+</ParamField>
+
+<ParamField path="project__store__passwords" type="boolean">
+</ParamField>
+
+<ParamField path="project__history__retention__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__org__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_LIST_API_KEYS">
+Retrieves a list of api keys associated with the authenticated user's neon account. this endpoint allows developers to view and manage their existing api keys, which are crucial for authentication when making requests to the neon api. it provides an overview of all active api keys, including their identifiers and potentially other metadata such as creation date or last used date. this tool should be used when you need to audit your api keys, check for any unauthorized keys, or before creating a new key to ensure you're not exceeding any limits. it does not provide the actual secret key values for security reasons, nor does it allow for the creation or deletion of keys.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_ENDPOINT">
+Deletes a specific endpoint within a neon project. this operation permanently removes the endpoint and all associated resources, such as configurations and access points. use this endpoint when you need to decommission or clean up unused endpoints in your project. it's important to note that this action is irreversible, so ensure you have backed up any necessary data or configurations before proceeding. this endpoint should be used with caution, as it will immediately terminate access to the specified endpoint and may impact any systems or applications relying on it.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_ORGANIZATION_BY_ID">
+Retrieves detailed information about a specific organization within the neon platform. this endpoint allows you to access comprehensive data about an organization, including its configuration, members, and associated projects. use this when you need to view or verify an organization's current state, such as checking membership, reviewing settings, or auditing organization-level information. the endpoint returns a snapshot of the organization at the time of the request and does not provide historical data or future projections. it's particularly useful for administrative tasks, reporting, and maintaining organizational oversight within the neon ecosystem.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RESET_ROLE_PASSWORD_FOR_BRANCH">
+Resets the password for a specific role within a project branch in the neon b2b saas integration platform. this endpoint is used to manage user access and security by allowing administrators to force a password reset for a particular role. it should be used when there's a need to update or secure access for a specific role, such as when an employee leaves the organization or as part of regular security practices. the operation is performed on a specific project and branch, ensuring that the correct environment is targeted. note that this action will invalidate the current password, and a new password will need to be set or communicated to the role user.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_API_KEY_FOR_ORGANIZATION">
+Creates a new api key for the specified organization, with optional project-specific access limitations. this endpoint is used to generate and manage api keys, which are essential for authenticating and authorizing access to neon's b2b saas integration platform. the created api key can be used to interact with various services and endpoints within the organization's scope. if a project id is provided, the api key's access will be restricted to that specific project, enabling fine-grained access control. this is particularly useful in multi-project environments where different teams or integrations require isolated access. the endpoint requires a key name to be specified, allowing for easy identification and management of multiple api keys within the organization. it's important to note that the actual api key value will be returned in the response, and should be securely stored as it cannot be retrieved later.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_PROJECT_BRANCH_ROLE">
+Retrieves detailed information about a specific role within a particular branch of a neon project. this endpoint is used to fetch the current configuration, permissions, and other relevant details associated with the specified role. it's particularly useful for auditing access controls, verifying role settings, or gathering information before making modifications to role permissions. the endpoint requires precise identification of the project, branch, and role, ensuring that the correct role information is retrieved from the appropriate context within the neon platform's hierarchical structure.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_CURRENT_USER_INFORMATION">
+Retrieves the profile information for the currently authenticated user. this endpoint should be used when you need to access details about the user making the api request, such as their username, email, or other account-related information. it's particularly useful for personalizing user experiences or retrieving user-specific settings within the neon platform. the endpoint doesn't accept any parameters, as it relies solely on the authentication token to identify the user. note that this endpoint will only return information for the authenticated user and cannot be used to retrieve profiles of other users.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_BY_ID">
+Deletes a specific project from the neon b2b saas integration platform. this endpoint permanently removes all data, configurations, and resources associated with the specified project. it should be used with caution, as the deletion process is irreversible. this operation is typically performed when a project is no longer needed or to clean up unused resources. the endpoint requires the project's unique identifier and likely needs proper authentication to ensure only authorized users can delete projects. after successful deletion, the project and its data will no longer be accessible through any other api endpoints.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_VPC_ENDPOINT_WITH_LABEL">
+Updates the label of a specific vpc endpoint within an organization's virtual private cloud (vpc) in a particular aws region. this endpoint allows you to change the descriptive name or identifier associated with a vpc endpoint, which can be useful for better organization and management of your vpc resources. the new label helps in identifying and categorizing the vpc endpoint within your infrastructure. this endpoint should be used when you need to modify the existing label of a vpc endpoint, perhaps due to changes in its purpose or to align with updated naming conventions in your organization. it's important to note that this operation only updates the label and does not affect the functionality or configuration of the vpc endpoint itself.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="region_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vpc_endpoint_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="label" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_VPC_ENDPOINTS_FOR_PROJECT">
+Retrieves a list of vpc (virtual private cloud) endpoints associated with a specific project in the neon b2b saas integration platform. this endpoint allows developers to fetch information about private network connections that enable secure communication between the project's resources and various aws services without traversing the public internet. use this endpoint when you need to audit, manage, or view the current vpc endpoint configurations for a given project. it's particularly useful for ensuring proper network isolation and security in complex integration scenarios. the endpoint does not create or modify vpc endpoints; it only provides read access to existing configurations.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_UPDATE_PROJECT_SETTINGS_BY_ID">
+Updates the configuration and settings of a specific neon project. this endpoint allows fine-grained control over various aspects of a project, including resource quotas, security settings, maintenance windows, and default endpoint configurations. it's particularly useful for adjusting project parameters to optimize performance, enhance security, or comply with specific operational requirements. the endpoint should be used when changes to project-wide settings are necessary, such as modifying resource limits, adjusting ip access controls, or reconfiguring maintenance schedules. note that some changes, like enabling logical replication, may have significant impacts on project operations and cannot be reversed. care should be taken when modifying critical settings to avoid unintended consequences on project functionality or availability.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project__settings__quota__active__time__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__compute__time__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__written__data__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__data__transfer__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__quota__logical__size__bytes" type="integer">
+</ParamField>
+
+<ParamField path="project__settings__allowed__ips__ips" type="array">
+</ParamField>
+
+<ParamField path="project__settings__allowed__ips__protected__branches__only" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__enable__logical__replication" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__weekdays" type="array">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__start__time" type="string">
+</ParamField>
+
+<ParamField path="project__settings__maintenance__window__end__time" type="string">
+</ParamField>
+
+<ParamField path="project__settings__block__public__connections" type="boolean">
+</ParamField>
+
+<ParamField path="project__settings__block__vpc__connections" type="boolean">
+</ParamField>
+
+<ParamField path="project__name" type="string">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__pg__settings" type="object">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__pgbouncer__settings" type="object">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__autoscaling__limit__min__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__autoscaling__limit__max__cu" type="integer">
+</ParamField>
+
+<ParamField path="project__default__endpoint__settings__suspend__timeout__seconds" type="integer">
+</ParamField>
+
+<ParamField path="project__history__retention__seconds" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_VPC_ENDPOINT_BY_IDS">
+Deletes a specific vpc endpoint within a given organization and region in the neon b2b saas integration platform. this endpoint should be used when you need to remove a vpc endpoint that is no longer required, perhaps due to changes in network configuration or service usage. the operation is irreversible, so caution should be exercised when invoking this endpoint. it's important to note that deleting a vpc endpoint may impact the connectivity between your vpc and the associated aws service, potentially disrupting ongoing operations that rely on this endpoint.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="region_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vpc_endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_TRANSFER_USER_PROJECTS_TO_ORGANIZATION">
+Transfers multiple projects from the authenticated user's personal account to a specified organization within the neon b2b saas integration platform. this endpoint allows for bulk transfer of projects, enabling efficient management of project ownership and organization. it should be used when reorganizing project structures or when moving projects from individual ownership to team or company-wide access. the endpoint is limited to transferring a maximum of 400 projects in a single request, which helps maintain system performance and prevents abuse. it's important to note that this operation is likely irreversible, so users should exercise caution and confirm the transfer details before execution.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_FETCH_ORGANIZATION_MEMBERS_BY_ID">
+Retrieves a list of all members associated with a specific organization in the neon b2b saas integration platform. this endpoint allows you to fetch detailed information about the users or entities that belong to the organization, which is crucial for managing access, roles, and permissions within the platform. use this endpoint when you need to review the current membership of an organization, audit user access, or gather member information for reporting purposes. the endpoint returns comprehensive member details, but it does not modify any data or provide information about non-member users. keep in mind that for large organizations, the response may be paginated to manage the data volume efficiently.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_ORGANIZATION_API_KEYS">
+Retrieves a list of all api keys associated with a specific organization in the neon b2b saas integration platform. this endpoint is crucial for administrators to manage and monitor api access within their organization. it provides a comprehensive view of all active api keys, enabling effective access control and security auditing. use this endpoint when you need to review, track, or manage the api keys in use by your organization, such as during security reviews or when updating access permissions.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_NEW_API_KEY">
+Creates a new api key for accessing the neon b2b saas integration platform. this endpoint should be used when setting up new integrations, creating separate keys for different environments (e.g., production, testing), or rotating existing keys for security purposes. the created api key will be used for authenticating and authorizing requests to other neon api endpoints. note that this endpoint only creates the key; it does not manage permissions or access levels, which must be configured separately. after creation, ensure the key is securely stored, as it may not be retrievable in plain text again.
+
+**Action Parameters**
+
+<ParamField path="key_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_BRANCHES_FOR_PROJECT">
+Retrieves a list of branches associated with a specific project in the neon b2b saas integration platform. this endpoint should be used when you need to get an overview of all branches within a particular project, which is useful for version management and workflow control. it provides information about different versions or development stages of the project, allowing for efficient project management and collaboration. the endpoint is particularly helpful when planning merges, reviewing project history, or deciding on which branch to base new development work.
+
+**Action Parameters**
+
+<ParamField path="search" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_VPC_REGION_ENDPOINTS">
+Retrieves a list of vpc endpoints for a specified organization within a particular aws region. this endpoint allows developers to obtain information about the virtual network interfaces that enable private communication between a vpc and supported aws services. it should be used when you need to audit, manage, or gather information about the existing vpc endpoints in a specific organizational context and geographic location. the endpoint provides a comprehensive view of how the organization's vpc is connected to various aws services, which is crucial for network architecture planning and security audits. note that this endpoint only lists the vpc endpoints; it does not provide detailed configuration information or allow for modifications to the endpoints.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="region_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_ORGANIZATION_API_KEY">
+Deletes a specific api key associated with an organization in the neon platform. this endpoint is used to revoke access for a particular api key, enhancing security by removing unused or compromised keys. it should be used when an api key is no longer needed, when rotating keys for security purposes, or when an api key may have been exposed. once deleted, the api key cannot be recovered, and any systems using this key will lose access to the neon api. ensure you have a backup or replacement key in place before deletion to avoid service interruptions.
+
+**Action Parameters**
+
+<ParamField path="key_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_PROJECT_BRANCHES">
+Retrieves detailed information about a specific branch within a neon project. this endpoint allows developers to fetch the current state and configuration of a branch, including its name, creation timestamp, and other relevant metadata. it's particularly useful when you need to verify branch details, check its status, or gather information for further operations on the branch. the endpoint should be used when you require up-to-date information about a single branch in your project's context. note that this endpoint only provides read access and does not modify any branch data.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_FETCH_DATABASE_FOR_BRANCH">
+Retrieves a list of databases associated with a specific project and branch in the neon platform. this endpoint allows developers to view all databases within a particular project and branch context, which is useful for managing different environments (e.g., development, staging, production) or versions of an application's database setup. it should be used when you need to inventory the databases in a specific branch or verify the existence of databases in a particular project environment. the endpoint does not provide detailed information about each database's schema or contents; it's primarily for listing purposes.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_ORGANIZATION_MEMBER">
+Removes a specific member from an organization within the neon b2b saas integration platform. this endpoint should be used when an organization administrator needs to revoke a user's membership, such as when an employee leaves the company or their role changes. the operation is permanent and will immediately remove the member's access to the organization's resources within neon. it's important to note that this action cannot be undone through the api, and re-adding a removed member would require a new invitation process. use this endpoint with caution, as it directly affects user access and organization structure.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="member_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_NEW_PROJECT_BRANCH">
+Creates a new branch in a neon project with optional compute endpoints. this endpoint allows you to specify the parent branch, branch name, and various configuration options for both the branch and its compute endpoints. it can be used to create development environments, test new features, or set up isolated database instances. the endpoint supports advanced features like autoscaling, custom provisioners, and suspend timeout configuration for optimizing resource usage and performance.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_REVEAL_ROLE_PASSWORD_IN_BRANCH">
+Reveals the password for a specific role within a branch of a neon project. this endpoint is used when you need to retrieve a previously hidden or encrypted password for a database role. it's particularly useful for administrators who need to access or share role credentials securely. the endpoint should be used cautiously, as it exposes sensitive information. it does not modify the password, only retrieves it. note that frequent use of this endpoint may be logged or restricted for security purposes.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_PROJECT_OPERATION_BY_ID">
+Retrieves detailed information about a specific operation within a project in the neon b2b saas integration platform. this endpoint is used when you need to fetch the current status, details, or results of a particular operation that has been initiated or is ongoing within a project. it's particularly useful for monitoring the progress of long-running tasks, checking the outcome of automated workflows, or auditing past activities. the endpoint requires both a project id and an operation id to uniquely identify the operation you're querying. it should be used when you have these identifiers and need up-to-date information about the operation. note that this endpoint only provides information about the operation itself and does not modify or execute any actions.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="operation_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_FETCH_VPCENDPOINT_DETAILS_BY_ID">
+Retrieves detailed information about a specific vpc endpoint within an organization's infrastructure in a particular aws region. this endpoint allows developers to access configuration details, status, and other relevant information about the vpc endpoint, which is crucial for managing private connectivity between vpcs and supported aws services. use this endpoint when you need to inspect or verify the settings of a vpc endpoint, troubleshoot connectivity issues, or gather information for compliance and auditing purposes. the endpoint provides a comprehensive view of the vpc endpoint's current state but does not allow modifications to the endpoint configuration.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="region_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vpc_endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_PROJECT_BRANCH_ROLE">
+Deletes a specific role from a branch within a project in the neon b2b saas integration platform. this endpoint is used to remove access permissions associated with a particular role in a specific project branch. it's particularly useful when restructuring access control or removing obsolete roles from a project's branch. the operation is permanent and cannot be undone, so it should be used with caution. this endpoint does not return any data upon successful deletion, typically responding with a 204 no content status.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_COMPUTE_ENDPOINT">
+Creates a new compute endpoint for a specified branch within a neon project. this endpoint allows for detailed configuration of database resources, including read/write capabilities, regional placement, autoscaling limits, and connection pooling settings. it's primarily used when setting up new database instances or modifying existing database configurations to meet specific performance, scaling, or operational requirements. the endpoint provides fine-grained control over compute resources, enabling optimized database operations for various use cases from development to production environments.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint__branch__id" type="string">
+</ParamField>
+
+<ParamField path="endpoint__region__id" type="string">
+</ParamField>
+
+<ParamField path="endpoint__type" type="string">
+</ParamField>
+
+<ParamField path="endpoint__settings__pg__settings" type="object">
+</ParamField>
+
+<ParamField path="endpoint__settings__pgbouncer__settings" type="object">
+</ParamField>
+
+<ParamField path="endpoint__autoscaling__limit__min__cu" type="integer">
+</ParamField>
+
+<ParamField path="endpoint__autoscaling__limit__max__cu" type="integer">
+</ParamField>
+
+<ParamField path="endpoint__provisioner" type="string">
+</ParamField>
+
+<ParamField path="endpoint__pooler__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__pooler__mode" type="string">
+</ParamField>
+
+<ParamField path="endpoint__disabled" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__passwordless__access" type="boolean">
+</ParamField>
+
+<ParamField path="endpoint__suspend__timeout__seconds" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_BRANCH_ENDPOINTS">
+Retrieves a list of endpoints associated with a specific branch of a project in the neon platform. this endpoint is used to fetch detailed information about the available integration points or api endpoints within a particular branch of a project. it's particularly useful for developers who need to understand the structure and capabilities of a branch in terms of its exposed endpoints. the returned data likely includes information such as endpoint urls, supported methods, and potentially brief descriptions or metadata about each endpoint. this tool should be used when you need to explore or audit the available endpoints for a given branch, which is crucial for managing integrations and workflows in the neon b2b saas integration platform.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_CONSUMPTION_HISTORY_PROJECTS">
+Retrieves the consumption history for specified projects within the neon platform. this endpoint allows users to fetch detailed metrics about resource usage over time, enabling effective monitoring and analysis of project-level consumption. it's particularly useful for tracking costs, identifying usage patterns, and optimizing resource allocation across different projects. the endpoint supports querying data for specific time periods and can provide aggregated data at various granularities (e.g., hourly, daily, monthly). while it offers comprehensive consumption data, it does not provide real-time usage information or predictive analytics.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="10">
+</ParamField>
+
+<ParamField path="project_ids" type="array">
+</ParamField>
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="granularity" type="string" required={true}>
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="include_v1_metrics" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_SET_BRANCH_AS_DEFAULT">
+Sets a specified branch as the default branch for a given project in neon. this endpoint allows users to designate a particular branch as the primary or main branch for a project, which can be useful for organizing workflows and setting default behaviors. the operation is performed using a post request, indicating that it modifies the state of the project. use this endpoint when you need to change the default branch of a project, such as after creating a new branch or deciding to switch the main development focus. it's important to note that this action may affect how other operations interact with the project, as many systems use the default branch as a reference point for various functionalities.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_RETRIEVE_ACCOUNT_CONSUMPTION_HISTORY">
+Retrieves the consumption history for a specified account within the neon platform. this endpoint provides detailed information about resource usage and associated costs over a given time period. it's particularly useful for analyzing usage patterns, forecasting future resource needs, and managing costs in the neon b2b saas integration platform. the endpoint returns data such as compute time, storage usage, api calls, and any other billable resources specific to the neon service. users can specify a date range and optionally filter by resource types to get a granular view of their consumption. this tool should be used when detailed analytics on resource utilization and spending are required, such as for budget planning, usage optimization, or billing reconciliation. it does not provide real-time usage data and may have a slight delay in reflecting the most recent consumption.
+
+**Action Parameters**
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="granularity" type="string" required={true}>
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="include_v1_metrics" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_USER_ORGANIZATIONS">
+Retrieves a list of organizations associated with the currently authenticated user in the neon platform. this endpoint allows users to view all the organizations they are a member of, providing essential information for managing multi-organization access and permissions. it should be used when a user needs to identify their organizational affiliations or when an application needs to determine a user's organization memberships for access control or data segregation purposes. the endpoint does not modify any data and is safe for frequent calls. note that it only returns organizations the user is actively a member of and won't include pending invitations or previously left organizations.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_PROJECT_ENDPOINT_INFORMATION">
+Retrieves a list of all endpoints associated with a specific project in the neon b2b saas integration platform. this endpoint should be used when you need to obtain information about the available integration points or data connections within a particular project. it provides an overview of the project's configured endpoints, which can be useful for monitoring, auditing, or managing the project's integration setup. the response likely includes details such as endpoint names, types, and statuses, though the exact structure is not specified in the given schema. this endpoint is essential for developers and administrators working with multiple integrations within a single project in the neon platform.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_ACCESS_PROJECT_DETAILS_BY_ID">
+Retrieves detailed information about a specific project within the neon b2b saas integration platform. this endpoint is used to fetch comprehensive data about a project, including its configuration, associated workflows, and current status. it's particularly useful when you need to review or analyze the settings and progress of an integration project. the endpoint should be used when detailed project information is required, such as during troubleshooting, reporting, or when preparing to make updates to a project. it does not modify any project data and is safe for frequent calls. however, it may not provide real-time updates for ongoing integration processes; for that, a separate status or logs endpoint might be more appropriate.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_ADD_PROJECT_EMAIL_PERMISSION">
+Adds permissions for a specified email address to a particular project within the neon b2b saas integration platform. this endpoint is used to grant access or specific rights to users for a given project, enabling collaboration and controlled resource sharing. it should be called when you need to add a new user to a project or modify existing user permissions. the endpoint associates the provided email with the specified project, likely setting up default or predefined permission levels. note that this endpoint only adds permissions and does not provide information about existing permissions or remove them.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_CREATE_VPC_ENDPOINT_LABEL">
+Updates the label of a specific vpc endpoint within a project in the neon b2b saas integration platform. this endpoint allows users to modify the identifier of an existing vpc endpoint, enhancing organization and management of network resources. it should be used when there's a need to rename or re-categorize a vpc endpoint for better clarity or changed purposes. the operation is idempotent, meaning repeated calls with the same label will not create additional changes. note that this endpoint only updates the label and does not modify any other properties or configurations of the vpc endpoint.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vpc_endpoint_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="label" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_BRANCH_ROLES_FOR_PROJECT">
+Retrieves the roles associated with a specific branch within a project in the neon b2b saas integration platform. this endpoint is used to fetch the current role assignments for a given project and branch combination, which is essential for managing access control and permissions within the neon ecosystem. it should be used when you need to review or audit the roles assigned to a particular branch, such as before making changes to permissions or when verifying the current access structure. the endpoint does not modify any roles; it only provides a read-only view of the existing role assignments. keep in mind that the response will only include roles for the specified branch and does not provide information about roles in other branches or at the project level.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_DELETE_VPC_ENDPOINT_BY_PROJECT_ID">
+Deletes a specific vpc endpoint within a designated project in the neon platform. this endpoint should be used when you need to remove a vpc endpoint that is no longer required or has become obsolete. the operation is irreversible, so it should be used with caution. once a vpc endpoint is deleted, any connections or integrations relying on it will be disrupted. this endpoint is particularly useful for cleaning up resources and managing network configurations in your neon projects.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vpc_endpoint_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="NEON_GET_SCHEMA_FOR_PROJECT_BRANCH">
+Retrieves the schema definition for a specific branch within a project in the neon b2b saas integration platform. this endpoint is crucial for developers and integrators who need to understand the data structure of a particular branch, enabling proper data mapping and ensuring consistency across integrations. it should be used when setting up new integrations, updating existing ones, or troubleshooting data-related issues within a project branch. the endpoint provides a detailed view of the data fields, types, and relationships, but does not modify the schema itself.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="db_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lsn" type="string">
+</ParamField>
+
+<ParamField path="timestamp" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,2992 @@
+---
+title: "Coda"
+subtitle: "Learn how to use Coda with Composio"
+---
+
+
+## Overview
+
+### Enum
+`CODA`
+
+### Description
+Collaborative workspace platform that transforms documents into powerful tools for team productivity and project management
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="CODA_DELETE_ROW">
+Deletes the specified row from the table or view. this endpoint will always return a 202, so long as the row exists and is accessible (and the update is structurally valid). row deletions are generally processed within several seconds. when deleting using a name as opposed to an id, an arbitrary row will be removed.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rowIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_PAGE">
+Returns details about a page.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PACKS">
+Get the list of accessible packs.
+
+**Action Parameters**
+
+<ParamField path="accessType" type="string">
+</ParamField>
+
+<ParamField path="accessTypes" type="array">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="onlyWorkspaceId" type="string">
+</ParamField>
+
+<ParamField path="parentWorkspaceIds" type="array">
+</ParamField>
+
+<ParamField path="excludePublicPacks" type="boolean">
+</ParamField>
+
+<ParamField path="excludeIndividualAcls" type="boolean">
+</ParamField>
+
+<ParamField path="excludeWorkspaceAcls" type="boolean">
+</ParamField>
+
+<ParamField path="includeBrainOnlyPacks" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_MUTATION_STATUS">
+Get the status for an asynchronous mutation to know whether or not it has been completed. each api endpoint that mutates a document will return a request id that you can pass to this endpoint to check the completion status. status information is not guaranteed to be available for more than one day after the mutation was completed. it is intended to be used shortly after the request was made.
+
+**Action Parameters**
+
+<ParamField path="requestId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PERMISSIONS_FOR_A_PACK">
+Get user, workspace, and/or global permissions for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_THE_PACK_LISTINGS_ACCESSIBLE_TO_A_USER">
+Get listings of public packs and packs created by you.
+
+**Action Parameters**
+
+<ParamField path="packAccessTypes" type="array">
+</ParamField>
+
+<ParamField path="packIds" type="array">
+</ParamField>
+
+<ParamField path="onlyWorkspaceId" type="string">
+</ParamField>
+
+<ParamField path="parentWorkspaceIds" type="array">
+</ParamField>
+
+<ParamField path="excludePublicPacks" type="boolean">
+</ParamField>
+
+<ParamField path="excludeWorkspaceAcls" type="boolean">
+</ParamField>
+
+<ParamField path="excludeIndividualAcls" type="boolean">
+</ParamField>
+
+<ParamField path="includeBrainOnlyPacks" type="boolean">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+<ParamField path="orderBy" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="5">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="installContext" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_SET_THE_OAUTH_CONFIGURATIONS_OF_THE_PACK">
+Set the oauth configurations of the pack, including client id and secret.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="clientId" type="string">
+</ParamField>
+
+<ParamField path="clientSecret" type="string">
+</ParamField>
+
+<ParamField path="redirectUri" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PATCH_THE_SYSTEM_CONNECTION_CREDENTIALS_OF_THE_PACK">
+Patch the system connection credentials of the pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_CUSTOM_DOC_DOMAINS">
+List all custom domains for a published doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PACK_ASSET_UPLOAD_COMPLETE">
+Note the completion of the upload of a pack asset.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packAssetId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="packAssetType" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_FORMULAS">
+Returns a list of named formulas in a coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_AVAILABLE_DOCS">
+Returns a list of coda docs accessible by the user, and which they have opened at least once. these are returned in the same order as on the docs page: reverse chronological by the latest event relevant to the user (last viewed, edited, or shared).
+
+**Action Parameters**
+
+<ParamField path="isOwner" type="boolean">
+</ParamField>
+
+<ParamField path="isPublished" type="boolean">
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="sourceDoc" type="string">
+</ParamField>
+
+<ParamField path="isStarred" type="boolean">
+</ParamField>
+
+<ParamField path="inGallery" type="boolean">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="folderId" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_THE_VERSIONS_FOR_A_PACK">
+Get the list of versions of a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_ADD_A_MAKER_FOR_PACK">
+Set a maker for a given pack. used to display makers for a pack in the corresponding packs page.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="loginId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_CREATE_DOC">
+Creates a new coda doc, optionally copying an existing doc. note that creating a doc requires you to be a doc maker in the applicable workspace (or be auto-promoted to one).
+
+**Action Parameters**
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="sourceDoc" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="folderId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_SYSTEM_CONNECTION_METADATA_OF_THE_PACK">
+Retrieve the system connection metadata of the pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PACK_ANALYTICS">
+Returns analytics data for packs the user can edit.
+
+**Action Parameters**
+
+<ParamField path="packIds" type="array">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+<ParamField path="scale" type="string">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="orderBy" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="isPublished" type="boolean">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_A_CATEGORY_FOR_PACK">
+Delete a publishing category for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="categoryName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_CONTENT_EXPORT_STATUS">
+Check the status of a page content export
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="requestId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_A_PERMISSION_FOR_PACK">
+Delete user, workspace, or global permissions for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="permissionId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_LOGS_OF_A_INGESTION">
+Retrieve the logs of a ingestion for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="organizationId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rootIngestionId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="logTypes" type="array">
+</ParamField>
+
+<ParamField path="ingestionExecutionId" type="string">
+</ParamField>
+
+<ParamField path="beforeTimestamp" type="string">
+</ParamField>
+
+<ParamField path="afterTimestamp" type="string">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+<ParamField path="q" type="string">
+</ParamField>
+
+<ParamField path="requestIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_ADD_CUSTOM_DOMAIN">
+Add a custom domain to a published doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="customDocDomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_FETCH_GROUPED_LOGS_BY_PACK_ORG_ROOT_INGESTION_ID">
+Retrieve the grouped logs of a pack for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="organizationId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rootIngestionId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ingestionExecutionId" type="string">
+</ParamField>
+
+<ParamField path="beforeTimestamp" type="string">
+</ParamField>
+
+<ParamField path="afterTimestamp" type="string">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+<ParamField path="q" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETES_A_CUSTOM_DOMAIN">
+Deletes a custom domain from a published doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="customDocDomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RESOLVE_BROWSER_LINK">
+Given a browser link to a coda object, attempts to find it and return metadata that can be used to get more info on it. returns a 400 if the url does not appear to be a coda url or a 404 if the resource cannot be located with the current credentials.
+
+**Action Parameters**
+
+<ParamField path="url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="degradeGracefully" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_PACK">
+Update an existing pack for non-versioned fields.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="overallRateLimit__intervalSeconds" type="integer">
+</ParamField>
+
+<ParamField path="overallRateLimit__operationsPerInterval" type="integer">
+</ParamField>
+
+<ParamField path="perConnectionRateLimit__intervalSeconds" type="integer">
+</ParamField>
+
+<ParamField path="perConnectionRateLimit__operationsPerInterval" type="integer">
+</ParamField>
+
+<ParamField path="logoAssetId" type="string">
+</ParamField>
+
+<ParamField path="coverAssetId" type="string">
+</ParamField>
+
+<ParamField path="exampleImages" type="array">
+</ParamField>
+
+<ParamField path="sourceCodeVisibility" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="shortDescription" type="string">
+</ParamField>
+
+<ParamField path="supportEmail" type="string">
+</ParamField>
+
+<ParamField path="termsOfServiceUrl" type="string">
+</ParamField>
+
+<ParamField path="privacyPolicyUrl" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_CONTROLS">
+Returns a list of controls in a coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATES_A_CUSTOM_DOMAIN">
+Updates properties of a document's custom domain.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="customDocDomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_A_PAGE">
+Deletes the specified page.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_CREATE_A_PAGE">
+Create a new page in a doc. note that creating a page requires you to be a doc maker in the applicable workspace.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+</ParamField>
+
+<ParamField path="iconName" type="string">
+</ParamField>
+
+<ParamField path="imageUrl" type="string">
+</ParamField>
+
+<ParamField path="parentPageId" type="string">
+</ParamField>
+
+<ParamField path="pageContent" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_SEARCH_PRINCIPALS">
+Searches for user and group principals matching the query that this doc can be shared with. at most 20 results will be returned for both users and groups. if no query is given then no results are returned.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_SET_THE_SYSTEM_CONNECTION_CREDENTIALS_OF_THE_PACK">
+Set the system connection credentials of the pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="credentials" type="object" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PACK_FORMULA_ANALYTICS">
+Returns analytics data for pack formulas.
+
+**Action Parameters**
+
+<ParamField path="packFormulaNames" type="array">
+</ParamField>
+
+<ParamField path="packFormulaTypes" type="array">
+</ParamField>
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+<ParamField path="scale" type="string">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="orderBy" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_OAUTH_CONFIGURATION_OF_THE_PACK">
+Retrieve the oauth configuration of the pack for display purpose. secrets will be returned with masks.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_WORKSPACE_USERS">
+Returns a list of members in the given workspace. this list will be ordered with the requesting user first and then ordered by role.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="includedRoles" type="array">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_A_MAKER_FOR_PACK">
+Delete a maker for a given pack, who will not be displayed in the corresponding packs page.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="loginId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_THE_DIFFERENCE_BETWEEN_TWO_PACK_VERSIONS">
+Gets information about the difference between the specified previous version and next version of a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="basePackVersion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="targetPackVersion" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_COLUMNS">
+Returns a list of columns in a table.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="visibleOnly" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_ANALYTICS_LAST_UPDATED_DAY">
+Returns days based on pacific standard time when analytics were last updated.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_SINGLE_PACK">
+Returns a single pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_THE_SOURCE_CODE_FOR_A_PACK_VERSION">
+Get temporary links used to download the source code for the given packid and version
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_A_PAGE">
+Update properties for a page. note that updating a page title or icon requires you to be a doc maker in the applicable workspace.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+</ParamField>
+
+<ParamField path="iconName" type="string">
+</ParamField>
+
+<ParamField path="imageUrl" type="string">
+</ParamField>
+
+<ParamField path="isHidden" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_PACK_ANALYTICS_SUMMARY">
+Returns summarized analytics data for packs the user can edit.
+
+**Action Parameters**
+
+<ParamField path="packIds" type="array">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="isPublished" type="boolean">
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_CATEGORIES_FOR_PACK">
+List publishing categories for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_USER_INFO">
+Returns basic info about the current user.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_ADD_A_PERMISSION_FOR_PACK">
+Create or modify user, workspace, or global permissions for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="principal" type="object" required={true}>
+</ParamField>
+
+<ParamField path="access" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_THE_NEXT_VALID_VERSION_FOR_A_PACK">
+Get the next valid version based on the proposed metadata.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="proposedMetadata" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sdkVersion" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_THE_RELEASES_FOR_A_PACK">
+Get the list of releases of a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_DOC">
+Updates metadata for a doc. note that updating a doc title requires you to be a doc maker in the applicable workspace.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="iconName" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_GROUPED_LOGS_OF_A_PACK">
+Retrieve the grouped logs of a pack for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="beforeTimestamp" type="string">
+</ParamField>
+
+<ParamField path="afterTimestamp" type="string">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+<ParamField path="q" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_REGISTER_PACK_VERSION">
+Registers a new pack version. this simply returns a signed url to use for uploading the pack version definition. following the completion of the upload, post to /apis/v1/packs/`{packid}`/versions/`{packversion}` trigger the rest of the creation process.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="bundleHash" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GETS_THE_JSON_SCHEMA_FOR_PACK_CONFIGURATION">
+Returns a json schema applicable for customizing the pack using pack configurations.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_FEATURED_DOCS_FOR_A_PACK">
+Returns a list of featured doc ids for a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_FEATURED_DOCS_FOR_A_PACK">
+Create or replace the featured docs for a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PUSH_A_BUTTON">
+Pushes a button on a row in a table. authorization note: this action is available to api tokens that are authorized to write to the table. however, the underlying button can perform any action on the document, including writing to other tables and performing pack actions.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rowIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="columnIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PACK_SOURCE_CODE_UPLOAD_COMPLETE">
+Note the completion of the upload of a pack source code.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="filename" type="string" required={true}>
+</ParamField>
+
+<ParamField path="codeHash" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_LOGS_OF_A_PACK">
+Retrieve the logs of a pack for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="logTypes" type="array">
+</ParamField>
+
+<ParamField path="beforeTimestamp" type="string">
+</ParamField>
+
+<ParamField path="afterTimestamp" type="string">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+<ParamField path="q" type="string">
+</ParamField>
+
+<ParamField path="requestIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_DOC">
+Deletes a doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PERMISSIONS">
+Returns a list of permissions for this coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_FORMULA">
+Returns info on a formula.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="formulaIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_TABLE_ROWS">
+Retrieves rows from a specific table within a coda document. this endpoint allows you to fetch data from your coda tables programmatically, enabling integration with other systems or data analysis tools. use this when you need to access the content of a table in your coda document, such as for reporting, data synchronization, or building custom views of your data outside of coda. the endpoint supports pagination for large tables and allows you to control the number of rows returned per request. it's important to note that this endpoint only retrieves data and doesn't modify the table contents.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+<ParamField path="useColumnNames" type="boolean">
+</ParamField>
+
+<ParamField path="valueFormat" type="string">
+</ParamField>
+
+<ParamField path="visibleOnly" type="boolean">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="syncToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_WORKSPACE_ROLES">
+Returns a list of the counts of users over time by role for the workspace.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPLOAD_A_PACK_ASSET">
+Request a signed s3 url to upload your pack asset.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packAssetType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="imageHash" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mimeType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="filename" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_COLUMN">
+Returns details about a column in a table.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="columnIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_ACL_SETTINGS">
+Returns settings associated with acls for this coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_PERMISSION">
+Deletes an existing permission.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="permissionId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UNPUBLISH_DOC">
+Unpublishes a doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_ACL_SETTINGS">
+Update settings associated with acls for this coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="allowEditorsToChangePermissions" type="boolean">
+</ParamField>
+
+<ParamField path="allowCopying" type="boolean">
+</ParamField>
+
+<ParamField path="allowViewersToRequestEditing" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PAGE_ANALYTICS">
+Returns analytics data for a given doc within the day. this method will return a 401 if the given doc is not in an enterprise workspace.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_TABLES">
+Returns a list of tables in a coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+<ParamField path="tableTypes" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GETS_CUSTOM_DOC_DOMAINS_PROVIDERS">
+Gets the provider (ie. godaddy) of a custom domain.
+
+**Action Parameters**
+
+<ParamField path="customDocDomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_ROW">
+Returns details about a row in a table.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rowIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="useColumnNames" type="boolean">
+</ParamField>
+
+<ParamField path="valueFormat" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_CREATE_PACK">
+Creates a new pack, essentially registering a new pack id. the contents of the pack will be uploaded separately.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="sourcePackId" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_TRIGGER_AUTOMATION">
+Triggers webhook-invoked automation
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ruleId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_FETCH_INGESTION_EXECUTIONS_FOR_PACK">
+Retrieve the ingestion execution ids of a root ingestion for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="organizationId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rootIngestionId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="beforeTimestamp" type="string">
+</ParamField>
+
+<ParamField path="afterTimestamp" type="string">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+<ParamField path="ingestionStatus" type="string">
+</ParamField>
+
+<ParamField path="datasource" type="string">
+</ParamField>
+
+<ParamField path="executionType" type="string">
+</ParamField>
+
+<ParamField path="includeDeletedIngestions" type="boolean">
+</ParamField>
+
+<ParamField path="csbIngestionId" type="string">
+</ParamField>
+
+<ParamField path="csbIngestionExecutionId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATE_AN_EXISTING_PACK_RELEASE">
+Update details of a pack release.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packReleaseId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="releaseNotes" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_ADD_A_CATEGORY_FOR_PACK">
+Add a publishing category for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="categoryName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_MAKERS_FOR_PACK">
+List makers for a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_RETRIEVE_THE_INFORMATION_FOR_A_SPECIFIC_LOG">
+Retrieve the ingestion execution ids of a root ingestion for debugging purpose.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="organizationId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rootIngestionId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="logId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="detailsKey" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_INFO_ABOUT_A_DOC">
+Returns metadata for the specified doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_DOC_CATEGORIES">
+Gets all available doc categories.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_DOC_ANALYTICS">
+Returns analytics data for available docs per day.
+
+**Action Parameters**
+
+<ParamField path="docIds" type="array">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="isPublished" type="boolean">
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+<ParamField path="scale" type="string">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+<ParamField path="orderBy" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_ADD_PERMISSION">
+Adds a new permission to the doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="access" type="string" required={true}>
+</ParamField>
+
+<ParamField path="principal" type="object" required={true}>
+</ParamField>
+
+<ParamField path="suppressEmail" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PUBLISH_DOC">
+Update publish settings for a doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="discoverable" type="boolean">
+</ParamField>
+
+<ParamField path="earnCredit" type="boolean">
+</ParamField>
+
+<ParamField path="categoryNames" type="array">
+</ParamField>
+
+<ParamField path="mode" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_TABLE">
+Returns details about a specific table or view.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="useUpdatedTableLayouts" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_PACK">
+Delete a given pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_PACK_VERSION_UPLOAD_COMPLETE">
+Note the completion of the upload of a pack version bundle in order to create that pack version.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="notes" type="string">
+</ParamField>
+
+<ParamField path="source" type="string">
+</ParamField>
+
+<ParamField path="allowOlderSdkVersion" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPLOAD_PACK_SOURCE_CODE">
+Request a signed s3 url to upload your pack source code.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payloadHash" type="string" required={true}>
+</ParamField>
+
+<ParamField path="filename" type="string" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_CREATE_A_NEW_PACK_RELEASE">
+Creates a new pack release based on an existing pack version.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="packVersion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="releaseNotes" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_LIST_PAGES">
+Returns a list of pages in a coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="25">
+</ParamField>
+
+<ParamField path="pageToken" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_UPDATES_USER_ROLE">
+Updates the workspace user role of a user that matches the parameters. only succeeds if the requesting user has admin permissions in the workspace.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="newRole" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_DELETE_MULTIPLE_ROWS">
+Deletes the specified rows from the table or view. this endpoint will always return a 202. row deletions are generally processed within several seconds.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rowIds" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_DOC_ANALYTICS_SUMMARY">
+Returns summarized analytics data for available docs.
+
+**Action Parameters**
+
+<ParamField path="isPublished" type="boolean">
+</ParamField>
+
+<ParamField path="sinceDate" type="string">
+</ParamField>
+
+<ParamField path="untilDate" type="string">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_A_CONTROL">
+Returns info on a control.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="controlIdOrName" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_SHARING_METADATA">
+Returns metadata associated with sharing for this coda doc.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_BEGIN_CONTENT_EXPORT">
+Initiate an export of content for the given page.
+
+**Action Parameters**
+
+<ParamField path="docId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="outputFormat" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODA_GET_DETAILED_LISTING_INFORMATION_FOR_A_PACK">
+Get detailed listing information for a pack.
+
+**Action Parameters**
+
+<ParamField path="packId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="docId" type="string">
+</ParamField>
+
+<ParamField path="installContext" type="string">
+</ParamField>
+
+<ParamField path="releaseChannel" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

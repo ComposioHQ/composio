@@ -1,0 +1,2488 @@
+---
+title: "Twitter"
+subtitle: "Learn how to use Twitter with Composio"
+---
+
+
+## Overview
+
+### Enum
+`TWITTER`
+
+### Description
+Twitter, Inc. was an American social media company based in San Francisco, California, which operated and was named for named for its flagship social media network prior to its rebrand as X.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="dm.write dm.read mute.read mute.write space.read tweet.write tweet.read tweet.moderate.write users.read follows.read follows.write like.read like.write list.read list.write block.read block.write bookmark.read bookmark.write offline.access">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.x.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="TWITTER_USER_LOOKUP_BY_IDS">
+The getusers endpoint retrieves detailed information about twitter users. it fetches user profiles by ids or usernames, supporting up to 100 users per request. use this endpoint to gather profile details, metrics, and optionally, pinned tweets. it's ideal for user lookup or displaying profile information, but doesn't provide real-time updates or streaming.
+
+**Action Parameters**
+
+<ParamField path="ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_USER_OBJECTS_THAT_HAVE_RETWEETED_THE_PROVIDED_POST_ID">
+Retrieves a list of users who have retweeted a specific tweet. this endpoint allows you to gather information about the users who have shared a particular tweet on their own timeline. it's useful for analyzing the reach and engagement of a tweet, as well as identifying influential users who have helped spread the content. the endpoint returns user data for public retweets only and does not include information about quote tweets or private retweets. use this when you need to track the spread of a tweet or understand its impact across the twitter network. note that the number of results may be limited and paginated, so multiple requests might be necessary for highly retweeted content.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_ADD_A_LIST_MEMBER">
+Adds a specified user to a twitter list. this endpoint allows you to include a user in a curated group of twitter accounts (list). it should be used when you want to expand the membership of a list you own or manage. the endpoint requires the list id and the user id of the account to be added. it's important to note that you can only add users to lists that you own or have management rights to. this tool doesn't provide information about the success of the operation or details about the list or user; it simply performs the addition. use this when you need to programmatically update list memberships, such as for maintaining topical groups or organizing followed accounts.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_POST_OBJECTS_LIKED_BY_THE_PROVIDED_USER_ID">
+Retrieves a list of tweets liked by a specified user. this endpoint allows you to fetch the most recent tweets liked by a user, providing insights into their preferences and interactions on the platform. it's useful for analyzing user engagement, understanding content popularity, or building features that showcase a user's liked content. the endpoint returns a paginated list of tweet objects, with options to expand and customize the returned data fields. note that this endpoint is subject to twitter's rate limits and the project-level tweet cap, which may affect the number of results you can retrieve in a given time frame.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_POSTS_THAT_REPOST_A_POST">
+Retrieves a list of retweets for a specified tweet. this endpoint allows you to fetch information about users who have retweeted a particular tweet, providing insights into the tweet's spread and engagement. use this when you need to analyze the reach of a tweet or identify users who have shared it. the endpoint returns data about the retweets themselves, not the full content of the original tweet. note that there may be limits on the number of retweets returned, and the results may not include retweets from protected accounts or users who have blocked the authenticating user.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SPACE_LOOKUP_BY_THEIR_CREATORS">
+Retrieves information about twitter spaces created by specified users. this endpoint allows you to fetch details of active, scheduled, or ended spaces associated with given creator ids. it's particularly useful for monitoring space activities of specific twitter users or for aggregating space data from multiple creators. the endpoint returns space objects containing various attributes such as their current state, title, start time, and more, depending on the fields requested. use this when you need to track or analyze spaces created by known twitter users. note that the endpoint may have rate limits and might not return spaces that have been deleted or are no longer available.
+
+**Action Parameters**
+
+<ParamField path="user_ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="space__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="topic__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FOLLOWERS_BY_USER_ID">
+Retrieves a list of users who follow the specified twitter user. this endpoint allows you to fetch the followers of any public twitter account using their unique user id. it's particularly useful for analyzing a user's audience, tracking follower growth, or identifying potential connections. the endpoint returns a paginated list of follower details, which may include user ids, usernames, and other public profile information depending on the api version and authentication level. use this when you need to analyze a user's follower base or track changes in their audience over time. note that for users with a large number of followers, multiple api calls may be necessary to retrieve the complete list due to pagination limits.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_USER_LOOKUP_BY_ID">
+Retrieves detailed information about a specific twitter user using their unique user id. this endpoint is part of the twitter api v2 and provides access to various attributes of a user's profile. it should be used when you need comprehensive details about a particular twitter account, such as the user's name, username, profile description, follower count, and other public information. the endpoint is useful for applications that require up-to-date user data, such as social media management tools, analytics platforms, or user verification systems. note that this endpoint only returns publicly available information and does not provide access to private user data or tweet content.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FETCH_SPACE_TICKET_BUYERS_LIST">
+Retrieves a list of users who have purchased tickets to a specific twitter space. this endpoint is useful for space creators or analysts to gather information about their audience and understand the reach of their paid spaces. it returns details about the buyers, which can be used for analytics, engagement tracking, or follow-up communications. the endpoint should be used after a space with ticketed entry has concluded or while it's ongoing. it will not provide real-time updates during the space, and it's limited to spaces that have implemented paid entry.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_POST_LOOKUP_BY_POST_ID">
+Retrieves detailed information about a specific tweet using its unique identifier. this endpoint allows developers to fetch the content, metadata, and possibly engagement metrics of a single tweet. it's particularly useful when you need comprehensive data about a known tweet, such as for analysis, display purposes, or tracking specific content. the endpoint returns the most up-to-date information available for the specified tweet. note that this tool does not provide real-time updates or streaming capabilities; it returns a snapshot of the tweet's data at the time of the request. keep in mind that tweets may be deleted or become unavailable, in which case the endpoint will return an appropriate error response.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_A_USER_S_OWNED_LISTS">
+Retrieves all the lists owned by a specified twitter user. this endpoint allows you to fetch the curated collections of users or tweets that a particular user has created and manages on their twitter account. it's useful for understanding a user's interests, content curation, and network on the platform. the endpoint returns details about each list, likely including the list name, description, member count, and other relevant information. use this when you need to analyze a user's content organization or discover thematic groupings they've created. note that this endpoint only returns lists owned by the specified user and does not include lists they're subscribed to but don't own. the response may be paginated for users with a large number of owned lists.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="list__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CAUSES_THE_USER_IN_THE_PATH_TO_REPOST_THE_SPECIFIED_POST">
+This endpoint allows a user to retweet a specific tweet. it should be used when a user wants to share another user's tweet on their own timeline. the action is performed by providing the unique identifier of the tweet to be retweeted. this endpoint is specifically for creating a retweet and does not handle undoing retweets or retrieving retweet information. keep in mind that retweeting may be subject to twitter's rate limiting and content policies.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_UNPIN_A_LIST">
+Removes a specific list from a user's pinned lists on their twitter profile. this endpoint allows you to unpin a previously pinned list, effectively removing it from the user's profile page. use this when a user wants to declutter their profile or change their featured lists. the operation is permanent, but the list itself is not deleted, only unpinned. note that this action can only be performed on lists that are currently pinned by the specified user.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CAUSES_THE_USER_IN_THE_PATH_TO_UNRETWEET_THE_SPECIFIED_POST">
+Deletes a retweet of a specific tweet made by a user. this endpoint allows you to remove a user's retweet, effectively undoing the action of sharing another user's tweet on their own timeline. it should be used when a user wants to take back their retweet or when managing a user's content programmatically. the endpoint requires both the user's id and the id of the original tweet that was retweeted. it's important to note that this action only removes the retweet; it does not affect the original tweet or any other users' retweets of the same content. this endpoint is particularly useful for content management, user privacy controls, or correcting accidental retweets.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="source_tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_DM_CONVERSATION_EVENTS">
+Retrieves direct message (dm) events from a specific conversation on twitter. this endpoint allows you to fetch various types of dm events, including messagecreate, participantsjoin, and participantsleave, providing a comprehensive view of the conversation's history and participant interactions. use this endpoint when you need to analyze or display the contents and activity of a particular dm conversation. it's particularly useful for applications that manage customer service, chatbots, or social media analytics on twitter. note that this endpoint only retrieves events from a single conversation at a time and may be subject to rate limiting or pagination for conversations with a large number of events.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="event_types" type="array" default="['MessageCreate', 'ParticipantsLeave', 'ParticipantsJoin']">
+</ParamField>
+
+<ParamField path="dm__event__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_POST_LOOKUP_BY_POST_IDS">
+The get /2/tweets endpoint retrieves detailed information about one or more specified tweets. it allows you to fetch comprehensive data for up to 100 tweets in a single request by providing their unique tweet ids. this endpoint is ideal for obtaining the full content, associated metadata, and engagement metrics of specific tweets. it's particularly useful for analyzing individual tweets, tracking conversation threads, or gathering data for specific content you're interested in. the endpoint offers extensive customization through various field parameters, allowing you to tailor the response to include only the data you need, such as author information, media attachments, polls, and metrics. however, it does not provide functionality for searching or streaming tweets; it's specifically for retrieving known tweet ids.
+
+**Action Parameters**
+
+<ParamField path="ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FOLLOWING_BY_USER_ID">
+Retrieves a list of users that the specified twitter user is following. this endpoint allows you to explore a user's social connections and interests by examining who they choose to follow on the platform. it's particularly useful for social graph analysis, influencer research, or understanding a user's preferences. the endpoint supports pagination for retrieving large sets of following data and allows customization of the user information returned through field selection. note that this endpoint may be subject to rate limiting, and the number of users returned per request is capped, requiring multiple calls for users with a large following list.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_UNFOLLOW_USER">
+Removes the follow relationship between two twitter users. this endpoint allows an authenticated user (source user id) to unfollow another user (target user id) on the platform. it should be used when a user wants to stop receiving tweets and updates from the target user in their home timeline. the operation is immediate and irreversible, although the user can choose to follow the target user again in the future if desired. this endpoint doesn't return any specific data about the unfollow action; it's primarily used for its side effect of updating the follow relationship. note that this action only affects the source user's following list and does not impact the target user's followers count until they refresh their profile.
+
+**Action Parameters**
+
+<ParamField path="source_user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_UPDATE_LIST">
+Updates an existing twitter list's properties. this endpoint allows users to modify the description, name, or privacy setting of a specific list identified by its unique id. it's useful for maintaining and organizing curated collections of twitter accounts. the endpoint should be used when a user wants to change list details or adjust its visibility. note that this operation only updates the specified fields; any omitted fields will retain their current values.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="private" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_A_USER_S_LIST_MEMBERSHIPS">
+Retrieves all twitter lists that a specified user is a member of. this endpoint allows you to discover the curated collections of accounts (lists) that a particular user has been added to by other twitter users. it's useful for understanding a user's interests, networks, and how they are categorized by the twitter community. the endpoint returns details about each list, such as the list name, description, and owner. use this when you need to analyze a user's presence across various topical or community-based lists on twitter. note that this endpoint only returns public lists and private lists that the authenticated user has access to view.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="list__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RECENT_SEARCH_COUNTS">
+Retrieves the count of tweets matching a specified query over the last seven days. this endpoint is useful for analyzing tweet volume trends and patterns within a recent timeframe. it supports granular data retrieval (minute, hour, or day) and allows for precise time range specification within the seven-day limit. the endpoint is subject to rate limiting and requires proper authentication. it's ideal for real-time or near-real-time tweet volume analysis but not suitable for historical data beyond a week.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+<ParamField path="since_id" type="string">
+</ParamField>
+
+<ParamField path="until_id" type="string">
+</ParamField>
+
+<ParamField path="next_token" type="string">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="granularity" type="string" default="hour">
+</ParamField>
+
+<ParamField path="search__count__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CREATE_LIST">
+Creates a new twitter list for organizing and curating tweets. this endpoint allows users to create a personalized list with a specific name, optional description, and privacy setting. it's useful for grouping accounts or topics of interest, making it easier to follow specific content streams. the created list can be used to aggregate tweets from multiple accounts without necessarily following them individually. note that while the list is created empty, users will need to populate it with members separately using other api endpoints.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="private" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FETCH_LIST_MEMBERS_BY_ID">
+Retrieves the members of a specified twitter list. this endpoint allows you to fetch all users who are part of a given list, providing valuable information about the list's composition. it's particularly useful for analyzing audience demographics, finding influential users within a specific topic, or simply managing your lists. the tool returns user objects for each member, which may include details such as user id, screen name, and profile information. use this when you need to examine or export the membership of a twitter list. note that for private lists, authentication as the list owner is required. the response is typically paginated, so multiple calls may be necessary to retrieve all members of large lists.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_COMPLIANCE_JOB_BY_ID">
+Retrieves detailed information about a specific compliance job using its unique identifier. this endpoint is part of twitter's compliance api and is used to check the status and details of a previously created compliance job. it's particularly useful for tracking the progress of batch compliance checks on tweets or user ids. use this endpoint when you need to monitor the status of a compliance job, retrieve results of completed jobs, or gather information about job parameters and execution details. it's essential for maintaining large datasets in compliance with twitter's data policies. the endpoint returns comprehensive information about the job, which may include its current status (e.g., in progress, complete), creation time, job type (e.g., tweets or users), and potentially the results if the job has been completed. however, it does not allow modification of the job or creation of new jobs.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="compliance__job__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_DM_EVENTS_BY_ID">
+Retrieves a specific direct message (dm) event from twitter using its unique identifier. this endpoint allows you to fetch detailed information about a single dm event, including its content, participants, and metadata. it's useful for applications that need to display or analyze individual messages within a dm conversation. the endpoint is part of twitter's api v2 and requires appropriate authentication to access a user's private messages. use this when you need to retrieve or display the contents of a specific direct message, or when tracking changes in a dm conversation. note that this endpoint only retrieves a single event at a time; for fetching multiple events or entire conversations, you would need to use a different endpoint.
+
+**Action Parameters**
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dm__event__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_HIDE_REPLIES">
+This endpoint allows you to hide or unhide a specific tweet identified by its tweet id. it's part of twitter's content moderation features, enabling users or moderators to control the visibility of tweets in conversations. use this endpoint when you need to manage tweet visibility, either to hide potentially inappropriate content or to restore visibility to previously hidden tweets. the action affects the tweet's visibility in the conversation thread and search results, but does not delete the tweet. note that this action can only be performed on tweets that the authenticated user has permission to modify.
+
+**Action Parameters**
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hidden" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FOLLOW_A_LIST">
+Allows an authenticated user to follow a specific twitter list. this endpoint is used when a user wants to subscribe to a curated list of twitter accounts, enabling them to see tweets from those accounts in a dedicated timeline. it's particularly useful for following topic-specific or curated content streams. the endpoint requires the user's authentication and the unique identifier of the list they wish to follow. it should not be used to create new lists or modify existing ones. note that following a list does not automatically follow all accounts within that list.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FOLLOW_USER">
+Initiates a follow request for the authenticated user to follow another twitter user. this endpoint should be used when a user wants to start following another account, receiving their tweets in their home timeline. it's particularly useful for building features that allow users to expand their network or for automated follow actions based on certain criteria. note that if the target user has protected tweets, this will send a follow request instead of immediately following. the endpoint does not provide information about the follow status or any details about the target user beyond the follow action.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_DELETE_DM">
+Deletes a specific direct message event from a conversation on twitter. this endpoint should be used when a user wants to permanently remove a particular message from their direct message history. it's useful for managing conversations, removing sensitive or outdated information, or complying with privacy requests. the deletion is irreversible, so use with caution. note that this endpoint only deletes individual message events, not entire conversations. it may not be possible to delete certain system-generated events or messages sent by other users.
+
+**Action Parameters**
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_REMOVE_A_LIST_MEMBER">
+Removes a specified user from a twitter list. this endpoint allows list owners to delete a member from their curated list, effectively unsubscribing the user from the list's content. use this when you need to manage list membership, such as removing inactive users or adjusting the list's focus. the endpoint requires both the list id and the user id of the member to be removed. it's important to note that this action can only be performed by the list owner or users with appropriate permissions. the endpoint doesn't return the updated list information, so a separate call may be needed to verify the change or retrieve the current list members.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SEND_A_NEW_MESSAGE_TO_A_DM_CONVERSATION">
+Sends a new direct message to a specific conversation on twitter. this endpoint allows you to post either a text message, media attachments, or both to an existing dm conversation. it's used when you need to programmatically send private messages to users within a conversation you're a part of. the endpoint requires either text content or at least one media attachment, making it versatile for various messaging needs. note that media must be uploaded separately and referenced by its media id. this tool doesn't handle media uploads directly, so ensure you have valid media ids before attaching media to messages.
+
+**Action Parameters**
+
+<ParamField path="dm_conversation_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_LIST_LOOKUP_BY_LIST_ID">
+Retrieves detailed information about a specific twitter list using its unique identifier. this endpoint allows developers to fetch metadata and properties of a particular list, such as its name, description, member count, and follower count. it's useful when you need to display or update information about a known list in your application. the endpoint provides a snapshot of the list's current state and does not include information about the list's members or subscribers. use this when you have a list id and need to access its properties or verify its existence.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RECENT_SEARCH">
+The searchrecenttweets endpoint allows you to search for tweets posted within the last 7 days that match your specified criteria. this powerful tool is ideal for real-time analysis, trend monitoring, and gathering recent public opinions on various topics. it supports a wide range of search operators, enabling precise and targeted searches across twitter's vast database of recent tweets. use this endpoint when you need up-to-date information or want to track emerging discussions. keep in mind that this endpoint only searches recent tweets; for historical data beyond 7 days, you would need to use a different endpoint. the search is limited to a subset of all tweets and may not return every single tweet matching your query due to twitter's indexing and data availability policies.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+<ParamField path="since_id" type="string">
+</ParamField>
+
+<ParamField path="until_id" type="string">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="10">
+</ParamField>
+
+<ParamField path="next_token" type="string">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="sort_order" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_A_USER_S_PINNED_LISTS">
+Retrieves the pinned lists of a specified twitter user. this endpoint allows you to fetch the curated lists that a user has chosen to highlight on their profile. it's useful for understanding a user's interests or the content they want to emphasize. the endpoint returns only the pinned lists, not the content of those lists or other user information. use this when you need to know which lists a user considers most important or wants to showcase on their profile.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CAUSES_THE_USER_IN_THE_PATH_TO_UNLIKE_THE_SPECIFIED_POST">
+Removes a like from a specific tweet for an authenticated user. this endpoint is used when a user wants to undo their previous action of liking a tweet. it allows for managing user engagement by removing positive interactions with content. the endpoint should be called when a user explicitly requests to unlike a tweet or as part of a feature that allows users to manage their liked tweets in bulk. it's important to note that this action is idempotent, meaning that unliking an already unliked tweet will not result in an error but will have no effect. the endpoint does not provide any information about the tweet or the like status after the operation.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_POST_DELETE_BY_POST_ID">
+Deletes a specific tweet from the authenticated user's timeline on twitter. this endpoint should be used when a user wants to permanently remove one of their own tweets from the platform. it's particularly useful for managing content, retracting statements, or maintaining privacy. the deletion is irreversible, so use with caution. this endpoint cannot be used to delete tweets from other users' accounts. be aware that while the tweet will be removed from twitter, it may still exist in third-party applications or services that have previously cached or stored the tweet data.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_LIST_POSTS_TIMELINE_BY_LIST_ID">
+Retrieves the most recent tweets from a specified twitter list. this endpoint allows developers to fetch tweets posted by members of a particular list, providing a curated stream of content based on the list's theme or purpose. it's useful for monitoring discussions, tracking industry trends, or aggregating content from a specific group of users. the endpoint returns tweet data in chronological order, typically including tweet text, author information, engagement metrics, and timestamps. it should be used when you need to access the latest content from a pre-defined group of twitter users. note that this endpoint may have rate limits and will only return tweets from public accounts or private accounts that the authenticated user has permission to view.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_MUTE_USER_BY_USER_ID">
+This endpoint allows a user to mute another user on twitter. when a user is muted, their tweets and retweets will no longer appear in the muting user's home timeline, although they will still be able to see the muted user's profile and tweets when visiting their profile directly. this feature is useful for managing unwanted content without the more severe step of blocking. the endpoint should be used when a user wants to reduce their exposure to another user's content without notifying that user or completely cutting off interaction. it's important to note that muting is a one-way action and does not prevent the muted user from seeing the muting user's tweets or interacting with them.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_USER_OBJECTS_THAT_HAVE_LIKED_THE_PROVIDED_POST_ID">
+Retrieves a list of users who have liked a specific tweet on twitter. this endpoint allows you to fetch information about the users who have engaged with a particular tweet by liking it. it's useful for analyzing tweet popularity, identifying influential users, and understanding audience engagement patterns. the endpoint returns user data for a single tweet and does not provide aggregated like counts or information about other forms of engagement such as retweets or replies.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SEARCH_FOR_SPACES">
+The searchspaces endpoint allows you to search for twitter spaces based on specified criteria. it's designed to help developers discover relevant live audio conversations or scheduled spaces on the platform. this endpoint is particularly useful for building discovery experiences, allowing users to find spaces of interest, or for monitoring conversations around specific topics or events. the endpoint supports various search parameters, including a query string, state filters, and the ability to specify which space fields to include in the response. it returns a list of space objects that match the search criteria, providing details such as the space id, title, state (live or scheduled), host information, and participant count. use this endpoint when you need to programmatically find spaces related to particular topics, hosted by specific users, or scheduled for certain times. it's ideal for applications that aggregate content, provide recommendations, or offer enhanced discovery features for twitter spaces.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="state" type="string" default="all">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="space__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="topic__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_THE_OPEN_API_SPECIFICATION_DOCUMENT">
+Retrieves the complete openapi specification for twitter's api v2 in json format. this endpoint should be used when developers need to access the full api documentation programmatically or when building tools that interact with the twitter api. the specification provides detailed information about all available endpoints, request/response structures, and authentication requirements. it is particularly useful for generating client libraries, setting up api testing environments, or creating interactive api documentation. note that this endpoint returns the raw openapi specification and does not provide any simplified or human-readable documentation; it's intended for machine consumption and developer tooling.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_USER_OBJECTS_THAT_ARE_BLOCKED_BY_PROVIDED_USER_ID">
+Retrieves a list of users that have been blocked by the specified twitter user. this endpoint is useful for managing user interactions and reviewing a user's blocking history. it should be used when you need to access or analyze the list of accounts a particular user has chosen to block. the endpoint returns information about blocked users, which may include their user ids, usernames, and other public profile data. note that this endpoint only provides information about users blocked by the specified account and does not allow for blocking or unblocking actions directly.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_UNFOLLOW_A_LIST">
+This endpoint allows a user to unfollow (stop following) a specific list on twitter. it removes the specified list from the user's followed lists. use this when a user no longer wants to see tweets from a particular list in their timeline or receive notifications about it. the operation is permanent but can be undone by following the list again using a separate api call. note that this endpoint only affects the user's relationship with the list and does not delete the list itself or affect other users following it.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_ADD_POST_TO_BOOKMARKS">
+Adds a specified tweet to the authenticated user's bookmarks. this endpoint allows users to save tweets for later reference or easy access. it should be used when a user wants to bookmark a tweet they find interesting or valuable. the endpoint requires the unique identifier of the tweet to be bookmarked. it's important to note that this action is user-specific and requires proper authentication. the endpoint does not provide information about existing bookmarks or the success status of the operation in the schema, so additional api calls may be necessary to confirm the bookmark was added successfully.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_DM_EVENTS_FOR_A_DM_CONVERSATION">
+Retrieves direct message (dm) events from a conversation with a specific participant on twitter. this endpoint allows you to fetch various types of dm events, such as message creations, participant joins, and participant leaves, for a one-on-one conversation. it's particularly useful when you need to access the history or recent activity of a direct message thread with a particular user. the endpoint returns events in chronological order, providing a comprehensive view of the conversation's timeline. note that this endpoint is limited to retrieving events from conversations between two participants and does not support group dm conversations.
+
+**Action Parameters**
+
+<ParamField path="participant_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="event_types" type="array" default="['MessageCreate', 'ParticipantsLeave', 'ParticipantsJoin']">
+</ParamField>
+
+<ParamField path="dm__event__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_USER_LOOKUP_ME">
+Retrieves the profile information of the currently authenticated user on twitter. this endpoint is part of the twitter api v2 and provides access to the user's public profile data, such as username, display name, bio, and other relevant information. it should be used when an application needs to fetch the most up-to-date information about the authenticated user, such as during profile management or user session initialization. the endpoint does not require any additional parameters beyond authentication, making it a simple and direct way to access user data. note that the specific fields returned may depend on the application's access level and the user's privacy settings.
+
+**Action Parameters**
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_POSTS_LABEL_STREAM">
+The get /2/tweets/label/stream endpoint enables real-time streaming of labeled tweets from twitter. this tool is designed for applications that require immediate access to labeled tweets as they are posted, allowing for real-time monitoring and analysis. it's particularly useful for sentiment analysis, brand monitoring, and trend detection. use this endpoint when you need to process large volumes of labeled tweets in real-time or react immediately to specific tweet categories. note that rate limiting may apply, and the stream may not include all tweets, only those matching labeling criteria.
+
+**Action Parameters**
+
+<ParamField path="backfill_minutes" type="integer">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CAUSES_THE_USER_IN_THE_PATH_TO_LIKE_THE_SPECIFIED_POST">
+Likes a specified tweet on behalf of the authenticated user. this endpoint allows a user to express appreciation or agreement with a particular tweet by adding it to their list of liked tweets. it should be used when a user wants to engage with content positively or save it for later reference. the action is reversible, and users can unlike a tweet using a separate endpoint. note that liking a tweet may increase its visibility to the user's followers and contribute to the tweet's overall engagement metrics. this endpoint does not return the updated like status or any other tweet information; it simply performs the action of liking the specified tweet.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_BOOKMARKS_BY_USER">
+Retrieves the bookmarks saved by a specific twitter user. this endpoint allows you to fetch a list of tweets that the user has bookmarked for later reference. it's useful for applications that need to display or analyze a user's saved content. the endpoint returns the most recent bookmarks first and supports pagination for handling large sets of bookmarked tweets. it should be used when you need to access a user's curated list of interesting or important tweets. note that this endpoint only returns the bookmarks and does not provide functionality to add or remove bookmarks.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="2">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_USER_HOME_TIMELINE_BY_USER_ID">
+Retrieves the reverse chronological timeline for a specified twitter user. this endpoint returns the most recent tweets and retweets posted by the user, ordered from newest to oldest. it's particularly useful for applications that need to display a user's latest activity or monitor real-time updates from a specific account. the endpoint should be used when you need to fetch the latest tweets for a user without any algorithmic sorting or filtering. it does not include replies or mentions unless they are self-threads or retweets. keep in mind that the number of tweets returned may be limited by twitter's api constraints, and pagination might be necessary for a complete timeline.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="since_id" type="string">
+</ParamField>
+
+<ParamField path="until_id" type="string">
+</ParamField>
+
+<ParamField path="max_results" type="integer">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="exclude" type="array">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_USER_OBJECTS_THAT_FOLLOW_A_LIST_BY_THE_PROVIDED_LIST_ID">
+Retrieves a list of users who are followers of a specified twitter list. this endpoint allows you to fetch the users who have chosen to follow and receive updates from a particular curated list on twitter. it's useful for understanding the audience and reach of a list, as well as for analyzing user interests and network connections. the endpoint returns user information for the list's followers, which can be used for various purposes such as audience analysis, engagement strategies, or finding potential users to interact with based on shared interests. note that this endpoint only provides information about the followers of the list, not the members or contents of the list itself.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_USER_LOOKUP_BY_USERNAMES">
+The getusersbyusernames endpoint retrieves detailed information about multiple twitter users based on their usernames. it allows for efficient bulk lookup of user data, supporting up to 100 usernames in a single request. this endpoint is particularly useful for applications that need to fetch user profiles, verify user existence, or gather public metrics for multiple users simultaneously. the response can be customized to include various user fields and even expand pinned tweet information, providing flexibility in the data returned. it's important to note that this endpoint has rate limits, typically allowing 300 requests per 15-minute window for app-only auth and 900 requests per 15-minute window for user auth. use this endpoint when you need to retrieve user information for known twitter handles, but avoid it for user search functionality.
+
+**Action Parameters**
+
+<ParamField path="usernames" type="array" required={true}>
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_USER_LOOKUP_BY_USERNAME">
+Retrieves detailed information about a twitter user based on their username. this endpoint allows developers to fetch public profile data for a specific user, which can be useful for displaying user information, verifying user existence, or gathering data for analysis. the endpoint should be used when you need to access a user's profile details, such as their display name, bio, follower count, or other public information associated with their account. it's important to note that this endpoint only provides publicly available information and does not grant access to private user data or direct messages. the tool is particularly useful for applications that need to display user profiles, verify user identities, or analyze public twitter user data.
+
+**Action Parameters**
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SEND_A_NEW_MESSAGE_TO_A_USER">
+Sends a new direct message to a specific user in a twitter conversation. this endpoint allows for sending text messages, media attachments, or both. it should be used when initiating or continuing a private conversation with another twitter user. the function requires either a text message, attachments, or both to be provided. it does not support editing or deleting existing messages. note that media must be uploaded separately and referenced by its media id in the attachments array.
+
+**Action Parameters**
+
+<ParamField path="participant_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SPACE_LOOKUP_UP_SPACE_IDS">
+Retrieves detailed information about one or more twitter spaces. this endpoint allows developers to fetch real-time data about live audio conversations, including metadata such as host information, participant count, and current status. it's particularly useful for applications that need to display or analyze active spaces, track engagement, or provide users with up-to-date information about ongoing audio discussions. the endpoint supports querying multiple spaces in a single request, making it efficient for batch retrieval. however, it doesn't provide functionality to create, modify, or end spaces - it's purely for data retrieval.
+
+**Action Parameters**
+
+<ParamField path="ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="space__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="topic__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FULL_ARCHIVE_SEARCH_COUNTS">
+Retrieves the count of tweets matching a specified query from twitter's full archive of public tweets. this endpoint allows users to analyze tweet volume over time, providing insights into trends, events, and public discourse. it's particularly useful for research, social media analysis, and understanding the temporal distribution of topics on twitter. the endpoint supports flexible time ranges and granularity options, enabling both broad historical analyses and detailed recent data examination. it's important to note that this endpoint is available only for academic research access and requires oauth 2.0 app-only authentication. while it provides comprehensive count data, it does not return the actual tweet content or user information.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+<ParamField path="since_id" type="string">
+</ParamField>
+
+<ParamField path="until_id" type="string">
+</ParamField>
+
+<ParamField path="next_token" type="string">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="granularity" type="string" default="hour">
+</ParamField>
+
+<ParamField path="search__count__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_DELETE_LIST">
+Deletes a specified twitter list associated with the authenticated user's account. this endpoint should be used when a user wants to permanently remove a list they've created, including all its members and followers. it's particularly useful for managing outdated or unnecessary lists, cleaning up a user's profile, or removing lists that no longer serve their intended purpose. once a list is deleted, it cannot be recovered, so use this endpoint with caution. this operation does not affect the accounts that were members of the list; it only removes the list itself from the platform.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETURNS_USER_OBJECTS_THAT_ARE_MUTED_BY_THE_PROVIDED_USER_ID">
+Retrieves a list of users that the specified user has muted on twitter. this endpoint allows you to fetch the accounts that a particular user has chosen to mute, effectively hiding their tweets from their timeline. it's useful for understanding a user's content preferences and moderation choices. the endpoint should be used when you need to analyze or display a user's muting behavior, such as in user management tools or content moderation systems. note that this endpoint only provides information about users who are muted; it does not allow muting or unmuting actions directly. the response likely includes paginated results, so multiple calls may be necessary to retrieve the complete list of muted users.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_UNMUTE_USER_BY_USER_ID">
+This endpoint allows a user to remove a mute relationship with another user on twitter. when a user unmutes a previously muted account, they will once again see the unmuted user's tweets and notifications in their timeline and interactions. this endpoint should be used when a user decides to re-engage with content from a previously muted account. it's important to note that this action is reversible, and the user can always re-mute the target user if needed. the endpoint doesn't provide any information about the mute status before or after the operation, it simply performs the unmute action.
+
+**Action Parameters**
+
+<ParamField path="source_user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_POSTS_FROM_A_SPACE">
+Retrieves tweets associated with a specific twitter space. this endpoint allows developers to fetch all tweets that are related to or were posted during a particular space, identified by its unique id. it's useful for analyzing discussions, engagement, and content shared within a space after it has ended or while it's ongoing. the endpoint should be used when you need to collect or analyze the tweets from a specific space, such as for content curation, sentiment analysis, or engagement metrics. it does not provide real-time streaming of tweets during a space; instead, it offers a way to retrieve tweets in batches. the response likely includes tweet text, author information, timestamps, and possibly engagement metrics, but the exact details of the response structure are not specified in the given schema.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_COMPLIANCE_JOBS">
+Retrieves a list of recent compliance jobs from the twitter api. this endpoint allows you to monitor and manage compliance-related tasks, such as data processing for tweets or users. use this when you need to track the status of compliance jobs, retrieve information about recently created jobs, or filter jobs based on type or status. it's particularly useful for applications that need to ensure adherence to twitter's data policies or for managing large-scale data operations. the endpoint does not create new jobs or modify existing ones; it's purely for retrieval and monitoring purposes.
+
+**Action Parameters**
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="compliance__job__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CREATE_COMPLIANCE_JOB_REQUEST">
+Creates a new batch compliance job for checking the compliance status of tweets or users on twitter. this endpoint allows you to initiate large-scale compliance checks, which is crucial for content moderation and user management. use this when you need to verify the compliance status of a large number of tweets or user accounts. the job creation process is asynchronous, meaning you'll need to check the job status separately after creation. this endpoint is particularly useful for applications dealing with content moderation, safety, and policy enforcement on twitter.
+
+**Action Parameters**
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="resumable" type="boolean">
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_RETRIEVE_POSTS_THAT_QUOTE_A_POST">
+This endpoint retrieves quote tweets for a specified tweet. it allows developers to fetch tweets that have quoted (shared with comment) a particular tweet, providing insights into how content is being shared and discussed on the platform. use this endpoint when you need to analyze the reach and impact of a specific tweet by examining who has quoted it and what they've added to the conversation. the endpoint returns a list of quote tweets, likely including information such as the quoting user, the quote tweet's content, and relevant metadata. note that this endpoint focuses solely on quote tweets and does not return other types of engagement such as replies or retweets without comments.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="10">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="exclude" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CREATE_A_NEW_DM_CONVERSATION">
+Creates a new group direct message (dm) conversation on twitter with specified participants and an initial message. this endpoint allows you to start a private group chat with multiple users, supporting both text and media content in the first message. use this when you need to initiate a private group discussion or share content with multiple twitter users simultaneously. the conversation is created immediately, and all specified participants are added to the group. note that this endpoint only creates group conversations; for one-on-one dms, a different endpoint should be used.
+
+**Action Parameters**
+
+<ParamField path="conversation_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="message" type="object" required={true}>
+</ParamField>
+
+<ParamField path="participant_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_POST_USAGE">
+Retrieves usage statistics related to tweets for the authenticated user or application. this endpoint provides aggregated data on tweet activity, which may include metrics such as the number of tweets posted, engagement rates, or api call volume related to tweet actions. it's particularly useful for monitoring and analyzing the twitter api usage patterns, ensuring compliance with rate limits, and understanding the overall tweet activity associated with your account or application. the data returned likely covers a specific time period, possibly the last 24 hours or up to the last 90 days, depending on twitter's data retention policies. this endpoint should be used for general usage monitoring and does not provide real-time data or detailed information about individual tweets.
+
+**Action Parameters**
+
+<ParamField path="days" type="integer" default="7">
+</ParamField>
+
+<ParamField path="usage__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_REMOVE_A_BOOKMARKED_POST">
+Removes a specific tweet from a user's bookmarks on twitter. this endpoint allows you to delete a saved tweet from a user's bookmark list, effectively "un-bookmarking" the tweet. use this when a user wants to remove a previously bookmarked tweet from their saved items. the endpoint requires both the user's id and the specific tweet id to be removed. it's important to note that this action is irreversible, and once a bookmark is deleted, it cannot be restored through the api. this endpoint is useful for managing a user's bookmarks, especially when implementing features like "unsave" or "remove from bookmarks" in twitter client applications.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tweet_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_RECENT_DM_EVENTS">
+Retrieves direct message events from the authenticated user's twitter account. this endpoint allows you to fetch various types of events related to direct messages, such as new messages, participants joining or leaving conversations. it's particularly useful for applications that need to monitor or analyze private communications on twitter. the endpoint supports pagination for handling large volumes of events and allows filtering by event type and specific conversations. use this endpoint when you need to access the user's private message history, track changes in direct message conversations, or build messaging-related features in your application. note that this endpoint only returns events the authenticated user has permission to view and may be subject to rate limiting.
+
+**Action Parameters**
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="event_types" type="array" default="['MessageCreate', 'ParticipantsLeave', 'ParticipantsJoin']">
+</ParamField>
+
+<ParamField path="dm__event__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_PIN_A_LIST">
+This endpoint allows a user to pin a specific list to their twitter profile. it's used to increase the visibility and quick access to a chosen list for the user and their profile visitors. the endpoint should be called when a user wants to highlight a particular list on their profile. it's important to note that there's a limit to how many lists can be pinned (typically up to 5), so this action may fail if the user has reached their maximum number of pinned lists. the endpoint doesn't provide information about currently pinned lists or remove other pinned lists automatically.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="list_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_GET_USER_S_FOLLOWED_LISTS">
+Retrieves a collection of lists that are followed by a specified twitter user. this endpoint allows developers to access information about the curated content a user has chosen to follow, providing insights into their interests and preferences on the platform. it's particularly useful for applications that aim to analyze user behavior, provide personalized recommendations, or aggregate content based on followed lists. the endpoint returns list metadata, not the actual content of the lists or their tweets. use this when you need to understand a user's content consumption patterns or when building features that leverage a user's followed lists for content discovery or social graph analysis.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="list__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_CREATION_OF_A_POST">
+The createtweet endpoint allows users to post new tweets on twitter with various customization options. it supports creating standard tweets, replies, quotes, polls, and tweets with media attachments. this endpoint should be used when an application needs to post content on behalf of a user, such as for scheduling tweets, cross-posting from other platforms, or automated content distribution. it offers fine-grained control over tweet visibility, reply settings, and content types, making it versatile for different use cases. however, users should be aware of the mutual exclusivity between certain parameters and respect twitter's content policies and rate limits when using this endpoint.
+
+**Action Parameters**
+
+<ParamField path="card_uri" type="string">
+</ParamField>
+
+<ParamField path="direct_message_deep_link" type="string">
+</ParamField>
+
+<ParamField path="for_super_followers_only" type="boolean">
+</ParamField>
+
+<ParamField path="geo__place__id" type="string">
+</ParamField>
+
+<ParamField path="media__media__ids" type="array">
+</ParamField>
+
+<ParamField path="media__tagged__user__ids" type="array">
+</ParamField>
+
+<ParamField path="nullcast" type="boolean">
+</ParamField>
+
+<ParamField path="poll__duration__minutes" type="integer">
+</ParamField>
+
+<ParamField path="poll__options" type="array">
+</ParamField>
+
+<ParamField path="poll__reply__settings" type="string">
+</ParamField>
+
+<ParamField path="quote_tweet_id" type="string">
+</ParamField>
+
+<ParamField path="reply__exclude__reply__user__ids" type="array">
+</ParamField>
+
+<ParamField path="reply__in__reply__to__tweet__id" type="string">
+</ParamField>
+
+<ParamField path="reply_settings" type="string">
+</ParamField>
+
+<ParamField path="text" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_SPACE_LOOKUP_BY_SPACE_ID">
+Retrieves detailed information about a specific twitter space using its unique identifier. this endpoint allows developers to fetch metadata and current status of a space, including its title, creator, host ids, scheduled start time (if applicable), current state (live, scheduled, or ended), and participant count. it's useful for applications that need to display or analyze information about particular spaces, such as third-party twitter clients or social media analytics tools. the endpoint provides a snapshot of the space at the time of the request and does not provide real-time updates or streaming capabilities. note that this endpoint can only retrieve information for public spaces or those the authenticated user has access to.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="space__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="topic__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="TWITTER_FULL_ARCHIVE_SEARCH">
+The gettweetsfullarchivesearch endpoint allows users to search for tweets across the entire twitter archive, dating back to 2006. this powerful search functionality enables comprehensive historical data analysis, trend identification, and research on twitter content. the endpoint supports various search operators and parameters for refined searching and can return both tweet and user information based on the specified fields. it's ideal for applications requiring access to historical twitter data, sentiment analysis over time, or tracking long-term trends on specific topics or from particular users. note that this endpoint may have usage limitations or require specific access levels, and the volume of data returned can be substantial for broad queries over long time periods.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="end_time" type="string">
+</ParamField>
+
+<ParamField path="since_id" type="string">
+</ParamField>
+
+<ParamField path="until_id" type="string">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="10">
+</ParamField>
+
+<ParamField path="next_token" type="string">
+</ParamField>
+
+<ParamField path="pagination_token" type="string">
+</ParamField>
+
+<ParamField path="sort_order" type="string">
+</ParamField>
+
+<ParamField path="tweet__fields" type="array">
+</ParamField>
+
+<ParamField path="expansions" type="array">
+</ParamField>
+
+<ParamField path="media__fields" type="array">
+</ParamField>
+
+<ParamField path="poll__fields" type="array">
+</ParamField>
+
+<ParamField path="user__fields" type="array">
+</ParamField>
+
+<ParamField path="place__fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

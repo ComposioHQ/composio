@@ -1,0 +1,916 @@
+---
+title: "Outlook"
+subtitle: "Learn how to use Outlook with Composio"
+---
+
+
+## Overview
+
+### Enum
+`OUTLOOK`
+
+### Description
+Outlook is Microsoft’s email and calendaring platform integrating contacts, tasks, and scheduling, enabling users to manage communications and events in a unified workspace
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="Calendars.Read,Calendars.ReadWrite,Calendars.ReadWrite.Shared,Contacts.ReadWrite,Mail.Read,Mail.ReadWrite,Mail.Send,offline_access,User.Read">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="OUTLOOK_OUTLOOK_LIST_EVENTS">
+List events in the user's calendar using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="top" type="integer" default="10">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+<ParamField path="filter" type="string">
+</ParamField>
+
+<ParamField path="select" type="array">
+</ParamField>
+
+<ParamField path="orderby" type="array">
+</ParamField>
+
+<ParamField path="timezone" type="string" default="UTC">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_CALENDAR_CREATE_EVENT">
+Create an event in the user's calendar via microsoft graph api. this tool expects a flattened 'attendees info' from the user/llm, then transforms them into the nested shape required by microsoft graph.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="subject" type="string" required={true}>
+</ParamField>
+
+<ParamField path="body" type="string" required={true}>
+</ParamField>
+
+<ParamField path="is_html" type="boolean">
+</ParamField>
+
+<ParamField path="start_datetime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="end_datetime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="time_zone" type="string" required={true}>
+</ParamField>
+
+<ParamField path="is_online_meeting" type="boolean">
+</ParamField>
+
+<ParamField path="online_meeting_provider" type="string">
+</ParamField>
+
+<ParamField path="attendees_info" type="array">
+</ParamField>
+
+<ParamField path="location" type="string">
+</ParamField>
+
+<ParamField path="show_as" type="string" default="busy">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_DELETE_CONTACT">
+Delete a contact from the user's outlook contacts using microsoft graph api. the contact id can be obtained from outlook get contacts or outlook get contact actions.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_CREATE_DRAFT_REPLY">
+Create a draft reply to an email using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment" type="string">
+</ParamField>
+
+<ParamField path="cc_emails" type="array">
+</ParamField>
+
+<ParamField path="bcc_emails" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_UPDATE_CALENDAR_EVENT">
+Update an event in the user's calendar using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="body" type="object">
+</ParamField>
+
+<ParamField path="start_datetime" type="string">
+</ParamField>
+
+<ParamField path="end_datetime" type="string">
+</ParamField>
+
+<ParamField path="time_zone" type="string" default="UTC">
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+<ParamField path="location" type="object">
+</ParamField>
+
+<ParamField path="show_as" type="string" default="busy">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_LIST_OUTLOOK_ATTACHMENTS">
+Retrieve a list of attachments for a specific outlook email message using microsoft graph api, omitting any base64 content bytes.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_SEARCH_MESSAGES">
+Action to search outlook messages using the microsoft search api for work/school accounts. note: this tool only supports microsoft 365/enterprise accounts and does not support @hotmail.com or @outlook.com addresses.
+
+**Action Parameters**
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="fromEmail" type="string">
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="hasAttachments" type="boolean">
+</ParamField>
+
+<ParamField path="from_index" type="integer">
+</ParamField>
+
+<ParamField path="size" type="integer" default="25">
+</ParamField>
+
+<ParamField path="enable_top_results" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_GET_MESSAGE">
+Retrieve an email message by its id using the microsoft graph api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_LIST_CONTACTS">
+Action to list outlook contacts using microsoft graph.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="contact_folder_id" type="string">
+</ParamField>
+
+<ParamField path="top" type="integer" default="10">
+</ParamField>
+
+<ParamField path="filter" type="string">
+</ParamField>
+
+<ParamField path="select" type="array">
+</ParamField>
+
+<ParamField path="orderby" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_GET_PROFILE">
+Get the profile of a user in outlook using microsoft graph api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_UPDATE_EMAIL">
+Update an existing email message.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="body" type="object">
+</ParamField>
+
+<ParamField path="importance" type="string" default="normal">
+</ParamField>
+
+<ParamField path="cc_recipients" type="array">
+</ParamField>
+
+<ParamField path="bcc_recipients" type="array">
+</ParamField>
+
+<ParamField path="to_recipients" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_CREATE_DRAFT">
+Create a draft email using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="subject" type="string" required={true}>
+</ParamField>
+
+<ParamField path="body" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to_recipients" type="array" required={true}>
+</ParamField>
+
+<ParamField path="cc_recipients" type="array">
+</ParamField>
+
+<ParamField path="bcc_recipients" type="array">
+</ParamField>
+
+<ParamField path="is_html" type="boolean">
+</ParamField>
+
+<ParamField path="attachment" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_UPDATE_CONTACT">
+Update an existing contact for the user in outlook contacts.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="displayName" type="string">
+</ParamField>
+
+<ParamField path="givenName" type="string">
+</ParamField>
+
+<ParamField path="surname" type="string">
+</ParamField>
+
+<ParamField path="emailAddresses" type="array">
+</ParamField>
+
+<ParamField path="businessPhones" type="array">
+</ParamField>
+
+<ParamField path="mobilePhone" type="string">
+</ParamField>
+
+<ParamField path="homePhones" type="array">
+</ParamField>
+
+<ParamField path="companyName" type="string">
+</ParamField>
+
+<ParamField path="jobTitle" type="string">
+</ParamField>
+
+<ParamField path="department" type="string">
+</ParamField>
+
+<ParamField path="officeLocation" type="string">
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="notes" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_SEND_EMAIL">
+Send an email using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="subject" type="string" required={true}>
+</ParamField>
+
+<ParamField path="body" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to_email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to_name" type="string">
+</ParamField>
+
+<ParamField path="cc_emails" type="array">
+</ParamField>
+
+<ParamField path="bcc_emails" type="array">
+</ParamField>
+
+<ParamField path="is_html" type="boolean">
+</ParamField>
+
+<ParamField path="save_to_sent_items" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="attachment" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_LIST_MESSAGES">
+List messages in the user's mailbox using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="folder" type="string" default="inbox">
+</ParamField>
+
+<ParamField path="top" type="integer" default="10">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+<ParamField path="is_read" type="boolean">
+</ParamField>
+
+<ParamField path="importance" type="string">
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="received_date_time_gt" type="string">
+</ParamField>
+
+<ParamField path="subject_startswith" type="string">
+</ParamField>
+
+<ParamField path="subject_endswith" type="string">
+</ParamField>
+
+<ParamField path="subject_contains" type="string">
+</ParamField>
+
+<ParamField path="received_date_time_ge" type="string">
+</ParamField>
+
+<ParamField path="received_date_time_lt" type="string">
+</ParamField>
+
+<ParamField path="received_date_time_le" type="string">
+</ParamField>
+
+<ParamField path="from_address" type="string">
+</ParamField>
+
+<ParamField path="has_attachments" type="boolean">
+</ParamField>
+
+<ParamField path="body_preview_contains" type="string">
+</ParamField>
+
+<ParamField path="sent_date_time_gt" type="string">
+</ParamField>
+
+<ParamField path="sent_date_time_lt" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+<ParamField path="select" type="array">
+</ParamField>
+
+<ParamField path="orderby" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_REPLY_EMAIL">
+Reply to an email using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cc_emails" type="array">
+</ParamField>
+
+<ParamField path="bcc_emails" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_DOWNLOAD_OUTLOOK_ATTACHMENT">
+Download an attachment from an outlook mail.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="message_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="attachment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_DELETE_EVENT">
+Delete a calendar event using microsoft graph api for outlook.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="send_notifications" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_CREATE_CONTACT">
+Create a new contact in the user's outlook contacts using microsoft graph api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="displayName" type="string">
+</ParamField>
+
+<ParamField path="givenName" type="string">
+</ParamField>
+
+<ParamField path="surname" type="string">
+</ParamField>
+
+<ParamField path="emailAddresses" type="array">
+</ParamField>
+
+<ParamField path="businessPhones" type="array">
+</ParamField>
+
+<ParamField path="mobilePhone" type="string">
+</ParamField>
+
+<ParamField path="homePhone" type="string">
+</ParamField>
+
+<ParamField path="companyName" type="string">
+</ParamField>
+
+<ParamField path="jobTitle" type="string">
+</ParamField>
+
+<ParamField path="department" type="string">
+</ParamField>
+
+<ParamField path="officeLocation" type="string">
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="notes" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_GET_SCHEDULE">
+Get the free/busy schedule of users and resources for a specific time period. this action requires a minimum of calendars.readbasic permission and can retrieve availability information for up to 20 users or resources at once, for a time period of up to 62 days.
+
+**Action Parameters**
+
+<ParamField path="Schedules" type="array" required={true}>
+</ParamField>
+
+<ParamField path="StartTime" type="object" required={true}>
+</ParamField>
+
+<ParamField path="EndTime" type="object" required={true}>
+</ParamField>
+
+<ParamField path="availabilityViewInterval" type="string" default="30">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_GET_CONTACT">
+Get a specific contact by id from outlook using microsoft graph api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="OUTLOOK_OUTLOOK_GET_EVENT">
+Get a specific calendar event by id from outlook using microsoft graph api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

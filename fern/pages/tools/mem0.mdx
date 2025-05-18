@@ -1,0 +1,1281 @@
+---
+title: "Mem0"
+subtitle: "Learn how to use Mem0 with Composio"
+---
+
+
+## Overview
+
+### Enum
+`MEM0`
+
+### Description
+Mem0 assists with AI-driven note-taking, knowledge recall, and productivity tools, allowing users to organize, search, and generate content from stored information
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="MEM0_DELETE_AN_ORGANIZATION">
+Delete an organization by its id.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_FETCH_DETAILS_OF_A_SPECIFIC_ORGANIZATION">
+Get a organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_GET_PROJECT_DETAILS">
+Retrieve details of a specific project within an organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_LIST_OF_MEMORY_EVENTS">
+Retrieves a list of events from the mem0 platform's structured memory layer. this endpoint allows developers to access the interaction history and contextual information stored for ai assistants and agents. it can be used to fetch recent events, analyze user preferences, or gather data for personalization purposes. the endpoint returns events in chronological order, which may include user interactions, system actions, or any other recorded occurrences within the mem0 ecosystem. it's particularly useful for applications that need to maintain context across multiple interactions or sessions. note that while this endpoint provides access to event data, it may not include sensitive user information and could be subject to privacy constraints.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_FETCH_DETAILED_LIST_OF_ORGANIZATIONS">
+Retrieves a list of organizations registered on the mem0 platform. this endpoint is essential for administrators or authorized users to get an overview of all organizations in the system. it can be used for various purposes such as user management, access control, or generating reports. the endpoint does not provide detailed information about each organization; it likely returns a basic list of organization names or ids. note that the response may be paginated for efficiency if there are many organizations.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_MEMORY_LIST">
+Get all memories
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="agent_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="metadata" type="object">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="keywords" type="string">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_ENTITY_SPECIFIC_MEMORIES">
+Retrieves all memories associated with a specific entity in the mem0 platform. this endpoint is used to access stored information, such as user preferences, chat history, or any other type of data that has been saved as a "memory" for the given entity. it's particularly useful for retrieving context or historical data related to a user or a specific interaction. the endpoint should be used when you need to recall or analyze previously stored information for a particular entity. it does not create, update, or delete memories; it only retrieves existing ones. the response will likely include all memories associated with the specified entity, but the exact structure and content of the memories are not detailed in this schema.
+
+**Action Parameters**
+
+<ParamField path="entity_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="entity_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_ADD_NEW_MEMORY_RECORDS">
+Add memories
+
+**Action Parameters**
+
+<ParamField path="messages" type="array">
+</ParamField>
+
+<ParamField path="agent_id" type="string">
+</ParamField>
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="includes" type="string">
+</ParamField>
+
+<ParamField path="excludes" type="string">
+</ParamField>
+
+<ParamField path="infer" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="output_format" type="string">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_GET_ORGANIZATION_MEMBERS">
+Retrieve a list of members for a specific organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_A_NEW_APPLICATION">
+Create a new app.
+
+**Action Parameters**
+
+<ParamField path="app_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_A_NEW_ORGANIZATION_ENTRY">
+Create a new organization.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_A_NEW_AGENT">
+Create a new agent.
+
+**Action Parameters**
+
+<ParamField path="agent_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_UPDATE_MEMORY_DETAILS_BY_ID">
+Get or update or delete a memory.
+
+**Action Parameters**
+
+<ParamField path="memory_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_A_NEW_AGENT_RUN">
+Create a new agent run.
+
+**Action Parameters**
+
+<ParamField path="run_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_FETCH_SPECIFIC_ENTITY_DETAILS_WITH_OPTIONAL_FILTERS">
+Retrieves detailed information about a specific entity within the mem0 platform. this endpoint is used to fetch comprehensive data related to a particular entity, identified by its type and unique id. it's particularly useful when you need to access or verify the current state, attributes, or configuration of an entity in your integration or workflow setup. the endpoint should be used when detailed information about a single entity is required, rather than for bulk data retrieval or updates. note that the specific details returned may vary depending on the entity type, and some information might be subject to user permissions or data privacy settings within mem0.
+
+**Action Parameters**
+
+<ParamField path="entity_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="entity_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_UPDATE_ORGANIZATION_MEMBER_ROLE">
+Update the role of an existing member in a specific organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_MEMORY_HISTORY_BY_ID">
+Retrieve the history of a memory.
+
+**Action Parameters**
+
+<ParamField path="memory_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_UPDATE_MEMORY_BATCH_WITH_UUID">
+Batch update multiple memories (up to 1000) in a single api call.
+
+**Action Parameters**
+
+<ParamField path="memories" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_FETCH_LIST_OF_ENTITY_FILTERS">
+Retrieves the list of available filters for entities in the mem0 system. this endpoint allows developers to fetch predefined filters that can be used to query and manage entities within the b2b saas integration platform. it's particularly useful when you need to understand what filtering options are available for narrowing down entity searches or for implementing advanced data synchronization logic. the endpoint returns a comprehensive list of filters, which may include options for filtering by entity type, creation date, modification date, or other relevant attributes specific to mem0's entity structure. use this endpoint when you need to build dynamic filtering interfaces or when you want to explore the available filtering capabilities of the mem0 platform. note that this endpoint only provides the filter definitions and does not apply any filters to the actual entity data.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_GET_PROJECTS">
+Retrieve a list of projects for a specific organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_A_SPECIFIC_MEMORY_BY_ID">
+Get or update or delete a memory.
+
+**Action Parameters**
+
+<ParamField path="memory_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_LIST_ENTITIES_WITH_OPTIONAL_ORG_AND_PROJECT_FILTERS">
+Retrieves a list of entities from the mem0 b2b saas integration platform. this endpoint allows developers to fetch all available entities, which can represent various data objects or resources within the system. it should be used when a comprehensive view of all entities is required, such as for data synchronization, inventory checks, or generating reports. the endpoint returns a collection of entity objects, likely including their identifiers and key attributes. however, it may not provide detailed information for each entity, and there might be limitations on the number of entities returned in a single request. for more specific entity data or filtered results, additional api calls or parameters may be necessary.
+
+**Action Parameters**
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_REMOVE_A_MEMBER_FROM_THE_ORGANIZATION">
+This endpoint removes a specified member from an organization within the mem0 b2b saas integration platform. it should be used when an organization administrator needs to revoke a user's access to the organization, such as when an employee leaves the company or changes roles. the endpoint requires the organization id (specified in the path) and the username of the member to be removed. it's important to note that this action is irreversible and will immediately terminate the user's access to all organization resources. the endpoint does not provide any information about the success or failure of the operation in the schema, so proper error handling should be implemented in the client application.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_UPDATE_PROJECT_MEMBER_ROLE">
+Update the role of a member in a specific project within an organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_ADD_ORGANIZATION_MEMBER">
+Add a new member to a specific organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_ALL_EVENTS_FOR_THE_CURRENTLY_LOGGED_IN_USER">
+This endpoint returns a paginated list of events associated with the authenticated user. you can filter the events by event type, start date, and end date. query parameters: - event type: filter by event type (add or search) - start date: filter events after this date (format: yyyy-mm-dd) - end date: filter events before this date (format: yyyy-mm-dd) - page: page number for pagination - page size: number of items per page (default: 50, max: 100)
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_PERFORM_SEMANTIC_SEARCH_ON_MEMORIES">
+Perform a semantic search on memories.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="agent_id" type="string">
+</ParamField>
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="top_k" type="integer" default="10">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="rerank" type="boolean">
+</ParamField>
+
+<ParamField path="output_format" type="string">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+<ParamField path="filter_memories" type="boolean">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+<ParamField path="only_metadata_based_search" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_A_NEW_USER">
+Create a new user.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_MEMORY_BY_UNIQUE_IDENTIFIER">
+Get a memory.
+
+**Action Parameters**
+
+<ParamField path="memory_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_AN_EXPORT_JOB_WITH_SCHEMA">
+Create a structured export of memories based on a provided schema.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="session_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_MEMORY_ENTRY">
+Get all memories
+
+**Action Parameters**
+
+<ParamField path="filters" type="object">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_SEARCH_MEMORIES_WITH_QUERY_FILTERS">
+Search memories based on a query and filters.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="filters" type="object" required={true}>
+</ParamField>
+
+<ParamField path="top_k" type="integer" default="10">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="rerank" type="boolean">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_ADD_MEMBER_TO_PROJECT">
+Add a new member to a specific project within an organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_PROJECT_MEMBER">
+Removes a member from a specific project within an organization in the mem0 b2b saas integration platform. this endpoint is used to revoke a user's access to a particular project, which may be necessary when team members change roles, leave the organization, or no longer require access to the project. it's important to note that this action only affects the user's membership in the specified project and does not remove them from the organization entirely. use this endpoint carefully, as it immediately terminates the user's ability to interact with the project through the mem0 platform.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_UPDATE_PROJECT">
+Update a specific project's settings.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="custom_instructions" type="array">
+</ParamField>
+
+<ParamField path="custom_categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_ENTITY_BY_TYPE_AND_ID">
+Deletes a specific entity from the mem0 system based on the provided entity type and id. this endpoint should be used when you need to permanently remove an entity, such as a user, agent, app, or run, from the system. the operation is irreversible, so it should be used with caution. this endpoint performs a hard delete, completely removing the entity and its associated data from mem0. it's important to note that this operation may have cascading effects on related data or dependencies within the system.
+
+**Action Parameters**
+
+<ParamField path="entity_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="entity_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_GET_PROJECT_MEMBERS">
+Retrieve a list of members for a specific project.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_PROJECT">
+Delete a specific project and its related data.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_MEMORY_BATCH_WITH_UUIDS">
+Batch delete multiple memories (up to 1000) in a single api call.
+
+**Action Parameters**
+
+<ParamField path="memory_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_CREATE_PROJECT">
+Create a new project within an organization.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_DELETE_MEMORIES_ENDPOINT">
+Delete memories
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="agent_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="metadata" type="object">
+</ParamField>
+
+<ParamField path="org_name" type="string">
+</ParamField>
+
+<ParamField path="project_name" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_EXPORT_DATA_BASED_ON_FILTERS">
+Get the latest memory export.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+<ParamField path="run_id" type="string">
+</ParamField>
+
+<ParamField path="session_id" type="string">
+</ParamField>
+
+<ParamField path="app_id" type="string">
+</ParamField>
+
+<ParamField path="org_id" type="string">
+</ParamField>
+
+<ParamField path="project_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="MEM0_RETRIEVE_MEMORY_RELATED_STATISTICS_FOR_THE_AUTHENTICATED_USER">
+This endpoint returns the following statistics: - total number of memories created - total number of search events - total number of add events
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

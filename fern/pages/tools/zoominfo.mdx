@@ -1,0 +1,1009 @@
+---
+title: "Zoominfo"
+subtitle: "Learn how to use Zoominfo with Composio"
+---
+
+
+## Overview
+
+### Enum
+`ZOOMINFO`
+
+### Description
+ZoomInfo is a multiplatform operating system that revenue teams use to deliver business growth.
+
+### Authentication Details
+
+<Accordion title="BASIC_WITH_JWT">
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="ZOOMINFO_SEARCH_CONTACT">
+Returns a list of contacts from zoominfo's data that meet the specified search criteria.
+
+**Action Parameters**
+
+<ParamField path="rpp" type="integer" default="25">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="sortOrder" type="string">
+</ParamField>
+
+<ParamField path="sortBy" type="string">
+</ParamField>
+
+<ParamField path="personId" type="string">
+</ParamField>
+
+<ParamField path="emailAddress" type="string">
+</ParamField>
+
+<ParamField path="supplementalEmail" type="array">
+</ParamField>
+
+<ParamField path="hashedEmail" type="string">
+</ParamField>
+
+<ParamField path="phone" type="array">
+</ParamField>
+
+<ParamField path="fullName" type="string">
+</ParamField>
+
+<ParamField path="firstName" type="string">
+</ParamField>
+
+<ParamField path="middleInitial" type="string">
+</ParamField>
+
+<ParamField path="lastName" type="string">
+</ParamField>
+
+<ParamField path="jobTitle" type="string">
+</ParamField>
+
+<ParamField path="excludeJobTitle" type="string">
+</ParamField>
+
+<ParamField path="managementLevel" type="string">
+</ParamField>
+
+<ParamField path="excludeManagementLevel" type="string">
+</ParamField>
+
+<ParamField path="department" type="string">
+</ParamField>
+
+<ParamField path="boardMember" type="string">
+</ParamField>
+
+<ParamField path="excludePartialProfiles" type="boolean">
+</ParamField>
+
+<ParamField path="executivesOnly" type="boolean">
+</ParamField>
+
+<ParamField path="requiredFields" type="string">
+</ParamField>
+
+<ParamField path="contactAccuracyScoreMin" type="string">
+</ParamField>
+
+<ParamField path="contactAccuracyScoreMax" type="string">
+</ParamField>
+
+<ParamField path="jobFunction" type="string">
+</ParamField>
+
+<ParamField path="lastUpdatedDateAfter" type="string">
+</ParamField>
+
+<ParamField path="validDateAfter" type="string">
+</ParamField>
+
+<ParamField path="lastUpdatedInMonths" type="integer">
+</ParamField>
+
+<ParamField path="hasBeenNotified" type="string">
+</ParamField>
+
+<ParamField path="companyPastOrPresent" type="string">
+</ParamField>
+
+<ParamField path="school" type="string">
+</ParamField>
+
+<ParamField path="degree" type="string">
+</ParamField>
+
+<ParamField path="locationCompanyId" type="array">
+</ParamField>
+
+<ParamField path="companyId" type="string">
+</ParamField>
+
+<ParamField path="companyName" type="string">
+</ParamField>
+
+<ParamField path="companyWebsite" type="string">
+</ParamField>
+
+<ParamField path="companyTicker" type="array">
+</ParamField>
+
+<ParamField path="companyDescription" type="string">
+</ParamField>
+
+<ParamField path="parentId" type="string">
+</ParamField>
+
+<ParamField path="ultimateParentId" type="string">
+</ParamField>
+
+<ParamField path="companyType" type="string">
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="street" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="zipCode" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="continent" type="string">
+</ParamField>
+
+<ParamField path="zipCodeRadiusMiles" type="string">
+</ParamField>
+
+<ParamField path="hashTagString" type="string">
+</ParamField>
+
+<ParamField path="techAttributeTagList" type="string">
+</ParamField>
+
+<ParamField path="subUnitTypes" type="string">
+</ParamField>
+
+<ParamField path="primaryIndustriesOnly" type="boolean">
+</ParamField>
+
+<ParamField path="industryCodes" type="string">
+</ParamField>
+
+<ParamField path="industryKeywords" type="string">
+</ParamField>
+
+<ParamField path="sicCodes" type="string">
+</ParamField>
+
+<ParamField path="naicsCodes" type="string">
+</ParamField>
+
+<ParamField path="revenueMin" type="integer">
+</ParamField>
+
+<ParamField path="revenueMax" type="integer">
+</ParamField>
+
+<ParamField path="revenue" type="string">
+</ParamField>
+
+<ParamField path="employeeRangeMin" type="string">
+</ParamField>
+
+<ParamField path="employeeRangeMax" type="string">
+</ParamField>
+
+<ParamField path="employeeCount" type="string">
+</ParamField>
+
+<ParamField path="companyRanking" type="string">
+</ParamField>
+
+<ParamField path="metroRegion" type="string">
+</ParamField>
+
+<ParamField path="locationSearchType" type="string">
+</ParamField>
+
+<ParamField path="fundingAmountMin" type="integer">
+</ParamField>
+
+<ParamField path="fundingAmountMax" type="integer">
+</ParamField>
+
+<ParamField path="fundingStartDate" type="string">
+</ParamField>
+
+<ParamField path="fundingEndDate" type="string">
+</ParamField>
+
+<ParamField path="excludedRegions" type="string">
+</ParamField>
+
+<ParamField path="zoominfoContactsMin" type="string">
+</ParamField>
+
+<ParamField path="zoominfoContactsMax" type="string">
+</ParamField>
+
+<ParamField path="companyStructureIncludedSubUnitTypes" type="string">
+</ParamField>
+
+<ParamField path="oneYearEmployeeGrowthRateMin" type="string">
+</ParamField>
+
+<ParamField path="oneYearEmployeeGrowthRateMax" type="string">
+</ParamField>
+
+<ParamField path="twoYearEmployeeGrowthRateMin" type="string">
+</ParamField>
+
+<ParamField path="twoYearEmployeeGrowthRateMax" type="string">
+</ParamField>
+
+<ParamField path="positionStartDateMin" type="string">
+</ParamField>
+
+<ParamField path="positionStartDateMax" type="string">
+</ParamField>
+
+<ParamField path="webReferences" type="array">
+</ParamField>
+
+<ParamField path="filterByBuyingCommittee" type="boolean">
+</ParamField>
+
+<ParamField path="techSkills" type="array">
+</ParamField>
+
+<ParamField path="yearsOfExperience" type="string">
+</ParamField>
+
+<ParamField path="engagementStartDate" type="string">
+</ParamField>
+
+<ParamField path="engagementEndDate" type="string">
+</ParamField>
+
+<ParamField path="engagementType" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_COMPANY_INPUT">
+Returns a list of fields you can use as input for the company search action.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_ENRICH_TECHNOLOGY">
+Use this endpoint to match contact information based on input values and return the desired output fields in the response. use contact enrich outputs to retrieve the list of available output fields.returns a list of news articles from zoominfo's data which meet the specified search criteria. all inputs are optional, but you must use at least one input parameter to generate a successful response.
+
+**Action Parameters**
+
+<ParamField path="companyId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_ENRICH_COMPANY">
+Use this endpoint to match contact information based on input values and return the desired output fields in the response. use contact enrich outputs to retrieve the list of available output fields.returns a list of news articles from zoominfo's data which meet the specified search criteria. all inputs are optional, but you must use at least one input parameter to generate a successful response.
+
+**Action Parameters**
+
+<ParamField path="companyId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyWebsite" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyTicker" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyPhone" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyFax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyStreet" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyCity" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyState" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyZipCode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyCountry" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ipAddress" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_SCOOP">
+Returns a list of scoops from zoominfo's data which meet the specified search criteria.
+
+**Action Parameters**
+
+<ParamField path="rpp" type="integer" default="25">
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sortOrder" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sortBy" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyWebsite" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyDescription" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ultimateParentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="address" type="string" required={true}>
+</ParamField>
+
+<ParamField path="street" type="string" required={true}>
+</ParamField>
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zipCode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="continent" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zipCodeRadiusMiles" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hashTagString" type="string" required={true}>
+</ParamField>
+
+<ParamField path="techAttributeTagList" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subUnitTypes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="primaryIndustriesOnly" type="boolean">
+</ParamField>
+
+<ParamField path="industryCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="industryKeywords" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sicCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="naicsCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="revenueMin" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="revenueMax" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="revenue" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeRangeMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeRangeMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeCount" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyRanking" type="string" required={true}>
+</ParamField>
+
+<ParamField path="metroRegion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="locationSearchType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fundingAmountMin" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fundingAmountMax" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fundingStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fundingEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="excludedRegions" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zoominfoContactsMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zoominfoContactsMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyStructureIncludedSubUnitTypes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="publishedStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="publishedEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="updatedSinceCreation" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="scoopType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scoopTopic" type="string" required={true}>
+</ParamField>
+
+<ParamField path="department" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scoopId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_SCOOP_INPUT">
+Returns a list of fields you can use as input for the scoop search action.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_ENRICH_CONTACT">
+Use this endpoint to match contact information based on input values and return the desired output fields in the response. use contact enrich outputs to retrieve the list of available output fields.returns a list of news articles from zoominfo's data which meet the specified search criteria. all inputs are optional, but you must use at least one input parameter to generate a successful response.
+
+**Action Parameters**
+
+<ParamField path="personId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fullName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="firstName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lastName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="emailAddress" type="string" required={true}>
+</ParamField>
+
+<ParamField path="phone" type="string" required={true}>
+</ParamField>
+
+<ParamField path="jobTitle" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hashedEmail" type="string" required={true}>
+</ParamField>
+
+<ParamField path="externalURL" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lastUpdatedDateAfter" type="string" required={true}>
+</ParamField>
+
+<ParamField path="validDateAfter" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="companyName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contactAccuracyScoreMin" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_NEWS">
+Returns a list of news articles from zoominfo's data which meet the specified search criteria. all inputs are optional, but you must use at least one input parameter to generate a successful response.
+
+**Action Parameters**
+
+<ParamField path="rpp" type="integer" default="25">
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="categories" type="array" required={true}>
+</ParamField>
+
+<ParamField path="url" type="array" required={true}>
+</ParamField>
+
+<ParamField path="pageDateMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pageDateMax" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_CONTACT_INPUT">
+Returns a list of fields you can use as input for the contact search action.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_ENRICH_LOCATION">
+Use this endpoint to match contact information based on input values and return the desired output fields in the response. use contact enrich outputs to retrieve the list of available output fields.returns a list of news articles from zoominfo's data which meet the specified search criteria. all inputs are optional, but you must use at least one input parameter to generate a successful response.
+
+**Action Parameters**
+
+<ParamField path="companyId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_NEWS_INPUT">
+Returns a list of fields you can use as input for the news search endpoint.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_INTENT_INPUT">
+Returns a list of fields you can use as input for the intent action.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_COMPANY">
+Returns a list of companies from zoominfo's data which meet the specified search criteria.
+
+**Action Parameters**
+
+<ParamField path="rpp" type="integer" default="25">
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sortOrder" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sortBy" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyWebsite" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyDescription" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ultimateParentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyTicker" type="array" required={true}>
+</ParamField>
+
+<ParamField path="companyType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="businessModel" type="array" required={true}>
+</ParamField>
+
+<ParamField path="address" type="string" required={true}>
+</ParamField>
+
+<ParamField path="street" type="string" required={true}>
+</ParamField>
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zipCode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="continent" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zipCodeRadiusMiles" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hashTagString" type="string" required={true}>
+</ParamField>
+
+<ParamField path="techAttributeTagList" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subUnitTypes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="primaryIndustriesOnly" type="boolean">
+</ParamField>
+
+<ParamField path="industryCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="industryKeywords" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sicCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="naicsCodes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="revenueMin" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="revenueMax" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="revenue" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeRangeMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeRangeMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="employeeCount" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyRanking" type="string" required={true}>
+</ParamField>
+
+<ParamField path="metroRegion" type="string" required={true}>
+</ParamField>
+
+<ParamField path="locationSearchType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fundingAmountMin" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fundingAmountMax" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fundingStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fundingEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="excludedRegions" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zoominfoContactsMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zoominfoContactsMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="companyStructureIncludedSubUnitTypes" type="string" required={true}>
+</ParamField>
+
+<ParamField path="certified" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="excludeDefunctCompanies" type="boolean">
+</ParamField>
+
+<ParamField path="oneYearEmployeeGrowthRateMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oneYearEmployeeGrowthRateMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="twoYearEmployeeGrowthRateMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="twoYearEmployeeGrowthRateMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="engagementStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="engagementEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="engagementType" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOMINFO_SEARCH_INTENT">
+Use this endpoint to search for companies and recommended contacts based on intent data. use input values to return the desired output fields in the response. for charging purposes, each intent signal returned is counted as a record.
+
+**Action Parameters**
+
+<ParamField path="topics" type="array" required={true}>
+</ParamField>
+
+<ParamField path="signalStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="signalEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="signalScoreMin" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="signalScoreMax" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="audienceStrengthMin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="audienceStrengthMax" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rpp" type="integer" default="25">
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sortOrder" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sortBy" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

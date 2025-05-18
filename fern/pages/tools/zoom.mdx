@@ -1,0 +1,6001 @@
+---
+title: "Zoom"
+subtitle: "Learn how to use Zoom with Composio"
+---
+
+
+## Overview
+
+### Enum
+`ZOOM`
+
+### Description
+Zoom is a video conferencing and online meeting platform featuring breakout rooms, screen sharing, and integrations with various enterprise tools
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="meeting:read:admin,meeting:write:admin,recording:write:admin,recording:master,recording:read:admin,user:read:admin,user:write:admin,user:master,account:read:admin,account:master,account:write:admin,calendar:write:admin,calendar:read:admin,contact:read:admin,group:write:admin,group:read:admin,group:master,mail:read:admin,mail:write:admin,phone_recording:write:admin,phone_recording:read:admin,phone_recording:master,clips:write:admin,zoom_events_recordings:read:admin,meeting_summary:read:admin">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.zoom.us/v2">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="ZOOM_DELETE_A_WEBINAR_S_BRANDING_NAME_TAG">
+This api removes a webinar's session branding name tag. requirements include enabled webinar session branding setting. it needs `webinar:write` or `webinar:write:admin` scopes, with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="name_tag_ids" type="string">
+</ParamField>
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_S_JOIN_TOKEN_FOR_LIVE_STREAMING">
+To live stream a zoom meeting, obtain a join token for a recording bot using the zoom sdk, which supports regular and raw streaming. requires a pro plan, livestreaming enabled, and specific scopes. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_REMOVE_A_PANELIST">
+To remove a webinar panelist, first get their `panelistid` via the list panelists api. requirements: pro/higher plan with webinar add-on. scopes needed: webinar:write, write:admin, delete:panelist, delete:panelist:admin. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="panelistId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_ACCOUNT_S_TSP_INFORMATION">
+Access telephony service provider info at account level requires a pro plan or higher, `tsp:read:admin` scope, and falls under `light` rate limit according to zoom's api.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_S_SESSION_BRANDING">
+This api lets you customize webinars with wallpapers and virtual backgrounds for participants, requiring a pro plan, webinar add-on, and session branding enabled. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_RECOVER_MEETING_RECORDINGS">
+Zoom's api lets pro users with cloud recording enabled recover deleted recordings from trash within 30 days. it applies to specific meetings and has a 'light' rate limit. scopes required: `recording:write:admin`,`recording:write`.
+
+**Action Parameters**
+
+<ParamField path="meetingUUID" type="string" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_ARCHIVED_FILE_STATISTICS">
+Zoom offers an archiving solution for accounts to automate the recording and collection of meeting/webinar data for compliance. it requires meeting/webinar archiving enabled and has a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_WEBINARS">
+The api lists all scheduled webinars for zoom users with a webinar plan, using `me` for user-level apps. it only shows unexpired webinars for hosts broadcasting to up to 10,000 attendees. requires pro plan upwards and specific scopes. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" default="scheduled">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PAST_WEBINAR_POLL_RESULTS">
+This api endpoint fetches results for webinar polls, supporting single or multiple-choice questions. requirements include a webinar license and specific scopes with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_ZOOM_MEETING_REGISTRATION_QUESTIONS">
+Update questions shown to users during meeting registration on zoom. applicable scopes: `meeting:write`, `meeting:write:admin`. rate limit label: `light`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_S_JOIN_TOKEN_FOR_LIVE_STREAMING">
+Api provides a webinar archive token for live streaming via zoom sdk and supports both live and raw streaming. prerequisites include pro plan with webinar add-on and enabling streaming in settings. scopes and light rate limit apply.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_PARTICIPANT_REPORTS">
+Use this api to generate past meeting reports with multiple participants, excluding solo participant reports. note: information may be limited without a hipaa baa. requires pro plan, specific admin scopes, and adheres to heavy rate limits.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_H_323_SIP_DEVICES">
+H.323/sip devices can make or receive calls via a room connector to join zoom meetings. this api lists all such devices on a zoom account. scopes: h323:read:admin. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_H_323_SIP_DEVICE">
+H.323/sip devices can join or be called into zoom meetings via room connector. use the api to add devices to your zoom account. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="encryption" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ip" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_ZPA_VERSION_INFO">
+Get zpa firmware/app version upgrade info. scopes: `device:read:admin`. granular: `device:read:list zpa versions:admin`, `device:read:list zpa versions:master`. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="zdmGroupId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_WEBINAR_POLL">
+Update webinar polls in zoom with `webinar:write` and `webinar:write:admin` scopes. granular scopes include `webinar:update:poll` and `webinar:update:poll:admin`. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="poll_type" type="integer">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_LIVE_STREAM_STATUS">
+Zoom allows live streaming webinars to custom platforms for users with pro or higher plans and a webinar add-on, after configuring live streaming details. scopes include webinar writing/admin, with light rate limits.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+<ParamField path="settings__active__speaker__name" type="boolean">
+</ParamField>
+
+<ParamField path="settings__display__name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_WEBINAR_S_BRANDING_NAME_TAG">
+Use the api to change a webinar's session branding name tag, requiring the setting enabled and `webinar:write`,`webinar:write:admin` scopes. rate limit is medium.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="nameTagId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="text_color" type="string">
+</ParamField>
+
+<ParamField path="accent_color" type="string">
+</ParamField>
+
+<ParamField path="background_color" type="string">
+</ParamField>
+
+<ParamField path="is_default" type="boolean">
+</ParamField>
+
+<ParamField path="set_default_for_all_panelists" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_S_ARCHIVED_FILES">
+To access archived files for a specific meeting, ensure your account has the meeting and webinar archiving feature enabled by zoom support. requires `recording:read` scope. rate limit label: light.
+
+**Action Parameters**
+
+<ParamField path="meetingUUID" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_REGISTRATION_QUESTIONS">
+This api lets you update registration questions for viewers of on-demand meeting recordings, with fields displayed during registration. it requires `recording:write:admin` and `recording:write` scopes and has a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_ABSENTEES">
+This text details api permissions for viewing absentees of a webinar, including specific scopes and granular scopes, and notes that the rate limit label for this action is categorized as "heavy."
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PAST_MEETING_INSTANCES">
+Return a list of past meeting instances. **scopes:** `meeting:read:admin`,`meeting:read` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `medium`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPGRADE_ZPA_OS_APP">
+Upgrade zpa firmware/app via zoom device manager group id. needs `device:write:admin` or more specific permissions. rate limit is classified as `heavy`.
+
+**Action Parameters**
+
+<ParamField path="zdm_group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="data" type="object" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_LIVESTREAM">
+Update livestream details on zoom for meetings to a custom platform. requires a pro license host. applicable scopes are `meeting:write:admin`, `meeting:write`. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="page_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="stream_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="stream_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="resolution" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_ARCHIVED_FILES">
+Zoom's archiving solution enables administrators to automatically record and archive meeting data to third-party platforms for compliance, needing the meeting and webinar archiving feature enabled.
+
+**Action Parameters**
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+<ParamField path="query_date_type" type="string" default="meeting_start_time">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_WEBINAR_S_POLL">
+Learn how to create a poll for a webinar, including permissions needed (webinar:write, admin) and specific abilities (poll creation). rate limit category is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="poll_type" type="integer">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_POLL">
+Access webinar poll details with `webinar:read:admin` or `webinar:read` scopes. for specific poll info, use `webinar:read:poll` or its admin version. it's under `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ADD_A_NEW_DEVICE">
+Add a new device to a zoom account, requiring `device:write:admin` scope with a `medium` rate limit.
+
+**Action Parameters**
+
+<ParamField path="device_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mac_address" type="string" required={true}>
+</ParamField>
+
+<ParamField path="serial_number" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vendor" type="string" required={true}>
+</ParamField>
+
+<ParamField path="model" type="string" required={true}>
+</ParamField>
+
+<ParamField path="room_id" type="string">
+</ParamField>
+
+<ParamField path="user_email" type="string">
+</ParamField>
+
+<ParamField path="device_type" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tag" type="string">
+</ParamField>
+
+<ParamField path="zdm_group_id" type="string">
+</ParamField>
+
+<ParamField path="extension_number" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING">
+Delete a meeting. **scopes:** `meeting:write:admin`,`meeting:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="schedule_for_reminder" type="boolean">
+</ParamField>
+
+<ParamField path="cancel_meeting_reminder" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_MEETING_POLL">
+Meeting hosts can survey attendees with polls. requires `meeting:write:admin` or `meeting:write` scopes. rate limit is `light`. more info: [zoom polling](https://support.zoom.us/hc/en-us/articles/213756303-polling-for-meetings).
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="poll_type" type="integer">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_RECORDINGS">
+To download meeting recordings, use `download url`. include oauth token in the header for passcode-protected ones. supports `recording:read` and `phone recording:read:admin` scopes, with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="ttl" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_USE_IN_MEETING_CONTROLS">
+Zoom meeting controls allow for managing recordings and inviting participants. cloud recording is necessary; local not supported. requires live meeting, host status, and specific permissions with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="method" type="string">
+</ParamField>
+
+<ParamField path="params__contacts" type="array">
+</ParamField>
+
+<ParamField path="params__invitee__name" type="string">
+</ParamField>
+
+<ParamField path="params__phone__number" type="string">
+</ParamField>
+
+<ParamField path="params__invite__options__require__greeting" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="params__invite__options__require__pressing__one" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="params__call__type" type="string">
+</ParamField>
+
+<ParamField path="params__device__ip" type="string">
+</ParamField>
+
+<ParamField path="params__h323__headers__from__display__name" type="string">
+</ParamField>
+
+<ParamField path="params__h323__headers__to__display__name" type="string">
+</ParamField>
+
+<ParamField path="params__sip__headers__from__display__name" type="string">
+</ParamField>
+
+<ParamField path="params__sip__headers__to__display__name" type="string">
+</ParamField>
+
+<ParamField path="params__sip__headers__from__uri" type="string">
+</ParamField>
+
+<ParamField path="params__sip__headers__additional__headers" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_PAST_MEETING_DETAILS">
+Get information about a past meeting. **scopes:** `meeting:read:admin`,`meeting:read` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_AN_ARCHIVED_FILE_S_AUTO_DELETE_STATUS">
+To update an archived file's auto-delete status on zoom, ensure your account has the archiving feature enabled and auto-delete disabled by contacting zoom support. requires `recording:write` scopes. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="fileId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="auto_delete" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_ACCOUNT_S_TSP_INFORMATION">
+Summary: update an account's telephony service provider (tsp) settings, ensuring the tsp account option is enabled. requires `tsp:write:admin` scope and adheres to the `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="dial_in_number_unrestricted" type="boolean">
+</ParamField>
+
+<ParamField path="enable" type="boolean">
+</ParamField>
+
+<ParamField path="master_account_setting_extended" type="boolean">
+</ParamField>
+
+<ParamField path="modify_credential_forbidden" type="boolean">
+</ParamField>
+
+<ParamField path="tsp_bridge" type="string">
+</ParamField>
+
+<ParamField path="tsp_enabled" type="boolean">
+</ParamField>
+
+<ParamField path="tsp_provider" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_MEETING_SURVEY">
+To update a zoom meeting survey, the host must be a pro user with the feature enabled for scheduled meetings. required scopes are meeting:write:admin and meeting:write. the rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom__survey__title" type="string">
+</ParamField>
+
+<ParamField path="custom__survey__anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__numbered__questions" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__show__question__type" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__feedback" type="string">
+</ParamField>
+
+<ParamField path="custom__survey__questions" type="array">
+</ParamField>
+
+<ParamField path="show_in_the_browser" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="third_party_survey" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CHANGE_DEVICE_ASSOCIATION">
+Api allows changing zoom room device associations, requiring enrollment in zoom device management (zmd) with admin write access. rate limit is medium.
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="room_id" type="string">
+</ParamField>
+
+<ParamField path="app_type" type="string" default="ZR">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR">
+To delete a webinar, you need a pro plan or higher with the webinar add-on. required scopes are `webinar:write` and `webinar:delete:webinar`. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="cancel_webinar_reminder" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING_RECORDING_FILE">
+To delete a meeting recording, enable "the host can delete cloud recordings" in zoom's recording settings. permissions needed are `recording:write:admin` and `recording:write` with a light rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string" default="trash">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PAST_WEBINAR_INSTANCES">
+The text details api permissions and rate limit for listing past webinar instances, including scopes like `webinar:read:admin` and `webinar:read`, with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_TRACKING_FIELD">
+This api provides details on zoom's scheduling tracking fields. it requires a business, education, api, or higher plan with `tracking fields:read:admin` scope. the rate limit label is `light`.
+
+**Action Parameters**
+
+<ParamField path="fieldId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_UPCOMING_MEETINGS">
+The api lists a zoom user's upcoming meetings within the next 24 hours, covering both scheduled and invited ones. use `me` for user-level apps. requires `meeting:read` scopes. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PAST_MEETINGS_Q_A">
+Zoom meetings' q&a feature allows participants to ask and answer questions during a meeting. specific meeting q&as are listed, requiring `meeting:read:admin` and `meeting:read` scopes, with a 'medium' rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ASSIGN_A_DEVICE_TO_A_USER_OR_COMMONAREA">
+Assign, move, or remove a device for a user/common area within zoom device management (zdm). requires the device to be enrolled in zdm and appropriate admin scopes. rate limit category is medium.
+
+**Action Parameters**
+
+<ParamField path="extension_number" type="string">
+</ParamField>
+
+<ParamField path="mac_address" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vendor" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_POLL">
+Meeting hosts can survey attendees through polls, with details available via a provided link. it requires `meeting:read:admin` and `meeting:read` permissions and has a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPLOAD_A_WEBINAR_S_BRANDING_VIRTUAL_BACKGROUND">
+Use the provided api to upload up to 10 virtual backgrounds for webinar sessions, in jpg/jpeg, gif, or png format, not exceeding 15mb. requires webinar session branding setting and `webinar:write` scopes. rate limit is medium.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+<ParamField path="default" type="boolean">
+</ParamField>
+
+<ParamField path="set_default_for_all_panelists" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_REGISTRANT_S_STATUS">
+This api lets you update a registrant's status for accessing an on-demand recording, with either approval or denial. it requires `recording:write:admin` or `recording:write` scopes and has a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string" required={true}>
+</ParamField>
+
+<ParamField path="registrants" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_PERFORM_BATCH_REGISTRATION">
+Summarize: licensed zoom users can register up to 30 attendees at once for scheduled meetings requiring registration. not applicable to instant or recurring meetings. requires `meeting:write` permissions. rate limit label: heavy.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="auto_approve" type="boolean">
+</ParamField>
+
+<ParamField path="registrants_confirmation_email" type="boolean">
+</ParamField>
+
+<ParamField path="registrants" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_MEETING_TEMPLATES">
+To access zoom meeting templates for user-level apps, use `me` instead of `userid`. scopes required are `meeting:read` and `meeting:read:admin`, with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_PERFORM_BATCH_POLL_CREATION">
+Meeting hosts can survey attendees using polls after meeting the prerequisites: pro account or higher, polling enabled, and scheduled meetings only. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="polls" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_SIP_PHONE">
+Zoom's psi allows integrating supported pbx systems like cisco and avaya for softphone use. account owners/admins must enable sip phone integration. it also offers an api for sip info updates with a light rate limit.
+
+**Action Parameters**
+
+<ParamField path="phoneId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="authorization_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="domain" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+<ParamField path="proxy_server" type="string" required={true}>
+</ParamField>
+
+<ParamField path="proxy_server2" type="string" required={true}>
+</ParamField>
+
+<ParamField path="proxy_server3" type="string" required={true}>
+</ParamField>
+
+<ParamField path="register_server" type="string" required={true}>
+</ParamField>
+
+<ParamField path="register_server2" type="string" required={true}>
+</ParamField>
+
+<ParamField path="register_server3" type="string" required={true}>
+</ParamField>
+
+<ParamField path="registration_expire_time" type="integer" default="60">
+</ParamField>
+
+<ParamField path="transport_protocol" type="string">
+</ParamField>
+
+<ParamField path="transport_protocol2" type="string">
+</ParamField>
+
+<ParamField path="transport_protocol3" type="string">
+</ParamField>
+
+<ParamField path="user_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="voice_mail" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_TRACKING_FIELDS">
+Use the api to view all tracking fields on zoom for usage analysis. requires business, education, api plan or higher. scope: tracking fields:read:admin. rate limit: medium.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_WEBINAR_S_INVITE_LINKS">
+Generate webinar invitation links requiring a business, education, or api plan with add-on. necessary scopes include `webinar:write` and `webinar:write:admin` with granular scopes for invitation links. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+<ParamField path="ttl" type="integer" default="7200">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_S_JOIN_TOKEN_FOR_LOCAL_RECORDING">
+Api provides a join token for webinar local recording via a bot using zoom sdk, supporting standard and raw types. requires pro plan, webinar add-on, and enabled setting. scopes: webinar token:read. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_RECORDING_S_ANALYTICS_SUMMARY">
+Access zoom meeting recording analytics with a 1-month max duration using an oauth token. use specific api scopes and note the medium rate limit. example: `curl` command with authorization header.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_MEETING_REGISTRANT_STATUS">
+Update meeting registrant status to approve, cancel, or deny participation. requires `meeting:write:admin`, `meeting:write` scopes. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="action" type="string" required={true}>
+</ParamField>
+
+<ParamField path="registrants" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_LIVE_STREAM">
+To update webinar live stream info, you need a pro plan with add-on, pre-configured streaming details, and specific permissions. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="page_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="stream_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="stream_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="resolution" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_SIP_URI_WITH_PASSCODE">
+The api retrieves a meeting's sip uri, including meeting id, optional passcode, and participant code, plus subscription status, participant code, and uri validity. scopes and rate limit are specified.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="passcode" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_WEBINAR">
+To schedule a host's webinar, use 'me' in user-level apps. max 10,000 attendees, 100 daily requests. needs pro plan or higher, webinar add-on, `webinar:write` scopes, and falls under 'light' rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="agenda" type="string">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="password" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__date__time" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__times" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__day" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week__day" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__repeat__interval" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__type" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__weekly__days" type="string">
+</ParamField>
+
+<ParamField path="schedule_for" type="string">
+</ParamField>
+
+<ParamField path="settings__allow__multiple__devices" type="boolean">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts" type="string">
+</ParamField>
+
+<ParamField path="settings__alternative__host__update__polls" type="boolean">
+</ParamField>
+
+<ParamField path="settings__approval__type" type="integer" default="2">
+</ParamField>
+
+<ParamField path="settings__attendees__and__panelists__reminder__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__attendees__and__panelists__reminder__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__audio" type="string" default="both">
+</ParamField>
+
+<ParamField path="settings__audio__conference__info" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__option" type="string">
+</ParamField>
+
+<ParamField path="settings__auto__recording" type="string" default="none">
+</ParamField>
+
+<ParamField path="settings__close__registration" type="boolean">
+</ParamField>
+
+<ParamField path="settings__contact__email" type="string">
+</ParamField>
+
+<ParamField path="settings__contact__name" type="string">
+</ParamField>
+
+<ParamField path="settings__email__language" type="string">
+</ParamField>
+
+<ParamField path="settings__enforce__login" type="boolean">
+</ParamField>
+
+<ParamField path="settings__enforce__login__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__follow__up__absentees__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__follow__up__absentees__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__follow__up__attendees__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__follow__up__attendees__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__global__dial__in__countries" type="array">
+</ParamField>
+
+<ParamField path="settings__hd__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__hd__video__for__attendees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__host__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__panelist__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__meeting__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__add__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__add__audio__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__on__demand" type="boolean">
+</ParamField>
+
+<ParamField path="settings__panelists__invitation__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__panelists__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__post__webinar__survey" type="boolean">
+</ParamField>
+
+<ParamField path="settings__practice__session" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__submit__questions" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__anonymous__questions" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__answer__questions" type="string">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__attendees__can__comment" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__attendees__can__upvote" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__auto__reply" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__auto__reply__text" type="string">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__restrict__number" type="integer">
+</ParamField>
+
+<ParamField path="settings__registration__type" type="integer" default="1">
+</ParamField>
+
+<ParamField path="settings__send__1080p__video__to__attendees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__share__button" type="boolean">
+</ParamField>
+
+<ParamField path="settings__survey__url" type="string">
+</ParamField>
+
+<ParamField path="settings__enable__session__branding" type="boolean">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="template_id" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="topic" type="string">
+</ParamField>
+
+<ParamField path="tracking_fields" type="array">
+</ParamField>
+
+<ParamField path="type" type="integer" default="5">
+</ParamField>
+
+<ParamField path="is_simulive" type="boolean">
+</ParamField>
+
+<ParamField path="record_file_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_MEETINGS">
+This zoom api lists a user's scheduled meetings using the `me` value for user-level apps, excluding instant meetings and only showing unexpired ones. it requires specific scopes and has a `medium` rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" default="scheduled">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="page_number" type="integer">
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ENABLE_SIP_PHONE">
+Zoom's psi allows integration of sip phones with supported pbx systems (cisco, avaya) for softphone functionality within zoom. requires enabling by account owner/admin through sales. scope: `sip phone:write:admin`, rate limit: `light`.
+
+**Action Parameters**
+
+<ParamField path="authorization_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="domain" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+<ParamField path="proxy_server" type="string" required={true}>
+</ParamField>
+
+<ParamField path="proxy_server2" type="string">
+</ParamField>
+
+<ParamField path="proxy_server3" type="string">
+</ParamField>
+
+<ParamField path="register_server" type="string" required={true}>
+</ParamField>
+
+<ParamField path="register_server2" type="string">
+</ParamField>
+
+<ParamField path="register_server3" type="string">
+</ParamField>
+
+<ParamField path="registration_expire_time" type="integer" default="60">
+</ParamField>
+
+<ParamField path="transport_protocol" type="string">
+</ParamField>
+
+<ParamField path="transport_protocol2" type="string">
+</ParamField>
+
+<ParamField path="transport_protocol3" type="string">
+</ParamField>
+
+<ParamField path="user_email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="voice_mail" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_LIVESTREAM_DETAILS">
+Zoom supports livestreaming meetings to a custom platform, requiring a pro plan or higher, pre-configuration of streaming details, and observing rate limits. it provides stream url, stream key, and page url for the stream.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_ZPA_DEVICE_BY_VENDOR_AND_MAC_ADDRESS">
+To remove a zpa device in the device manager by vendor and mac, use scopes `device:write:admin`, `device:delete:zpa device:admin`, and `device:delete:zpa device:master`. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="vendor" type="string" required={true}>
+</ParamField>
+
+<ParamField path="macAddress" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_LIVE_MEETING_MESSAGE">
+Delete a message in a zoom live meeting using the api, requires dlp enabled for in-meeting chat. applicable scopes are `meeting:write` and `meeting:write:admin`. rate limit is classified as `medium`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="messageId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_ids" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_LIVESTREAM_STATUS">
+Zoom supports livestreaming meetings to custom platforms with options to update livestream status, requiring a host with a pro license and specific permissions. rate limit label: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+<ParamField path="settings__active__speaker__name" type="boolean">
+</ParamField>
+
+<ParamField path="settings__display__name" type="string">
+</ParamField>
+
+<ParamField path="settings__layout" type="string" default="follow_host">
+</ParamField>
+
+<ParamField path="settings__close__caption" type="string" default="burnt-in">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_PAST_MEETING_PARTICIPANTS">
+Api allows paid users (pro+) to fetch past meeting attendee info, excluding solo participants. requires double encoding for certain uuids, with `meeting:read` scope and others. rate limit is medium.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_INVITATION">
+Retrieve the meeting invitation note for a specific meeting. **scopes:** `meeting:read`,`meeting:read:admin` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_TRACKING_SOURCES">
+Zoom's webinar registration tracking sources feature allows users to analyze where registrants come from, aiding in marketing strategy optimization. it needs a webinar license, registration, and permissions, with a 'medium' rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_SIP_PHONES">
+Zoom's phone system integration allows organizations to connect the zoom client to cisco or avaya pbx systems for softphone functionality. users must contact sales to enable it. this api lists sip phones on an account. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="search_key" type="string">
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_S_TOKEN">
+Get a zoom meeting closed caption token to use with third-party captioning services by enabling specific settings. it requires meeting read permissions and has a 'light' rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" default="closed_caption_token">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_SIP_PHONE">
+This api deletes a zoom account's sip phone, supported only on cisco and avaya pbx systems. users must enable sip phone integration via zoom sales. scope required: `sip phone:write:admin` with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="phoneId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_SCHEDULE_USER_WEBINAR_WITH_REGISTRATION">
+Schedule a webinar for up to 30 participants requiring registration. must be a licensed user & webinar type 5. use specific api scopes with a 'heavy' rate limit label.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="auto_approve" type="boolean">
+</ParamField>
+
+<ParamField path="registrants" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_TRACKING_FIELD">
+This api allows updating tracking fields on zoom, requiring a business, education, api or higher plan, with `tracking fields:write:admin` scope. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="fieldId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="field" type="string">
+</ParamField>
+
+<ParamField path="recommended_values" type="array">
+</ParamField>
+
+<ParamField path="required" type="boolean">
+</ParamField>
+
+<ParamField path="visible" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_RECORDING_SETTINGS">
+This text outlines the api for retrieving zoom cloud recording settings for meetings, specifying required scopes (`recording:read:admin` and `recording:read`) and indicating a `light` rate limit label.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_MEETING_STATUS">
+Update the status of a meeting. **scopes:** `meeting:write:admin`,`meeting:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ADD_A_USER_S_TSP_ACCOUNT">
+Add a user's tsp account. **scopes:** `tsp:write:admin`,`tsp:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="conference_code" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dial_in_numbers" type="array">
+</ParamField>
+
+<ParamField path="leader_pin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tsp_bridge" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CHANGE_DEVICE">
+Change device name. **prerequisites:** * device must be enrolled in zmd (zoom device management) **scopes:** `device:write:admin` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `medium`
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="device_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag" type="string">
+</ParamField>
+
+<ParamField path="room_id" type="string">
+</ParamField>
+
+<ParamField path="device_type" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_BILLING_INVOICE_REPORTS">
+Access department billing invoices using `billing id` from the get billing reports api. requires pro account, department billing, `report:read:admin`, and `report:read:billing invoice:admin` scope. heavy rate limits apply.
+
+**Action Parameters**
+
+<ParamField path="billing_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_RECORDING_REGISTRANTS">
+This api lists past meeting registrants for on-demand cloud recordings. viewers must register to access. it requires `recording:read:admin` and `recording:read` scopes with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" default="approved">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_USER_S_TSP_ACCOUNTS">
+A user can have a maximum of two tsp accounts. use this api to list all tsp accounts of a user. **scopes:** `tsp:read:admin`,`tsp:read` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `medium`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_REGISTRANT">
+Zoom's webinar feature supports broadcasting to up to 10,000 attendees, requiring registration and a webinar plan. it includes an api for user details and comes with a 'light' rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="registrantId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_MEETING_POLL">
+Meeting hosts can create polls for attendees if using a pro or higher plan, with the polling feature enabled, and for scheduled meetings only. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="poll_type" type="integer">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_UPCOMING_EVENTS_REPORT">
+This api lists upcoming meetings/webinars within a month for users with a pro plan or higher. it requires `report:read:admin` and `report:read:upcoming meetings webinars:admin` scopes. rate limit: heavy.
+
+**Action Parameters**
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="type" type="string" default="all">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_DEVICE_DETAIL">
+Retrieve a device's details. **scopes:** `device:read:admin`,`device:write:admin` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `heavy`
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_A_WEBINAR_S_POLLS">
+The text outlines zoom webinar's api for listing polls, including required scopes (`webinar:read:admin`, `webinar:read`, `webinar:read:list polls`, `webinar:read:list polls:admin`) and mentioning its `light` rate limit label.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ADD_A_MEETING_REGISTRANT">
+This text guides on creating and customizing a user's registration for a zoom meeting, with a max of 4,999 registrants. preconditions include the host being licensed. api scopes and a light rate limit apply.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_ids" type="string">
+</ParamField>
+
+<ParamField path="first_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="last_name" type="string">
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="industry" type="string">
+</ParamField>
+
+<ParamField path="job_title" type="string">
+</ParamField>
+
+<ParamField path="no_of_employees" type="string">
+</ParamField>
+
+<ParamField path="org" type="string">
+</ParamField>
+
+<ParamField path="purchasing_time_frame" type="string">
+</ParamField>
+
+<ParamField path="role_in_purchase_process" type="string">
+</ParamField>
+
+<ParamField path="language" type="string">
+</ParamField>
+
+<ParamField path="auto_approve" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_ACTIVE_INACTIVE_HOST_REPORTS">
+Generate reports for active or inactive hosts within the last 6 months, limited to a month's range. active hosts have hosted meetings; inactive have not. requires pro plan or higher and specific admin permissions. rate limit: heavy.
+
+**Action Parameters**
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_WEBINAR_PARTICIPANTS">
+Get a list of past webinar participants with a pro plan or above plus an add-on. requires specific scopes and has a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_DAILY_USAGE_REPORT">
+The daily report provides zoom service usage details, like new users, meetings, participants, and minutes per day for a month, requiring a pro plan or higher. it has a 'heavy' rate limit.
+
+**Action Parameters**
+
+<ParamField path="year" type="integer">
+</ParamField>
+
+<ParamField path="month" type="integer">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_SURVEY_REPORT">
+To access past meeting survey reports on zoom, a pro or higher plan is needed, with `report:read:admin` and `report:read:meeting survey:admin` permissions. rate limit label is `heavy`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_USER_S_TSP_ACCOUNT">
+This api retrieves details for a user's specific tsp account, with a two-account maximum per user. it requires `tsp:read:admin` or `tsp:read` scopes and has a 'light' rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tspId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_LIVE_MEETING_MESSAGE">
+Update a live meeting message by id after enabling zoom's dlp for chat. prerequisites: dlp enabled. scopes: `meeting:write`, `meeting:write:admin`. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="messageId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="message_content" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_MEETING">
+Enable zoom meeting creation via user-level apps with "me". "start url" for hosts expires in 2 hours, or 90 days for "custcreate" users. renew via api, capped at 100 requests/day. requires "meeting:write" permission, subject to medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="agenda" type="string">
+</ParamField>
+
+<ParamField path="default_password" type="boolean">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="password" type="string">
+</ParamField>
+
+<ParamField path="pre_schedule" type="boolean">
+</ParamField>
+
+<ParamField path="recurrence__end__date__time" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__times" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__day" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week__day" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__repeat__interval" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__type" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__weekly__days" type="string" default="1">
+</ParamField>
+
+<ParamField path="schedule_for" type="string">
+</ParamField>
+
+<ParamField path="settings__additional__data__center__regions" type="array">
+</ParamField>
+
+<ParamField path="settings__allow__multiple__devices" type="boolean">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts" type="string">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts__email__notification" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="settings__approval__type" type="integer" default="2">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__approved__list" type="array">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__denied__list" type="array">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__method" type="string">
+</ParamField>
+
+<ParamField path="settings__audio" type="string" default="both">
+</ParamField>
+
+<ParamField path="settings__audio__conference__info" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__exception" type="array">
+</ParamField>
+
+<ParamField path="settings__authentication__option" type="string">
+</ParamField>
+
+<ParamField path="settings__auto__recording" type="string" default="none">
+</ParamField>
+
+<ParamField path="settings__breakout__room__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__breakout__room__rooms" type="array">
+</ParamField>
+
+<ParamField path="settings__calendar__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__close__registration" type="boolean">
+</ParamField>
+
+<ParamField path="settings__cn__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__contact__email" type="string">
+</ParamField>
+
+<ParamField path="settings__contact__name" type="string">
+</ParamField>
+
+<ParamField path="settings__email__notification" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="settings__encryption__type" type="string">
+</ParamField>
+
+<ParamField path="settings__focus__mode" type="boolean">
+</ParamField>
+
+<ParamField path="settings__global__dial__in__countries" type="array">
+</ParamField>
+
+<ParamField path="settings__host__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__in__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__jbh__time" type="integer">
+</ParamField>
+
+<ParamField path="settings__join__before__host" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__meeting__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__meeting__invitees" type="array">
+</ParamField>
+
+<ParamField path="settings__mute__upon__entry" type="boolean">
+</ParamField>
+
+<ParamField path="settings__participant__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__private__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__confirmation__email" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registration__type" type="integer" default="1">
+</ParamField>
+
+<ParamField path="settings__show__share__button" type="boolean">
+</ParamField>
+
+<ParamField path="settings__use__pmi" type="boolean">
+</ParamField>
+
+<ParamField path="settings__waiting__room" type="boolean">
+</ParamField>
+
+<ParamField path="settings__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__host__save__video__order" type="boolean">
+</ParamField>
+
+<ParamField path="settings__alternative__host__update__polls" type="boolean">
+</ParamField>
+
+<ParamField path="settings__internal__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__continuous__meeting__chat__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__continuous__meeting__chat__auto__add__invited__external__users" type="boolean">
+</ParamField>
+
+<ParamField path="settings__participant__focused__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__push__change__to__calendar" type="boolean">
+</ParamField>
+
+<ParamField path="settings__resources" type="array">
+</ParamField>
+
+<ParamField path="settings__auto__start__meeting__summary" type="boolean">
+</ParamField>
+
+<ParamField path="settings__auto__start__ai__companion__questions" type="boolean">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="template_id" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="topic" type="string">
+</ParamField>
+
+<ParamField path="tracking_fields" type="array">
+</ParamField>
+
+<ParamField path="type" type="integer" default="2">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ADD_A_WEBINAR_REGISTRANT">
+Zoom users with a webinar plan can create and manage webinars, broadcasting to up to 10,000 attendees. registration requires a pro plan, specific permissions, and is governed by a "light" rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_ids" type="string">
+</ParamField>
+
+<ParamField path="first_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="last_name" type="string">
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="industry" type="string">
+</ParamField>
+
+<ParamField path="job_title" type="string">
+</ParamField>
+
+<ParamField path="no_of_employees" type="string">
+</ParamField>
+
+<ParamField path="org" type="string">
+</ParamField>
+
+<ParamField path="purchasing_time_frame" type="string">
+</ParamField>
+
+<ParamField path="role_in_purchase_process" type="string">
+</ParamField>
+
+<ParamField path="language" type="string">
+</ParamField>
+
+<ParamField path="source_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_H_323_SIP_DEVICE">
+H.323/sip devices can use a room connector to join/invite to zoom meetings. use the api to edit device info in your zoom account. scopes: h323:write:admin. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="encryption" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ip" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_ZDM_GROUP_INFO">
+Retrieve zoom device manager group details for an account, requiring `device:read:admin` or granular `device:read:list groups:admin/master` permissions. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_REGISTRATION_QUESTIONS_FOR_MEETING">
+This text provides details on registering for a meeting via zoom, including the required api scopes (meeting:read, meeting:read:admin) and the rate limit label, which is categorized as "light."
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PAST_MEETING_S_POLL_RESULTS">
+Zoom meeting polls enable hosts to survey attendees and list results, but only for pro account holders in scheduled meetings. polling is not available for instant meetings. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_H_323_SIP_DEVICE">
+A h.323/sip device can join or be called into a zoom meeting via a room connector. this api allows for the deletion of such a device from a zoom account. it has an `h323:write:admin` scope and a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_A_USER_S_PAC_ACCOUNTS">
+To list a user's pac accounts on zoom, use the 'me' value for user-level apps. requires pro plan or higher with audio conferencing subscription and pac enabled. scopes: `pac:read:admin`, `pac:read`. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_SET_WEBINAR_S_DEFAULT_BRANDING_VIRTUAL_BACKGROUND">
+Use the api for setting a webinar's default session branding with a virtual background, requiring an enabled webinar session branding setting, webinar:write and webinar:write:admin scopes. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="id" type="string">
+</ParamField>
+
+<ParamField path="set_default_for_all_panelists" type="boolean">
+</ParamField>
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_WEBINAR_SURVEY">
+To update a zoom webinar survey, you need a pro plan or higher with a webinar add-on, enable the survey feature, have `webinar:write` and survey update permissions, under a `light` api rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom__survey__title" type="string">
+</ParamField>
+
+<ParamField path="custom__survey__anonymous" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__numbered__questions" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__show__question__type" type="boolean">
+</ParamField>
+
+<ParamField path="custom__survey__feedback" type="string">
+</ParamField>
+
+<ParamField path="custom__survey__questions" type="array">
+</ParamField>
+
+<ParamField path="show_in_the_browser" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="show_in_the_follow_up_email" type="boolean">
+</ParamField>
+
+<ParamField path="third_party_survey" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_REGISTRANT">
+Details on a specific user registered for a zoom meeting can be accessed by a host or admin with permissions. requires a meeting plan and the scopes `meeting:read:admin` and `meeting:read`. rate limit label is `light`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="registrantId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_LIVE_WEBINAR_MESSAGE">
+This api lets you delete a specific message in a live webinar by id. required: zoom's dlp for in-meeting chat enabled. scopes needed are `webinar:write` and `webinar:write:admin`, with a `medium` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="messageId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_ids" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING_S_ARCHIVED_FILES">
+Api to delete all meeting's archived files requires meeting/webinar archiving enabled and scopes `recording:write:admin`, `recording:write`. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingUUID" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_Q_A_REPORT">
+Summary: access past meeting q&a reports requires a pro plan or higher, with `report:read:admin` and `report:read:meeting qna:admin` scopes. note the `heavy` rate limit label.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR_SURVEY">
+Use the api to delete zoom webinar surveys if you have a pro plan or higher, the survey feature enabled, and the right scopes. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_SET_GLOBAL_DIAL_IN_URL_FOR_A_TSP_USER">
+An api allows setting the url for a user's global dial-in page in zoom with tsp and third-party audio options. applicable scopes are `tsp:write:admin`, `tsp:write`, and it has a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="audio_url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_RECOVER_A_SINGLE_RECORDING">
+Zoom's api enables users to restore recordings from the trash within 30 days of deletion. it supports recovery of individual meeting files. requires `recording:write:admin` or `recording:write` scopes. rate limit category is `light`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_WEBINAR_TEMPLATES">
+Zoom users with a pro account or higher can list webinar templates and use them for scheduling future webinars by using `template id` in the api. for user-level apps, use `me` instead of `userid`. requires `webinar:read` or admin equivalents.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_RECORDING_S_ANALYTICS_DETAILS">
+Access zoom meeting recording analytics and download within 1 month using oauth token in the authorization header. requires scopes `recording:read:admin`,`recording:read` with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR_S_BRANDING_VIRTUAL_BACKGROUNDS">
+This api allows the deletion of webinar session branding, specifically virtual backgrounds. requires the webinar session branding setting enabled. accessible with `webinar:write` and `webinar:write:admin` scopes. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string">
+</ParamField>
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_REGISTRATION_QUESTIONS_FOR_WEBINAR">
+To register for a webinar, users must fill out a form with specific fields and questions. requirements include a pro or higher plan with a webinar add-on and certain access scopes.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_DEVICES">
+This api lets you list devices. **scopes:** `device:read:admin`,`device:write:admin` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `heavy`
+
+**Action Parameters**
+
+<ParamField path="search_text" type="string">
+</ParamField>
+
+<ParamField path="platform_os" type="string">
+</ParamField>
+
+<ParamField path="is_enrolled_in_zdm" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="device_type" type="integer" default="-1">
+</ParamField>
+
+<ParamField path="device_vendor" type="string">
+</ParamField>
+
+<ParamField path="device_model" type="string">
+</ParamField>
+
+<ParamField path="device_status" type="integer" default="-1">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_SUMMARY">
+Meeting summary info requires a pro+ host plan, ai companion enabled, excluding e2ee meetings. scopes include meeting summary:read and admin versions. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_SURVEY">
+Zoom's webinar survey feature requires a pro or higher plan and an add-on, enabled in the host's account. it's governed by scopes (`webinar:read:admin`, `webinar:read`) and granular scopes, with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_S_JOIN_TOKEN_FOR_LOCAL_RECORDING">
+Obtain a join token for a zoom meeting to enable a recording bot, using the sdk, to connect and start local recording. requires enabling local recording in zoom settings. applicable rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="bypass_waiting_room" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_MEETING_POLLS">
+Meeting hosts with pro or higher plans can poll attendees in scheduled meetings, but not in instant meetings. polls are listed with "light" rate limits under `meeting:read:admin` and `meeting:read` scopes.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="anonymous" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_WEBINAR">
+Update your scheduled webinar up to 100 times daily per webinar host's userid. requires a pro plan or higher plus a webinar add-on. scopes include webinar:write and admin updates, with a 'light' rate limit label.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="agenda" type="string">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="password" type="string">
+</ParamField>
+
+<ParamField path="schedule_for" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__date__time" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__times" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__day" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week__day" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__repeat__interval" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__type" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__weekly__days" type="string" default="1">
+</ParamField>
+
+<ParamField path="settings__allow__multiple__devices" type="boolean">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts" type="string">
+</ParamField>
+
+<ParamField path="settings__alternative__host__update__polls" type="boolean">
+</ParamField>
+
+<ParamField path="settings__approval__type" type="integer" default="2">
+</ParamField>
+
+<ParamField path="settings__attendees__and__panelists__reminder__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__attendees__and__panelists__reminder__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__audio" type="string" default="both">
+</ParamField>
+
+<ParamField path="settings__audio__conference__info" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__name" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__option" type="string">
+</ParamField>
+
+<ParamField path="settings__auto__recording" type="string" default="none">
+</ParamField>
+
+<ParamField path="settings__close__registration" type="boolean">
+</ParamField>
+
+<ParamField path="settings__contact__email" type="string">
+</ParamField>
+
+<ParamField path="settings__contact__name" type="string">
+</ParamField>
+
+<ParamField path="settings__email__language" type="string">
+</ParamField>
+
+<ParamField path="settings__enforce__login" type="boolean">
+</ParamField>
+
+<ParamField path="settings__enforce__login__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__follow__up__absentees__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__follow__up__absentees__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__follow__up__attendees__email__notification__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__follow__up__attendees__email__notification__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__global__dial__in__countries" type="array">
+</ParamField>
+
+<ParamField path="settings__hd__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__hd__video__for__attendees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__host__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__panelist__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__meeting__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__add__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__add__audio__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__notify__registrants" type="boolean">
+</ParamField>
+
+<ParamField path="settings__on__demand" type="boolean">
+</ParamField>
+
+<ParamField path="settings__panelists__invitation__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__panelists__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__post__webinar__survey" type="boolean">
+</ParamField>
+
+<ParamField path="settings__practice__session" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__submit__questions" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__anonymous__questions" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__answer__questions" type="string">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__attendees__can__comment" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__attendees__can__upvote" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__allow__auto__reply" type="boolean">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__auto__reply__text" type="string">
+</ParamField>
+
+<ParamField path="settings__question__and__answer__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__confirmation__email" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__restrict__number" type="integer">
+</ParamField>
+
+<ParamField path="settings__registration__type" type="integer" default="1">
+</ParamField>
+
+<ParamField path="settings__send__1080p__video__to__attendees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__share__button" type="boolean">
+</ParamField>
+
+<ParamField path="settings__survey__url" type="string">
+</ParamField>
+
+<ParamField path="settings__enable__session__branding" type="boolean">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="topic" type="string">
+</ParamField>
+
+<ParamField path="tracking_fields" type="array">
+</ParamField>
+
+<ParamField path="type" type="integer" default="5">
+</ParamField>
+
+<ParamField path="is_simulive" type="boolean">
+</ParamField>
+
+<ParamField path="record_file_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR_REGISTRANT">
+Guide to deleting webinar registrants, requiring `webinar:write` or admin permissions and specific granular scopes. rate limit level: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="registrantId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_Q_A_REPORT">
+Summary: get a report of q&as from past webinars, requiring a pro/higher plan with webinar add-on, and specific admin permissions. rate limit category: heavy.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_WEBINAR_S_BRANDING_NAME_TAG">
+Use the api to create up to 20 name tags for a webinar's session branding. requires enabled webinar session branding setting and `webinar:write`, `webinar:write:admin` scopes. rate limit is medium.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="text_color" type="string" required={true}>
+</ParamField>
+
+<ParamField path="accent_color" type="string" required={true}>
+</ParamField>
+
+<ParamField path="background_color" type="string" required={true}>
+</ParamField>
+
+<ParamField path="is_default" type="boolean">
+</ParamField>
+
+<ParamField path="set_default_for_all_panelists" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_POLL_REPORTS">
+This api allows fetching past meeting poll results. requirements: pro plan or higher, `report:read:admin` and `report:read:list meeting polls:admin` scopes. rate limit is heavy.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_LIVE_STREAM_DETAILS">
+Zoom webinar live stream setup requires pro plan or higher, webinar add-on, and pre-configured streaming details. it supports custom platforms, including stream url, stream key, and page url. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_WEBINAR_REGISTRATION_FIELDS">
+Update webinar registration questions/fields for user completion to receive the join link. requires pro/higher plan with webinar add-on, and registration set as required. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="questions" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_WEBINAR_REGISTRANT_STATUS">
+Update webinar registrants' status: approve, deny, or revoke. requires `webinar:write` or admin scopes. features granular scopes for registrant status updates. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="action" type="string" required={true}>
+</ParamField>
+
+<ParamField path="registrants" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING">
+The text provides details on api permissions for reading meeting information, categorizing permissions into general and granular scopes, and labels the rate limit as 'light'.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="show_previous_occurrences" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_S_TOKEN">
+Get a closed caption token for zoom webinars to enable third-party closed captioning by visiting the provided link. requires a pro plan, webinar add-on, and specific settings enabled. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" default="closed_caption_token">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_DETAIL_REPORTS">
+Obtain a thorough report for a previous meeting. requirements: pro plan or higher, with admin rights to read reports. rate limit is categorized as heavy.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_S_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING">
+Get a meeting archive token for sdk apps or bots to access real-time raw media streams. requires a pro plan or higher and activating **archive meetings and webinars** in zoom settings. scope: `meeting token:read:admin:local archiving`. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_MEETING_RECORDING_SETTINGS">
+Updated settings for zoom's cloud recording feature. applicable scopes: recording:write, recording:write:admin. rate limit label: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="approval_type" type="integer">
+</ParamField>
+
+<ParamField path="authentication_domains" type="string">
+</ParamField>
+
+<ParamField path="authentication_option" type="string">
+</ParamField>
+
+<ParamField path="on_demand" type="boolean">
+</ParamField>
+
+<ParamField path="password" type="string">
+</ParamField>
+
+<ParamField path="recording_authentication" type="boolean">
+</ParamField>
+
+<ParamField path="send_email_to_host" type="boolean">
+</ParamField>
+
+<ParamField path="share_recording" type="string">
+</ParamField>
+
+<ParamField path="show_social_share_buttons" type="boolean">
+</ParamField>
+
+<ParamField path="topic" type="string">
+</ParamField>
+
+<ParamField path="viewer_download" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_PANELISTS">
+Webinar panelists have enhanced capabilities like video, screen share, and annotating, requiring a pro/higher plan with webinar add-on. access controls include `webinar:read:admin` and others, with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR_S_BRANDING_WALLPAPER">
+This api removes a webinar's session branding wallpaper file, requiring the webinar session branding setting and `webinar:write` or `webinar:write:admin` scopes. it has a light rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_WEBINAR_REGISTRANTS">
+Zoom users with a webinar plan can list registrants for webinars, requiring a pro plan or higher and webinar add-on. webinars broadcast to up to 10k attendees. registration is mandatory.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="status" type="string" default="approved">
+</ParamField>
+
+<ParamField path="tracking_source_id" type="string">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_DEVICE">
+Delete a device from a zoom account. **prerequisites:** * device must be enrolled in zmd (zoom device management) **scopes:** `device:write:admin` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `heavy`
+
+**Action Parameters**
+
+<ParamField path="deviceId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_TSP_ACCOUNT">
+Update a user's tsp account. **scopes:** `tsp:write:admin`,`tsp:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tspId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="conference_code" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dial_in_numbers" type="array">
+</ParamField>
+
+<ParamField path="leader_pin" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tsp_bridge" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_MEETING_S_INVITE_LINKS">
+Create a batch of invitation links for a meeting. **scopes:** `meeting:write:admin`,`meeting:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+<ParamField path="ttl" type="integer" default="7200">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_POLL_REPORTS">
+Access past webinar polls report on zoom with a pro/higher plan and webinar add-on. requires `report:read:admin` and `report:read:list webinar polls:admin` permissions. rate limit: heavy.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_REMOVE_WEBINAR_PANELISTS">
+To remove all panelists from a webinar, ensure you have a pro plan or higher with the webinar add-on. required access includes `webinar:write` and `webinar:delete:panelist` scopes, under a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_OPERATION_LOGS_REPORT">
+The zoom operations logs report allows auditing of user and admin actions like additions, setting adjustments, and recording deletions within a period. it requires at least a pro plan and specific scopes, with a high rate limit.
+
+**Action Parameters**
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="category_type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_REGISTRATION_QUESTIONS">
+Use the api to fetch questions displayed for user registration to view specific meeting on-demand recordings. includes fields for question inclusion. scopes: `recording:read:admin`, `recording:read`. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_MEETING_REGISTRANTS">
+Zoom meetings can require registration by a host or admin. it allows listing of registered users and has `meeting:read:admin` and `meeting:read` scopes with a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="status" type="string" default="approved">
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_MEETING_RECORDINGS">
+Summary: to delete all meeting recordings, ensure the user's account has cloud recording enabled. required permissions include `recording:write:admin` and `recording:write` with a `light` rate limit label.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string" default="trash">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_WEBINAR_TEMPLATE">
+Use this api to create a webinar template from an existing webinar. **scopes:** `webinar:write:admin`,`webinar:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `medium`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="webinar_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="save_recurrence" type="boolean">
+</ParamField>
+
+<ParamField path="overwrite" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_TRACKING_FIELD">
+This api allows deletion of zoom tracking fields. requirements: business, education, api plan, or higher. needs admin permissions with `tracking fields:write:admin` scope. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="fieldId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_MEETING_SUMMARIES_OF_AN_ACCOUNT">
+Generates meeting summaries for pro account holders with ai companion enabled, excluding e2ee meetings. requires scopes `meeting summary:read:admin` and `meeting:read:list summaries:admin`. rate limit: medium.
+
+**Action Parameters**
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_A_MEETING">
+To update a meeting via api, ensure `start time` is future-dated; `recurrence` is needed. limit: 100 requests/day, 100 updates/meeting in 24 hrs. requires `meeting:write` and `meeting:write:admin` scopes, with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="agenda" type="string">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="password" type="string">
+</ParamField>
+
+<ParamField path="pre_schedule" type="boolean">
+</ParamField>
+
+<ParamField path="schedule_for" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__date__time" type="string">
+</ParamField>
+
+<ParamField path="recurrence__end__times" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__day" type="integer" default="1">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__monthly__week__day" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__repeat__interval" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__type" type="integer">
+</ParamField>
+
+<ParamField path="recurrence__weekly__days" type="string" default="1">
+</ParamField>
+
+<ParamField path="settings__allow__multiple__devices" type="boolean">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts" type="string">
+</ParamField>
+
+<ParamField path="settings__alternative__hosts__email__notification" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="settings__alternative__host__update__polls" type="boolean">
+</ParamField>
+
+<ParamField path="settings__approval__type" type="integer" default="2">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__approved__list" type="array">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__denied__list" type="array">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__approved__or__denied__countries__or__regions__method" type="string">
+</ParamField>
+
+<ParamField path="settings__audio" type="string" default="both">
+</ParamField>
+
+<ParamField path="settings__audio__conference__info" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__exception" type="array">
+</ParamField>
+
+<ParamField path="settings__authentication__name" type="string">
+</ParamField>
+
+<ParamField path="settings__authentication__option" type="string">
+</ParamField>
+
+<ParamField path="settings__auto__recording" type="string" default="none">
+</ParamField>
+
+<ParamField path="settings__breakout__room__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__breakout__room__rooms" type="array">
+</ParamField>
+
+<ParamField path="settings__calendar__type" type="integer">
+</ParamField>
+
+<ParamField path="settings__close__registration" type="boolean">
+</ParamField>
+
+<ParamField path="settings__cn__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__contact__email" type="string">
+</ParamField>
+
+<ParamField path="settings__contact__name" type="string">
+</ParamField>
+
+<ParamField path="settings__custom__keys" type="array">
+</ParamField>
+
+<ParamField path="settings__email__notification" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="settings__encryption__type" type="string">
+</ParamField>
+
+<ParamField path="settings__enforce__login" type="boolean">
+</ParamField>
+
+<ParamField path="settings__enforce__login__domains" type="string">
+</ParamField>
+
+<ParamField path="settings__focus__mode" type="boolean">
+</ParamField>
+
+<ParamField path="settings__global__dial__in__countries" type="array">
+</ParamField>
+
+<ParamField path="settings__global__dial__in__numbers" type="array">
+</ParamField>
+
+<ParamField path="settings__host__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__in__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__jbh__time" type="integer">
+</ParamField>
+
+<ParamField path="settings__join__before__host" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__sign__language__interpretation__interpreters" type="array">
+</ParamField>
+
+<ParamField path="settings__meeting__authentication" type="boolean">
+</ParamField>
+
+<ParamField path="settings__meeting__invitees" type="array">
+</ParamField>
+
+<ParamField path="settings__mute__upon__entry" type="boolean">
+</ParamField>
+
+<ParamField path="settings__participant__video" type="boolean">
+</ParamField>
+
+<ParamField path="settings__private__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__confirmation__email" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registrants__email__notification" type="boolean">
+</ParamField>
+
+<ParamField path="settings__registration__type" type="integer" default="1">
+</ParamField>
+
+<ParamField path="settings__show__share__button" type="boolean">
+</ParamField>
+
+<ParamField path="settings__use__pmi" type="boolean">
+</ParamField>
+
+<ParamField path="settings__waiting__room" type="boolean">
+</ParamField>
+
+<ParamField path="settings__watermark" type="boolean">
+</ParamField>
+
+<ParamField path="settings__host__save__video__order" type="boolean">
+</ParamField>
+
+<ParamField path="settings__internal__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__continuous__meeting__chat__enable" type="boolean">
+</ParamField>
+
+<ParamField path="settings__continuous__meeting__chat__auto__add__invited__external__users" type="boolean">
+</ParamField>
+
+<ParamField path="settings__participant__focused__meeting" type="boolean">
+</ParamField>
+
+<ParamField path="settings__resources" type="array">
+</ParamField>
+
+<ParamField path="settings__auto__start__meeting__summary" type="boolean">
+</ParamField>
+
+<ParamField path="settings__auto__start__ai__companion__questions" type="boolean">
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="template_id" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="topic" type="string">
+</ParamField>
+
+<ParamField path="tracking_fields" type="array">
+</ParamField>
+
+<ParamField path="type" type="integer" default="2">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_SIP_URI_WITH_PASSCODE">
+To obtain a webinar's sip uri, include its id, any passcode, and participant code. api also displays subscription status, participant code, and uri lifespan. necessary scopes and a light rate limit apply.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="passcode" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_CLOUD_RECORDING_USAGE_REPORT">
+Get cloud recording usage report for the last 6 months, up to yesterday, with a max date range of 30 days. requires pro plan or higher, `report:read:admin` scope, and has a `heavy` rate limit.
+
+**Action Parameters**
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_WEBINAR_POLL">
+Guidelines for deleting a webinar's poll feature in zoom, requiring 'webinar:write' and admin permissions, with granular scopes for poll deletion. rate limit label is 'light'.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_MEETING_REPORTS">
+Retrieve reports on past zoom meetings and webinars within a six-month period, limited to one month at a time, requiring at least two unique participants. applicable for pro plans or higher, with specific admin scopes. rate limit label: heavy.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="type" type="string" default="past">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING_REGISTRANT">
+Delete a meeting registrant. **scopes:** `meeting:write:admin`,`meeting:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="registrantId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_USER_S_TSP_ACCOUNT">
+Delete a user's tsp account. **scopes:** `tsp:write:admin`,`tsp:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `light`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tspId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPLOAD_A_WEBINAR_S_BRANDING_WALLPAPER">
+This api lets you upload one webinar branding wallpaper in jpg/jpeg, gif, or png format, with a 16:9 ratio, ideally 1920x1080 px, not exceeding 15mb. requires "webinar session branding" enabled and has a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_ALL_RECORDINGS">
+This text details how to list zoom cloud recordings for a user, notably by using "me" for user-level apps and requiring an oauth token for access. it requires a pro plan, cloud recording enabled, and has a medium rate limit.
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="mc" type="string" default="false">
+</ParamField>
+
+<ParamField path="trash" type="boolean">
+</ParamField>
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+<ParamField path="trash_type" type="string" default="meeting_recordings">
+</ParamField>
+
+<ParamField path="meeting_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_MEETING_TEMPLATE_FROM_AN_EXISTING_MEETING">
+Create a meeting template from an existing meeting. **scopes:** `meeting:write:admin`,`meeting:write` **[rate limit label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `medium`
+
+**Action Parameters**
+
+<ParamField path="userId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="meeting_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="save_recurrence" type="boolean">
+</ParamField>
+
+<ParamField path="overwrite" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_UPDATE_WEBINAR_STATUS">
+This api ends an ongoing webinar. requires a valid webinar plan, `webinar:write` and `webinar:update:status` scopes. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_TRACKING_FIELD">
+Use the api to create tracking fields for zoom, allowing analysis of usage by organization fields. prerequisites include a business or higher plan. rate limit is light.
+
+**Action Parameters**
+
+<ParamField path="field" type="string">
+</ParamField>
+
+<ParamField path="recommended_values" type="array">
+</ParamField>
+
+<ParamField path="required" type="boolean">
+</ParamField>
+
+<ParamField path="visible" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING_POLL">
+Meeting hosts can survey attendees using polls, but polls must be deleted post-meeting. requirements: pro account, enabled polling, and a scheduled meeting. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="pollId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR_S_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING">
+This api provides a webinar's archive token for real-time access to raw audio and video streams, requiring a pro plan, webinar add-on, and enabled archive settings. rate limit: light.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_BILLING_REPORTS">
+To get zoom account department billing reports, require a pro/higher account with department billing enabled and permission scopes `report:read:admin` and `report:read:billing:admin`. contact zoom support for setup. note: heavy rate limits apply.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_ADD_PANELISTS">
+Panelists in webinars have access to more features like video sharing and screen sharing compared to attendees. adding panelists requires a pro or higher zoom plan with webinar add-on and specific scopes. rate limit label is medium.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="panelists" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_DELETE_A_MEETING_SURVEY">
+To delete a zoom meeting survey, the host needs a pro account with the survey feature enabled for scheduled meetings. permissions: `meeting:write`, `meeting:write:admin`. rate limit: `light`.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_DETAIL_REPORTS">
+Access past webinar details through a report, requiring a pro or higher plan with webinar add-on. it needs `report:read:admin` and `report:read:webinar:admin` scopes and is subject to a `heavy` rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_TELEPHONE_REPORTS">
+The telephone report api offers data on who joined meetings by phone, their dial-in number, and more, for a given time. it requires a pro plan, specific admin read scopes, and has a heavy rate limit.
+
+**Action Parameters**
+
+<ParamField path="type" type="string" default="1">
+</ParamField>
+
+<ParamField path="query_date_type" type="string" default="start_time">
+</ParamField>
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="page_number" type="integer" default="1">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_SIGN_IN_SIGN_OUT_ACTIVITY_REPORT">
+Get zoom user sign in/out logs with a pro plan or higher. requires `report:read:admin` and `report:read:user activities:admin` scopes. rate limit is heavy.
+
+**Action Parameters**
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="to" type="string">
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_SURVEY_REPORT">
+Access past webinar survey reports with a pro plan or higher and webinar add-on. requires `report:read:admin` and `report:read:webinar survey:admin` scopes. note: heavy rate limit applies.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_WEBINAR_PARTICIPANT_REPORTS">
+Access detailed reports on webinar attendees for up to 6 months. requires pro or higher plan with webinar add-on. necessary scopes include `report:read:admin` and `report:read:list webinar participants:admin`. rate limit label: heavy.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="next_page_token" type="string">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_WEBINAR">
+Access zoom webinar details requires pro or higher plan and webinar add-on. scopes include `webinar:read:admin` and `webinar:read`. granular scopes and a 'light' rate limit also apply.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="occurrence_id" type="string">
+</ParamField>
+
+<ParamField path="show_previous_occurrences" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_CREATE_A_RECORDING_REGISTRANT">
+Zoom offers on-demand cloud recordings of past meetings, accessible to registered users via an api. api scopes required are `recording:write:admin` and `recording:write`, with a 'light' rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="custom_questions" type="array">
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="first_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="industry" type="string">
+</ParamField>
+
+<ParamField path="job_title" type="string">
+</ParamField>
+
+<ParamField path="last_name" type="string">
+</ParamField>
+
+<ParamField path="no_of_employees" type="string">
+</ParamField>
+
+<ParamField path="org" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="purchasing_time_frame" type="string">
+</ParamField>
+
+<ParamField path="role_in_purchase_process" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_GET_A_MEETING_SURVEY">
+Zoom's post-meeting survey and reporting require a pro license, enabled survey feature, and scheduled meeting setup. it applies to `meeting:read` and `meeting:read:admin` scopes with a `light` rate limit.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ZOOM_LIST_Q_AS_OF_A_PAST_WEBINAR">
+The text describes zoom's q&a feature for webinars, allowing attendees to ask questions and panelists to answer, lists prerequisites like a webinar license, scopes for accessing past q&as, and mentions a 'medium' rate limit.
+
+**Action Parameters**
+
+<ParamField path="webinarId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,2298 @@
+---
+title: "Gong"
+subtitle: "Learn how to use Gong with Composio"
+---
+
+
+## Overview
+
+### Enum
+`GONG`
+
+### Description
+Gong is a platform for video meetings, call recording, and team collaboration.
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="base_url" type="string">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="GONG_CREATE_ACTIVITY_SCORECARDS_REPORT">
+Retrieve all the answers for the scorecards that were reviewed during a specified date range, for calls that took place during a specified date range, for specific scorecards or for specific reviewed users. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:stats:scorecards'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__callFromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__callToDate" type="string">
+</ParamField>
+
+<ParamField path="filter__reviewFromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__reviewToDate" type="string">
+</ParamField>
+
+<ParamField path="filter__reviewMethod" type="string">
+</ParamField>
+
+<ParamField path="filter__reviewedUserIds" type="array">
+</ParamField>
+
+<ParamField path="filter__scorecardIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_GET_PERMISSION_PROFILE">
+Returns a permission profile.
+
+**Action Parameters**
+
+<ParamField path="profileId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_FILTERED_CALL_DETAILS">
+Lists detailed call data for calls that took place during a specified date range, have specified call ids or hosted by specified users. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:read:extensive'. moreover, clients requesting media download urls by the contentselector.exposedfields.media field should also have the scope 'api:calls:read:media-url'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__toDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__workspaceId" type="string">
+</ParamField>
+
+<ParamField path="filter__callIds" type="array">
+</ParamField>
+
+<ParamField path="filter__primaryUserIds" type="array">
+</ParamField>
+
+<ParamField path="contentSelector__context" type="string">
+</ParamField>
+
+<ParamField path="contentSelector__contextTiming" type="array">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__parties" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__structure" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__topics" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__trackers" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__trackerOccurrences" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__pointsOfInterest" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__brief" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__outline" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__highlights" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__callOutcome" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__content__keyPoints" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__interaction__speakers" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__interaction__video" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__interaction__personInteractionStats" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__interaction__questions" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__collaboration__publicComments" type="boolean">
+</ParamField>
+
+<ParamField path="contentSelector__exposedFields__media" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_OF_CALLS_IN_A_SPECIFIC_FOLDER_V2_LIBRARY_FOLDER_CONTENT">
+Given a folder id, this endpoint retrieves a list of calls in it. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:library:read'.
+
+**Action Parameters**
+
+<ParamField path="folderId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_USERS_BY_FILTER_V2_USERS_EXTENSIVE">
+List multiple users. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:users:read'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__createdFromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__createdToDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__includeAvatars" type="boolean">
+</ParamField>
+
+<ParamField path="filter__userIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_MANUAL_CRM_CALL_ASSOCIATIONS">
+Returns a list of all calls that were manually associated or re-associated with crm account and deal/opportunity since a given time. actions will be listed in the ascending order of their timing. notice if a call was associated and later re-associated the api will return both events. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:crm-calls:manual-association:read'.
+
+**Action Parameters**
+
+<ParamField path="fromDateTime" type="string">
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_POST_A_DIGITAL_INTERACTION_V2_DIGITAL_INTERACTION">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:digital-interactions:write'.
+
+**Action Parameters**
+
+<ParamField path="eventId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timestamp" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sourceSystemName" type="string">
+</ParamField>
+
+<ParamField path="sessionId" type="string">
+</ParamField>
+
+<ParamField path="device" type="string">
+</ParamField>
+
+<ParamField path="content__contentId" type="string">
+</ParamField>
+
+<ParamField path="content__contentTitle" type="string">
+</ParamField>
+
+<ParamField path="content__contentLabel" type="array">
+</ParamField>
+
+<ParamField path="content__contentUrl" type="string">
+</ParamField>
+
+<ParamField path="content__contentAdditionalInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="content__numericContentDetails__value" type="integer">
+</ParamField>
+
+<ParamField path="content__numericContentDetails__rangeFrom" type="integer">
+</ParamField>
+
+<ParamField path="content__numericContentDetails__rangeTo" type="integer">
+</ParamField>
+
+<ParamField path="content__numericContentDetails__numericType" type="string">
+</ParamField>
+
+<ParamField path="content__stepContentDetails__value" type="string">
+</ParamField>
+
+<ParamField path="content__stepContentDetails__availableSteps" type="array">
+</ParamField>
+
+<ParamField path="content__searchObjectDetails__name" type="string">
+</ParamField>
+
+<ParamField path="content__searchObjectDetails__objectType" type="string">
+</ParamField>
+
+<ParamField path="content__searchObjectDetails__domain" type="string">
+</ParamField>
+
+<ParamField path="content__searchObjectDetails__objectId" type="string">
+</ParamField>
+
+<ParamField path="content__searchObjectDetails__url" type="string">
+</ParamField>
+
+<ParamField path="content__contentCustomFields" type="array">
+</ParamField>
+
+<ParamField path="person__name" type="string">
+</ParamField>
+
+<ParamField path="person__email" type="string">
+</ParamField>
+
+<ParamField path="person__phoneNumber" type="string">
+</ParamField>
+
+<ParamField path="person__personId" type="string">
+</ParamField>
+
+<ParamField path="person__personBusinessContext__objectType" type="string">
+</ParamField>
+
+<ParamField path="person__personBusinessContext__objectId" type="string">
+</ParamField>
+
+<ParamField path="person__personBusinessContext__systemName" type="string">
+</ParamField>
+
+<ParamField path="person__location__country" type="string">
+</ParamField>
+
+<ParamField path="person__location__state" type="string">
+</ParamField>
+
+<ParamField path="person__location__region" type="string">
+</ParamField>
+
+<ParamField path="person__location__city" type="string">
+</ParamField>
+
+<ParamField path="person__company__companyId" type="string">
+</ParamField>
+
+<ParamField path="person__company__name" type="string">
+</ParamField>
+
+<ParamField path="person__company__domain" type="string">
+</ParamField>
+
+<ParamField path="person__company__companyBusinessContexts" type="array">
+</ParamField>
+
+<ParamField path="person__personCustomFields" type="array">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+<ParamField path="trackingId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_GONG_ENGAGE_FLOWS_V2_FLOWS">
+Engage flows have the following visibility types: * company: visible to everyone in the company, can only be edited by users with edit permissions. * personal: reps can set up their own flows which are only available to them. * shared: reps can share a flow with other reps. those reps can then add leads to the flow. this endpoint returns all company flows, together with personal flows and flows shared with the user specified in the flowemailowner parameter. when accessed through a bearer token authorization method, use the 'api:flows:read' scope.
+
+**Action Parameters**
+
+<ParamField path="flowOwnerEmail" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_GET_GENERIC_CRM_INTEGRATION_DETAILS_V2_CRM_INTEGRATIONS">
+.public-api-info `{ background: rgb(222, 235,_255);}`.public-api-tip `{ background: rgb(227, 252,_239);}`.public-api-parameter `{ background:_rgba(9,30,66,0.08);}`.public-api-note `{ background: rgb(234, 230,_255);}`.public-api-important `{ background: rgb(255, 250,_230);}`.public-api-critical `{ background: rgb(255, 235,_230);}`table, th, td `{ border: 1px solid gray; border-collapse:_collapse;}`th, td `{ padding:_5px;}`th `{ text-align:_left;}`img `{ border: 2px solid_#d3d5d9;}`returns the crm integration you set up using the put /v2/crm/integrations endpoint. you can only have one integration at a time. when accessed using a bearer token, this endpoint requires the 'api:crm:integrations:read' scope.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_FLOWS_FOR_CRM_PROSPECTS">
+Get the gong engage flows assigned to the given prospects. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:flows:read'.
+
+**Action Parameters**
+
+<ParamField path="crmProspectsIds" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_CREATE_A_NEW_GONG_MEETING_V2_MEETINGS">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:meetings:user:create'.
+
+**Action Parameters**
+
+<ParamField path="startTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="invitees" type="array" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string">
+</ParamField>
+
+<ParamField path="organizerEmail" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_DATA_PRIVACY_INFO_FOR_EMAIL_ADDRESS">
+Shows the elements in the gong system that reference the given email address. given an emails address, this endpoint returns details of all calls and email messages that reference this address, and any leads or contacts with this email address. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:data-privacy:read'.
+
+**Action Parameters**
+
+<ParamField path="emailAddress" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_ALL_USERS_V2_USERS">
+List all of the company's users. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:users:read'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="includeAvatars" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_SCORECARDS_DETAILS_V2_SETTINGS_SCORECARDS">
+Retrieve all the scorecards within the gong system. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:settings:scorecards:read'.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_GET_CRM_OBJECTS_V2_CRM_ENTITIES">
+Retrieves crm entities from the gong platform. this endpoint allows users to fetch various crm objects such as accounts, deals, and contacts that have been integrated with gong's revenue intelligence system. it provides a way to access and utilize crm data within the context of gong's conversation analysis and insights. use this endpoint when you need to synchronize crm data with gong or when you want to retrieve the latest crm entity information for analysis or reporting purposes. the endpoint does not modify any data and is intended for read-only operations. note that the specific fields and structure of the returned entities may vary based on the crm system integrated with gong.
+
+**Action Parameters**
+
+<ParamField path="integrationId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="objectType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="objectsCrmIds" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_LIBRARY_FOLDERS_V2_LIBRARY_FOLDERS">
+Use this endpoint to retrieve a list of public library folders. we do not allow retrieval of either private or archived folders. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:library:read'.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_CALL_DATA_BY_DATE_RANGE_V2_CALLS">
+List calls that took place during a specified date range. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:read:basic'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="fromDateTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="toDateTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_DELETE_A_GENERIC_CRM_INTEGRATION_V2_CRM_INTEGRATIONS">
+Deletes an existing crm integration from the gong platform. this endpoint should be used when you want to disconnect or remove a previously established integration between gong and a crm system, such as hubspot. it's particularly useful when you need to change crm providers, stop syncing data between gong and a specific crm, or troubleshoot integration issues by removing and re-adding the connection. the deletion is likely permanent, so use this endpoint with caution. it's important to note that this operation may affect data synchronization and potentially impact existing analytics or reports that rely on the integrated crm data.
+
+**Action Parameters**
+
+<ParamField path="integrationId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="clientRequestId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_ALL_COACHING_METRICS_V2_COACHING">
+List all of the coaching metrics of a manager. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:coaching:read'.
+
+**Action Parameters**
+
+<ParamField path="workspace__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="manager__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_AGGREGATE_USER_ACTIVITY_STATISTICS">
+Lists the activity of multiple users within the gong system during a defined period. given the period, this endpoint returns multiple records, one for each user, with an applicable activity during the period. each record includes statistics about the user's activity. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:stats:user-actions'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__toDate" type="string">
+</ParamField>
+
+<ParamField path="filter__createdFromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__createdToDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__userIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_UPDATE_PERMISSION_PROFILE_V2_PERMISSION_PROFILE">
+Update a permission profile.
+
+**Action Parameters**
+
+<ParamField path="profileId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="callsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="callsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__libraryFolderIds" type="array">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__managePublicFolder" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__manageStreams" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__manageFolderCalls" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__shareFoldersAndStreams" type="boolean">
+</ParamField>
+
+<ParamField path="dealsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="dealsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditSubmissions__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditSubmissions__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditTargets__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditTargets__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="coachingAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="coachingAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="insightsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="insightsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="usageAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="usageAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="emailsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="emailsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="scoreCalls" type="boolean">
+</ParamField>
+
+<ParamField path="overrideScore" type="boolean">
+</ParamField>
+
+<ParamField path="downloadCallMedia" type="boolean">
+</ParamField>
+
+<ParamField path="shareCallsWithCustomers" type="boolean">
+</ParamField>
+
+<ParamField path="manuallyScheduleAndUploadCalls" type="boolean">
+</ParamField>
+
+<ParamField path="privateCalls" type="boolean">
+</ParamField>
+
+<ParamField path="deleteCalls" type="boolean">
+</ParamField>
+
+<ParamField path="trimCalls" type="boolean">
+</ParamField>
+
+<ParamField path="listenInCalls" type="boolean">
+</ParamField>
+
+<ParamField path="deleteEmails" type="boolean">
+</ParamField>
+
+<ParamField path="callsAndSearch" type="boolean">
+</ParamField>
+
+<ParamField path="library" type="boolean">
+</ParamField>
+
+<ParamField path="deals" type="boolean">
+</ParamField>
+
+<ParamField path="createEditAndDeleteDealsBoards" type="boolean">
+</ParamField>
+
+<ParamField path="dealsInlineEditing" type="boolean">
+</ParamField>
+
+<ParamField path="account" type="boolean">
+</ParamField>
+
+<ParamField path="coaching" type="boolean">
+</ParamField>
+
+<ParamField path="usage" type="boolean">
+</ParamField>
+
+<ParamField path="teamStats" type="boolean">
+</ParamField>
+
+<ParamField path="initiatives" type="boolean">
+</ParamField>
+
+<ParamField path="market" type="boolean">
+</ParamField>
+
+<ParamField path="activity" type="boolean">
+</ParamField>
+
+<ParamField path="forecast" type="boolean">
+</ParamField>
+
+<ParamField path="forecastManage" type="boolean">
+</ParamField>
+
+<ParamField path="engageManageCompanyTemplates" type="boolean">
+</ParamField>
+
+<ParamField path="engageManageCompanySequences" type="boolean">
+</ParamField>
+
+<ParamField path="engageCreateAndManageRulesets" type="boolean">
+</ParamField>
+
+<ParamField path="engageSnoozeFlowToDosForOthers" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsActivity" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsPerformance" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsFlows" type="boolean">
+</ParamField>
+
+<ParamField path="manageGeneralBusinessSettings" type="boolean">
+</ParamField>
+
+<ParamField path="manageScorecards" type="boolean">
+</ParamField>
+
+<ParamField path="exportCallsAndCoachingDataToCSV" type="boolean">
+</ParamField>
+
+<ParamField path="crmDataInlineEditing" type="boolean">
+</ParamField>
+
+<ParamField path="crmDataImport" type="boolean">
+</ParamField>
+
+<ParamField path="viewRevenueAnalytics" type="boolean">
+</ParamField>
+
+<ParamField path="manageRevenueAnalytics" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_POST_INTERACTION_FILTER_STATS">
+Returns interaction stats for users based on calls that have whisper turned on. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:stats:interaction'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__toDate" type="string">
+</ParamField>
+
+<ParamField path="filter__createdFromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__createdToDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__userIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_REGISTER_A_GENERIC_CRM_INTEGRATION_V2_CRM_INTEGRATIONS">
+Updates an existing crm integration in the gong platform. this endpoint allows you to modify the details of a previously set up integration between gong and your customer relationship management (crm) system. it's primarily used for changing the integration's name or reassigning the ownership to a different team member. this operation is crucial for maintaining accurate and up-to-date integration configurations, especially when there are changes in your organization's structure or integration strategies. note that this endpoint only updates the integration metadata and does not affect the actual data synchronization between gong and your crm.
+
+**Action Parameters**
+
+<ParamField path="ownerEmail" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_ERASE_DATA_FOR_PHONE_NUMBER">
+Given a phone number, this endpoint deletes from the gong system any leads or contacts with a matching phone number or mobile phone number. email messages sent to or from these leads/contacts are deleted. calls where the leads/contacts appear are deleted. the deletion is not immediate, and may take several hours to complete. this endpoint contains a data integrity protection mechanism to prevent the deletion of an abnormal number of objects. if the deletion fails please contact support at help@gong.io delete the data from your crm and email system before performing this operation so that private data is not re-imported into gong. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:data-privacy:delete'.
+
+**Action Parameters**
+
+<ParamField path="phoneNumber" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_DELETE_A_GONG_MEETING_V2_MEETINGS">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:meetings:user:delete'.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="organizerEmail" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_SCHEMA_FIELDS_V2_CRM_ENTITY_SCHEMA">
+Retrieves the comprehensive schema of crm entities in the gong platform. this endpoint provides detailed metadata about the structure, attributes, and relationships of entities within the customer relationship management (crm) system. it is particularly useful for developers integrating with gong's api who need to understand the data model of the crm entities. the endpoint returns a complete view of all crm entity schemas, which can be used for data mapping, validation, or building dynamic forms. note that this endpoint does not accept any parameters, meaning it returns the full schema without filtering options. while powerful, be mindful of potential performance implications when dealing with large, complex crm structures.
+
+**Action Parameters**
+
+<ParamField path="integrationId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="objectType" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_TRANSCRIPTS_OF_CALLS_V2_CALLS_TRANSCRIPT">
+Returns transcripts for calls that took place during the specified date period. if call ids are specified, only transcripts for calls with those ids that took place during the time period are returned. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:read:transcript'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__toDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__workspaceId" type="string">
+</ParamField>
+
+<ParamField path="filter__callIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_GET_REQUEST_STATUS_V2_CRM_REQUEST_STATUS">
+The getcrmrequeststatus endpoint retrieves the current status of crm integration requests in the gong platform. it allows users to check the progress and outcome of operations related to crm data uploads, synchronization, or other crm-related processes. this endpoint is particularly useful for monitoring the health and progress of crm integrations, troubleshooting issues, and ensuring data consistency between gong and connected crm systems. it should be used when you need to verify if a crm integration request has been completed, is still in progress, or has encountered any errors. the endpoint does not modify any data and is intended for status checking only. note that the specific details returned may vary depending on the type and complexity of the crm integration request being queried.
+
+**Action Parameters**
+
+<ParamField path="integrationId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="clientRequestId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_MANAGE_USER_CALL_ACCESS">
+Returns a list of users who have received individual access to calls through the api. this endpoint doesn't cover user that have access for other reasons (such as sharing recipients, or access through permission profiles). when accessed through a bearer token authorization method, this endpoint requires the scope 'api:call-user-access:read'.
+
+**Action Parameters**
+
+<ParamField path="filter__callIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_DELETE_USERS_FROM_CALL_ACCESS_LIST">
+Remove individual user access from calls. the request can only remove access previously given by the /v2/calls/users-access api. if a given user does not have access to the call, they will be unaffected. if a given user does have access to the call, but not through the pubic api (for example if the call was shared with the user), the user's access will remain unchanged. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:call-user-access:write'.
+
+**Action Parameters**
+
+<ParamField path="callAccessList" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_UPLOAD_CRM_OBJECTS_V2_CRM_ENTITIES">
+Uploads crm data files to the gong platform for integration and analysis. this endpoint allows users to send large crm data files (up to 200mb) using a multipart/form-data request. it should be used when integrating crm systems with gong's revenue intelligence platform to provide up-to-date customer interaction data. the endpoint is specifically designed for file uploads and does not support other operations like querying or modifying existing data. ensure that the uploaded file contains properly structured crm data compatible with gong's system for successful integration and subsequent analysis.
+
+**Action Parameters**
+
+<ParamField path="dataFile" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_ERASE_DATA_FOR_EMAIL_ADDRESS">
+Given an email address, this endpoint deletes from the gong system any calls or email messages that reference this address. email messages sent to or from the address are deleted. calls where the email address appears (as a lead, contact, attendee or speaker) are deleted. leads or contacts with the email address are deleted. the deletion is not immediate, and may take several hours to complete. this endpoint contains a data integrity protection mechanism to prevent the deletion of an abnormal number of objects. if the deletion fails please contact support at help@gong.io delete the data from your crm and email system before performing this operation so that private data is not re-imported into gong. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:data-privacy:delete'.
+
+**Action Parameters**
+
+<ParamField path="emailAddress" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_USER_SETTINGS_HISTORY_V2_USERS_ID_SETTINGS_HISTORY">
+Retrieve a specific user's settings history. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:users:read'.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_POST_DAY_BY_DAY_ACTIVITY_STATS">
+Retrieve the daily activity of multiple users within the gong system for a range of dates. this endpoint returns records including statistics about each user's activity, on the daily level. records are returned only for users with activity in the range. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:stats:user-actions:detailed'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__toDate" type="string">
+</ParamField>
+
+<ParamField path="filter__createdFromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__createdToDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__userIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_REPORT_CONTENT_VIEWED_EVENT">
+Push engagement events into gong and display them as events in gong’s activity timeline, when a content is viewed by an external participant (for example, a contract was “viewed” by the prospect) when accessed through a bearer token authorization method, this endpoint requires the scope 'api:engagement-data:write'.
+
+**Action Parameters**
+
+<ParamField path="reportingSystem" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventTimestamp" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventId" type="string">
+</ParamField>
+
+<ParamField path="contentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contentUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contentTitle" type="string" required={true}>
+</ParamField>
+
+<ParamField path="viewActionTitle" type="string">
+</ParamField>
+
+<ParamField path="shareId" type="string">
+</ParamField>
+
+<ParamField path="viewInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="viewer__email" type="string">
+</ParamField>
+
+<ParamField path="viewer__name" type="string">
+</ParamField>
+
+<ParamField path="viewer__title" type="string">
+</ParamField>
+
+<ParamField path="viewer__context" type="array">
+</ParamField>
+
+<ParamField path="crmContext" type="array">
+</ParamField>
+
+<ParamField path="contentProperties" type="array">
+</ParamField>
+
+<ParamField path="eventProperties" type="array">
+</ParamField>
+
+<ParamField path="userAgent" type="string">
+</ParamField>
+
+<ParamField path="mobileAppId" type="string">
+</ParamField>
+
+<ParamField path="agentPlatform" type="string">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="trackingId" type="string">
+</ParamField>
+
+<ParamField path="nonCompanyParticipants" type="array">
+</ParamField>
+
+<ParamField path="moreInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="actionName" type="string">
+</ParamField>
+
+<ParamField path="sharer__id" type="string">
+</ParamField>
+
+<ParamField path="sharer__email" type="string">
+</ParamField>
+
+<ParamField path="sharer__name" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageSubject" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageBody" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_USER_V2_USERS_ID">
+Retrieve a specific user. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:users:read'.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_DATA_FOR_A_SPECIFIC_CALL_V2_CALLS_ID">
+Retrieve data for a specific call. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:read:basic'.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_INTEGRATION_SETTINGS_V2_INTEGRATION_SETTINGS">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:integration-settings:write'.
+
+**Action Parameters**
+
+<ParamField path="integrationTypeSettings" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_ADD_NEW_CALL_V2_CALLS">
+When using this endpoint, either provide a downloadmediaurl or use the returned callid in a follow-up request to /v2/calls/`{id}`/media to upload the media file. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:create'.
+
+**Action Parameters**
+
+<ParamField path="clientUniqueId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="purpose" type="string">
+</ParamField>
+
+<ParamField path="scheduledStart" type="string">
+</ParamField>
+
+<ParamField path="scheduledEnd" type="string">
+</ParamField>
+
+<ParamField path="actualStart" type="string" required={true}>
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="parties" type="array" required={true}>
+</ParamField>
+
+<ParamField path="direction" type="string" required={true}>
+</ParamField>
+
+<ParamField path="disposition" type="string">
+</ParamField>
+
+<ParamField path="context" type="array">
+</ParamField>
+
+<ParamField path="customData" type="string">
+</ParamField>
+
+<ParamField path="speakersTimeline__precise" type="boolean">
+</ParamField>
+
+<ParamField path="speakersTimeline__speechSegments" type="array">
+</ParamField>
+
+<ParamField path="meetingUrl" type="string">
+</ParamField>
+
+<ParamField path="callProviderCode" type="string">
+</ParamField>
+
+<ParamField path="downloadMediaUrl" type="string">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="languageCode" type="string">
+</ParamField>
+
+<ParamField path="primaryUser" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_UPDATE_SHARED_CONTENT_EVENT">
+Push engagement events into gong and display them as events in gong’s activity timeline, when a gong user shares content with external participants (for example, a contract was “shared” by the account executive with his prospects) when accessed through a bearer token authorization method, this endpoint requires the scope 'api:engagement-data:write'.
+
+**Action Parameters**
+
+<ParamField path="reportingSystem" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventTimestamp" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventId" type="string">
+</ParamField>
+
+<ParamField path="contentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contentUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contentTitle" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shareId" type="string">
+</ParamField>
+
+<ParamField path="shareInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageSubject" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageBody" type="string">
+</ParamField>
+
+<ParamField path="sharer__id" type="string">
+</ParamField>
+
+<ParamField path="sharer__email" type="string">
+</ParamField>
+
+<ParamField path="sharer__name" type="string">
+</ParamField>
+
+<ParamField path="recipients" type="array">
+</ParamField>
+
+<ParamField path="crmContext" type="array">
+</ParamField>
+
+<ParamField path="contentProperties" type="array">
+</ParamField>
+
+<ParamField path="eventProperties" type="array">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="actionName" type="string">
+</ParamField>
+
+<ParamField path="nonCompanyParticipants" type="array">
+</ParamField>
+
+<ParamField path="moreInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="trackingId" type="string">
+</ParamField>
+
+<ParamField path="mobileAppId" type="string">
+</ParamField>
+
+<ParamField path="agentPlatform" type="string">
+</ParamField>
+
+<ParamField path="userAgent" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA">
+Adds a call media, recorded by a telephony system (pbx) or other media recording facility. gong accepts call recordings in various audio and video file formats, including wav, mp3, mp4, mkv and flac. if uploading a dual-channel (stereo) file separated by speaker, make sure to specify which channel correspondsto the company team member (rep) in the parties/mediachannelid parameter of the add new call operation. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:calls:create'.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mediaFile" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_DATA_PRIVACY_FOR_PHONE_NUMBER">
+Shows the elements in the gong system that reference the given phone number. given a phone number, this endpoint returns details of any leads or contacts with this phone number and their associated calls and email messages. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:data-privacy:read'.
+
+**Action Parameters**
+
+<ParamField path="phoneNumber" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_ASSIGN_PROSPECTS_TO_FLOW">
+Use this endpoint to assign a number of prospects to a flow. prospects can be contacts or leads in your crm. generate a list of comma separated crm ids of the prospects you want to add to a flow. the flowinstanceowneremail parameter is the email address of the gong user who set up the flow instance and owns the flow to-dos. you can assign up to 200 prospects to a flow in a single request. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:flows:write'.
+
+**Action Parameters**
+
+<ParamField path="crmProspectsIds" type="array" required={true}>
+</ParamField>
+
+<ParamField path="flowId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="flowInstanceOwnerEmail" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_USERS_FROM_PERMISSION_PROFILE">
+Returns a list of all users whose access is controlled by the given permission profile. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:users:read'.
+
+**Action Parameters**
+
+<ParamField path="profileId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_FETCH_ALL_PERMISSION_PROFILES">
+Returns a list of all permission profiles. the listing is in the alphabetical order of the profile names.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_REPORT_EVENT_OF_A_CUSTOM_ACTION_V2_CUSTOMER_ENGAGEMENT_ACTION">
+Push engagement events into gong and display them as events in gong’s activity timeline, when a content is engaged by an external participant (for example, a contract was “signed” by the prospect) when accessed through a bearer token authorization method, this endpoint requires the scope 'api:engagement-data:write'.
+
+**Action Parameters**
+
+<ParamField path="reportingSystem" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventTimestamp" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventId" type="string">
+</ParamField>
+
+<ParamField path="contentId" type="string">
+</ParamField>
+
+<ParamField path="contentUrl" type="string">
+</ParamField>
+
+<ParamField path="contentTitle" type="string">
+</ParamField>
+
+<ParamField path="actionName" type="string">
+</ParamField>
+
+<ParamField path="eventInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="actor__email" type="string">
+</ParamField>
+
+<ParamField path="actor__name" type="string">
+</ParamField>
+
+<ParamField path="actor__title" type="string">
+</ParamField>
+
+<ParamField path="actor__context" type="array">
+</ParamField>
+
+<ParamField path="crmContext" type="array">
+</ParamField>
+
+<ParamField path="contentProperties" type="array">
+</ParamField>
+
+<ParamField path="eventProperties" type="array">
+</ParamField>
+
+<ParamField path="userAgent" type="string">
+</ParamField>
+
+<ParamField path="mobileAppId" type="string">
+</ParamField>
+
+<ParamField path="agentPlatform" type="string">
+</ParamField>
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+<ParamField path="nonCompanyParticipants" type="array">
+</ParamField>
+
+<ParamField path="moreInfoUrl" type="string">
+</ParamField>
+
+<ParamField path="shareId" type="string">
+</ParamField>
+
+<ParamField path="trackingId" type="string">
+</ParamField>
+
+<ParamField path="sharer__id" type="string">
+</ParamField>
+
+<ParamField path="sharer__email" type="string">
+</ParamField>
+
+<ParamField path="sharer__name" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageSubject" type="string">
+</ParamField>
+
+<ParamField path="sharingMessageBody" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_LIST_ALL_COMPANY_WORKSPACES_V2_WORKSPACES">
+Returns a list of all workspaces including their details. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:workspaces:read'.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_CREATE_PERMISSION_PROFILE_V2_PERMISSION_PROFILE">
+Create a permission profile in a given workspace.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="callsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="callsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__libraryFolderIds" type="array">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__managePublicFolder" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__manageStreams" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__manageFolderCalls" type="boolean">
+</ParamField>
+
+<ParamField path="libraryFolderAccess__shareFoldersAndStreams" type="boolean">
+</ParamField>
+
+<ParamField path="dealsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="dealsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditSubmissions__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditSubmissions__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditTargets__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="forecastPermissions__forecastEditTargets__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="coachingAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="coachingAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="insightsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="insightsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="usageAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="usageAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="emailsAccess__permissionLevel" type="string">
+</ParamField>
+
+<ParamField path="emailsAccess__teamLeadIds" type="array">
+</ParamField>
+
+<ParamField path="scoreCalls" type="boolean">
+</ParamField>
+
+<ParamField path="overrideScore" type="boolean">
+</ParamField>
+
+<ParamField path="downloadCallMedia" type="boolean">
+</ParamField>
+
+<ParamField path="shareCallsWithCustomers" type="boolean">
+</ParamField>
+
+<ParamField path="manuallyScheduleAndUploadCalls" type="boolean">
+</ParamField>
+
+<ParamField path="privateCalls" type="boolean">
+</ParamField>
+
+<ParamField path="deleteCalls" type="boolean">
+</ParamField>
+
+<ParamField path="trimCalls" type="boolean">
+</ParamField>
+
+<ParamField path="listenInCalls" type="boolean">
+</ParamField>
+
+<ParamField path="deleteEmails" type="boolean">
+</ParamField>
+
+<ParamField path="callsAndSearch" type="boolean">
+</ParamField>
+
+<ParamField path="library" type="boolean">
+</ParamField>
+
+<ParamField path="deals" type="boolean">
+</ParamField>
+
+<ParamField path="createEditAndDeleteDealsBoards" type="boolean">
+</ParamField>
+
+<ParamField path="dealsInlineEditing" type="boolean">
+</ParamField>
+
+<ParamField path="account" type="boolean">
+</ParamField>
+
+<ParamField path="coaching" type="boolean">
+</ParamField>
+
+<ParamField path="usage" type="boolean">
+</ParamField>
+
+<ParamField path="teamStats" type="boolean">
+</ParamField>
+
+<ParamField path="initiatives" type="boolean">
+</ParamField>
+
+<ParamField path="market" type="boolean">
+</ParamField>
+
+<ParamField path="activity" type="boolean">
+</ParamField>
+
+<ParamField path="forecast" type="boolean">
+</ParamField>
+
+<ParamField path="forecastManage" type="boolean">
+</ParamField>
+
+<ParamField path="engageManageCompanyTemplates" type="boolean">
+</ParamField>
+
+<ParamField path="engageManageCompanySequences" type="boolean">
+</ParamField>
+
+<ParamField path="engageCreateAndManageRulesets" type="boolean">
+</ParamField>
+
+<ParamField path="engageSnoozeFlowToDosForOthers" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsActivity" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsPerformance" type="boolean">
+</ParamField>
+
+<ParamField path="viewEngageAnalyticsFlows" type="boolean">
+</ParamField>
+
+<ParamField path="manageGeneralBusinessSettings" type="boolean">
+</ParamField>
+
+<ParamField path="manageScorecards" type="boolean">
+</ParamField>
+
+<ParamField path="exportCallsAndCoachingDataToCSV" type="boolean">
+</ParamField>
+
+<ParamField path="crmDataInlineEditing" type="boolean">
+</ParamField>
+
+<ParamField path="crmDataImport" type="boolean">
+</ParamField>
+
+<ParamField path="viewRevenueAnalytics" type="boolean">
+</ParamField>
+
+<ParamField path="manageRevenueAnalytics" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_POST_MEETING_INTEGRATION_STATUS">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:meetings:integration:status'.
+
+**Action Parameters**
+
+<ParamField path="emails" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_TRACKER_DETAILS_V2_SETTINGS_TRACKERS">
+Retrieves details of all keyword trackers in the system or in a given workspace. when accessed through a bearer token authorization method, this endpoint requires the 'api:settings:trackers:read' scope.
+
+**Action Parameters**
+
+<ParamField path="workspaceId" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_AGGREGATE_ACTIVITY_BY_PERIOD_VIA_API">
+Lists the aggregated activity of multiple users within the gong system for each time period within the defined date range. this endpoint returns multiple records, one for each user. for each user there are items for every time period in the date range, including statistics about the user's activity. records are returned only for users with activity in the range. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:stats:user-actions'.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="filter__fromDate" type="string">
+</ParamField>
+
+<ParamField path="filter__toDate" type="string">
+</ParamField>
+
+<ParamField path="filter__createdFromDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__createdToDateTime" type="string">
+</ParamField>
+
+<ParamField path="filter__userIds" type="array">
+</ParamField>
+
+<ParamField path="aggregationPeriod" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_GIVE_INDIVIDUAL_USERS_ACCESS_TO_CALLS_V2_CALLS_USERS_ACCESS">
+Give individual users access to calls. if a user already has access (perhaps the call was shared with them, or they have access through their permission profiles) the request will have no effect. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:call-user-access:write'.
+
+**Action Parameters**
+
+<ParamField path="callAccessList" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_RETRIEVE_LOGS_DATA_BY_TYPE_AND_TIME_RANGE_V2_LOGS">
+List log entries that took place during a specified time range. when accessed through a bearer token authorization method, this endpoint requires the scope 'api:logs:read'.
+
+**Action Parameters**
+
+<ParamField path="logType" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fromDateTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="toDateTime" type="string">
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GONG_UPDATE_A_GONG_MEETING_V2_MEETINGS_MEETING_ID">
+When accessed through a bearer token authorization method, this endpoint requires the scope 'api:meetings:user:update'.
+
+**Action Parameters**
+
+<ParamField path="meetingId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="startTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="invitees" type="array" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string">
+</ParamField>
+
+<ParamField path="organizerEmail" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

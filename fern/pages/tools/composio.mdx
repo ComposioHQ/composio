@@ -1,0 +1,343 @@
+---
+title: "Composio"
+subtitle: "Learn how to use Composio with Composio"
+---
+
+
+## Overview
+
+### Enum
+`COMPOSIO`
+
+### Description
+Composio enables AI Agents and LLMs to authenticate and integrate with various tools via function calling.
+
+### Authentication Details
+
+<Accordion title="NO_AUTH">
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="COMPOSIO_ADVANCED_USE_CASE_SEARCH">
+Apps are like github, linear, gmail, etc. actions are like send email, create issue, etc programmatic functions that can be used to perform the action. not all apps support all actions. some apps support only a subset of actions that might be possible to perform with that app. use this action to search for apps that can be used to perform a specific use case. this list is only probabilistic. search apps for a specified usecase. so for example, if use case is to "send an email" this action will return all the apps that can be used to send email. similarly if use case is to "create a github issue" this action will return all the apps that can be used to create a github issue. after using this, to confirm whether the application can indeed potentially support the use case, use the action retrieve actions.
+
+**Action Parameters**
+
+<ParamField path="usecase" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="3">
+</ParamField>
+
+<ParamField path="apps" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_GET_REQUIRED_PARAMETERS">
+This action retrieves the necessary parameters required to initiate a connection with a specified tool. for instance, linear may need an 'api key', zendesk might require a 'subdomain', and slack could need a 'webhook url'. the required parameters vary based on the authentication scheme employed. for example, api key authentication requires an api key, whereas oauth2 typically does not require any parameters because it involves redirecting the user to the tool's website for authorization.
+
+**Action Parameters**
+
+<ParamField path="tool" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_ENABLE_TRIGGER">
+Enable a specific trigger for the authenticated user.
+
+**Action Parameters**
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+<ParamField path="trigger_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="config_params" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_CHECK_ACTIVE_CONNECTION">
+Check if any active connections exist for a given tool or status of the connection with a specific id. if an active connection exists, the tool will return true, otherwise it will return false. active connections allow an agent to perform any actions on top of the tool.
+
+**Action Parameters**
+
+<ParamField path="tool" type="string">
+</ParamField>
+
+<ParamField path="connection_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_INITIATE_CONNECTION">
+Initiate a connection to a tool with the given parameters. for example, linear might require an api key to create a connection, which we can get by calling get required parameters. to create a new connection, we need to call create connection with the required parameters. similarly, zendesk might require a subdomain to create a connection, which we can get by calling get required parameters. to create a new connection, we need to call create connection with the subdomain.
+
+**Action Parameters**
+
+<ParamField path="tool" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parameters" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_GET_RESPONSE_SCHEMA">
+Retrieves the response schema for a specified composio action. this action fetches the complete response schema definition for any valid composio action, returning it as a dictionary that describes the expected response structure.
+
+**Action Parameters**
+
+<ParamField path="action" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_LIST_TRIGGERS">
+List available triggers and their configuration schemas.
+
+**Action Parameters**
+
+<ParamField path="app_names" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_RETRIEVE_ACTIONS">
+Apps are like github, linear, gmail, etc. actions are like send email, create issue, etc programmatic functions that can be used to perform the action. get actions for a given usecase using similarity search. this actions are most relevant to the usecase but still might not be actual actions needed for the usecase. this decision should be made by you. this should be used to narrow down for an app, and find the most relevant actions for the usecase. in some cases, you might want to even check if the usecase is supported by the app or not.
+
+**Action Parameters**
+
+<ParamField path="app_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="usecase" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="5">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_WAIT_FOR_CONNECTION">
+Wait for a connection to be established for a given tool or check the status of a connection with a specific id. wait for a given amount of time and then check again the status of the connection.
+
+**Action Parameters**
+
+<ParamField path="tool" type="string">
+</ParamField>
+
+<ParamField path="connection_id" type="string">
+</ParamField>
+
+<ParamField path="timeperiod" type="integer" default="30">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_RETRIEVE_APPS">
+Apps are like github, linear, gmail, etc. actions are like send email, create issue, etc programmatic functions that can be used to perform the action. not all apps support all actions. some apps support only a subset of actions that might be possible to perform with that app. use this action to retrieve the apps that can be used to perform the action. this list is only probabilistic. retrieve apps for a specified usecase. so for example, if use case is to "send an email" this action will return all the apps that can be used to send email. simiarly if use case is to "create a github issue" this action will return all the apps that can be used to create a github issue. after using this, to confirm whether the application can indeed potentially support the use case, use the action retrieve actions.
+
+**Action Parameters**
+
+<ParamField path="usecase" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer" default="3">
+</ParamField>
+
+<ParamField path="apps" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_LIST_APPS">
+List all the available apps on composio with filtering options.
+
+**Action Parameters**
+
+<ParamField path="name_filter" type="string">
+</ParamField>
+
+<ParamField path="category" type="string">
+</ParamField>
+
+<ParamField path="min_actions" type="integer">
+</ParamField>
+
+<ParamField path="size" type="integer" default="10">
+</ParamField>
+
+<ParamField path="enabled_only" type="boolean">
+</ParamField>
+
+<ParamField path="no_auth_only" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_EXECUTE_ACTION">
+Execute an action using the composio api.
+
+**Action Parameters**
+
+<ParamField path="action_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="request" type="" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

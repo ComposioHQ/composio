@@ -1,0 +1,290 @@
+---
+title: "Retellai"
+subtitle: "Learn how to use Retellai with Composio"
+---
+
+
+## Overview
+
+### Enum
+`RETELLAI`
+
+### Description
+RetellAI captures calls and transcripts, enabling businesses to analyze conversations, extract insights, and enhance customer interactions in one centralized platform
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="RETELLAI_RETRIEVE_CALL_DETAILS_BY_ID">
+Retrieve call details by id for web/phone calls, including type, agent id, status, timestamps, and web access token; covering responses from success to server errors.
+
+**Action Parameters**
+
+<ParamField path="call_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_CREATE_A_NEW_OUTBOUND_PHONE_CALL">
+Initiate an outbound call by post to '/v2/create-phone-call'. requires 'from number' and 'to number' in e.164 format. optional overrides and metadata supported. on success, returns call details including type, status, and ids.
+
+**Action Parameters**
+
+<ParamField path="from_number" type="string" required={true}>
+</ParamField>
+
+<ParamField path="to_number" type="string" required={true}>
+</ParamField>
+
+<ParamField path="override_agent_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_LIST_ALL_PHONE_NUMBERS">
+Retrieves a list of all phone numbers associated with the account.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_BUY_A_NEW_PHONE_NUMBER_BIND_AGENTS">
+This endpoint allows purchasing a new phone number with a specified area code and binding it to designated agents for inbound and outbound calls. it requires json with agent ids and area code. responses indicate the creation status or errors.
+
+**Action Parameters**
+
+<ParamField path="inbound_agent_id" type="string">
+</ParamField>
+
+<ParamField path="outbound_agent_id" type="string">
+</ParamField>
+
+<ParamField path="area_code" type="integer">
+</ParamField>
+
+<ParamField path="nickname" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_RETRIEVE_DETAILS_OF_A_SPECIFIC_PHONE_NUMBER">
+Fetches the details of a given phone number in e.164 format.
+
+**Action Parameters**
+
+<ParamField path="phone_number" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_RETRIEVE_CALL_DETAILS">
+The /v2/list-calls endpoint retrieves call records with filters (agent id, timestamps), offers sorting, pagination, and handles different responses (success, bad request, unauthorized, server error) in json format.
+
+**Action Parameters**
+
+<ParamField path="filter__criteria__agent__id" type="array">
+</ParamField>
+
+<ParamField path="filter__criteria__before__start__timestamp" type="integer">
+</ParamField>
+
+<ParamField path="filter__criteria__after__start__timestamp" type="integer">
+</ParamField>
+
+<ParamField path="filter__criteria__before__end__timestamp" type="integer">
+</ParamField>
+
+<ParamField path="filter__criteria__after__end__timestamp" type="integer">
+</ParamField>
+
+<ParamField path="sort_order" type="string" default="descending">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="100">
+</ParamField>
+
+<ParamField path="pagination_key" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_CREATE_A_NEW_WEB_CALL">
+The /v2/create-web-call endpoint creates a web call with a unique agent id, returning call details like type, token, call id, and status in json format, with a 201 response. optional metadata and variables can be included.
+
+**Action Parameters**
+
+<ParamField path="agent_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_RETRIEVE_DETAILS_OF_A_SPECIFIC_VOICE">
+"access specific voice details including its name, provider, accent, gender, and a preview audio url using the unique voice id. parameters required."
+
+**Action Parameters**
+
+<ParamField path="voice_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_DELETE_PHONE_NUMBER">
+Deletes an existing phone number identified by its e.164 format.
+
+**Action Parameters**
+
+<ParamField path="phone_number" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="RETELLAI_UPDATE_PHONE_NUMBER">
+Updates the agent bound to a purchased phone number.
+
+**Action Parameters**
+
+<ParamField path="phone_number" type="string" required={true}>
+</ParamField>
+
+<ParamField path="inbound_agent_id" type="string">
+</ParamField>
+
+<ParamField path="outbound_agent_id" type="string">
+</ParamField>
+
+<ParamField path="nickname" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

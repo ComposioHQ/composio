@@ -1,0 +1,7441 @@
+---
+title: "Pipedrive"
+subtitle: "Learn how to use Pipedrive with Composio"
+---
+
+
+## Overview
+
+### Enum
+`PIPEDRIVE`
+
+### Description
+Pipedrive is a sales management tool built around pipeline visualization, lead tracking, activity reminders, and automation to keep deals progressing
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="contacts:full leads:full mail:full activities:full products:full projects:full">
+</ParamField>
+
+<ParamField path="COMPANYDOMAIN" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="BEARER_TOKEN">
+<ParamField path="token" type="string" required={true}>
+</ParamField>
+
+<ParamField path="COMPANYDOMAIN" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_ORGANIZATION_FIELDS_IN_BULK">
+Marks multiple fields as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_PIPELINE_VISIBILITY_FOR_A_ROLE">
+Updates pipeline visibility settings for different roles. for details, see the pipedrive visibility groups article.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_REQUESTING_AUTHORIZATION">
+Authorize a user by redirecting them to the pipedrive oauth authorization page and request their permissions to act on their behalf. this step is necessary to implement only when you allow app installation outside of the marketplace.
+
+**Action Parameters**
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="redirect_uri" type="string" required={true}>
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ACTIVITY_FIELDS">
+Returns all activity fields.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_FILTER_HELPERS">
+The text provides links to documentation for adding or updating filters, and information on all supported filter helpers in an api. it encourages consulting a tutorial for more details on adding a filter.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_ROLE">
+Returns the details of a specific role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_MAIL_THREAD_DETAILS">
+Updates the properties of a mail thread.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="deal_id" type="integer">
+</ParamField>
+
+<ParamField path="lead_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PROJECT">
+Marks a project as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_OR_UPDATE_ROLE_SETTING">
+Adds or updates the visibility setting for a role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="setting_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="value" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_NEW_ACTIVITY_TYPE">
+Adds a new activity type.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="icon_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_SUMMARY">
+Returns a summary of all the deals.
+
+**Action Parameters**
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="stage_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_DEAL_FIELD">
+Marks a field as deleted. for more information, see the tutorial for deleting a custom field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_STAGE">
+Adds a new stage, returns the id upon success.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pipeline_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="deal_probability" type="integer">
+</ParamField>
+
+<ParamField path="rotten_flag" type="boolean">
+</ParamField>
+
+<ParamField path="rotten_days" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ORGANIZATION_FIELDS">
+Returns data about all organization fields.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ACTIVITIES_ASSIGNED_TO_A_PARTICULAR_USER">
+Returns all activities assigned to a particular user.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+<ParamField path="done" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_RETURNS_PROJECT_GROUPS">
+Returns all active groups under a specific project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_PRODUCT_TO_A_DEAL">
+Adds a product to a deal, creating a new item called a deal-product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_RETURNS_PROJECT_TASKS">
+Returns tasks linked to a specific project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_STAGES_IN_BULK">
+Marks multiple stages as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ORGANIZATIONS">
+Returns all organizations.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="first_char" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_PRODUCT_FIELD">
+Returns data about a specific product field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_UPDATES_ABOUT_AN_ORGANIZATION">
+Lists updates about an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="all_changes" type="string">
+</ParamField>
+
+<ParamField path="items" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_PROJECT">
+Adds a new project. note that you can supply additional custom fields along with the request that are not described here. these custom fields are different for each pipedrive account and can be recognized by long hashes as keys.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_USER_CONNECTIONS">
+Returns data about all connections for the authorized user.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_CREATE_A_NEW_WEBHOOK">
+Creates and returns details of a new webhook. trigger events combine `event action` and `event object`, like `*.*` for all events or `added.deal`, `deleted.persons` for specific actions. more info in the webhooks guide.
+
+**Action Parameters**
+
+<ParamField path="version" type="string" default="1.0">
+</ParamField>
+
+<ParamField path="subscription_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="event_action" type="string" required={true}>
+</ParamField>
+
+<ParamField path="event_object" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="http_auth_user" type="string">
+</ParamField>
+
+<ParamField path="http_auth_password" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_DEALS_IN_BULK">
+Marks multiple deals as deleted. after 30 days, the deals will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_PRODUCT">
+Returns data about a specific product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_ORGANIZATION_FIELD">
+Returns data about a specific organization field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ORGANIZATION_RELATIONSHIP">
+Deletes an organization relationship and returns the deleted id.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_ACTIVITY">
+Updates an activity. includes `more activities scheduled in context` property in response's `additional data` which indicates whether there are more undone activities scheduled with the same deal, person or organization (depending on the supplied data).
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FOLLOWERS_OF_A_USER">
+Lists the followers of a specific user.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_DEALS">
+Returns all deals. for more information, see the tutorial for getting all deals.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="stage_id" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string" default="all_not_deleted">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+<ParamField path="owned_by_you" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_USER">
+Adds a new user to the company, returns the id upon success.
+
+**Action Parameters**
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="access" type="array" default="[{'app': 'sales'}]">
+</ParamField>
+
+<ParamField path="active_flag" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_MAIL_THREAD">
+Returns a specific mail thread.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FOLLOWERS_OF_AN_ORGANIZATION">
+Lists the followers of an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_TASK">
+Marks a task as deleted. if the task has subtasks then those will also be deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_PIPELINE">
+Adds a new pipeline.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="order_nr" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_SEARCH_ORGANIZATIONS">
+Searches all organizations by name, address, notes and/or custom fields. this endpoint is a wrapper of /v1/itemsearch with a narrower oauth scope.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_AN_ACTIVITY">
+New activity added. response includes `more activities scheduled in context` to show if more are planned with the same entity. see tutorial on adding activities [here](https://pipedrive.readme.io/docs/adding-an-activity).
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PERMITTED_USERS_LISTS_USERS_PERMITTED_TO_ACCESS_A_PRODUCT">
+Lists users permitted to access a product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_RECURRING_SUBSCRIPTION">
+Updates a recurring subscription.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="cycle_amount" type="integer">
+</ParamField>
+
+<ParamField path="payments" type="array">
+</ParamField>
+
+<ParamField path="update_deal_value" type="boolean">
+</ParamField>
+
+<ParamField path="effective_date" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_FILTERS">
+Returns data about all filters.
+
+**Action Parameters**
+
+<ParamField path="type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_GOAL">
+Adds a new goal. along with adding a new goal, a report is created to track the progress of your goal.
+
+**Action Parameters**
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="interval" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_TEMPLATE">
+Returns the details of a specific project template.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_FILTER">
+Updates an existing filter.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_NOTES">
+Returns all notes.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="lead_id" type="string">
+</ParamField>
+
+<ParamField path="deal_id" type="integer">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+<ParamField path="pinned_to_lead_flag" type="integer">
+</ParamField>
+
+<ParamField path="pinned_to_deal_flag" type="integer">
+</ParamField>
+
+<ParamField path="pinned_to_organization_flag" type="integer">
+</ParamField>
+
+<ParamField path="pinned_to_person_flag" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_ROLE_ASSIGNMENT">
+Removes the assigned user from a role and adds to the default role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PERSON_FIELD">
+Updates a person field. for more information, see the tutorial for updating custom fields' values.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="options" type="array">
+</ParamField>
+
+<ParamField path="add_visible_flag" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_LEAD">
+Updating lead properties modifies only specified fields; use `null` to unset. custom field data matches `deals`. unset fields are omitted. leads share deals' custom fields. for examples, refer to the tutorial.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="integer">
+</ParamField>
+
+<ParamField path="label_ids" type="array">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="is_archived" type="boolean">
+</ParamField>
+
+<ParamField path="value__amount" type="integer">
+</ParamField>
+
+<ParamField path="value__currency" type="string">
+</ParamField>
+
+<ParamField path="expected_close_date" type="string">
+</ParamField>
+
+<ParamField path="was_seen" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_PERSONS_IN_BULK">
+Marks multiple persons as deleted. after 30 days, the persons will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_MAIL_MESSAGES_ASSOCIATED_WITH_A_PERSON">
+Lists mail messages associated with a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_RECURRING_SUBSCRIPTION">
+Adds a new recurring subscription.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="deal_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="currency" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cadence_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cycles_count" type="integer">
+</ParamField>
+
+<ParamField path="cycle_amount" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="infinite" type="boolean">
+</ParamField>
+
+<ParamField path="payments" type="array">
+</ParamField>
+
+<ParamField path="update_deal_value" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FILE">
+Marks a file as deleted. after 30 days, the file will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FOLLOWER_FROM_A_PERSON">
+Deletes a follower from a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="follower_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PIPELINES">
+Returns data about all pipelines.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ACTIVITIES_ASSOCIATED_WITH_AN_ORGANIZATION">
+Lists activities associated with an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="done" type="integer">
+</ParamField>
+
+<ParamField path="exclude" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_MAIL_MESSAGES_ASSOCIATED_WITH_A_DEAL">
+Lists mail messages associated with a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FOLLOWER_FROM_A_DEAL">
+Deletes a follower from a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="follower_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ADD_ONS_FOR_A_SINGLE_COMPANY">
+Returns the add-ons for a single company.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_DEALS_BETA">
+This endpoint returns all deals with cursor pagination (in beta). only global admins can access it; others get a 403 error. more info on pagination and permissions is available online.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="since" type="string">
+</ParamField>
+
+<ParamField path="until" type="string">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="stage_id" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_SEARCH_LEADS">
+Endpoint searches leads by title, notes, custom fields, with options to filter by person and organization ids, and is a more specific use of the /v1/itemsearch with limited oauth scope.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_ROLE_DETAILS">
+Updates the parent role and/or the name of a specific role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="parent_role_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ROLE_SETTINGS">
+Returns the visibility settings of a specific role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_BOARD">
+Returns the details of a specific project board.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ROLES">
+Returns all the roles within the company.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_DEAL_FIELDS_IN_BULK">
+Marks multiple deal fields as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_PROJECT">
+Returns the details of a specific project. also note that custom fields appear as long hashes in the resulting data. these hashes can be mapped against the `key` value of project fields.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FOLLOWERS_OF_A_PERSON">
+Lists the followers of a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_EXISTING_WEBHOOK">
+Deletes the specified webhook.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LINK_A_USER_WITH_THE_INSTALLED_VIDEO_CALL_INTEGRATION">
+A video calling provider must call this endpoint after a user has installed the video calling app so that the new user's information is sent.
+
+**Action Parameters**
+
+<ParamField path="user_provider_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="company_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="marketplace_client_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_SUBSCRIPTION">
+Returns details of an installment or a recurring subscription.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_COMMENT">
+Returns the details of a comment.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="commentId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_CREATE_A_REMOTE_FILE_AND_LINK_IT_TO_AN_ITEM">
+Creates an empty file on google drive linked to an item. for details, refer to the pipedrive remote file adding tutorial.
+
+**Action Parameters**
+
+<ParamField path="title" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="item_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="item_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="remote_location" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_DEAL">
+Marks a deal as deleted. after 30 days, the deal will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PERMISSION_SET_ASSIGNMENTS">
+Returns the list of assignments for a permission set.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ROLE_ASSIGNMENTS">
+Returns all users assigned to a role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_RETURNS_PROJECT_PLAN">
+Returns information about items in a project plan. items consists of tasks and activities and are linked to specific project phase and group.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_DEAL_FIELD">
+Returns data about a specific deal field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_INSTALLMENT_SUBSCRIPTION">
+Updates an installment subscription.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payments" type="array" required={true}>
+</ParamField>
+
+<ParamField path="update_deal_value" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ACTIVITY_TYPES">
+Returns all activity types.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ORGANIZATION">
+Marks an organization as deleted. after 30 days, the organization will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_DEALS_ASSOCIATED_WITH_AN_ORGANIZATION">
+Lists deals associated with an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string" default="all_not_deleted">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+<ParamField path="only_primary_association" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DOWNLOAD_ONE_FILE">
+Initializes a file download.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LINK_A_REMOTE_FILE_TO_AN_ITEM">
+Links an existing remote file (`googledrive`) to the item you supply. for more information, see the tutorial for adding a remote file.
+
+**Action Parameters**
+
+<ParamField path="item_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="item_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="remote_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="remote_location" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PROJECTS">
+Returns all projects. this is a cursor-paginated endpoint. for more information, please refer to our documentation on pagination.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="phase_id" type="integer">
+</ParamField>
+
+<ParamField path="include_archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_FILTERS_IN_BULK">
+Marks multiple filters as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PERSON_FIELD">
+Marks a field as deleted. for more information, see the tutorial for deleting a custom field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_FILTER">
+Returns data about a specific filter. note that this also returns the condition lines of the filter.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_RETURNS_PROJECT_ACTIVITIES">
+Returns activities linked to a specific project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_MAIL_MESSAGES_OF_MAIL_THREAD">
+Returns all the mail messages inside a specified mail thread.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_USERS_TO_A_TEAM">
+Adds users to an existing team.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="users" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_STAGE_DETAILS">
+Updates the properties of a stage.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_PIPELINE">
+Returns data about a specific pipeline. also returns the summary of the deals in this pipeline across its stages.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="totals_convert_currency" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_FOLLOWER_TO_A_DEAL">
+Adds a follower to a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PERMISSION_SETS">
+Returns data about all permission sets.
+
+**Action Parameters**
+
+<ParamField path="app" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_STAGE">
+Returns data about a specific stage.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="everyone" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_TASKS">
+Returns all tasks. this is a cursor-paginated endpoint. for more information, please refer to our documentation on pagination.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="assignee_id" type="integer">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="parent_task_id" type="integer">
+</ParamField>
+
+<ParamField path="done" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_SEARCH_PERSONS">
+This endpoint searches for individuals by various identifiers and is a specific use case of /v1/itemsearch with limited oauth scope, allowing results filtering by organization id.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_RESULT_OF_A_GOAL">
+Gets the progress of a goal for the specified period.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="period__start" type="string" required={true}>
+</ParamField>
+
+<ParamField path="period__end" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_PERSON_PICTURE">
+Deletes a person’s picture.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_LEADS">
+The api returns sorted leads by creation time, supporting pagination via `limit` and `start`. custom field values are included if set, mimicking the `deals` endpoint structure; unset fields are omitted. leads share custom fields with deals.
+
+**Action Parameters**
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="archived_status" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="integer">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_FILTER">
+New filter creation returns an id. only one primary condition group with 'and' and two secondary groups (one 'and', one 'or') are supported. future syntax expansion possible. see tutorial for details.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PROJECT">
+Updates a project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_PHASE">
+Returns the details of a specific project phase.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PAYMENTS_OF_A_SUBSCRIPTION">
+Returns all payments of an installment or recurring subscription.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_UPDATES_ABOUT_A_DEAL">
+Lists updates about a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="all_changes" type="string">
+</ParamField>
+
+<ParamField path="items" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_NOTE">
+Deletes a specific note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_DEAL_FIELD">
+Adds a new deal field. for more information, see the tutorial for adding a new custom field.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_IN_A_STAGE">
+Lists deals in a specific stage.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="everyone" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_ACTIVITY_TYPES_IN_BULK">
+Marks multiple activity types as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_LEAD">
+Pipedrive api lets you add leads linked to people or organizations and tags them with 'api' source. custom fields from deals apply to leads and appear in responses if set. details are in the tutorials for adding and updating leads.
+
+**Action Parameters**
+
+<ParamField path="title" type="string" required={true}>
+</ParamField>
+
+<ParamField path="owner_id" type="integer">
+</ParamField>
+
+<ParamField path="label_ids" type="array">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="value__amount" type="integer">
+</ParamField>
+
+<ParamField path="value__currency" type="string">
+</ParamField>
+
+<ParamField path="expected_close_date" type="string">
+</ParamField>
+
+<ParamField path="was_seen" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PERSON">
+Marks a person as deleted. after 30 days, the person will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_PRODUCT_FIELD">
+Adds a new product field. for more information, see the tutorial for adding a new custom field.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="options" type="array">
+</ParamField>
+
+<ParamField path="field_type" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_DEALS_ASSOCIATED_WITH_A_PERSON">
+Lists deals associated with a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string" default="all_not_deleted">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_COMMENT_RELATED_TO_A_NOTE">
+Deletes a comment.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="commentId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_PROJECT_PHASES">
+Returns all active project phases under a specific board.
+
+**Action Parameters**
+
+<ParamField path="board_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_LEAD_LABEL">
+Deletes a specific lead label.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FOLLOWER_FROM_A_PRODUCT">
+Deletes a follower from a product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="follower_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_CREATE_AN_ORGANIZATION_RELATIONSHIP">
+Creates and returns an organization relationship.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rel_owner_org_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="rel_linked_org_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_PRODUCT_FIELDS_IN_BULK">
+Marks multiple fields as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_ROLE_ASSIGNMENT">
+Assigns a user to a role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_DEAL">
+Fetches specific deal details, including exclusive fields like deal age and pipeline stage duration. custom fields show up as hashes, which can be matched using the 'key' from dealfields. see the deal details tutorial for more.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ACTIVITIES_ASSOCIATED_WITH_A_DEAL">
+Lists activities associated with a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="done" type="integer">
+</ParamField>
+
+<ParamField path="exclude" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ACTIVITIES_BETA">
+This beta cursor-paginated endpoint returns all activities, accessible only to global admins, not regular users who get a 403 error. refer to pipedrive's documentation for pagination and global permissions.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="since" type="string">
+</ParamField>
+
+<ParamField path="until" type="string">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="done" type="boolean">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_FIND_SUBSCRIPTION_BY_DEAL">
+Returns details of an installment or a recurring subscription by the deal id.
+
+**Action Parameters**
+
+<ParamField path="dealId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_PERMISSION_SET">
+Returns data about a specific permission set.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_PERSON">
+The text describes an api endpoint that returns detailed person information, including extra fields and custom fields as hashes. it also provides `data.marketing status` if the campaigns product is used.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NOTE">
+Adds a new note.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_ORGANIZATION_RELATIONSHIP">
+Finds and returns an organization relationship from its id.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_MERGE_TWO_DEALS">
+Merges a deal with another deal. for more information, see the tutorial for merging two deals.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="merge_with_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_LEAD">
+Deletes a specific lead.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_USERS_FROM_A_TEAM">
+Deletes users from an existing team.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="users" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PIPELINE_VISIBILITY_FOR_A_ROLE">
+Returns a list of visible or hidden pipeline ids by role. see the "visibility groups article" for details on pipeline visibility.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="visible" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_TEAM">
+Updates an existing team and returns the updated object.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_PRODUCT">
+Adds a new product to the products inventory. for more information, see the tutorial for adding a product.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FOLLOWERS_OF_A_DEAL">
+Lists the followers of a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_PERFORM_A_SEARCH_FROM_MULTIPLE_ITEM_TYPES">
+Performs a search from your choice of item types and fields.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="item_types" type="string">
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="search_for_related_items" type="boolean">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_NOTE">
+Returns details about a specific note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_EXISTING_GOAL">
+Marks a goal as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_USER_ROLE_SETTINGS">
+Lists the settings of user's assigned role.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ACTIVITIES_ASSOCIATED_WITH_A_PERSON">
+Lists activities associated with a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="done" type="integer">
+</ParamField>
+
+<ParamField path="exclude" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_FILE_DETAILS">
+Updates the properties of a file.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FILES_ATTACHED_TO_AN_ORGANIZATION">
+Lists files associated with an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_MOVEMENTS_IN_PIPELINE">
+Returns statistics for deals movements for the given time period.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="end_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_SUPPORTED_CURRENCIES">
+Returns all supported currencies in given account which should be used when saving monetary values with other objects. the `code` parameter of the returning objects is the currency code according to iso 4217 for all non-custom currencies.
+
+**Action Parameters**
+
+<ParamField path="term" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PIPELINE">
+Updates the properties of a pipeline.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="order_nr" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ATTACH_AN_AUDIO_FILE_TO_THE_CALL_LOG">
+Adds an audio recording to the call log. that audio can be played by those who have access to the call log object.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_FIND_GOALS">
+Query goal data by appending ``{searchfield}`=`{searchvalue}`` to the url with dot-notation fields and values. include `is active` to filter by goal status and specify both `period.start` and `period.end` for time-based searches.
+
+**Action Parameters**
+
+<ParamField path="type__name" type="string">
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="is_active" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="assignee__id" type="integer">
+</ParamField>
+
+<ParamField path="assignee__type" type="string">
+</ParamField>
+
+<ParamField path="expected__outcome__target" type="integer">
+</ParamField>
+
+<ParamField path="expected__outcome__tracking__metric" type="string">
+</ParamField>
+
+<ParamField path="expected__outcome__currency__id" type="integer">
+</ParamField>
+
+<ParamField path="type__params__pipeline__id" type="array">
+</ParamField>
+
+<ParamField path="type__params__stage__id" type="integer">
+</ParamField>
+
+<ParamField path="type__params__activity__type__id" type="array">
+</ParamField>
+
+<ParamField path="period__start" type="string">
+</ParamField>
+
+<ParamField path="period__end" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_FOLLOWER_TO_A_PERSON">
+Adds a follower to a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_TEAM">
+Adds a new team to the company and returns the created object.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="manager_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="users" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_COMMENTS_FOR_A_NOTE">
+Returns all comments associated with a note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_CHANNEL">
+The endpoint removes a messenger channel along with conversations and messages. requires messengers integration oauth and messaging app extension manifest.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FILTER">
+Marks a filter as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ARCHIVE_A_PROJECT">
+Archives a project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_ROLE">
+Adds a new role.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parent_role_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PERSON">
+Modifies a person’s details in pipedrive. see the linked tutorial for guidance. if utilizing campaigns, the endpoint also handles `data.marketing status`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PROJECT_TEMPLATES">
+The endpoint retrieves all non-deleted project templates with cursor-based pagination. refer to the provided documentation link for more details on pagination.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_TIMELINE">
+Returns opened and won deals in time-based groups according to a specified dealfield, with examples of deals grouped by month over a 3-month period starting january 2012.
+
+**Action Parameters**
+
+<ParamField path="start_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="interval" type="string" required={true}>
+</ParamField>
+
+<ParamField path="amount" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="field_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="pipeline_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="exclude_deals" type="integer">
+</ParamField>
+
+<ParamField path="totals_convert_currency" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PRODUCT_FIELD">
+Marks a product field as deleted. for more information, see the tutorial for deleting a custom field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_USER_PERMISSIONS">
+Lists aggregated permissions over all assigned permission sets for a user.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ROLE_ASSIGNMENTS_LISTS_ROLE_ASSIGNMENTS_FOR_A_USER">
+Lists role assignments for a user.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_UPDATES_ABOUT_PARTICIPANTS_OF_A_DEAL">
+This endpoint provides cursor-paginated updates on deal participants. for pagination details, see the pipedrive documentation.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_AN_ORGANIZATION">
+Provides detailed information about an organization, including additional fields not shown when listing all organizations, and maps custom fields as long hashes to the 'key' value in organizationfields.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_NOTE_FIELDS">
+Returns data about all note fields.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_ORGANIZATION_RELATIONSHIP">
+Updates and returns an organization relationship.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="rel_owner_org_id" type="integer">
+</ParamField>
+
+<ParamField path="rel_linked_org_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_CANCEL_A_RECURRING_SUBSCRIPTION">
+Cancels a recurring subscription.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_UPDATES_ABOUT_A_PERSON">
+Lists updates about a person.if a company uses the [campaigns product](https://pipedrive.readme.io/docs/campaigns-in-pipedrive-api), then this endpoint's response will also include updates for the `marketing status` field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="all_changes" type="string">
+</ParamField>
+
+<ParamField path="items" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DUPLICATE_DEAL">
+Duplicates a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_TASK">
+Updates a task.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_CALL_LOG">
+Returns details of a specific call log.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PERSONS_OF_AN_ORGANIZATION">
+Lists persons associated with an organization.if a company uses the [campaigns product](https://pipedrive.readme.io/docs/campaigns-in-pipedrive-api), then this endpoint will also return the `data.marketing status` field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_TEAMS">
+Returns data about teams within the company.
+
+**Action Parameters**
+
+<ParamField path="order_by" type="string" default="id">
+</ParamField>
+
+<ParamField path="skip_users" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PRODUCTS">
+Returns data about all products.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="ids" type="array">
+</ParamField>
+
+<ParamField path="first_char" type="string">
+</ParamField>
+
+<ParamField path="get_summary" type="boolean">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_ORGANIZATION_FIELD">
+Updates an organization field. for more information, see the tutorial for updating custom fields' values.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="options" type="array">
+</ParamField>
+
+<ParamField path="add_visible_flag" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ACTIVITY_TYPE">
+Marks an activity type as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_PERFORM_A_SEARCH_USING_A_SPECIFIC_FIELD_FROM_AN_ITEM_TYPE">
+Performs a search from the values of a specific field. results can either be the distinct values of the field (useful for searching autocomplete field values), or the ids of actual items (deals, leads, persons, organizations or products).
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="field_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="field_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="return_item_ids" type="boolean">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_CONVERSION_RATES_IN_PIPELINE">
+Returns all stage-to-stage conversion and pipeline-to-close rates for the given time period.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="end_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_PERSON_PICTURE">
+This service allows adding a photo to a person's profile, replacing any existing one. images must be square with a minimum size of 128 pixels and in gif, jpg, or png formats. they will be resized to 128 and 512 pixels.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+<ParamField path="crop_x" type="integer">
+</ParamField>
+
+<ParamField path="crop_y" type="integer">
+</ParamField>
+
+<ParamField path="crop_width" type="integer">
+</ParamField>
+
+<ParamField path="crop_height" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_CALL_LOG">
+Deletes a call log. if there is an audio recording attached to it, it will also be deleted. the related activity will not be removed by this request. if you want to remove the related activities, please use the endpoint which is specific for activities.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_USERS">
+Returns data about all users within the company.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_WHERE_A_PRODUCT_IS_ATTACHED_TO">
+Returns data about deals that have a product attached to it.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string" default="all_not_deleted">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_ACTIVITY_IN_PROJECT_PLAN">
+Updates an activity phase or group in a project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="activityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="phase_id" type="integer">
+</ParamField>
+
+<ParamField path="group_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_CONVERSATION">
+Deletes an existing conversation. to use the endpoint, you need to have **messengers integration** oauth scope enabled and the messaging manifest ready for the [messaging app extension](https://pipedrive.readme.io/docs/messaging-app-extension).
+
+**Action Parameters**
+
+<ParamField path="channel__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="conversation__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_FOLLOWER_TO_A_PRODUCT">
+Adds a follower to a product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_DEAL_FIELD">
+Updates a deal field. for more information, see the tutorial for updating custom fields' values.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="options" type="array">
+</ParamField>
+
+<ParamField path="add_visible_flag" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_MAIL_THREADS">
+Returns mail threads in a specified folder ordered by the most recent message within.
+
+**Action Parameters**
+
+<ParamField path="folder" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_ORGANIZATIONS_BETA">
+This beta api endpoint lists all organizations with cursor pagination. only global admins have access; others get a 403 error. see docs for pagination and global permissions.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="since" type="string">
+</ParamField>
+
+<ParamField path="until" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="integer">
+</ParamField>
+
+<ParamField path="first_char" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_FIND_USERS_BY_NAME">
+Finds users by their name.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="search_by_email" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_ACTIVITY_TYPE">
+Updates an activity type.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="icon_key" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="order_nr" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PRODUCT_FIELD">
+Updates a product field. for more information, see the tutorial for updating custom fields' values.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="options" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_A_TASK">
+Returns the details of a specific task.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UNLINK_USER_FROM_VIDEO_CALL_INTEGRATION">
+A video calling provider must call this endpoint to remove the link between a user and the installed video calling app.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_USER">
+Returns data about a specific user within the company.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PARTICIPANT_FROM_A_DEAL">
+Deletes a participant from a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="deal_participant_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ORGANIZATION_FIELD">
+Marks a field as deleted. for more information, see the tutorial for deleting a custom field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_AN_ORGANIZATION">
+Updates the properties of an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_COMMENT_TO_A_NOTE">
+Adds a new comment to a note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="content" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_REFRESHING_THE_TOKENS">
+Access tokens expire after the time specified in `expires in`. to continue accessing the api, use the `refresh token` to obtain a new access token.
+
+**Action Parameters**
+
+<ParamField path="grant_type" type="string" default="refresh_token">
+</ParamField>
+
+<ParamField path="refresh_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_PERSON">
+Add a new contact in pipedrive with optional custom fields unique to each account found using the `personfields` endpoint. the endpoint also handles `data.marketing status` for campaigns product users.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_ORGANIZATIONS_IN_BULK">
+Marks multiple organizations as deleted. after 30 days, the organizations will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_SUBSCRIPTION">
+Marks an installment or a recurring subscription as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_AN_ORGANIZATION">
+Set up a new pipedrive organization using custom fields with unique key hashes. retrieve `organizationfields` for configuration. check the linked tutorial for guidance.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_MERGE_TWO_PERSONS">
+Merges a person with another person. for more information, see the tutorial for merging two persons.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="merge_with_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PRODUCTS_ATTACHED_TO_A_DEAL">
+Lists products attached to a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="include_product_data" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_RECENTS">
+Returns data about all recent changes occurred after the given timestamp.
+
+**Action Parameters**
+
+<ParamField path="since_timestamp" type="string" required={true}>
+</ParamField>
+
+<ParamField path="items" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_PRODUCT">
+Updates product data.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_CALL_LOGS_ASSIGNED_TO_A_PARTICULAR_USER">
+Returns all call logs assigned to a particular user.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_LEAD_LABEL">
+Creates a lead label.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_EXISTING_GOAL">
+Updates an existing goal.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="interval" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PERMITTED_USERS">
+Lists the users permitted to access a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_MERGE_TWO_ORGANIZATIONS">
+Merges an organization with another organization. for more information, see the tutorial for merging two organizations.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="merge_with_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_PERSON_FIELDS_IN_BULK">
+Marks multiple fields as deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ENUMERATE_ACCESSIBLE_USERS_FOR_LEAD">
+Lists the users permitted to access a lead.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_FILES">
+Returns data about all files.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PERSONS">
+Returns all persons.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="first_char" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_PARTICIPANT_TO_A_DEAL">
+Adds a participant to a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="person_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_SEARCH_DEALS">
+This api endpoint searches deals by title, notes, and custom fields, filters results by person or organization id, and is a specific use case of /v1/itemsearch with limited oauth scope.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="organization_id" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DETAILS_OF_AN_ACTIVITY">
+Returns the details of a specific activity.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FILES_ATTACHED_TO_A_PRODUCT">
+Lists files associated with a product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PRODUCT_FIELDS">
+Returns data about all product fields.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ORGANIZATION_ACCESSIBLE_USER_LIST">
+List users permitted to access an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_A_SINGLE_TEAM">
+Returns data about a specific team.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="skip_users" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ACTIVITY">
+Marks an activity as deleted. after 30 days, the activity will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_SETTINGS_OF_AN_AUTHORIZED_USER">
+Lists the settings of an authorized user. example response contains a shortened list of settings.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_WEBHOOKS">
+Returns data about all the webhooks of a company.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PARTICIPANTS_OF_A_DEAL">
+Lists the participants associated with a deal.if a company uses the [campaigns product](https://pipedrive.readme.io/docs/campaigns-in-pipedrive-api), then this endpoint will also return the `data.marketing status` field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MULTIPLE_ACTIVITIES_IN_BULK">
+Marks multiple activities as deleted. after 30 days, the activities will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_ORGANIZATION_FIELD">
+Adds a new organization field. for more information, see the tutorial for adding a new custom field.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_TASK_IN_PROJECT_PLAN">
+Updates a task phase or group in a project.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="phase_id" type="integer">
+</ParamField>
+
+<ParamField path="group_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_MAIL_MESSAGE">
+Returns data about a specific mail message.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_body" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_DEALS_IN_A_PIPELINE">
+Lists deals in a specific pipeline across all its stages.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="filter_id" type="integer">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="everyone" type="integer">
+</ParamField>
+
+<ParamField path="stage_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="get_summary" type="integer">
+</ParamField>
+
+<ParamField path="totals_convert_currency" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_LEAD">
+Api returns specific lead details with custom field values in the deals format. unset custom fields are omitted. leads share custom fields with deals, not having a unique set.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_STAGE">
+Marks a stage as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_LEAD_LABEL">
+Updates one or more properties of a lead label. only properties included in the request will be updated.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_FILE">
+Upload and link files to deals, people, organizations, activities, products, or leads in pipedrive. see the "adding a file" tutorial for details.
+
+**Action Parameters**
+
+<ParamField path="file" type="object">
+</ParamField>
+
+<ParamField path="deal_id" type="integer">
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+<ParamField path="product_id" type="integer">
+</ParamField>
+
+<ParamField path="activity_id" type="integer">
+</ParamField>
+
+<ParamField path="lead_id" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_TEAMS_OF_A_USER">
+Returns data about all teams which have the specified user as a member.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="order_by" type="string" default="id">
+</ParamField>
+
+<ParamField path="skip_users" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_ROLE">
+Marks a role as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_USERS_IN_A_TEAM">
+Returns a list of all user ids within a team.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FILES_ATTACHED_TO_A_PERSON">
+Lists files associated with a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PERSONS_BETA">
+This beta endpoint returns all persons, using cursor pagination. only global admins have access; others get a 403 error. info on pagination and permissions is in the linked docs.
+
+**Action Parameters**
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="since" type="string">
+</ParamField>
+
+<ParamField path="until" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="integer">
+</ParamField>
+
+<ParamField path="first_char" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_AN_INSTALLMENT_SUBSCRIPTION">
+Adds a new installment subscription.
+
+**Action Parameters**
+
+<ParamField path="deal_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="currency" type="string" required={true}>
+</ParamField>
+
+<ParamField path="payments" type="array" required={true}>
+</ParamField>
+
+<ParamField path="update_deal_value" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_DEAL_FIELDS">
+Returns data about all deal fields.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_LEAD_LABELS">
+Returns details of all lead labels. this endpoint does not support pagination and all labels are always returned.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_MAIL_THREAD">
+Marks a mail thread as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_COMMENT_RELATED_TO_A_NOTE">
+Updates a comment related to a note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="commentId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="content" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_DEAL">
+Add a new deal to pipedrive with any custom fields, which vary by account and are identified by long hash keys. check dealfields for existing custom fields. for details, visit the tutorial on adding a deal.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PERSON_FIELDS">
+Returns data about all person fields.if a company uses the [campaigns product](https://pipedrive.readme.io/docs/campaigns-in-pipedrive-api), then this endpoint will also return the `data.marketing status` field.
+
+**Action Parameters**
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_FOLLOWER_TO_AN_ORGANIZATION">
+Adds a follower to an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_THE_PRODUCT_ATTACHED_TO_A_DEAL">
+Updates the details of the product that has been attached to a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="product_attachment_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="product_id" type="integer">
+</ParamField>
+
+<ParamField path="item_price" type="integer">
+</ParamField>
+
+<ParamField path="quantity" type="integer">
+</ParamField>
+
+<ParamField path="discount" type="integer">
+</ParamField>
+
+<ParamField path="discount_type" type="string" default="percentage">
+</ParamField>
+
+<ParamField path="duration" type="integer" default="1">
+</ParamField>
+
+<ParamField path="product_variation_id" type="integer">
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+<ParamField path="tax" type="integer">
+</ParamField>
+
+<ParamField path="tax_method" type="string">
+</ParamField>
+
+<ParamField path="enabled_flag" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_LEAD_SOURCES">
+Returns all lead sources. please note that the list of lead sources is fixed, it cannot be modified. all leads created through the pipedrive api will have a lead source `api` assigned.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PRODUCTS_ASSOCIATED_WITH_A_PERSON">
+Lists products associated with a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_RECEIVES_AN_INCOMING_MESSAGE">
+Adds a message to a conversation. to use the endpoint, you need to have **messengers integration** oauth scope enabled and the messaging manifest ready for the [messaging app extension](https://pipedrive.readme.io/docs/messaging-app-extension).
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="channel_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="sender_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="conversation_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="message" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="created_at" type="string" required={true}>
+</ParamField>
+
+<ParamField path="reply_by" type="string">
+</ParamField>
+
+<ParamField path="conversation_link" type="string">
+</ParamField>
+
+<ParamField path="attachments" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_PERSON_FIELD">
+Returns data about a specific person field.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_DEAL">
+Updates the properties of a deal. for more information, see the tutorial for updating a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_TASK">
+Adds a new task.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_PROJECT_BOARDS">
+Returns all projects boards that are not deleted.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_ALL_PERSONS_ASSOCIATED_WITH_A_DEAL">
+The endpoint lists every person linked to a deal, including primary contacts and participants, and provides a `data.marketing status` field for users of the campaigns product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_FOLLOWER_FROM_AN_ORGANIZATION">
+Deletes a follower from an organization. you can retrieve the `follower id` from the list followers of an organization endpoint.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="follower_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_MAIL_MESSAGES_ASSOCIATED_WITH_AN_ORGANIZATION">
+Lists mail messages associated with an organization.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_USER_DETAILS">
+Updates the properties of a user. currently, only `active flag` can be updated.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="active_flag" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_SEARCH_PRODUCTS">
+Searches all products by name, code and/or custom fields. this endpoint is a wrapper of /v1/itemsearch with a narrower oauth scope.
+
+**Action Parameters**
+
+<ParamField path="term" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string">
+</ParamField>
+
+<ParamField path="exact_match" type="boolean">
+</ParamField>
+
+<ParamField path="include_fields" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_AN_ATTACHED_PRODUCT_FROM_A_DEAL">
+Deletes a product attachment from a deal, using the `product attachment id`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="product_attachment_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_CHANNEL">
+New messaging channel added; registration limited to admins. utilizes getconversations endpoint for data retrieval. requires messengers integration oauth scope and a prepared messaging app extension manifest.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provider_channel_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="avatar_url" type="string">
+</ParamField>
+
+<ParamField path="template_support" type="boolean">
+</ParamField>
+
+<ParamField path="provider_type" type="string" default="other">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_CURRENT_USER_DATA">
+Returns data about an authorized user within the company with bound company data: company id, company name, and domain. note that the `locale` property means 'date/number format' in the pipedrive account settings, not the chosen language.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_UPDATE_A_NOTE">
+Updates a note.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_PERMITTED_USERS_LIST_USERS_PERMITTED_TO_ACCESS_A_PERSON">
+List users permitted to access a person.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_NEW_PERSON_FIELD">
+Adds a new person field. for more information, see the tutorial for adding a new custom field.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FILES_ATTACHED_TO_A_DEAL">
+Lists files associated with a deal.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_RELATIONSHIPS_FOR_ORGANIZATION">
+Gets all of the relationships for a supplied organization id.
+
+**Action Parameters**
+
+<ParamField path="org_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ALL_STAGES">
+Returns data about all stages.
+
+**Action Parameters**
+
+<ParamField path="pipeline_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_LIST_FOLLOWERS_OF_A_PRODUCT">
+Lists the followers of a product.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PIPELINE">
+Marks a pipeline as deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_DELETE_A_PRODUCT">
+Marks a product as deleted. after 30 days, the product will be permanently deleted.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_GET_ONE_FILE">
+Returns data about a specific file.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="PIPEDRIVE_ADD_A_CALL_LOG">
+Adds a new call log.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="activity_id" type="integer">
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="duration" type="string">
+</ParamField>
+
+<ParamField path="outcome" type="string" required={true}>
+</ParamField>
+
+<ParamField path="from_phone_number" type="string">
+</ParamField>
+
+<ParamField path="to_phone_number" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string" required={true}>
+</ParamField>
+
+<ParamField path="end_time" type="string" required={true}>
+</ParamField>
+
+<ParamField path="person_id" type="integer">
+</ParamField>
+
+<ParamField path="org_id" type="integer">
+</ParamField>
+
+<ParamField path="deal_id" type="integer">
+</ParamField>
+
+<ParamField path="lead_id" type="string">
+</ParamField>
+
+<ParamField path="note" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

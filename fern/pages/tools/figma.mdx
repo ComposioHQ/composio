@@ -1,0 +1,1296 @@
+---
+title: "Figma"
+subtitle: "Learn how to use Figma with Composio"
+---
+
+
+## Overview
+
+### Enum
+`FIGMA`
+
+### Description
+A collaborative interface design tool.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="files:read,file_comments:write,file_dev_resources:read,file_dev_resources:write,webhooks:write">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.figma.com">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.figma.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="FIGMA_DELETE_A_WEBHOOK">
+Deletes the specified webhook. this operation cannot be reversed.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_ADD_A_REACTION_TO_A_COMMENT">
+Posts a new comment reaction on a file comment.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="emoji" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILE_JSON">
+Returns the document identified by `file key` as a json object. the file key can be parsed from any figma file url: `https://www.figma.com/file/`{file_key}`/`{title}``. the `document` property contains a node of type `document`. the `components` property contains a mapping from node ids to component metadata. this is to help you determine which components each instance comes from.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="version" type="string">
+</ParamField>
+
+<ParamField path="ids" type="string">
+</ParamField>
+
+<ParamField path="depth" type="integer">
+</ParamField>
+
+<ParamField path="geometry" type="string">
+</ParamField>
+
+<ParamField path="plugin_data" type="string">
+</ParamField>
+
+<ParamField path="branch_data" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_WEBHOOK_REQUESTS">
+Returns all webhook requests sent within the last week. useful for debugging.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_COMPONENT_ACTION_DATA">
+Returns a list of library analytics component actions data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_VARIABLE_USAGE_DATA">
+Returns a list of library analytics variable usage data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_DEV_RESOURCES">
+Get dev resources in a file
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="node_ids" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_RENDER_IMAGES_OF_FILE_NODES">
+Renders images from a file. if no error occurs, `"images"` will be populated with a map from node ids to urls of the rendered images, and `"status"` will be omitted. the image assets will expire after 30 days. images up to 32 megapixels can be exported. any images that are larger will be scaled down. important: the image map may contain values that are `null`. this indicates that rendering of that specific node has failed. this may be due to the node id not existing, or other reasons such has the node having no renderable components. it is guaranteed that any node that was requested for rendering will be represented in this map whether or not the render succeeded. to render multiple images from the same file, use the `ids` query parameter to specify multiple node ids. ``` get /v1/images/:key?ids=1:2,1:3,1:4 ```
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+<ParamField path="version" type="string">
+</ParamField>
+
+<ParamField path="scale" type="integer">
+</ParamField>
+
+<ParamField path="format" type="string" default="png">
+</ParamField>
+
+<ParamField path="svg_outline_text" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="svg_include_id" type="boolean">
+</ParamField>
+
+<ParamField path="svg_include_node_id" type="boolean">
+</ParamField>
+
+<ParamField path="svg_simplify_stroke" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="contents_only" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="use_absolute_bounds" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_TEAM_COMPONENT_SETS">
+Get a paginated list of published component sets within a team library.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="after" type="integer">
+</ParamField>
+
+<ParamField path="before" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_VARIABLE_ACTION_DATA">
+Returns a list of library analytics variable actions data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_PROJECTS_IN_A_TEAM">
+You can use this endpoint to get a list of all the projects within the specified team. this will only return projects visible to the authenticated user or owner of the developer token. note: it is not currently possible to programmatically obtain the team id of a user just from a token. to obtain a team id, navigate to a team page of a team you are a part of. the team id will be present in the url after the word team and before your team name.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_ME">
+Returns the user information for the currently authenticated user.(DEPRECATED use get_current_user)
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_ADD_A_COMMENT_TO_A_FILE">
+Posts a new comment on the file.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="message" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_id" type="string">
+</ParamField>
+
+<ParamField path="client_meta" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_STYLE_ACTION_DATA">
+Returns a list of library analytics style actions data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_REACTIONS_FOR_A_COMMENT">
+Gets a paginated list of reactions left on the comment.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_TEAM_STYLES">
+Get a paginated list of published styles within a team library.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="after" type="integer">
+</ParamField>
+
+<ParamField path="before" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILE_STYLES">
+Get a list of published styles within a file library.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_CREATE_DEV_RESOURCES">
+Bulk create dev resources across multiple files. dev resources that are successfully created will show up in the links created array in the response. if there are any dev resources that cannot be created, you may still get a 200 response. these resources will show up in the errors array. some reasons a dev resource cannot be created include: - resource points to a `file key` that cannot be found. - the node already has the maximum of 10 dev resources. - another dev resource for the node has the same url.
+
+**Action Parameters**
+
+<ParamField path="dev_resources" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_COMPONENT_USAGE_DATA">
+Returns a list of library analytics component usage data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILE_COMPONENTS">
+Get a list of published components within a file library.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_A_WEBHOOK">
+Get a webhook by id.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_DELETE_A_REACTION">
+Deletes a specific comment reaction. only the person who made the reaction is allowed to delete it.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="emoji" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_COMMENTS_IN_A_FILE">
+Gets a list of comments left on the file.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="as_md" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_COMPONENT_SET">
+Get metadata on a published component set by key.
+
+**Action Parameters**
+
+<ParamField path="key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_DELETE_DEV_RESOURCE">
+Delete a dev resource from a file
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dev_resource_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_STYLE">
+Get metadata on a style by key.
+
+**Action Parameters**
+
+<ParamField path="key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_PUBLISHED_VARIABLES">
+**this api is available to full members of enterprise orgs.** the `get /v1/files/:file key/variables/published` endpoint returns the variables that are published from the given file. the response for this endpoint contains some key differences compared to the `get /v1/files/:file key/variables/local` endpoint: - each variable and variable collection contains a `subscribed id`. - modes are omitted for published variable collections published variables have two ids: an id that is assigned in the file where it is created (`id`), and an id that is used by subscribing files (`subscribed id`). the `id` and `key` are stable over the lifetime of the variable. the `subscribed id` changes every time the variable is modified and published. the same is true for variable collections. the `updatedat` fields are iso 8601 timestamps that indicate the last time that a change to a variable was published. for variable collections, this timestamp will change any time a variable in the collection is changed.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_TEAM_COMPONENTS">
+Get a paginated list of published components within a team library.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer" default="30">
+</ParamField>
+
+<ParamField path="after" type="integer">
+</ParamField>
+
+<ParamField path="before" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LIBRARY_ANALYTICS_STYLE_USAGE_DATA">
+Returns a list of library analytics style usage data broken down by the requested dimension.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cursor" type="string">
+</ParamField>
+
+<ParamField path="group_by" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_UPDATE_DEV_RESOURCES">
+Bulk update dev resources across multiple files. ids for dev resources that are successfully updated will show up in the `links updated` array in the response. if there are any dev resources that cannot be updated, you may still get a 200 response. these resources will show up in the `errors` array.
+
+**Action Parameters**
+
+<ParamField path="dev_resources" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_LOCAL_VARIABLES">
+**this api is available to full members of enterprise orgs.** the `get /v1/files/:file key/variables/local` endpoint lets you enumerate local variables created in the file and remote variables used in the file. remote variables are referenced by their `subscribed id`. as a part of the variables related api additions, the `get /v1/files/:file key` endpoint now returns a `boundvariables` property, containing the `variableid` of the bound variable. the `get /v1/files/:file key/variables/local` endpoint can be used to get the full variable or variable collection object. note that `get /v1/files/:file key/variables/published` does not return modes. instead, you will need to use the `get /v1/files/:file key/variables/local` endpoint, in the same file, to examine the mode values.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILES_IN_A_PROJECT">
+Get a list of all the files within the specified project.
+
+**Action Parameters**
+
+<ParamField path="project_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_data" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_CURRENT_USER">
+Returns the user information for the currently authenticated user.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_IMAGE_FILLS">
+Returns download links for all images present in image fills in a document. image fills are how figma represents any user supplied images. when you drag an image into figma, we create a rectangle with a single fill that represents the image, and the user is able to transform the rectangle (and properties on the fill) as they wish. this endpoint returns a mapping from image references to the urls at which the images may be download. image urls will expire after no more than 14 days. image references are located in the output of the get files endpoint under the `imageref` attribute in a `paint`.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_VERSIONS_OF_A_FILE">
+This endpoint fetches the version history of a file, allowing you to see the progression of a file over time. you can then use this information to render a specific version of the file, via another endpoint.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="before" type="integer">
+</ParamField>
+
+<ParamField path="after" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_ACTIVITY_LOGS">
+Returns a list of activity log events
+
+**Action Parameters**
+
+<ParamField path="events" type="string">
+</ParamField>
+
+<ParamField path="start_time" type="integer">
+</ParamField>
+
+<ParamField path="end_time" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="order" type="string" default="asc">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_UPDATE_A_WEBHOOK">
+Update a webhook by id.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="event_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint" type="string" required={true}>
+</ParamField>
+
+<ParamField path="passcode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILE_JSON_FOR_SPECIFIC_NODES">
+Retrieves nodes (design elements) from a specified figma file. this endpoint allows developers to access and extract various design components, such as shapes, text layers, frames, components, and groups, from a particular figma document. it's particularly useful for applications that need to analyze, render, or manipulate figma designs programmatically. the endpoint should be used when you need to fetch the structure and content of a figma file, but it won't provide real-time collaborative features or make changes to the file. keep in mind that the response may be large for complex files with many nodes, so consider performance implications when making frequent calls.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ids" type="string" required={true}>
+</ParamField>
+
+<ParamField path="version" type="string">
+</ParamField>
+
+<ParamField path="depth" type="integer">
+</ParamField>
+
+<ParamField path="geometry" type="string">
+</ParamField>
+
+<ParamField path="plugin_data" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_CREATE_A_WEBHOOK">
+Create a new webhook which will call the specified endpoint when the event triggers. by default, this webhook will automatically send a ping event to the endpoint when it is created. if this behavior is not desired, you can create the webhook and set the status to paused and reactivate it later.
+
+**Action Parameters**
+
+<ParamField path="event_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint" type="string" required={true}>
+</ParamField>
+
+<ParamField path="passcode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_CREATE_MODIFY_DELETE_VARIABLES">
+This endpoint allows you to manage variables, variable collections, modes, and their values within a figma file. it provides comprehensive control over your design system's variable structure, enabling you to create, update, and delete variable collections, modes, and individual variables. you can also set specific values for variables across different modes. use this endpoint when you need to programmatically update your design system's variable structure or values, such as during bulk updates or when synchronizing with external systems. the endpoint supports various variable types (boolean, float, string, color) and allows for platform-specific code syntax definitions. keep in mind that this endpoint performs multiple actions in a single call, so careful structuring of your request is essential to avoid unintended changes.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="variableCollections" type="array">
+</ParamField>
+
+<ParamField path="variableModes" type="array">
+</ParamField>
+
+<ParamField path="variables" type="array">
+</ParamField>
+
+<ParamField path="variableModeValues" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_COMPONENT">
+Get metadata on a component by key.
+
+**Action Parameters**
+
+<ParamField path="key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_FILE_COMPONENT_SETS">
+Get a list of published component sets within a file library.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_PAYMENTS">
+There are two methods to query for a user's payment information on a plugin, widget, or community file. the first method, using plugin payment tokens, is typically used when making queries from a plugin's or widget's code. the second method, providing a user id and resource id, is typically used when making queries from anywhere else. note that you can only query for resources that you own. in most cases, this means that you can only query resources that you originally created.
+
+**Action Parameters**
+
+<ParamField path="plugin_payment_token" type="string">
+</ParamField>
+
+<ParamField path="user_id" type="integer">
+</ParamField>
+
+<ParamField path="community_file_id" type="integer">
+</ParamField>
+
+<ParamField path="plugin_id" type="integer">
+</ParamField>
+
+<ParamField path="widget_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_DELETE_A_COMMENT">
+Deletes a specific comment. only the person who made the comment is allowed to delete it.
+
+**Action Parameters**
+
+<ParamField path="file_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="FIGMA_GET_TEAM_WEBHOOKS">
+Returns all webhooks registered under the specified team.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

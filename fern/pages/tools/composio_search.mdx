@@ -1,0 +1,349 @@
+---
+title: "Composio Search"
+subtitle: "Learn how to use Composio Search with Composio"
+---
+
+
+## Overview
+
+### Enum
+`COMPOSIO_SEARCH`
+
+### Description
+Composio Search is an all-in-one tool for searching and scraping the web.
+
+### Authentication Details
+
+<Accordion title="NO_AUTH">
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="COMPOSIO_SEARCH_SHOPPING_SEARCH">
+The shoppingsearch class performs a product search using the composio shopping search api.it specifically target shopping results related to the given query. by utilizing the google shopping search engine through the composio shopping search api, it fetches the most relevant product listings based on the input query. the `shoppingsearch` class is particularly useful for applications that need to retrieve and display the latest product listings and shopping results for a specific item. it leverages the powerful search capabilities of google's shopping search engine, ensuring that the returned results are current and relevant.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_GOOGLE_MAPS_SEARCH">
+The googlemapssearch class performs a location-specific search using the composio goolge maps search api. this class extends the functionality of the base action class to specifically target locations related to the given query. by utilizing the google maps search engine through the composio goolge maps search api, it fetches the most relevant location data based on the input query. the `googlemapssearch` class is particularly useful for applications that need to retrieve and display location information about a specific area. it leverages the powerful search capabilities of google's maps search engine, ensuring that the returned results are accurate and relevant.
+
+**Action Parameters**
+
+<ParamField path="q" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ll" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_SCHOLAR_SEARCH">
+Scholar api allows you to scrape results from a google scholar search query. the scholarsearch class performs an academic search using the composio scholar search api, academic papers and scholarly articles. it uses the google scholar search engine through the serp api to fetch relevant academic information based on the input query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH">
+The duckduckgosearch class utilizes the composio duckduckgo search api to perform searches, focusing on web information and details. it leverages the duckduckgo search engine via the composio duckduckgo search api to retrieve relevant web data based on the provided query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_IMAGE_SEARCH">
+The imagesearch class performs an image search using the composio image search api, to target image data and information. it uses the google images search engine through the composio image search api to fetch relevant image information based on the input query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_EVENT_SEARCH">
+The eventsearch class enables scraping of google events search queries. it conducts an event search using the composio events search api, retrieving information on events such as concerts, festivals, and other activities based on the provided query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_FINANCE_SEARCH">
+The financesearch class utilizes the composio finance search api to conduct financial searches, focusing on financial data and stock information. it leverages the google finance search engine via the composio finance search api to retrieve pertinent financial details based on the provided query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_TRENDS_SEARCH">
+The trendssearch class performs a trend search using the google trends search api, to target trend data and information. it uses the google trends search engine through the google trends search api to fetch relevant trend information based on the input query.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="data_type" type="string" default="TIMESERIES">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_SEARCH">
+Perform a google search using the composio google search api.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_NEWS_SEARCH">
+The newssearch class performs a news-specific search using the composio news search api. this class extends the functionality of the base action class to specifically target news articles related to the given query. by utilizing the google news search engine through the composio news search api, it fetches the most relevant news articles based on the input query. the `newssearch` class is particularly useful for applications that need to retrieve and display the latest news articles about a specific topic. it leverages the powerful search capabilities of google's news search engine, ensuring that the returned results are current and relevant.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_EXA_SIMILARLINK">
+Perform a search to find similar links and retrieve a list of relevant results. the search can optionally return contents.
+
+**Action Parameters**
+
+<ParamField path="url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="useAutoprompt" type="boolean">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="numResults" type="integer">
+</ParamField>
+
+<ParamField path="includeDomains" type="array">
+</ParamField>
+
+<ParamField path="excludeDomains" type="array">
+</ParamField>
+
+<ParamField path="startCrawlDate" type="string">
+</ParamField>
+
+<ParamField path="endCrawlDate" type="string">
+</ParamField>
+
+<ParamField path="startPublishedDate" type="string">
+</ParamField>
+
+<ParamField path="endPublishedDate" type="string">
+</ParamField>
+
+<ParamField path="category" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="COMPOSIO_SEARCH_TAVILY_SEARCH">
+The composio llm search class serves as a gateway to the composio llm search api, allowing users to perform searches across a broad range of content with multiple filtering options. it accommodates complex queries, including both keyword and phrase searches, with additional parameters to fine-tune the search results. this class enables a tailored search experience by allowing users to specify the search depth, include images and direct answers, apply domain-specific filters, and control the number of results returned. it is designed to meet various search requirements, from quick lookups to in-depth research.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="search_depth" type="string" default="basic">
+</ParamField>
+
+<ParamField path="include_images" type="boolean">
+</ParamField>
+
+<ParamField path="include_answer" type="boolean">
+</ParamField>
+
+<ParamField path="include_raw_content" type="boolean">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="5">
+</ParamField>
+
+<ParamField path="include_domains" type="array">
+</ParamField>
+
+<ParamField path="exclude_domains" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

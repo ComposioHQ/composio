@@ -1,0 +1,569 @@
+---
+title: "Airtable"
+subtitle: "Learn how to use Airtable with Composio"
+---
+
+
+## Overview
+
+### Enum
+`AIRTABLE`
+
+### Description
+Airtable is a low‒code platform to build next‒gen apps. Move beyond
+    rigid tools, operationalize your critical data, and reimagine
+    workflows with AI
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="data.records:read,data.records:write,data.recordComments:read,data.recordComments:write,schema.bases:read,schema.bases:write,user.email:read">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="BEARER_TOKEN">
+<ParamField path="token" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="AIRTABLE_CREATE_TABLE">
+Creates a new table in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_GET_BASE_SCHEMA">
+Gets the schema of a base in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_CREATE_MULTIPLE_RECORDS">
+Creates multiple records in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="records" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_DELETE_RECORD">
+Deletes a specific record in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_UPDATE_MULTIPLE_RECORDS">
+Updates multiple records in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="records" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_GET_USER_INFO">
+Retrieves user information from airtable.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_LIST_COMMENTS">
+Lists comments in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_CREATE_BASE">
+Creates a new base in airtable.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="workspaceId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tables" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_UPDATE_RECORD">
+Updates a specific record in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="returnFieldsByFieldId" type="boolean">
+</ParamField>
+
+<ParamField path="fields" type="object" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_GET_RECORD">
+Retrieves a specific record from airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cellFormat" type="string" default="json">
+</ParamField>
+
+<ParamField path="returnFieldsByFieldId" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_DELETE_MULTIPLE_RECORDS">
+Deletes multiple records in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordIds" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_DELETE_COMMENT">
+Deletes a comment in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="rowCommentId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_CREATE_RECORD">
+Creates a new record in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="object" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_CREATE_FIELD">
+Create a field in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="options" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_CREATE_COMMENT">
+Creates a comment in airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recordId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_LIST_RECORDS">
+Retrieves records from airtable.
+
+**Action Parameters**
+
+<ParamField path="baseId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tableIdOrName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeZone" type="string" default="utc">
+</ParamField>
+
+<ParamField path="userLocale" type="string">
+</ParamField>
+
+<ParamField path="pageSize" type="integer" default="100">
+</ParamField>
+
+<ParamField path="maxRecords" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="string">
+</ParamField>
+
+<ParamField path="view" type="string">
+</ParamField>
+
+<ParamField path="sort" type="array">
+</ParamField>
+
+<ParamField path="filterByFormula" type="string">
+</ParamField>
+
+<ParamField path="cellFormat" type="string" default="json">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="returnFieldsByFieldId" type="boolean">
+</ParamField>
+
+<ParamField path="recordMetadata" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AIRTABLE_LIST_BASES">
+Lists all bases in airtable.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

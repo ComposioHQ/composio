@@ -1,0 +1,4450 @@
+---
+title: "Cal"
+subtitle: "Learn how to use Cal with Composio"
+---
+
+
+## Overview
+
+### Enum
+`CAL`
+
+### Description
+Cal simplifies meeting coordination by providing shareable booking pages, calendar syncing, and availability management to streamline the scheduling process
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.cal.com/">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="CALCOM_AUTH">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="access_token" type="string" required={true}>
+</ParamField>
+
+<ParamField path="refresh_token" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="CAL_CHECK_CALENDAR_VERSION_2">
+The checkcalendaravailability endpoint retrieves the availability status of a specified calendar. it allows users to check free/busy times, ensuring efficient scheduling and resource management. this endpoint is particularly useful when you need to determine suitable time slots for scheduling events or meetings. it provides a snapshot of the calendar's current availability without exposing detailed event information. use this endpoint before attempting to schedule new events to avoid conflicts and optimize time management. note that the endpoint may have limitations on how far into the future it can check availability, and the granularity of the availability data may vary depending on the calendar's settings and the api's capabilities.
+
+**Action Parameters**
+
+<ParamField path="calendar" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_SCHEDULE_BY_ID">
+Retrieves detailed information about a specific schedule using its unique identifier. this endpoint allows users to access comprehensive data about a particular schedule, including event details, time slots, and any associated metadata. it's particularly useful when you need to view or update an existing schedule, or when integrating schedule information into other applications. the endpoint returns the most up-to-date information for the specified schedule, making it ideal for real-time schedule management and synchronization across different platforms or services. note that this endpoint only provides read access to the schedule data and does not allow modifications to the schedule itself.
+
+**Action Parameters**
+
+<ParamField path="scheduleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_HANDLE_CONFERENCING_OAUTH_CALLBACK_FOR_APP">
+Handles the oauth callback for conferencing applications integrated with cal. this endpoint is called by the conferencing service provider after a user has granted authorization to integrate the conferencing app with cal. it completes the oauth flow by exchanging the authorization code for an access token, which cal then uses to interact with the conferencing api on behalf of the user. this endpoint should be used as the redirect uri when setting up the oauth integration with the conferencing service provider. it's important to note that this endpoint is part of the authentication process and should not be called directly by client applications. the response from this endpoint typically redirects the user back to the cal application with the authentication result.
+
+**Action Parameters**
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_STRIPE_CONNECT_INFO">
+Retrieves the current stripe connect account information associated with the cal user's account. this endpoint is used to check the status of the stripe connect integration, including account details, verification status, and payout information. it's particularly useful for users who want to manage their payment settings or troubleshoot issues related to stripe payments in their cal account. the endpoint does not modify any data and is safe for frequent calls. however, it doesn't provide real-time payment transaction details or allow for account modifications. use this endpoint when setting up stripe integration, verifying account status, or displaying account information to the user within the cal application.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_LIST_EVENT_TYPES">
+Retrieves a list of all available event types in the cal scheduling system. this endpoint provides comprehensive details about each event type, including display names, severity levels, and short descriptions. it's particularly useful for applications that need to present cal's event options to users or integrate cal's event types into their own interfaces. the endpoint supports pagination for efficient handling of large numbers of event types and allows filtering by slug for more targeted queries. use this endpoint when you need to display or manage the full range of scheduling options available in your cal integration. note that this endpoint does not create or modify event types; it's purely for retrieval and listing purposes.
+
+**Action Parameters**
+
+<ParamField path="username" type="string">
+</ParamField>
+
+<ParamField path="eventSlug" type="string">
+</ParamField>
+
+<ParamField path="usernames" type="string">
+</ParamField>
+
+<ParamField path="orgSlug" type="string">
+</ParamField>
+
+<ParamField path="orgId" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_EVENT_TYPES">
+Retrieves a list of event types associated with a specific team in the cal scheduling system. this endpoint is used to fetch all available event types that can be scheduled or managed within the context of the specified team. it's particularly useful for applications that need to display or process the various types of events a team can handle, such as different meeting durations, purposes, or configurations. the endpoint should be used when you need to present scheduling options to team members or integrate team-specific event types into a larger workflow. it does not create, modify, or delete event types, nor does it provide detailed information about individual events or team members' availability. the response likely includes basic information about each event type, such as its name, duration, and any custom fields, but the exact structure of the returned data is not specified in the given schema.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="eventSlug" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_TEAM_EVENT_TYPE">
+The createteameventtype endpoint creates a new event type for a team in cal. it defines parameters like duration, title, and hosts for team-wide events such as "strategy sessions" or "demo calls". this endpoint allows for customization of scheduling rules, booking limits, and appearance settings, providing control over the event's presentation and scheduling strategy.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="lengthInMinutes" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="lengthInMinutesOptions" type="array" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="locations" type="array">
+</ParamField>
+
+<ParamField path="bookingFields" type="array">
+</ParamField>
+
+<ParamField path="disableGuests" type="boolean">
+</ParamField>
+
+<ParamField path="slotInterval" type="integer">
+</ParamField>
+
+<ParamField path="minimumBookingNotice" type="integer">
+</ParamField>
+
+<ParamField path="beforeEventBuffer" type="integer">
+</ParamField>
+
+<ParamField path="afterEventBuffer" type="integer">
+</ParamField>
+
+<ParamField path="scheduleId" type="integer">
+</ParamField>
+
+<ParamField path="bookingLimitsCount" type="object">
+</ParamField>
+
+<ParamField path="onlyShowFirstAvailableSlot" type="boolean">
+</ParamField>
+
+<ParamField path="bookingLimitsDuration" type="object">
+</ParamField>
+
+<ParamField path="bookingWindow" type="object">
+</ParamField>
+
+<ParamField path="offsetStart" type="integer">
+</ParamField>
+
+<ParamField path="confirmationPolicy" type="object">
+</ParamField>
+
+<ParamField path="recurrence" type="object">
+</ParamField>
+
+<ParamField path="requiresBookerEmailVerification" type="boolean">
+</ParamField>
+
+<ParamField path="hideCalendarNotes" type="boolean">
+</ParamField>
+
+<ParamField path="lockTimeZoneToggleOnBookingPage" type="boolean">
+</ParamField>
+
+<ParamField path="color__lightThemeHex" type="string">
+</ParamField>
+
+<ParamField path="color__darkThemeHex" type="string">
+</ParamField>
+
+<ParamField path="seats" type="object">
+</ParamField>
+
+<ParamField path="customName" type="string">
+</ParamField>
+
+<ParamField path="destinationCalendar__integration" type="string">
+</ParamField>
+
+<ParamField path="destinationCalendar__externalId" type="string">
+</ParamField>
+
+<ParamField path="useDestinationCalendarEmail" type="boolean">
+</ParamField>
+
+<ParamField path="hideCalendarEventDetails" type="boolean">
+</ParamField>
+
+<ParamField path="successRedirectUrl" type="string">
+</ParamField>
+
+<ParamField path="hosts" type="array" required={true}>
+</ParamField>
+
+<ParamField path="assignAllTeamMembers" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_USER_AVAILABILITY_SCHEDULE">
+Creates a new schedule in the cal.com api, allowing users to define their availability patterns and exceptions. this endpoint is used to set up regular working hours, custom availability for specific days of the week, and overrides for particular dates. it's particularly useful for managing complex schedules or when setting up a new user in the system. the created schedule can be used to control when events can be booked with the user. note that while you can create multiple schedules, only one can be set as the default per user.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeZone" type="string" required={true}>
+</ParamField>
+
+<ParamField path="availability" type="array">
+</ParamField>
+
+<ParamField path="isDefault" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="overrides" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_DESTINATION_CALENDAR_INTEGRATION">
+Updates the destination calendars for cal integration with external calendar services. this endpoint allows you to specify which external calendar should be used for syncing events and managing scheduling. use this when you need to change or set up the primary calendar for integration with cal. the endpoint requires you to provide both the type of calendar service (integration) and the specific calendar identifier (externalid) within that service. this ensures that cal connects to the correct external calendar for seamless event management and synchronization. note that this endpoint only updates the destination calendar settings and does not perform the actual synchronization of events.
+
+**Action Parameters**
+
+<ParamField path="integration" type="string" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_USER_FROM_ORGANIZATION">
+Removes a specified user from a given organization within the cal scheduling system. this endpoint should be used when an administrator or authorized user needs to revoke a user's membership or access to an organization, such as when an employee leaves a company or a team member's role changes. the operation is permanent and will immediately remove all associated permissions and access rights the user had within that organization. it's important to note that this action does not delete the user account from the cal system entirely, but only removes their association with the specific organization. use with caution as it cannot be undone through this api, and may require manual re-addition of the user if done in error.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_MARK_BOOKING_ABSENT_FOR_UID">
+Marks specified attendees or the host as absent for a particular booking in the cal.com scheduling system. this endpoint is used to update the attendance status after a scheduled event has occurred. it allows for recording absences of either the host, specific attendees, or both. this tool is particularly useful for maintaining accurate attendance records, which can be crucial for follow-ups, rescheduling, or analyzing participation trends in your organization's events.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+<ParamField path="host" type="boolean">
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_OAUTH_CLIENT_USER_BY_ID">
+Retrieves detailed information about a specific user associated with a particular oauth client in the cal application. this endpoint is useful for oauth client applications that need to access or verify user data within their authorized scope. it should be used when an oauth client needs to fetch up-to-date information about a user, such as profile details, permissions, or custom attributes related to the client's integration. the endpoint provides a focused view of the user in the context of the oauth client and does not return information about the user's interactions with other oauth clients or general account details unrelated to the specified client.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RESERVE_SLOT_FOR_EVENT">
+The reservetimeslot endpoint allows users to reserve a specific time slot for an event in the cal scheduling system. it is used to secure a desired time frame for a particular event type, ensuring that the slot is marked as unavailable for other potential bookings. this endpoint should be called when a user has selected an available time slot and wishes to temporarily hold it while completing the booking process. it's particularly useful in scenarios where there might be high demand for certain time slots, helping to prevent double-bookings. the reservation is made using utc timestamps, which ensures consistency across different time zones. for events with multiple seats, an optional booking uid can be provided to associate the reservation with a specific seat or participant.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="slotUtcStartDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slotUtcEndDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="bookingUid" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_WEBHOOK_BY_EVENT_TYPE_ID">
+Retrieves detailed information about a specific webhook associated with a particular event type in the cal scheduling system. this endpoint allows users to fetch the configuration and status of a webhook, which is crucial for managing integrations and ensuring proper event notifications. it should be used when you need to review or troubleshoot a specific webhook setup for an event type. the endpoint provides information such as the webhook's target url, subscribed events, and current status, but does not modify the webhook configuration. note that this endpoint retrieves data for a single webhook and cannot be used to list multiple webhooks or modify webhook settings.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_ORGANIZATION_MEMBERSHIP">
+Removes a user's membership from a specific organization within the cal system. this endpoint should be used when you need to terminate a user's association with an organization, such as when an employee leaves a company or a team member is removed from a project. the operation is irreversible, so it should be used with caution. once a membership is deleted, the user will lose all access and permissions associated with that organization. this endpoint does not provide any information about the deleted membership or confirm its previous existence; it simply performs the deletion if the provided identifiers are valid.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_ORGANIZATION_WEBHOOK_BY_ORG_ID">
+Creates a new webhook for an organization in cal.com. this endpoint allows you to set up automated notifications for various booking and meeting events. use it to integrate cal.com with your applications, enabling real-time updates and actions based on scheduling activities. the webhook can be customized with specific triggers, a payload template, and security features. it's particularly useful for synchronizing cal.com events with external systems, automating workflows, or maintaining up-to-date records in connected applications.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="triggers" type="string" required={true}>
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_SAVE_CALENDAR_ENTRY">
+Saves or updates the specified calendar in the cal api. this endpoint is used to persist changes made to a calendar's properties or settings. it should be called after making modifications to a calendar to ensure the changes are stored on the server. the endpoint uses an http get method, which is unusual for a save operation and may indicate that it's designed for simple updates or to trigger a save action on the server side. due to the lack of a request body, this endpoint may be limited in the amount of data it can update. it's best used for simple save operations or to trigger server-side saving of previously cached changes. this endpoint does not return the saved calendar data, so a separate get request may be needed to confirm the changes.
+
+**Action Parameters**
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+<ParamField path="calendar" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_SET_DEFAULT_CONFERENCING_APP">
+Sets the default conferencing application for a specific app in the cal scheduling system. this endpoint allows users to define which conferencing tool (e.g., zoom, google meet, microsoft teams) should be used by default when creating new events or meetings for a particular application. it's useful for standardizing the conferencing experience across an organization or for individual users who prefer a specific platform. the endpoint should be used when configuring or updating the default conferencing settings for an app. it's important to note that this endpoint only sets the default and does not create or modify any existing meetings or events.
+
+**Action Parameters**
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_PATCH_TEAM_DETAILS_BY_ID">
+Updates the details and settings of a specific team in the cal scheduling system. this endpoint allows modification of various team properties such as name, branding, time preferences, and visibility settings. it's used when team administrators need to change team information or adjust team-wide settings. the endpoint requires the team's unique identifier in the url path and accepts a json payload with the properties to be updated. not all properties need to be included in every request; only the provided fields will be updated. this endpoint is particularly useful for maintaining up-to-date team information and customizing the team's appearance and behavior within the cal platform.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="logoUrl" type="string">
+</ParamField>
+
+<ParamField path="calVideoLogo" type="string">
+</ParamField>
+
+<ParamField path="appLogo" type="string">
+</ParamField>
+
+<ParamField path="appIconLogo" type="string">
+</ParamField>
+
+<ParamField path="bio" type="string">
+</ParamField>
+
+<ParamField path="hideBranding" type="boolean">
+</ParamField>
+
+<ParamField path="isPrivate" type="boolean">
+</ParamField>
+
+<ParamField path="hideBookATeamMember" type="boolean">
+</ParamField>
+
+<ParamField path="metadata" type="string">
+</ParamField>
+
+<ParamField path="theme" type="string">
+</ParamField>
+
+<ParamField path="brandColor" type="string">
+</ParamField>
+
+<ParamField path="darkBrandColor" type="string">
+</ParamField>
+
+<ParamField path="bannerUrl" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="weekStart" type="string">
+</ParamField>
+
+<ParamField path="bookingLimits" type="string">
+</ParamField>
+
+<ParamField path="includeManagedEventsInLimits" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_AVAILABLE_SLOTS_INFO">
+Retrieves a list of available time slots for scheduling within the cal system. this endpoint is used to check availability for booking events or meetings. it returns a collection of free time slots within the specified date range, considering existing bookings and configured availability. use this endpoint when you need to display available times to users for scheduling purposes or to check if specific time slots are free. the response will include the start and end times of each available slot, but won't provide details about existing bookings or blocked times.
+
+**Action Parameters**
+
+<ParamField path="startTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endTime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeSlug" type="string">
+</ParamField>
+
+<ParamField path="usernameList" type="array">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="rescheduleUid" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="orgSlug" type="string">
+</ParamField>
+
+<ParamField path="slotFormat" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_ORG_ATTRIBUTE_OPTION_BY_USER">
+Creates a new attribute option for a specific user within an organization. this endpoint is part of the advanced configuration system for managing user attributes. it allows for the addition of custom attribute options, which can be used to extend the functionality of the cal scheduling system for specific organizational needs. use this endpoint when you need to add new options to existing attributes for a user, such as custom availability settings, specialized event types, or user-specific preferences. the endpoint requires the organization id, user id, and attribute id to ensure the new option is correctly associated with the right user and attribute within the organizational structure.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="value" type="string">
+</ParamField>
+
+<ParamField path="attributeOptionId" type="string">
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_PATCH_WEBHOOK_EVENT_TYPE">
+This endpoint allows you to update an existing webhook associated with a specific event type in cal.com. it provides functionality to modify the webhook's payload template, activation status, subscriber url, trigger events, and secret key. use this endpoint when you need to change the configuration of an existing webhook, such as adjusting the events it responds to or updating the destination url for notifications. this tool is particularly useful for maintaining and fine-tuning your integration with cal.com's event management system. note that you must provide the eventtypeid and webhookid in the path to identify the specific webhook you want to update.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean">
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string">
+</ParamField>
+
+<ParamField path="triggers" type="string">
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CHECK_GCAL_SYNCHRONIZATION_STATUS">
+The gcal check endpoint is used to verify the connection status and synchronization between cal and a user's google calendar account. this get request allows developers to quickly check if the integration is active and functioning correctly. it's particularly useful when setting up or troubleshooting cal's google calendar integration. the endpoint doesn't modify any calendar data; it only retrieves the current status. while specific parameters are not defined, the response likely includes information about the connection status, last sync time, and any potential issues with the integration. use this endpoint when you need to ensure that cal can access and sync with the user's google calendar before performing other calendar-related operations.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_WEBHOOK_BY_ID">
+Deletes a specific webhook from the cal api system using its unique identifier. this endpoint should be used when you want to remove a previously configured webhook, stopping it from receiving further notifications or updates. it's particularly useful for cleaning up unused webhooks or updating your notification preferences. the operation is irreversible, so use it with caution. once deleted, you'll need to create a new webhook if you want to receive notifications again for the same events.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_TEAM_EVENT_TYPES_WITH_CUSTOM_OPTIONS">
+This endpoint creates a new event type for a team within an organization in the cal scheduling system. it allows for extensive customization of event properties including duration, booking fields, location options, recurrence patterns, and team member assignments. use this endpoint when you need to set up a new type of schedulable event for your team, such as team meetings, client consultations, or product demos. the event type created will be available for booking through the cal platform, integrating with specified calendars and following the defined scheduling rules. note that while this endpoint offers a wide range of customization options, some advanced features like workflow integrations or complex recurrence patterns may require additional setup or api calls.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="lengthInMinutes" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="lengthInMinutesOptions" type="array" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="locations" type="array">
+</ParamField>
+
+<ParamField path="bookingFields" type="array">
+</ParamField>
+
+<ParamField path="disableGuests" type="boolean">
+</ParamField>
+
+<ParamField path="slotInterval" type="integer">
+</ParamField>
+
+<ParamField path="minimumBookingNotice" type="integer">
+</ParamField>
+
+<ParamField path="beforeEventBuffer" type="integer">
+</ParamField>
+
+<ParamField path="afterEventBuffer" type="integer">
+</ParamField>
+
+<ParamField path="scheduleId" type="integer">
+</ParamField>
+
+<ParamField path="bookingLimitsCount" type="object">
+</ParamField>
+
+<ParamField path="onlyShowFirstAvailableSlot" type="boolean">
+</ParamField>
+
+<ParamField path="bookingLimitsDuration" type="object">
+</ParamField>
+
+<ParamField path="bookingWindow" type="object">
+</ParamField>
+
+<ParamField path="offsetStart" type="integer">
+</ParamField>
+
+<ParamField path="confirmationPolicy" type="object">
+</ParamField>
+
+<ParamField path="recurrence" type="object">
+</ParamField>
+
+<ParamField path="requiresBookerEmailVerification" type="boolean">
+</ParamField>
+
+<ParamField path="hideCalendarNotes" type="boolean">
+</ParamField>
+
+<ParamField path="lockTimeZoneToggleOnBookingPage" type="boolean">
+</ParamField>
+
+<ParamField path="color__lightThemeHex" type="string">
+</ParamField>
+
+<ParamField path="color__darkThemeHex" type="string">
+</ParamField>
+
+<ParamField path="seats" type="object">
+</ParamField>
+
+<ParamField path="customName" type="string">
+</ParamField>
+
+<ParamField path="destinationCalendar__integration" type="string">
+</ParamField>
+
+<ParamField path="destinationCalendar__externalId" type="string">
+</ParamField>
+
+<ParamField path="useDestinationCalendarEmail" type="boolean">
+</ParamField>
+
+<ParamField path="hideCalendarEventDetails" type="boolean">
+</ParamField>
+
+<ParamField path="successRedirectUrl" type="string">
+</ParamField>
+
+<ParamField path="hosts" type="array" required={true}>
+</ParamField>
+
+<ParamField path="assignAllTeamMembers" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RESCHEDULE_BOOKING_BY_UID">
+Reschedules an existing booking in the cal system to a new date and time. this endpoint allows users to change the scheduled time of an appointment or event without canceling and recreating it. it should be used when a user needs to modify the timing of an existing booking due to changes in availability or preferences. the endpoint takes the unique identifier of the booking and likely expects new scheduling details in the request body (not specified in the given schema). it's important to note that this operation modifies an existing booking, so it should be used carefully to avoid conflicts with other scheduled events or availability constraints. the endpoint does not provide information about available time slots; it's assumed that the new schedule has been validated beforehand.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_ORGANIZATION_SCHEDULES">
+Retrieves all schedules associated with a specific organization in the cal scheduling system. this endpoint allows users to fetch a comprehensive list of schedules, including events, appointments, and other time-based entries, for a given organization. it's particularly useful for applications that need to display or manage multiple schedules within an organizational context. the endpoint should be used when there's a need to get an overview of all scheduling activities for an organization, such as for reporting, synchronization with other systems, or displaying a master calendar. it does not provide detailed information about individual events; for that, you would need to use a separate endpoint specific to event details. the response likely includes basic information about each schedule, such as ids, names, and possibly summary statistics, but the exact structure of the returned data is not specified in the provided schema.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_MODIFY_ORG_ATTRIBUTE_BY_ID">
+Updates a specific attribute for an organization in the cal scheduling system. this endpoint allows for partial modifications to an existing attribute, such as changing its name, slug, type, or enabled status. it's particularly useful when you need to adjust attribute settings without replacing the entire attribute object. the endpoint should be used when fine-tuning organizational attributes to better suit evolving business needs or to correct attribute information. it's important to note that this operation only updates the specified fields, leaving others unchanged. care should be taken when modifying the 'type' field, as changing an attribute's type may have implications for existing data associated with that attribute.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="enabled" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_ORGANIZATION_USER_SCHEDULES">
+Retrieves the schedules for a specific user within an organization. this endpoint allows you to fetch all schedule information associated with a particular user, including their availability, booked events, and any recurring patterns. it's useful for applications that need to display or analyze a user's calendar data, such as for team coordination or resource planning. the endpoint should be used when you need up-to-date schedule information for a known user within a specific organization. it does not provide the ability to modify schedules or create new events. note that the response may be paginated for users with extensive schedule data, and you may need to handle pagination to retrieve the complete schedule.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_BOOKING_DETAILS_BY_UID">
+Retrieves detailed information about a specific booking using its unique identifier (uid). this endpoint allows you to fetch comprehensive data about a single booking, including its status, associated event details, attendee information, and any custom fields. it's particularly useful when you need to access or verify the details of a specific booking, such as when updating a calendar, sending reminders, or managing event logistics. the endpoint returns the most up-to-date information about the booking, reflecting any changes or updates that may have occurred since it was created. note that this endpoint only provides information for existing bookings; it will return an error if the specified bookinguid does not exist or has been deleted.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_OAUTH_CLIENT_USER_SETTINGS">
+Updates a user's profile and scheduling preferences in the cal.com system. this endpoint allows modification of various user attributes, including personal information (email, name, avatar), time preferences (time format, time zone, week start day), and system settings (default schedule, locale). it's designed for customizing a user's experience within cal.com, ensuring that scheduling, display, and communication align with the user's preferences. this endpoint should be used when a user needs to change their profile information or adjust their scheduling settings. it's particularly useful after initial account creation or when a user's circumstances change (e.g., moving to a new time zone). note that while the schema doesn't explicitly mark any fields as required, typically the email and name fields are essential for user identification.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="defaultScheduleId" type="integer">
+</ParamField>
+
+<ParamField path="weekStart" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="locale" type="string">
+</ParamField>
+
+<ParamField path="avatarUrl" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FORCE_REFRESH_USER_OAUTH_CLIENT">
+Force refreshes oauth tokens for a specific client and user. this endpoint is used to manually trigger a refresh of access and refresh tokens without waiting for the normal expiration process. it's particularly useful when tokens have become invalid or when immediate access with fresh tokens is required. the operation is performed on the server-side and returns new oauth tokens. use this endpoint cautiously and only when necessary, as frequent force refreshes may be rate-limited or flagged as suspicious activity.
+
+**Action Parameters**
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_NEW_BOOKING_REQUEST">
+Creates a new booking in the cal scheduling system. this endpoint allows for the creation of standard, instant, or recurring bookings based on the provided parameters. it's designed to integrate seamlessly with various event types and accommodate different booking scenarios. use this endpoint when you need to programmatically schedule meetings or events, manage attendees, and customize booking details. the endpoint is versatile, handling single occurrences as well as recurring events, and supports additional features like custom metadata and booking field responses. note that some parameters are specific to certain booking types (e.g., 'instant' for team events, 'recurrencecount' for recurring bookings).
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_PATCH_ORGANIZATION_ATTRIBUTE_OPTION">
+Updates a specific option within an organization's attribute. this endpoint allows for partial modifications of an existing option, enabling you to change either its value, its slug, or both. it's particularly useful for maintaining and adjusting organizational settings or configurations over time. use this when you need to modify an option without replacing the entire attribute or creating a new option. the endpoint requires specific identifiers for the organization, attribute, and option to ensure precise updates. it's important to note that this operation may affect any systems or processes that rely on the original option values, so it should be used with caution and proper validation.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="optionId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="value" type="string">
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_ORGANIZATION_ATTRIBUTES_OPTIONS">
+Retrieves all attribute options for a specific user within an organization in cal.com. this endpoint is used to fetch the available options for managing attributes tailored to a particular user's context within the organizational structure. it's particularly useful when you need to populate user-specific attribute settings or display customized options in user interfaces. the endpoint should be called when initializing user-specific forms, updating user profiles, or when needing to make decisions based on a user's available attribute options within their organization. note that this endpoint only retrieves the options and does not modify any data.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DECLINE_BOOKING_WITH_REASON">
+Declines a specific booking that requires confirmation in the cal scheduling system. this endpoint should be used when a host needs to reject or cancel a previously scheduled event. it requires providing a reason for declining, which helps maintain clear communication with the attendee. the endpoint is specifically for bookings that are in a state requiring confirmation and should not be used for already confirmed or past events. note that declining a booking is typically irreversible, so it should be used carefully. this action may trigger notifications to the attendee based on the cal system's configuration.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+<ParamField path="reason" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_SAVE_CALENDAR_ICS_FEEDS">
+Imports and saves ics (icalendar) feed urls into the cal calendar system. this endpoint allows users to add external calendar data to their cal account by providing one or more ics feed urls. it's particularly useful for syncing events from other calendar services or importing recurring events from external sources. the imported feeds can be set as read-only or writable, depending on whether you want to allow modifications to the imported events through the cal api. use this endpoint when you need to integrate external calendar data into your cal account or when setting up initial calendar synchronization for a user.
+
+**Action Parameters**
+
+<ParamField path="urls" type="array" required={true}>
+</ParamField>
+
+<ParamField path="readOnly" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_ADD_ORGANIZATION_ATTRIBUTE_OPTION">
+Adds a new option to a specific attribute of an organization. this endpoint allows you to expand the list of available choices for a particular attribute by creating a new option with a display value and a unique identifier (slug). it's useful for dynamically extending the capabilities of attributes, such as adding new categories, tags, or selectable options for organization-specific features. the endpoint requires both the organization id and attribute id to ensure the new option is added to the correct attribute of the specific organization. use this when you need to introduce new, valid selections for an existing attribute in the system.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="value" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_TEAM_DETAILS_BY_ORG_ID_AND_TEAM_ID">
+Retrieves detailed information about a specific team within an organization. this endpoint allows you to fetch comprehensive data about a team, including its members, roles, and any associated metadata. it should be used when you need to access up-to-date information about a particular team's structure or composition within an organizational context. the endpoint is particularly useful for scenarios involving team management, resource allocation, or when integrating team data with other systems. it does not modify any team data and is intended for read-only operations. note that this endpoint only provides information for a single team at a time and does not support batch retrieval of multiple teams.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_ORGANIZATION_WEBHOOK_BY_ID">
+Retrieves detailed information about a specific webhook within an organization. this endpoint allows you to fetch the current configuration, status, and other relevant details of a webhook using its unique identifier. use this when you need to inspect or verify the settings of an existing webhook, such as its target url, triggered events, or active status. the endpoint is particularly useful for troubleshooting webhook-related issues or when you need to review webhook configurations without modifying them. note that this endpoint only provides information and does not modify the webhook in any way.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_DEFAULT_CONFERENCING_SETTINGS">
+Retrieves the default conferencing settings for the cal.com application. this endpoint allows users to fetch the pre-configured conferencing options that are set as default for the account or organization. it can be used to understand the current conferencing setup without making any changes. the returned information likely includes details such as the preferred video conferencing platform, default meeting duration, and other relevant conferencing parameters. this endpoint is particularly useful when setting up new events or when you need to ensure consistency across multiple schedulers within an organization. it does not modify any settings and is safe to use for read-only operations.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_SCHEDULES_LIST">
+Retrieves a list of schedules from the cal.com api. this endpoint allows users to fetch all available schedules associated with their account or organization. it provides an overview of the scheduling options set up within the system, which can be useful for managing and reviewing existing schedules. the endpoint should be used when you need to display a comprehensive list of schedules, such as in a dashboard or when preparing to create or modify events. it's important to note that this endpoint likely returns basic schedule information and may not include detailed event data for each schedule. for more specific schedule details or to filter results, additional api calls or parameters may be required.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_ADD_MEMBER_TO_TEAM_USING_ORG_AND_TEAM_ID">
+Adds a new member to a specified team within an organization. this endpoint allows you to create a team membership by associating a user with a team and defining their role and permissions. it's used when you need to expand your team, assign new roles, or invite users to collaborate within a specific organizational structure. the endpoint requires the organization id and team id as path parameters, and accepts a json payload with user details and role information. it's particularly useful for team management, role assignment, and controlling user access within the cal application.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string" default="MEMBER">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_OAUTH_CLIENT_WEBHOOK">
+Deletes a specific webhook associated with an oauth client in the cal application. this endpoint is used to remove a webhook subscription, effectively stopping any further notifications or callbacks that were previously set up for the specified oauth client. it should be used when you no longer need to receive real-time updates for certain events related to the oauth client. this operation is permanent and cannot be undone, so it should be used with caution. the endpoint requires both the oauth client id and the specific webhook id to ensure precise targeting of the webhook to be deleted.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_USER_ATTRIBUTE_OPTION">
+Deletes a specific attribute option for a user within an organization. this endpoint is used to remove custom attribute options that are no longer needed or relevant for the user or organization. it should be used when you want to permanently remove an attribute option, such as a deprecated skill, role, or any other custom field associated with the user in the organizational context. the operation is irreversible, so it should be used with caution. this endpoint does not return the deleted data; it typically returns a success status upon completion.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeOptionId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_PATCH_ORGANIZATION_USER_DETAILS">
+Updates specific information for a user within a given organization. this endpoint allows for partial updates to user details, enabling administrators or authorized personnel to modify user attributes without replacing the entire user object. it should be used when changes to a user's information are required, such as updating contact details, changing roles, or modifying permissions. the endpoint accepts json input for flexible updates to various user properties. note that while the endpoint allows for updates, it does not provide information about which specific fields can be modified; refer to the api documentation for a complete list of updatable user properties.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_ORGANIZATION_ATTRIBUTE_OPTION">
+Deletes a specific option associated with an attribute of an organization in the cal system. this endpoint is used to remove configuration settings or options that are no longer needed for a particular organization's attribute. it provides granular control over organization-level configurations by allowing the removal of individual options. the endpoint should be used when you need to clean up or modify the available options for an organization's attribute. it's important to note that this operation is irreversible, so caution should be exercised when using this endpoint. the deletion will only affect the specified option and will not impact other options or the attribute itself.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="optionId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_USER_SCHEDULE_IN_ORGANIZATION">
+Updates a specific user's schedule within an organization. this endpoint allows for modifying various aspects of a schedule, including its name, time zone, regular availability, and date-specific overrides. it's particularly useful for adjusting a user's availability patterns, setting up recurring schedules, and managing exceptions for specific dates. the endpoint should be used when there's a need to change an existing schedule, such as updating office hours, adjusting for seasonal changes, or accommodating temporary schedule modifications. it's important to note that this is a patch operation, meaning it will only update the fields provided in the request body, leaving other existing schedule details unchanged. the endpoint requires careful consideration of time zones and date formats to ensure accurate scheduling across different regions.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="scheduleId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="availability" type="array">
+</ParamField>
+
+<ParamField path="isDefault" type="boolean">
+</ParamField>
+
+<ParamField path="overrides" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_CALENDAR_LIST">
+Retrieves a list of calendars associated with the authenticated user's account. this endpoint allows users to fetch all their available calendars, which can be useful for displaying calendar options, managing multiple calendars, or integrating calendar selection into other applications. it should be used when an overview of all calendars is needed, such as when initializing a calendar view or allowing users to choose which calendars to display or modify. the endpoint likely returns basic information about each calendar, such as its id, name, and possibly metadata like color or visibility settings. note that this endpoint may not provide detailed event information for each calendar; separate api calls might be required to fetch events for specific calendars.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_OAUTH_CLIENT_USER">
+Creates a new managed user for a specific oauth client in the cal.com scheduling system. this endpoint is used to set up a user profile with initial scheduling preferences, including email, name, time format, week start day, timezone, locale, and avatar url. it's particularly useful for integrating cal.com's scheduling capabilities into third-party applications or services. the endpoint requires at least the user's email and name, with other parameters being optional but highly recommended for a complete user setup. note that if a timezone is not provided, the user won't have a default schedule, which may limit their ability to use certain features until manually set up.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="weekStart" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="locale" type="string">
+</ParamField>
+
+<ParamField path="avatarUrl" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_OAUTH_CLIENT_WEBHOOK_BY_ID">
+Retrieves detailed information about a specific webhook associated with an oauth client in the cal application. this endpoint allows you to fetch the current configuration and status of a webhook, including its target url, subscribed events, and any other relevant metadata. use this when you need to verify a webhook's setup, troubleshoot webhook-related issues, or gather information for webhook management. it's particularly useful for developers integrating cal's event notifications into their applications. the endpoint does not modify any data and is safe for frequent calls, but remember it only provides information for a single webhook at a time.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_CONFERENCING_APP_CONNECT">
+Initiates a connection to a specified conferencing application for virtual meeting setup. this endpoint is used to establish the necessary link between cal.com and the chosen conferencing platform, enabling seamless integration for scheduling and joining virtual meetings. it should be called when a user wants to set up or join a conference call through cal.com's interface. the endpoint handles the initial handshake and authentication process with the specified conferencing app, but does not actually create or schedule the meeting itself. note that the success of the connection depends on proper configuration and permissions for the specified app within cal.com's settings.
+
+**Action Parameters**
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CHECK_ICS_FEED_CALENDAR_ENDPOINT">
+Checks the validity and accessibility of an ics (icalendar subscription) feed. this endpoint verifies if the provided ics feed url is properly formatted, accessible, and contains valid calendar data. it should be used before integrating an external ics feed into the cal application or when troubleshooting issues with existing feed connections. the tool helps identify potential problems with the feed, such as incorrect urls, server issues, or malformed icalendar data. it does not modify or import the feed data; it only performs a validation check. users should ensure they have the necessary permissions to access the feed url before using this endpoint.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_DETAILS_IN_ORGANIZATION">
+Retrieves a list of teams associated with a specific organization in the cal system. this endpoint should be used when you need to get an overview of all teams within an organization, such as for team management, resource allocation, or reporting purposes. it provides a comprehensive list of teams, which can be useful for administrators or managers who need to manage multiple teams within their organization. the endpoint does not provide detailed information about individual team members or their schedules; it focuses solely on team-level data. use this endpoint when you need to display or process team information in bulk for a given organization.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_ALL_BOOKINGS">
+Retrieves a list of bookings from the cal scheduling system. this endpoint allows you to fetch booking information, which may include details such as appointment times, attendee information, and booking status. it supports pagination and filtering options to manage large datasets and narrow down results based on specific criteria such as date range and booking status. use this endpoint when you need to access and display booking data, generate reports, or synchronize reservation information with other systems. the endpoint does not create, modify, or delete bookings; it is designed for read-only operations on existing booking data.
+
+**Action Parameters**
+
+<ParamField path="status" type="array">
+</ParamField>
+
+<ParamField path="attendeeEmail" type="string">
+</ParamField>
+
+<ParamField path="attendeeName" type="string">
+</ParamField>
+
+<ParamField path="eventTypeIds" type="string">
+</ParamField>
+
+<ParamField path="eventTypeId" type="string">
+</ParamField>
+
+<ParamField path="teamsIds" type="string">
+</ParamField>
+
+<ParamField path="teamId" type="string">
+</ParamField>
+
+<ParamField path="afterStart" type="string">
+</ParamField>
+
+<ParamField path="beforeEnd" type="string">
+</ParamField>
+
+<ParamField path="sortStart" type="string">
+</ParamField>
+
+<ParamField path="sortEnd" type="string">
+</ParamField>
+
+<ParamField path="sortCreated" type="string">
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_CALENDAR_CREDENTIALS">
+This endpoint allows you to create or update credentials for a specific calendar in the cal system. it is used to establish or modify the authentication details required for cal to interact with external calendar services on behalf of the user. this operation is essential for integrating cal with various calendar providers, enabling features such as availability checks and event synchronization. use this endpoint when setting up a new calendar integration or when credentials need to be refreshed due to expiration or changes in the external service. note that the specific credential format and requirements may vary depending on the calendar service being integrated, and proper security measures should be implemented to protect sensitive credential information.
+
+**Action Parameters**
+
+<ParamField path="calendar" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_WEBHOOK_DETAILS_FOR_OAUTH_CLIENT">
+Retrieves a list of webhooks associated with a specific oauth client in the cal scheduling system. this endpoint allows developers to get information about all webhook subscriptions for a particular oauth client, enabling them to manage and monitor event notifications. use this endpoint when you need to review, audit, or manage the webhook configurations for a given oauth client. it provides details such as the subscribed events, target urls, and current status of each webhook. this endpoint is particularly useful for applications that integrate with cal and need to maintain their webhook subscriptions.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_OR_UPDATE_TEAM_PROFILE">
+Creates a new team in the cal.com application with customizable properties for appearance, scheduling, and functionality. this endpoint allows you to set up a team with a unique name, visual branding (logo and banner), privacy settings, and default scheduling parameters. it's ideal for organizations looking to establish a new group within their cal.com account for collaborative scheduling and event management. the endpoint offers extensive customization options, from basic team information to advanced settings like timezone preferences and member acceptance policies. use this when you need to programmatically create and configure teams in cal.com, especially useful for large organizations or when automating team setup processes.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="logoUrl" type="string">
+</ParamField>
+
+<ParamField path="calVideoLogo" type="string">
+</ParamField>
+
+<ParamField path="appLogo" type="string">
+</ParamField>
+
+<ParamField path="appIconLogo" type="string">
+</ParamField>
+
+<ParamField path="bio" type="string">
+</ParamField>
+
+<ParamField path="hideBranding" type="boolean">
+</ParamField>
+
+<ParamField path="isPrivate" type="boolean">
+</ParamField>
+
+<ParamField path="hideBookATeamMember" type="boolean">
+</ParamField>
+
+<ParamField path="metadata" type="string">
+</ParamField>
+
+<ParamField path="theme" type="string">
+</ParamField>
+
+<ParamField path="brandColor" type="string">
+</ParamField>
+
+<ParamField path="darkBrandColor" type="string">
+</ParamField>
+
+<ParamField path="bannerUrl" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="timeZone" type="string" default="Europe/London">
+</ParamField>
+
+<ParamField path="weekStart" type="string" default="Sunday">
+</ParamField>
+
+<ParamField path="autoAcceptCreator" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CANCEL_BOOKING_VIA_UID">
+Cancels a specific booking in the cal.com system using the provided booking uid. this endpoint should be used when a user or system needs to cancel a previously scheduled event or appointment. it allows for programmatic cancellation of bookings, which can be useful for integrations or automated workflows. the cancellation is initiated by sending a post request to this endpoint, and it will likely trigger any associated cancellation policies or notifications set up in the cal.com system. note that this action is typically irreversible, so it should be used with caution and proper confirmation from the user or system initiating the cancellation.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_USER_SCHEDULE_IN_ORGANIZATION">
+Creates a new schedule for a specific user within an organization, defining their availability for booking events. this endpoint allows for detailed customization of a user's schedule, including regular weekly availability and date-specific overrides. it's particularly useful for setting up different scheduling scenarios, such as office hours, meeting availabilities, or special event timeslots. the created schedule can be set as the default for the user, which will be used for event types not tied to a specific schedule. when creating a schedule, consider the user's time zone and any recurring patterns in their availability to ensure accurate and efficient scheduling.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeZone" type="string" required={true}>
+</ParamField>
+
+<ParamField path="availability" type="array">
+</ParamField>
+
+<ParamField path="isDefault" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="overrides" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_ORG_WEBHOOK">
+Deletes a specific webhook associated with an organization in the cal api. this endpoint is used to permanently remove a webhook configuration, stopping any further notifications or callbacks that were previously set up for that webhook. it should be used when you no longer need to receive updates for the events that the webhook was configured for, or when you want to clean up unused webhook configurations. this operation is irreversible, so it should be used with caution. once a webhook is deleted, you will need to create a new webhook if you want to receive notifications again in the future.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_CURRENT_TEAM_FOR_ORGANIZATION">
+Retrieves information about the current user's team within a specified organization. this endpoint is used to fetch details related to the authenticated user's team membership and organizational context. it's particularly useful when you need to understand the user's role, permissions, or team structure within a specific organization. the endpoint returns data about the team(s) the user belongs to, which may include team names, ids, roles, and other relevant team-specific information. it should be used when building features that require team-aware functionality or when displaying team-related information in user interfaces. note that this endpoint only provides information for the authenticated user and does not allow querying team information for other users.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_ORGANIZATION_ATTRIBUTE">
+Deletes a specific attribute from an organization in the cal system. this endpoint should be used when you need to remove custom data or settings associated with an organization. it permanently removes the specified attribute, so use with caution. the endpoint is particularly useful for cleaning up obsolete data or correcting erroneously added attributes. note that this operation cannot be undone, and any integrations or features relying on the deleted attribute may be affected.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CONNECT_TO_CALENDAR">
+Retrieves the connection status or initiates a connection process for a specific calendar with external services or applications. this endpoint is used to check if a calendar is already connected or to start the integration process with other platforms, such as team collaboration tools or third-party scheduling services. it's particularly useful when setting up new integrations or troubleshooting existing connections. the endpoint does not modify the calendar itself but focuses on its external connectivity. note that the actual connection process may require additional steps or authorization, which might not be handled directly by this endpoint.
+
+**Action Parameters**
+
+<ParamField path="calendar" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_ORGANIZATION_ATTRIBUTE_BY_ID">
+Retrieves a specific attribute associated with an organization in the cal application. this endpoint allows you to fetch detailed information about a single attribute of an organization, providing granular access to organization data. use this when you need to access a particular piece of information about an organization without retrieving all of its data. the endpoint requires both the organization id and the specific attribute id to pinpoint the exact information needed. it's particularly useful for applications that need to frequently check or update specific organization attributes without the overhead of fetching or processing complete organization profiles.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_REASSIGN_BOOKING_TO_ANOTHER_USER">
+This endpoint allows you to reassign a booking from one user to another within the cal scheduling system. it's used when a scheduled event needs to be transferred to a different host or team member. the endpoint requires the unique identifier of the booking to be reassigned and the user id of the new assignee. you can also provide a reason for the reassignment, which is useful for communication and record-keeping. this function is particularly helpful for managing team schedules, handling conflicts, or redistributing workload. note that this endpoint doesn't handle the logistics of informing participants about the change; that should be managed separately if required.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="reason" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_SCHEDULE_BY_ID">
+Deletes a specific schedule from the cal application using its unique identifier. this endpoint should be used when you need to permanently remove a schedule from the system, such as when an event is cancelled or a recurring schedule is no longer needed. it's important to note that this action is irreversible; once a schedule is deleted, it cannot be recovered through the api. use this endpoint with caution, especially for schedules associated with upcoming or important events. the success of the deletion is typically indicated by the http status code of the response, with a 200 or 204 status suggesting successful removal.
+
+**Action Parameters**
+
+<ParamField path="scheduleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_ATTRIBUTE_OPTIONS_FOR_ORG">
+Retrieves the available options for a specific attribute within an organization. this endpoint is used to fetch the list of possible values or configurations associated with a particular attribute. it's particularly useful when you need to populate dropdown menus, checkboxes, or other form elements with predefined options specific to an organization's attribute. the endpoint should be used when you need to display or update attribute options in your application's user interface or when processing organization-specific data that relies on these attribute values. it does not modify any data and is intended for read-only operations. keep in mind that the returned options are specific to the given organization and attribute, and may vary between different organizations or attributes.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="attributeId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_ORGANIZATION_ATTRIBUTES">
+Retrieves the attributes associated with a specific organization in the cal application. this endpoint allows you to fetch various characteristics, settings, or properties of an organization identified by its unique id. use this endpoint when you need to access detailed information about an organization's configuration or status within the cal system. the retrieved attributes may include organization-wide settings, preferences, or any other relevant metadata that cal maintains for organizations. this endpoint is particularly useful for applications that need to synchronize or display organization-specific information from cal.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_SCHEDULE_FOR_USER_IN_TEAM">
+Retrieves the schedules for a specific user within a team and organization context. this endpoint allows you to fetch all scheduled events or appointments for a particular user, considering their association with a specific team and organization. it's useful for getting an overview of a user's availability, upcoming events, or for synchronizing schedules across different systems. the endpoint should be used when you need to access or display a user's schedule within the context of their team and organization, such as for team planning, resource allocation, or integrating with external calendar systems. note that this endpoint only provides schedule information and does not allow for modifications to the schedules.
+
+**Action Parameters**
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_TEAM_INFORMATION_BY_TEAM_ID">
+Retrieves detailed information about a specific team within the cal application. this endpoint allows you to fetch comprehensive data about a team, which may include team name, members, settings, and other relevant information. use this endpoint when you need to access or display team details in your application, or when you need to verify team information before performing team-related operations. the endpoint provides a snapshot of the team's current state and does not modify any team data. note that the specific fields returned in the response may vary based on the team's configuration and the user's permissions.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_CONFERENCE_OAUTH_AUTHORIZATION_URL">
+Generates an oauth authorization url for a specified conferencing application. this endpoint is used to initiate the oauth flow, allowing cal.com to integrate with various conferencing platforms. the generated url should be used to redirect users to the conferencing app's authorization page, where they can grant cal.com permission to access their conferencing account. this is a crucial step in setting up seamless video conferencing integration within cal.com's scheduling system. the endpoint should be called when a user wants to connect a new conferencing app to their cal.com account or when refreshing existing integrations.
+
+**Action Parameters**
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+<ParamField path="returnTo" type="string" required={true}>
+</ParamField>
+
+<ParamField path="onErrorReturnTo" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_MEMBERSHIP_FROM_ORGANIZATION">
+Retrieves detailed information about a specific membership within an organization. this endpoint is used to fetch the current status, role, and other relevant details of a user's membership in a particular organization. it's particularly useful for checking a member's current standing, permissions, or any custom attributes associated with their membership. the endpoint should be used when you need to verify or review the specifics of an individual's association with an organization. it does not modify any data and is purely for information retrieval. note that this endpoint will not provide information about other members or the organization as a whole - it's focused solely on the specified membership.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_SELECTED_CALENDARS">
+Removes one or more calendars from the list of selected calendars for the authenticated user. this endpoint is used to unselect or deactivate specific calendars within the cal application, affecting their visibility and usage in scheduling operations. it should be used when a user wants to stop using certain calendars for availability checks, event creation, or other cal functionalities. this operation does not delete the actual calendar data but rather removes it from the active selection. be cautious when using this endpoint, as it may impact existing scheduled events or availability if the deselected calendars were being used for those purposes.
+
+**Action Parameters**
+
+<ParamField path="integration" type="string" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="credentialId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_WEBHOOK_EVENT">
+Creates a new webhook subscription in cal.com to receive real-time notifications for specified events. this endpoint allows you to set up automated notifications for various booking-related activities, such as creations, reschedulings, cancellations, and more. use this to integrate cal.com events with your application, enabling real-time updates and automated workflows. the webhook can be customized with specific triggers and a payload template to fit your integration needs. it's essential for building responsive, event-driven applications that interact with cal.com's scheduling system.
+
+**Action Parameters**
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="triggers" type="string" required={true}>
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_TEAM_BY_ID">
+Deletes a specific team from the cal system using its unique identifier. this endpoint should be used when you need to permanently remove a team and all its associated data from the application. it's important to note that this action is irreversible and will remove all team-related information, including member associations, scheduled events, and team-specific settings. use this endpoint with caution, ensuring that you have the correct teamid and necessary permissions to delete the team. this operation cannot be undone, so it's recommended to implement confirmation steps in your application before making this call.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_SELECTED_SLOT">
+Deletes a previously selected time slot from the cal scheduling system. this endpoint should be used when a user wants to remove a specific time slot they had previously marked as available for scheduling or evaluating other users. it's particularly useful for managing availability in dynamic scheduling environments where plans may change frequently. the operation is irreversible, so it should be used with caution. while the endpoint doesn't require any parameters in the url or body, it likely relies on authentication to identify the user whose selected slot is being deleted.
+
+**Action Parameters**
+
+<ParamField path="uid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_LIST_ORGANIZATION_MEMBERSHIPS">
+Retrieves a list of all memberships for a specific organization. this endpoint is used to get an overview of users associated with the organization, including their membership status (e.g., active, pending, invited). it's particularly useful for organization administrators to manage team members, review access levels, and track invitations. the endpoint returns details such as user information, roles, and membership dates. use this when you need to audit organization membership, prepare for user management tasks, or integrate member information into other systems. note that it does not modify any membership data and is read-only.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_EVENT_TYPE_BY_TEAM_ID">
+Retrieves detailed information about a specific event type within a team's context in the cal scheduling system. this endpoint is used to fetch the configuration, settings, and other relevant details of an event type associated with a particular team. it's particularly useful when you need to review or display the properties of an event type, such as its name, duration, availability, or any custom fields. this endpoint should be used when integrating team-specific event types into other applications or when building team management interfaces within cal. note that this endpoint only provides read access to the event type data and cannot be used to modify the event type. for any changes, a separate update endpoint would be required.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_GOOGLE_CALENDAR_OAUTH_AUTHENTICATION_URL">
+Generates the oauth 2.0 authorization url for google calendar integration with cal. this endpoint is used to initiate the authentication process, allowing users to grant cal permission to access their google calendar data. the returned url should be opened in a web browser, where users can log in to their google account and authorize the application. this is a critical first step in setting up the google calendar integration for cal, enabling features such as availability checks and event synchronization. note that this endpoint only provides the authorization url and does not complete the oauth flow; additional steps will be required to exchange the authorization code for access tokens.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CHECK_TEAM_STRIPE_INTEGRATION_STATUS">
+Retrieves the stripe integration status and related information for a specific team in the cal application. this endpoint should be used when you need to verify a team's stripe account status, check subscription details, or confirm payment information. it provides a quick way to assess the health and status of a team's integration with stripe for payment processing and subscription management. the endpoint does not modify any data and is safe for frequent checks. however, it should not be used excessively due to potential rate limiting. note that this endpoint only provides status information and does not allow for modifications to the team's stripe settings.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_OAUTH_CLIENT_USER">
+Deletes a user's association with a specific oauth client in the cal application. this endpoint is used to revoke a user's access to resources managed by a particular oauth client, effectively removing their permissions and connection to that client. it should be used when you need to terminate a user's relationship with a specific application or service integrated with cal, such as when an employee leaves an organization or when access needs to be revoked for security reasons. this operation is permanent and cannot be undone, so it should be used with caution. the endpoint does not delete the user account from the cal system entirely, but only removes the association with the specified oauth client.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_USER_PROFILE_DETAILS">
+Updates the user preferences and profile information for the authenticated user in the cal scheduling api. this endpoint allows for partial updates, meaning you can provide only the fields you want to change without affecting other settings. use this endpoint to customize the user experience, including time format, week start day, language preferences, and profile details. the endpoint accepts various parameters to tailor the cal application to the user's needs, such as email, name, time format (12 or 24-hour), default schedule, preferred week start day, time zone, locale, and avatar url. this flexibility enables a personalized scheduling experience across different cultural and personal preferences. it's important to note that all parameters are optional, allowing for granular updates to specific preferences without modifying others. when using this endpoint, ensure that the provided values adhere to the specified formats and constraints for each parameter to avoid errors.
+
+**Action Parameters**
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="defaultScheduleId" type="integer">
+</ParamField>
+
+<ParamField path="weekStart" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="locale" type="string">
+</ParamField>
+
+<ParamField path="avatarUrl" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_REFRESH_OAUTH_TOKEN_FOR_CLIENT_ID">
+Refreshes an oauth access token for a managed user in the cal application. this endpoint should be used when an existing access token has expired or is about to expire, allowing continued access to cal's api without requiring the user to re-authenticate. it takes a previously issued refresh token and returns a new access token. this process is crucial for maintaining uninterrupted access to cal's services for integrated applications. note that this endpoint is specifically for managed users within the cal ecosystem and should not be used for regular user authentication flows.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="refreshToken" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_WEBHOOKS_FOR_EVENT_TYPE">
+Deletes a webhook associated with a specific event type in the cal api. this endpoint is used to remove a previously configured webhook for a particular event type, effectively stopping any further notifications for that event type. it should be used when you no longer need to receive real-time updates about a specific event type or when you want to reconfigure your webhook settings. the operation is irreversible, so care should be taken to ensure that the correct eventtypeid is provided. this endpoint does not return the deleted webhook details, so it's recommended to retrieve and store any necessary information before deletion.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_CALENDAR_BUSY_TIMES">
+Retrieves busy time slots for specified calendars within a given time range. this endpoint is used to check when calendars are occupied, helping users find available time slots for scheduling meetings or events. it returns a list of time ranges during which the queried calendars are busy. this tool is essential for implementing smart scheduling features, conflict detection, and optimizing meeting arrangements. it does not provide detailed event information or free time slots directly - only the busy periods. the response should be used in conjunction with desired meeting durations to determine suitable scheduling options.
+
+**Action Parameters**
+
+<ParamField path="loggedInUsersTz" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dateFrom" type="string">
+</ParamField>
+
+<ParamField path="dateTo" type="string">
+</ParamField>
+
+<ParamField path="credentialId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_LIST_TEAM_EVENT_TYPES_BY_ORG_AND_TEAM_ID">
+Retrieves a list of event types associated with a specific team within an organization. this endpoint is used to fetch all available scheduling options (event types) that have been set up for a particular team, allowing for efficient management of team-specific scheduling capabilities. it's particularly useful when you need to review or display the various types of meetings or appointments a team can schedule. the response likely includes details such as event type names, durations, and any custom fields associated with each event type. this endpoint should be used when you need to present scheduling options to team members or integrate team-specific scheduling capabilities into other applications.
+
+**Action Parameters**
+
+<ParamField path="eventSlug" type="string">
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_MEMBERSHIP_BY_ID">
+Retrieves detailed information about a specific membership within a team in an organization. this endpoint is used to fetch individual member details, including their role, status, and other relevant information within the context of a particular team and organization. it's particularly useful for auditing team compositions, verifying member roles, or retrieving specific member data for administrative purposes. the endpoint follows a hierarchical structure, requiring identifiers for the organization, team, and specific membership to pinpoint the exact record. note that this endpoint only provides read access to membership information and cannot be used to modify or create new memberships.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_EVENT_TYPE_BY_ID">
+Retrieves detailed information about a specific event type in the cal.com system using its unique identifier. this endpoint is useful when you need to access the complete set of properties and settings for a particular event type, such as its name, duration, availability, and any custom fields. it should be used when you have the event type id and require its full details, for instance, when editing an event type or displaying its information to users. the endpoint will not create, update, or delete event types; it is solely for fetching existing data. keep in mind that the response will only include information for the specified event type and not for any associated events or bookings.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_V2_CONFERENCING_INFO">
+Retrieves the conferencing details and capabilities for the authenticated user or organization within the cal application. this endpoint provides information about available video conferencing integrations, settings, and options that can be used for scheduling and managing virtual meetings. it should be used when setting up new events that require video conferencing or when checking the current conferencing configuration. the endpoint does not modify any settings; it only returns the existing configuration. note that the specific conferencing providers and features available may depend on the user's subscription level or organization settings.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_WEBHOOK_BY_ID">
+The updatewebhook endpoint allows you to modify an existing webhook configuration in cal.com. it enables you to update various aspects of a webhook, including its payload template, active status, subscriber url, event triggers, and secret key. this endpoint is useful when you need to change the behavior or destination of an existing webhook without creating a new one. it's particularly helpful for adjusting notification preferences, updating the payload format, or modifying the events that trigger the webhook. note that this endpoint updates only the fields you provide; any fields not included in the request will retain their current values.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean">
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string">
+</ParamField>
+
+<ParamField path="triggers" type="string">
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_TEAM_INFORMATION_BY_ID">
+The updateteam endpoint allows you to modify various properties of an existing team within an organization in the cal application. this patch operation enables partial updates, meaning you can change specific team attributes without needing to provide all team information. use this endpoint when you need to update team details such as name, visual branding elements, privacy settings, time-related preferences, or booking configurations. it's particularly useful for keeping team information current, adjusting team visibility, or modifying scheduling parameters. the endpoint accepts a json payload with the properties to be updated, offering flexibility in managing team characteristics. note that while most fields are optional, allowing for targeted updates, any provided field will overwrite the existing value for that property. be cautious when updating critical fields like 'slug' or 'timezone' as they may affect team accessibility and scheduling functionality.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="logoUrl" type="string">
+</ParamField>
+
+<ParamField path="calVideoLogo" type="string">
+</ParamField>
+
+<ParamField path="appLogo" type="string">
+</ParamField>
+
+<ParamField path="appIconLogo" type="string">
+</ParamField>
+
+<ParamField path="bio" type="string">
+</ParamField>
+
+<ParamField path="hideBranding" type="boolean">
+</ParamField>
+
+<ParamField path="isPrivate" type="boolean">
+</ParamField>
+
+<ParamField path="hideBookATeamMember" type="boolean">
+</ParamField>
+
+<ParamField path="metadata" type="string">
+</ParamField>
+
+<ParamField path="theme" type="string">
+</ParamField>
+
+<ParamField path="brandColor" type="string">
+</ParamField>
+
+<ParamField path="darkBrandColor" type="string">
+</ParamField>
+
+<ParamField path="bannerUrl" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="weekStart" type="string">
+</ParamField>
+
+<ParamField path="bookingLimits" type="string">
+</ParamField>
+
+<ParamField path="includeManagedEventsInLimits" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_MEMBERSHIPS">
+Retrieves a list of memberships for a specific team in the cal scheduling application. this endpoint allows you to fetch detailed information about all members associated with a given team, including their roles and current status within the team. it's particularly useful for team managers or administrators who need to review the composition of their team, check member roles, or audit team access. the endpoint should be used when you need a comprehensive overview of a team's structure and membership status. note that this endpoint only provides membership information and does not allow for modifications to team composition or member roles.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DISCONNECT_CALENDAR_USING_CREDENTIAL_ID">
+Disconnects a specific calendar from the cal service by deleting its associated credential. this endpoint should be used when a user wants to remove a calendar integration, such as when switching to a different calendar provider or revoking access to a previously connected calendar. the operation is irreversible, so it should be used with caution. it's important to note that this action only removes the connection between cal and the external calendar; it does not delete any events or data within the calendar itself. after disconnection, cal will no longer have access to read or modify events in the disconnected calendar.
+
+**Action Parameters**
+
+<ParamField path="calendar" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_EVENT_TYPE_BY_ID">
+Deletes a specific event type from the cal scheduling system. this endpoint should be used when you need to permanently remove an event type configuration from your account. it's particularly useful for cleaning up obsolete or unused event types, streamlining your scheduling options. the operation is irreversible, so it should be used with caution. once an event type is deleted, any associated scheduling links will become invalid, and it will no longer be available for booking. this endpoint does not affect any existing bookings made using this event type prior to deletion.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_ORGANIZATION_WEBHOOKS_BY_ORG_ID">
+Retrieves a list of webhooks configured for a specific organization in the cal.com api. this endpoint allows users to fetch details about all webhooks associated with the given organization, including their configured urls, event triggers, and current status. it should be used when you need to review or audit the webhook integrations for an organization, such as checking which external services are receiving notifications from cal.com. the endpoint provides a comprehensive view of webhook configurations but does not modify or create new webhooks. note that the response may be paginated for organizations with a large number of webhooks, and additional calls might be needed to retrieve the full list.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_PHONE_CALL_FOR_EVENT_TYPE">
+Creates a new phone call event type within a specified team's calendar system. this endpoint allows users to set up structured phone call events with customizable details such as caller and recipient information, event status, and call scripts. it's particularly useful for scheduling and managing phone appointments, check-ins, or any recurring phone-based events within a team context. the created event type can be used as a template for future phone call scheduling, streamlining the process of setting up similar calls. note that this endpoint only creates the event type structure and does not schedule actual calls; it prepares the system for future call scheduling based on the defined parameters.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="yourPhoneNumber" type="string" required={true}>
+</ParamField>
+
+<ParamField path="numberToCall" type="string" required={true}>
+</ParamField>
+
+<ParamField path="calApiKey" type="string" required={true}>
+</ParamField>
+
+<ParamField path="templateType" type="string" default="CUSTOM_TEMPLATE">
+</ParamField>
+
+<ParamField path="schedulerName" type="string">
+</ParamField>
+
+<ParamField path="guestName" type="string">
+</ParamField>
+
+<ParamField path="guestEmail" type="string">
+</ParamField>
+
+<ParamField path="guestCompany" type="string">
+</ParamField>
+
+<ParamField path="beginMessage" type="string">
+</ParamField>
+
+<ParamField path="generalPrompt" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_TEAM_IN_ORGANIZATION">
+Creates a new team within an organization in the cal scheduling api. this endpoint allows for the creation of a customizable team with various branding, scheduling, and privacy options. it should be used when setting up a new team within an existing organization, enabling collaborative scheduling and shared resources. the endpoint provides extensive customization capabilities but requires careful consideration of optional parameters to fully utilize its features. note that while many parameters are optional, they significantly impact the team's appearance and functionality, so it's recommended to review and set as many relevant parameters as possible during creation.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="logoUrl" type="string">
+</ParamField>
+
+<ParamField path="calVideoLogo" type="string">
+</ParamField>
+
+<ParamField path="appLogo" type="string">
+</ParamField>
+
+<ParamField path="appIconLogo" type="string">
+</ParamField>
+
+<ParamField path="bio" type="string">
+</ParamField>
+
+<ParamField path="hideBranding" type="boolean">
+</ParamField>
+
+<ParamField path="isPrivate" type="boolean">
+</ParamField>
+
+<ParamField path="hideBookATeamMember" type="boolean">
+</ParamField>
+
+<ParamField path="metadata" type="string">
+</ParamField>
+
+<ParamField path="theme" type="string">
+</ParamField>
+
+<ParamField path="brandColor" type="string">
+</ParamField>
+
+<ParamField path="darkBrandColor" type="string">
+</ParamField>
+
+<ParamField path="bannerUrl" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="timeZone" type="string" default="Europe/London">
+</ParamField>
+
+<ParamField path="weekStart" type="string" default="Sunday">
+</ParamField>
+
+<ParamField path="autoAcceptCreator" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_TEAM_MEMBERSHIPS_BY_ID">
+Removes a user's membership from a specific team within the cal application. this endpoint should be used when you need to revoke a user's access to a team, such as when an employee leaves a project or organization. the deletion is permanent and cannot be undone, so it should be used with caution. this operation only removes the user from the specified team; it does not delete the user's account from the cal application. after successful deletion, the user will no longer have access to the team's resources or events.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_MODIFY_ORGANIZATION_MEMBERSHIP_BY_ID">
+Updates the details of a specific membership within an organization. this endpoint allows modification of a membership's acceptance status, role, and impersonation settings. it should be used when there's a need to change a member's status, promote or demote their role, or adjust their impersonation privileges. the endpoint requires the organization id and membership id to be specified in the url path. note that this operation may have significant implications for the member's access and capabilities within the organization, so it should be used cautiously and typically requires appropriate authorization.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_OAUTH_CLIENTS_USER">
+Retrieves a list of users associated with a specified oauth client. this endpoint is useful for administrators or system integrators who need to manage user access or permissions for a particular oauth client. it provides visibility into which users have authorized or are linked to the client application. the endpoint should be used when you need to audit user access, manage user permissions, or gather user information related to a specific oauth client. it's important to note that this endpoint only returns user information and does not modify any user or client settings. the response will likely include basic user details, but may not contain sensitive information or full user profiles.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_TEAM_MEMBERSHIP_PROPERTIES">
+Updates specific attributes of a team membership within an organization. this endpoint allows for modifying the acceptance status, role, and impersonation settings of a team member. it's used to manage team dynamics, adjust member permissions, and control access levels within the organization. the endpoint supports partial updates, meaning you can modify one or more properties without affecting others. use this when you need to change a member's role, confirm their acceptance of an invitation, or adjust their impersonation privileges. note that this endpoint doesn't add or remove members from a team; it only modifies existing memberships.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_CONFERENCE_APP_CONNECTION">
+Disconnects an active conferencing session for a specified application integration in cal. this endpoint should be used when you need to programmatically end or terminate an ongoing conference call or meeting. it's particularly useful for automating the process of closing conferences, ensuring that sessions are properly concluded and resources are freed up. the endpoint doesn't provide information about the disconnected session or return a list of active sessions. use this endpoint with caution, as it will immediately terminate the specified conference, potentially disrupting ongoing communications if used incorrectly.
+
+**Action Parameters**
+
+<ParamField path="app" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_WEBHOOK_BY_ID">
+Retrieves detailed information about a specific webhook registered in the cal api. this endpoint allows you to fetch the configuration, status, and other relevant details of a webhook using its unique identifier. use this endpoint when you need to review or verify the settings of an existing webhook, such as its target url, subscribed events, or last triggered timestamp. it's particularly useful for troubleshooting webhook-related issues or auditing your webhook configurations. the endpoint returns comprehensive information about the webhook but does not modify any existing settings. note that this endpoint only provides details for webhooks that you have permission to access within your cal account.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_PROVIDER_DETAILS">
+Retrieves detailed information about a specific provider in the cal scheduling system using their unique client id. this endpoint should be used when you need to access a provider's profile, availability, or other related data for scheduling purposes. it's particularly useful for displaying provider information to users, verifying a provider's existence in the system, or fetching data to populate scheduling interfaces. the endpoint returns comprehensive details about the provider, which may include their name, specialties, available time slots, and any custom settings they've configured. note that this endpoint only retrieves information and does not modify any provider data. for real-time availability, you may need to use additional endpoints in conjunction with this one.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_USER_TO_ORGANIZATION">
+This endpoint adds a new user to an organization within the cal scheduling system. it allows for the creation of a user profile with customizable settings including appearance preferences, time zone, locale, and organizational role. the endpoint is typically used when onboarding new team members to an organization's cal instance. it provides extensive customization options but requires only the user's email address as a mandatory field. other parameters allow for fine-tuning the user's experience within cal, from visual preferences to scheduling behaviors. note that while many fields are optional, setting them during user creation can streamline the onboarding process and ensure a consistent experience across the organization.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string">
+</ParamField>
+
+<ParamField path="weekday" type="string">
+</ParamField>
+
+<ParamField path="brandColor" type="string">
+</ParamField>
+
+<ParamField path="darkBrandColor" type="string">
+</ParamField>
+
+<ParamField path="hideBranding" type="boolean">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="theme" type="string">
+</ParamField>
+
+<ParamField path="appTheme" type="string">
+</ParamField>
+
+<ParamField path="timeFormat" type="integer">
+</ParamField>
+
+<ParamField path="defaultScheduleId" type="integer">
+</ParamField>
+
+<ParamField path="locale" type="string" default="en">
+</ParamField>
+
+<ParamField path="avatarUrl" type="string">
+</ParamField>
+
+<ParamField path="organizationRole" type="string" default="MEMBER">
+</ParamField>
+
+<ParamField path="autoAccept" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_USERS_IN_ORGANIZATION">
+Retrieves a list of users associated with a specific organization in the cal api system. this endpoint is used to obtain information about all users belonging to the organization identified by the provided orgid. it's particularly useful for organization administrators or integration systems that need to manage or review user memberships. the endpoint returns user details, which may include usernames, email addresses, roles, or other relevant information. it should be used when you need a comprehensive view of an organization's user base, such as for auditing purposes or user management tasks. note that this endpoint does not provide detailed scheduling information for individual users; it focuses solely on user membership within the organization.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+<ParamField path="emails" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_WEBHOOKS_LIST">
+Retrieves a list of all configured webhooks for the authenticated user or application in the cal scheduling system. this endpoint allows users to view and manage their existing webhook subscriptions, which are used for real-time notifications about events such as new appointments, cancellations, or updates. it should be used when you need to audit your webhook configurations, check the status of existing webhooks, or gather information before modifying webhook settings. the response typically includes details such as webhook urls, associated events, and current status. note that this endpoint does not create new webhooks or modify existing ones; it is purely for retrieving information. the number of webhooks returned may be limited, and pagination might be required for accounts with a large number of webhook subscriptions.
+
+**Action Parameters**
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CONFIRM_BOOKING_BY_UID">
+Confirms a specific booking in the cal system using its unique identifier. this endpoint should be used when a user or system needs to finalize and approve a previously created booking. it marks the booking as confirmed, which may trigger additional actions such as sending confirmation emails or updating availability. this endpoint is crucial for completing the booking process and should only be called once per booking. it does not provide the ability to modify booking details; for that, a separate update endpoint should be used prior to confirmation.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_SAVE_OAUTH_CREDENTIALS_VIA_GCAL_API">
+Saves the oauth credentials obtained from google calendar authorization process. this endpoint is crucial for completing the oauth flow and establishing a connection between cal and a user's google calendar. it should be called after successfully obtaining the authorization code from google's oauth server. the saved credentials allow cal to make authorized requests to the google calendar api on behalf of the user. this endpoint is typically used programmatically as part of the oauth implementation and not directly by end-users. note that while the schema doesn't specify parameters, the authorization code or tokens are likely passed through query parameters or headers.
+
+**Action Parameters**
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CHECK_STRIPE_STATUS">
+The stripe check endpoint is used to verify the status of the stripe integration within the cal scheduling system. it allows users to check if their stripe account is properly connected and functioning for payment processing related to scheduled events or services. this endpoint should be used when there's a need to confirm the health of the stripe integration, such as during initial setup, troubleshooting, or routine system checks. it provides a quick way to ensure that the payment processing capabilities are ready for use without initiating any actual transactions. note that this endpoint does not provide detailed stripe account information or process any payments; it's purely for checking the integration status.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_MEMBERSHIP_DETAILS">
+Retrieves detailed information about a specific membership within a team. this endpoint should be used when you need to access the current status, role, or other attributes of a particular team member. it provides a comprehensive view of the membership, including the member's information, their role in the team, and any other relevant details. this tool is particularly useful for team management, auditing team composition, or verifying a member's status. note that it only returns information for a single membership and does not provide a list of all team members.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_WEBHOOK_FOR_EVENT_TYPE">
+Deletes a specific webhook associated with an event type in the cal application. this endpoint should be used when you want to remove a webhook configuration, such as when you no longer need real-time notifications for a particular event type or when you're updating your integration settings. the operation is irreversible, so use it with caution. this endpoint only removes the webhook configuration and does not affect the event type itself or any other webhooks associated with other event types.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_TEAM_MEMBERSHIP_WITH_ROLE">
+Adds a new member to a specified team within the cal application. this endpoint allows you to invite users to join a team, set their initial role, and configure their membership settings. use this when you need to expand your team, assign roles to new members, or modify existing memberships. the endpoint requires the team id and user id, with optional parameters to customize the membership details. it's particularly useful for team administrators and owners managing their organization's structure in cal.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string" default="MEMBER">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_OAUTH_CLIENT_WEBHOOK">
+Updates an existing webhook configuration for a specific oauth client. this endpoint allows you to modify various aspects of a webhook, including its payload template, active status, subscriber url, trigger events, and secret key. use this when you need to change the behavior or settings of an already configured webhook, such as updating the events it responds to or modifying the payload structure. the endpoint is particularly useful for maintaining and adjusting webhook integrations as your application's needs evolve. note that this operation only updates the specified fields; any fields not included in the request will retain their current values.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean">
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string">
+</ParamField>
+
+<ParamField path="triggers" type="string">
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_EVENT_TYPE_DETAILS">
+Retrieves detailed information about a specific event type within a team and organization. this endpoint is used to fetch the configuration, settings, and other relevant details of a particular event type. it's particularly useful when you need to review or display the characteristics of an event type, such as its duration, availability, or custom fields. the endpoint requires the organization id, team id, and event type id to pinpoint the exact event type. it should be used when detailed information about a specific event type is needed, rather than for listing multiple event types or creating new ones. note that this endpoint only provides read access to the event type data and cannot be used to modify the event type.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_MEMBERSHIP_FOR_ORGANIZATION">
+This endpoint adds a new member to an organization or updates an existing member's role and settings within the organization. it allows for the specification of the user's role, acceptance status, and impersonation settings. use this endpoint when you need to invite new members to your organization, change a member's role, or update their membership settings. the endpoint requires at least the user id and role to be specified, with optional parameters for fine-tuning the membership details. note that this endpoint does not handle the actual user creation process; the specified user id must correspond to an existing user in the system.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string" default="MEMBER">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_MY_INFORMATION">
+Retrieves the profile information for the currently authenticated user. this endpoint provides access to the user's personal and account details, which may include name, email, preferences, and other relevant profile data. it should be used when the application needs to display or process the logged-in user's information. the endpoint does not accept any parameters, as it relies on the authentication context to identify the user. while it offers a comprehensive view of the user's profile, it does not provide information about the user's events, schedules, or team-related data, which may require separate api calls.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_REASSIGN_BOOKING_WITH_UID">
+Reassigns a specific booking to another team member. this endpoint allows for the transfer of a booking from one team member to another, typically used when a team member becomes unavailable or to optimize scheduling. it should be used when there's a need to change the assignee of an existing booking without canceling or creating a new one. the endpoint requires the unique identifier of the booking to be reassigned. it's important to note that this operation may have implications on the availability of both the original and the new assignee, and may trigger notifications to relevant parties. the endpoint does not provide information about the new assignee or the reason for reassignment in the request, suggesting these details may need to be managed separately or through a different process.
+
+**Action Parameters**
+
+<ParamField path="bookingUid" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_USER_SCHEDULE_BY_ORG_ID">
+Retrieves a specific user's schedule within an organization. this endpoint allows you to fetch detailed information about a user's schedule, including events, availability, and time slots. it is particularly useful for viewing and managing individual user schedules in an organizational context. use this endpoint when you need to access or display a user's schedule, check their availability, or integrate their calendar information into other systems. the endpoint requires specific identifiers for the organization, user, and schedule to ensure accurate retrieval of the desired schedule information.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="scheduleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_WEBHOOK_FOR_EVENT_TYPE">
+Creates a new webhook for a specific event type in cal.com. this endpoint allows you to set up real-time notifications for various booking-related events, enabling integration with external services or applications. you can customize the webhook by specifying triggers, defining a payload template, and setting security parameters. use this when you need to automate actions or update external systems based on cal.com booking events. the webhook can be configured to handle multiple trigger events, providing flexibility in how you respond to different booking scenarios. note that proper configuration of the subscriberurl and handling of incoming webhook data is crucial for successful integration.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="triggers" type="string" required={true}>
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_ORGANIZATION_TEAMS_EVENT_TYPES">
+Retrieves a list of event types associated with teams in a specified organization. this endpoint allows you to fetch all the available event types that have been configured for teams within the organization identified by the provided orgid. use this endpoint when you need to display or manage the various event types that teams can use for scheduling within your organization. the response will likely include details such as event type names, durations, and any custom fields or settings associated with each event type. this information is crucial for understanding the different scheduling options available to teams and can be used to populate user interfaces or to make decisions about scheduling workflows. note that this endpoint only provides information about event types and does not allow for creation, modification, or deletion of event types. for those operations, you would need to use separate endpoints specifically designed for those purposes.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_TEAM_MEMBERSHIP_BY_ID">
+Updates the properties of a specific team membership in cal. this endpoint allows for modifying a team member's acceptance status, role, and impersonation settings. it's used when you need to change a member's status within a team, adjust their permissions, or update security settings. the endpoint provides flexibility in managing team dynamics and member access levels. note that this is a partial update, so only the fields you specify will be modified.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="accepted" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="disableImpersonation" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_TEAMS_LIST">
+Retrieves a list of teams associated with the authenticated user's account in the cal.com application. this endpoint is used to fetch information about all teams the user is a part of, including team names, members, and potentially other relevant details such as team settings or permissions. it's particularly useful for applications that need to display a user's team affiliations or perform team-based operations. the endpoint does not accept any parameters, suggesting it returns a comprehensive list of teams without filtering. note that while it provides an overview of teams, it may not include detailed scheduling information or specific event data for each team.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_SCHEDULE_BY_ID">
+Updates an existing schedule in the cal api, allowing for partial modifications to various schedule properties. this endpoint is used to change schedule details such as name, time zone, regular availability patterns, default status, and specific date overrides. it provides flexibility in managing recurring schedules while accommodating exceptions for special dates or events. the endpoint should be used when adjustments to an existing schedule are needed, rather than creating a new schedule from scratch. it's particularly useful for fine-tuning availability patterns, updating schedule metadata, or adding exceptions to regular schedules. note that this endpoint only updates the specified fields, leaving unmentioned properties unchanged.
+
+**Action Parameters**
+
+<ParamField path="scheduleId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="timeZone" type="string">
+</ParamField>
+
+<ParamField path="availability" type="array">
+</ParamField>
+
+<ParamField path="isDefault" type="boolean">
+</ParamField>
+
+<ParamField path="overrides" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_UPDATE_WEBHOOK_FOR_ORGANIZATION">
+The updatewebhook endpoint allows you to modify an existing webhook configuration for a specific organization in cal.com. this endpoint is used to update various aspects of a webhook, including its payload template, active status, subscriber url, trigger events, and secret. it's particularly useful when you need to change the behavior or destination of webhook notifications without creating a new webhook. use this endpoint when you want to adjust how and when your application receives real-time updates about events in cal.com, such as bookings, meetings, or form submissions. note that updating a webhook does not affect any historical data or previously sent notifications; it only changes how future notifications will be handled.
+
+**Action Parameters**
+
+<ParamField path="webhookId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean">
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string">
+</ParamField>
+
+<ParamField path="triggers" type="string">
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_PHONE_CALL_EVENT">
+Creates a new phone call event for a specific event type within a team and organization using the cal.com api. this endpoint allows you to set up automated phone calls with customizable details for both the scheduler and the guest. it's particularly useful for scheduling check-in calls, appointments, or any scenario where a phone call needs to be integrated into an event workflow. the endpoint supports different template types and allows for personalized messaging options. use this when you need to automate phone call scheduling as part of your event management process. note that this endpoint requires valid phone numbers in e.164 format and a cal api key for authentication. it does not handle the actual phone call execution but rather sets up the event in the cal.com system.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="yourPhoneNumber" type="string" required={true}>
+</ParamField>
+
+<ParamField path="numberToCall" type="string" required={true}>
+</ParamField>
+
+<ParamField path="calApiKey" type="string" required={true}>
+</ParamField>
+
+<ParamField path="templateType" type="string" default="CUSTOM_TEMPLATE">
+</ParamField>
+
+<ParamField path="schedulerName" type="string">
+</ParamField>
+
+<ParamField path="guestName" type="string">
+</ParamField>
+
+<ParamField path="guestEmail" type="string">
+</ParamField>
+
+<ParamField path="guestCompany" type="string">
+</ParamField>
+
+<ParamField path="beginMessage" type="string">
+</ParamField>
+
+<ParamField path="generalPrompt" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_SAVE_STRIPE_DETAILS">
+The v2 stripe save endpoint is designed to save or update stripe integration settings for a cal user's account. this get request initiates the process of storing stripe-related information, such as api keys or account details, in the cal system. it's primarily used when setting up or modifying stripe integration for payment processing within cal's scheduling platform. while the endpoint doesn't appear to accept parameters, it likely relies on authenticated user context to determine which account to update. note that using a get method for saving data is unconventional and may have specific implementation reasons or could potentially be a schema error. users should be cautious and refer to additional documentation for the exact behavior and any required headers or authentication methods.
+
+**Action Parameters**
+
+<ParamField path="state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_POST_SELECTED_CALENDARS">
+The postselectedcalendars endpoint allows users to select or update calendars for integration within the cal application. this endpoint is used to associate a specific calendar from an external service with the user's cal account. it should be used when setting up new calendar integrations or modifying existing ones. the endpoint requires information about the integration type, an external identifier for the calendar, and the associated credential id for authentication. this ensures that cal can properly sync and manage events from the selected external calendar. note that this endpoint does not retrieve or modify calendar data directly; it only establishes the connection between cal and the external calendar service.
+
+**Action Parameters**
+
+<ParamField path="integration" type="string" required={true}>
+</ParamField>
+
+<ParamField path="externalId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="credentialId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_WEBHOOKS_FOR_EVENT_TYPE">
+Retrieves all webhooks associated with a specific event type in the cal scheduling system. this endpoint allows users to fetch detailed information about the configured webhooks for a particular event type, such as team meetings or client consultations. it's useful for auditing webhook configurations, troubleshooting notification issues, or gathering information for reporting purposes. the endpoint returns a list of webhook objects, likely including details such as webhook urls, event subscriptions, and current status. it should be used when you need to review or manage the external integrations and notifications set up for a specific type of event in your cal instance.
+
+**Action Parameters**
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_ORGANIZATION_ID">
+Get the organization id of the user.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_DEFAULT_SCHEDULE_DETAILS">
+Retrieves the default schedule configuration from the cal api. this endpoint is used to fetch the pre-configured default schedule settings, which can serve as a starting point or fallback for creating new schedules or managing existing ones. it provides essential information about the standard scheduling setup without requiring any additional parameters. use this endpoint when you need to access or review the base scheduling configuration for your cal integration. note that this endpoint only returns the default schedule and does not provide information about custom or user-specific schedules. the returned data can be used to understand the system's default behavior and as a reference for creating or modifying other schedules.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_MEMBERSHIP_IN_TEAM">
+Removes a user's membership from a specific team within an organization. this endpoint should be used when you need to revoke a user's access to a team, such as when they leave the team or the organization. the operation is permanent and cannot be undone, so it should be used with caution. once a membership is deleted, the user will lose all access and permissions associated with that team. this endpoint does not remove the user from the organization entirely, only from the specified team.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="membershipId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_FETCH_PROVIDER_ACCESS_TOKEN">
+Retrieves an access token for a specific client from the cal api provider. this endpoint is used as part of the authentication process to obtain a token that can be used for subsequent api calls. the access token serves as a credential to authenticate and authorize the client's requests to protected resources within the cal api. this endpoint should be called when a client application needs to initiate or refresh its authentication session. it's important to note that this endpoint does not provide any scheduling or event management functionality directly; it's solely for obtaining the necessary credentials for api access. the retrieved access token should be securely stored and used in the authorization header for other cal api endpoints.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_TEAM_FROM_ORGANIZATION">
+Deletes a specific team from an organization. this endpoint permanently removes the team and all its associated data from the system. it should be used when a team is no longer needed or when restructuring the organization. caution should be exercised as this action is irreversible and will affect all team members and any projects or events associated with the team. the endpoint requires both the organization id and team id to ensure precise targeting of the team to be deleted, preventing accidental removals. it does not provide any information about the deleted team or its members after the operation.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_USER_SCHEDULE">
+Deletes a specific schedule for a user within an organization. this endpoint allows for the permanent removal of a schedule, which can be useful for cleaning up outdated or unwanted schedules. it should be used when a schedule is no longer needed or when reorganizing a user's calendar structure. the operation is irreversible, so caution should be exercised when invoking this endpoint. it does not return the deleted schedule data, only performs the deletion action.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="userId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="scheduleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_RETRIEVE_TEAM_MEMBERSHIPS_FOR_ORGANIZATION">
+Retrieves a list of memberships for a specific team within an organization. this endpoint allows you to fetch detailed information about all users who are members of the specified team, including their roles (e.g., member, maintainer) and membership states (e.g., active, pending). use this endpoint when you need to audit team composition, manage access control, or generate reports on team structure. it's particularly useful for organization administrators and team leads who need to oversee team membership. note that this endpoint only provides information about existing memberships and does not allow for modification of team composition.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="take" type="integer">
+</ParamField>
+
+<ParamField path="skip" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_ORGANIZATION_ATTRIBUTES">
+Creates a new custom attribute for an organization in the cal.com platform. this endpoint allows for the definition of various types of attributes (text, number, single select, or multi-select) that can be used to customize the behavior and data collection within the organization's cal.com instance. it's particularly useful for adding new fields to event bookings, user profiles, or other customizable areas of the application. the attribute creation process requires specifying the attribute's name, a unique slug, its data type, and any associated options for select-type attributes. this endpoint should be used when setting up new organizational features, expanding data collection capabilities, or implementing custom workflows within cal.com. it's important to note that while the attribute is created with this call, additional steps may be needed to integrate it into specific areas of the cal.com interface or functionality.
+
+**Action Parameters**
+
+<ParamField path="orgId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="options" type="array" required={true}>
+</ParamField>
+
+<ParamField path="enabled" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_DELETE_EVENT_TYPE_IN_TEAM">
+Deletes a specific event type associated with a team in the cal scheduling system. this endpoint should be used when you need to permanently remove an event type configuration from a team's available scheduling options. it's particularly useful for cleaning up outdated or unused event types, or when restructuring a team's scheduling workflow. the operation is irreversible, so it should be used with caution. this endpoint doesn't return any data upon successful deletion, typically responding with a 204 no content status. it's important to note that deleting an event type will affect any existing schedules or integrations that rely on this event type, so ensure all dependencies are addressed before deletion.
+
+**Action Parameters**
+
+<ParamField path="teamId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="eventTypeId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_CREATE_OAUTH_CLIENT_WEBHOOK_CONFIGURATION">
+Creates a new webhook for a specific oauth client in cal.com, enabling real-time notifications for various booking and meeting events. this endpoint allows you to configure custom event triggers, specify a subscriber url for receiving notifications, and optionally customize the payload template. use this when you need to integrate cal.com events with external systems or automate workflows based on scheduling activities. the webhook can be set to active immediately or created in an inactive state for later activation. proper configuration of triggers and the subscriber url is crucial for effective event monitoring and integration.
+
+**Action Parameters**
+
+<ParamField path="clientId" type="string" required={true}>
+</ParamField>
+
+<ParamField path="payloadTemplate" type="string">
+</ParamField>
+
+<ParamField path="active" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="subscriberUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="triggers" type="string" required={true}>
+</ParamField>
+
+<ParamField path="secret" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CAL_GET_ALL_TIMEZONES">
+The get timezones endpoint retrieves a comprehensive list of valid time zone codes and ids supported by the cal scheduling api. this endpoint is essential for applications that need to manage appointments and events across different geographical regions. it provides the necessary data to ensure accurate time representation and conversion when scheduling events or displaying times to users in various locations. use this endpoint when you need to populate timezone selection dropdowns, validate user-inputted timezones, or synchronize timezone information across your application. the returned list can be used to localize event times, ensure correct timestamp generation, and facilitate scheduling for participants in different time zones. while the endpoint provides timezone information, it does not offer details about daylight saving time transitions or utc offsets for specific dates. for such precise time calculations, additional processing or separate api calls may be necessary.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,146 @@
+---
+title: "Codeinterpreter"
+subtitle: "Learn how to use Codeinterpreter with Composio"
+---
+
+
+## Overview
+
+### Enum
+`CODEINTERPRETER`
+
+### Description
+CodeInterpreter extends Python-based coding environments with integrated data analysis, enabling developers to run scripts, visualize results, and prototype solutions inside supported platforms
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="CODEINTERPRETER_UPLOAD_FILE_CMD">
+Upload a file to the sandbox environment. the files should be uploaded to the /home/user folder.
+
+**Action Parameters**
+
+<ParamField path="sandbox_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object" required={true}>
+</ParamField>
+
+<ParamField path="destination_path" type="string" required={true}>
+</ParamField>
+
+<ParamField path="overwrite" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODEINTERPRETER_EXECUTE_CODE">
+Execute python code in a sandbox and return any result, stdout, stderr, and error. use /home/user folder to write/read files. try to not use plt.show() as the code is executed remotely. use files for image/chart output instead.
+
+**Action Parameters**
+
+<ParamField path="sandbox_id" type="string">
+</ParamField>
+
+<ParamField path="code_to_execute" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeout" type="integer" default="60">
+</ParamField>
+
+<ParamField path="keep_alive" type="integer" default="300">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODEINTERPRETER_GET_FILE_CMD">
+Get a file from the sandbox and returns the file. the files should be read from /home/user folder.
+
+**Action Parameters**
+
+<ParamField path="sandbox_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_path" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CODEINTERPRETER_RUN_TERMINAL_CMD">
+Run a command in the terminal and returns the stdout, stderr, and error code. use /home/user folder to write/read files.
+
+**Action Parameters**
+
+<ParamField path="sandbox_id" type="string">
+</ParamField>
+
+<ParamField path="command" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="keep_alive" type="integer" default="300">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,3803 @@
+---
+title: "Intercom"
+subtitle: "Learn how to use Intercom with Composio"
+---
+
+
+## Overview
+
+### Enum
+`INTERCOM`
+
+### Description
+A messaging platform that allows businesses to communicate with
+    prospective and existing customers within their app, on their website,
+    through social media, or via email.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="read_user,write_user,read_company,write_company,read_conversation,write_conversation,read_admin,write_admin,read_tag,write_tag,read_event,write_event,read_segment,write_segment,read_count,write_count,read_data_attribute,write_data_attribute,read_ticket,write_ticket,read_team,write_team,read_note,write_note,read_news,write_news,read_article,write_article,read_webhook,write_webhook,offline_access">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.intercom.io">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="INTERCOM_LIST_ATTACHED_SEGMENTS_FOR_COMPANIES">
+You can fetch a list of all segments that belong to a company.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_CREATE_A_COLLECTION">
+You can create a new collection by making a post request to `https://api.intercom.io/help center/collections.`
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__description" type="string">
+</ParamField>
+
+<ParamField path="parent_id" type="string">
+</ParamField>
+
+<ParamField path="help_center_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_ACTIVITY_LOGS">
+You can get a log of activities by all admins in an app.
+
+**Action Parameters**
+
+<ParamField path="created_at_after" type="string" required={true}>
+</ParamField>
+
+<ParamField path="created_at_before" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_GET_A_CONTACT">
+You can fetch the details of a single contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_A_HELP_CENTER">
+You can fetch the details of a single help center by making a get request to `https://api.intercom.io/help center/help center/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_ADMINS">
+You can fetch a list of admins for a given workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_CREATE_AN_ARTICLE">
+You can create a new article by making a post request to `https://api.intercom.io/articles`.
+
+**Action Parameters**
+
+<ParamField path="title" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="body" type="string">
+</ParamField>
+
+<ParamField path="author_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="parent_id" type="integer">
+</ParamField>
+
+<ParamField path="parent_type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_UPDATE_A_CONTACT">
+You can update an existing contact (ie. user or lead).
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_UPDATE_AN_ARTICLE">
+You can update the details of a single article by making a put request to `https://api.intercom.io/articles/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="body" type="string">
+</ParamField>
+
+<ParamField path="author_id" type="integer">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="parent_id" type="string">
+</ParamField>
+
+<ParamField path="parent_type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ar__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bg__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__bs__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ca__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__cs__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__da__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__de__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__el__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__en__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__es__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__et__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fi__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__fr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__he__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__hu__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__id__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__it__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ja__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ko__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lt__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__lv__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__mn__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nb__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__nl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ro__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__ru__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sl__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__sv__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__tr__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__vi__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__url" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__title" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__body" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__author__id" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__state" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__created__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__updated__at" type="integer">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_AN_ADMIN">
+You can retrieve the details of a single admin.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_DELETE_A_COLLECTION">
+You can delete a single collection by making a delete request to `https://api.intercom.io/collections/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_ARTICLES">
+You can fetch a list of all articles by making a get request to `https://api.intercom.io/articles`. &gt; 📘 how are the articles sorted and ordered? &gt; &gt; articles will be returned in descending order on the `updated at` attribute. this means if you need to iterate through results then we'll show the most recently updated articles first.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_SUBSCRIPTIONS_FOR_A_CONTACT">
+You can fetch a list of subscription types that are attached to a contact. these can be subscriptions that a user has 'opted-in' to or has 'opted-out' from, depending on the subscription type. this will return a list of subscription type objects that the contact is associated with. the data property will show a combined list of: 1.opt-out subscription types that the user has opted-out from. 2.opt-in subscription types that the user has opted-in to receiving.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_DELETE_A_CONTACT">
+You can delete a single contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_A_COMPANY_BY_ID">
+You can fetch a single company.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_SEARCH_FOR_ARTICLES">
+You can search for articles by making a get request to `https://api.intercom.io/articles/search`.
+
+**Action Parameters**
+
+<ParamField path="phrase" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="help_center_id" type="integer">
+</ParamField>
+
+<ParamField path="highlight" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ATTACHED_COMPANIES_FOR_CONTACT">
+You can fetch a list of companies that are associated to a contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_A_COLLECTION">
+You can fetch the details of a single collection by making a get request to `https://api.intercom.io/help center/collections/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_NOTES">
+You can fetch a list of notes that are associated to a contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_UPDATE_A_COLLECTION">
+You can update the details of a single collection by making a put request to `https://api.intercom.io/collections/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ar__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bg__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__bs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ca__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__cs__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__da__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__de__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__el__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__en__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__es__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__et__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__fr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__he__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__hu__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__id__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__it__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ja__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ko__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__lv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__mn__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nb__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__nl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ro__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__ru__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sl__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__sv__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__tr__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__vi__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__pt__BR__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__CN__description" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__type" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__name" type="string">
+</ParamField>
+
+<ParamField path="translated__content__zh__TW__description" type="string">
+</ParamField>
+
+<ParamField path="parent_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_IDENTIFY_AN_ADMIN">
+You can view the currently authorised admin along with the embedded app object (a "workspace" in legacy terminology). &gt; 🚧 single sign on &gt; &gt; if you are building a custom "log in with intercom" flow for your site, and you call the `/me` endpoint to identify the logged-in user, you should not accept any sign-ins from users with unverified email addresses as it poses a potential impersonation security risk.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_REMOVE_SUBSCRIPTION_FROM_A_CONTACT">
+You can remove a specific subscription from a contact. this will return a subscription type model for the subscription type that was removed from the contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_HELP_CENTERS">
+You can list all help centers by making a get request to `https://api.intercom.io/help center/help centers`.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_CREATE_A_NOTE">
+You can add a note to a single contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="body" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contact_id" type="string">
+</ParamField>
+
+<ParamField path="admin_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_DELETE_A_COMPANY">
+You can delete a single company.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_UPDATE_A_COMPANY">
+You can update a single company using the intercom provisioned `id`. `{\% admonition type=`attention` name=`using `company id``_\%}` when updating a company it is not possible to update `company id`. this can only be set once upon creation of the company. `{\% /admonition_\%}`
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_COMPANIES">
+You can list companies. the company list is sorted by the `last request at` field and by default is ordered descending, most recently requested first. note that the api does not include companies who have no associated users in list responses. when using the companies endpoint and the pages object to iterate through the returned companies, there is a limit of 10,000 companies that can be returned. if you need to list or iterate on more than 10,000 companies, please use the [scroll api](https://developers.intercom.com/reference#iterating-over-all-companies). `{\% admonition type=`warning` name=`pagination`_\%}` you can use pagination to limit the number of results returned. the default is `20` results per page. see the [pagination section](https://developers.intercom.com/docs/build-an-integration/learn-more/rest-apis/pagination/#pagination-for-list-apis) for more details on how to use the `starting after` param. `{\% /admonition_\%}`
+
+**Action Parameters**
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+<ParamField path="order" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_DETACH_A_CONTACT_FROM_A_COMPANY">
+You can detach a company from a single contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_COMPANIES">
+You can fetch a single company by passing in `company id` or `name`. `https://api.intercom.io/companies?name=`{name}`` `https://api.intercom.io/companies?company id=`{company_id}`` you can fetch all companies and filter by `segment id` or `tag id` as a query parameter. `https://api.intercom.io/companies?tag id=`{tag_id}`` `https://api.intercom.io/companies?segment id=`{segment_id}``
+
+**Action Parameters**
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="company_id" type="string">
+</ParamField>
+
+<ParamField path="tag_id" type="string">
+</ParamField>
+
+<ParamField path="segment_id" type="string">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_SCROLL_OVER_ALL_COMPANIES">
+The `list all companies` functionality does not work well for huge datasets, and can result in errors and performance problems when paging deeply. the scroll api provides an efficient mechanism for iterating over all companies in a dataset. - each app can only have 1 scroll open at a time. you'll get an error message if you try to have more than one open per app. you can get the first page of companies by simply sending a get request to the scroll endpoint. for subsequent requests you will need to use the scroll parameter from the response type="danger" name="scroll network timeouts". since scroll is often used on large datasets network errors such as timeouts can be encountered. when this occurs you will see a http 500 error with the following message: "request failed due to an internal network error. please restart the scroll operation." if this happens, you will need to restart your scroll query.
+
+**Action Parameters**
+
+<ParamField path="scroll_param" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_ADD_SUBSCRIPTION_TO_A_CONTACT">
+You can add a specific subscription to a contact. in intercom, we have two different subscription types based on user consent - opt-out and opt-in: 1.attaching a contact to an opt-out subscription type will opt that user out from receiving messages related to that subscription type. 2.attaching a contact to an opt-in subscription type will opt that user in to receiving messages related to that subscription type. this will return a subscription type model for the subscription type that was added to the contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="consent_type" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_TAGS_ATTACHED_TO_A_CONTACT">
+You can fetch a list of all tags that are attached to a specific contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_MERGE_A_LEAD_AND_A_USER">
+You can merge a contact with a `role` of `lead` into a contact with a `role` of `user`.
+
+**Action Parameters**
+
+<ParamField path="from" type="string">
+</ParamField>
+
+<ParamField path="into" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ATTACHED_SEGMENTS_FOR_CONTACT">
+You can fetch a list of segments that are associated to a contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_ATTACH_A_CONTACT_TO_A_COMPANY">
+You can attach a company to a single contact.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_ADD_TAG_TO_A_CONTACT">
+You can tag a specific contact. this will return a tag object for the tag that was added to the contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_SET_AN_ADMIN_TO_AWAY">
+You can set an admin as away for the inbox.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="away_mode_enabled" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="away_mode_reassign" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ALL_COLLECTIONS">
+You can fetch a list of all collections by making a get request to `https://api.intercom.io/help center/collections`. collections will be returned in descending order on the `updated at` attribute. this means if you need to iterate through results then we'll show the most recently updated collections first.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_CREATE_OR_UPDATE_A_COMPANY">
+You can create or update a company. companies will be only visible in intercom when there is at least one associated user. companies are looked up via `company id` in a `post` request, if not found via `company id`, the new company will be created, if found, that company will be updated. `{\% admonition type=`attention` name=`using `company id``_\%}` you can set a unique `company id` value when creating a company. however, it is not possible to update `company id`. be sure to set a unique value once upon creation of the company. `{\% /admonition_\%}`
+
+**Action Parameters**
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="company_id" type="string">
+</ParamField>
+
+<ParamField path="plan" type="string">
+</ParamField>
+
+<ParamField path="size" type="integer">
+</ParamField>
+
+<ParamField path="website" type="string">
+</ParamField>
+
+<ParamField path="industry" type="string">
+</ParamField>
+
+<ParamField path="custom_attributes" type="object">
+</ParamField>
+
+<ParamField path="remote_created_at" type="integer">
+</ParamField>
+
+<ParamField path="monthly_spend" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_DELETE_AN_ARTICLE">
+You can delete a single article by making a delete request to `https://api.intercom.io/articles/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_RETRIEVE_AN_ARTICLE">
+You can fetch the details of a single article by making a get request to `https://api.intercom.io/articles/`.
+
+**Action Parameters**
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_LIST_ATTACHED_CONTACTS">
+You can fetch a list of all contacts that belong to a company.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="INTERCOM_REMOVE_TAG_FROM_A_CONTACT">
+You can remove tag from a specific contact. this will return a tag object for the tag that was removed from the contact.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

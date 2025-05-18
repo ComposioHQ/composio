@@ -1,0 +1,499 @@
+---
+title: "Googlecalendar"
+subtitle: "Learn how to use Googlecalendar with Composio"
+---
+
+
+## Overview
+
+### Enum
+`GOOGLECALENDAR`
+
+### Description
+Google Calendar is a time-management and scheduling calendar service developed by Google.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="BEARER_TOKEN">
+<ParamField path="token" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="GOOGLECALENDAR_GET_CURRENT_DATE_TIME">
+Action to get the current date and time of a specified timezone, given its utc offset value.
+
+**Action Parameters**
+
+<ParamField path="timezone" type="number">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_QUICK_ADD">
+Create a new event in a google calendar based on a simple text string like 'appointment at somewhere on june 3rd 10am-10:25am' you can only give title and timeslot here. no recurring meetings and no attendee can be added here. this is not a preferred endpoint. only use this if no other endpoint is possible.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+<ParamField path="text" type="string">
+</ParamField>
+
+<ParamField path="send_updates" type="string" default="none">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_FIND_EVENT">
+Find events in a google calendar based on a search query.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="max_results" type="integer" default="10">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="show_deleted" type="boolean">
+</ParamField>
+
+<ParamField path="single_events" type="boolean" default="True">
+</ParamField>
+
+<ParamField path="timeMax" type="string">
+</ParamField>
+
+<ParamField path="timeMin" type="string">
+</ParamField>
+
+<ParamField path="updated_min" type="string">
+</ParamField>
+
+<ParamField path="event_types" type="array" default="['default', 'outOfOffice', 'focusTime', 'workingLocation']">
+</ParamField>
+
+<ParamField path="page_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_UPDATE_EVENT">
+Update an existing event in a google calendar.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="eventType" type="string" default="default">
+</ParamField>
+
+<ParamField path="create_meeting_room" type="boolean">
+</ParamField>
+
+<ParamField path="guestsCanSeeOtherGuests" type="boolean">
+</ParamField>
+
+<ParamField path="guestsCanInviteOthers" type="boolean">
+</ParamField>
+
+<ParamField path="location" type="string">
+</ParamField>
+
+<ParamField path="summary" type="string">
+</ParamField>
+
+<ParamField path="transparency" type="string" default="opaque">
+</ParamField>
+
+<ParamField path="visibility" type="string" default="default">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="recurrence" type="array">
+</ParamField>
+
+<ParamField path="guests_can_modify" type="boolean">
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+<ParamField path="send_updates" type="boolean">
+</ParamField>
+
+<ParamField path="start_datetime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="event_duration_hour" type="integer">
+</ParamField>
+
+<ParamField path="event_duration_minutes" type="integer" default="30">
+</ParamField>
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_PATCH_CALENDAR">
+Action to update a google calendar based on the provided calendar id and other required and optional parameters. note that 'summary' is a mandatory parameter. use googlecalendar list calendars action to get the list of calendars and their ids.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="location" type="string">
+</ParamField>
+
+<ParamField path="summary" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_FIND_FREE_SLOTS">
+Find free slots in a google calendar based on for a specific time period.
+
+**Action Parameters**
+
+<ParamField path="time_min" type="string">
+</ParamField>
+
+<ParamField path="time_max" type="string">
+</ParamField>
+
+<ParamField path="timezone" type="string" default="UTC">
+</ParamField>
+
+<ParamField path="group_expansion_max" type="integer" default="100">
+</ParamField>
+
+<ParamField path="calendar_expansion_max" type="integer" default="50">
+</ParamField>
+
+<ParamField path="items" type="array" default="['primary']">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_REMOVE_ATTENDEE">
+Remove an attendee from an existing event in a google calendar.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="attendee_email" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_LIST_CALENDARS">
+Action to list all google calendars from the user's calendar list with pagination.
+
+**Action Parameters**
+
+<ParamField path="max_results" type="integer" default="10">
+</ParamField>
+
+<ParamField path="min_access_role" type="string">
+</ParamField>
+
+<ParamField path="page_token" type="string">
+</ParamField>
+
+<ParamField path="show_deleted" type="boolean">
+</ParamField>
+
+<ParamField path="show_hidden" type="boolean">
+</ParamField>
+
+<ParamField path="sync_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_DUPLICATE_CALENDAR">
+Action to duplicate a google calendar based on the provided summary. the duplicated calendar can be used similarly to manage other goals.
+
+**Action Parameters**
+
+<ParamField path="summary" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_GET_CALENDAR">
+Action to fetch a calendar based on the provided calendar id.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_CREATE_EVENT">
+Create a new event in a google calendar.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="eventType" type="string" default="default">
+</ParamField>
+
+<ParamField path="create_meeting_room" type="boolean">
+</ParamField>
+
+<ParamField path="guestsCanSeeOtherGuests" type="boolean">
+</ParamField>
+
+<ParamField path="guestsCanInviteOthers" type="boolean">
+</ParamField>
+
+<ParamField path="location" type="string">
+</ParamField>
+
+<ParamField path="summary" type="string">
+</ParamField>
+
+<ParamField path="transparency" type="string" default="opaque">
+</ParamField>
+
+<ParamField path="visibility" type="string" default="default">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="recurrence" type="array">
+</ParamField>
+
+<ParamField path="guests_can_modify" type="boolean">
+</ParamField>
+
+<ParamField path="attendees" type="array">
+</ParamField>
+
+<ParamField path="send_updates" type="boolean">
+</ParamField>
+
+<ParamField path="start_datetime" type="string" required={true}>
+</ParamField>
+
+<ParamField path="event_duration_hour" type="integer">
+</ParamField>
+
+<ParamField path="event_duration_minutes" type="integer" default="30">
+</ParamField>
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="GOOGLECALENDAR_DELETE_EVENT">
+Delete an event from a google calendar.
+
+**Action Parameters**
+
+<ParamField path="calendar_id" type="string" default="primary">
+</ParamField>
+
+<ParamField path="event_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

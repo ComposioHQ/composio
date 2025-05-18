@@ -1,0 +1,120 @@
+---
+title: "Entelligence"
+subtitle: "Learn how to use Entelligence with Composio"
+---
+
+
+## Overview
+
+### Enum
+`ENTELLIGENCE`
+
+### Description
+Entelligence leverages artificial intelligence to provide insights, recommendations, and predictive analytics for businesses seeking data-driven decision-making capabilities
+
+### Authentication Details
+
+<Accordion title="NO_AUTH">
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="ENTELLIGENCE_INTERACT_WITH_THE_REPOSITORY_AGENT">
+Send a question and related information to the repository agent and receive a streaming response
+
+**Action Parameters**
+
+<ParamField path="question" type="string" required={true}>
+</ParamField>
+
+<ParamField path="history" type="array" required={true}>
+</ParamField>
+
+<ParamField path="vectorDBUrl" type="string" required={true}>
+</ParamField>
+
+<ParamField path="githubUsername" type="string">
+</ParamField>
+
+<ParamField path="username" type="string">
+</ParamField>
+
+<ParamField path="advancedAgent" type="boolean" default="True">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="ENTELLIGENCE_ADD_A_NEW_REPOSITORY">
+Add a new repository to the system with specified details
+
+**Action Parameters**
+
+<ParamField path="Name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="Url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="IsPublic" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="UserUUID" type="string">
+</ParamField>
+
+<ParamField path="OrganizationUUID" type="string">
+</ParamField>
+
+<ParamField path="VectorDBURL" type="string">
+</ParamField>
+
+<ParamField path="IsMergedRepo" type="boolean">
+</ParamField>
+
+<ParamField path="DocumentationUrl" type="string">
+</ParamField>
+
+<ParamField path="Branch" type="string">
+</ParamField>
+
+<ParamField path="AccessToken" type="string">
+</ParamField>
+
+<ParamField path="IngestPrs" type="boolean">
+</ParamField>
+
+<ParamField path="IngestIssues" type="boolean">
+</ParamField>
+
+<ParamField path="IngestDocs" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

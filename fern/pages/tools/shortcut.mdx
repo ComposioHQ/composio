@@ -1,0 +1,3980 @@
+---
+title: "Shortcut"
+subtitle: "Learn how to use Shortcut with Composio"
+---
+
+
+## Overview
+
+### Enum
+`SHORTCUT`
+
+### Description
+Shortcut aligns product development work with company objectives so teams can execute with a shared purpose.
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.app.shortcut.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="SHORTCUT_GET_FILE">
+Get file returns information about the selected uploadedfile.
+
+**Action Parameters**
+
+<ParamField path="file__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_EPIC_COMMENTS">
+Get a list of all comments on an epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_MILESTONES">
+Search milestones lets you search milestones based on desired parameters. since ordering of results can change over time (due to search ranking decay, new milestones being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_CATEGORY">
+Create category allows you to create a new category in shortcut.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_ITERATION">
+The createiteration endpoint allows you to create a new iteration in shortcut, which represents a time-boxed period for completing a set of stories or tasks. this endpoint is crucial for teams using agile methodologies, enabling them to plan and track progress over specific time periods. use this endpoint when setting up sprint cycles, planning releases, or organizing work into manageable timeframes. the endpoint requires essential information such as the iteration's name and date range, while also offering options to add followers, associate groups, and attach labels for better organization and tracking. it's important to note that while multiple groups can be added via the api, the current web ui only displays one group association. this endpoint should not be used for modifying existing iterations; instead, use the dedicated update endpoint for such changes.
+
+**Action Parameters**
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="group_ids" type="array">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="end_date" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_PROJECT">
+Create project is used to create a new shortcut project.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start_time" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="iteration_length" type="integer">
+</ParamField>
+
+<ParamField path="abbreviation" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DISABLE_STORY_TEMPLATES">
+Disables the story template feature for the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_STORY_COMMENT">
+Get comment is used to get comment information.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_STORIES">
+Search stories lets you search stories based on desired parameters. since ordering of stories can change over time (due to search ranking decay, new stories being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_MILESTONE">
+(deprecated: use 'create objective') create milestone allows you to create a new milestone in shortcut.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_EPIC_COMMENT">
+This endpoint allows you to create a threaded comment on an epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="author_id" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_STORY">
+Create story is used to add a new story to your shortcut workspace. this endpoint requires that either **workflow state id** or **project id** be provided, but will reject the request if both or neither are specified. the workflow state id has been marked as required and is the recommended field to specify because we are in the process of sunsetting projects in shortcut.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="story_links" type="array">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="story_type" type="string">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="move_to" type="string">
+</ParamField>
+
+<ParamField path="file_ids" type="array">
+</ParamField>
+
+<ParamField path="source_task_id" type="integer">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comments" type="array">
+</ParamField>
+
+<ParamField path="epic_id" type="integer">
+</ParamField>
+
+<ParamField path="story_template_id" type="string">
+</ParamField>
+
+<ParamField path="external_links" type="array">
+</ParamField>
+
+<ParamField path="sub_tasks" type="array">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="iteration_id" type="integer">
+</ParamField>
+
+<ParamField path="tasks" type="array">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_id" type="integer">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="estimate" type="integer">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="linked_file_ids" type="array">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_STORY_FROM_TEMPLATE">
+Create story from template is used to add a new story derived from a template to your shortcut workspace.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="story_links" type="array">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="external_links_add" type="array">
+</ParamField>
+
+<ParamField path="story_type" type="string">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="move_to" type="string">
+</ParamField>
+
+<ParamField path="file_ids" type="array">
+</ParamField>
+
+<ParamField path="source_task_id" type="integer">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="file_ids_add" type="array">
+</ParamField>
+
+<ParamField path="file_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="comments" type="array">
+</ParamField>
+
+<ParamField path="follower_ids_add" type="array">
+</ParamField>
+
+<ParamField path="epic_id" type="integer">
+</ParamField>
+
+<ParamField path="story_template_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="external_links" type="array">
+</ParamField>
+
+<ParamField path="follower_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="sub_tasks" type="array">
+</ParamField>
+
+<ParamField path="linked_file_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="iteration_id" type="integer">
+</ParamField>
+
+<ParamField path="custom_fields_remove" type="array">
+</ParamField>
+
+<ParamField path="tasks" type="array">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="labels_add" type="array">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_id" type="integer">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="estimate" type="integer">
+</ParamField>
+
+<ParamField path="owner_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="custom_fields_add" type="array">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="linked_file_ids_add" type="array">
+</ParamField>
+
+<ParamField path="linked_file_ids" type="array">
+</ParamField>
+
+<ParamField path="labels_remove" type="array">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+<ParamField path="owner_ids_add" type="array">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="external_links_remove" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_MILESTONE_EPICS">
+(deprecated: use 'list objective epics') list all of the epics within the milestone.
+
+**Action Parameters**
+
+<ParamField path="milestone__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_ITERATION_STORIES">
+Get a list of all stories in an iteration.
+
+**Action Parameters**
+
+<ParamField path="iteration__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UNLINK_COMMENT_THREAD_FROM_SLACK">
+Unlinks a comment from its linked slack thread (comment replies and slack replies will no longer be synced)
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_STORY_REACTION">
+Create a reaction to a story comment.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="emoji" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_EPIC_COMMENT">
+This endpoint returns information about the selected epic comment.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_MULTIPLE_STORIES">
+Create multiple stories allows you to create multiple stories in a single request using the same syntax as [create story](https://developer.shortcut.com/api/rest/v3#create-story).
+
+**Action Parameters**
+
+<ParamField path="stories" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_CATEGORY_MILESTONES">
+List category milestones returns a list of all milestones with the category.
+
+**Action Parameters**
+
+<ParamField path="category__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_CURRENT_MEMBER_INFO">
+Returns information about the authenticated member.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_EPIC">
+Get epic returns information about the selected epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_TASK">
+Returns information about a chosen task.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="task__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_ENABLE_ITERATIONS">
+Enables iterations for the current workspace
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_STORY">
+Update story can be used to update story properties.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="pull_request_ids" type="array">
+</ParamField>
+
+<ParamField path="story_type" type="string">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="move_to" type="string">
+</ParamField>
+
+<ParamField path="file_ids" type="array">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="epic_id" type="integer">
+</ParamField>
+
+<ParamField path="external_links" type="array">
+</ParamField>
+
+<ParamField path="branch_ids" type="array">
+</ParamField>
+
+<ParamField path="commit_ids" type="array">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="iteration_id" type="integer">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_id" type="integer">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="estimate" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="linked_file_ids" type="array">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_STORY_REACTION">
+Delete a reaction from any story comment.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="emoji" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_CUSTOM_FIELD">
+Update custom field can be used to update the definition of a custom field. the order of items in the 'values' collection is interpreted to be their ascending sort order.to delete an existing enum value, simply omit it from the 'values' collection. new enum values may be created inline by including an object in the 'values' collection having a 'value' entry with no 'id' (eg. `{`value`: `mynewvalue`, `color key`:_`green`}`).
+
+**Action Parameters**
+
+<ParamField path="custom__field__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="enabled" type="boolean">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="values" type="array">
+</ParamField>
+
+<ParamField path="icon_set_identifier" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="before_id" type="string">
+</ParamField>
+
+<ParamField path="after_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_KEY_RESULT">
+Get key result returns information about a chosen key result.
+
+**Action Parameters**
+
+<ParamField path="key__result__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_EPIC">
+Update epic can be used to update numerous fields in the epic. the only required parameter is epic id, which can be found in the shortcut ui.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="objective_ids" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="planned_start_date" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="milestone_id" type="integer">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="epic_state_id" type="integer">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="group_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_OBJECTIVE">
+Get objective returns information about a chosen objective.
+
+**Action Parameters**
+
+<ParamField path="objective__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_ITERATION">
+This endpoint allows you to update an existing iteration in shortcut. it provides comprehensive control over various aspects of an iteration, including its metadata, associated members and groups, labels, and timeframe. use this endpoint when you need to modify any details of an ongoing or upcoming iteration, such as adjusting dates, adding followers, or updating labels. the endpoint is particularly useful for project managers or team leads who need to refine iteration details as the project progresses. note that while you can update multiple aspects of an iteration in a single call, only the fields you include in the request will be modified; omitted fields will retain their current values.
+
+**Action Parameters**
+
+<ParamField path="iteration__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="group_ids" type="array">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="start_date" type="string">
+</ParamField>
+
+<ParamField path="end_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_STORY_COMMENT">
+Create comment allows you to create a comment on any story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="author_id" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="parent_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_LABEL">
+Update label allows you to replace a label name with another name. if you try to name a label something that already exists, you will receive a 422 response.
+
+**Action Parameters**
+
+<ParamField path="label__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_PROJECT">
+Update project can be used to change properties of a project.
+
+**Action Parameters**
+
+<ParamField path="project__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="days_to_thermometer" type="integer">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="show_thermometer" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="abbreviation" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_ENTITY_TEMPLATE">
+Update an entity template's name or its contents.
+
+**Action Parameters**
+
+<ParamField path="entity__template__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="story__contents__description" type="string">
+</ParamField>
+
+<ParamField path="story__contents__labels" type="array">
+</ParamField>
+
+<ParamField path="story__contents__story__type" type="string">
+</ParamField>
+
+<ParamField path="story__contents__custom__fields" type="array">
+</ParamField>
+
+<ParamField path="story__contents__file__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__name" type="string">
+</ParamField>
+
+<ParamField path="story__contents__epic__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__external__links" type="array">
+</ParamField>
+
+<ParamField path="story__contents__iteration__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__tasks" type="array">
+</ParamField>
+
+<ParamField path="story__contents__group__id" type="string">
+</ParamField>
+
+<ParamField path="story__contents__workflow__state__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__follower__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__owner__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__estimate" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__project__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__linked__file__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__deadline" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_ENTITY_TEMPLATE">
+Create a new entity template for the workspace.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="author_id" type="string">
+</ParamField>
+
+<ParamField path="story__contents__description" type="string">
+</ParamField>
+
+<ParamField path="story__contents__labels" type="array">
+</ParamField>
+
+<ParamField path="story__contents__story__type" type="string">
+</ParamField>
+
+<ParamField path="story__contents__custom__fields" type="array">
+</ParamField>
+
+<ParamField path="story__contents__file__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__name" type="string">
+</ParamField>
+
+<ParamField path="story__contents__epic__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__external__links" type="array">
+</ParamField>
+
+<ParamField path="story__contents__iteration__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__tasks" type="array">
+</ParamField>
+
+<ParamField path="story__contents__group__id" type="string">
+</ParamField>
+
+<ParamField path="story__contents__workflow__state__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__follower__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__owner__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__estimate" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__project__id" type="integer">
+</ParamField>
+
+<ParamField path="story__contents__linked__file__ids" type="array">
+</ParamField>
+
+<ParamField path="story__contents__deadline" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_CUSTOM_FIELD">
+Retrieves detailed information about a specific custom field in shortcut using its unique public identifier. this endpoint allows developers to fetch the properties and configuration of a custom field, which can include its name, type, possible values, and any other associated metadata. it's particularly useful when you need to inspect or validate a custom field's settings programmatically, or when integrating custom field data into external systems. the endpoint should be used when detailed information about a single custom field is required, rather than for bulk operations or listing all custom fields. note that this endpoint only provides read access to custom field data and cannot be used to modify the custom field.
+
+**Action Parameters**
+
+<ParamField path="custom__field__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_OBJECTIVE">
+Create objective allows you to create a new objective in shortcut.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH">
+Search lets you search epics and stories based on desired parameters. since ordering of the results can change over time (due to search ranking decay, new epics and stories being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_STORY_HISTORY">
+Retrieves the complete history of changes for a specific story in the shortcut project management system. this endpoint allows users to track all modifications, updates, and revisions made to a story over time, providing a comprehensive timeline of its evolution. it's particularly useful for project managers, team members, and stakeholders who need to understand how a story has changed, who made the changes, and when they occurred. the endpoint returns a chronological list of all events and modifications associated with the specified story, helping teams maintain transparency and accountability in their project workflows. note that this endpoint focuses solely on the history of a single story and does not provide information about related stories or overall project status.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_GROUP">
+Updates an existing group in the shortcut workspace. this endpoint allows you to modify various properties of a group, including its name, description, color, members, and associated workflows. use this when you need to change group details, add or remove members, or update the group's visual representation. it's particularly useful for team reorganizations, project changes, or general maintenance of your shortcut workspace structure. note that while many fields are optional, you should include any fields you wish to modify; omitted fields will retain their current values.
+
+**Action Parameters**
+
+<ParamField path="group__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="display_icon_id" type="string">
+</ParamField>
+
+<ParamField path="mention_name" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="color_key" type="string">
+</ParamField>
+
+<ParamField path="member_ids" type="array">
+</ParamField>
+
+<ParamField path="workflow_ids" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_MILESTONES">
+(deprecated: use 'list objectives') list milestones returns a list of all milestones and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_STORY_LINK">
+Returns the stories and their relationship for the given story link.
+
+**Action Parameters**
+
+<ParamField path="story__link__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_EPIC_COMMENT">
+This endpoint allows you to delete a comment from an epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_LABEL">
+Create label allows you to create a new label in shortcut.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_GROUP">
+Creates a new group in the shortcut system with customizable properties. this endpoint allows you to set up a group with a unique mention name, display name, optional description, and various customization options. use this when you need to establish a new team, department, or any other collective within your shortcut workspace. the created group can include members, associated workflows, and visual customizations like color and icon. this endpoint is particularly useful for organizing your shortcut workspace structure, facilitating team collaboration, and streamlining workflow management. note that while member and workflow associations can be set during creation, they can also be modified later using separate endpoints.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="member_ids" type="array">
+</ParamField>
+
+<ParamField path="workflow_ids" type="array">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mention_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="color_key" type="string">
+</ParamField>
+
+<ParamField path="display_icon_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_LINKED_FILE">
+Updated linked file allows you to update properties of a previously attached linked-file.
+
+**Action Parameters**
+
+<ParamField path="linked__file__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="story_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="thumbnail_url" type="string">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="size" type="integer">
+</ParamField>
+
+<ParamField path="uploader_id" type="string">
+</ParamField>
+
+<ParamField path="url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_ENTITY_TEMPLATE">
+Deletes a specific entity template from the shortcut api. this endpoint should be used when you need to permanently remove a template that is no longer needed or is obsolete. it's important to note that this operation cannot be undone, so it should be used with caution. the deletion is performed on a single template identified by its public id, adhering to the best practice of controlling deletion on a per-resource basis. this endpoint is part of the api v3, which may include enhanced features or changes compared to previous versions.
+
+**Action Parameters**
+
+<ParamField path="entity__template__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_REPOSITORIES">
+List repositories returns a list of all repositories and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_PROJECTS">
+List projects returns a list of all projects and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_EPIC_COMMENT">
+This endpoint allows you to update a threaded comment on an epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_STORY_LINK">
+Updates the stories and/or the relationship for the given story link.
+
+**Action Parameters**
+
+<ParamField path="story__link__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="verb" type="string">
+</ParamField>
+
+<ParamField path="subject_id" type="integer">
+</ParamField>
+
+<ParamField path="object_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_TASK">
+Update task can be used to update task properties.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="task__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="complete" type="boolean">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_MEMBERS">
+Returns information about members of the workspace.
+
+**Action Parameters**
+
+<ParamField path="org__public__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_REPOSITORY">
+Get repository returns information about the selected repository.
+
+**Action Parameters**
+
+<ParamField path="repo__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_GROUPS">
+A group in our api maps to a "team" within the shortcut product. a team is a collection of users that can be associated to stories, epics, and iterations within shortcut.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_FILES">
+List files returns a list of all uploadedfiles in the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_EPIC">
+Delete epic can be used to delete the epic. the only required parameter is epic id.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_LINKED_FILE">
+Get file returns information about the selected linked file.
+
+**Action Parameters**
+
+<ParamField path="linked__file__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_EPICS">
+Search epics lets you search epics based on desired parameters. since ordering of stories can change over time (due to search ranking decay, new epics being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_STORY_COMMENT">
+Lists comments associated with a story
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_EXTERNAL_LINK_STORIES">
+Get stories which have a given external link associated with them.
+
+**Action Parameters**
+
+<ParamField path="external_link" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_ITERATIONS">
+Search iterations lets you search iterations based on desired parameters. since ordering of results can change over time (due to search ranking decay, new iterations being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_STORY">
+Delete story can be used to delete any story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_MILESTONE">
+(deprecated: use 'get objective') get milestone returns information about a chosen milestone.
+
+**Action Parameters**
+
+<ParamField path="milestone__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_ITERATIONS">
+Retrieves a list of all iterations in the shortcut project management system. iterations represent specific time periods for planning and tracking work, allowing teams to organize their development cycles. this endpoint provides comprehensive information about each iteration, including its name, start and end dates, status, and associated stories or tasks. use this endpoint when you need an overview of all iterations for project planning, progress tracking, or reporting purposes. it's particularly useful for analyzing past performance, planning future sprints, or getting a high-level view of the project timeline. note that the response may be paginated for projects with a large number of iterations, and you might need to make multiple requests to retrieve the full dataset.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_LABEL_STORIES">
+List all of the stories with the label.
+
+**Action Parameters**
+
+<ParamField path="label__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_LINKED_FILE">
+Create linked file allows you to create a new linked file in shortcut.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="story_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="thumbnail_url" type="string">
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="size" type="integer">
+</ParamField>
+
+<ParamField path="uploader_id" type="string">
+</ParamField>
+
+<ParamField path="content_type" type="string">
+</ParamField>
+
+<ParamField path="url" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_LABEL">
+Delete label can be used to delete any label.
+
+**Action Parameters**
+
+<ParamField path="label__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_CATEGORIES">
+List categories returns a list of all categories and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_EPIC_STORIES">
+Get a list of all stories in an epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_STORY_COMMENT">
+Delete a comment from any story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_FILE">
+Update file updates the properties of an uploadedfile (but not its content).
+
+**Action Parameters**
+
+<ParamField path="file__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="uploader_id" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_TASK">
+Delete task can be used to delete any previously created task on a story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="task__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_STORIES">
+List stories returns a list of all stories in a selected project and their attributes.
+
+**Action Parameters**
+
+<ParamField path="project__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_STORIES_OLD">
+Search stories lets you search stories based on desired parameters.
+
+**Action Parameters**
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="owner_id" type="string">
+</ParamField>
+
+<ParamField path="story_type" type="string">
+</ParamField>
+
+<ParamField path="epic_ids" type="array">
+</ParamField>
+
+<ParamField path="project_ids" type="array">
+</ParamField>
+
+<ParamField path="updated_at_end" type="string">
+</ParamField>
+
+<ParamField path="completed_at_end" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_types" type="array">
+</ParamField>
+
+<ParamField path="deadline_end" type="string">
+</ParamField>
+
+<ParamField path="created_at_start" type="string">
+</ParamField>
+
+<ParamField path="epic_id" type="integer">
+</ParamField>
+
+<ParamField path="label_name" type="string">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="iteration_id" type="integer">
+</ParamField>
+
+<ParamField path="label_ids" type="array">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_id" type="integer">
+</ParamField>
+
+<ParamField path="iteration_ids" type="array">
+</ParamField>
+
+<ParamField path="created_at_end" type="string">
+</ParamField>
+
+<ParamField path="deadline_start" type="string">
+</ParamField>
+
+<ParamField path="group_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+<ParamField path="estimate" type="integer">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="completed_at_start" type="string">
+</ParamField>
+
+<ParamField path="updated_at_start" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPLOAD_FILES">
+Upload files uploads one or many files and optionally associates them with a story. use the multipart/form-data content-type to upload. each `file` key should contain a separate file. each uploadedfile's name comes from the content-disposition header "filename" directive for that field.
+
+**Action Parameters**
+
+<ParamField path="story_id" type="object">
+</ParamField>
+
+<ParamField path="file0" type="object">
+</ParamField>
+
+<ParamField path="file1" type="object">
+</ParamField>
+
+<ParamField path="file2" type="object">
+</ParamField>
+
+<ParamField path="file3" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_MEMBER">
+Returns information about a member.
+
+**Action Parameters**
+
+<ParamField path="member__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="org__public__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_EPIC_COMMENT_COMMENT">
+This endpoint allows you to create a nested comment reply to an existing epic comment.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="author_id" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_LINKED_FILE">
+Delete linked file can be used to delete any previously attached linked-file.
+
+**Action Parameters**
+
+<ParamField path="linked__file__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_ENTITY_TEMPLATES">
+List all the entity templates for the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_LABEL">
+Get label returns information about the selected label.
+
+**Action Parameters**
+
+<ParamField path="label__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_TASK">
+Create task is used to create a new task in a story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string" required={true}>
+</ParamField>
+
+<ParamField path="complete" type="boolean">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_CATEGORY">
+Update category allows you to replace a category name with another name. if you try to name a category something that already exists, you will receive a 422 response.
+
+**Action Parameters**
+
+<ParamField path="category__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="color" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_OBJECTIVE_EPICS">
+List all of the epics within the objective.
+
+**Action Parameters**
+
+<ParamField path="objective__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_FILE">
+Delete file deletes a previously uploaded file.
+
+**Action Parameters**
+
+<ParamField path="file__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_PROJECT">
+Delete project can be used to delete a project. projects can only be deleted if all associated stories are moved or deleted. in the case that the project cannot be deleted, you will receive a 422 response.
+
+**Action Parameters**
+
+<ParamField path="project__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_GROUP">
+Retrieves detailed information about a specific group in the shortcut workspace using its unique public identifier. this endpoint allows developers to fetch comprehensive data about a group, including its name, type, and associated metadata. it's particularly useful when you need to access or verify group details programmatically, such as during workflow automations or when building integrations that involve group management. the endpoint provides more granular control and information compared to what's available through the web application, making it valuable for advanced group-related operations and data analysis within your shortcut projects.
+
+**Action Parameters**
+
+<ParamField path="group__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_OBJECTIVES">
+List objectives returns a list of all objectives and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_EPIC_WORKFLOW">
+Returns the epic workflow for the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_ITERATION">
+Retrieves detailed information about a specific iteration in the shortcut project management system. this endpoint allows users to fetch comprehensive data about a single iteration, including its name, status, start and end dates, associated stories, and progress metrics. it should be used when detailed information about a particular iteration is needed, such as during sprint planning, progress tracking, or retrospective analysis. the endpoint provides a snapshot of the iteration at the time of the request and does not include real-time updates. it's particularly useful for project managers, scrum masters, and team members who need to review or report on iteration-specific data. note that this endpoint only retrieves information and does not allow for modification of the iteration details.
+
+**Action Parameters**
+
+<ParamField path="iteration__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_LINKED_FILES">
+List linked files returns a list of all linked-files and their attributes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_ENABLE_STORY_TEMPLATES">
+Enables the story template feature for the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_ITERATION">
+Deletes a specific iteration from the shortcut project management system. this endpoint should be used when you need to permanently remove an iteration and all its associated data from your project workflow. it's particularly useful for cleaning up completed or cancelled iterations that are no longer needed. be cautious when using this endpoint, as the deletion is irreversible and will remove all data associated with the specified iteration. ensure you have the correct iteration id before proceeding with the deletion to avoid unintended data loss.
+
+**Action Parameters**
+
+<ParamField path="iteration__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_PROJECT">
+Get project returns information about the selected project.
+
+**Action Parameters**
+
+<ParamField path="project__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_STORY_LINK">
+Story links (called story relationships in the ui) allow you create semantic relationships between two stories. the parameters read like an active voice grammatical sentence: subject -&gt; verb -&gt; object. the subject story acts on the object story; the object story is the direct object of the sentence. the subject story "blocks", "duplicates", or "relates to" the object story. examples: - "story 5 blocks story 6” -- story 6 is now "blocked" until story 5 is moved to a done workflow state. - "story 2 duplicates story 1” -- story 2 represents the same body of work as story 1 (and should probably be archived). - "story 7 relates to story 3”
+
+**Action Parameters**
+
+<ParamField path="verb" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subject_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="object_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_CATEGORY">
+Delete category can be used to delete any category.
+
+**Action Parameters**
+
+<ParamField path="category__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_EPICS">
+List epics returns a list of all epics and their attributes.
+
+**Action Parameters**
+
+<ParamField path="includes_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_GROUP_STORIES">
+List the stories assigned to the group. (by default, limited to 1,000).
+
+**Action Parameters**
+
+<ParamField path="group__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_LABELS">
+List labels returns a list of all labels and their attributes.
+
+**Action Parameters**
+
+<ParamField path="slim" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_KEY_RESULT">
+Update key result allows updating a key result's name or initial, observed, or target values.
+
+**Action Parameters**
+
+<ParamField path="key__result__public__id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="initial__observed__value__numeric__value" type="string">
+</ParamField>
+
+<ParamField path="initial__observed__value__boolean__value" type="boolean">
+</ParamField>
+
+<ParamField path="observed__value__numeric__value" type="string">
+</ParamField>
+
+<ParamField path="observed__value__boolean__value" type="boolean">
+</ParamField>
+
+<ParamField path="target__value__numeric__value" type="string">
+</ParamField>
+
+<ParamField path="target__value__boolean__value" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_WORKFLOWS">
+Returns a list of all workflows in the workspace.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_ENTITY_TEMPLATE">
+Get entity template returns information about a given entity template.
+
+**Action Parameters**
+
+<ParamField path="entity__template__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_STORY">
+Get story returns information about a chosen story.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_MULTIPLE_STORIES">
+Update multiple stories allows you to make changes to numerous stories at once.
+
+**Action Parameters**
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="story_ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="story_type" type="string">
+</ParamField>
+
+<ParamField path="move_to" type="string">
+</ParamField>
+
+<ParamField path="follower_ids_add" type="array">
+</ParamField>
+
+<ParamField path="epic_id" type="integer">
+</ParamField>
+
+<ParamField path="external_links" type="array">
+</ParamField>
+
+<ParamField path="follower_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="iteration_id" type="integer">
+</ParamField>
+
+<ParamField path="custom_fields_remove" type="array">
+</ParamField>
+
+<ParamField path="labels_add" type="array">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="workflow_state_id" type="integer">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="estimate" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+<ParamField path="owner_ids_remove" type="array">
+</ParamField>
+
+<ParamField path="custom_fields_add" type="array">
+</ParamField>
+
+<ParamField path="project_id" type="integer">
+</ParamField>
+
+<ParamField path="labels_remove" type="array">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+<ParamField path="owner_ids_add" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_CATEGORY">
+Get category returns information about the selected category.
+
+**Action Parameters**
+
+<ParamField path="category__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_STORY_LINK">
+Removes the relationship between the stories for the given story link.
+
+**Action Parameters**
+
+<ParamField path="story__link__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_GET_WORKFLOW">
+Get workflow returns information about a chosen workflow.
+
+**Action Parameters**
+
+<ParamField path="workflow__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_CUSTOM_FIELD">
+Deletes a specific custom field from the shortcut system using its unique public identifier. this endpoint should be used when you need to permanently remove a custom field that is no longer required in your workflows or project structure. it's important to note that this operation is irreversible, and once a custom field is deleted, all data associated with it will be lost. use this endpoint with caution, ensuring that the custom field is no longer needed and that its deletion won't negatively impact any existing processes or data integrity within your shortcut instance.
+
+**Action Parameters**
+
+<ParamField path="custom__field__public__id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_LABEL_EPICS">
+List all of the epics with the label.
+
+**Action Parameters**
+
+<ParamField path="label__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_CREATE_EPIC">
+Create epic allows you to create a new epic in shortcut.
+
+**Action Parameters**
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="labels" type="array">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="objective_ids" type="array">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="planned_start_date" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="milestone_id" type="integer">
+</ParamField>
+
+<ParamField path="requested_by_id" type="string">
+</ParamField>
+
+<ParamField path="epic_state_id" type="integer">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="group_id" type="string">
+</ParamField>
+
+<ParamField path="updated_at" type="string">
+</ParamField>
+
+<ParamField path="follower_ids" type="array">
+</ParamField>
+
+<ParamField path="group_ids" type="array">
+</ParamField>
+
+<ParamField path="owner_ids" type="array">
+</ParamField>
+
+<ParamField path="external_id" type="string">
+</ParamField>
+
+<ParamField path="deadline" type="string">
+</ParamField>
+
+<ParamField path="created_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_STORY_COMMENT">
+Update comment replaces the text of the existing comment.
+
+**Action Parameters**
+
+<ParamField path="story__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_CUSTOM_FIELDS">
+Retrieves a list of all custom fields defined in the shortcut api. this endpoint allows developers to fetch information about user-defined fields that have been added to extend the functionality of standard fields in integrations. it's particularly useful when you need to understand the structure and types of custom data being used across the system. the endpoint returns details about each custom field, which may include their identifiers, names, types, and any associated metadata. use this endpoint when you need to inventory existing custom fields, prepare for data migrations, or dynamically adjust your application's data model to accommodate custom fields. note that this endpoint does not create, modify, or delete custom fields; it's purely for retrieval of existing custom field definitions.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_OBJECTIVE">
+Update objective can be used to update objective properties.
+
+**Action Parameters**
+
+<ParamField path="objective__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_MULTIPLE_STORIES">
+Delete multiple stories allows you to delete multiple archived stories at once.
+
+**Action Parameters**
+
+<ParamField path="story_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_SEARCH_OBJECTIVES">
+Search objectives lets you search objectives based on desired parameters. since ordering of results can change over time (due to search ranking decay, new objectives being created), the `next` value from the previous response can be used as the path and query string for the next page to ensure stable ordering.
+
+**Action Parameters**
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page_size" type="integer">
+</ParamField>
+
+<ParamField path="detail" type="string">
+</ParamField>
+
+<ParamField path="next" type="string">
+</ParamField>
+
+<ParamField path="entity_types" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UNLINK_PRODUCTBOARD_FROM_EPIC">
+This endpoint allows you to unlink a productboard epic.
+
+**Action Parameters**
+
+<ParamField path="epic__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_LIST_CATEGORY_OBJECTIVES">
+Returns a list of all objectives with the category.
+
+**Action Parameters**
+
+<ParamField path="category__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_MILESTONE">
+(deprecated: use 'delete objective') delete milestone can be used to delete any milestone.
+
+**Action Parameters**
+
+<ParamField path="milestone__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_UPDATE_MILESTONE">
+(deprecated: use 'update objective') update milestone can be used to update milestone properties.
+
+**Action Parameters**
+
+<ParamField path="milestone__public__id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="completed_at_override" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="started_at_override" type="string">
+</ParamField>
+
+<ParamField path="categories" type="array">
+</ParamField>
+
+<ParamField path="before_id" type="integer">
+</ParamField>
+
+<ParamField path="after_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DELETE_OBJECTIVE">
+Delete objective can be used to delete any objective.
+
+**Action Parameters**
+
+<ParamField path="objective__public__id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SHORTCUT_DISABLE_ITERATIONS">
+Disables iterations for the current workspace
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

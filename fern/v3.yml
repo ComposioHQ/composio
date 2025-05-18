@@ -1,0 +1,31 @@
+tabs:
+  docs:
+    display-name: Docs
+    icon: book
+  sdk-reference:
+    display-name: SDK Reference
+    href: https://deepwiki.com/ComposioHQ/composio
+    icon: code
+  api-reference:
+    display-name: API Reference
+    icon: server
+    skip-slug: true
+
+
+navigation:
+  - tab: docs
+    layout:
+      - section: Getting Started
+        icon: rocket
+        contents:
+          - page: Introduction
+            path: pages/v3/getting-started/welcome.mdx
+  - tab: api-reference
+    layout:
+      - section: API Reference
+        contents:
+          - api: v3
+            api-name: v3
+            skip-slug: true
+            paginated: false
+            flattened: true

@@ -1,0 +1,40 @@
+---
+title: "Zoho Mail"
+subtitle: "Learn how to use Zoho Mail with Composio"
+---
+
+
+## Overview
+
+### Enum
+`ZOHO_MAIL`
+
+### Description
+Zoho Mail is an email hosting service built with the needs of a modern business in mind.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="partner.organization">
+</ParamField>
+
+<ParamField path="extension" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.

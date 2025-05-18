@@ -1,0 +1,42 @@
+---
+title: "Exist"
+subtitle: "Learn how to use Exist with Composio"
+---
+
+
+## Overview
+
+### Enum
+`EXIST`
+
+### Description
+With Exist, you can create your own data points to track anything else
+    you want. Use it as a habit tracker, keep a record of medications and
+    symptoms, or track subjective measures like energy and stress levels.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="activity_read,activity_write,productivity_read,productivity_write,mood_read,mood_write,sleep_read,sleep_write,workouts_read,workouts_write,events_read,events_write,finance_read,finance_write,food_read,food_write,health_read,health_write,location_read,location_write,media_read,media_write,social_read,social_write,weather_read,weather_write,custom_read,custom_write,manual_read,manual_write">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://exist.io">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.

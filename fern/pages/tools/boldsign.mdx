@@ -1,0 +1,43 @@
+---
+title: "Boldsign"
+subtitle: "Learn how to use Boldsign with Composio"
+---
+
+
+## Overview
+
+### Enum
+`BOLDSIGN`
+
+### Description
+BoldSign is an easy-to-use and secure electronic signature solution.
+    With BoldSign you can quickly complete your contracts, accept offers,
+    sign NDAs, approve invoices, confirm service appointments, onboard new
+    employees, and more with just few clicks.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="openid profile email offline_access BoldSign.Documents.All">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.boldsign.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.

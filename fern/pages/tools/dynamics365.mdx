@@ -1,0 +1,601 @@
+---
+title: "Dynamics365"
+subtitle: "Learn how to use Dynamics365 with Composio"
+---
+
+
+## Overview
+
+### Enum
+`DYNAMICS365`
+
+### Description
+Dynamics 365 from Microsoft combines CRM, ERP, and productivity apps to streamline sales, marketing, customer service, and operations in one integrated platform
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="https://{{subdomain}}.api.crm.dynamics.com/user_impersonation,offline_access">
+</ParamField>
+
+<ParamField path="subdomain" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_CASE">
+Creates a new case (incident) entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="customerid_account" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="caseorigincode" type="integer">
+</ParamField>
+
+<ParamField path="prioritycode" type="integer" default="1">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_UPDATE_OPPORTUNITY">
+Updates an existing opportunity entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="opportunity_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="estimatedclosedate" type="string">
+</ParamField>
+
+<ParamField path="estimatedvalue" type="number">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="opportunityratingcode" type="integer">
+</ParamField>
+
+<ParamField path="salesstagecode" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_GET_LEAD_ACTION">
+Get lead action
+
+**Action Parameters**
+
+<ParamField path="lead_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_GET_INVOICE_ACTION">
+Get invoice action
+
+**Action Parameters**
+
+<ParamField path="invoice_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_GET_ALL_LEADS_ACTION">
+Get all leads action
+
+**Action Parameters**
+
+<ParamField path="filter" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_ACCOUNT">
+Creates a new account entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="creditonhold" type="boolean">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="revenue" type="number">
+</ParamField>
+
+<ParamField path="accountcategorycode" type="integer" default="1">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_INVOICE">
+Creates a new invoice entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+<ParamField path="price_level_id" type="string">
+</ParamField>
+
+<ParamField path="currency_id" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_UPDATE_INVOICE">
+Updates an existing invoice entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="invoice_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="totalamount" type="number">
+</ParamField>
+
+<ParamField path="duedate" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_UPDATE_CASE">
+Updates an existing case (incident) entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="case_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="prioritycode" type="integer" default="1">
+</ParamField>
+
+<ParamField path="statuscode" type="integer" default="1">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_UPDATE_SALES_ORDER">
+Updates an existing sales order entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="salesorder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="freightamount" type="number">
+</ParamField>
+
+<ParamField path="discountamount" type="number">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_OPPORTUNITY">
+Creates a new opportunity entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="customer_account" type="string">
+</ParamField>
+
+<ParamField path="estimatedclosedate" type="string">
+</ParamField>
+
+<ParamField path="estimatedvalue" type="number">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_SALES_ORDER">
+Creates a new sales order entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+<ParamField path="price_level_id" type="string">
+</ParamField>
+
+<ParamField path="currency_id" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_LEAD">
+Creates a new lead entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="firstname" type="string">
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="companyname" type="string">
+</ParamField>
+
+<ParamField path="emailaddress1" type="string">
+</ParamField>
+
+<ParamField path="telephone1" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_CREATE_CONTACT">
+Creates a new contact entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="firstname" type="string">
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="emailaddress1" type="string">
+</ParamField>
+
+<ParamField path="telephone1" type="string">
+</ParamField>
+
+<ParamField path="mobilephone" type="string">
+</ParamField>
+
+<ParamField path="jobtitle" type="string">
+</ParamField>
+
+<ParamField path="address1_city" type="string">
+</ParamField>
+
+<ParamField path="address1_stateorprovince" type="string">
+</ParamField>
+
+<ParamField path="address1_postalcode" type="string">
+</ParamField>
+
+<ParamField path="address1_country" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_GET_ALL_INVOICES_ACTION">
+Get all invoices action
+
+**Action Parameters**
+
+<ParamField path="filter" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="DYNAMICS365_DYNAMICSCRM_UPDATE_LEAD">
+Updates an existing lead entity record in dynamics crm using the web api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" default="me">
+</ParamField>
+
+<ParamField path="lead_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="subject" type="string">
+</ParamField>
+
+<ParamField path="firstname" type="string">
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="companyname" type="string">
+</ParamField>
+
+<ParamField path="emailaddress1" type="string">
+</ParamField>
+
+<ParamField path="telephone1" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

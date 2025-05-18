@@ -1,0 +1,2072 @@
+---
+title: "Supabase"
+subtitle: "Learn how to use Supabase with Composio"
+---
+
+
+## Overview
+
+### Enum
+`SUPABASE`
+
+### Description
+Supabase is an open-source backend-as-a-service providing a Postgres database, authentication, storage, and real-time subscription APIs for building modern applications
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="all">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="API_KEY">
+<ParamField path="supabase_personal_token" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="SUPABASE_DISABLES_PREVIEW_BRANCHING">
+Disables preview branching for the specified project
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_RETURNS_PROJECT_S_READONLY_MODE_STATUS">
+Retrieves the read-only status of a specific supabase project. this endpoint allows users to check whether a project is currently in read-only mode, which may affect the ability to make changes to the project's database or settings. use this endpoint when you need to verify the current operational state of a project, especially before attempting to make modifications. the read-only status can be crucial for maintenance, troubleshooting, or ensuring data integrity during critical operations. note that this endpoint only provides the status and does not allow changing the read-only state of the project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LISTS_SQL_SNIPPETS_FOR_THE_LOGGED_IN_USER">
+Retrieves a collection of code snippets from the supabase backend. this endpoint allows developers to fetch pre-defined code fragments or templates that can be used in their supabase applications. it's particularly useful for accessing commonly used database queries, functions, or other reusable code components. the endpoint returns all available snippets or a filtered set based on default criteria. use this when you need to quickly access and integrate pre-written code into your supabase project, improving development efficiency and maintaining consistency across your application. note that this endpoint does not provide functionality for creating, updating, or deleting snippets.
+
+**Action Parameters**
+
+<ParamField path="project_ref" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_PROJECT_S_CUSTOM_HOSTNAME_CONFIG">
+Retrieves the custom hostname information for a specified supabase project. this endpoint allows users to get details about the custom domain configuration associated with their project. it is useful when you need to verify the current custom hostname settings, check the status of a custom domain setup, or gather information for troubleshooting domain-related issues. the endpoint should be used when managing project settings, particularly those related to custom domain configuration. it does not modify any settings and is intended for read-only access to the custom hostname data. note that this endpoint may only return information for projects on paid plans that have access to the custom hostname feature.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_DELETES_THE_GIVEN_PROJECT">
+Deletes a specific supabase project identified by its unique reference. this endpoint should be used when you want to permanently remove a project from your supabase account, including all its associated resources such as databases, authentication settings, and storage. it's important to note that this action is irreversible and will result in the loss of all data and configurations associated with the project. use this endpoint with caution, typically when a project is no longer needed or when cleaning up development or test environments. it does not provide any option for data backup before deletion, so ensure you have made necessary backups if required before calling this endpoint.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_AUTHORIZE_USER_THROUGH_OAUTH">
+Initiates the oauth 2.0 authorization process for supabase. this endpoint is used to start the authorization flow, allowing third-party applications to request permission from users to access their supabase resources. when called, it typically redirects the user to a supabase-hosted login page where they can grant or deny access to the requesting application. after authorization, the user is redirected back to the application with an authorization code, which can be exchanged for an access token. this endpoint should be used when implementing oauth 2.0 authentication flow in client applications that need to integrate with supabase services. it's important to note that this is just the first step in the oauth process and additional steps will be required to complete the authentication.
+
+**Action Parameters**
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="response_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="redirect_uri" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="response_mode" type="string">
+</ParamField>
+
+<ParamField path="code_challenge" type="string">
+</ParamField>
+
+<ParamField path="code_challenge_method" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_UPDATES_PROJECT_S_CUSTOM_HOSTNAME_CONFIGURATION">
+Initializes a custom hostname for a specific supabase project. this endpoint allows you to set up a unique domain name for your project, enabling you to use your own branded url instead of the default supabase-provided subdomain. this is particularly useful for production environments where you want to present a professional, branded interface to your users. the custom hostname must be properly configured with appropriate dns settings before initialization. this operation is typically performed once per project and may require additional steps for ssl certificate provisioning.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_hostname" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_CREATES_A_NEW_API_KEY_FOR_THE_PROJECT">
+Creates a new api key for a supabase project. this endpoint allows you to generate either a publishable or secret api key, which can be used to authenticate and authorize access to your supabase project's resources. use this when you need to create new access credentials for your application or when rotating keys for security purposes. the endpoint provides options to add a description to the key and customize jwt templates for secret keys, enhancing key management and security.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_ALL_ORGANIZATIONS">
+Retrieves a list of organizations associated with the authenticated user's supabase account. this endpoint is part of supabase's management api and is used to get an overview of all organizations the user has access to. it's particularly useful for users who manage multiple organizations or need to switch between different organization contexts. the endpoint returns basic information about each organization, which may include details such as organization id, name, and other relevant metadata. this tool should be used when you need to display a list of organizations, select an organization for further operations, or verify organization membership. it does not provide detailed information about projects within organizations or allow for organization management operations.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_SET_UP_A_READ_REPLICA">
+Sets up a read replica for a specified supabase project in a chosen aws region. this endpoint is used to enhance database performance and reduce latency by creating a read-only copy of the primary database in a different geographical location. it's particularly useful for applications with a global user base or those requiring improved read performance. the setup process involves specifying the desired region for the read replica, which should be chosen based on the geographical distribution of your users. this endpoint should be used when scaling your application to handle increased read traffic or to improve response times for users in different parts of the world. note that while read replicas improve read performance, they do not directly affect write operations, which are still handled by the primary database.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="read_replica_region" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_REMOVES_A_THIRD_PARTY_AUTH_INTEGRATION">
+Removes a specified third-party authentication provider from a supabase project's configuration. this endpoint should be used when you want to disable or remove a previously configured external authentication method, such as google, github, or other social login providers. it's particularly useful when updating your app's authentication options or when you no longer want to support a specific third-party login method. be cautious when using this endpoint, as it will immediately prevent users from logging in via the removed provider. ensure you have a migration plan for users who previously used this authentication method.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tpa_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_A_SPECIFIC_SQL_SNIPPET">
+Retrieves a specific snippet from the supabase database based on its unique identifier. this endpoint should be used when you need to fetch the full details of a particular snippet, such as its content, metadata, or associated information. it's particularly useful for displaying individual snippet details or for retrieving snippet data for editing purposes. the endpoint returns a single snippet object and does not support retrieving multiple snippets in one call. note that this endpoint only retrieves existing snippets; it cannot be used to create, update, or delete snippets.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_UPDATES_PROJECT_S_NETWORK_RESTRICTIONS">
+Applies network restrictions to a supabase project by specifying allowed ipv4 and ipv6 addresses for database access. this endpoint enhances database security by limiting connections to only authorized ip addresses. it should be used when setting up or updating network security policies for a supabase project. the function takes arrays of allowed ipv4 and ipv6 addresses or cidr ranges, applying these restrictions to control database access. it's particularly useful for securing production environments or implementing strict access controls. note that applying these restrictions may impact existing database connections from non-specified ip addresses.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dbAllowedCidrs" type="array">
+</ParamField>
+
+<ParamField path="dbAllowedCidrsV6" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_ALL_SECRETS">
+Retrieves all secrets associated with a specific supabase project. this endpoint is used to fetch sensitive information such as api keys, tokens, or other confidential data that are crucial for the project's functionality but need to be kept secure. it should be used when you need to access or manage the secrets for a particular project, for example, during development, debugging, or when rotating credentials. the endpoint returns a list of secret objects, likely including details such as secret names, values (possibly masked), and any associated metadata. be cautious when using this endpoint, as it exposes sensitive information. ensure proper authentication and authorization measures are in place to protect the returned data.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_DELETE_A_FUNCTION">
+Deletes a specific edge function from a supabase project. this endpoint should be used when you want to permanently remove a function that is no longer needed or has become obsolete. it's important to note that this action is irreversible, and once a function is deleted, it cannot be recovered. use this endpoint with caution, especially in production environments, to avoid unintended loss of functionality. this operation helps in maintaining a clean and efficient project structure by removing unused functions.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="function_slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_PROJECT_S_POSTGRES_CONFIG">
+Retrieves the postgresql database configuration for a specified supabase project. this endpoint allows developers to access detailed settings and parameters of their project's database, which can be crucial for understanding the current setup, troubleshooting, or planning optimizations. it should be used when you need to review or verify the database configuration, such as connection limits, memory allocations, or other postgresql-specific settings. the tool provides a snapshot of the current configuration and does not modify any settings. keep in mind that some advanced or security-sensitive configuration details might be omitted from the response.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_RESTORES_A_PITR_BACKUP_FOR_A_DATABASE">
+Initiates a point-in-time recovery (pitr) operation to restore a supabase project's database to a specific moment in time. this endpoint should be used when you need to recover your database due to accidental data loss, corruption, or to revert unintended changes. it allows for precise recovery, reducing data loss to as little as two minutes before the incident. the restoration process may take some time depending on the size of your database and the specified recovery point. note that this operation will overwrite the current state of your database, so it should be used with caution and only when absolutely necessary.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recovery_time_target_unix" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_RETRIEVE_A_FUNCTION">
+Retrieves detailed information about a specific function within a supabase project. this endpoint allows developers to fetch metadata, configuration, and other relevant details about a serverless function or edge function deployed in their supabase project. it's useful for monitoring, debugging, or programmatically managing functions within your supabase infrastructure. the endpoint requires both the project reference and the function's unique identifier (slug) to pinpoint the exact function you're querying. use this when you need to inspect or verify the current state and configuration of a particular function in your project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="function_slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_PROJECT_S_PGSODIUM_CONFIG">
+Retrieves the pgsodium configuration or status information for a specific supabase project. this endpoint allows developers to access details about the pgsodium extension, which provides advanced security features for postgresql databases within the project. use this endpoint when you need to check the current pgsodium settings, verify its activation status, or gather information about the security features it provides for your supabase project. the endpoint is particularly useful for monitoring and managing database security configurations, but it does not modify any settings directly.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_PROJECT_S_AUTH_CONFIG">
+Retrieves the current authentication configuration for a specified supabase project. this endpoint is used to fetch details about the project's authentication settings, which may include information about enabled authentication providers, single sign-on (sso) configurations, and other auth-related parameters. it's particularly useful when you need to review or audit the current authentication setup of a project. the endpoint does not modify any settings; it's purely for retrieving information. note that while this endpoint provides comprehensive auth configuration data, it does not return sensitive information like api keys or secrets.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_DELETES_AN_API_KEY_FOR_THE_PROJECT">
+Deletes a specific api key associated with a supabase project. this endpoint is used to revoke access for a particular api key, enhancing security by removing unused or potentially compromised keys. it should be used when you need to invalidate an api key, such as when an employee leaves the organization or when you suspect a key has been exposed. the operation is irreversible, so use it with caution. once deleted, any applications or services using this api key will lose access to the supabase project resources.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_PROJECT_S_SERVICE_HEALTH_STATUS">
+Retrieves the current health status of a specified supabase project. this endpoint should be used to monitor the operational status and performance of your supabase project, ensuring it's functioning correctly. it provides a quick way to check if all components of your project (such as database, authentication, and storage) are operating as expected. this tool is particularly useful for implementing health checks in your application, setting up monitoring systems, or troubleshooting issues. note that while it gives an overview of project health, it may not provide detailed diagnostics or historical data.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="timeout_ms" type="integer">
+</ParamField>
+
+<ParamField path="services" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_PROJECT_S_POSTGREST_CONFIG">
+Retrieves the postgrest configuration for a specified supabase project. this endpoint allows developers to fetch the current settings and parameters of the postgrest instance associated with their project. it's particularly useful when you need to review or debug the restful api layer built on top of your postgresql database. use this endpoint when you want to inspect how your project's api is configured, including any custom settings or optimizations. note that this endpoint only provides configuration information and does not allow for direct modification of the postgrest settings.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LISTS_ALL_SSO_PROVIDERS">
+Retrieves the list of configured single sign-on (sso) providers for a specific supabase project. this endpoint allows developers to fetch the current sso configuration, including details about each configured provider such as type (e.g., google, facebook, github) and any associated settings. it's particularly useful when you need to review or audit the authentication options available for your project. the endpoint does not modify any configurations; it's a read-only operation intended for configuration review and management purposes.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_RUN_SQL_QUERY">
+Executes a custom sql query on a specified supabase project's database. this endpoint allows direct interaction with the postgresql database, enabling complex data operations beyond basic crud functionalities. use this when you need to perform advanced queries, data manipulations, or when the standard supabase api endpoints don't suffice for your specific data requirements. be cautious when using this endpoint, as it provides raw sql execution capabilities, which can potentially modify or delete data if not used carefully. ensure proper input validation and consider using parameterized queries to prevent sql injection attacks.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="query" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GET_DATABASE_BRANCH_CONFIG">
+Retrieves detailed information about a specific branch in a supabase project. this endpoint allows developers to fetch the current status, configuration, and other relevant details of a particular branch identified by its unique branch id. it's useful for monitoring the state of different development environments, verifying branch settings, or gathering information before performing operations on a branch. the endpoint should be used when you need up-to-date information about a single branch, such as checking if it's ready for merging or reviewing its current setup. note that this endpoint only provides read-only access to branch information and cannot be used to modify the branch.
+
+**Action Parameters**
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GET_PROJECT_API_KEYS">
+Retrieves the list of api keys associated with a specific supabase project. this endpoint allows developers to fetch all the api keys that have been generated for a particular project, which is crucial for managing access to the project's resources and services. use this endpoint when you need to view, audit, or manage the api keys for a given project. it's particularly useful for security audits, key rotation, or when setting up new environments that require existing api keys. the endpoint does not create new keys or modify existing ones; it only provides a read-only view of the current api keys for the specified project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_ACTIVATES_A_VANITY_SUBDOMAIN_FOR_A_PROJECT">
+Activates a custom vanity subdomain for a specific supabase project. this endpoint allows you to set up a personalized url for your project, replacing the default supabase-provided domain. use this when you want to improve branding, enhance user trust, or create a more professional appearance for your application. the activation process associates your custom subdomain with the specified project, enabling access to your supabase resources through this new url. note that dns configuration on your domain registrar's side may be required for the vanity subdomain to work correctly.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vanity_subdomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATE_A_DATABASE_BRANCH">
+Creates a database branch from the specified project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="desired_instance_size" type="string">
+</ParamField>
+
+<ParamField path="release_channel" type="string">
+</ParamField>
+
+<ParamField path="postgres_engine" type="string">
+</ParamField>
+
+<ParamField path="branch_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="git_branch" type="string">
+</ParamField>
+
+<ParamField path="persistent" type="boolean">
+</ParamField>
+
+<ParamField path="region" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_LISTS_ALL_THIRD_PARTY_AUTH_INTEGRATIONS">
+Retrieves the current third-party authentication configuration for a specific supabase project. this endpoint allows developers to fetch details about which third-party authentication providers (such as google, facebook, or github) are currently set up and configured for the project. it's useful when you need to review or verify the existing third-party auth settings, especially before making changes or troubleshooting authentication issues. the endpoint returns read-only information and doesn't modify any settings. use this when you need to audit your project's authentication setup or when integrating third-party login options into your application.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_MEMBERS_OF_AN_ORGANIZATION">
+Retrieves a list of members for a specified organization within supabase. this endpoint is used to fetch details about users who are part of the organization, which is crucial for managing access control, permissions, and team collaboration. the endpoint returns information such as user ids, roles, and potentially other relevant details about each member. it should be used when you need to audit organization membership, manage team access, or display a roster of organization members. note that this endpoint only provides member information and does not allow for adding, removing, or modifying member details.
+
+**Action Parameters**
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_DELETE_A_DATABASE_BRANCH">
+Deletes a specific branch from the supabase project's version control system. this endpoint should be used when you want to permanently remove a branch and its associated data state from your project. it's particularly useful for cleaning up temporary or experimental branches that are no longer needed. be cautious when using this endpoint, as deleting a branch is irreversible and will remove all data and changes specific to that branch. ensure that any necessary data or changes have been merged or backed up before deletion. this operation does not affect the main branch or other existing branches in your project.
+
+**Action Parameters**
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_ALL_PROJECTS">
+Retrieves a list of all projects associated with the authenticated user's supabase account. this endpoint provides an overview of the projects created and managed by the user, allowing for easy access to project information and management. it should be used when you need to fetch details about multiple projects at once, such as for displaying a project dashboard or selecting a project to work on. the endpoint returns basic information about each project, which may include project ids, names, and other relevant metadata. it does not provide detailed statistics or real-time data about project usage or performance.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_EXCHANGE_AUTH_CODE_FOR_USER_S_ACCESS_AND_REFRESH_TOKEN">
+Generates or refreshes an oauth token for authenticating api requests to supabase. this endpoint supports two grant types: 'authorization code' for obtaining a new token, and 'refresh token' for refreshing an existing token. it should be used to acquire the necessary credentials for accessing protected supabase resources. the endpoint requires client authentication and expects form-encoded data. it's crucial for implementing secure api access in applications using supabase, but should not be called directly by end-users. instead, it should be part of a secure oauth flow handled by your application's backend.
+
+**Action Parameters**
+
+<ParamField path="grant_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string">
+</ParamField>
+
+<ParamField path="code_verifier" type="string">
+</ParamField>
+
+<ParamField path="redirect_uri" type="string">
+</ParamField>
+
+<ParamField path="refresh_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_UPDATE_PROJECT_S_SSL_ENFORCEMENT_CONFIGURATION">
+Updates the ssl enforcement configuration for a specific supabase project's database connections. this endpoint allows you to enable or disable ssl enforcement, which is crucial for maintaining secure communications between clients and the database. use this when you need to modify the project's database security settings, particularly when changing the ssl requirements for database access. the change affects how clients connect to the database, so use with caution and ensure all client applications are prepared for any ssl enforcement changes.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="requestedConfig__database" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_UPGRADES_THE_PROJECT_S_POSTGRES_VERSION">
+Upgrades a supabase project to a specified version through a chosen release channel. this endpoint allows developers to update their supabase project to a newer version, providing access to the latest features, improvements, and bug fixes. the upgrade process requires specifying both the release channel and the target version to ensure a controlled and predictable upgrade path. this tool should be used when a project needs to be updated to a specific version or when transitioning between different stages of stability (e.g., from beta to general availability). it's important to note that upgrading may impact existing functionality, so it's recommended to review release notes and test thoroughly before upgrading production environments.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="release_channel" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_version" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_REMOVE_A_READ_REPLICA">
+Removes a specified read replica from a supabase project. this endpoint is used to manage the database replication setup by eliminating unnecessary or outdated read replicas. it should be used when you need to reduce the number of read replicas, perhaps to optimize resource usage or reduce costs. the operation is irreversible, so it should be used with caution. this tool does not provide information about the status of the removal process or the remaining read replicas; it only initiates the removal action.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="database_identifier" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CONFIG_PGSODIUM_UPDATE_WITH_ROOT_KEY_WARNING">
+Updates the pgsodium configuration for a specific supabase project by setting a new root encryption key. this endpoint is used to initialize or change the database encryption settings, enhancing the security of data stored in the project. it should be used when setting up a new project's security features or when rotating encryption keys for security best practices. this operation is critical and should be performed with caution, as it affects the encryption of all data in the project's database.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="root_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_A_SSO_PROVIDER_BY_ITS_UUID">
+Retrieves the configuration details for a specific single sign-on (sso) provider associated with a supabase project. this endpoint allows developers to fetch the current settings and parameters for a particular sso integration, such as google, github, or azure active directory. use this when you need to review or verify the configuration of an sso provider for your project, for example, before making changes or troubleshooting authentication issues. the endpoint returns the provider's configuration but does not modify any settings. it's particularly useful for auditing your project's sso setup or preparing for updates to the sso configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provider_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CUSTOM_HOSTNAME_DNS_VERIFICATION">
+Re-verifies the custom hostname associated with a specific supabase project. this endpoint is used when there's a need to confirm or update the verification status of a previously set custom hostname for a project. it should be called after making changes to dns settings, updating ssl certificates, or when troubleshooting domain-related issues. the re-verification process ensures that the custom hostname is correctly configured and accessible. this tool is particularly useful for maintaining the proper functioning of custom domains in supabase projects, especially after domain configuration changes or when addressing connectivity problems.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATE_DATABASE_BRANCH_CONFIG">
+Updates the configuration and properties of a specific branch in a supabase project. this endpoint allows modifications to branch settings such as its name, associated git branch, reset behavior, persistence, and current status. it's used for managing branch-specific configurations, synchronizing with version control, and tracking the deployment state of database migrations and serverless functions. this tool is particularly useful when adjusting branch settings during development workflows, ci/cd processes, or when troubleshooting deployment issues. note that while most fields are user-updateable, the 'status' field might be system-controlled in many cases and may not always reflect immediate changes.
+
+**Action Parameters**
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="branch_name" type="string">
+</ParamField>
+
+<ParamField path="git_branch" type="string">
+</ParamField>
+
+<ParamField path="reset_on_push" type="boolean">
+</ParamField>
+
+<ParamField path="persistent" type="boolean">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_GET_A_THIRD_PARTY_INTEGRATION">
+Retrieves the configuration details for a specific third-party authentication provider associated with a supabase project. this endpoint allows developers to inspect and manage the settings of external authentication services integrated with their supabase application. use this when you need to view or verify the current configuration of a particular third-party auth provider, such as client ids, redirect uris, or other provider-specific settings. this tool is particularly useful for debugging authentication issues, auditing security configurations, or preparing to update third-party auth settings. note that this endpoint only retrieves the configuration and does not modify any settings.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tpa_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_DISABLES_PROJECT_S_READONLY_MODE_FOR_THE_NEXT_15_MINUTES">
+Temporarily disables the read-only mode for a specified supabase project. this endpoint is used when you need to perform write operations on a project that is normally set to read-only. it's particularly useful for maintenance tasks, data updates, or temporary modifications to project settings. the disable duration is not specified in the schema, so it's advisable to re-enable read-only mode manually after completing the necessary operations. this endpoint should be used cautiously as it may affect data integrity if write operations are not carefully managed during the disabled period. it's important to note that this operation likely requires admin or owner-level permissions for the project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_REMOVE_NETWORK_BANS">
+Removes specified ipv4 addresses from the network ban list of a supabase project. this endpoint allows project administrators to lift restrictions on previously banned ip addresses, restoring their access to the project's resources. use this when you need to unblock specific ip addresses that were previously banned, either due to a mistake, a resolved security issue, or a change in access requirements. it's important to note that this action immediately restores access for the specified ip addresses, so it should be used cautiously and only when you're certain that the ip addresses are safe to unban.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="ipv4_addresses" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATES_PROJECT_S_POSTGREST_CONFIG">
+Updates the postgrest configuration for a specific supabase project. this endpoint allows you to modify various postgrest settings, including the maximum number of rows returned, database connection pool size, additional search paths, and the primary database schema. use this endpoint when you need to fine-tune the performance and behavior of your postgrest api for a particular project. it's particularly useful for optimizing query results, managing database resources, and customizing schema configurations. note that changes made through this endpoint may affect the behavior and performance of your postgrest api, so use it cautiously and test thoroughly after making updates.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="max_rows" type="integer">
+</ParamField>
+
+<ParamField path="db_pool" type="integer">
+</ParamField>
+
+<ParamField path="db_extra_search_path" type="string">
+</ParamField>
+
+<ParamField path="db_schema" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_ALL_FUNCTIONS">
+Retrieves a list of edge functions associated with a specific supabase project. this endpoint allows developers to fetch all deployed functions within a project, enabling them to manage and monitor their serverless functions. use this endpoint when you need to review, audit, or programmatically interact with the functions in your supabase project. it provides an overview of the available functions but does not return the function code or execution details. this tool is particularly useful for devops tasks, ci/cd pipelines, or building custom management interfaces for supabase projects.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_RETURNS_THE_PROJECT_S_ELIGIBILITY_FOR_UPGRADES">
+Checks the upgrade eligibility status for a specific supabase project. this endpoint allows developers to determine whether a project can be upgraded to a newer version or plan. it should be used before initiating an upgrade process to ensure the project meets the necessary criteria for an upgrade. the tool returns the eligibility status, which can help in making informed decisions about project maintenance and feature adoption. it does not perform the actual upgrade; it only provides information about the possibility of an upgrade.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_ENABLES_DATABASE_WEBHOOKS_ON_THE_PROJECT">
+Enables database webhooks for a specified supabase project. this endpoint allows developers to activate real-time notifications for database events such as insert, update, or delete operations. once enabled, external systems can receive instant updates about changes in the project's database tables. this feature is particularly useful for maintaining data consistency across multiple systems or triggering actions based on database changes. it should be used when setting up integrations that require immediate reaction to database modifications. keep in mind that enabling webhooks may increase system load and network traffic, so it should be used judiciously and with appropriate error handling in place.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GET_PROJECT_S_SSL_ENFORCEMENT_CONFIGURATION">
+Retrieves the current ssl enforcement status for a specified supabase project. this endpoint allows developers to check whether ssl connections are mandated for database access, enhancing security by ensuring data encryption in transit. use this endpoint when you need to verify the ssl settings for a project, particularly during security audits or when troubleshooting connection issues. the returned information helps in understanding the project's current security configuration regarding ssl usage.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LISTS_ALL_BACKUPS">
+Retrieves a list of database backups for a specified supabase project. this endpoint allows users to view the available backups for their project's database, which is crucial for data management and disaster recovery planning. it should be used when you need to check the status of your backups, verify backup completion, or prepare for a database restore operation. the endpoint provides information about existing backups but does not create new backups or perform restore operations. keep in mind that the availability and retention of backups may depend on your supabase plan and configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_CURRENT_VANITY_SUBDOMAIN_CONFIG">
+Retrieves the vanity subdomain associated with a specific supabase project. this endpoint allows developers to fetch the custom domain name assigned to their project, which can be used for branding and easier access to the project's api. use this endpoint when you need to confirm or display the current vanity subdomain for a given project. it's particularly useful for project management interfaces or when setting up integrations that require the project's custom url. the endpoint does not modify the subdomain; it only provides read access to the existing configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_RETRIEVE_A_FUNCTION_BODY">
+Retrieves the body (source code) of a specific serverless function within a supabase project. this endpoint allows developers to fetch the current implementation of a function, which can be useful for auditing, debugging, or programmatically managing function code. it should be used when you need to view or analyze the code of an existing serverless function in your project. the endpoint does not modify the function; it only provides read access to the function's body. note that this tool does not execute the function or provide information about its runtime behavior or logs.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="function_slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATES_A_SSO_PROVIDER_BY_ITS_UUID">
+Updates the configuration of a single sign-on (sso) provider for a specific supabase project. this endpoint allows you to modify various aspects of the sso setup, including metadata, allowed domains, and attribute mapping. use this when you need to change the sso provider's settings, such as updating the identity provider's metadata, adjusting allowed domains, or modifying how user attributes are mapped from the sso provider to supabase. this tool is crucial for maintaining and adapting your project's sso integration as your authentication needs evolve or when the identity provider's configuration changes.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provider_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="metadata_xml" type="string">
+</ParamField>
+
+<ParamField path="metadata_url" type="string">
+</ParamField>
+
+<ParamField path="domains" type="array">
+</ParamField>
+
+<ParamField path="attribute__mapping__keys" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_DELETES_A_PROJECT_S_VANITY_SUBDOMAIN_CONFIGURATION">
+Deletes the vanity subdomain associated with a specific supabase project. this endpoint should be used when you want to remove a custom domain name that was previously set up for your project. it's important to note that this action is irreversible and will immediately affect how users access your project. after deletion, the project will revert to its default supabase-provided url. use this endpoint with caution, as it may disrupt existing integrations or user access if not properly managed. this operation does not affect the project's data or functionality, only its custom access url.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GET_PROJECT_S_PGBOUNCER_CONFIG">
+Retrieves the pgbouncer configuration settings for a specified supabase project. this endpoint allows developers to view the current connection pooling settings, which are crucial for optimizing database performance and resource utilization. use this when you need to inspect or audit the pgbouncer configuration, such as before making changes or troubleshooting connection issues. the response will include details like pool size, connection timeouts, and other pgbouncer-specific parameters. note that this endpoint only provides read access to the configuration and does not allow modifications.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LIST_ALL_DATABASE_BRANCHES">
+Returns all database branches of the specified project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_PROJECT_S_SUPAVISOR_CONFIG">
+Retrieves the current database pooler configuration for a specified supabase project. this endpoint allows developers to fetch detailed settings related to the connection pooler, which manages and optimizes database connections for improved performance and resource utilization. use this endpoint when you need to review or troubleshoot the database connection management settings for your supabase project. the returned configuration likely includes information about pooling modes (transaction or session), connection limits, and other relevant pooler parameters. this tool is particularly useful for understanding how your project's database connections are being managed and can help in optimizing database performance.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATE_A_FUNCTION">
+Creates a new edge function for a specified supabase project. edge functions are serverless functions that run on supabase's edge network, allowing for quick execution and low latency. this endpoint is used when you need to add new custom functionality to your supabase project, such as integrating with third-party apis or performing complex computations. the function can be written in javascript or typescript and will be deployed to supabase's infrastructure. it's important to note that the function's code ('body' parameter) should be thoroughly tested before deployment, as errors in edge functions can impact your application's performance and functionality.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="verify_jwt" type="boolean">
+</ParamField>
+
+<ParamField path="import_map" type="boolean">
+</ParamField>
+
+<ParamField path="entrypoint_path" type="string">
+</ParamField>
+
+<ParamField path="import_map_path" type="string">
+</ParamField>
+
+<ParamField path="body" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GENERATE_TYPE_SCRIPT_TYPES">
+Retrieves typescript type definitions generated from the database schema of a specified supabase project. this endpoint is essential for developers working with typescript in their supabase projects, as it provides type-safe access to database tables and views. the generated types enhance code quality by enabling compile-time checks and autocompletion in ides. use this endpoint when setting up a new typescript project with supabase or after making changes to your database schema to ensure your types are up-to-date. note that this endpoint does not modify your database or project settings; it only retrieves the current type definitions based on your existing schema.
+
+**Action Parameters**
+
+<ParamField path="included_schemas" type="string" default="public">
+</ParamField>
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_ACTIVATES_A_CUSTOM_HOSTNAME_FOR_A_PROJECT">
+Activates a previously configured custom hostname for a specific supabase project. this endpoint should be used when you want to make your custom domain active and accessible for your project after setting it up. it finalizes the process of associating your custom domain with your supabase project, allowing users to access your project via the custom url instead of the default supabase-provided url. this action is typically performed once the dns settings have been properly configured and verified. note that this endpoint only activates the hostname; it does not handle the initial setup or dns configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_CHECKS_VANITY_SUBDOMAIN_AVAILABILITY">
+Checks the availability of a vanity subdomain for a supabase project. this endpoint allows developers to verify if a desired custom subdomain is available for use with their project's api. it should be used when setting up a new project or when wanting to customize the url for an existing project. the tool will return information about whether the requested subdomain is available or already in use. it's important to note that this endpoint only checks availability and does not reserve or assign the subdomain; a separate action would be required to actually set the vanity subdomain for the project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="vanity_subdomain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_RESETS_A_DATABASE_BRANCH">
+The resetbranch endpoint is used to reset a specific branch in supabase to a clean state. this operation reverts the database schema and data of the specified branch to its initial state, effectively undoing all changes made since the branch was created or last reset. it's particularly useful during development and testing phases when you need to start fresh or revert unwanted changes. the endpoint should be used cautiously as it will permanently delete all data and schema changes in the branch. it's recommended to use this endpoint only in non-production environments or when you're absolutely certain about resetting the branch. note that this operation cannot be undone, so it's crucial to have proper backups or snapshots before performing a reset.
+
+**Action Parameters**
+
+<ParamField path="branch_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_LISTS_ALL_BUCKETS">
+Retrieves a list of all storage buckets within a specified supabase project. this endpoint allows developers to get an overview of the storage organization for a particular project, including both public and private buckets. it's useful for managing and monitoring storage resources, especially when working with multiple buckets or when you need to verify the existence of specific buckets. the endpoint does not provide detailed information about the contents of the buckets or their access policies; it only returns a list of bucket names or identifiers. use this when you need to enumerate available storage containers or before performing operations that require knowing the existing bucket structure.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATES_A_NEW_THIRD_PARTY_AUTH_INTEGRATION">
+Configures third-party authentication settings for a supabase project. this endpoint allows you to set up openid connect (oidc) and json web key set (jwks) parameters for integrating external identity providers. use this when you need to enable or update third-party authentication methods in your supabase application. the endpoint accepts either an oidc issuer url, a jwks url, or custom jwks data, providing flexibility in how you manage authentication keys and configurations. this is particularly useful for implementing single sign-on (sso) or integrating with enterprise identity solutions.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oidc_issuer_url" type="string">
+</ParamField>
+
+<ParamField path="jwks_url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATES_A_NEW_SSO_PROVIDER">
+Creates a new single sign-on (sso) provider for a supabase project, specifically for saml 2.0 authentication. this endpoint allows you to configure and integrate an external identity provider with your supabase authentication system, enabling users to log in using their organizational credentials. use this when setting up enterprise-level authentication or when you need to support federated identity management. the endpoint requires detailed configuration of the saml provider, including metadata and attribute mapping, to ensure proper integration and user attribute synchronization.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="metadata_xml" type="string">
+</ParamField>
+
+<ParamField path="metadata_url" type="string">
+</ParamField>
+
+<ParamField path="domains" type="array">
+</ParamField>
+
+<ParamField path="attribute__mapping__keys" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATES_PROJECT_S_POSTGRES_CONFIG">
+Updates the postgresql configuration settings for a specific supabase project. this endpoint allows fine-tuning of various database parameters to optimize performance, resource utilization, and behavior of the postgresql instance. it should be used when you need to adjust database settings to meet specific application requirements or improve overall database performance. exercise caution when modifying these settings, as improper configurations can significantly impact database functionality and performance. it's recommended to test changes in a non-production environment before applying them to a live system. note that some changes may require a database restart to take effect.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="statement_timeout" type="string">
+</ParamField>
+
+<ParamField path="effective_cache_size" type="string">
+</ParamField>
+
+<ParamField path="maintenance_work_mem" type="string">
+</ParamField>
+
+<ParamField path="max_connections" type="integer">
+</ParamField>
+
+<ParamField path="max_locks_per_transaction" type="integer">
+</ParamField>
+
+<ParamField path="max_parallel_maintenance_workers" type="integer">
+</ParamField>
+
+<ParamField path="max_parallel_workers" type="integer">
+</ParamField>
+
+<ParamField path="max_parallel_workers_per_gather" type="integer">
+</ParamField>
+
+<ParamField path="max_slot_wal_keep_size" type="string">
+</ParamField>
+
+<ParamField path="max_standby_archive_delay" type="string">
+</ParamField>
+
+<ParamField path="max_standby_streaming_delay" type="string">
+</ParamField>
+
+<ParamField path="max_wal_size" type="string">
+</ParamField>
+
+<ParamField path="max_worker_processes" type="integer">
+</ParamField>
+
+<ParamField path="shared_buffers" type="string">
+</ParamField>
+
+<ParamField path="wal_keep_size" type="string">
+</ParamField>
+
+<ParamField path="work_mem" type="string">
+</ParamField>
+
+<ParamField path="session_replication_role" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_DELETES_A_PROJECT_S_CUSTOM_HOSTNAME_CONFIGURATION">
+Deletes the custom hostname associated with a specific supabase project. this endpoint should be used when you want to remove a previously configured custom domain from your project, reverting it back to the default supabase-provided hostname. it's important to note that this action will affect your project's accessibility and may require updates to your client code, oauth provider settings, and dns configurations. use this endpoint with caution, as it will immediately impact how users and services interact with your supabase project.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATE_AN_ORGANIZATION">
+Creates a new organization within supabase. this endpoint is used to establish a top-level entity that can manage multiple projects, handle access control, and centralize billing. organizations in supabase provide a way to group related projects and collaborate with team members efficiently. use this endpoint when setting up a new team, company, or project group in supabase. it's an essential first step for teams or companies that plan to work on multiple projects or need to manage access for various team members across different projects.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATE_A_FUNCTION">
+Updates an existing edge function within a specified supabase project. this endpoint allows you to modify various properties of an edge function, including its name, source code, and jwt verification settings. it's particularly useful for iterating on function development, implementing bug fixes, or adjusting security settings without creating a new function. the endpoint supports both json and deno-specific eszip formats, making it versatile for different development workflows. use this when you need to make changes to an existing function's configuration or code without altering its fundamental identity within your project structure.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="function_slug" type="string" required={true}>
+</ParamField>
+
+<ParamField path="slug" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="verify_jwt" type="boolean">
+</ParamField>
+
+<ParamField path="import_map" type="boolean">
+</ParamField>
+
+<ParamField path="entrypoint_path" type="string">
+</ParamField>
+
+<ParamField path="import_map_path" type="string">
+</ParamField>
+
+<ParamField path="body" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_UPDATES_PROJECT_S_SUPAVISOR_CONFIG">
+Updates the database pooler configuration for a specific supabase project. this endpoint allows you to modify the connection pool settings, which can significantly impact your application's database performance and scalability. use this when you need to optimize database connection management based on your application's requirements. the primary focus is on adjusting the default pool size to balance between performance and resource utilization. note that while the pool mode parameter is present in the schema, it is deprecated and ignored in the request.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="default_pool_size" type="integer">
+</ParamField>
+
+<ParamField path="pool_mode" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_REMOVES_A_SSO_PROVIDER_BY_ITS_UUID">
+Deletes a specific single sign-on (sso) provider configuration from a supabase project. this endpoint is used to remove an sso provider's settings when you no longer want to offer that authentication method for your application. it's particularly useful when updating your authentication strategy or removing unused sso options. be cautious when using this endpoint, as it will immediately disable the specified sso provider for all users, potentially affecting their ability to log in if they primarily use that method.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provider_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_ALPHA_UPDATES_AN_API_KEY_FOR_THE_PROJECT">
+Updates the properties of an existing api key for a specified supabase project. this endpoint allows you to modify the description and jwt template configuration of an api key, enabling fine-tuned control over authentication and authorization settings. use this when you need to change the purpose, role, or permissions associated with an existing api key. the endpoint is particularly useful for adjusting access levels or providing more context about the key's usage without creating a new key. note that updating an api key does not regenerate the key itself, but rather modifies its metadata and associated jwt configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_PROJECT_S_NETWORK_BANS">
+Retrieves the list of network bans for a specific supabase project. this endpoint allows project administrators to view all ip addresses or ranges that have been banned from accessing the project's resources. it should be used when monitoring network security, investigating potential security breaches, or managing access control for the project. the endpoint returns a list of banned ip addresses or ranges along with any associated metadata such as the reason for the ban and the timestamp of when it was implemented. it's important to note that this endpoint only retrieves existing bans and does not modify or create new bans.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_CREATE_A_PROJECT">
+Creates a new supabase project with specified configurations. this endpoint allows you to set up a new project within your organization, configuring essential parameters such as database credentials, project name, hosting region, and instance size. it's used when initializing a new supabase environment for your application. the endpoint handles the provisioning of necessary resources and sets up the project according to your specifications. note that some parameters like subscription plans are now managed at the organization level and are not part of this project creation process.
+
+**Action Parameters**
+
+<ParamField path="db_pass" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="organization_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="plan" type="string">
+</ParamField>
+
+<ParamField path="region" type="string" required={true}>
+</ParamField>
+
+<ParamField path="kps_enabled" type="boolean">
+</ParamField>
+
+<ParamField path="desired_instance_size" type="string">
+</ParamField>
+
+<ParamField path="template_url" type="string">
+</ParamField>
+
+<ParamField path="release_channel" type="string">
+</ParamField>
+
+<ParamField path="postgres_engine" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_PROJECT_S_NETWORK_RESTRICTIONS">
+Retrieves the current network restrictions configured for a specific supabase project. this endpoint allows developers to fetch and review the existing network access controls, such as ip whitelists or blacklists, that have been set up to enhance the project's security. use this endpoint when you need to audit or verify the current network security settings for a particular project. it's particularly useful for maintaining and monitoring the security posture of your supabase applications. the endpoint doesn't modify any settings; it only provides read access to the existing configuration.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_BETA_GETS_THE_LATEST_STATUS_OF_THE_PROJECT_S_UPGRADE">
+Retrieves the current upgrade status for a specified supabase project. this endpoint should be used to check the progress or result of an ongoing or recent project upgrade. it provides information about whether the upgrade is in progress, completed successfully, or encountered any issues. this tool is particularly useful for monitoring the state of your project during maintenance or version updates. it does not initiate upgrades or provide detailed logs of the upgrade process.
+
+**Action Parameters**
+
+<ParamField path="ref" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="SUPABASE_GETS_INFORMATION_ABOUT_THE_ORGANIZATION">
+Retrieves detailed information about a specific organization in supabase using its unique slug identifier. this endpoint is part of the management api and allows you to fetch organization-level data, which may include details such as the organization's name, created date, owner information, and associated projects. it's useful when you need to access or verify organization details programmatically, especially in scenarios involving multi-project management or organization-wide settings. the endpoint returns read-only data and does not modify any organization information.
+
+**Action Parameters**
+
+<ParamField path="slug" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

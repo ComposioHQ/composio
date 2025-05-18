@@ -1,0 +1,2872 @@
+---
+title: "Agencyzoom"
+subtitle: "Learn how to use Agencyzoom with Composio"
+---
+
+
+## Overview
+
+### Enum
+`AGENCYZOOM`
+
+### Description
+AgencyZoom is for the P&C insurance agent that's looking to increase sales, boost retention and analyze agency & producer performance.
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="JWT_TOKEN" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="BASIC_WITH_JWT">
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="AGENCYZOOM_CREATE_A_LEAD_OPPORTUNITY">
+Adds a new opportunity to an existing lead in agencyzoom. this endpoint allows you to associate detailed opportunity information with a specific lead, including the insurance carrier, product line, premium amount, and number of items. it's particularly useful for tracking potential sales and managing the sales pipeline within the agency. the endpoint also supports custom fields, enabling the capture of agency-specific data alongside standard opportunity information. use this when you need to create a new sales opportunity for an existing lead or want to update your sales pipeline with fresh potential business. this endpoint is crucial for maintaining an up-to-date and comprehensive view of your agency's sales activities and potential revenue streams.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="carrierId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="productLineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="integer" default="1">
+</ParamField>
+
+<ParamField path="premium" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_LEAD_FILE">
+Deletes a specific file associated with a lead in the agencyzoom system. this endpoint is used to remove unnecessary or outdated files from a lead's record, helping maintain organized and relevant data. it's particularly useful for cleaning up lead information, ensuring compliance with data retention policies, or removing sensitive information when no longer needed. the operation is irreversible, so it should be used with caution. this endpoint doesn't return the deleted file content; it only removes the file from the system.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fileId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_LEADS">
+The listleads endpoint allows users to search and retrieve a list of leads from the agencyzoom platform based on various filtering criteria. this powerful tool enables users to find specific leads by applying multiple filters such as date ranges, customer information, lead status, and workflow stages. the endpoint supports pagination, sorting, and detailed filtering options, making it ideal for generating targeted lead lists, analyzing lead performance, and managing sales pipelines efficiently. use this endpoint when you need to retrieve a comprehensive view of leads or when searching for leads that match specific criteria within your agencyzoom account.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_LIFE_AND_HEALTH_LEADS">
+This endpoint allows users to search and filter life and health insurance leads within the agencyzoom platform. it provides a comprehensive set of parameters for refining search results based on various criteria such as lead status, date ranges, customer information, and agent associations. the endpoint supports pagination, sorting, and detailed filtering options, making it suitable for retrieving specific subsets of lead data for analysis, follow-up, or reporting purposes. use this endpoint when you need to access or analyze life and health insurance lead data with granular control over the returned results.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_LEAD_NOTES">
+Retrieves all notes associated with a specific lead in agencyzoom. this endpoint allows users to fetch the complete history of notes or comments related to a particular lead, which can include interaction logs, follow-up reminders, or any other relevant information recorded by the agency. it's particularly useful for getting a comprehensive view of all communications and updates regarding a lead. the endpoint should be used when there's a need to review the entire note history for a lead, such as during client meetings, performance reviews, or when preparing for follow-up actions. note that this endpoint only provides read access to the notes and doesn't allow for creating, updating, or deleting notes.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_OPPORTUNITY_DETAILS">
+Retrieves detailed information about a specific opportunity within the agencyzoom platform. this endpoint allows users to fetch comprehensive data for a single opportunity by providing its unique identifier. it's particularly useful for accessing up-to-date information about leads, sales prospects, or potential business deals tracked in agencyzoom. the endpoint should be used when detailed information about a particular opportunity is needed, such as during sales reviews, client interactions, or when updating opportunity status. note that this endpoint only provides data for one opportunity at a time and does not support bulk retrieval or filtering of multiple opportunities.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_CUSTOMER_POLICY">
+Deletes a specific policy associated with a customer in the agencyzoom system. this endpoint should be used when an agency needs to remove a policy from a customer's account, such as when a policy has been cancelled or is no longer active. it's important to note that this action is irreversible, so it should be used with caution. this endpoint does not return the deleted policy details; it typically returns a success status if the deletion is completed or an error if the policy or customer cannot be found or if there are any issues with the deletion process.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="policyId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_CUSTOMERS">
+The customersearch endpoint enables advanced filtering and retrieval of customer data in agencyzoom. it supports various search criteria, sorting, and pagination, ideal for generating targeted customer lists or analysis. users can filter by personal info, agency-specific data, and customer status, making it valuable for customer segmentation and reporting.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_REOPEN_A_TASK">
+Reopens a previously closed task in the agencyzoom system. this endpoint allows users to reactivate a task that was marked as completed or closed, enabling further work or updates on the task. it should be used when a closed task needs to be revisited, such as when additional information becomes available or when the task's objectives were not fully met. the endpoint requires the unique identifier of the task and optionally accepts comments to provide context for reopening. note that this action may impact task analytics and workflow statuses within agencyzoom, so it should be used judiciously and in accordance with the organization's task management policies.
+
+**Action Parameters**
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_TASK">
+Deletes a specific task from the agencyzoom system using its unique identifier. this endpoint should be used when a task is no longer relevant, completed outside the system, or entered in error. it permanently removes the task from the user's task list and associated workflows. use with caution as this action cannot be undone. the endpoint is particularly useful for maintaining a clean and organized task list, ensuring that only active and relevant tasks are visible to users. it does not return the deleted task information, so make sure to retrieve any necessary data before deletion.
+
+**Action Parameters**
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_DRIVER">
+This endpoint deletes an opportunity associated with a specific driver in the agencyzoom platform. it is used to remove a lead, potential sale, or business engagement from a driver's record when it's no longer relevant or needed. the deletion is permanent and should be used with caution. this tool is particularly useful for maintaining an up-to-date and accurate sales pipeline by removing opportunities that have been closed, lost, or are no longer pursuable. it helps in keeping the agency's opportunity tracking system clean and efficient.
+
+**Action Parameters**
+
+<ParamField path="driverId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_AN_OPPORTUNITY">
+The createopportunity endpoint allows users to add new lead opportunity data to the agencyzoom system. it is designed for creating comprehensive records of potential business opportunities, including details about the lead, associated insurance products, and property information. this endpoint should be used when a new lead or potential client is identified and needs to be entered into the system for tracking and follow-up. it's particularly useful for insurance agencies managing various types of policies and leads across different carriers. the endpoint requires minimal information to create an opportunity but allows for extensive customization through optional fields and custom data points. however, users should note that this endpoint is for creating new opportunities only and cannot be used to update existing records.
+
+**Action Parameters**
+
+<ParamField path="carrierId" type="integer">
+</ParamField>
+
+<ParamField path="productLineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customerReferralId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="integer" default="1">
+</ParamField>
+
+<ParamField path="premium" type="integer">
+</ParamField>
+
+<ParamField path="expiryDate" type="string">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+<ParamField path="property__zip" type="string">
+</ParamField>
+
+<ParamField path="property__city" type="string">
+</ParamField>
+
+<ParamField path="property__state" type="string">
+</ParamField>
+
+<ParamField path="property__country" type="string">
+</ParamField>
+
+<ParamField path="property__address1" type="string">
+</ParamField>
+
+<ParamField path="property__address2" type="string">
+</ParamField>
+
+<ParamField path="property__useMailingAddressAsLocation" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_MY_PROFILE">
+This endpoint allows you to update the profile information of the currently authenticated user in the agencyzoom platform. it is used to modify essential user details such as first name, last name, email, and optionally, the phone number. this endpoint should be called whenever there's a need to update the user's contact information or correct any inaccuracies in their profile data. it's particularly useful for maintaining up-to-date records, which is crucial for effective agency management and communication. note that this endpoint only updates the profile information and does not affect other aspects of the user's account such as permissions or associated agency data. ensure that the provided email is unique within the system, as it may be used as a primary identifier for the user.
+
+**Action Parameters**
+
+<ParamField path="firstname" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lastname" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_LEAD_FILE_NAME">
+This endpoint allows you to rename a lead file associated with a specific customer referral in agencyzoom. it's used when you need to update the name of an existing file for better organization or to reflect changes in the lead's information. the operation requires the customer referral id, the specific file id, and the new file name. this tool is particularly useful for maintaining accurate and up-to-date records in your lead management system. keep in mind that renaming a file does not alter its contents or associations within the system.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customerReferralId" type="integer">
+</ParamField>
+
+<ParamField path="fileId" type="integer">
+</ParamField>
+
+<ParamField path="newFileName" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CHANGE_STATUS_FOR_LEAD">
+This endpoint updates the status of a lead in agencyzoom, allowing for comprehensive lead management and workflow transitions. it can be used to mark leads as active, won, lost, or x-dated, with additional options for specifying workflow stages, recycling parameters, and lead sources. the endpoint is particularly useful for automating lead lifecycle management, handling lead recycling processes, and maintaining accurate status information within the agencyzoom system. it should be used whenever there's a need to change a lead's status or move it through different stages of your sales pipeline. note that while only the 'status' field is required, providing additional parameters can offer more context and control over the lead's journey through your workflow.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="workflowId" type="integer">
+</ParamField>
+
+<ParamField path="workflowStageId" type="integer">
+</ParamField>
+
+<ParamField path="status" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="date" type="string">
+</ParamField>
+
+<ParamField path="lossReasonId" type="integer">
+</ParamField>
+
+<ParamField path="xDateType" type="string">
+</ParamField>
+
+<ParamField path="changeLeadSourceTo" type="integer">
+</ParamField>
+
+<ParamField path="recycleToStage" type="integer">
+</ParamField>
+
+<ParamField path="recycleToPipeline" type="integer">
+</ParamField>
+
+<ParamField path="toStageId" type="integer">
+</ParamField>
+
+<ParamField path="tagIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_POLICIES_FOR_A_CUSTOMER">
+Retrieves a list of insurance policies associated with a specific customer in the agencyzoom platform. this endpoint allows users to access detailed policy information for a given customer, enabling efficient management of customer relationships and policy tracking. it should be used when needing to review or analyze the insurance coverage of a particular customer. the endpoint returns policy details such as policy types, coverage amounts, and policy statuses, but does not provide premium payment information or claims history.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_LEAD_TASKS">
+Retrieves a list of tasks associated with a specific lead in the agencyzoom platform. this endpoint allows users to fetch all tasks that have been assigned or linked to a particular lead, providing a comprehensive view of the activities and follow-ups planned for that potential customer. it is particularly useful for tracking the progress of lead nurturing, ensuring that all necessary steps are taken in the sales process, and maintaining an organized workflow. the endpoint should be used when you need to review or manage tasks for a specific lead, such as during lead follow-up, performance review, or when updating the lead's status. note that this endpoint only returns task information and does not provide detailed lead data or allow for task modification.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_AUTH_URL_FOR_V4SSO">
+The get auth params endpoint retrieves the necessary authentication parameters for single sign-on (sso) integration with agencyzoom. this endpoint should be used when initiating an sso authentication flow or when refreshing sso authentication details. it provides the required parameters to properly configure and execute the sso process with agencyzoom's authentication system. the endpoint doesn't require any input parameters, simplifying the process of obtaining up-to-date sso configuration. however, users should be aware that the returned parameters may change over time, so it's recommended to call this endpoint before each sso attempt rather than caching the results for extended periods.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_BUSINESS_CLASSIFICATIONS">
+Retrieves a paginated list of business classifications based on specified search criteria. this endpoint allows you to search, filter, and sort business classifications within the agencyzoom platform. it's useful for retrieving structured information about various business types, industries, or categories that agencies work with. the search can be refined by location and text-based queries, making it valuable for tasks such as market analysis, client segmentation, or data enrichment in agency management workflows. the endpoint returns a subset of results based on pagination parameters, allowing for efficient handling of large datasets. use this when you need to explore or analyze the types of businesses in the agencyzoom system, or when integrating business classification data into your agency's processes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_LINK_A_VEHICLE_TO_OPPORTUNITY">
+Links a specific vehicle to an existing opportunity in the agencyzoom platform. this endpoint is used to associate vehicle information with a sales opportunity, which is crucial for insurance agencies dealing with auto policies or vehicle-related services. it allows for better organization and management of client data by connecting vehicle details directly to potential business opportunities. the endpoint should be used when a vehicle needs to be explicitly associated with an ongoing sales opportunity, such as when a client is considering insurance for a specific vehicle. this operation helps in streamlining the sales process and ensuring that all relevant information is connected within the agencyzoom system.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="vehicleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_LOCATIONS">
+Retrieves a list of all locations or branches associated with the agency in agencyzoom. this endpoint provides comprehensive information about each office, which may include details such as address, contact information, operating hours, and assigned territories. it is particularly useful for agencies with multiple branches to manage their office network, support territory management, and maintain up-to-date location data. the endpoint should be used when an overview of all agency locations is needed, such as for reporting, administrative purposes, or integrating location data with other systems. note that this endpoint returns all locations without filtering, so it may not be suitable for retrieving specific location details in high-volume scenarios.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_COMPLETE_TASK">
+Updates the status of a specific task to 'completed' in the agencyzoom platform. this endpoint should be used when a user or automated system needs to mark a task as finished, helping to maintain accurate task tracking and workflow management. it's particularly useful for updating task progress in real-time, which can trigger subsequent workflow automations or update performance metrics. the endpoint doesn't return the updated task details, so a separate api call may be needed if confirmation or additional task information is required after completion.
+
+**Action Parameters**
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_LEAD_FILES">
+The leadfilesearch endpoint allows you to search and retrieve lead files within the agencyzoom platform. this post request to /v1/api/leads/files supports pagination, sorting, and filtering options to efficiently manage and access lead data. use this endpoint when you need to fetch lead files based on specific criteria such as location, customer referral, or file type. the endpoint is particularly useful for generating reports, analyzing lead data, or integrating lead information into other systems. note that while the endpoint provides flexible search capabilities, it may not include all lead details in the response, focusing primarily on file-related information.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_TASK">
+Updates an existing task in the agencyzoom platform with new lead data and task details. this endpoint allows for comprehensive modifications to a task, including its title, due date, assignment, associated lead or customer, and status. it's particularly useful for keeping task information current as leads progress through the sales pipeline or when task requirements change. the endpoint supports various task types, making it versatile for different agency workflows such as follow-ups, email communications, phone calls, and meetings. use this endpoint when you need to modify any aspect of an existing task, including reassigning it, rescheduling, or marking it as completed. note that while many parameters are optional, at least one parameter should be provided to make meaningful updates to the task.
+
+**Action Parameters**
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_BATCH_CREATE_LEAD">
+The batchcreateleads endpoint allows for the efficient creation of multiple leads in a single api call. this endpoint is designed to streamline the process of adding new leads to the agencyzoom system, supporting up to 5 lead creations per request. it's particularly useful for bulk imports or when integrating lead generation systems with agencyzoom. the endpoint accepts an array of lead objects, each containing essential information such as the lead's name, contact details, assigned agent, and pipeline information. additional optional fields allow for comprehensive lead profiling, including custom fields for agency-specific data. when using this endpoint, ensure that all required fields are provided for each lead and that the total number of leads does not exceed the maximum limit of 5 per request. this batch creation method significantly reduces api calls and improves efficiency when handling multiple new leads simultaneously.
+
+**Action Parameters**
+
+<ParamField path="leadDataRequests" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_CUSTOM_FIELDS">
+Retrieves all custom fields configured in the agencyzoom system. custom fields are user-defined data points that allow agencies to track additional information tailored to their specific needs. this endpoint should be used when you need to fetch a comprehensive list of all custom fields set up in the system, which can include fields for leads, customers, or sales activities. it provides a way to dynamically adapt to an agency's unique data structure without requiring changes to the core api. note that this endpoint returns only the custom field definitions and not their associated values for specific records.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_BIZ_LEAD">
+Creates or updates a business lead in the agencyzoom platform. this endpoint is used to input detailed information about a potential business client, including both personal contact details and company-specific data. it's particularly useful for b2b sales and marketing teams who need to manage and track business leads through various stages of the sales pipeline. the endpoint requires essential information like the lead's name, email, and assignment details, while also allowing for extensive additional data to be recorded, such as business classification, revenue, and custom fields. use this when you need to add a new business lead to the system or update an existing one with new information. note that this endpoint is specifically designed for business leads and includes fields that may not be relevant for individual consumer leads.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_LEAD_QUOTE">
+This endpoint allows you to update quote data for a specific lead in agencyzoom. it is used to modify existing quote information, including essential details such as the quote id, carrier, product line, number of items, and premium amount. the endpoint also supports the addition of custom fields, enabling flexible data management for agency-specific requirements. use this endpoint when you need to revise or update quote information for a lead, such as when policy details change or when refining a quote based on new information. note that this endpoint requires the lead id as part of the url path, ensuring that the quote is associated with the correct lead in the system.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="carrierId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="productLineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="premium" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_MARK_THREAD_AS_UNREAD_API_ENDPOINT">
+This endpoint allows users to mark a specific text thread as unread in the agencyzoom platform. it is used to manage the read/unread status of communication threads, which can include email conversations or chat messages. the endpoint is particularly useful for users who want to flag important messages for later attention or maintain an organized view of their communications. it should be used when a user needs to change the status of a thread they've previously read or accidentally marked as read. this operation only affects the thread's read status and does not modify the content of the messages within the thread.
+
+**Action Parameters**
+
+<ParamField path="threadId" type="string">
+</ParamField>
+
+<ParamField path="markUnread" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_CUSTOMER">
+Updates an existing customer's information in the agencyzoom platform. this endpoint allows for comprehensive modifications to a customer's profile, including personal details, contact information, address, and business-specific data. it supports both individual and business customers, with specific fields for commercial entities. the endpoint is ideal for keeping customer information up-to-date, adding new details, or correcting existing data. it provides flexibility through custom fields and tagging capabilities, enabling personalized customer management. use this endpoint when you need to modify any aspect of a customer's profile or when new information becomes available. note that some fields are only applicable to business customers, and care should be taken to maintain data consistency, especially with date formats and business-specific numeric values.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="firstname" type="string">
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="secondaryEmail" type="string">
+</ParamField>
+
+<ParamField path="secondaryPhone" type="string">
+</ParamField>
+
+<ParamField path="streetAddress" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+<ParamField path="createDate" type="string">
+</ParamField>
+
+<ParamField path="bizCustomer" type="integer">
+</ParamField>
+
+<ParamField path="contactFirstname" type="string">
+</ParamField>
+
+<ParamField path="contactLastname" type="string">
+</ParamField>
+
+<ParamField path="contactMiddlename" type="string">
+</ParamField>
+
+<ParamField path="numberOfEmployees" type="integer">
+</ParamField>
+
+<ParamField path="annualRevenue" type="integer">
+</ParamField>
+
+<ParamField path="totalPayroll" type="integer">
+</ParamField>
+
+<ParamField path="tagNames" type="string">
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="csrId" type="integer">
+</ParamField>
+
+<ParamField path="agentId" type="integer">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_TASK_DETAILS">
+Retrieves detailed information about a specific task within the agencyzoom platform. this endpoint allows users to fetch comprehensive data related to a single task, including its status, assigned agent, due date, and other relevant details. it should be used when you need to access or review the complete information of a particular task, such as during task management, progress tracking, or reporting activities. the endpoint is particularly useful for integrating task data into external systems or creating custom dashboards. note that this endpoint only provides information for a single task; for bulk task retrieval or listing multiple tasks, a different endpoint should be used.
+
+**Action Parameters**
+
+<ParamField path="taskId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_BUSINESS_LEAD">
+Updates the data for an existing business lead in agencyzoom. this endpoint allows you to modify various aspects of a lead's profile, including personal information, contact details, pipeline status, and business-specific data. it's particularly useful for keeping lead information up-to-date as the sales process progresses or when new information becomes available. the endpoint requires several mandatory fields to ensure critical lead data is maintained, while offering flexibility with numerous optional fields for comprehensive lead management. note that this endpoint is specifically designed for business leads and includes fields tailored to business entities.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_SMS_THREADS">
+The searchtextthreads endpoint allows users to search, filter, and retrieve text threads (notifications) within the agencyzoom platform. this powerful tool supports pagination, custom sorting, and various filtering options to help users efficiently manage and analyze their communication threads. use this endpoint when you need to find specific threads, generate reports, or analyze communication patterns across different agents, locations, or time periods. the endpoint is particularly useful for large agencies dealing with high volumes of client communications, enabling them to quickly locate relevant conversations and track engagement metrics. note that while this endpoint provides comprehensive search capabilities, it does not modify or create new threads; it is strictly for retrieving existing data.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_DRIVER_S_DETAILS">
+The editopportunitydriver endpoint updates information for a specific driver in agencyzoom. it modifies details like personal info, relationships, and licensing data. use this put request when changes in a driver's status or information need to be reflected in the system. the endpoint requires driverid in the url and firstname and lastname in the request body. other fields are optional.
+
+**Action Parameters**
+
+<ParamField path="driverId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="firstName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="middleName" type="string">
+</ParamField>
+
+<ParamField path="lastName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="relationship" type="string">
+</ParamField>
+
+<ParamField path="gender" type="string">
+</ParamField>
+
+<ParamField path="maritalStatus" type="integer">
+</ParamField>
+
+<ParamField path="stateLicensed" type="string">
+</ParamField>
+
+<ParamField path="licenseNumber" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_PRODUCT_CATEGORIES_POLICY_CATEGORIES">
+Retrieves a list of all product categories available in the agencyzoom system. this endpoint is used to obtain a comprehensive overview of how products or services are categorized within the platform. it's particularly useful for agency managers or system integrators who need to understand the product structure or want to use these categories for reporting, filtering, or organizing insurance products. the endpoint returns all categories without any filtering, making it ideal for populating dropdown menus or creating a product hierarchy in client applications. note that this endpoint does not provide detailed information about the products within each category; it only returns the category structure itself.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_LOSS_REASONS">
+Retrieves a comprehensive list of loss reasons from the agencyzoom system. this endpoint is designed to provide insurance agencies with standardized reasons for policy losses or claim denials. it should be used when agencies need to categorize or analyze the causes of lost business or rejected claims. the tool returns all available loss reasons without any filtering options, making it useful for populating dropdown menus or conducting overall loss analysis. however, it does not provide detailed statistics or frequency of each loss reason; it only offers the predefined list of reasons.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_LEAD_DETAILS">
+Retrieves detailed information about a specific lead in the agencyzoom platform using its unique identifier. this endpoint is essential for accessing comprehensive data about a single lead, including contact information, status, associated policies, and interaction history. use this endpoint when you need to fetch up-to-date information about a particular lead, such as during customer interactions, for updating records, or when analyzing individual lead performance. the endpoint provides a snapshot of the lead's current state in the system, which is crucial for effective lead management and informed decision-making in insurance agency operations.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_EMAIL_THREADS">
+The emailthreadsearch endpoint allows users to search, filter, and retrieve email threads within the agencyzoom platform. this powerful tool enables agencies to efficiently manage their email communications by providing a flexible way to locate specific threads based on various criteria. use this endpoint when you need to find relevant email conversations, track communication history with clients or team members, or analyze email trends within your agency. the endpoint supports pagination, sorting, and multiple filtering options, making it suitable for handling large volumes of email threads. it can be used to build advanced search interfaces, generate reports on communication patterns, or integrate email thread management into other agency workflows. note that this endpoint focuses on retrieving thread metadata and does not return the full content of emails. for sensitive operations or accessing full email content, additional authentication or separate api calls may be required.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SERVICE_TICKET_LIST">
+The listservicetickets endpoint allows users to search and retrieve a list of service tickets in the agencyzoom crm platform. it provides extensive filtering and sorting capabilities to narrow down results based on various criteria such as status, priority, date ranges, and associated entities like workflows and carriers. this endpoint is particularly useful for generating reports, analyzing customer service performance, and managing ongoing customer interactions. the results are paginated for efficient data retrieval, and the endpoint supports customizable sorting to help users organize the data according to their needs. it's important to note that this endpoint does not create or modify service tickets; it's designed solely for retrieval and analysis purposes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_REMOVE_TEXT_THREAD_ENDPOINT">
+The deletetextthread endpoint is used to remove a specific text thread from the agencyzoom communication workflow. this operation is irreversible and should be used with caution. the endpoint allows for the deletion of a single thread at a time, identified by its unique threadid. while primarily focused on thread deletion, the endpoint also supports pagination, sorting, and location-based filtering, which can be useful for managing large volumes of threads or when working with multi-location agencies. it's important to note that this endpoint does not provide information about the deleted thread or confirm its contents before deletion. users should ensure they have the correct threadid before proceeding with the deletion to avoid unintended data loss.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THREAD_DETAILS">
+The email thread detail search endpoint allows users to search and retrieve information about email threads within agencyzoom. it supports pagination, sorting, and filtering options for efficient data retrieval. use this endpoint to find specific email threads, analyze communication patterns, or gather information about client interactions. it's ideal for customer service reviews and auditing communication history.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_THREAD">
+The deleteemailthread endpoint allows users to delete a specific email thread from the agencyzoom system. this post request requires the unique threadid of the email thread to be deleted. the endpoint supports pagination and sorting options, making it useful for managing large volumes of email threads efficiently. it's particularly helpful when cleaning up old or irrelevant email conversations to maintain a clutter-free communication environment. however, users should exercise caution as deleted threads cannot be recovered, and this action may affect related data or workflows within agencyzoom.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_LIFE_PROFESSIONALS">
+Retrieves a list of life insurance professionals managed within the agencyzoom platform. this endpoint allows users to access information about life insurance agents, brokers, or other professionals associated with their agency. it can be used to gather data for performance tracking, communication management, or workflow automation purposes. the endpoint does not provide detailed sales data or customer information, focusing solely on professional-related data. note that the specific fields returned for each professional are not defined in the given schema and may need to be confirmed with the api documentation.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_LEAD_QUOTES">
+Retrieves all quotes associated with a specific lead in the agencyzoom platform. this endpoint allows users to fetch detailed information about the insurance quotes generated for a particular lead, enabling efficient tracking and management of potential policies. it should be used when an agent or system needs to review or compare multiple quotes for a single lead, such as during the sales process or when updating a lead's status. the endpoint provides a comprehensive view of quote history for the specified lead but does not modify any data or generate new quotes. note that the response may include both active and historical quotes, so users should pay attention to quote status and dates when processing the returned data.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_OPPORTUNITIES_FOR_A_LEAD">
+Retrieves all opportunities associated with a specific lead in agencyzoom. this endpoint allows users to fetch detailed information about potential sales or business prospects linked to a particular lead, enabling efficient tracking and management of the sales pipeline. it should be used when you need to review or analyze the opportunities generated from a specific lead, such as for performance tracking or follow-up prioritization. the endpoint provides a comprehensive view of a lead's potential value but does not modify any data. note that it only returns opportunities for the specified lead and does not provide aggregate data across multiple leads.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_CUSTOMER_TASKS">
+Retrieves a list of tasks associated with a specific customer in agencyzoom. this endpoint is used to fetch all tasks related to a given customer, enabling agents to view and manage customer-specific activities, follow-ups, and action items. it provides a comprehensive overview of ongoing and completed tasks for the customer, supporting effective task management and customer engagement. the endpoint should be used when an agent needs to review or track the progress of tasks associated with a particular customer, such as policy renewals, claim follow-ups, or general inquiries. note that this endpoint only returns task data and does not include detailed customer information or allow task modification.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_RECYCLE_EVENTS">
+Retrieves the recycle events associated with a specific lead in the agencyzoom platform. this endpoint allows users to fetch the history of recycling activities for a given lead, which can include events such as lead reassignment, reactivation, or any other recycling-related actions. it is particularly useful for tracking the lifecycle of a lead and understanding how it has been managed over time. the endpoint should be used when analyzing lead management processes, auditing lead handling, or gathering data for performance metrics related to lead recycling efficiency.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_VEHICLE">
+This endpoint deletes a specific vehicle associated with an opportunity in the agencyzoom system. it is used to remove a vehicle from the database when it is no longer relevant to an insurance opportunity or lead. the operation is permanent and should be used with caution as it may affect related data or workflows within the agency management process. this endpoint is particularly useful for maintaining accurate and up-to-date information about potential insurance deals, especially when vehicle details change or are no longer part of the opportunity. it does not provide any information about the deleted vehicle or the status of the deletion process, so additional verification may be necessary after calling this endpoint.
+
+**Action Parameters**
+
+<ParamField path="vehicleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_LIST_OF_END_STAGES">
+Retrieves information about the end stages of workflows or processes within the agencyzoom platform. this endpoint allows users to fetch data related to the final steps in various agency management workflows, such as lead conversion, customer onboarding, or policy closure. it provides valuable insights into the completion status of different processes, helping agencies track and optimize their operational efficiency. the endpoint should be used when analyzing workflow performance, identifying bottlenecks, or generating reports on process completion rates. note that this endpoint may not provide real-time updates and the data retrieved might reflect the most recent system update rather than instantaneous status.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_CUSTOMER_FILE">
+Deletes a specific file associated with a customer in the agencyzoom platform. this endpoint is used when you need to remove a file from a customer's record, such as outdated documents or incorrectly uploaded files. it's important to note that this operation is irreversible, so it should be used with caution. the endpoint requires both the customer id and the specific file id to ensure precise file deletion within the customer's records.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="fileId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UNLINK_A_DRIVER_FROM_OPPORTUNITY">
+This endpoint unlinks a specific driver from an opportunity within the agencyzoom platform. it is used to update the details of a potential sale or business engagement by removing the association between a driver and an opportunity. this action is particularly useful when managing insurance-related opportunities and need to modify the involved parties. the endpoint should be used when a driver is no longer relevant to an opportunity, such as when a policy is being updated or when correcting data entry errors. it's important to note that this operation may have implications on the opportunity's status or associated policies, so it should be used carefully and in accordance with the business logic of the insurance agency.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="driverId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_TASK">
+The createtask endpoint allows users to create a new task within the agencyzoom platform. this powerful tool is essential for managing agency workflows, tracking activities, and ensuring timely follow-ups with clients and leads. it provides flexibility in task creation, allowing users to specify various details such as the task type, assignee, due date, and associated contacts or leads. the endpoint is particularly useful for automating task creation as part of larger workflow processes or for integrating task management with other systems. when using this endpoint, it's important to provide at least the required fields (title and type) and to ensure that any ids used (such as assigneeid or customerid) correspond to valid entities within your agencyzoom account. while many fields are optional, providing more details can significantly enhance task tracking and management efficiency.
+
+**Action Parameters**
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="dueDatetime" type="string">
+</ParamField>
+
+<ParamField path="comments" type="string">
+</ParamField>
+
+<ParamField path="assigneeId" type="integer">
+</ParamField>
+
+<ParamField path="lifeProfessionalId" type="integer">
+</ParamField>
+
+<ParamField path="contactEmail" type="string">
+</ParamField>
+
+<ParamField path="customerId" type="integer">
+</ParamField>
+
+<ParamField path="leadId" type="integer">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="invitees" type="array">
+</ParamField>
+
+<ParamField path="timeSpecific" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_DRIVER_DETAILS">
+Retrieves detailed information about a specific driver associated with an opportunity in the agencyzoom platform. this endpoint is used to fetch driver data, which may include personal details, performance metrics, and opportunity-related information. it's particularly useful for agencies managing multiple drivers and tracking their involvement in various business opportunities. the endpoint should be called when detailed driver information is needed in the context of opportunity management or when updating driver records. note that this endpoint only provides data for a single driver and does not return a list of all drivers or opportunities.
+
+**Action Parameters**
+
+<ParamField path="driverId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UNREAD_THREAD">
+This endpoint allows users to mark an email thread as unread or read within the agencyzoom platform. it is primarily used for managing communication threads and controlling their visibility in the user's inbox or unread list. the endpoint should be called when a user wants to change the read status of a specific email thread, either to flag it for future attention (marking as unread) or to indicate it has been reviewed (marking as read). this function is particularly useful for prioritizing communications, managing workflow, and ensuring important threads don't get overlooked. it's important to note that this endpoint only updates the read status and does not modify the content of the thread or move it between folders.
+
+**Action Parameters**
+
+<ParamField path="threadId" type="string">
+</ParamField>
+
+<ParamField path="markUnread" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_PRODUCT_LINES_POLICY_TYPES">
+Retrieves a list of product lines available in the agencyzoom platform. this endpoint allows users to fetch information about various insurance products or services that can be managed through agencyzoom. it should be used when an agency needs to view or update their product offerings, or when integrating agencyzoom with other systems that require product line information. the endpoint provides a comprehensive overview of all product lines but does not include detailed information about individual policies or customers associated with each product line. it's particularly useful for agencies looking to streamline their product management or analyze their current product portfolio.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_A_DRIVER_FOR_AN_OPPORTUNITY">
+Creates a new driver record associated with a specific opportunity in the agencyzoom platform. this endpoint is used to add detailed driver information to an existing opportunity, which is crucial for insurance agencies managing client data and policy quotes. it captures comprehensive driver details including personal information, relationship status, and licensing information. the endpoint also offers the option to automatically create a contact in the system based on the driver information provided. use this endpoint when you need to add a new driver to an opportunity or update driver information for insurance quoting or policy management purposes. note that while many fields are optional, providing complete and accurate information will result in more comprehensive records and potentially more accurate insurance quotes.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_A_CUSTOMER_NOTE">
+Adds a new note to a specific customer's profile in agencyzoom. this endpoint allows users to append additional information, comments, or observations to a customer's record, enhancing the tracking and management of customer interactions. it should be used whenever there's a need to document important information related to a customer, such as meeting notes, follow-up reminders, or any relevant updates. the endpoint is designed for creating new notes only and does not support editing or retrieving existing notes. there are no apparent limitations on note length or content, providing flexibility in the type of information that can be recorded.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="note" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_VEHICLE_DETAILS">
+Retrieves a list of opportunities associated with a specific vehicle in the agencyzoom system. this endpoint is useful for agencies looking to track and manage sales opportunities or leads related to a particular vehicle or vehicle-related product. it can be used to fetch potential sales, renewals, or other business prospects tied to the specified vehicle. the endpoint should be called when an agent or system needs to review or analyze opportunities for a single vehicle, which can aid in targeted sales strategies or follow-ups. note that this endpoint focuses on opportunities for a single vehicle and may not provide comprehensive information about the vehicle itself or other related entities.
+
+**Action Parameters**
+
+<ParamField path="vehicleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_MOVE_LEAD_TO_SOLD">
+This endpoint allows you to mark a lead as sold in the agencyzoom system by updating its status and recording details of the sold products. it's used when a sale has been completed for a lead, enabling you to track successful conversions and maintain accurate sales records. the endpoint supports marking multiple products as sold in a single request, making it efficient for recording complex sales transactions. use this when you need to update the status of a lead and log the specifics of the products sold, including policy details, premiums, and related information. the endpoint is particularly useful for agencies tracking their sales performance and maintaining detailed records of their insurance policy sales.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="keepOpen" type="boolean">
+</ParamField>
+
+<ParamField path="soldProducts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_BATCH_DELETE_TASK">
+Allows batch deletion of multiple tasks in the agencyzoom platform. this endpoint is designed for efficiently removing multiple tasks simultaneously, reducing the need for individual deletion requests. it should be used when you need to delete several tasks at once, such as when cleaning up completed or outdated tasks. the endpoint accepts an array of task ids and attempts to delete all specified tasks. note that this operation is irreversible, so care should be taken to ensure that all listed task ids are intended for deletion. the endpoint does not provide confirmation of individual task deletions, so it's advisable to verify the results separately if needed.
+
+**Action Parameters**
+
+<ParamField path="taskIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_LEAD_OPPORTUNITY">
+Updates the opportunity data for a specific lead in agencyzoom. this endpoint allows users to modify existing opportunity information, including the associated carrier, product line, premium amount, number of items, and custom fields. it's primarily used when there are changes to an opportunity's details or when new information becomes available during the sales process. the endpoint is essential for keeping opportunity data current and accurate, which is crucial for effective lead management and sales tracking in insurance agencies. note that this endpoint updates an existing opportunity; it cannot be used to create a new opportunity or modify lead information directly.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="carrierId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="productLineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="integer" default="1">
+</ParamField>
+
+<ParamField path="premium" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_V4_SSO_LOG_THE_USER_IN">
+Authenticates a user using their email and password, and retrieves initial dashboard data. this endpoint should be used for single sign-on (sso) functionality, allowing users to access the agencyzoom platform and immediately receive relevant dashboard information. it combines the login process with data retrieval, streamlining the user's entry into the system. note that this endpoint requires both username (email) and password to be provided in the request body as json. the specific structure of the dashboard data returned is not detailed in the given schema and may vary based on the user's role and permissions.
+
+**Action Parameters**
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_LEAD_STATUS_BY_ID">
+Updates the status of a lead in the agencyzoom system and manages associated workflow information. this endpoint allows for changing a lead's status (e.g., from active to won), updating workflow stages, scheduling future actions, and managing lead recycling. it's particularly useful for tracking lead progress, managing sales pipelines, and automating lead nurturing processes. the endpoint provides granular control over lead management, including the ability to change lead sources, set loss reasons, and apply tags. it should be used whenever there's a significant change in a lead's status or when you need to move a lead through different stages of your sales process. note that this endpoint doesn't provide historical tracking of status changes; it only updates the current status and related information.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="workflowId" type="integer">
+</ParamField>
+
+<ParamField path="workflowStageId" type="integer">
+</ParamField>
+
+<ParamField path="status" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="date" type="string">
+</ParamField>
+
+<ParamField path="lossReasonId" type="integer">
+</ParamField>
+
+<ParamField path="xDateType" type="string">
+</ParamField>
+
+<ParamField path="changeLeadSourceTo" type="integer">
+</ParamField>
+
+<ParamField path="recycleToStage" type="integer">
+</ParamField>
+
+<ParamField path="recycleToPipeline" type="integer">
+</ParamField>
+
+<ParamField path="toStageId" type="integer">
+</ParamField>
+
+<ParamField path="tagIds" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_LINK_A_DRIVER_TO_OPPORTUNITY">
+Links a specific driver (sales agent or team member) to an existing opportunity within agencyzoom. this endpoint is used to associate a driver with a potential sales or business opportunity, enabling better tracking and management of the sales process. it should be used when assigning or reassigning opportunities to specific team members. the linkage allows for personalized workflow management and enhanced performance tracking. this operation updates the existing opportunity record and may trigger related workflows or notifications within the agencyzoom system.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="driverId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_LEAD_OPPORTUNITY">
+Deletes a specific opportunity associated with a lead in the agencyzoom platform. this endpoint should be used when an opportunity is no longer relevant, has been closed, or was created in error. it permanently removes the opportunity from the lead's record, helping to maintain an accurate and up-to-date sales pipeline. use this endpoint with caution, as deleted opportunities cannot be recovered. it's important to note that this action only removes the opportunity, not the lead itself.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UNLINK_A_VEHICLE_FROM_OPPORTUNITY">
+This endpoint unlinks a specific vehicle from an opportunity in the agencyzoom platform. it is used to remove the association between a vehicle and an opportunity, which may be necessary when updating opportunity details or managing vehicle-related data within the system. the operation is performed using the put http method, indicating an update to the existing relationship. this endpoint should be used when you need to dissociate a vehicle from an opportunity, such as when a vehicle is no longer relevant to a particular sales opportunity or when correcting incorrectly linked data. it's important to note that this operation only removes the link between the vehicle and the opportunity; it does not delete either the vehicle or the opportunity from the system.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="vehicleId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_LOG_THE_USER_OUT">
+Logs out the currently authenticated user from the agencyzoom platform. this endpoint should be called when a user wants to end their active session and securely sign out of the application. it invalidates the user's current authentication token, ensuring that it can no longer be used for api requests. this is an important security measure to implement when building integrations with agencyzoom, especially in multi-user environments or applications where session management is crucial.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_DEPARTMENTS_GROUPS">
+This endpoint allows users to search for and retrieve department and group information within a specific agency in the agencyzoom platform. it is designed to support customer search requests in the context of department and group management. the endpoint should be used when there's a need to access or analyze the organizational structure of an agency, particularly for customer-related operations. it provides a way to streamline agency management by offering insights into how departments and groups are organized within an agency. note that this endpoint focuses solely on retrieving department and group data and does not modify or create new organizational structures. the response likely includes details about the departments, their associated groups, and potentially relevant customer information, although the exact response structure is not specified in the provided schema.
+
+**Action Parameters**
+
+<ParamField path="agencyNumber" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_A_LEAD_QUOTE">
+Adds a new quote to a specific lead in the agencyzoom platform. this endpoint allows users to associate detailed quote information with a lead, including carrier details, product information, premium amount, and custom fields. it's particularly useful for tracking and managing different insurance quotes offered to a potential client. the endpoint should be used when a new quote is generated for a lead or when updating quote information. it provides a comprehensive way to capture both standard quote data and agency-specific information through custom fields, enhancing the lead management process. note that this endpoint only adds quote data and does not process or bind the insurance policy itself.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="carrierId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="productLineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="items" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="premium" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_AN_OPPORTUNITY">
+Deletes a specific opportunity from the agencyzoom system using its unique identifier. this endpoint should be used when an agency needs to remove an opportunity that is no longer relevant, has been closed, or was created in error. it permanently removes the opportunity data, so it should be used with caution. the deletion is irreversible, and once an opportunity is deleted, it cannot be recovered through the api. this endpoint is useful for maintaining data accuracy and cleaning up the agency's opportunity pipeline.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_LEAD">
+Creates or updates a lead in the agencyzoom crm system. this endpoint allows you to input comprehensive information about a lead, including personal details, contact information, assignment data, and custom fields. it's used to add new leads to the system or update existing lead information. the endpoint is particularly useful for integrating lead capture forms or importing leads from external sources. it ensures that leads are properly categorized, assigned, and placed into the correct stage of your sales pipeline. when using this endpoint, make sure to provide all required fields and any additional information that will help in lead management and follow-up processes.
+
+**Action Parameters**
+
+<ParamField path="firstname" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="secondaryEmail" type="string">
+</ParamField>
+
+<ParamField path="secondaryPhone" type="string">
+</ParamField>
+
+<ParamField path="notes" type="string">
+</ParamField>
+
+<ParamField path="pipelineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="stageId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="contactDate" type="string">
+</ParamField>
+
+<ParamField path="soldDate" type="string">
+</ParamField>
+
+<ParamField path="leadSourceId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="assignmentGroupId" type="integer">
+</ParamField>
+
+<ParamField path="xDate" type="string">
+</ParamField>
+
+<ParamField path="quoteDate" type="string">
+</ParamField>
+
+<ParamField path="assignTo" type="string" required={true}>
+</ParamField>
+
+<ParamField path="csrId" type="integer">
+</ParamField>
+
+<ParamField path="streetAddress" type="string">
+</ParamField>
+
+<ParamField path="streetAddressLine2" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+<ParamField path="isBusiness" type="boolean">
+</ParamField>
+
+<ParamField path="agencyNumber" type="string">
+</ParamField>
+
+<ParamField path="departmentCode" type="string">
+</ParamField>
+
+<ParamField path="groupCode" type="string">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="nickname" type="string">
+</ParamField>
+
+<ParamField path="maritalStatus" type="integer">
+</ParamField>
+
+<ParamField path="tagNames" type="string">
+</ParamField>
+
+<ParamField path="middlename" type="string">
+</ParamField>
+
+<ParamField path="nextExpirationDate" type="string">
+</ParamField>
+
+<ParamField path="otherProducers" type="array">
+</ParamField>
+
+<ParamField path="otherCsrs" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_LEAD">
+Updates an existing lead's information in the agencyzoom platform. this endpoint allows you to modify various details of a lead, including personal information, contact details, assignment, and pipeline stage. it's particularly useful for keeping lead information up-to-date as they progress through your sales pipeline or when new information becomes available. the endpoint requires several key pieces of information to be provided, ensuring that critical lead data is always maintained. while it offers flexibility in updating many optional fields, it enforces the presence of essential information through required parameters. this endpoint should be used whenever there's a need to modify any aspect of a lead's data, whether it's a simple update to contact information or a significant change in the lead's status within your agency's workflow.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="firstname" type="string" required={true}>
+</ParamField>
+
+<ParamField path="lastname" type="string">
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="secondaryEmail" type="string">
+</ParamField>
+
+<ParamField path="secondaryPhone" type="string">
+</ParamField>
+
+<ParamField path="notes" type="string">
+</ParamField>
+
+<ParamField path="pipelineId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="stageId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="contactDate" type="string">
+</ParamField>
+
+<ParamField path="soldDate" type="string">
+</ParamField>
+
+<ParamField path="leadSourceId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="assignmentGroupId" type="integer">
+</ParamField>
+
+<ParamField path="xDate" type="string">
+</ParamField>
+
+<ParamField path="quoteDate" type="string">
+</ParamField>
+
+<ParamField path="assignTo" type="string" required={true}>
+</ParamField>
+
+<ParamField path="csrId" type="integer">
+</ParamField>
+
+<ParamField path="streetAddress" type="string">
+</ParamField>
+
+<ParamField path="streetAddressLine2" type="string">
+</ParamField>
+
+<ParamField path="city" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="zip" type="string">
+</ParamField>
+
+<ParamField path="isBusiness" type="boolean">
+</ParamField>
+
+<ParamField path="agencyNumber" type="string">
+</ParamField>
+
+<ParamField path="departmentCode" type="string">
+</ParamField>
+
+<ParamField path="groupCode" type="string">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="birthday" type="string">
+</ParamField>
+
+<ParamField path="nickname" type="string">
+</ParamField>
+
+<ParamField path="maritalStatus" type="integer">
+</ParamField>
+
+<ParamField path="tagNames" type="string">
+</ParamField>
+
+<ParamField path="middlename" type="string">
+</ParamField>
+
+<ParamField path="nextExpirationDate" type="string">
+</ParamField>
+
+<ParamField path="otherProducers" type="array">
+</ParamField>
+
+<ParamField path="otherCsrs" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_CUSTOMER">
+Deletes a specific customer record from the agencyzoom platform. this endpoint should be used when an agency needs to permanently remove a customer's information from their database, such as when a customer relationship has ended or due to data privacy requests. it's important to note that this action is irreversible and will remove all associated data for the specified customer. use this endpoint with caution, as it may have implications on historical reporting and data integrity. always ensure proper authorization and confirmation before executing a customer deletion.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_A_LEAD_QUOTE">
+Deletes a specific quote associated with a particular lead in the agencyzoom system. this endpoint should be used when you need to permanently remove a quote from a lead's record, such as when a quote is no longer valid or relevant. it's important to note that this operation is irreversible, so it should be used with caution. the endpoint requires both the lead id and quote id to ensure precise targeting of the quote to be deleted. after successful deletion, the quote will no longer be accessible or associated with the specified lead.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="quoteId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_EMPLOYEES">
+Retrieves a list of employees within the agency from the agencyzoom system. this endpoint allows users to access comprehensive employee information, which can be crucial for managing staff, tracking performance, and maintaining accurate records for e&o compliance. it's designed to be used when an overview of all employees or specific employee details are needed. the endpoint returns data such as employee names, roles, contact information, and potentially performance metrics or task assignments. however, it does not modify any employee data and should not be used for updates or deletions. note that the response may be paginated for large agencies, and additional calls might be necessary to retrieve the complete employee list.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_TEXT_DETAIL_THREAD">
+Searches for messages within text threads in the agencyzoom platform. this endpoint allows users to retrieve and filter messages based on various criteria such as thread id, search term, lead status, and date. it supports pagination, sorting, and filtering to provide flexible and efficient access to message data. use this endpoint when you need to find specific messages, analyze communication history, or gather insights from text thread conversations. the search can be narrowed down to a specific thread or broadened to include multiple threads based on the provided parameters. note that this endpoint does not provide real-time message updates and is intended for historical data retrieval and analysis.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_LEADS_COUNT">
+The leadpipelinesearch endpoint allows you to search and retrieve lead pipeline counts based on various criteria in agencyzoom. it supports filtering by attributes such as status, assigned user, creation date, and customer information, with pagination and sorting options. use this tool for analyzing your sales pipeline, tracking lead progress, and generating reports. it's ideal for complex searches across your lead database, but primarily returns counts or summary data rather than detailed lead information.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_LOG_THE_USER_IN">
+Authenticates a user in the agencyzoom platform using their email address and password. this endpoint should be used to obtain the necessary authentication token for accessing other agencyzoom api features. it is the initial step in any workflow that requires authenticated access to agencyzoom's services. the endpoint returns a jwt token upon successful authentication, which must be included in subsequent api calls. note that this endpoint does not create new user accounts; it only authenticates existing users. for security reasons, implement appropriate measures to protect sensitive login credentials during transmission.
+
+**Action Parameters**
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="password" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_SEARCH_TASKS">
+This endpoint allows you to search and list tasks within the agencyzoom platform. it provides extensive filtering options to retrieve specific sets of tasks based on various criteria such as date range, task type, status, assignee, and lead source. the endpoint supports pagination and sorting, making it suitable for displaying task lists in user interfaces or for bulk data retrieval. use this endpoint when you need to fetch tasks for display, reporting, or synchronization purposes. it's particularly useful for generating task overviews, managing workloads, or analyzing task distribution across team members and lead sources. the endpoint does not create, update, or delete tasks; it's purely for retrieval and searching. also, note that while it offers many filter options, it does not provide task details beyond the search criteria. for full task details, you may need to use a separate endpoint after obtaining the task ids from this search.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_THE_CUSTOMER_DETAILS">
+Retrieves detailed information about a specific customer in the agencyzoom system. this endpoint allows you to fetch comprehensive customer data using a unique customer identifier. it should be used when you need to access or display individual customer details, such as contact information, account status, or custom fields associated with the customer. the endpoint is particularly useful for populating customer profile pages, preparing for customer interactions, or integrating customer data into other systems. keep in mind that this endpoint only provides information for a single customer at a time and does not support bulk retrieval or filtering of multiple customers.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_AMS_POLICIES_FOR_A_CUSTOMER">
+Retrieves the ams (agency management system) policies associated with a specific customer in the agencyzoom platform. this endpoint allows users to fetch policy information that has been synchronized from an integrated agency management system for a given customer. it should be used when you need to access up-to-date policy details for a particular customer, such as during customer reviews, policy updates, or when generating reports. the endpoint provides a comprehensive view of the customer's policies as stored in the ams, but it does not allow for policy modifications or creations through this call.
+
+**Action Parameters**
+
+<ParamField path="customerId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_AN_OPPORTUNITY">
+The updateopportunity endpoint modifies existing opportunity data in agencyzoom. it updates lead information, policy details, and property data for a specific opportunity. this endpoint is crucial for maintaining accurate and current opportunity information throughout the sales process. it supports partial updates and adapts to agency-specific configurations, ensuring critical data points are included based on individual agency needs.
+
+**Action Parameters**
+
+<ParamField path="carrierId" type="integer">
+</ParamField>
+
+<ParamField path="productLineId" type="integer">
+</ParamField>
+
+<ParamField path="items" type="integer" default="1">
+</ParamField>
+
+<ParamField path="premium" type="integer">
+</ParamField>
+
+<ParamField path="expiryDate" type="string">
+</ParamField>
+
+<ParamField path="customFields" type="array">
+</ParamField>
+
+<ParamField path="property__zip" type="string">
+</ParamField>
+
+<ParamField path="property__city" type="string">
+</ParamField>
+
+<ParamField path="property__state" type="string">
+</ParamField>
+
+<ParamField path="property__country" type="string">
+</ParamField>
+
+<ParamField path="property__address1" type="string">
+</ParamField>
+
+<ParamField path="property__address2" type="string">
+</ParamField>
+
+<ParamField path="property__useMailingAddressAsLocation" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_POLICY">
+The updatepolicy endpoint allows you to modify an existing insurance policy in the agencyzoom system. this put request to /v1/api/policies/`{policyid}` updates various details of a policy, including its category, carrier, dates, premium, and associated ids. it's used when policy information needs to be changed or corrected after initial creation. the endpoint requires several mandatory fields to ensure accurate policy updates, while also allowing optional fields for more comprehensive policy management. it's important to note that monetary values are represented in cents, requiring conversion from dollar amounts before submission.
+
+**Action Parameters**
+
+<ParamField path="policyId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="insuredName" type="string">
+</ParamField>
+
+<ParamField path="productCategoryId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="carrierId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="soldDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="agentId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="policyType" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="policyNumber" type="string">
+</ParamField>
+
+<ParamField path="premium" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="brokerFee" type="integer">
+</ParamField>
+
+<ParamField path="items" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="leadSourceId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="agencyNumber" type="string" required={true}>
+</ParamField>
+
+<ParamField path="effectiveDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="expiryDate" type="string" required={true}>
+</ParamField>
+
+<ParamField path="priorCarrierName" type="string">
+</ParamField>
+
+<ParamField path="priorPolicyNumber" type="string">
+</ParamField>
+
+<ParamField path="priorExpiryDate" type="string">
+</ParamField>
+
+<ParamField path="departmentCode" type="string">
+</ParamField>
+
+<ParamField path="groupCode" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_CARRIERS">
+Retrieves a list of insurance carriers available in the agencyzoom system. this endpoint allows users to fetch information about various insurance providers integrated with agencyzoom. it should be used when you need to obtain an up-to-date list of carriers for tasks such as populating dropdown menus, verifying carrier availability, or syncing carrier data with other systems. the endpoint returns basic information about each carrier, which may include their name, id, and possibly other relevant details. keep in mind that this endpoint does not provide detailed information about specific policies or coverage options offered by the carriers.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_A_VEHICLE_S_DETAILS">
+The editopportunityvehicle endpoint allows you to update the details of a vehicle associated with an existing opportunity in agencyzoom. this tool is primarily used for maintaining accurate and up-to-date vehicle information within the context of insurance opportunities or policy management. it enables you to modify various aspects of a vehicle's record, including its identification, basic details, and ownership status. use this endpoint when you need to correct, update, or add new information about a vehicle that is linked to an opportunity in the system. this could be necessary when a client's vehicle details change, when correcting data entry errors, or when adding more comprehensive information to an existing record. it's important to note that while only the 'make' field is required, providing as much accurate information as possible will ensure the most complete and useful vehicle record. the endpoint does not handle the creation or deletion of vehicle records, only their modification.
+
+**Action Parameters**
+
+<ParamField path="vehicleId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="vin" type="string">
+</ParamField>
+
+<ParamField path="make" type="string" required={true}>
+</ParamField>
+
+<ParamField path="year" type="integer">
+</ParamField>
+
+<ParamField path="model" type="string">
+</ParamField>
+
+<ParamField path="ownership" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_CSRS">
+Retrieves a list of customer service representatives (csrs) associated with the agency in agencyzoom. this endpoint allows agencies to access information about their csr team, which can be useful for performance tracking, workload distribution, and team management. the retrieved data likely includes details such as csr names, contact information, and possibly performance metrics. use this endpoint when you need an overview of your customer service team or when integrating csr data with other systems for reporting or workflow automation purposes. note that the specific fields returned and any filtering options are not detailed in the provided schema, so additional documentation may be needed for a complete understanding of the response structure and query capabilities.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_AUTHENTICATE_FOR_JWTVIA_V4_SSO">
+The v4sso sso login endpoint facilitates single sign-on (sso) authentication for agencyzoom while simultaneously requesting dashboard data. this dual-purpose endpoint streamlines the login process and initial data retrieval, enhancing user experience and reducing api calls. it should be used when a user needs to authenticate and immediately access their dashboard information. the endpoint expects login credentials and optionally a v4sso callback code, returning authentication tokens and relevant dashboard data upon successful login. note that this endpoint combines authentication and data retrieval, which may not be suitable for scenarios where only authentication or only dashboard data is needed.
+
+**Action Parameters**
+
+<ParamField path="code" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_VEHICLES_FOR_AN_OPPORTUNITY">
+Retrieves a list of vehicles associated with a specific opportunity in the agencyzoom platform. this endpoint is useful for accessing detailed information about vehicles linked to a particular insurance opportunity, such as a quote, policy, or claim. it should be used when you need to review or process vehicle-specific data within the context of an agency's opportunity management workflow. the endpoint provides a comprehensive view of all vehicles tied to the given opportunity, which can be crucial for accurate policy pricing, risk assessment, or claim processing. note that this endpoint only returns vehicle information and does not modify any existing data.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_DELETE_MESSAGE">
+The deletemessage endpoint allows users to remove a specific message from an email thread within the agencyzoom platform. this tool is crucial for maintaining clean and organized communication records, supporting e&o compliance, and managing agency communications effectively. it should be used when a user needs to permanently remove an incorrect, outdated, or sensitive message from an email thread. the endpoint supports pagination and sorting, which is particularly useful when dealing with large email threads or when precise message selection is required before deletion. it's important to note that this operation is irreversible, so users should exercise caution and ensure they have the correct messageid before proceeding with deletion. the tool does not provide message recovery options, so it's advisable to have a backup or confirmation process in place before using this endpoint for critical communications.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_DRIVERS_FOR_AN_OPPORTUNITY">
+Retrieves the drivers associated with a specific opportunity in agencyzoom. this endpoint allows users to fetch detailed information about the factors influencing a particular sales opportunity, which can include customer data, policy information, or other relevant details that impact the opportunity's success. it should be used when analyzing the key elements affecting a specific sales lead or potential business. the tool provides insights into what's driving the opportunity, helping agents make informed decisions and strategize effectively. note that this endpoint only returns driver information for a single opportunity at a time and does not provide an overview of multiple opportunities or agency-wide analytics.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_ASSIGN_GROUPS">
+Retrieves information about assigned groups within the agencyzoom platform. this endpoint allows users to fetch details about organizational structures, teams, or categories that have been set up and assigned within their agency. it can be used to get an overview of how tasks, leads, or responsibilities are distributed across different groups in the agency. the endpoint does not accept any parameters, suggesting it may return a comprehensive list of all assigned groups by default. use this endpoint when you need to understand the current group structure or assignment distribution in your agencyzoom account. note that this endpoint may not provide detailed information about individual group members or specific assignments; it's primarily for getting a high-level view of the assigned group structure.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_LEAD_SOURCE_CATEGORIES">
+Retrieves a list of lead source categories from the agencyzoom system. this endpoint allows users to fetch the predefined categories used for classifying lead sources within the agency. it's useful for understanding how leads are organized and for maintaining consistency when adding new leads or analyzing lead data. the categories returned can be used in other api calls or within the agencyzoom platform to properly categorize and manage leads. this endpoint does not accept any parameters, suggesting it returns all available categories without filtering options.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_A_VEHICLE_FOR_AN_OPPORTUNITY">
+Creates a new vehicle record associated with a specific opportunity in agencyzoom. this endpoint is used to add detailed vehicle information to an existing opportunity, which is crucial for insurance agencies managing auto policies or quotes. it allows for the input of essential vehicle data such as make, model, year, vin, and ownership status, enabling agents to accurately assess and process insurance-related opportunities. the endpoint should be used when new vehicle information needs to be added to an opportunity, typically during the quoting process or when updating client information. it's important to note that this endpoint only creates the vehicle record and does not modify other aspects of the opportunity. ensure that the opportunityid is valid and that you have the necessary vehicle details before making the api call.
+
+**Action Parameters**
+
+<ParamField path="opportunityId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="vin" type="string">
+</ParamField>
+
+<ParamField path="make" type="string" required={true}>
+</ParamField>
+
+<ParamField path="year" type="integer">
+</ParamField>
+
+<ParamField path="model" type="string">
+</ParamField>
+
+<ParamField path="ownership" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_LEAD_SOURCES">
+Retrieves a list of lead sources available in the agencyzoom platform. this endpoint allows users to fetch information about various channels or origins from which leads are acquired. it should be used when you need to analyze the distribution of leads across different sources, update marketing strategies, or integrate lead source data into reports. the endpoint returns all lead sources associated with the authenticated user's account or agency. it's particularly useful for understanding the effectiveness of different lead generation channels and optimizing lead management processes. note that this endpoint does not provide detailed information about individual leads, but rather focuses on the sources themselves.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_CREATE_A_LEAD_NOTE">
+Adds a new note to a specific lead in the agencyzoom platform. this endpoint is used to record important information, interactions, or updates related to a lead. it's particularly useful for maintaining a comprehensive history of client communications and internal observations. the note is associated with the lead identified by the provided leadid. this endpoint should be used whenever there's new information to add to a lead's record, such as after a phone call, email exchange, or any significant event in the sales process. it does not modify any other lead information besides adding the new note. the endpoint is essential for keeping all team members informed about the latest developments with each lead, facilitating better collaboration and follow-up strategies.
+
+**Action Parameters**
+
+<ParamField path="leadId" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="note" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_BATCH_CREATE_CONTACT">
+The batchcreatecontacts endpoint enables creation of multiple contacts (up to 5) in a single api call within agencyzoom. it's ideal for efficiently importing new contacts or updating records from external sources. the endpoint requires 'firstname' and 'lastname' for each contact, with optional fields for additional details. note the 5-contact limit per request for larger datasets.
+
+**Action Parameters**
+
+<ParamField path="contactDataRequests" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_PRODUCER">
+Retrieves text thread information for a specified producer in the agencyzoom system. this endpoint allows users to access communication logs, which can be crucial for tracking customer interactions, managing follow-ups, and ensuring compliance with agency policies. it can be used to monitor producer performance, analyze communication patterns, and gather insights for improving customer service. the endpoint may return multiple text threads or a specific thread, depending on the parameters provided. it's particularly useful for agencies looking to review producer-client communications or gather data for reporting purposes.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_GET_A_LIST_OF_PIPELINES">
+Retrieves a comprehensive list of pipelines and their associated stages within the agencyzoom system. this endpoint provides crucial information for understanding and managing workflow processes in an insurance agency. it should be used when you need an overview of all available pipelines and their constituent stages, which is essential for task organization, progress tracking, and workflow optimization. the endpoint returns data about the structure of your agency's workflows, including pipeline names, stage sequences, and potentially other relevant metadata. it does not modify any existing pipelines or stages, nor does it provide detailed information about specific tasks or leads within these pipelines.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AGENCYZOOM_UPDATE_TAGS_FOR_A_POLICY">
+This endpoint allows users to add tags to a specific policy in agencyzoom. it's used to categorize and organize policies for easier management and retrieval. the endpoint accepts either a policy id from agencyzoom or an ams policy id, along with a list of tag names to be associated with the policy. this tool is particularly useful for bulk updates or when integrating tag management into external workflows. note that this endpoint only adds tags and does not remove existing ones; separate api calls may be needed for tag removal or replacement.
+
+**Action Parameters**
+
+<ParamField path="policyId" type="integer">
+</ParamField>
+
+<ParamField path="amsPolicyId" type="integer">
+</ParamField>
+
+<ParamField path="tagNames" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

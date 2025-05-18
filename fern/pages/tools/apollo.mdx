@@ -1,0 +1,700 @@
+---
+title: "Apollo"
+subtitle: "Learn how to use Apollo with Composio"
+---
+
+
+## Overview
+
+### Enum
+`APOLLO`
+
+### Description
+Apollo is a CRM tool that allows you to manage your contacts, leads, and opportunities.
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="APOLLO_CREATE_DEAL">
+Creates a new deal in apollo.io. requires a master api key. tracks account activity including monetary values, owners, and stages.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="owner_id" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+<ParamField path="amount" type="string">
+</ParamField>
+
+<ParamField path="opportunity_stage_id" type="string">
+</ParamField>
+
+<ParamField path="closed_date" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_LIST_CONTACT_STAGES">
+Retrieves the ids and details for available contact stages in your apollo account. requires a master api key.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_LIST_ACCOUNT_STAGES">
+Retrieves the ids and details for available account stages in your apollo account. requires a master api key.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_UPDATE_DEALS">
+Updates an existing deal in apollo.io. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="opportunity_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="owner_id" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="amount" type="string">
+</ParamField>
+
+<ParamField path="opportunity_stage_id" type="string">
+</ParamField>
+
+<ParamField path="closed_date" type="string">
+</ParamField>
+
+<ParamField path="is_closed" type="boolean">
+</ParamField>
+
+<ParamField path="is_won" type="boolean">
+</ParamField>
+
+<ParamField path="source" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_ORGANIZATION_SEARCH">
+Search for companies in apollo's database. consumes credits and not available for free plans. limited to 50,000 records (100 per page, up to 500 pages).
+
+**Action Parameters**
+
+<ParamField path="organization_num_employees_ranges" type="array">
+</ParamField>
+
+<ParamField path="organization_locations" type="array">
+</ParamField>
+
+<ParamField path="organization_not_locations" type="array">
+</ParamField>
+
+<ParamField path="q_organization_keyword_tags" type="array">
+</ParamField>
+
+<ParamField path="q_organization_name" type="string">
+</ParamField>
+
+<ParamField path="organization_ids" type="array">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_SEARCH_CONTACTS">
+Search for contacts in your apollo account. not available for free plan users. limited to 50,000 records (100 per page, up to 500 pages).
+
+**Action Parameters**
+
+<ParamField path="q_keywords" type="string">
+</ParamField>
+
+<ParamField path="contact_stage_ids" type="array">
+</ParamField>
+
+<ParamField path="sort_by_field" type="string">
+</ParamField>
+
+<ParamField path="sort_ascending" type="boolean">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_PEOPLE_ENRICHMENT">
+Enriches data for one person in apollo.io. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="first_name" type="string">
+</ParamField>
+
+<ParamField path="last_name" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="hashed_email" type="string">
+</ParamField>
+
+<ParamField path="organization_name" type="string">
+</ParamField>
+
+<ParamField path="domain" type="string">
+</ParamField>
+
+<ParamField path="id" type="string">
+</ParamField>
+
+<ParamField path="linkedin_url" type="string">
+</ParamField>
+
+<ParamField path="reveal_personal_emails" type="boolean">
+</ParamField>
+
+<ParamField path="reveal_phone_number" type="boolean">
+</ParamField>
+
+<ParamField path="webhook_url" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_UPDATE_ACCOUNT">
+Updates an existing account in apollo.io. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="account_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="domain" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="string">
+</ParamField>
+
+<ParamField path="account_stage_id" type="string">
+</ParamField>
+
+<ParamField path="raw_address" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_CREATE_ACCOUNT">
+Creates a new account in apollo.io. requires a master api key. note: apollo does not deduplicate accounts - a new account will be created even if similar details exist.
+
+**Action Parameters**
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="domain" type="string">
+</ParamField>
+
+<ParamField path="owner_id" type="string">
+</ParamField>
+
+<ParamField path="account_stage_id" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="raw_address" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_LIST_USERS">
+Retrieves the ids for all users (teammates) in your apollo account. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_SEARCH_ACCOUNTS">
+Search for accounts in your apollo account. not available for free plan users. limited to 50,000 records (100 per page, up to 500 pages). note: this searches only accounts added to your database, not all companies in apollo.
+
+**Action Parameters**
+
+<ParamField path="q_organization_name" type="string">
+</ParamField>
+
+<ParamField path="account_stage_ids" type="array">
+</ParamField>
+
+<ParamField path="sort_by_field" type="string">
+</ParamField>
+
+<ParamField path="sort_ascending" type="boolean">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_LIST_DEALS">
+Retrieves all deals that have been created for your team's apollo account. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="sort_by_field" type="string">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_PEOPLE_SEARCH">
+Search for people in apollo's database. consumes credits and not available for free plans. limited to 50,000 records (100 per page, up to 500 pages). note: does not return new email/phone data - use people enrichment endpoints for that.
+
+**Action Parameters**
+
+<ParamField path="person_titles" type="array">
+</ParamField>
+
+<ParamField path="person_locations" type="array">
+</ParamField>
+
+<ParamField path="person_seniorities" type="array">
+</ParamField>
+
+<ParamField path="organization_locations" type="array">
+</ParamField>
+
+<ParamField path="q_organization_domains" type="array">
+</ParamField>
+
+<ParamField path="contact_email_status" type="array">
+</ParamField>
+
+<ParamField path="organization_ids" type="array">
+</ParamField>
+
+<ParamField path="organization_num_employees_ranges" type="array">
+</ParamField>
+
+<ParamField path="q_keywords" type="string">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_CREATE_TASK">
+Creates new tasks in apollo.io for users and teams. requires a master api key. note: not available for free plan users. apollo does not deduplicate tasks.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="contact_ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="priority" type="string" required={true}>
+</ParamField>
+
+<ParamField path="due_at" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="note" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_UPDATE_CONTACT">
+Updates an existing contact in apollo.io. requires a master api key.
+
+**Action Parameters**
+
+<ParamField path="contact_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="first_name" type="string">
+</ParamField>
+
+<ParamField path="last_name" type="string">
+</ParamField>
+
+<ParamField path="organization_name" type="string">
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="website_url" type="string">
+</ParamField>
+
+<ParamField path="label_names" type="array">
+</ParamField>
+
+<ParamField path="contact_stage_id" type="string">
+</ParamField>
+
+<ParamField path="present_raw_address" type="string">
+</ParamField>
+
+<ParamField path="direct_phone" type="string">
+</ParamField>
+
+<ParamField path="corporate_phone" type="string">
+</ParamField>
+
+<ParamField path="mobile_phone" type="string">
+</ParamField>
+
+<ParamField path="home_phone" type="string">
+</ParamField>
+
+<ParamField path="other_phone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_ORGANIZATION_ENRICHMENT">
+Enriches data for one company in apollo.io. requires a master api key. enriched data includes industry information, revenue, employee counts, funding details, and more.
+
+**Action Parameters**
+
+<ParamField path="domain" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="APOLLO_CREATE_CONTACT">
+Creates a new contact in apollo.io. requires a master api key. note: apollo does not deduplicate contacts - a new contact will be created even if similar details exist.
+
+**Action Parameters**
+
+<ParamField path="first_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="last_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="organization_name" type="string">
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="account_id" type="string">
+</ParamField>
+
+<ParamField path="email" type="string">
+</ParamField>
+
+<ParamField path="website_url" type="string">
+</ParamField>
+
+<ParamField path="label_names" type="array">
+</ParamField>
+
+<ParamField path="contact_stage_id" type="string">
+</ParamField>
+
+<ParamField path="present_raw_address" type="string">
+</ParamField>
+
+<ParamField path="direct_phone" type="string">
+</ParamField>
+
+<ParamField path="corporate_phone" type="string">
+</ParamField>
+
+<ParamField path="mobile_phone" type="string">
+</ParamField>
+
+<ParamField path="home_phone" type="string">
+</ParamField>
+
+<ParamField path="other_phone" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

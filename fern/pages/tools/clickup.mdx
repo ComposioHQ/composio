@@ -1,0 +1,4914 @@
+---
+title: "Clickup"
+subtitle: "Learn how to use Clickup with Composio"
+---
+
+
+## Overview
+
+### Enum
+`CLICKUP`
+
+### Description
+ClickUp unifies tasks, docs, goals, and chat in a single platform, allowing teams to plan, organize, and collaborate across projects with customizable workflows
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="task:read,task:write,team:read,team:write,workspace:read,workspace:write,list:read,list:write,view:read,view:write,folder:read,folder:write,space:read,space:write,goal:read,goal:write,comment:read,comment:write,tag:read,tag:write,time:read,time:write,customfield:read,customfield:write">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.clickup.com">
+</ParamField>
+
+</Accordion>
+
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="CLICKUP_SPACES_GET_SPACE_DETAILS">
+View the spaces avialable in a workspace. you can only get member info in private spaces.(DEPRECATED use get_spaces)
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_USER_FROM_WORKSPACE">
+Deactivate a user from a workspace. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_WORKSPACE_EVERYTHING_LEVEL_VIEWS">
+View the task and page views available at the everything level of a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_CUSTOM_FIELD_VALUE">
+Remove the data from a custom field on a task. this does not delete the option from the custom field.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="field_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_FOLDERLESS_LISTS">
+View the lists in a space that aren't located in a folder.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_LISTS">
+View the lists within a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_ACCESS_TOKEN">
+The text outlines api authentication via personal tokens and oauth flow, stating oauth tokens can't be used in "try it" feature or tested via web browsers.
+
+**Action Parameters**
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_KEY_RESULT">
+Add a target to a goal.
+
+**Action Parameters**
+
+<ParamField path="goal_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="owners" type="array" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="steps_start" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="steps_end" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="unit" type="string" required={true}>
+</ParamField>
+
+<ParamField path="task_ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="list_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_SHARED_HIERARCHY">
+View the tasks, lists, and folders that have been shared with the authenticated user.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_GUEST_ON_WORKSPACE">
+Rename and configure options for a guest. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="can_edit_tags" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_see_time_spent" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_see_time_estimated" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_create_views" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="custom_role_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_STOP_A_TIME_ENTRY">
+Stop a timer that's currently running for the authenticated user.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_LIST_VIEWS">
+View the task and page views available for a list. views and required views are separate responses.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASKS">
+This api endpoint allows viewing up to 100 tasks per page, limited to tasks within the specified `list id` that have it as their home list. tasks from other home lists aren't included.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="include_markdown_description" type="boolean">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="reverse" type="boolean">
+</ParamField>
+
+<ParamField path="subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="statuses" type="array">
+</ParamField>
+
+<ParamField path="include_closed" type="boolean">
+</ParamField>
+
+<ParamField path="assignees" type="array">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="due_date_gt" type="integer">
+</ParamField>
+
+<ParamField path="due_date_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_lt" type="integer">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="custom_items" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_AUTHORIZATION_GET_ACCESS_TOKEN">
+The text outlines api authentication via personal tokens and oauth flow, stating oauth tokens can't be used in "try it" feature or tested via web browsers.(DEPRECATED use get_access_token)
+
+**Action Parameters**
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="code" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_VIEW_TASKS">
+See all visible tasks in a view in clickup.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASK_COMMENTS">
+View task comments. if you do not include the `start` and `start id` parameters, this endpoint will return the most recent 25 comments. use the `start` and `start id` parameters of the oldest comment to retrieve the next 25 comments.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="start_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_A_TIME_ENTRY">
+Update the details of a time entry.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="timer_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="tags" type="array" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="tag_action" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="end" type="integer">
+</ParamField>
+
+<ParamField path="tid" type="string">
+</ParamField>
+
+<ParamField path="billable" type="boolean">
+</ParamField>
+
+<ParamField path="duration" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_SPACE">
+Rename, set the space color, and enable clickapps for a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string" required={true}>
+</ParamField>
+
+<ParamField path="private" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="admin_can_manage" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="multiple_assignees" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="features__tags__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__start__date" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__remap__due__dates" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__remap__closed__due__date" type="boolean">
+</ParamField>
+
+<ParamField path="features__time__tracking__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__time__estimates__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__checklists__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__custom__fields__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__remap__dependencies__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__dependency__warning__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__portfolios__enabled" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_LIST_VIEW">
+Add a list, board, calendar, table, timeline, workload, activity, map, chat, or gantt view to a list.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="grouping__field" type="string">
+</ParamField>
+
+<ParamField path="grouping__dir" type="integer">
+</ParamField>
+
+<ParamField path="grouping__collapsed" type="array">
+</ParamField>
+
+<ParamField path="grouping__ignore" type="boolean">
+</ParamField>
+
+<ParamField path="divide__field" type="null">
+</ParamField>
+
+<ParamField path="divide__dir" type="null">
+</ParamField>
+
+<ParamField path="divide__collapsed" type="boolean">
+</ParamField>
+
+<ParamField path="sorting__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__search" type="string">
+</ParamField>
+
+<ParamField path="filters__show__closed" type="boolean">
+</ParamField>
+
+<ParamField path="columns__fields" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assignees" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assigned__comments" type="boolean">
+</ParamField>
+
+<ParamField path="team__sidebar__unassigned__tasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__task__locations" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__subtasks" type="integer">
+</ParamField>
+
+<ParamField path="settings__show__subtask__parent__names" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__closed__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__assignees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__images" type="boolean">
+</ParamField>
+
+<ParamField path="settings__collapse__empty__columns" type="string">
+</ParamField>
+
+<ParamField path="settings__me__comments" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__checklists" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_SPACES">
+View the spaces avialable in a workspace. you can only get member info in private spaces.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_FOLDERS_CREATE_NEW_FOLDER">
+Add a new folder to a space.(DEPRECATED use create_folder)
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_CHECKLIST_ITEM">
+Delete a line item from a task checklist.
+
+**Action Parameters**
+
+<ParamField path="checklist_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="checklist_item_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_GOAL">
+Remove a goal from your workspace.
+
+**Action Parameters**
+
+<ParamField path="goal_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_TAGS_FROM_TIME_ENTRIES">
+Add a label to a time entry.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tags" type="array" required={true}>
+</ParamField>
+
+<ParamField path="time_entry_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_TASK">
+Create a new task.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assignees" type="array">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="priority" type="integer">
+</ParamField>
+
+<ParamField path="due_date" type="integer">
+</ParamField>
+
+<ParamField path="due_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="time_estimate" type="integer">
+</ParamField>
+
+<ParamField path="start_date" type="integer">
+</ParamField>
+
+<ParamField path="start_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="notify_all" type="boolean">
+</ParamField>
+
+<ParamField path="parent" type="string">
+</ParamField>
+
+<ParamField path="links_to" type="string">
+</ParamField>
+
+<ParamField path="check_required_custom_fields" type="boolean">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="custom_item_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_AUTHORIZATION_GET_WORK_SPACE_LIST">
+View the workspaces available to the authenticated user.(DEPRECATED use get_authorized_teams_workspaces)
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_GOALS">
+View the goals available in a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_completed" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_VIEWS_GET_EVERYTHING_LEVEL">
+View the task and page views available at the everything level of a workspace.(DEPRECATED use get_workspace_everything_level_views)
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_KEY_RESULT">
+Delete a target from a goal.
+
+**Action Parameters**
+
+<ParamField path="key_result_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_WEBHOOK">
+Delete a webhook to stop monitoring the events and locations of the webhook.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_GUEST_FROM_LIST">
+Revoke a guest's access to a list. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_TASK_ATTACHMENT">
+Upload a file to a task as an attachment. ***note:** this request uses multipart/form-data as the content type.*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="attachment" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_A_TIME_ENTRY">
+Create a time entry. ***note:** a time entry that has a negative duration means that timer is currently running for that user.*
+
+**Action Parameters**
+
+<ParamField path="team_Id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="start" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="stop" type="integer">
+</ParamField>
+
+<ParamField path="end" type="integer">
+</ParamField>
+
+<ParamField path="billable" type="boolean">
+</ParamField>
+
+<ParamField path="duration" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+<ParamField path="tid" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_TAGS_FROM_TIME_ENTRIES">
+Remove labels from time entries. this does not remove the label from a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tags" type="array" required={true}>
+</ParamField>
+
+<ParamField path="time_entry_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_FOLDER_VIEW">
+Add a list, board, calendar, table, timeline, workload, activity, map, chat, or gantt view to a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="grouping__field" type="string">
+</ParamField>
+
+<ParamField path="grouping__dir" type="integer">
+</ParamField>
+
+<ParamField path="grouping__collapsed" type="array">
+</ParamField>
+
+<ParamField path="grouping__ignore" type="boolean">
+</ParamField>
+
+<ParamField path="divide__field" type="null">
+</ParamField>
+
+<ParamField path="divide__dir" type="null">
+</ParamField>
+
+<ParamField path="divide__collapsed" type="boolean">
+</ParamField>
+
+<ParamField path="sorting__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__search" type="string">
+</ParamField>
+
+<ParamField path="filters__show__closed" type="boolean">
+</ParamField>
+
+<ParamField path="columns__fields" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assignees" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assigned__comments" type="boolean">
+</ParamField>
+
+<ParamField path="team__sidebar__unassigned__tasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__task__locations" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__subtasks" type="integer">
+</ParamField>
+
+<ParamField path="settings__show__subtask__parent__names" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__closed__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__assignees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__images" type="boolean">
+</ParamField>
+
+<ParamField path="settings__collapse__empty__columns" type="string">
+</ParamField>
+
+<ParamField path="settings__me__comments" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__checklists" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_VIEW">
+View information about a specific task or page view.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_TASK_FROM_TEMPLATE">
+Create a new task using a task template.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="template_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_WEBHOOK">
+Update a webhook to change the events to be monitored.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="endpoint" type="string" required={true}>
+</ParamField>
+
+<ParamField path="events" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_SET_CUSTOM_FIELD_VALUE">
+To add data to a task's custom field, obtain the `task id` and the custom field's `field id` (uuid). use the "get accessible custom fields" or "get task" api endpoints to find the `field id`.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="field_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_TIME_TRACKED">
+***note:** this is a legacy time tracking endpoint. we recommend using the time tracking api endpoints to manage time entries.*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="interval_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="end" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="time" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_SPACE_TAG">
+Update a task tag.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tag_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag__name" type="string">
+</ParamField>
+
+<ParamField path="tag__fg__color" type="string">
+</ParamField>
+
+<ParamField path="tag__bg__color" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_CUSTOM_TASK_TYPES">
+View the custom task types available in a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_LIST">
+Rename a list, update the list info description, set a due date/time, set the list's priority, set an assignee, set or remove the list color.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="content" type="string" required={true}>
+</ParamField>
+
+<ParamField path="due_date" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="due_date_time" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="priority" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="unset_status" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_LIST">
+View information about a list.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_FOLDER">
+View the lists within a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_GUEST_TO_FOLDER">
+Share a folder with a guest. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+<ParamField path="permission_level" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_INVITE_USER_TO_WORKSPACE">
+Invite someone to your workspace as a member through a specific endpoint. note: guest invitations and this feature are exclusive to workspaces on the enterprise plan.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="admin" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="custom_role_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_USER_ON_WORKSPACE">
+Update a user's name and role. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="username" type="string" required={true}>
+</ParamField>
+
+<ParamField path="admin" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="custom_role_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TASK_CHECKLISTS_CREATE_NEW_CHECKLIST">
+Add a new checklist to a task.(DEPRECATED use create_checklist)
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_WORKSPACE_PLAN">
+View the current [plan](https://clickup.com/pricing) for the specified workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_TASK_FROM_LIST">
+This api endpoint allows for removing a task from an extra list, not its original list, requiring the tasks in multiple list clickapp to be enabled.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_AUTHORIZED_TEAMS_WORKSPACES">
+View the workspaces available to the authenticated user.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_GUEST">
+View information about a guest. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_VIEW">
+Rename a view, update the grouping, sorting, filters, columns, and settings of a view.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parent__id" type="string">
+</ParamField>
+
+<ParamField path="parent__type" type="integer">
+</ParamField>
+
+<ParamField path="grouping__field" type="string">
+</ParamField>
+
+<ParamField path="grouping__dir" type="integer">
+</ParamField>
+
+<ParamField path="grouping__collapsed" type="array">
+</ParamField>
+
+<ParamField path="grouping__ignore" type="boolean">
+</ParamField>
+
+<ParamField path="divide__field" type="null">
+</ParamField>
+
+<ParamField path="divide__dir" type="null">
+</ParamField>
+
+<ParamField path="divide__collapsed" type="boolean">
+</ParamField>
+
+<ParamField path="sorting__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__search" type="string">
+</ParamField>
+
+<ParamField path="filters__show__closed" type="boolean">
+</ParamField>
+
+<ParamField path="columns__fields" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assignees" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assigned__comments" type="boolean">
+</ParamField>
+
+<ParamField path="team__sidebar__unassigned__tasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__task__locations" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__subtasks" type="integer">
+</ParamField>
+
+<ParamField path="settings__show__subtask__parent__names" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__closed__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__assignees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__images" type="boolean">
+</ParamField>
+
+<ParamField path="settings__collapse__empty__columns" type="string">
+</ParamField>
+
+<ParamField path="settings__me__comments" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__checklists" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_FOLDER">
+Rename a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_VIEW">
+Deletes a specific view by its id. requires 'view id' as a string parameter in the path. successful deletion returns 200 with an empty json object.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_TAG_TO_TASK">
+Add a tag to a task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_INVITE_GUEST_TO_WORKSPACE">
+To invite a guest to your workspace, use the "invite user to workspace" endpoint. then, use specific endpoints to grant access to folders, lists, or tasks. note: available only for enterprise plan.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+<ParamField path="can_edit_tags" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_see_time_spent" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_see_time_estimated" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="can_create_views" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="custom_role_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_TASK">
+Delete a task from your workspace.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_SPACE_TAG">
+Delete a task tag from a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tag_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag__name" type="string">
+</ParamField>
+
+<ParamField path="tag__tag__fg" type="string">
+</ParamField>
+
+<ParamField path="tag__tag__bg" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_GUEST_TO_TASK">
+Share a task with a guest. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="permission_level" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TEAMS_USER_GROUPS_CREATE_TEAM">
+The endpoint allows creating teams within workspaces, assigning tasks, and managing ids for both. adding a view-only guest as a paid member may result in extra charges due to automatic seat addition.(DEPRECATED use create_team)
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="members" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_SPACE_VIEW">
+Add a list, board, calendar, table, timeline, workload, activity, map, chat, or gantt view to a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="grouping__field" type="string">
+</ParamField>
+
+<ParamField path="grouping__dir" type="integer">
+</ParamField>
+
+<ParamField path="grouping__collapsed" type="array">
+</ParamField>
+
+<ParamField path="grouping__ignore" type="boolean">
+</ParamField>
+
+<ParamField path="divide__field" type="null">
+</ParamField>
+
+<ParamField path="divide__dir" type="null">
+</ParamField>
+
+<ParamField path="divide__collapsed" type="boolean">
+</ParamField>
+
+<ParamField path="sorting__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__search" type="string">
+</ParamField>
+
+<ParamField path="filters__show__closed" type="boolean">
+</ParamField>
+
+<ParamField path="columns__fields" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assignees" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assigned__comments" type="boolean">
+</ParamField>
+
+<ParamField path="team__sidebar__unassigned__tasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__task__locations" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__subtasks" type="integer">
+</ParamField>
+
+<ParamField path="settings__show__subtask__parent__names" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__closed__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__assignees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__images" type="boolean">
+</ParamField>
+
+<ParamField path="settings__collapse__empty__columns" type="string">
+</ParamField>
+
+<ParamField path="settings__me__comments" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__checklists" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASK_MEMBERS">
+View the people who have access to a task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_CHECKLIST">
+Add a new checklist to a task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_TASK_COMMENT">
+Add a new comment to a task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="comment_text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="notify_all" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_AUTHORIZATION_VIEW_ACCOUNT_DETAILS">
+View the details of the authenticated user's clickup account.(DEPRECATED use get_authorized_user)
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_AUTHORIZED_USER">
+View the details of the authenticated user's clickup account.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_A_TIME_ENTRY">
+Delete a time entry from a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="timer_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_FOLDERS_GET_CONTENTS_OF">
+View the folders in a space.(DEPRECATED use get_folders)
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_LIST_MEMBERS">
+View the people who have access to a list.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_GOAL">
+View the details of a goal including its targets.
+
+**Action Parameters**
+
+<ParamField path="goal_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_SPACE">
+Delete a space from your workspace.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_TEAM">
+This endpoint removes a user group from a workspace, per clickup documentation. `team id` is the workspace id, and `group id` is the user group id.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TEAMS_WORK_SPACES_GET_WORK_SPACE_PLAN">
+View the current [plan](https://clickup.com/pricing) for the specified workspace.(DEPRECATED use get_workspace_plan)
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_SPACE_VIEWS">
+View the task and page views available for a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TRACK_TIME">
+***note:** this is a legacy time tracking endpoint. we recommend using the time tracking api endpoints to manage time entries.*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="start" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="end" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="time" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_SPACE">
+Add a new space to a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="multiple_assignees" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="features__tags__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__start__date" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__remap__due__dates" type="boolean">
+</ParamField>
+
+<ParamField path="features__due__dates__remap__closed__due__date" type="boolean">
+</ParamField>
+
+<ParamField path="features__time__tracking__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__time__estimates__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__checklists__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__custom__fields__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__remap__dependencies__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__dependency__warning__enabled" type="boolean">
+</ParamField>
+
+<ParamField path="features__portfolios__enabled" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_FILTERED_TEAM_TASKS">
+View the tasks that meet specific criteria from a workspace. responses are limited to 100 tasks per page. you can only view task information of tasks you can access.
+
+**Action Parameters**
+
+<ParamField path="team_Id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="reverse" type="boolean">
+</ParamField>
+
+<ParamField path="subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="space_ids" type="array">
+</ParamField>
+
+<ParamField path="project_ids" type="array">
+</ParamField>
+
+<ParamField path="list_ids" type="array">
+</ParamField>
+
+<ParamField path="statuses" type="array">
+</ParamField>
+
+<ParamField path="include_closed" type="boolean">
+</ParamField>
+
+<ParamField path="assignees" type="array">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="due_date_gt" type="integer">
+</ParamField>
+
+<ParamField path="due_date_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_lt" type="integer">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="parent" type="string">
+</ParamField>
+
+<ParamField path="include_markdown_description" type="boolean">
+</ParamField>
+
+<ParamField path="custom_items" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_WEBHOOKS">
+View the webhooks created via the api for a workspace. this endpoint returns webhooks created by the authenticated user.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_ALL_TAGS_FROM_TIME_ENTRIES">
+View all the labels that have been applied to time entries in a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_COMMENT">
+Delete a task comment.
+
+**Action Parameters**
+
+<ParamField path="comment_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_CHECKLIST">
+Rename a task checklist, or reorder a checklist so it appears above or below other checklists on a task.
+
+**Action Parameters**
+
+<ParamField path="checklist_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="position" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_ACCESSIBLE_CUSTOM_FIELDS">
+View the custom fields available on tasks in a specific list.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_FOLDERLESS_LIST">
+Add a new list in a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="content" type="string">
+</ParamField>
+
+<ParamField path="due_date" type="integer">
+</ParamField>
+
+<ParamField path="due_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="priority" type="integer">
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_USER">
+View information about a user in a workspace. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_GUEST_TO_LIST">
+Share a list with a guest. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+<ParamField path="permission_level" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_TIME_TRACKED">
+***note:** this is a legacy time tracking endpoint. we recommend using the time tracking api endpoints to manage time entries.*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="interval_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_FOLDER">
+Delete a folder from your workspace.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_GOAL">
+Add a new goal to a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="due_date" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="multiple_owners" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="owners" type="array" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_TASK_TO_LIST">
+Add a task to an additional list. ***note:** this endpoint requires the [tasks in multiple list clickapp](https://help.clickup.com/hc/en-us/articles/6309958824727-tasks-in-multiple-lists) to be enabled.*
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_BULK_TASKS_TIME_IN_STATUS">
+View how long two or more tasks have been in each status.
+
+**Action Parameters**
+
+<ParamField path="task_ids" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_SPACES_GET_DETAILS">
+View the spaces available in a workspace.(DEPRECATED use get_space)
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_WEBHOOK">
+Set up a webhook to monitor for events. we do not have a dedicated ip address for webhooks. we use our domain name and dynamic addressing.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="endpoint" type="string" required={true}>
+</ParamField>
+
+<ParamField path="events" type="array" required={true}>
+</ParamField>
+
+<ParamField path="space_id" type="integer">
+</ParamField>
+
+<ParamField path="folder_id" type="integer">
+</ParamField>
+
+<ParamField path="list_id" type="integer">
+</ParamField>
+
+<ParamField path="task_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TIME_ENTRY_HISTORY">
+View a list of changes made to a time entry.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="timer_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_WORKSPACE_SEATS">
+View the used, total, and available member and guest seats for a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_TASK">
+Update a task by including one or more fields in the request body.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="custom_item_id" type="integer">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="priority" type="integer">
+</ParamField>
+
+<ParamField path="due_date" type="integer">
+</ParamField>
+
+<ParamField path="due_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="parent" type="string">
+</ParamField>
+
+<ParamField path="time_estimate" type="integer">
+</ParamField>
+
+<ParamField path="start_date" type="integer">
+</ParamField>
+
+<ParamField path="start_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="assignees__add" type="array">
+</ParamField>
+
+<ParamField path="assignees__rem" type="array">
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_LIST_COMMENT">
+Add a comment to a list.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment_text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="notify_all" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CHANGE_TAG_NAMES_FROM_TIME_ENTRIES">
+Rename an time entry label.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="new_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag_bg" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag_fg" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_CHECKLIST_ITEM">
+Update an individual line item in a task checklist. you can rename it, set the assignee, mark it as resolved, or nest it under another checklist item.
+
+**Action Parameters**
+
+<ParamField path="checklist_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="checklist_item_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="assignee" type="string">
+</ParamField>
+
+<ParamField path="resolved" type="boolean">
+</ParamField>
+
+<ParamField path="parent" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_SPACE">
+View the spaces available in a workspace.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_LIST_COMMENTS">
+To view comments on a list, omitting `start` and `start id` shows the latest 25 comments. for earlier ones, use the `start` and `start id` of the oldest comment to get the next 25.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="start_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_LIST">
+Add a new list to a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="content" type="string">
+</ParamField>
+
+<ParamField path="due_date" type="integer">
+</ParamField>
+
+<ParamField path="due_date_time" type="boolean">
+</ParamField>
+
+<ParamField path="priority" type="integer">
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_TEAM">
+The endpoint controls user group assignments in a workspace, requiring 'team id' and 'group id'. adding a view-only guest as a paid member incurs prorated charges for additional seats.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="handle" type="string">
+</ParamField>
+
+<ParamField path="members__add" type="array">
+</ParamField>
+
+<ParamField path="members__rem" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_RUNNING_TIME_ENTRY">
+View a time entry that's currently tracking time for the authenticated user. ***note:** a time entry that has a negative duration means that timer is currently running for that user.*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TASKS_GET_TASK_DETAILS">
+View information about a task. you can only view task information of tasks you can access. tasks with attachments will return an "attachments" response.(DEPRECATED use get_task)
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="include_subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="include_markdown_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TEAMS_WORK_SPACES_GET_WORK_SPACE_SEATS">
+View the used, total, and available member and guest seats for a workspace.(DEPRECATED use get_workspace_seats)
+
+**Action Parameters**
+
+<ParamField path="team_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_FOLDER_VIEWS">
+View the task and page views available for a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_CHECKLIST_ITEM">
+Add a line item to a task checklist.
+
+**Action Parameters**
+
+<ParamField path="checklist_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_SPACE_TAGS">
+View the task tags available in a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_START_A_TIME_ENTRY">
+Start a timer for the authenticated user.
+
+**Action Parameters**
+
+<ParamField path="team_Id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="tid" type="string">
+</ParamField>
+
+<ParamField path="billable" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_CHECKLIST">
+Delete a checklist from a task.
+
+**Action Parameters**
+
+<ParamField path="checklist_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_VIEWS_SPACE_VIEWS_GET">
+View the task and page views available for a space.(DEPRECATED use get_space_views)
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_TEAM">
+The endpoint allows creating teams within workspaces, assigning tasks, and managing ids for both. adding a view-only guest as a paid member may result in extra charges due to automatic seat addition.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="members" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ATTACHMENTS_UPLOAD_FILE_TO_TASK_AS_ATTACHMENT">
+Upload a file to a task as an attachment. ***note:** this request uses multipart/form-data as the content type.*(DEPRECATED use create_task_attachment)
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="attachment" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_COMMENT">
+Replace the content of a task commment, assign a comment, and mark a comment as resolved.
+
+**Action Parameters**
+
+<ParamField path="comment_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="comment_text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assignee" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="resolved" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_CUSTOM_ROLES">
+View the custom roles available in a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_members" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_SPACE_TAG">
+Add a new task tag to a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="tag__name" type="string">
+</ParamField>
+
+<ParamField path="tag__tag__fg" type="string">
+</ParamField>
+
+<ParamField path="tag__tag__bg" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_SINGULAR_TIME_ENTRY">
+View a single time entry. ***note:** a time entry that has a negative duration means that timer is currently running for that user.*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="timer_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="include__task" type="boolean">
+</ParamField>
+
+<ParamField path="include_location_names" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_GUEST_FROM_TASK">
+Revoke a guest's access to a task. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_CHAT_VIEW_COMMENTS">
+View comments from a chat view. if you do not include the `start` and `start id` parameters, this endpoint will return the most recent 25 comments. use the `start` and `start id` parameters of the oldest comment to retrieve the next 25 comments.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="start" type="integer">
+</ParamField>
+
+<ParamField path="start_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_DEPENDENCY">
+Set a task as waiting on or blocking another task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="depends_on" type="string">
+</ParamField>
+
+<ParamField path="depedency_of" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_FOLDERS_GET_FOLDER_CONTENT">
+View the lists within a folder.(DEPRECATED use get_folder)
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_UPDATE_GOAL">
+Rename a goal, set the due date, replace the description, add or remove owners, and set the goal color.
+
+**Action Parameters**
+
+<ParamField path="goal_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="due_date" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="rem_owners" type="array" required={true}>
+</ParamField>
+
+<ParamField path="add_owners" type="array" required={true}>
+</ParamField>
+
+<ParamField path="color" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_DEPENDENCY">
+Remove the dependency relationship between two or more tasks.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="depends_on" type="string" required={true}>
+</ParamField>
+
+<ParamField path="dependency_of" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_LISTS_GET_FOLDER_LISTS">
+View the lists within a folder.(DEPRECATED use get_lists)
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_EDIT_KEY_RESULT">
+Update a target.
+
+**Action Parameters**
+
+<ParamField path="key_result_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="steps_current" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="note" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_TASKS_GET_LIST_TASKS">
+This api endpoint allows viewing up to 100 tasks per page, limited to tasks within the specified `list id` that have it as their home list. tasks from other home lists aren't included.(DEPRECATED use get_tasks)
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+<ParamField path="include_markdown_description" type="boolean">
+</ParamField>
+
+<ParamField path="page" type="integer">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="reverse" type="boolean">
+</ParamField>
+
+<ParamField path="subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="statuses" type="array">
+</ParamField>
+
+<ParamField path="include_closed" type="boolean">
+</ParamField>
+
+<ParamField path="assignees" type="array">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="due_date_gt" type="integer">
+</ParamField>
+
+<ParamField path="due_date_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_created_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_updated_lt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_gt" type="integer">
+</ParamField>
+
+<ParamField path="date_done_lt" type="integer">
+</ParamField>
+
+<ParamField path="custom_fields" type="array">
+</ParamField>
+
+<ParamField path="custom_items" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_LIST">
+Delete a list from your workspace.
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TEAMS">
+This endpoint allows viewing user groups (teams) in a workspace, where `team id` is the workspace id, and `group id` is a user group id in api documentation.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="group_ids" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASK_S_TIME_IN_STATUS">
+View how long a task has been in each status. the total time in status clickapp must first be enabled by the workspace owner or an admin.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_WORKSPACE_EVERYTHING_LEVEL_VIEW">
+Add a list, board, calendar, table, timeline, workload, activity, map, chat, or gantt view at the everything level of a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="grouping__field" type="string">
+</ParamField>
+
+<ParamField path="grouping__dir" type="integer">
+</ParamField>
+
+<ParamField path="grouping__collapsed" type="array">
+</ParamField>
+
+<ParamField path="grouping__ignore" type="boolean">
+</ParamField>
+
+<ParamField path="divide__field" type="null">
+</ParamField>
+
+<ParamField path="divide__dir" type="null">
+</ParamField>
+
+<ParamField path="divide__collapsed" type="boolean">
+</ParamField>
+
+<ParamField path="sorting__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__fields" type="array">
+</ParamField>
+
+<ParamField path="filters__search" type="string">
+</ParamField>
+
+<ParamField path="filters__show__closed" type="boolean">
+</ParamField>
+
+<ParamField path="columns__fields" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assignees" type="array">
+</ParamField>
+
+<ParamField path="team__sidebar__assigned__comments" type="boolean">
+</ParamField>
+
+<ParamField path="team__sidebar__unassigned__tasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__task__locations" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__subtasks" type="integer">
+</ParamField>
+
+<ParamField path="settings__show__subtask__parent__names" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__closed__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__assignees" type="boolean">
+</ParamField>
+
+<ParamField path="settings__show__images" type="boolean">
+</ParamField>
+
+<ParamField path="settings__collapse__empty__columns" type="string">
+</ParamField>
+
+<ParamField path="settings__me__comments" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="settings__me__checklists" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_GUEST_FROM_FOLDER">
+Revoke a guest's access to a folder. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="include_shared" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_MEMBERS_GET_LIST_USERS">
+View the people who have access to a list.(DEPRECATED use get_list_members)
+
+**Action Parameters**
+
+<ParamField path="list_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TRACKED_TIME">
+***note:** this is a legacy time tracking endpoint. we recommend using the time tracking api endpoints to manage time entries.*
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_ADD_TASK_LINK">
+Link two tasks together.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="links_to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASK_TEMPLATES">
+View the task templates available in a workspace.
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_FOLDER">
+Add a new folder to a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_TAG_FROM_TASK">
+Remove a tag from a task. this does not delete the tag from the space.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tag_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_DELETE_TASK_LINK">
+Remove the link between two tasks.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="links_to" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TASK">
+View information about a task. you can only view task information of tasks you can access. tasks with attachments will return an "attachments" response.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+<ParamField path="include_subtasks" type="boolean">
+</ParamField>
+
+<ParamField path="include_markdown_description" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_FOLDERS">
+View the folders in a space.
+
+**Action Parameters**
+
+<ParamField path="space_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="archived" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_REMOVE_GUEST_FROM_WORKSPACE">
+Revoke a guest's access to a workspace. ***note:** this endpoint is only available to workspaces on our [enterprise plan](https://clickup.com/pricing).*
+
+**Action Parameters**
+
+<ParamField path="team_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="guest_id" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_CREATE_CHAT_VIEW_COMMENT">
+Add a new comment to a chat view.
+
+**Action Parameters**
+
+<ParamField path="view_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="comment_text" type="string" required={true}>
+</ParamField>
+
+<ParamField path="notify_all" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CLICKUP_GET_TIME_ENTRIES_WITHIN_A_DATE_RANGE">
+This api endpoint retrieves time entries for the past 30 days for the user or others using the `assignee` parameter, and allows filtering by `space id` or `task id`. negative durations show active timers.
+
+**Action Parameters**
+
+<ParamField path="team_Id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="start_date" type="integer">
+</ParamField>
+
+<ParamField path="end_date" type="integer">
+</ParamField>
+
+<ParamField path="assignee" type="integer">
+</ParamField>
+
+<ParamField path="include_task_tags" type="boolean">
+</ParamField>
+
+<ParamField path="include_location_names" type="boolean">
+</ParamField>
+
+<ParamField path="space_id" type="integer">
+</ParamField>
+
+<ParamField path="folder_id" type="integer">
+</ParamField>
+
+<ParamField path="list_id" type="integer">
+</ParamField>
+
+<ParamField path="task_id" type="string">
+</ParamField>
+
+<ParamField path="custom_task_ids" type="boolean">
+</ParamField>
+
+<ParamField path="team_id" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

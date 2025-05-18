@@ -1,0 +1,41 @@
+---
+title: "Front"
+subtitle: "Learn how to use Front with Composio"
+---
+
+
+## Overview
+
+### Enum
+`FRONT`
+
+### Description
+A customer communication hub that brings emails and messages into a
+    single platform for better team collaboration and customer service.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="private_resources,shared_resources,team,knowledge_base,auto_provisioning,provisioning">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api2.frontapp.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.

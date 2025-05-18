@@ -1,0 +1,168 @@
+---
+layout: custom
+no-image-zoom: true
+description: >-
+  Composio is the skill layer for AI agents, helping developers add tools, authentication,
+  and integrations to their agents.
+---
+
+<style>
+  {`
+
+  /*Custom Styles*/
+  .rm-Header {
+    position: sticky;
+    top: 0;
+    --Header-background: none;
+  }
+
+  #enterprise .container {
+    margin-bottom: 0;
+  }
+  .rm-Flyout {
+    background: #fbfbfb;
+  }
+
+`}
+</style>
+
+export const LandingPageCard = ({ href, title, imgSrc, description }) => (
+  <div className="rounded-lg bg-[#F5F4F2] dark:bg-[#0F0F0F] px-6 py-5 hover:bg-[#E9E6DE] dark:hover:bg-[#292929] md:p-8">
+    <a
+      href={href}
+      target="_self"
+      className="flex h-full flex-col justify-between"
+      style={{ textDecoration: 'none' }}
+    >
+      <div className="mb-5 flex flex-col justify-between gap-5">
+        <h2 className="lg:min-h-20 [@media(min-width:1181px)]:min-h-0">
+          {title}
+        </h2>
+        <img src={imgSrc} alt={title} />
+        <p className="p-lg">{description}</p>
+      </div>
+      <div className="mt-2 text-sm text-[#2D4CB9] dark:text-[#4C6EE6] md:mt-0 md:self-end">
+        {"GET STARTED"}
+        <div className="ml-2 inline-block group-hover:no-underline">
+          <svg
+            width="12"
+            height="11"
+            viewBox="0 0 12 11"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ transform: "rotate(-90deg)" }}
+          >
+            <path
+              d="M6 10.75L0.75 5.31686L1.74907 4.27907L5.2556 8.00291L5.2556 0.25L6.7444 0.25L6.7444 8.00291L10.2509 4.27907L11.25 5.31686L6 10.75Z"
+              fill="currentColor"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    </a>
+  </div>
+);
+
+export const EndpointLink = ({ href, title }) => (
+  <a
+    href={href}
+    className="group flex cursor-pointer flex-row text-sm !font-normal text-[#2D4CB9] dark:text-[#4C6EE6]"
+    rel="noreferrer"
+    target="_self"
+  >
+    {title}
+    <span className="duration-400 flex items-center transition-all ease-in-out group-hover:pl-1 group-hover:pr-2">
+      <div className="ml-2 inline-block text-sm !text-[#2D4CB9] group-hover:no-underline">
+        <svg
+          width="12"
+          height="11"
+          viewBox="0 0 12 11"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ transform: "rotate(-90deg)" }}
+        >
+          <path
+            d="M6 10.75L0.75 5.31686L1.74907 4.27907L5.2556 8.00291L5.2556 0.25L6.7444 0.25L6.7444 8.00291L10.2509 4.27907L11.25 5.31686L6 10.75Z"
+            fill="currentColor"
+          ></path>
+        </svg>
+      </div>
+    </span>
+  </a>
+);
+
+export const cards = [
+  {
+    href: "/getting-started/quickstart",
+    title: "Quickstart",
+    description:
+      "Build an agent in minutes that can interact with the tools your users care about.",
+  },
+  {
+    href: "/tools",
+    title: "Work with tools",
+    description:
+      "Use tools to build agents that can work with 300+ apps your users already use.",
+  },
+  {
+    href: "/auth",
+    title: "Authentication",
+    description:
+      "Authenticate your agents across your users' apps reliably and securely.",
+  },
+  {
+    href: "/cookbooks",
+    title: "Guides and Cookbooks",
+    description:
+      "Build production-ready agents with our guides and cookbooks.",
+  },
+];
+
+export const frameworks = [
+  {
+    href: "/frameworks/openai",
+    title: "OPENAI",
+  },
+  {
+    href: "/frameworks/langgraph",
+    title: "LANGGRAPH",
+  },
+  {
+    href: "/frameworks/llamaindex",
+    title: "LLAMAINDEX",
+  },
+  {
+    href: "/frameworks/vercel",
+    title: "VERCEL",
+  },
+];
+
+<div className="m-auto max-w-[1195px] flex-grow overflow-y-auto px-8 pt-10 md:p-10 md:pb-14">
+  <div className="flex flex-col gap-5 md:!grid md:grid-cols-2 md:gap-10 md:pb-7 lg:!grid-cols-3 lg:gap-x-8 lg:gap-y-10 lg:pb-16">
+    {cards.map((card) => (
+      <LandingPageCard
+        key={card.href}
+        href={card.href}
+        imgSrc={card.imgSrc}
+        title={card.title}
+        description={card.description}
+      />
+    ))}
+    <div className="col-span-2">
+      <div className="mb-8 flex flex-col gap-9 px-6 py-5 md:!flex-row md:items-end md:gap-16 md:p-8 lg:gap-10 rounded-lg bg-[#F5F4F2] dark:bg-[#0F0F0F] hover:bg-[#E9E6DE] dark:hover:bg-[#292929] shadow-sm">
+        <div className="md:w-1/2">
+          <h2 className="mb-8 mt-4 md:mt-0 text-2xl font-bold">Frameworks</h2>
+          <p className="p-lg w-full text-lg">
+            Composio integrates with popular AI agent frameworks, making it easy to add tools and authentication to your existing agents
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-5 md:w-1/2 md:gap-10 lg:w-1/3 lg:gap-8">
+          {frameworks.map((framework) => (
+            <EndpointLink key={framework.href} {...framework} />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

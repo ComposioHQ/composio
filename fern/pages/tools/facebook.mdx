@@ -1,0 +1,40 @@
+---
+title: "Facebook"
+subtitle: "Learn how to use Facebook with Composio"
+---
+
+
+## Overview
+
+### Enum
+`FACEBOOK`
+
+### Description
+Facebook is a social media and social networking service.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string" default="email,public_profile,user_friends,user_photos,user_posts,user_videos,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement,pages_read_user_content,pages_manage_metadata,pages_manage_ads,pages_manage_cta,pages_manage_instant_articles,pages_messaging,pages_messaging_subscriptions,pages_messaging_phone_number,pages_messaging_payments,business_management,ads_management,ads_read,catalog_management,leads_retrieval">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://graph.facebook.com">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
+                                
+                                You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.

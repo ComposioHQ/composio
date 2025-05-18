@@ -1,0 +1,455 @@
+---
+title: "Crustdata"
+subtitle: "Learn how to use Crustdata with Composio"
+---
+
+
+## Overview
+
+### Enum
+`CRUSTDATA`
+
+### Description
+CrustData is an AI-powered data intelligence platform that provides real-time company and people data via APIs and webhooks, empowering B2B sales teams, AI SDRs, and investors to act on live signals
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="api_key" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="CRUSTDATA_SEARCH_FOR_JOB_ID_IN_SCREENER">
+The screener person search endpoint allows users to search for persons associated with a specific job id within the crustdata b2b saas integration platform. this post request accepts a json payload containing a job id and returns relevant person data linked to that job. it's particularly useful for scenarios where you need to quickly retrieve all individuals connected to a particular job or project. the endpoint is part of the platform's screening functionality, enabling efficient filtering of person records based on job-related criteria. while it provides a focused search based on job id, it may not offer advanced filtering options or return comprehensive job details.
+
+**Action Parameters**
+
+<ParamField path="job_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_FETCH_HEADCOUNT_BY_FACET_TIMESERIES">
+Retrieves headcount data as a timeseries with faceted analysis capabilities. this endpoint allows users to fetch detailed headcount information over time, applying complex filters, pagination, and sorting. it's particularly useful for hr analytics, workforce planning, and organizational growth analysis. the endpoint supports nested logical operations in its filtering mechanism, enabling highly specific queries. users can paginate through large datasets and sort results based on multiple criteria. while powerful, this endpoint requires careful construction of the filters parameter to ensure accurate data retrieval. it should be used when detailed, time-based headcount analysis is needed, but may not be suitable for simple, non-time-series headcount queries or for real-time data needs due to its complexity.
+
+**Action Parameters**
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_SCREEN_METRICS_AND_FILTER_CONDITIONS">
+The screendata endpoint enables advanced data screening and filtering on the crustdata platform. it allows users to construct complex queries for retrieving specific datasets based on custom metrics, filtering conditions, and sorting criteria. use this endpoint for targeted data extraction, custom reporting, or data analysis within the b2b saas integration ecosystem. note that while powerful, complex queries may impact performance with large datasets.
+
+**Action Parameters**
+
+<ParamField path="metrics" type="array" required={true}>
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_RETRIEVE_LINKED_IN_POSTS">
+Retrieves linkedin posts for a specified company using crustdata's screener functionality. this endpoint allows users to gather social media data from linkedin, which can be used for analyzing company activity, engagement, and sentiment. it's particularly useful for b2b marketers, sales professionals, and analysts who need insights into a company's social media presence and content strategy. the endpoint supports filtering by date range and customizing the response fields, making it versatile for various use cases such as competitive analysis, lead generation, and market research. note that the availability and completeness of data may depend on the company's linkedin activity and privacy settings.
+
+**Action Parameters**
+
+<ParamField path="company_linkedin_url" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_SEARCH_COMPANIES_WITH_FILTERS">
+The companysearch endpoint enables users to search and filter companies using the crustdata api. it provides a powerful mechanism for querying company data based on multiple criteria, supporting complex filtering and pagination. this endpoint is ideal for applications that need to retrieve specific sets of company information, such as financial analysis tools, market research platforms, or business intelligence systems. the search functionality allows for precise data retrieval, enhancing the efficiency of data integration and analysis processes in b2b scenarios. users should be aware that the endpoint requires careful construction of filter objects and proper use of pagination to ensure optimal performance and accurate results.
+
+**Action Parameters**
+
+<ParamField path="filters" type="array" required={true}>
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_SEARCH_LINKED_IN_POSTS_BY_KEYWORD">
+This endpoint enables searching for linkedin posts using a specific keyword. it allows users to retrieve relevant content from linkedin by specifying a search term, along with options for pagination, sorting, and filtering by post date. the function is particularly useful for conducting market research, competitor analysis, or tracking industry trends on the linkedin platform. users can fine-tune their search results by choosing how to sort the posts (by relevance or date) and selecting a specific time frame for the content. the endpoint returns paginated results, allowing for efficient navigation through large sets of matching posts.
+
+**Action Parameters**
+
+<ParamField path="keyword" type="string" required={true}>
+</ParamField>
+
+<ParamField path="page" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sort_by" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date_posted" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_ENRICH_PERSON_SCREENER">
+The screener person enrich endpoint enriches person data by providing additional information based on the given query. it allows users to retrieve detailed information about individuals, which can be useful for various purposes such as customer profiling, lead generation, or data verification. this endpoint should be used when you need to augment existing person data with additional details or verify information about a specific individual. the enrichment process draws from crustdata's extensive database and real-time data sources to provide up-to-date and comprehensive information. users can customize the response by specifying the exact fields they need, optimizing data transfer and processing. note that the availability and accuracy of enriched data may vary depending on the input provided and the information available in crustdata's systems.
+
+**Action Parameters**
+
+<ParamField path="linkedin_profile_url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="enrich_realtime" type="boolean" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_POST_JOB_LISTINGS_TABLE_DATA">
+This endpoint retrieves filtered and sorted job listings data for specified company tickers from a chosen dataset in the crustdata platform. it allows for highly customizable queries with complex filtering conditions, pagination, and sorting options. the endpoint is designed for bulk data retrieval and analysis of job market trends across multiple companies. use this endpoint when you need to fetch and analyze job listing data for specific companies, apply custom filters to narrow down the results, or when you want to paginate through large sets of job data. it's particularly useful for market research, competitive analysis, or tracking employment trends in specific industries or companies. note that this endpoint requires careful construction of the request body, especially for the filters parameter, which can support nested logical conditions. the performance and response time may vary depending on the complexity of the filters and the amount of data requested.
+
+**Action Parameters**
+
+<ParamField path="tickers" type="array" required={true}>
+</ParamField>
+
+<ParamField path="dataset__name" type="string">
+</ParamField>
+
+<ParamField path="dataset__id" type="string">
+</ParamField>
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_POST_FUNDING_MILESTONE_TIME_SERIES_DATA">
+The fundingmilestonetimeseries endpoint retrieves time-series data related to funding milestones for companies. it allows for complex querying of funding events over time, with flexible filtering, pagination, and sorting options. this endpoint is particularly useful for analyzing funding trends, comparing company funding histories, or tracking specific funding events across multiple organizations. the data returned is based on the specified filters and can be tailored to focus on particular time ranges, funding stages, or company characteristics. while it provides comprehensive funding milestone data, it does not include detailed company information beyond what's directly related to funding events.
+
+**Action Parameters**
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_FILTER_DECISION_MAKERS_DATA">
+Filters and retrieves decision maker data from the crustdata b2b saas integration platform based on complex criteria. this endpoint allows for advanced querying of decision maker information using a combination of filters, pagination, sorting, and title-based filtering. it's designed for scenarios where specific subsets of decision maker data need to be extracted or analyzed. the endpoint supports nested logical conditions in filters, enabling highly targeted data retrieval. use this when you need to perform detailed analysis or reporting on decision makers across various organizations or industries. note that the endpoint requires careful structuring of the request body to effectively utilize its advanced filtering capabilities.
+
+**Action Parameters**
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+<ParamField path="decision_maker_titles" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_POST_HEADCOUNT_TIMESERIES_DATA">
+Retrieves filtered and sorted headcount timeseries data from the crustdata data lab. this endpoint allows for complex querying of historical headcount information, enabling users to analyze workforce trends over time. it supports advanced filtering with nested conditions, pagination for handling large datasets, and customizable sorting. ideal for generating reports, conducting workforce analysis, or integrating headcount data into third-party business intelligence tools. note that the specifics of the returned data structure are not provided in the given schema.
+
+**Action Parameters**
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_POST_WEB_TRAFFIC_DATA">
+Retrieves filtered and sorted web traffic data from the crustdata platform. this endpoint allows for complex querying of web traffic information using nested conditions and logical operators. it supports pagination for handling large datasets and provides sorting capabilities for customized data presentation. use this endpoint when you need to analyze web traffic patterns, filter data based on specific criteria, or extract insights from your web analytics. the endpoint is particularly useful for generating reports, identifying trends, or monitoring key performance indicators related to web traffic.
+
+**Action Parameters**
+
+<ParamField path="filters__op" type="string">
+</ParamField>
+
+<ParamField path="filters__conditions" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="count" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="sorts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_SCREENER_COMPANY_INFORMATION">
+The getcompanyscreener endpoint allows users to search and filter companies based on various criteria such as headcount, growth rate, funding, and more. it provides a powerful way to identify specific companies that meet predefined conditions. this endpoint is particularly useful for tasks like lead generation, market research, and competitive analysis. the endpoint returns a list of companies matching the specified criteria, with each company entry containing key information such as name, industry, headcount, funding details, and growth metrics. users can customize their search using multiple filters, sort the results, and paginate through large result sets. note that the accuracy of the data depends on crustdata's real-time data collection and update frequency.
+
+**Action Parameters**
+
+<ParamField path="company_domain" type="string" required={true}>
+</ParamField>
+
+<ParamField path="enrich_realtime" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="CRUSTDATA_FETCH_INVESTOR_PORTFOLIO_DATA">
+Retrieves comprehensive investor portfolio data from the data lab section of the crustdata api. this endpoint provides access to detailed information about investor portfolios, including investment holdings, performance metrics, and other relevant data points. it is designed to support investment analysis, portfolio management, and decision-making processes in a b2b context. the endpoint should be used when detailed investor portfolio information is required for tasks such as investment screening, performance tracking, or generating analytical reports. it's important to note that this endpoint may not provide real-time data and the frequency of updates should be verified in the api documentation. additionally, users should be aware of any data privacy and usage restrictions that may apply to the retrieved investor information.
+
+**Action Parameters**
+
+<ParamField path="investor_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="array">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

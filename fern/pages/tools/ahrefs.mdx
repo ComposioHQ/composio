@@ -1,0 +1,1795 @@
+---
+title: "Ahrefs"
+subtitle: "Learn how to use Ahrefs with Composio"
+---
+
+
+## Overview
+
+### Enum
+`AHREFS`
+
+### Description
+Ahrefs is an SEO and marketing platform offering site audits, keyword research, content analysis, and competitive insights to improve search rankings and drive organic traffic
+
+### Authentication Details
+
+<Accordion title="API_KEY">
+<ParamField path="apiKey" type="string" required={true}>
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="AHREFS_GET_SITE_EXPLORER_LINKED_ANCHORS_EXTERNAL">
+The site-explorer-linked-anchors-external endpoint retrieves data about external anchor texts linking to a specified target website. this tool is essential for analyzing the backlink profile of a domain, understanding the context in which other sites are linking to it, and identifying potential seo opportunities or issues. it provides insights into the most common anchor texts used in external links, which can help in assessing the website's perceived topical relevance and authority. use this endpoint when you need to analyze the external link profile of a website, conduct competitor research, or identify potential link-building opportunities. note that this tool focuses solely on external links and does not provide information about internal linking structures or other on-page seo factors.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SITE_EXPLORER_PAGES_HISTORY">
+The get site explorer pages history endpoint retrieves historical data about specific pages or domains from ahrefs' site explorer. it tracks changes in seo performance over time, including backlinks, organic traffic, and visibility. use this endpoint for assessing historical performance, comparing metrics, and identifying trends. ideal for seo audits and competitor analysis. data availability may vary based on ahrefs' crawl history.
+
+**Action Parameters**
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_CRAWLER_IP_RANGES">
+Retrieves the list of ip address ranges used by ahrefs' web crawler (ahrefsbot). this endpoint provides essential information for website administrators to identify and potentially whitelist ahrefs' crawler traffic. use this endpoint when you need to configure your server's firewall rules, analyze server logs, or verify the authenticity of crawler requests claiming to be from ahrefs. the returned data includes the current set of ip ranges, which may change over time, so it's recommended to check this endpoint periodically for updates. note that while this information helps in identifying ahrefs' crawler, it should not be used as the sole method of authentication for the crawler.
+
+**Action Parameters**
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_PERFORM_BATCH_URL_ANALYSIS_USING_MULTIPLE_PARAMETERS">
+Performs a batch analysis on multiple urls or domains using ahrefs' powerful seo metrics. this endpoint allows users to retrieve key seo data for up to 100 targets simultaneously, streamlining the process of analyzing multiple websites or pages. it's particularly useful for comparing competitors, analyzing site sections, or processing large sets of urls efficiently. the endpoint offers customization options for selecting specific metrics, filtering by country, and choosing the calculation mode for volume-based metrics. while it provides comprehensive data, users should be aware of the 100-target limit per request and ensure they have sufficient api quota for large-scale analyses.
+
+**Action Parameters**
+
+<ParamField path="select" type="array" required={true}>
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="targets" type="array" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SITE_EXPLORER_METRICS_HISTORY">
+Retrieves historical seo metrics data for a specified website over a given time period. this endpoint is part of the ahrefs site explorer tool and provides valuable insights into a website's performance trends. it should be used when analyzing long-term seo progress, identifying patterns in backlink growth, or tracking changes in organic traffic and keyword rankings. the tool is particularly useful for competitive analysis, allowing users to compare their website's historical performance against competitors. it's important to note that the data granularity may vary depending on the date range selected, with more recent dates potentially offering more detailed data.
+
+**Action Parameters**
+
+<ParamField path="select" type="string" default="date,org_cost,org_traffic,paid_cost,paid_traffic">
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_BACKLINKS_STATS_RETRIEVAL">
+Retrieves comprehensive backlink statistics for a specified website or url using ahrefs' site explorer tool. this endpoint provides crucial data for seo analysis, including the total number of backlinks, referring domains, and potentially the domain rating (dr). it's essential for understanding a site's link profile, assessing its seo performance, and conducting competitive analysis. the tool is particularly useful when users need detailed insights into a website's backlink structure or when comparing the backlink profiles of multiple domains. note that the data returned is based on ahrefs' extensive web crawl and may not include very recent backlinks.
+
+**Action Parameters**
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_EXPLORE_KEYWORD_VOLUME_BY_COUNTRY">
+Retrieves the search volume data for specified keywords across different countries using ahrefs' keywords explorer tool. this endpoint allows users to obtain accurate search volume information, helping in keyword research and content strategy planning for specific geographic regions. it's particularly useful for seo professionals and content marketers looking to optimize their targeting for different markets. the endpoint provides monthly search volume data, which can be used to gauge the popularity and potential traffic of keywords in various countries. note that the data is based on ahrefs' extensive database and may not always exactly match real-time google search volumes.
+
+**Action Parameters**
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="search_engine" type="string" default="google">
+</ParamField>
+
+<ParamField path="keyword" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SITE_EXPLORER_KEYWORDS_HISTORY">
+Retrieves historical keyword performance data for a specified website or domain using ahrefs' site explorer. this endpoint provides insights into how keywords have performed over time, including changes in rankings, search volume, and potential traffic. it's particularly useful for analyzing seo trends, understanding the impact of optimization efforts, and identifying seasonal patterns in keyword performance. the tool should be used when you need a comprehensive view of a website's keyword history to inform seo strategies and content planning. it does not provide real-time data and may have limitations on the historical range available.
+
+**Action Parameters**
+
+<ParamField path="select" type="string" default="date,top3,top4_10,top11_plus">
+</ParamField>
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_LIST_BEST_BY_EXTERNAL_LINKS">
+The 'get best by external links' endpoint retrieves a list of pages from a specified website, ranked by the number of external links pointing to them. this tool is essential for identifying the most authoritative and popular pages on a domain from an external linking perspective. it helps in understanding which content attracts the most backlinks, aiding in content strategy and link building efforts. the endpoint is particularly useful for seo professionals and digital marketers looking to analyze a website's most valuable pages in terms of external link equity. however, it's important to note that this tool focuses solely on external links and doesn't provide information on internal linking or other seo metrics.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="history" type="string" default="all_time">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_PUBLIC_CRAWLER_IPS">
+Retrieves a list of ip addresses currently used by ahrefsbot, ahrefs' web crawler. this endpoint provides essential information for webmasters and seo professionals who want to verify the authenticity of requests coming from ahrefs or manage their server's access rules. the returned list includes all active ip addresses utilized by ahrefsbot for crawling websites. this tool should be used when you need to confirm if a particular ip belongs to ahrefs or when updating your website's firewall rules to allow ahrefs' crawler. it's important to note that this list may change over time, so it's recommended to check it periodically for the most up-to-date information.
+
+**Action Parameters**
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_LINKED_ANCHORS_EXPLORER">
+Retrieves information about internal linked anchors for a specified website using the ahrefs api. this endpoint provides data on anchor text used in internal links and the number of outgoing links associated with each anchor. it's particularly useful for analyzing a website's internal linking structure, identifying commonly used anchor texts, and optimizing internal link distribution. the endpoint is part of ahrefs' site explorer tool and helps in understanding the website's hierarchy and content relationships. each request and result incurs a cost of 1 row, which should be considered when making multiple or large-scale queries.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_EXPLORE_MATCHING_TERMS_FOR_KEYWORDS">
+The keywords explorer matching terms endpoint retrieves a list of keyword phrases that match or contain the specified keyword from ahrefs' vast database. this tool is part of ahrefs' keyword explorer functionality and is designed to assist in comprehensive keyword research for seo purposes. it returns matching terms along with their relevant metrics such as search volume, keyword difficulty, and potential traffic. this endpoint is particularly useful when expanding a seed keyword list, finding long-tail variations, or discovering closely related search terms. the tool takes into account the specified country for localized results, allowing for targeted keyword strategies in different markets. it's important to note that while this tool provides valuable keyword suggestions, it should be used in conjunction with other ahrefs features for a complete seo strategy.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="search_engine" type="string" default="google">
+</ParamField>
+
+<ParamField path="keywords" type="string">
+</ParamField>
+
+<ParamField path="keyword_list_id" type="integer">
+</ParamField>
+
+<ParamField path="match_mode" type="string" default="terms">
+</ParamField>
+
+<ParamField path="terms" type="string" default="all">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_GET_SITE_AUDIT_PROJECTS">
+Retrieves a list of site audit projects associated with the authenticated ahrefs account. this endpoint allows users to access and manage their site audit projects, which are essential for identifying technical and on-page seo issues across websites. it should be used when you need an overview of all site audit projects or want to check the status of ongoing audits. the endpoint likely returns project details such as project names, urls being audited, last audit dates, and overall health scores. keep in mind that while this endpoint provides a list of projects, it does not include the detailed audit results for each project; separate api calls would be needed to fetch specific project data.
+
+**Action Parameters**
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SITE_EXPLORER_METRICS">
+The getsiteexplorermetrics endpoint retrieves comprehensive seo metrics for a specified website using ahrefs' site explorer tool. it provides crucial data such as backlink profile, referring pages, organic keyword rankings, and various other seo-related metrics that are essential for understanding a website's performance and authority in search engine results. this endpoint is particularly useful for seo professionals, digital marketers, and website owners who need to analyze their own sites or competitor websites. the tool offers flexibility in terms of analysis scope and specific metrics retrieval, allowing users to tailor the data to their specific needs. however, users should be aware that the depth and recency of data may vary depending on ahrefs' crawling frequency and the size of the target website.
+
+**Action Parameters**
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_EXPLORE_LINKED_DOMAINS_OF_A_SITE">
+Retrieves a list of external domains that the specified target website or url links to, using ahrefs' site explorer functionality. this endpoint is crucial for analyzing a website's external linking structure, which can provide insights into its content strategy, partnerships, and overall seo approach. it's particularly useful for competitive analysis, link building strategies, and identifying potential opportunities or risks in a website's outbound link profile. the endpoint returns detailed information about each linked domain, including the number of links pointing to it from the target site.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_RELATED_TERMS">
+The keywords explorer related terms endpoint retrieves a list of related terms for a given keyword using ahrefs' extensive keyword database. this tool is essential for expanding keyword research, finding new content ideas, and identifying potential long-tail keywords for seo strategies. it provides valuable insights into semantically related terms that users are searching for, helping to broaden and refine content targeting. the endpoint is particularly useful when brainstorming content ideas or looking to expand the scope of an existing seo campaign. however, it should be noted that this tool focuses on keyword relationships and does not provide metrics like search volume or keyword difficulty directly in its response.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="keywords" type="string">
+</ParamField>
+
+<ParamField path="keyword_list_id" type="integer">
+</ParamField>
+
+<ParamField path="view_for" type="string" default="top_10">
+</ParamField>
+
+<ParamField path="terms" type="string" default="all">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_RANK_TRACKER_OVERVIEW">
+The getranktrackeroverview endpoint retrieves a comprehensive summary of keyword rankings and seo performance data from ahrefs' rank tracker tool. it provides a high-level overview of a website's ranking positions, serp features, and performance against competitors across multiple search engines and countries. this endpoint is ideal for quickly assessing the overall seo health and progress of a website without delving into specific keyword details. it should be used when you need a snapshot of your seo performance or to track changes in your overall ranking landscape over time. note that while this overview gives a broad picture, it may not include in-depth data for individual keywords or specific serp features.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="device" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_GET_SERP_OVERVIEW">
+Retrieves a comprehensive overview of search engine results pages (serp) data for specified keywords or queries. this endpoint provides valuable insights into search performance, including historical data, search intent analysis, and detailed metrics for each keyword. it's particularly useful for seo professionals and digital marketers looking to optimize their content strategy and improve their website's search engine visibility. the serp overview can help identify trends, analyze competition, and inform content creation efforts based on real search data. note that while this endpoint offers a wealth of information, it may not provide real-time data and should be used for strategic planning rather than immediate tactical decisions.
+
+**Action Parameters**
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="top_positions" type="integer">
+</ParamField>
+
+<ParamField path="date" type="string">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="keyword" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SUBSCRIPTION_LIMITS_AND_USAGE">
+Retrieves detailed information about the current subscription limits and usage for an ahrefs account. this endpoint provides essential data to monitor api consumption, track remaining credits or rows, and manage subscription usage effectively. it should be used regularly to ensure compliance with plan limits and to plan for potential upgrades or additional purchases. the tool does not modify any account settings or usage data; it only provides a snapshot of the current status. while specific response fields are not detailed in the schema, users can expect information about total limits, current usage, and possibly remaining allowances for various ahrefs features and api endpoints.
+
+**Action Parameters**
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_EXPLORE_KEYWORDS_OVERVIEW">
+Retrieves a comprehensive overview of keyword data from ahrefs' keywords explorer tool. this endpoint provides essential insights for seo professionals and content strategists, offering a summary of key metrics such as search volume, keyword difficulty, and potential traffic. it's ideal for users looking to get a quick snapshot of keyword performance and opportunities without diving into specific keyword details. the overview likely includes aggregate data and trends, helping users to make informed decisions about their keyword strategy. while it offers a broad perspective, it may not provide in-depth analysis of individual keywords. use this endpoint when you need a high-level view of your keyword landscape or to identify general trends in your niche.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target_mode" type="string">
+</ParamField>
+
+<ParamField path="target" type="string">
+</ParamField>
+
+<ParamField path="target_position" type="string">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="search_engine" type="string" default="google">
+</ParamField>
+
+<ParamField path="keywords" type="string">
+</ParamField>
+
+<ParamField path="keyword_list_id" type="integer">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_DOMAIN_RATING_HISTORY">
+Retrieves the historical domain rating (dr) data for a specified domain over time. this endpoint is part of ahrefs' site explorer tool and provides insights into how a domain's authority has changed. it's useful for tracking the impact of seo efforts, analyzing competitors, or understanding long-term trends in domain strength. the tool returns a time series of domain rating values, allowing users to visualize changes in a domain's perceived authority according to ahrefs' metrics. it should be used when analyzing the historical performance of a domain in terms of its overall seo strength and backlink profile quality. note that this endpoint focuses solely on domain rating and does not provide other metrics like backlink counts or organic traffic data.
+
+**Action Parameters**
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_PAGES_BY_TRAFFIC_OVERVIEW">
+Retrieves a list of pages from a specified website, ordered by their estimated organic search traffic. this endpoint is part of the ahrefs site explorer tool and provides valuable insights into which pages on a website are performing well in terms of attracting organic search visitors. it's useful for identifying top-performing content, understanding traffic distribution across a site, and prioritizing optimization efforts. the endpoint returns data such as page urls, estimated traffic, and other relevant metrics. it's important to note that the traffic data is an estimation based on ahrefs' algorithms and may not exactly match actual analytics data. this tool is particularly useful for seo professionals, content strategists, and website owners looking to analyze and improve their site's organic search performance.
+
+**Action Parameters**
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_DOMAIN_RATING_FOR_SITE_EXPLORER">
+Retrieves the domain rating (dr) for a specified domain. domain rating is an ahrefs metric that measures the strength and authority of a website's backlink profile on a logarithmic scale from 0 to 100. this endpoint should be used when you need to quickly assess the overall seo strength of a domain based on its backlink profile. it's particularly useful for competitive analysis, link building research, and evaluating potential partnership opportunities. the tool provides a single, easy-to-understand metric but does not offer detailed information about the backlinks themselves or other seo factors. for more comprehensive backlink analysis, consider using other ahrefs endpoints that provide more detailed backlink data.
+
+**Action Parameters**
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_GET_SITE_EXPLORER_COUNTRY_METRICS">
+Retrieves country-specific site explorer metrics for a given website from ahrefs. this endpoint provides valuable insights into a website's performance across different countries, including data on organic traffic, keyword rankings, and backlink profiles. it's particularly useful for analyzing international seo performance, identifying strong markets, and uncovering opportunities for global expansion. the tool returns a list of countries with their respective seo metrics, helping users understand how their website performs in various geographical regions. note that the specific metrics returned may vary based on the ahrefs plan and data availability for the target website.
+
+**Action Parameters**
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_COMPETITORS_OVERVIEW">
+Retrieves a comprehensive overview of competitor data in relation to keyword rankings and organic search performance. this endpoint is part of ahrefs' rank tracker feature and provides a comparative analysis of your website against multiple competitors. it offers insights into keyword positions, traffic share, and serp features across all tracked keywords. use this endpoint when you need a high-level view of your seo performance relative to your competitors. the data returned helps identify ranking opportunities, track your market share in organic search, and understand how you stack up against your competition in terms of visibility and traffic. note that this endpoint may have limitations on the number of competitors it compares against and the historical data range available.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="device" type="string" required={true}>
+</ParamField>
+
+<ParamField path="project_id" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_BROKEN_BACKLINKS_DATA">
+Retrieves a list of broken backlinks for a specified website using ahrefs' site explorer tool. this endpoint helps identify and analyze backlinks that are no longer functional, potentially affecting the website's seo performance. it should be used when conducting a backlink audit, cleaning up a website's link profile, or identifying opportunities for link reclamation. the tool provides detailed information about each broken backlink, including the referring page, anchor text, and the specific broken url. it's important to note that this endpoint may have limitations on the number of results returned and may require additional api calls for pagination if there are many broken backlinks.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="aggregation" type="string" default="similar_links">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_ORGANIC_KEYWORDS">
+Retrieves organic keywords data for a specified website using ahrefs' site explorer tool. this endpoint provides valuable insights into a website's seo performance by returning a list of keywords for which the site ranks in organic search results. it's particularly useful for analyzing a website's organic search visibility, identifying ranking opportunities, and comparing keyword performance against competitors. the data returned includes key metrics such as keyword position, search volume, and estimated traffic, allowing users to make informed decisions about their seo strategy. note that the results are based on ahrefs' database and may not reflect real-time search engine results.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_ANCHOR_DATA">
+Retrieves anchor text data for a specified website or url using ahrefs' site explorer tool. this endpoint provides valuable insights into the anchor text distribution of backlinks pointing to the target url or domain. it helps seo professionals analyze the quality and diversity of anchor texts, which can influence search engine rankings. use this endpoint when you need to understand how other websites are linking to a specific page or domain, and to identify potential opportunities for link building or anchor text optimization. the tool does not provide information about the linking pages themselves, focusing solely on the anchor text data.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="history" type="string" default="all_time">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_GET_URL_RATING_HISTORY">
+Retrieves the historical url rating data for a specified url over time. this endpoint provides insights into how a url's seo strength has changed, allowing users to track the impact of their seo efforts or analyze competitors' url performance. the url rating is a key ahrefs metric that reflects the strength of a url based on its backlink profile and other seo factors. use this endpoint to visualize url rating trends, identify significant changes in a url's seo performance, and correlate these changes with specific events or strategies. the data returned is particularly useful for long-term seo analysis and competitive research.
+
+**Action Parameters**
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_VOLUME_HISTORY">
+Retrieves the historical search volume data for a specified keyword using ahrefs' keywords explorer tool. this endpoint provides valuable insights into how the popularity of a keyword has changed over time, allowing users to analyze trends, seasonality, and long-term shifts in search behavior. the data returned can be crucial for planning seo strategies, content calendars, and understanding market dynamics. it's particularly useful when you need to assess the historical performance of keywords, identify seasonal patterns, or evaluate the potential of trending topics. the tool does not provide future predictions or real-time data, focusing instead on historical trends based on ahrefs' comprehensive database of search information.
+
+**Action Parameters**
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="keyword" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_PAID_PAGES_DATA">
+Retrieves information about paid pages (ppc advertising) for a specified website using ahrefs' site explorer tool. this endpoint provides valuable insights into a website's paid search strategy, including the keywords they're targeting, ad copies, and potentially performance metrics. it's particularly useful for competitive analysis in digital marketing, allowing users to understand their competitors' paid search efforts. the tool should be used when analyzing a website's ppc strategy or researching potential keywords for paid campaigns. it does not provide information about organic search performance or other seo metrics.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_BEST_BY_INTERNAL_LINKS">
+Retrieves data on the best-performing internal links within a specified website using ahrefs' site explorer feature. this endpoint analyzes the internal link structure of the target site and returns a list of the most effective internal links based on various seo metrics. it's particularly useful for identifying high-value linking opportunities within your own website, which can help improve your site's overall seo performance and user navigation. the tool provides insights that can be used to optimize your internal linking strategy, potentially boosting the ranking potential of important pages on your site. note that this endpoint focuses solely on internal links and does not provide information about external backlinks or other seo metrics.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_ORGANIC_COMPETITORS">
+The getorganiccompetitors endpoint in the ahrefs api provides a comprehensive analysis of websites competing for organic search rankings with a specified target domain. it identifies and ranks competitors based on their keyword overlap and organic search performance relative to the target site. this tool is essential for understanding the competitive landscape in seo, discovering potential content gaps, and informing strategic decisions for improving organic search visibility. use this endpoint when you need to identify key competitors in organic search, analyze their strengths, and uncover opportunities for outranking them. the tool focuses solely on organic search competitors and does not provide information on paid search or other marketing channels.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_SEARCH_SUGGESTIONS_EXPLORER">
+Retrieves search suggestions for a given keyword or phrase using ahrefs' keywords explorer tool. this endpoint provides autocomplete-style suggestions that can help uncover related keywords, long-tail variations, and potential content ideas based on real search data. it's particularly useful for expanding keyword lists, finding low-competition keywords, and understanding user search intent. the suggestions returned may include both informational and transactional keywords, offering insights into various stages of the user journey. this tool should be used when conducting keyword research, planning content strategies, or optimizing for search engine visibility. it does not provide detailed metrics like search volume or keyword difficulty; for such data, additional api calls may be necessary.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string" required={true}>
+</ParamField>
+
+<ParamField path="search_engine" type="string" default="google">
+</ParamField>
+
+<ParamField path="keywords" type="string">
+</ParamField>
+
+<ParamField path="keyword_list_id" type="integer">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_TOP_PAGES_FROM_SITE_EXPLORER">
+Retrieves data about the top-performing pages of a specified website using ahrefs' site explorer tool. this endpoint provides valuable insights into a site's most successful content based on various seo metrics. it's particularly useful for content analysis, competitive research, and identifying opportunities for optimization. the data returned includes details such as page urls, organic traffic estimates, ranking keywords, and other relevant seo metrics for each top page. use this endpoint when you need to analyze the best-performing content of a website or compare top pages across different domains. note that the results are based on ahrefs' data and estimates, which may not always reflect real-time traffic or exact google rankings.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="date_compared" type="string">
+</ParamField>
+
+<ParamField path="date" type="string" required={true}>
+</ParamField>
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_SITE_EXPLORER_REFERRING_DOMAINS_HISTORY">
+Retrieves the historical data of referring domains for a specified website or url over time. this endpoint is part of ahrefs' site explorer tool and provides valuable insights into the growth or decline of a website's backlink profile. it should be used when analyzing the long-term seo performance of a website, identifying trends in link building efforts, or comparing the backlink acquisition rates of different domains. the data returned includes the number of referring domains at various points in time, allowing users to track changes and potentially correlate them with specific events or marketing efforts. this endpoint is particularly useful for seo professionals, digital marketers, and website owners who need to monitor their site's authority growth over time or analyze competitors' link building strategies.
+
+**Action Parameters**
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_SITE_EXPLORER_REFERRING_DOMAINS">
+Retrieves a list of domains that have backlinks pointing to a specified target website. this endpoint is essential for conducting comprehensive backlink analysis, allowing users to identify and evaluate the sources of incoming links to their website. it provides valuable data for assessing the strength and quality of a site's backlink profile, which is crucial for seo strategies and competitor analysis. the endpoint returns detailed information about each referring domain, likely including metrics such as domain rating (dr), number of backlinks, and first seen date. it should be used when analyzing a website's backlink structure, identifying potential link-building opportunities, or auditing the quality of incoming links. note that while this endpoint provides aggregate data about referring domains, it does not offer specifics about individual backlinks or anchor texts.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="history" type="string" default="all_time">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_RETRIEVE_OUTLINKS_STATS">
+Retrieves comprehensive statistics about outgoing links (outlinks) from a specified website using ahrefs' site explorer tool. this endpoint provides valuable insights into a website's external linking practices, which is crucial for seo analysis and understanding a site's overall link profile. use this tool to gather data on the number of outlinks, the diversity of linked domains, and the distribution of follow vs. nofollow links. it's particularly useful for competitive analysis, identifying potential link-building opportunities, and assessing a site's overall linking strategy. note that this endpoint focuses solely on outgoing links and does not provide information about backlinks or internal links.
+
+**Action Parameters**
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_TOTAL_SEARCH_VOLUME_HISTORY">
+Retrieves the historical total search volume data for specified keywords using ahrefs' site explorer tool. this endpoint allows users to track and analyze the search popularity trends of specific terms over time, which is crucial for seo strategy and content planning. it provides aggregated search volume data, helping users understand seasonal trends, overall interest changes, and compare different keywords' performance. the tool is particularly useful for identifying trending topics, planning content calendars, and making data-driven decisions in digital marketing campaigns. however, it's important to note that the data represents past trends and should be used in conjunction with other metrics for comprehensive seo analysis.
+
+**Action Parameters**
+
+<ParamField path="volume_mode" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="top_positions" type="string" default="top_10">
+</ParamField>
+
+<ParamField path="history_grouping" type="string" default="monthly">
+</ParamField>
+
+<ParamField path="date_to" type="string">
+</ParamField>
+
+<ParamField path="date_from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="country" type="string">
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="AHREFS_FETCH_ALL_BACKLINKS">
+Retrieves a comprehensive list of backlinks for a specified website or url using ahrefs' site explorer tool. this endpoint provides detailed information about the backlink profile of the target, including the source urls, link attributes, and potentially other seo metrics like domain rating (dr) or url rating (ur) of the linking pages. it's particularly useful for analyzing a website's link-building efforts, identifying potential link-building opportunities, and assessing the overall health of a site's backlink profile. the endpoint can handle large-scale backlink data, making it suitable for in-depth seo analysis and competitive research. however, users should be aware that for websites with a substantial number of backlinks, multiple api calls or pagination may be necessary to retrieve the complete dataset.
+
+**Action Parameters**
+
+<ParamField path="timeout" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="1000">
+</ParamField>
+
+<ParamField path="order_by" type="string">
+</ParamField>
+
+<ParamField path="where" type="string">
+</ParamField>
+
+<ParamField path="select" type="string" required={true}>
+</ParamField>
+
+<ParamField path="protocol" type="string" default="both">
+</ParamField>
+
+<ParamField path="target" type="string" required={true}>
+</ParamField>
+
+<ParamField path="mode" type="string" default="subdomains">
+</ParamField>
+
+<ParamField path="aggregation" type="string" default="similar_links">
+</ParamField>
+
+<ParamField path="history" type="string" default="all_time">
+</ParamField>
+
+<ParamField path="output" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,7891 @@
+---
+title: "Box"
+subtitle: "Learn how to use Box with Composio"
+---
+
+
+## Overview
+
+### Enum
+`BOX`
+
+### Description
+Cloud content management and file sharing service for businesses.
+
+### Authentication Details
+
+<Accordion title="OAUTH2">
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="oauth_redirect_uri" type="string" default="https://backend.composio.dev/api/v1/auth-apps/add">
+</ParamField>
+
+<ParamField path="scopes" type="string">
+</ParamField>
+
+<ParamField path="base_url" type="string" default="https://api.box.com/2.0">
+</ParamField>
+
+</Accordion>
+
+
+## Actions
+
+<AccordionGroup>
+<Accordion title="BOX_GET_GROUP">
+Retrieves information about a group. only members of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_FILE_VERSIONS">
+Retrieve a list of the past versions for a file. versions are only tracked by box users with premium accounts. to fetch the id of the current version of a file, use the `get /file/:id` api.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_SHARED_LINK_TO_FOLDER">
+Adds a shared link to a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_GROUP">
+Permanently deletes a group. only users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ENTERPRISE_DEVICE_PINS">
+Retrieves all the device pins within an enterprise. the user must have admin privileges, and the application needs the "manage enterprise" scope to make this call.
+
+**Action Parameters**
+
+<ParamField path="enterprise_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_GROUP">
+Creates a new group of users in an enterprise. only users with admin permissions can create new groups.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="provenance" type="string">
+</ParamField>
+
+<ParamField path="external_sync_identifier" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="invitability_level" type="string">
+</ParamField>
+
+<ParamField path="member_viewability_level" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_METADATA_TEMPLATE_BY_ID">
+Retrieves a metadata template by its id.
+
+**Action Parameters**
+
+<ParamField path="template_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GENERATE_TEXT">
+Sends an ai request to supported large language models (llms) and returns generated text based on the provided prompt.
+
+**Action Parameters**
+
+<ParamField path="prompt" type="string" required={true}>
+</ParamField>
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+<ParamField path="dialogue_history" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_SLACK_INTEGRATION_MAPPING">
+Deletes a [slack integration mapping](https://support.box.com/hc/en-us/articles/4415585987859-box-as-the-content-layer-for-slack). you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="integration_mapping_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_AI_AGENT">
+Deletes an ai agent using the provided parameters.
+
+**Action Parameters**
+
+<ParamField path="agent_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_RETENTION_POLICY">
+Permanently deletes a retention policy.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_WEBHOOK">
+Creates a webhook.
+
+**Action Parameters**
+
+<ParamField path="target__id" type="string">
+</ParamField>
+
+<ParamField path="target__type" type="string">
+</ParamField>
+
+<ParamField path="address" type="string" required={true}>
+</ParamField>
+
+<ParamField path="triggers" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TASK_ASSIGNMENTS">
+Lists all of the assignments for a given task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_UPLOAD_SESSION_FOR_EXISTING_FILE">
+Creates an upload session for an existing file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_size" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="file_name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DOWNLOAD_FILE">
+Returns the contents of a file in binary format.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="version" type="string">
+</ParamField>
+
+<ParamField path="access_token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ASK_QUESTION">
+Sends an ai request to supported llms and returns an answer specifically focused on the user's question given the provided context.
+
+**Action Parameters**
+
+<ParamField path="mode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="prompt" type="string" required={true}>
+</ParamField>
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+<ParamField path="dialogue_history" type="array">
+</ParamField>
+
+<ParamField path="include_citations" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_PREFLIGHT_CHECK_BEFORE_UPLOAD">
+Performs a check to verify that a file will be accepted by box before you upload the entire file.
+
+**Action Parameters**
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="size" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_COPY_FOLDER">
+Creates a copy of a folder within a destination folder. the original folder will not be changed.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="parent__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_SHIELD_INFORMATION_BARRIER_SEGMENT_RESTRICTION_BY_ID">
+Delete shield information barrier segment restriction based on provided id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_restriction_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_BOX_SIGN_TEMPLATES">
+Gets box sign templates created by a user.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FILE_VERSION_LEGAL_HOLDS">
+Get a list of file versions on legal hold for a legal hold assignment. due to ongoing re-architecture efforts this api might not return all file versions for this policy id. instead, this api will only return file versions held in the legacy architecture. two new endpoints will available to request any file versions held in the new architecture. for file versions held in the new architecture, the `get /legal hold policy assignments/:id/file versions on hold` api can be used to return all past file versions available for this policy assignment, and the `get /legal hold policy assignments/:id/files on hold` api can be used to return any current (latest) versions of a file under legal hold. the `get /legal hold policy assignments?policy id=`{id}`` api can be used to find a list of policy assignments for a given policy id. once the re-architecture is completed this api will be deprecated.
+
+**Action Parameters**
+
+<ParamField path="policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SHIELD_INFORMATION_BARRIER_SEGMENT">
+Creates a shield information barrier segment.
+
+**Action Parameters**
+
+<ParamField path="shield__information__barrier__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__type" type="string">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_AI_AGENT_BY_AGENT_ID">
+Gets an ai agent using the `agent id` parameter.
+
+**Action Parameters**
+
+<ParamField path="agent_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_GROUP_COLLABORATIONS">
+Retrieves all the collaborations for a group. the user must have admin permissions to inspect enterprise's groups. each collaboration object has details on which files or folders the group has access to and with what role.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_WORKFLOWS">
+Returns list of workflows that act on a given `folder id`, and have a flow with a trigger type of `workflow manual start`. you application must be authorized to use the `manage box relay` application scope within the developer console in to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="trigger_type" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FIND_METADATA_TEMPLATE_BY_INSTANCE_ID">
+Finds a metadata template by searching for the id of an instance of the template.
+
+**Action Parameters**
+
+<ParamField path="metadata_instance_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_RECENTLY_ACCESSED_ITEMS">
+Returns information about the recent items accessed by a user, either in the last 90 days or up to the last 1000 items accessed.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_STORAGE_POLICY_ASSIGNMENTS">
+Fetches all the storage policy assignment for an enterprise or user.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="resolved_for_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="resolved_for_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SHIELD_INFORMATION_BARRIER_REPORTS">
+Lists shield information barrier reports.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SHIELD_INFORMATION_BARRIER_SEGMENT_RESTRICTIONS">
+Lists shield information barrier segment restrictions based on provided segment id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_ZIP_DOWNLOAD_STATUS">
+Returns the download status of a `zip` archive, allowing an application to inspect the progress of the download as well as the number of items that might have been skipped. this endpoint can only be accessed once the download has started. subsequently this endpoint is valid for 12 hours from the start of the download. the url of this endpoint should not be considered as fixed. instead, use the [create zip download](e://post zip downloads) api to request to create a `zip` archive, and then follow the `status url` field in the response to this endpoint.
+
+**Action Parameters**
+
+<ParamField path="zip_download_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FILE_VERSION_RETENTIONS">
+Retrieves all file version retentions for the given enterprise. **note**: file retention api is now **deprecated**. to get information about files and file versions under retention, see [files under retention](e://get-retention-policy-assignments-id-files-under-retention) or [file versions under retention](e://get-retention-policy-assignments-id-file-versions-under-retention) endpoints.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string">
+</ParamField>
+
+<ParamField path="file_version_id" type="string">
+</ParamField>
+
+<ParamField path="policy_id" type="string">
+</ParamField>
+
+<ParamField path="disposition_action" type="string">
+</ParamField>
+
+<ParamField path="disposition_before" type="string">
+</ParamField>
+
+<ParamField path="disposition_after" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_GROUPS_FOR_ENTERPRISE">
+Retrieves all of the groups for a given enterprise. the user must have admin permissions to inspect enterprise's groups.
+
+**Action Parameters**
+
+<ParamField path="filter_term" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_SHARED_LINK_FROM_FILE">
+Removes a shared link from a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_SHIELD_INFORMATION_BARRIER_SEGMENT_MEMBER_BY_ID">
+Deletes a shield information barrier segment member based on provided id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_member_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_TASK_ASSIGNMENT">
+Updates a task assignment. this endpoint can be used to update the state of a task assigned to a user.
+
+**Action Parameters**
+
+<ParamField path="task_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="message" type="string">
+</ParamField>
+
+<ParamField path="resolution_state" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHIELD_INFORMATION_BARRIER_SEGMENT_MEMBER_BY_ID">
+Retrieves a shield information barrier segment member by its id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_member_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_RESEND_BOX_SIGN_REQUEST">
+Resends a signature request email to all outstanding signers.
+
+**Action Parameters**
+
+<ParamField path="sign_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FOLDER_APP_ITEM_ASSOCIATIONS">
+**this is a beta feature, which means that its availability might be limited.** returns all app items the folder is associated with. this includes app items associated with ancestors of the folder. assuming the context user has access to the folder, the type/ids are revealed even if the context user does not have **view** permission on the app item.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="application_type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_USER">
+Deletes a user. by default this will fail if the user still owns any content. move their owned content first before proceeding, or use the `force` field to delete the user and their files.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="notify" type="boolean">
+</ParamField>
+
+<ParamField path="force" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_GLOBAL_METADATA_TEMPLATES">
+Used to retrieve all generic, global metadata templates available to all enterprises using box.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_BOX_SKILL_CARDS_FROM_FILE">
+Removes any box skills cards metadata from a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TASK_ASSIGNMENT">
+Retrieves information about a task assignment.
+
+**Action Parameters**
+
+<ParamField path="task_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_USER_FROM_LIST_OF_USERS_EXEMPT_FROM_DOMAIN_RESTRICTIONS">
+Removes a user's exemption from the restrictions set out by the allowed list of domains for collaborations.
+
+**Action Parameters**
+
+<ParamField path="collaboration_whitelist_exempt_target_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_FILE">
+Updates a file. this can be used to rename or move a file, create a shared link, or lock a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="lock__access" type="string">
+</ParamField>
+
+<ParamField path="lock__expires__at" type="string">
+</ParamField>
+
+<ParamField path="lock__is__download__prevented" type="boolean">
+</ParamField>
+
+<ParamField path="disposition_at" type="string">
+</ParamField>
+
+<ParamField path="permissions__can__download" type="string">
+</ParamField>
+
+<ParamField path="collections" type="array">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ITEMS_IN_FOLDER">
+Retrieves a page of items in a folder. these items can be files, folders, and web links. to request more information about the folder itself, like its size, use the [get a folder](#get-folders-id) endpoint instead.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="usemarker" type="boolean">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_SLACK_INTEGRATION_MAPPING">
+Updates a [slack integration mapping](https://support.box.com/hc/en-us/articles/4415585987859-box-as-the-content-layer-for-slack). supports updating the box folder id and options. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="integration_mapping_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_TASK">
+Removes a task from a file.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_RETENTION_POLICY">
+Creates a retention policy.
+
+**Action Parameters**
+
+<ParamField path="policy_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="policy_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="disposition_action" type="string" required={true}>
+</ParamField>
+
+<ParamField path="retention_length" type="string">
+</ParamField>
+
+<ParamField path="retention_type" type="string">
+</ParamField>
+
+<ParamField path="can_owner_extend_retention" type="boolean">
+</ParamField>
+
+<ParamField path="are_owners_notified" type="boolean">
+</ParamField>
+
+<ParamField path="custom_notification_recipients" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPLOAD_PART_OF_FILE">
+Uploads a chunk of a file for an upload session. the actual endpoint url is returned by the [`create upload session`](e://post-files-upload-sessions) and [`get upload session`](e://get-files-upload-sessions-id) endpoints.
+
+**Action Parameters**
+
+<ParamField path="upload_session_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_ALL_BOX_SKILL_CARDS_ON_FILE">
+An alternative method that can be used to overwrite and update all box skill metadata cards on a file.
+
+**Action Parameters**
+
+<ParamField path="skill_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="metadata__cards" type="array">
+</ParamField>
+
+<ParamField path="file__type" type="string">
+</ParamField>
+
+<ParamField path="file__id" type="string">
+</ParamField>
+
+<ParamField path="file__version__type" type="string">
+</ParamField>
+
+<ParamField path="file__version__id" type="string">
+</ParamField>
+
+<ParamField path="usage__unit" type="string">
+</ParamField>
+
+<ParamField path="usage__value" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_WEB_LINK">
+Creates a web link object within a folder.
+
+**Action Parameters**
+
+<ParamField path="url" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parent__id" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_CLASSIFICATION_TO_FOLDER">
+Adds a classification to a folder by specifying the label of the classification to add. this api can also be called by including the enterprise id in the url explicitly, for example `/folders/:id/enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="Box__Security__Classification__Key" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_WEB_LINK">
+Retrieve information about a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_RESTORE_FILE">
+Restores a file that has been moved to the trash. an optional new parent id can be provided to restore the file to in case the original folder has been deleted.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_STARTS_WORKFLOW_BASED_ON_REQUEST_BODY">
+Initiates a flow with a trigger type of `workflow manual start`. you application must be authorized to use the `manage box relay` application scope within the developer console.
+
+**Action Parameters**
+
+<ParamField path="workflow_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="flow__type" type="string">
+</ParamField>
+
+<ParamField path="flow__id" type="string">
+</ParamField>
+
+<ParamField path="files" type="array" required={true}>
+</ParamField>
+
+<ParamField path="folder__type" type="string">
+</ParamField>
+
+<ParamField path="folder__id" type="string">
+</ParamField>
+
+<ParamField path="outcomes" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_RETENTION_POLICY_ASSIGNMENTS">
+Returns a list of all retention policy assignments associated with a specified retention policy.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_BOX_SIGN_REQUEST">
+Creates a signature request. this involves preparing a document for signing and sending the signature request to signers.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_LEGAL_HOLD_POLICY">
+Retrieve a legal hold policy.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_FOLDER">
+Creates a new empty folder within the specified parent folder.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parent__id" type="string">
+</ParamField>
+
+<ParamField path="sync_state" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_OR_UPDATE_USER_AVATAR">
+Adds or updates a user avatar.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="pic" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REQUEST_ACCESS_TOKEN">
+Request an access token using either a client-side obtained oauth 2.0 authorization code or a server-side jwt assertion. an access token is a string that enables box to verify that a request belongs to an authorized session. in the normal order of operations you will begin by requesting authentication from the [authorize](#get-authorize) endpoint and box will send you an authorization code. you will then send this code to this endpoint to exchange it for an access token. the returned access token can then be used to to make box api calls.
+
+**Action Parameters**
+
+<ParamField path="grant_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_id" type="string">
+</ParamField>
+
+<ParamField path="client_secret" type="string">
+</ParamField>
+
+<ParamField path="code" type="string">
+</ParamField>
+
+<ParamField path="refresh_token" type="string">
+</ParamField>
+
+<ParamField path="assertion" type="string">
+</ParamField>
+
+<ParamField path="subject_token" type="string">
+</ParamField>
+
+<ParamField path="subject_token_type" type="string">
+</ParamField>
+
+<ParamField path="actor_token" type="string">
+</ParamField>
+
+<ParamField path="actor_token_type" type="string">
+</ParamField>
+
+<ParamField path="scope" type="string">
+</ParamField>
+
+<ParamField path="resource" type="string">
+</ParamField>
+
+<ParamField path="box_subject_type" type="string">
+</ParamField>
+
+<ParamField path="box_subject_id" type="string">
+</ParamField>
+
+<ParamField path="box_shared_link" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_DOMAIN_FROM_LIST_OF_ALLOWED_COLLABORATION_DOMAINS">
+Removes a domain from the list of domains that have been deemed safe to create collaborations for within the current enterprise.
+
+**Action Parameters**
+
+<ParamField path="collaboration_whitelist_entry_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_USER_TO_GROUP">
+Creates a group membership. only users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="user__id" type="string">
+</ParamField>
+
+<ParamField path="group__id" type="string">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="configurable_permissions" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SHIELD_INFORMATION_BARRIERS">
+Retrieves a list of shield information barrier objects for the enterprise of jwt.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_STORAGE_POLICY_ASSIGNMENT">
+Fetches a specific storage policy assignment.
+
+**Action Parameters**
+
+<ParamField path="storage_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_SHARED_LINK_FROM_FOLDER">
+Removes a shared link from a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_INITIAL_CLASSIFICATIONS">
+When an enterprise does not yet have any classifications, this api call initializes the classification template with an initial set of classifications. if an enterprise already has a classification, the template will already exist and instead an api call should be made to add additional classifications.
+
+**Action Parameters**
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="templateKey" type="string" required={true}>
+</ParamField>
+
+<ParamField path="displayName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hidden" type="boolean">
+</ParamField>
+
+<ParamField path="copyInstanceOnItemCopy" type="boolean">
+</ParamField>
+
+<ParamField path="fields" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SHIELD_INFORMATION_BARRIER_SEGMENT_RESTRICTION">
+Creates a shield information barrier segment restriction object.
+
+**Action Parameters**
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shield__information__barrier__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__type" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__segment__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__segment__type" type="string">
+</ParamField>
+
+<ParamField path="restricted__segment__id" type="string">
+</ParamField>
+
+<ParamField path="restricted__segment__type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_COMMENT">
+Permanently deletes a comment.
+
+**Action Parameters**
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REVIEW_FILES_ON_LEGAL_HOLD_POLICY_ASSIGNMENT">
+Get a list of files with current file versions for a legal hold assignment. in some cases you may want to get previous file versions instead. in these cases, use the `get /legal hold policy assignments/:id/file versions on hold` api instead to return any previous versions of a file for this legal hold policy assignment. due to ongoing re-architecture efforts this api might not return all file versions held for this policy id. instead, this api will only return the latest file version held in the newly developed architecture. the `get /file version legal holds` api can be used to fetch current and past versions of files held within the legacy architecture. this endpoint does not support returning any content that is on hold due to a custodian collaborating on a hub. the `get /legal hold policy assignments?policy id=`{id}`` api can be used to find a list of policy assignments for a given policy id.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_SHIELD_INFORMATION_BARRIER_SEGMENT">
+Deletes the shield information barrier segment based on provided id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FIND_FILE_FOR_SHARED_LINK">
+Returns the file represented by a shared link. a shared file can be represented by a shared link, which can originate within the current enterprise or within another. this endpoint allows an application to retrieve information about a shared file when only given a shared link. the `shared link permission options` array field can be returned by requesting it in the `fields` query parameter.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_GROUP_MEMBERSHIP">
+Updates a user's group membership. only admins of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_membership_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="configurable_permissions" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_MEMBERS_OF_GROUP">
+Retrieves all the members for a group. only members of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_RETENTION_POLICIES">
+Retrieves all of the retention policies for an enterprise.
+
+**Action Parameters**
+
+<ParamField path="policy_name" type="string">
+</ParamField>
+
+<ParamField path="policy_type" type="string">
+</ParamField>
+
+<ParamField path="created_by_user_id" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_USER_EXEMPTION_FROM_COLLABORATION_DOMAIN_RESTRICTIONS">
+Exempts a user from the restrictions set out by the allowed list of domains for collaborations.
+
+**Action Parameters**
+
+<ParamField path="user__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_USER_S_EMAIL_ALIASES">
+Retrieves all email aliases for a user. the collection does not include the primary login for the user.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_COLLECTION_BY_ID">
+Retrieves a collection by its id.
+
+**Action Parameters**
+
+<ParamField path="collection_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_COLLECTION_ITEMS">
+Retrieves the files and/or folders contained within this collection.
+
+**Action Parameters**
+
+<ParamField path="collection_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_COLLABORATION">
+Deletes a single collaboration.
+
+**Action Parameters**
+
+<ParamField path="collaboration_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_UPLOAD_SESSION">
+Creates an upload session for a new file.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_size" type="integer" required={true}>
+</ParamField>
+
+<ParamField path="file_name" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_UPLOAD_SESSION">
+Return information about an upload session. the actual endpoint url is returned by the [`create upload session`](e://post-files-upload-sessions) endpoint.
+
+**Action Parameters**
+
+<ParamField path="upload_session_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_USER_S_GROUPS">
+Retrieves all the groups for a user. only members of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_METADATA_TEMPLATE_BY_NAME">
+Retrieves a metadata template by its `scope` and `templatekey` values. to find the `scope` and `templatekey` for a template, list all templates for an enterprise or globally, or list all templates applied to a file or folder.
+
+**Action Parameters**
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_LEGAL_HOLD_POLICY">
+Update legal hold policy.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="policy_name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="release_notes" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_METADATA_CASCADE_POLICY">
+Retrieve a specific metadata cascade policy assigned to a folder.
+
+**Action Parameters**
+
+<ParamField path="metadata_cascade_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_REQUEST">
+Retrieves the information about a file request.
+
+**Action Parameters**
+
+<ParamField path="file_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_THUMBNAIL">
+Retrieves a thumbnail, or smaller image representation, of a file. sizes of `32x32`,`64x64`, `128x128`, and `256x256` can be returned in the `.png` format and sizes of `32x32`, `160x160`, and `320x320` can be returned in the `.jpg` format. thumbnails can be generated for the image and video file formats listed [found on our community site][1]. [1]: https://community.box.com/t5/migrating-and-previewing-content/file-types-and-fonts-supported-in-box-content-preview/ta-p/327
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="extension" type="string" required={true}>
+</ParamField>
+
+<ParamField path="min_height" type="integer">
+</ParamField>
+
+<ParamField path="min_width" type="integer">
+</ParamField>
+
+<ParamField path="max_height" type="integer">
+</ParamField>
+
+<ParamField path="max_width" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TRASHED_WEB_LINK">
+Retrieves a web link that has been moved to the trash.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_FOLDER">
+Deletes a folder, either permanently or by moving it to the trash.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="recursive" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHIELD_INFORMATION_BARRIER_SEGMENT_WITH_SPECIFIED_ID">
+Retrieves shield information barrier segment based on provided id..
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_FILE_REQUEST">
+Updates a file request. this can be used to activate or deactivate a file request.
+
+**Action Parameters**
+
+<ParamField path="file_request_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="title" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="is_email_required" type="boolean">
+</ParamField>
+
+<ParamField path="is_description_required" type="boolean">
+</ParamField>
+
+<ParamField path="expires_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_TASK">
+Updates a task. this can be used to update a task's configuration, or to update its completion state.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="action" type="string">
+</ParamField>
+
+<ParamField path="message" type="string">
+</ParamField>
+
+<ParamField path="due_at" type="string">
+</ParamField>
+
+<ParamField path="completion_rule" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_METADATA_CASCADE_POLICY">
+Deletes a metadata cascade policy.
+
+**Action Parameters**
+
+<ParamField path="metadata_cascade_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_TERMS_OF_SERVICE">
+Updates a specific terms of service.
+
+**Action Parameters**
+
+<ParamField path="terms_of_service_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_USER_EXEMPT_FROM_COLLABORATION_DOMAIN_RESTRICTIONS">
+Returns a users who has been exempt from the collaboration domain restrictions.
+
+**Action Parameters**
+
+<ParamField path="collaboration_whitelist_exempt_target_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_METADATA_INSTANCE_FROM_FOLDER">
+Deletes a piece of folder metadata.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_SHARED_LINK_ON_FILE">
+Updates a shared link on a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_RETENTION_POLICY">
+Retrieves a retention policy.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_SEARCH_FOR_CONTENT">
+Searches for files, folders, web links, and shared files across the users content or across the entire enterprise.
+
+**Action Parameters**
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="scope" type="string" default="user_content">
+</ParamField>
+
+<ParamField path="file_extensions" type="array">
+</ParamField>
+
+<ParamField path="created_at_range" type="array">
+</ParamField>
+
+<ParamField path="updated_at_range" type="array">
+</ParamField>
+
+<ParamField path="size_range" type="array">
+</ParamField>
+
+<ParamField path="owner_user_ids" type="array">
+</ParamField>
+
+<ParamField path="recent_updater_user_ids" type="array">
+</ParamField>
+
+<ParamField path="ancestor_folder_ids" type="array">
+</ParamField>
+
+<ParamField path="content_types" type="array">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="trash_content" type="string" default="non_trashed_only">
+</ParamField>
+
+<ParamField path="mdfilters" type="array">
+</ParamField>
+
+<ParamField path="sort" type="string" default="relevance">
+</ParamField>
+
+<ParamField path="direction" type="string" default="DESC">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="30">
+</ParamField>
+
+<ParamField path="include_recent_shared_links" type="boolean">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="deleted_user_ids" type="array">
+</ParamField>
+
+<ParamField path="deleted_at_range" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_FILE">
+Deletes a file, either permanently or by moving it to the trash. the the enterprise settings determine whether the item will be permanently deleted from box or moved to the trash.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHARED_LINK_FOR_WEB_LINK">
+Gets the information for a shared link on a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_METADATA_TEMPLATE">
+Delete a metadata template and its instances. this deletion is permanent and can not be reversed.
+
+**Action Parameters**
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UNASSIGN_STORAGE_POLICY">
+Delete a storage policy assignment. deleting a storage policy assignment on a user will have the user inherit the enterprise's default storage policy. there is a rate limit for calling this endpoint of only twice per user in a 24 hour time frame.
+
+**Action Parameters**
+
+<ParamField path="storage_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_ALLOWED_COLLABORATION_DOMAIN">
+Returns a domain that has been deemed safe to create collaborations for within the current enterprise.
+
+**Action Parameters**
+
+<ParamField path="collaboration_whitelist_entry_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHIELD_INFORMATION_BARRIER_WITH_SPECIFIED_ID">
+Get shield information barrier based on provided id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_USERS_EXEMPT_FROM_COLLABORATION_DOMAIN_RESTRICTIONS">
+Returns a list of users who have been exempt from the collaboration domain restrictions.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_EMAIL_ALIAS">
+Adds a new email alias to a user account..
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_CLASSIFICATIONS">
+Retrieves the classification metadata template and lists all the classifications available to this enterprise. this api can also be called by including the enterprise id in the url explicitly, for example `/metadata templates/enterprise 12345/securityclassification-6vmvochwuwo/schema`.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_VERSION">
+Retrieve a specific version of a file. versions are only tracked for box users with premium accounts.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="file_version_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_WATERMARK_ON_FILE">
+Retrieve the watermark for a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ASSIGN_STORAGE_POLICY">
+Creates a storage policy assignment for an enterprise or user.
+
+**Action Parameters**
+
+<ParamField path="storage__policy__type" type="string">
+</ParamField>
+
+<ParamField path="storage__policy__id" type="string">
+</ParamField>
+
+<ParamField path="assigned__to__type" type="string">
+</ParamField>
+
+<ParamField path="assigned__to__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_PERMANENTLY_REMOVE_FOLDER">
+Permanently deletes a folder that is in the trash. this action cannot be undone.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_EXTRACT_METADATA_STRUCTURED">
+Sends an ai request to supported large language models (llms) and returns extracted metadata as a set of key-value pairs. for this request, you either need a metadata template or a list of fields you want to extract. input is **either** a metadata template or a list of fields to ensure the structure. to learn more about creating templates, see [creating metadata templates in the admin console](https://support.box.com/hc/en-us/articles/360044194033-customizing-metadata-templates) or use the [metadata template api](g://metadata/templates/create).
+
+**Action Parameters**
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+<ParamField path="metadata__template__template__key" type="string">
+</ParamField>
+
+<ParamField path="metadata__template__type" type="string">
+</ParamField>
+
+<ParamField path="metadata__template__scope" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_BOX_SIGN_REQUEST_BY_ID">
+Gets a sign request by id.
+
+**Action Parameters**
+
+<ParamField path="sign_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_USER">
+Retrieves information about a user in the enterprise. the application and the authenticated user need to have the permission to look up users in the entire enterprise. this endpoint also returns a limited set of information for external users who are collaborated on content owned by the enterprise for authenticated users with the right scopes. in this case, disallowed fields will return null instead.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FIND_APP_ITEM_FOR_SHARED_LINK">
+Returns the app item represented by a shared link. the link can originate from the current enterprise or another.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SLACK_INTEGRATION_MAPPINGS">
+Lists [slack integration mappings](https://support.box.com/hc/en-us/articles/4415585987859-box-as-the-content-layer-for-slack) in a users' enterprise. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="partner_item_type" type="string">
+</ParamField>
+
+<ParamField path="partner_item_id" type="string">
+</ParamField>
+
+<ParamField path="box_item_id" type="string">
+</ParamField>
+
+<ParamField path="box_item_type" type="string">
+</ParamField>
+
+<ParamField path="is_manually_created" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_ZIP_DOWNLOAD">
+Creates a request to download multiple files and folders as a single `zip` archive file. this api does not return the archive but instead performs all the checks to ensure that the user has access to all the items, and then returns a `download url` and a `status url` that can be used to download the archive. the limit for an archive is either the account's upload limit or 10,000 files, whichever is met first. **note**: downloading a large file can be affected by various factors such as distance, network latency, bandwidth, and congestion, as well as packet loss ratio and current server load. for these reasons we recommend that a maximum zip archive total size does not exceed 25gb.
+
+**Action Parameters**
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+<ParamField path="download_file_name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_COMMIT_UPLOAD_SESSION">
+Close an upload session and create a file from the uploaded chunks. the actual endpoint url is returned by the [`create upload session`](e://post-files-upload-sessions) and [`get upload session`](e://get-files-upload-sessions-id) endpoints.
+
+**Action Parameters**
+
+<ParamField path="upload_session_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="parts" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FOLDER_INFORMATION">
+Retrieves details for a folder, including the first 100 entries in the folder. passing `sort`, `direction`, `offset`, and `limit` parameters in query allows you to manage the list of returned [folder items](r://folder--full#param-item-collection). to fetch more items within the folder, use the [get items in a folder](e://get-folders-id-items) endpoint.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_USER">
+Updates a managed or app user in an enterprise. this endpoint is only available to users and applications with the right admin permissions.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="enterprise" type="string">
+</ParamField>
+
+<ParamField path="notify" type="boolean">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="login" type="string">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="language" type="string">
+</ParamField>
+
+<ParamField path="is_sync_enabled" type="boolean">
+</ParamField>
+
+<ParamField path="job_title" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="tracking_codes" type="array">
+</ParamField>
+
+<ParamField path="can_see_managed_users" type="boolean">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="is_external_collab_restricted" type="boolean">
+</ParamField>
+
+<ParamField path="is_exempt_from_device_limits" type="boolean">
+</ParamField>
+
+<ParamField path="is_exempt_from_login_verification" type="boolean">
+</ParamField>
+
+<ParamField path="is_password_reset_required" type="boolean">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="space_amount" type="integer">
+</ParamField>
+
+<ParamField path="notification__email__email" type="string">
+</ParamField>
+
+<ParamField path="external_app_user_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_AI_AGENT_DEFAULT_CONFIGURATION">
+Get the ai agent default config
+
+**Action Parameters**
+
+<ParamField path="mode" type="string" required={true}>
+</ParamField>
+
+<ParamField path="language" type="string">
+</ParamField>
+
+<ParamField path="model" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_CLASSIFICATION_TO_FILE">
+Adds a classification to a file by specifying the label of the classification to add. this api can also be called by including the enterprise id in the url explicitly, for example `/files/:id//enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="Box__Security__Classification__Key" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_SHIELD_INFORMATION_BARRIER_SEGMENT_WITH_SPECIFIED_ID">
+Updates the shield information barrier segment based on provided id..
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_WATERMARK_FROM_FOLDER">
+Removes the watermark from a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_COLLABORATION">
+Adds a collaboration for a single user or a single group to a file or folder. collaborations can be created using email address, user ids, or a group ids. if a collaboration is being created with a group, access to this endpoint is dependent on the group's ability to be invited. if collaboration is in `pending` status, the following fields are redacted: - `login` and `name` are hidden if a collaboration was created using `user id`, - `name` is hidden if a collaboration was created using `login`.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="notify" type="boolean">
+</ParamField>
+
+<ParamField path="item__type" type="string">
+</ParamField>
+
+<ParamField path="item__id" type="string">
+</ParamField>
+
+<ParamField path="accessible__by__type" type="string">
+</ParamField>
+
+<ParamField path="accessible__by__id" type="string">
+</ParamField>
+
+<ParamField path="accessible__by__login" type="string">
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+<ParamField path="is_access_only" type="boolean">
+</ParamField>
+
+<ParamField path="can_view_path" type="boolean">
+</ParamField>
+
+<ParamField path="expires_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_TERMS_OF_SERVICE_STATUS_FOR_EXISTING_USER">
+Updates the status for a terms of service for a user.
+
+**Action Parameters**
+
+<ParamField path="terms_of_service_user_status_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="is_accepted" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_DEVICE_PIN">
+Deletes an individual device pin.
+
+**Action Parameters**
+
+<ParamField path="device_pinner_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CHANGE_SHIELD_INFORMATION_BARRIER_STATUS">
+Change status of shield information barrier with the specified id.
+
+**Action Parameters**
+
+<ParamField path="id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_TEAMS_INTEGRATION_MAPPING">
+Creates a [teams integration mapping](https://support.box.com/hc/en-us/articles/360044681474-using-box-for-teams) by mapping a teams channel to a box item. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_WEBHOOK">
+Updates a webhook.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="target__id" type="string">
+</ParamField>
+
+<ParamField path="target__type" type="string">
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="triggers" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_USER_AVATAR">
+Retrieves an image of a the user's avatar.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_METADATA_INSTANCES_ON_FILE">
+Retrieves all metadata for a given file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UNASSIGN_TASK">
+Deletes a specific task assignment.
+
+**Action Parameters**
+
+<ParamField path="task_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_METADATA_INSTANCE_ON_FILE">
+Retrieves the instance of a metadata template that has been applied to a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALLOWED_COLLABORATION_DOMAINS">
+Returns the list domains that have been deemed safe to create collaborations for within the current enterprise.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_METADATA_INSTANCE_ON_FILE">
+Applies an instance of a metadata template to a file. in most cases only values that are present in the metadata template will be accepted, except for the `global.properties` template which accepts any key-value pair.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_COPY_FILE_REQUEST">
+Copies an existing file request that is already present on one folder, and applies it to another folder.
+
+**Action Parameters**
+
+<ParamField path="file_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_DEVICE_PIN">
+Retrieves information about an individual device pin.
+
+**Action Parameters**
+
+<ParamField path="device_pinner_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_TERMS_OF_SERVICE_STATUS_FOR_NEW_USER">
+Sets the status for a terms of service for a user.
+
+**Action Parameters**
+
+<ParamField path="tos__type" type="string">
+</ParamField>
+
+<ParamField path="tos__id" type="string">
+</ParamField>
+
+<ParamField path="user__type" type="string">
+</ParamField>
+
+<ParamField path="user__id" type="string">
+</ParamField>
+
+<ParamField path="is_accepted" type="boolean" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_USER">
+Creates a new managed user in an enterprise. this endpoint is only available to users and applications with the right admin permissions.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="login" type="string">
+</ParamField>
+
+<ParamField path="is_platform_access_only" type="boolean">
+</ParamField>
+
+<ParamField path="role" type="string">
+</ParamField>
+
+<ParamField path="language" type="string">
+</ParamField>
+
+<ParamField path="is_sync_enabled" type="boolean">
+</ParamField>
+
+<ParamField path="job_title" type="string">
+</ParamField>
+
+<ParamField path="phone" type="string">
+</ParamField>
+
+<ParamField path="address" type="string">
+</ParamField>
+
+<ParamField path="space_amount" type="integer">
+</ParamField>
+
+<ParamField path="tracking_codes" type="array">
+</ParamField>
+
+<ParamField path="can_see_managed_users" type="boolean">
+</ParamField>
+
+<ParamField path="timezone" type="string">
+</ParamField>
+
+<ParamField path="is_external_collab_restricted" type="boolean">
+</ParamField>
+
+<ParamField path="is_exempt_from_device_limits" type="boolean">
+</ParamField>
+
+<ParamField path="is_exempt_from_login_verification" type="boolean">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="external_app_user_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_METADATA_INSTANCES_ON_FOLDER">
+Retrieves all metadata for a given folder. this can not be used on the root folder with id `0`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_METADATA_INSTANCE_FROM_FILE">
+Deletes a piece of file metadata.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_INFORMATION">
+Retrieves the details about a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_PERMANENTLY_REMOVE_FILE">
+Permanently deletes a file that is in the trash. this action cannot be undone.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_USER_AVATAR">
+Removes an existing user avatar. you cannot reverse this operation.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_USER_FROM_GROUP">
+Deletes a specific group membership. only admins of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_membership_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_COLLECTIONS">
+Retrieves all collections for a given user. currently, only the `favorites` collection is supported.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_APPLY_WATERMARK_TO_FILE">
+Applies or update a watermark on a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="watermark__imprint" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_USER_INVITE">
+Invites an existing external user to join an enterprise. the existing user can not be part of another enterprise and must already have a box account. once invited, the user will receive an email and are prompted to accept the invitation within the box web application. this method requires the "manage an enterprise" scope enabled for the application, which can be enabled within the developer console.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="enterprise__id" type="string">
+</ParamField>
+
+<ParamField path="actionable__by__login" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FIND_FOLDER_FOR_SHARED_LINK">
+Return the folder represented by a shared link. a shared folder can be represented by a shared link, which can originate within the current enterprise or within another. this endpoint allows an application to retrieve information about a shared folder when only given a shared link.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_SHARED_LINK_ON_WEB_LINK">
+Updates a shared link on a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_RESTORE_WEB_LINK">
+Restores a web link that has been moved to the trash. an optional new parent id can be provided to restore the web link to in case the original folder has been deleted.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_FOLDER_LOCK">
+Creates a folder lock on a folder, preventing it from being moved and/or deleted. you must be authenticated as the owner or co-owner of the folder to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="locked__operations__move" type="boolean">
+</ParamField>
+
+<ParamField path="locked__operations__delete" type="boolean">
+</ParamField>
+
+<ParamField path="folder__type" type="string">
+</ParamField>
+
+<ParamField path="folder__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_LEGAL_HOLD_POLICY">
+Delete an existing legal hold policy. this is an asynchronous process. the policy will not be fully deleted yet when the response returns.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_WATERMARK_FOR_FOLDER">
+Retrieve the watermark for a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_CLASSIFICATION_ON_FOLDER">
+Retrieves the classification metadata instance that has been applied to a folder. this api can also be called by including the enterprise id in the url explicitly, for example `/folders/:id/enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_RETENTION_POLICY_ASSIGNMENT">
+Removes a retention policy assignment applied to content.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPLOAD_FILE">
+Uploads a small file to box. for file sizes over 50mb we recommend using the chunk upload apis. the `attributes` part of the body must come **before** the `file` part. requests that do not follow this format when uploading the file will receive a http `400` error with a `metadata after file contents` error code.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="attributes" type="object">
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TASK">
+Retrieves information about a specific task.
+
+**Action Parameters**
+
+<ParamField path="task_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_BOX_SKILL_CARDS_ON_FILE">
+List the box skills metadata cards that are attached to a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_GROUP">
+Updates a specific group. only admins of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="provenance" type="string">
+</ParamField>
+
+<ParamField path="external_sync_identifier" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="invitability_level" type="string">
+</ParamField>
+
+<ParamField path="member_viewability_level" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_VERSION_LEGAL_HOLD">
+Retrieves information about the legal hold policies assigned to a file version.
+
+**Action Parameters**
+
+<ParamField path="file_version_legal_hold_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_METADATA_INSTANCE_ON_FOLDER">
+Retrieves the instance of a metadata template that has been applied to a folder. this can not be used on the root folder with id `0`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_BOX_SIGN_TEMPLATE_BY_ID">
+Fetches details of a specific box sign template.
+
+**Action Parameters**
+
+<ParamField path="template_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_METADATA_TEMPLATE">
+Creates a new metadata template that can be applied to files and folders.
+
+**Action Parameters**
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="templateKey" type="string">
+</ParamField>
+
+<ParamField path="displayName" type="string" required={true}>
+</ParamField>
+
+<ParamField path="hidden" type="boolean">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="copyInstanceOnItemCopy" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHARED_LINK_FOR_FILE">
+Gets the information for a shared link on a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_COMMENT">
+Adds a comment by the user to a specific file, or as a reply to an other comment.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="message" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tagged_message" type="string">
+</ParamField>
+
+<ParamField path="item__id" type="string">
+</ParamField>
+
+<ParamField path="item__type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_METADATA_TEMPLATES_FOR_ENTERPRISE">
+Used to retrieve all metadata templates created to be used specifically within the user's enterprise
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_WEBHOOK">
+Retrieves a specific webhook
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REVOKE_ACCESS_TOKEN">
+Revoke an active access token, effectively logging a user out that has been previously authenticated.
+
+**Action Parameters**
+
+<ParamField path="client_id" type="string">
+</ParamField>
+
+<ParamField path="client_secret" type="string">
+</ParamField>
+
+<ParamField path="token" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_FILE_REQUEST">
+Deletes a file request permanently.
+
+**Action Parameters**
+
+<ParamField path="file_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_CLASSIFICATION_FROM_FOLDER">
+Removes any classifications from a folder. this api can also be called by including the enterprise id in the url explicitly, for example `/folders/:id/enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FILE_APP_ITEM_ASSOCIATIONS">
+**this is a beta feature, which means that its availability might be limited.** returns all app items the file is associated with. this includes app items associated with ancestors of the file. assuming the context user has access to the file, the type/ids are revealed even if the context user does not have **view** permission on the app item.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="application_type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FIND_WEB_LINK_FOR_SHARED_LINK">
+Returns the web link represented by a shared link. a shared web link can be represented by a shared link, which can originate within the current enterprise or within another. this endpoint allows an application to retrieve information about a shared web link when only given a shared link.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_LEGAL_HOLD_POLICY_ASSIGNMENT">
+Retrieve a legal hold policy assignment.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_FORCE_APPLY_METADATA_CASCADE_POLICY_TO_FOLDER">
+Force the metadata on a folder with a metadata cascade policy to be applied to all of its children. this can be used after creating a new cascade policy to enforce the metadata to be cascaded down to all existing files within that folder.
+
+**Action Parameters**
+
+<ParamField path="metadata_cascade_policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="conflict_resolution" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_PROMOTE_FILE_VERSION">
+Promote a specific version of a file. if previous versions exist, this method can be used to promote one of the older versions to the top of the version history. this creates a new copy of the old version and puts it at the top of the versions history. the file will have the exact same contents as the older version, with the the same hash digest, `etag`, and name as the original. other properties such as comments do not get updated to their former values. don't use this endpoint to restore box notes, as it works with file formats such as pdf, doc, pptx or similar.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="id" type="string">
+</ParamField>
+
+<ParamField path="type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_AI_AGENT">
+Creates an ai agent. at least one of the following capabilities must be provided: `ask`, `text gen`, `extract`.
+
+**Action Parameters**
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="access_state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="icon_reference" type="string">
+</ParamField>
+
+<ParamField path="allowed_entities" type="array">
+</ParamField>
+
+<ParamField path="ask__type" type="string">
+</ParamField>
+
+<ParamField path="ask__access__state" type="string">
+</ParamField>
+
+<ParamField path="ask__description" type="string">
+</ParamField>
+
+<ParamField path="ask__custom__instructions" type="string">
+</ParamField>
+
+<ParamField path="text__gen__type" type="string">
+</ParamField>
+
+<ParamField path="text__gen__access__state" type="string">
+</ParamField>
+
+<ParamField path="text__gen__description" type="string">
+</ParamField>
+
+<ParamField path="text__gen__custom__instructions" type="string">
+</ParamField>
+
+<ParamField path="extract__type" type="string">
+</ParamField>
+
+<ParamField path="extract__access__state" type="string">
+</ParamField>
+
+<ParamField path="extract__description" type="string">
+</ParamField>
+
+<ParamField path="extract__custom__instructions" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_SHARED_LINK_TO_FILE">
+Adds a shared link to a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_APPLY_WATERMARK_TO_FOLDER">
+Applies or update a watermark on a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="watermark__imprint" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SHIELD_INFORMATION_BARRIER_SEGMENT_MEMBERS">
+Lists shield information barrier segment members based on provided segment ids.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TRASHED_FILE">
+Retrieves a file that has been moved to the trash. please note that only if the file itself has been moved to the trash can it be retrieved with this api call. if instead one of its parent folders was moved to the trash, only that folder can be inspected using the [`get /folders/:id/trash`](e://get folders id trash) api. to list all items that have been moved to the trash, please use the [`get /folders/trash/items`](e://get-folders-trash-items/) api.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_CLASSIFICATION_FROM_FILE">
+Removes any classifications from a file. this api can also be called by including the enterprise id in the url explicitly, for example `/files/:id//enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FOLDER_COLLABORATIONS">
+Retrieves a list of pending and active collaborations for a folder. this returns all the users that have access to the folder or have been invited to the folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UNASSIGN_LEGAL_HOLD_POLICY">
+Remove a legal hold from an item. this is an asynchronous process. the policy will not be fully removed yet when the response returns.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_PENDING_COLLABORATIONS">
+Retrieves all pending collaboration invites for this user.
+
+**Action Parameters**
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHIELD_INFORMATION_BARRIER_SEGMENT_RESTRICTION_BY_ID">
+Retrieves a shield information barrier segment restriction based on provided id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_segment_restriction_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TRASHED_FOLDER">
+Retrieves a folder that has been moved to the trash. please note that only if the folder itself has been moved to the trash can it be retrieved with this api call. if instead one of its parent folders was moved to the trash, only that folder can be inspected using the [`get /folders/:id/trash`](e://get folders id trash) api. to list all items that have been moved to the trash, please use the [`get /folders/trash/items`](e://get-folders-trash-items/) api.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_COLLABORATION">
+Retrieves a single collaboration.
+
+**Action Parameters**
+
+<ParamField path="collaboration_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_BOX_SIGN_REQUESTS">
+Gets signature requests created by a user. if the `sign files` and/or `parent folder` are deleted, the signature request will not return in the list.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="senders" type="array">
+</ParamField>
+
+<ParamField path="shared_requests" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_METADATA_CASCADE_POLICY">
+Creates a new metadata cascade policy that applies a given metadata template to a given folder and automatically cascades it down to any files within that folder. in order for the policy to be applied a metadata instance must first be applied to the folder the policy is to be applied to.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="templateKey" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHIELD_INFORMATION_BARRIER_REPORT_BY_ID">
+Retrieves a shield information barrier report by its id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_report_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_STORAGE_POLICY">
+Fetches a specific storage policy.
+
+**Action Parameters**
+
+<ParamField path="storage_policy_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REFRESH_ACCESS_TOKEN">
+Refresh an access token using its client id, secret, and refresh token.
+
+**Action Parameters**
+
+<ParamField path="grant_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_secret" type="string" required={true}>
+</ParamField>
+
+<ParamField path="refresh_token" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_COLLABORATION">
+Updates a collaboration. can be used to change the owner of an item, or to accept collaboration invites.
+
+**Action Parameters**
+
+<ParamField path="collaboration_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="role" type="string" required={true}>
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="expires_at" type="string">
+</ParamField>
+
+<ParamField path="can_view_path" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_BOX_SKILL_CARDS_ON_FILE">
+Applies one or more box skills metadata cards to a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="cards" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FILE_COLLABORATIONS">
+Retrieves a list of pending and active collaborations for a file. this returns all the users that have access to the file or have been invited to the file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_TEAMS_INTEGRATION_MAPPING">
+Updates a [teams integration mapping](https://support.box.com/hc/en-us/articles/360044681474-using-box-for-teams). supports updating the box folder id and options. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="integration_mapping_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_FILE_VERSION">
+Move a file version to the trash. versions are only tracked for box users with premium accounts.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_version_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SHIELD_INFORMATION_BARRIER">
+Creates a shield information barrier to separate individuals/groups within the same firm and prevents confidential information passing between them.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_LEGAL_HOLD_POLICIES">
+Retrieves a list of legal hold policies that belong to an enterprise.
+
+**Action Parameters**
+
+<ParamField path="policy_name" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_AI_AGENTS">
+Lists ai agents based on the provided parameters.
+
+**Action Parameters**
+
+<ParamField path="mode" type="array">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="agent_state" type="array">
+</ParamField>
+
+<ParamField path="include_box_default" type="boolean">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_RETENTION_POLICY">
+Updates a retention policy.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="policy_name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="disposition_action" type="string">
+</ParamField>
+
+<ParamField path="retention_type" type="string">
+</ParamField>
+
+<ParamField path="retention_length" type="string">
+</ParamField>
+
+<ParamField path="status" type="string">
+</ParamField>
+
+<ParamField path="can_owner_extend_retention" type="boolean">
+</ParamField>
+
+<ParamField path="are_owners_notified" type="boolean">
+</ParamField>
+
+<ParamField path="custom_notification_recipients" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_DOMAIN_TO_LIST_OF_ALLOWED_COLLABORATION_DOMAINS">
+Creates a new entry in the list of allowed domains to allow collaboration for.
+
+**Action Parameters**
+
+<ParamField path="domain" type="string" required={true}>
+</ParamField>
+
+<ParamField path="direction" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILES_UNDER_RETENTION">
+Returns a list of files under retention for a retention policy assignment.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SHIELD_INFORMATION_BARRIER_REPORT">
+Creates a shield information barrier report for a given barrier.
+
+**Action Parameters**
+
+<ParamField path="shield__information__barrier__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_EXTRACT_METADATA_FREEFORM">
+Sends an ai request to supported large language models (llms) and extracts metadata in form of key-value pairs. in this request, both the prompt and the output can be freeform. metadata template setup before sending the request is not required.
+
+**Action Parameters**
+
+<ParamField path="prompt" type="string" required={true}>
+</ParamField>
+
+<ParamField path="items" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_LEGAL_HOLD_POLICY">
+Create a new legal hold policy.
+
+**Action Parameters**
+
+<ParamField path="policy_name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="filter_started_at" type="string">
+</ParamField>
+
+<ParamField path="filter_ended_at" type="string">
+</ParamField>
+
+<ParamField path="is_ongoing" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TRASHED_ITEMS">
+Retrieves the files and folders that have been moved to the trash. any attribute in the full files or folders objects can be passed in with the `fields` parameter to retrieve those specific attributes that are not returned by default. this endpoint defaults to use offset-based pagination, yet also supports marker-based pagination using the `marker` parameter.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="usemarker" type="boolean">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="direction" type="string">
+</ParamField>
+
+<ParamField path="sort" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_GROUP_MEMBERSHIP">
+Retrieves a specific group membership. only admins of this group or users with admin-level permissions will be able to use this api.
+
+**Action Parameters**
+
+<ParamField path="group_membership_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ADD_SHARED_LINK_TO_WEB_LINK">
+Adds a shared link to a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ASSIGN_LEGAL_HOLD_POLICY">
+Assign a legal hold to a file, file version, folder, or user.
+
+**Action Parameters**
+
+<ParamField path="policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assign__to__type" type="string">
+</ParamField>
+
+<ParamField path="assign__to__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_AUTHORIZE_USER">
+Authorize a user by sending them through the [box](https://box.com) website and request their permission to act on their behalf. this is the first step when authenticating a user using oauth 2.0. to request a user's authorization to use the box apis on their behalf you will need to send a user to the url with this format.
+
+**Action Parameters**
+
+<ParamField path="response_type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="client_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="redirect_uri" type="string">
+</ParamField>
+
+<ParamField path="state" type="string">
+</ParamField>
+
+<ParamField path="scope" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_TERMS_OF_SERVICE">
+Creates a terms of service for a given enterprise and type of user.
+
+**Action Parameters**
+
+<ParamField path="status" type="string" required={true}>
+</ParamField>
+
+<ParamField path="tos_type" type="string">
+</ParamField>
+
+<ParamField path="text" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ENTERPRISE_USERS">
+Returns a list of all users for the enterprise along with their `user id`, `public name`, and `login`. the application and the authenticated user need to have the permission to look up users in the entire enterprise.
+
+**Action Parameters**
+
+<ParamField path="filter_term" type="string">
+</ParamField>
+
+<ParamField path="user_type" type="string">
+</ParamField>
+
+<ParamField path="external_app_user_id" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="usemarker" type="boolean">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_STORAGE_POLICY_ASSIGNMENT">
+Updates a specific storage policy assignment.
+
+**Action Parameters**
+
+<ParamField path="storage_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="storage__policy__type" type="string">
+</ParamField>
+
+<ParamField path="storage__policy__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_RESTORE_FOLDER">
+Restores a folder that has been moved to the trash. an optional new parent id can be provided to restore the folder to in case the original folder has been deleted. during this operation, part of the file tree will be locked, mainly the source folder and all of its descendants, as well as the destination folder. for the duration of the operation, no other move, copy, delete, or restore operation can performed on any of the locked folders.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_RETENTION_POLICY_ASSIGNMENT">
+Retrieves a retention policy assignment
+
+**Action Parameters**
+
+<ParamField path="retention_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_JOBS_TO_TERMINATE_USER_GROUP_SESSION">
+Validates the roles and permissions of the group, and creates asynchronous jobs to terminate the group's sessions. returns the status for the post request.
+
+**Action Parameters**
+
+<ParamField path="group_ids" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_TASK">
+Creates a single task on a file. this task is not assigned to any user and will need to be assigned separately.
+
+**Action Parameters**
+
+<ParamField path="item__id" type="string">
+</ParamField>
+
+<ParamField path="item__type" type="string">
+</ParamField>
+
+<ParamField path="action" type="string" default="review">
+</ParamField>
+
+<ParamField path="message" type="string">
+</ParamField>
+
+<ParamField path="due_at" type="string">
+</ParamField>
+
+<ParamField path="completion_rule" type="string" default="all_assignees">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_RETENTION_ON_FILE">
+Returns information about a file version retention. **note**: file retention api is now **deprecated**. to get information about files and file versions under retention, see [files under retention](e://get-retention-policy-assignments-id-files-under-retention) or [file versions under retention](e://get-retention-policy-assignments-id-file-versions-under-retention) endpoints.
+
+**Action Parameters**
+
+<ParamField path="file_version_retention_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_JOBS_TO_TERMINATE_USERS_SESSION">
+Validates the roles and permissions of the user, and creates asynchronous jobs to terminate the user's sessions. returns the status for the post request.
+
+**Action Parameters**
+
+<ParamField path="user_ids" type="array" required={true}>
+</ParamField>
+
+<ParamField path="user_logins" type="array" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SHIELD_INFORMATION_BARRIER_SEGMENT_MEMBER">
+Creates a new shield information barrier segment member.
+
+**Action Parameters**
+
+<ParamField path="type" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__type" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__segment__id" type="string">
+</ParamField>
+
+<ParamField path="shield__information__barrier__segment__type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ASSIGN_TASK">
+Assigns a task to a user. a task can be assigned to more than one user by creating multiple assignments.
+
+**Action Parameters**
+
+<ParamField path="task__id" type="string">
+</ParamField>
+
+<ParamField path="task__type" type="string">
+</ParamField>
+
+<ParamField path="assign__to__id" type="string">
+</ParamField>
+
+<ParamField path="assign__to__login" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_LEGAL_HOLD_POLICY_ASSIGNMENTS">
+Retrieves a list of items a legal hold policy has been assigned to.
+
+**Action Parameters**
+
+<ParamField path="policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assign_to_type" type="string">
+</ParamField>
+
+<ParamField path="assign_to_id" type="string">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_METADATA_INSTANCE_ON_FOLDER">
+Applies an instance of a metadata template to a folder. in most cases only values that are present in the metadata template will be accepted, except for the `global.properties` template which accepts any key-value pair. to display the metadata template in the box web app the enterprise needs to be configured to enable **cascading folder level metadata** for the user in the admin console.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="scope" type="string" required={true}>
+</ParamField>
+
+<ParamField path="template_key" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_TERMS_OF_SERVICE">
+Fetches a specific terms of service.
+
+**Action Parameters**
+
+<ParamField path="terms_of_service_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_FOLDER">
+Updates a folder. this can be also be used to move the folder, create shared links, update collaborations, and more.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="sync_state" type="string">
+</ParamField>
+
+<ParamField path="can_non_owners_invite" type="boolean">
+</ParamField>
+
+<ParamField path="tags" type="array">
+</ParamField>
+
+<ParamField path="is_collaboration_restricted_to_enterprise" type="boolean">
+</ParamField>
+
+<ParamField path="collections" type="array">
+</ParamField>
+
+<ParamField path="can_non_owners_view_collaborators" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPLOAD_FILE_VERSION">
+Update a file's content. for file sizes over 50mb we recommend using the chunk upload apis. the `attributes` part of the body must come **before** the `file` part. requests that do not follow this format when uploading the file will receive a http `400` error with a `metadata after file contents` error code.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="attributes" type="object">
+</ParamField>
+
+<ParamField path="file" type="object">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_SHARED_LINK_ON_FOLDER">
+Updates a shared link on a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__download" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__preview" type="boolean">
+</ParamField>
+
+<ParamField path="shared__link__permissions__can__edit" type="boolean">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TASKS_ON_FILE">
+Retrieves a list of all the tasks for a file. this endpoint does not support pagination.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_SHARED_LINK_FOR_FOLDER">
+Gets the information for a shared link on a folder.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DOWNLOAD_ZIP_ARCHIVE">
+Returns the contents of a `zip` archive in binary format. this url does not require any form of authentication and could be used in a user's browser to download the archive to a user's device. by default, this url is only valid for a few seconds from the creation of the request for this archive. once a download has started it can not be stopped and resumed, instead a new request for a zip archive would need to be created. the url of this endpoint should not be considered as fixed. instead, use the [create zip download](e://post zip downloads) api to request to create a `zip` archive, and then follow the `download url` field in the response to this endpoint.
+
+**Action Parameters**
+
+<ParamField path="zip_download_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_SHIELD_INFORMATION_BARRIER_SEGMENTS">
+Retrieves a list of shield information barrier segment objects for the specified information barrier id.
+
+**Action Parameters**
+
+<ParamField path="shield_information_barrier_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_TEAMS_INTEGRATION_MAPPING">
+Deletes a [teams integration mapping](https://support.box.com/hc/en-us/articles/360044681474-using-box-for-teams). you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="integration_mapping_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_STORAGE_POLICIES">
+Fetches all the storage policies in the enterprise.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_WEB_LINK">
+Updates a web link object.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="url" type="string">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="description" type="string">
+</ParamField>
+
+<ParamField path="shared__link__access" type="string">
+</ParamField>
+
+<ParamField path="shared__link__password" type="string">
+</ParamField>
+
+<ParamField path="shared__link__vanity__name" type="string">
+</ParamField>
+
+<ParamField path="shared__link__unshared__at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TEAMS_INTEGRATION_MAPPINGS">
+Lists [teams integration mappings](https://support.box.com/hc/en-us/articles/360044681474-using-box-for-teams) in a users' enterprise. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="partner_item_type" type="string">
+</ParamField>
+
+<ParamField path="partner_item_id" type="string">
+</ParamField>
+
+<ParamField path="box_item_id" type="string">
+</ParamField>
+
+<ParamField path="box_item_type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_AI_AGENT">
+Updates an ai agent.
+
+**Action Parameters**
+
+<ParamField path="agent_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="type" type="string" required={true}>
+</ParamField>
+
+<ParamField path="name" type="string" required={true}>
+</ParamField>
+
+<ParamField path="access_state" type="string" required={true}>
+</ParamField>
+
+<ParamField path="icon_reference" type="string">
+</ParamField>
+
+<ParamField path="allowed_entities" type="array">
+</ParamField>
+
+<ParamField path="ask__type" type="string">
+</ParamField>
+
+<ParamField path="ask__access__state" type="string">
+</ParamField>
+
+<ParamField path="ask__description" type="string">
+</ParamField>
+
+<ParamField path="ask__custom__instructions" type="string">
+</ParamField>
+
+<ParamField path="text__gen__type" type="string">
+</ParamField>
+
+<ParamField path="text__gen__access__state" type="string">
+</ParamField>
+
+<ParamField path="text__gen__description" type="string">
+</ParamField>
+
+<ParamField path="text__gen__custom__instructions" type="string">
+</ParamField>
+
+<ParamField path="extract__type" type="string">
+</ParamField>
+
+<ParamField path="extract__access__state" type="string">
+</ParamField>
+
+<ParamField path="extract__description" type="string">
+</ParamField>
+
+<ParamField path="extract__custom__instructions" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_USER_INVITE_STATUS">
+Returns the status of a user invite.
+
+**Action Parameters**
+
+<ParamField path="invite_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CANCEL_BOX_SIGN_REQUEST">
+Cancels a sign request.
+
+**Action Parameters**
+
+<ParamField path="sign_request_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_PARTS">
+Return a list of the chunks uploaded to the upload session so far. the actual endpoint url is returned by the [`create upload session`](e://post-files-upload-sessions) and [`get upload session`](e://get-files-upload-sessions-id) endpoints.
+
+**Action Parameters**
+
+<ParamField path="upload_session_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_WEBHOOK">
+Deletes a webhook.
+
+**Action Parameters**
+
+<ParamField path="webhook_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_USER_AND_ENTERPRISE_EVENTS">
+Returns up to a year of past events for a given user or for the entire enterprise. by default this returns events for the authenticated user. to retrieve events for the entire enterprise, set the `stream type` to `admin logs streaming` for live monitoring of new events, or `admin logs` for querying across historical events. the user making the api call will need to have admin privileges, and the application will need to have the scope `manage enterprise properties` checked.
+
+**Action Parameters**
+
+<ParamField path="stream_type" type="string" default="all">
+</ParamField>
+
+<ParamField path="stream_position" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="100">
+</ParamField>
+
+<ParamField path="event_type" type="array">
+</ParamField>
+
+<ParamField path="created_after" type="string">
+</ParamField>
+
+<ParamField path="created_before" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_PREVIOUS_FILE_VERSIONS_FOR_LEGAL_HOLD_POLICY_ASSIGNMENT">
+Get a list of previous file versions for a legal hold assignment. in some cases you may only need the latest file versions instead. in these cases, use the `get /legal hold policy assignments/:id/files on hold` api instead to return any current (latest) versions of a file for this legal hold policy assignment. due to ongoing re-architecture efforts this api might not return all files held for this policy id. instead, this api will only return past file versions held in the newly developed architecture. the `get /file version legal holds` api can be used to fetch current and past versions of files held within the legacy architecture. this endpoint does not support returning any content that is on hold due to a custodian collaborating on a hub. the `get /legal hold policy assignments?policy id=`{id}`` api can be used to find a list of policy assignments for a given policy id.
+
+**Action Parameters**
+
+<ParamField path="legal_hold_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_PERMANENTLY_REMOVE_WEB_LINK">
+Permanently deletes a web link that is in the trash. this action cannot be undone.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_TRANSFER_OWNED_FOLDERS">
+Transfers ownership of a specific folder (with id 0) from one user to another in the box cloud storage system. this endpoint should be used when you need to change the owner of a user's root folder, effectively transferring all of their content to another user. it's particularly useful in scenarios such as employee offboarding or role transitions within an organization. the operation is irreversible, so it should be used with caution. note that this endpoint specifically targets the folder with id 0, which typically represents a user's root folder in box.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="notify" type="boolean">
+</ParamField>
+
+<ParamField path="owned__by__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_EVENTS_LONG_POLL_ENDPOINT">
+The listevents endpoint provides information about the events available in the box system. this options method allows developers to discover the capabilities and requirements for interacting with the /events endpoint. it's particularly useful for understanding the types of events that can be monitored, the format of event data, and any constraints or limitations on event retrieval. this endpoint should be used when setting up event monitoring or webhook integrations to ensure proper configuration and understanding of the event system. while it doesn't directly fetch events, it offers crucial metadata for effectively working with box's event streaming and notification features.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_METADATA_CASCADE_POLICIES">
+Retrieves a list of all the metadata cascade policies that are applied to a given folder. this can not be used on the root folder with id `0`.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="owner_enterprise_id" type="string">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_UPLOAD_SESSION">
+Abort an upload session and discard all data uploaded. this cannot be reversed. the actual endpoint url is returned by the [`create upload session`](e://post-files-upload-sessions) and [`get upload session`](e://get-files-upload-sessions-id) endpoints.
+
+**Action Parameters**
+
+<ParamField path="upload_session_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_RESTORE_FILE_VERSION">
+Restores a specific version of a file after it was deleted. don't use this endpoint to restore box notes, as it works with file formats such as pdf, doc, pptx or similar.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="file_version_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="trashed_at" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_EMAIL_ALIAS">
+Removes an email alias from a user.
+
+**Action Parameters**
+
+<ParamField path="user_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="email_alias_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_WATERMARK_FROM_FILE">
+Removes the watermark from a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_ALL_WEBHOOKS">
+Returns all defined webhooks for the requesting application. this api only returns webhooks that are applied to files or folders that are owned by the authenticated user. this means that an admin can not see webhooks created by a service account unless the admin has access to those folders, and vice versa.
+
+**Action Parameters**
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_COMMENT">
+Retrieves the message and metadata for a specific comment, as well as information on the user who created the comment.
+
+**Action Parameters**
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_COPY_FILE">
+Creates a copy of a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="name" type="string">
+</ParamField>
+
+<ParamField path="version" type="string">
+</ParamField>
+
+<ParamField path="parent__id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_UPDATE_COMMENT">
+Update the message of a comment.
+
+**Action Parameters**
+
+<ParamField path="comment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="message" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_CREATE_SLACK_INTEGRATION_MAPPING">
+Creates a [slack integration mapping](https://support.box.com/hc/en-us/articles/4415585987859-box-as-the-content-layer-for-slack) by mapping a slack channel to a box item. you need admin or co-admin role to use this endpoint.
+
+**Action Parameters**
+
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TERMS_OF_SERVICE_USER_STATUSES">
+Retrieves an overview of users and their status for a terms of service, including whether they have accepted the terms and when.
+
+**Action Parameters**
+
+<ParamField path="tos_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="user_id" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_DELETE_FOLDER_LOCK">
+Deletes a folder lock on a given folder. you must be authenticated as the owner or co-owner of the folder to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="folder_lock_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_TERMS_OF_SERVICES">
+Returns the current terms of service text and settings for the enterprise.
+
+**Action Parameters**
+
+<ParamField path="tos_type" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_ASSIGN_RETENTION_POLICY">
+Assigns a retention policy to an item.
+
+**Action Parameters**
+
+<ParamField path="policy_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="assign__to__type" type="string">
+</ParamField>
+
+<ParamField path="assign__to__id" type="string">
+</ParamField>
+
+<ParamField path="filter_fields" type="array">
+</ParamField>
+
+<ParamField path="start_date_field" type="string">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_SHARED_LINK_FROM_WEB_LINK">
+Removes a shared link from a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_REMOVE_WEB_LINK">
+Deletes a web link.
+
+**Action Parameters**
+
+<ParamField path="web_link_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_QUERY_FILES_FOLDERS_BY_METADATA">
+Create a search using sql-like syntax to return items that match specific metadata. by default, this endpoint returns only the most basic info about the items for which the query matches. to get additional fields for each item, including any of the metadata, use the `fields` attribute in the query.
+
+**Action Parameters**
+
+<ParamField path="from" type="string" required={true}>
+</ParamField>
+
+<ParamField path="query" type="string">
+</ParamField>
+
+<ParamField path="query_params" type="object">
+</ParamField>
+
+<ParamField path="ancestor_folder_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="order_by" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer" default="100">
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_CLASSIFICATION_ON_FILE">
+Retrieves the classification metadata instance that has been applied to a file. this api can also be called by including the enterprise id in the url explicitly, for example `/files/:id//enterprise 12345/securityclassification-6vmvochwuwo`.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FOLDER_LOCKS">
+Retrieves folder lock details for a given folder. you must be authenticated as the owner or co-owner of the folder to use this endpoint.
+
+**Action Parameters**
+
+<ParamField path="folder_id" type="string" required={true}>
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_FILE_VERSIONS_UNDER_RETENTION">
+Returns a list of file versions under retention for a retention policy assignment.
+
+**Action Parameters**
+
+<ParamField path="retention_policy_assignment_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="marker" type="string">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_LIST_FILE_COMMENTS">
+Retrieves a list of comments for a file.
+
+**Action Parameters**
+
+<ParamField path="file_id" type="string" required={true}>
+</ParamField>
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+<ParamField path="limit" type="integer">
+</ParamField>
+
+<ParamField path="offset" type="integer">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+<Accordion title="BOX_GET_CURRENT_USER">
+Retrieves information about the user who is currently authenticated. in the case of a client-side authenticated oauth 2.0 application this will be the user who authorized the app. in the case of a jwt, server-side authenticated application this will be the service account that belongs to the application by default. use the `as-user` header to change who this api call is made on behalf of.
+
+**Action Parameters**
+
+<ParamField path="fields" type="array">
+</ParamField>
+
+
+**Action Response**
+
+<ParamField path="data" type="object">
+</ParamField>
+
+<ParamField path="successful" type="boolean">
+</ParamField>
+
+<ParamField path="error" type="">
+</ParamField>
+
+</Accordion>
+
+</AccordionGroup>
