@@ -17,9 +17,10 @@
     "create:provider": "bash scripts/create-provider.sh",
     "check:peer-deps": "tsx scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx scripts/update-peer-deps.ts",
-    "publish": "lerna publish --no-private",
     "prepublish": "pnpm run build",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:release": "changeset publish"
   },
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
