@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "turbo test --filter=./packages/**",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
