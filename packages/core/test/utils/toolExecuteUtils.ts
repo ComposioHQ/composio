@@ -45,8 +45,8 @@ export const mockToolExecution = async (
   );
 
   // Mock composio tool retrieval
-  const getComposioToolBySlugSpy = vi.spyOn(tools, 'getComposioToolBySlug');
-  getComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
+  const getRawComposioToolBySlugSpy = vi.spyOn(tools, 'getRawComposioToolBySlug');
+  getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
 
   // Mock connected account
   const getConnectedAccountIdForToolSpy = vi.spyOn(
@@ -62,7 +62,7 @@ export const mockToolExecution = async (
 
   return {
     getCustomToolBySlugSpy,
-    getComposioToolBySlugSpy,
+    getRawComposioToolBySlugSpy,
     getConnectedAccountIdForToolSpy,
   };
 };

@@ -26,7 +26,7 @@ describe('Tools Modifiers', () => {
       // mock client to send back the tool
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getComposioToolBySlug(userId, slug, schemaModifier);
+      const result = await context.tools.getRawComposioToolBySlug(userId, slug, schemaModifier);
 
       expect(schemaModifier).toHaveBeenCalledTimes(1);
       expect(schemaModifier).toHaveBeenCalledWith(
@@ -53,7 +53,7 @@ describe('Tools Modifiers', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getComposioTools(userId, {}, schemaModifier);
+      const result = await context.tools.getRawComposioTools(userId, {}, schemaModifier);
 
       expect(schemaModifier).toHaveBeenCalledTimes(2);
       expect(result[0].name).toContain('Modified');
@@ -125,8 +125,8 @@ describe('Tools Modifiers', () => {
 
       const executionModifiers = createExecutionModifiers();
 
-      const getComposioToolBySlugSpy = vi.spyOn(context.tools, 'getComposioToolBySlug');
-      getComposioToolBySlugSpy.mockResolvedValueOnce({
+      const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+      getRawComposioToolBySlugSpy.mockResolvedValueOnce({
         ...(toolMocks.transformedTool as unknown as Tool),
         description: 'Modified schema',
       });
@@ -138,7 +138,7 @@ describe('Tools Modifiers', () => {
         ...executionModifiers,
       });
 
-      expect(getComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
       expect(createExecuteToolFnSpy).toHaveBeenCalledWith(
         userId,
         expect.objectContaining(executionModifiers)

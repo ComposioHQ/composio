@@ -65,8 +65,8 @@ export class Tools<
 
     // Bind methods that use customTools to ensure correct 'this' context
     this.execute = this.execute.bind(this);
-    this.getComposioToolBySlug = this.getComposioToolBySlug.bind(this);
-    this.getComposioTools = this.getComposioTools.bind(this);
+    this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
+    this.getRawComposioTools = this.getRawComposioTools.bind(this);
   }
 
   /**
@@ -163,7 +163,7 @@ export class Tools<
     userId: string,
     toolSlug: string
   ): Promise<string | null> {
-    const tool = await this.getComposioToolBySlug(userId, toolSlug);
+    const tool = await this.getRawComposioToolBySlug(userId, toolSlug);
     if (!tool.toolkit) {
       throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
     }
@@ -203,7 +203,7 @@ export class Tools<
    * This method fetches the tools from the Composio API and wraps them using the provider.
    * @returns {ToolList} List of tools
    */
-  async getComposioTools(
+  async getRawComposioTools(
     userId: string,
     query: ToolListParams = {},
     modifier?: TransformToolSchemaModifier
@@ -262,10 +262,10 @@ export class Tools<
    *
    * @example
    * ```ts
-   * const tool = await composio.tools.getComposioToolBySlug('default', 'github');
+   * const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
    * ```
    */
-  async getComposioToolBySlug(
+  async getRawComposioToolBySlug(
     userId: string,
     slug: string,
     modifier?: TransformToolSchemaModifier
@@ -279,7 +279,7 @@ export class Tools<
     const tool = await this.client.tools.retrieve(slug);
     if (!tool) {
       throw new ComposioToolNotFoundError(
-        `[getComposioToolBySlug] Tool with slug ${slug} not found`
+        `[getRawComposioToolBySlug] Tool with slug ${slug} not found`
       );
     }
     // change the case of the tool to camel case
@@ -349,11 +349,11 @@ export class Tools<
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
+      const tool = await this.getRawComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
       return this.provider.wrapTool(tool, executeToolFn) as TTool;
     } else {
       // if the first argument is an object, get a list of tools
-      const tools = await this.getComposioTools(userId, arg2, options?.modifyToolSchema);
+      const tools = await this.getRawComposioTools(userId, arg2, options?.modifyToolSchema);
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
@@ -502,7 +502,7 @@ export class Tools<
         return this.handleCustomToolExecution(customTool, body, modifiers);
       } else {
         // handle composio tool execution
-        const composioTool = await this.getComposioToolBySlug(body.userId, slug);
+        const composioTool = await this.getRawComposioToolBySlug(body.userId, slug);
         if (!composioTool) {
           throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
         }

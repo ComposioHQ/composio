@@ -33,7 +33,7 @@ describe('Tools', () => {
     });
   });
 
-  describe('getComposioTools', () => {
+  describe('getRawComposioTools', () => {
     it('should fetch tools from the API', async () => {
       const userId = 'test-user';
 
@@ -42,7 +42,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId);
 
       expect(mockClient.tools.list).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
@@ -62,7 +62,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      await context.tools.getComposioTools(userId, query);
+      await context.tools.getRawComposioTools(userId, query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: ['TOOL1', 'TOOL2'],
@@ -82,7 +82,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId);
 
       expect(result[0].inputParameters).toEqual(toolMocks.transformedTool.inputParameters);
       expect(result[0].outputParameters).toEqual(toolMocks.transformedTool.outputParameters);
@@ -99,7 +99,7 @@ describe('Tools', () => {
       const getCustomToolsSpy = vi.spyOn(context.tools['customTools'], 'getCustomTools');
       getCustomToolsSpy.mockResolvedValueOnce([toolMocks.customTool as unknown as Tool]);
 
-      const result = await context.tools.getComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId);
 
       expect(result).toHaveLength(2);
       expect(result[1].slug).toEqual(toolMocks.customTool.slug);
@@ -116,7 +116,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getComposioTools(userId, {}, schemaModifier);
+      const result = await context.tools.getRawComposioTools(userId, {}, schemaModifier);
 
       expect(schemaModifier).toHaveBeenCalled();
       expect(result[0].description).toEqual('Modified description');
@@ -131,20 +131,20 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      await expect(context.tools.getComposioTools(userId, {}, invalidModifier)).rejects.toThrow(
+      await expect(context.tools.getRawComposioTools(userId, {}, invalidModifier)).rejects.toThrow(
         'Invalid schema modifier. Not a function.'
       );
     });
   });
 
-  describe('getComposioToolBySlug', () => {
+  describe('getRawComposioToolBySlug', () => {
     it('should fetch a tool by slug from the API', async () => {
       const userId = 'test-user';
       const slug = 'TOOL_SLUG';
 
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getComposioToolBySlug(userId, slug);
+      const result = await context.tools.getRawComposioToolBySlug(userId, slug);
 
       expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug);
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
@@ -157,7 +157,7 @@ describe('Tools', () => {
       const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
       getCustomToolBySlugSpy.mockResolvedValueOnce(toolMocks.customTool as unknown as Tool);
 
-      const result = await context.tools.getComposioToolBySlug(userId, slug);
+      const result = await context.tools.getRawComposioToolBySlug(userId, slug);
 
       expect(getCustomToolBySlugSpy).toHaveBeenCalledWith(slug);
       expect(mockClient.tools.retrieve).not.toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe('Tools', () => {
       getCustomToolBySlugSpy.mockResolvedValueOnce(undefined);
       mockClient.tools.retrieve.mockResolvedValueOnce(null);
 
-      await expect(context.tools.getComposioToolBySlug(userId, slug)).rejects.toThrow(
+      await expect(context.tools.getRawComposioToolBySlug(userId, slug)).rejects.toThrow(
         `Tool with slug ${slug} not found`
       );
     });
@@ -186,7 +186,7 @@ describe('Tools', () => {
 
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getComposioToolBySlug(userId, slug, schemaModifier);
+      const result = await context.tools.getRawComposioToolBySlug(userId, slug, schemaModifier);
 
       expect(schemaModifier).toHaveBeenCalled();
       expect(result.description).toEqual('Modified description');
@@ -198,14 +198,16 @@ describe('Tools', () => {
       const userId = 'test-user';
       const slug = 'TOOL_SLUG';
 
-      const getComposioToolBySlugSpy = vi.spyOn(context.tools, 'getComposioToolBySlug');
-      getComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
+      const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+      getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+        toolMocks.transformedTool as unknown as Tool
+      );
 
       context.mockProvider.wrapTool.mockReturnValueOnce('wrapped-tool');
 
       const result = await context.tools.get(userId, slug);
 
-      expect(getComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, undefined);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, undefined);
       expect(context.mockProvider.wrapTool).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tool');
     });
@@ -214,14 +216,14 @@ describe('Tools', () => {
       const userId = 'test-user';
       const filters = { tools: ['TOOL1', 'TOOL2'] };
 
-      const getComposioToolsSpy = vi.spyOn(context.tools, 'getComposioTools');
-      getComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
 
       context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
 
       const result = await context.tools.get(userId, filters);
 
-      expect(getComposioToolsSpy).toHaveBeenCalledWith(userId, filters, undefined);
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(userId, filters, undefined);
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tools');
     });
@@ -233,12 +235,14 @@ describe('Tools', () => {
         description: 'Modified description',
       });
 
-      const getComposioToolBySlugSpy = vi.spyOn(context.tools, 'getComposioToolBySlug');
-      getComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
+      const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+      getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+        toolMocks.transformedTool as unknown as Tool
+      );
 
       await context.tools.get(userId, slug, { modifyToolSchema: schemaModifier });
 
-      expect(getComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
     });
   });
 
