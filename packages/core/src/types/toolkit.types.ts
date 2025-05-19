@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Toolkit list params
  */
-export const ToolkitMangedByEnumSchema = z.enum(['all', 'composio_managed', 'project_managed']);
+export const ToolkitMangedByEnumSchema = z.enum(['all', 'composio', 'project']);
 export const ToolkitSortByEnumSchema = z.enum(['usage', 'alphabetically']);
 export const ToolkitsListParamsSchema = z.object({
   category: z.string().optional(),

@@ -20,6 +20,7 @@ import {
   AuthConfigRetrieveResponse,
   AuthConfigRetrieveResponseSchema,
   AuthConfigUpdateParams,
+  AuthConfigUpdateParamsSchema,
   CreateAuthConfigParams,
   CreateAuthConfigParamsSchema,
   CreateAuthConfigResponse,
@@ -164,11 +165,24 @@ export class AuthConfigs {
    * @returns {Promise<AuthConfigUpdateResponse>} Updated auth config
    */
   async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
-    return this.client.authConfigs.update(nanoid, {
-      auth_config: {
-        credentials: data.credentials,
-      },
-    });
+    const parsedData = AuthConfigUpdateParamsSchema.safeParse(data);
+    if (parsedData.error) {
+      throw new ValidationError(parsedData.error);
+    }
+    return this.client.authConfigs.update(
+      nanoid,
+      parsedData.data.type === 'custom'
+        ? {
+            type: 'custom',
+            credentials: parsedData.data.credentials,
+            restrict_to_following_tools: parsedData.data.restrictToFollowingTools,
+          }
+        : {
+            type: 'default',
+            scopes: parsedData.data.scopes,
+            restrict_to_following_tools: parsedData.data.restrictToFollowingTools,
+          }
+    );
   }
 
   /**

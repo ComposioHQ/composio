@@ -106,7 +106,7 @@ export class Tools<
    * @returns {Promise<boolean>} True if the connected account exists for the given tools, false otherwise.
    */
   private async checkIfConnectedAccountExistsForTools(
-    userId: string,
+    userIds: string[],
     tools: ToolList
   ): Promise<boolean> {
     // @TODO: Filter out tools that don't require a connected account
@@ -116,7 +116,7 @@ export class Tools<
       return true;
     }
     const connectedAccounts = await this.client.connectedAccounts.list({
-      user_id: userId,
+      user_ids: userIds,
     });
     // if no connected accounts, return false
     if (connectedAccounts.items.length === 0) {
@@ -180,8 +180,8 @@ export class Tools<
     // if the toolkit is not a no auth app, fetch connected accounts
     if (!isNoAuthApp) {
       const connectedAccounts = await this.client.connectedAccounts.list({
-        user_id: userId,
-        toolkit_slug: tool.toolkit.slug,
+        user_ids: [userId],
+        toolkit_slugs: [tool.toolkit.slug],
       });
       // if no connected accounts, throw an error
       if (connectedAccounts.items.length === 0) {
@@ -214,7 +214,7 @@ export class Tools<
     }
 
     const tools = await this.client.tools.list({
-      tool_slugs: queryParams.data.tools?.join(','),
+      tool_slugs: queryParams.data.tools,
       toolkit_slug: queryParams.data.toolkits?.join(','),
       cursor: queryParams.data.cursor,
       important: queryParams.data.important,

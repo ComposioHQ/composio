@@ -65,7 +65,7 @@ describe('Tools', () => {
       await context.tools.getComposioTools(userId, query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: 'TOOL1,TOOL2',
+        tool_slugs: ['TOOL1', 'TOOL2'],
         limit: '10',
         cursor: undefined,
         important: undefined,

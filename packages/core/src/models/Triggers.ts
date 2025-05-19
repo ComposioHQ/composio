@@ -162,6 +162,7 @@ export class Triggers {
     const clientId = sessionInfo.project?.id;
 
     if (!clientId) throw new Error('Client ID not found');
+    if (!this.client.apiKey) throw new Error('API key not found');
 
     await PusherUtils.getPusherClient(this.client.baseURL, this.client.apiKey);
 

@@ -104,7 +104,21 @@ export const AuthConfigListResponseSchema = z.object({
 });
 export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema>;
 
-export const AuthConfigUpdateParamsSchema = z.object({
-  credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+export const AuthCustomConfigUpdateParamsSchema = z.object({
+  credentials: z.record(z.string(), z.union([z.string(), z.unknown()])),
+  type: z.literal('custom'),
+  restrictToFollowingTools: z.array(z.string()).optional(),
 });
+
+export const AuthDefaultConfigUpdateParamsSchema = z.object({
+  scopes: z.string(),
+  type: z.literal('default'),
+  restrictToFollowingTools: z.array(z.string()).optional(),
+});
+
+export const AuthConfigUpdateParamsSchema = z.discriminatedUnion('type', [
+  AuthCustomConfigUpdateParamsSchema,
+  AuthDefaultConfigUpdateParamsSchema,
+]);
+
 export type AuthConfigUpdateParams = z.infer<typeof AuthConfigUpdateParamsSchema>;
