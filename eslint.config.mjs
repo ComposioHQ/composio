@@ -10,6 +10,7 @@ export default [
       'node_modules/**',
       'examples/',
       'scripts/**',
+      '**/test/**',
     ],
   },
   { files: ['packages/**/*.ts'] },
