@@ -4,35 +4,36 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseComposioToolset } from './toolset/BaseToolset';
+import { BaseComposioProvider } from './provider/BaseProvider';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
-import type { ToolsetOptions } from './types/modifiers.types';
+import type { ProviderOptions } from './types/modifiers.types';
 import type { ToolListParams } from './types/tool.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
-import { OpenAIToolset } from './toolset/OpenAIToolset';
+import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 
-export type ComposioConfig<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> =
-  {
-    apiKey?: string;
-    baseURL?: string;
-    allowTracking?: boolean;
-    allowTracing?: boolean;
-    toolset?: TToolset;
-    telemetryTransport?: BaseTelemetryTransport;
-  };
+export type ComposioConfig<
+  TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
+> = {
+  apiKey?: string;
+  baseURL?: string;
+  allowTracking?: boolean;
+  allowTracing?: boolean;
+  provider?: TProvider;
+  telemetryTransport?: BaseTelemetryTransport;
+};
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = OpenAIToolset> {
+export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -41,19 +42,19 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
 
   /**
    * The configuration for the Composio SDK.
-   * @type {ComposioConfig<TToolset>}
+   * @type {ComposioConfig<TProvider>}
    */
-  private config: ComposioConfig<TToolset>;
+  private config: ComposioConfig<TProvider>;
 
   private telemetry: Telemetry | undefined;
 
   /**
    * Core models for Composio.
    */
-  tools: Tools<unknown, unknown, TToolset>;
+  tools: Tools<unknown, unknown, TProvider>;
   toolkits: Toolkits;
   triggers: Triggers;
-  toolset: TToolset;
+  provider: TProvider;
   // auth configs
   authConfigs: AuthConfigs;
   createAuthConfig: AuthConfigs['create'];
@@ -68,9 +69,9 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
    * @param {string} config.runtime The runtime for the Composio SDK.
    * @param {boolean} config.allowTracking Whether to allow analytics / tracking. Defaults to true.
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
-   * @param {TToolset} config.toolset The toolset to use for this Composio instance.
+   * @param {TProvider} config.provider The provider to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<TToolset>) {
+  constructor(config: ComposioConfig<TProvider>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
       config?.apiKey
@@ -99,11 +100,11 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     };
 
     /**
-     * Set the default toolset, if not provided by the user.
+     * Set the default provider, if not provided by the user.
      */
-    this.toolset = (config.toolset ?? new OpenAIToolset()) as TToolset;
-    this.tools = new Tools(this.client, this.toolset);
-    this.toolset._setExecuteToolFn(this.tools.execute);
+    this.provider = (config.provider ?? new OpenAIProvider()) as TProvider;
+    this.tools = new Tools(this.client, this.provider);
+    this.provider._setExecuteToolFn(this.tools.execute);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -151,7 +152,7 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
     this.telemetry.instrumentTelemetry(this.triggers);
     this.telemetry.instrumentTelemetry(this.authConfigs);
     this.telemetry.instrumentTelemetry(this.connectedAccounts);
-    this.telemetry.instrumentTelemetry(this.toolset);
+    this.telemetry.instrumentTelemetry(this.provider);
   }
 
   /**
@@ -168,13 +169,13 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   /**
    * Fetch all the tools from Composio.
    * @param {ToolListParams} params Parameters to fetch the tools.
-   * @param {ToolsetOptions<TToolset>} modifiers Modifiers to apply to the tools.
-   * @returns {Promise<ReturnType<TToolset['getTools']>>} The tools from the toolset.
+   * @param {ProviderOptions<TProvider>} modifiers Modifiers to apply to the tools.
+   * @returns {Promise<ReturnType<TProvider['getTools']>>} The tools from the provider.
    */
-  getTools<T extends TToolset>(
+  getTools<T extends TProvider>(
     userId: string,
     filters: ToolListParams,
-    modifiers?: ToolsetOptions<T>
+    modifiers?: ProviderOptions<T>
   ): Promise<ReturnType<T['wrapTools']>> {
     return this.tools.get(userId, filters, modifiers) as Promise<ReturnType<T['wrapTools']>>;
   }
@@ -182,13 +183,13 @@ export class Composio<TToolset extends BaseComposioToolset<unknown, unknown> = O
   /**
    * Fetch a tool from Composio by its slug.
    * @param {string} slug slug of the tool
-   * @param {ToolsetOptions<TToolset>} modifiers to be applied to the tool
-   * @returns {Promise<ReturnType<TToolset['getToolBySlug']>>} The tool from the toolset.
+   * @param {ProviderOptions<TProvider>} modifiers to be applied to the tool
+   * @returns {Promise<ReturnType<TProvider['getToolBySlug']>>} The tool from the provider.
    */
-  getToolBySlug<T extends TToolset>(
+  getToolBySlug<T extends TProvider>(
     userId: string,
     slug: string,
-    modifiers?: ToolsetOptions<T>
+    modifiers?: ProviderOptions<T>
   ): Promise<ReturnType<T['wrapTool']>> {
     return this.tools.get(userId, slug, modifiers) as Promise<ReturnType<T['wrapTool']>>;
   }

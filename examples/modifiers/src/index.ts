@@ -1,8 +1,8 @@
 import { Composio } from '@composio/core';
-import { VercelToolset } from '@composio/vercel';
+import { VercelProvider } from '@composio/vercel';
 
 /**
- * Non agentic toolset
+ * Non agentic provider
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -31,12 +31,12 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
 console.log(tools);
 
 /**
- * Agentic toolset
+ * Agentic provider
  */
 const vercel = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   // calling this provider now no? or what? or toolProvider or toolManager?
-  toolset: new VercelToolset(),
+  provider: new VercelProvider(),
 });
 
 const agenticTools = await vercel.tools.get(

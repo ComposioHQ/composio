@@ -1,7 +1,7 @@
 /**
  * OpenAI Assistants with Composio Tool Example
  *
- * This example demonstrates how to use the Composio OpenAIToolset with OpenAI Assistants API.
+ * This example demonstrates how to use the Composio OpenAIProvider with OpenAI Assistants API.
  * It uses the HACKERNEWS_GET_USER tool to fetch information about a HackerNews user.
  */
 import { Composio } from '@composio/core';
@@ -56,7 +56,7 @@ async function main() {
     });
 
     console.log('🔄 Waiting for assistant response and handling tool calls...');
-    const completedRun = await composio.toolset.waitAndHandleAssistantToolCalls(
+    const completedRun = await composio.provider.waitAndHandleAssistantToolCalls(
       'default',
       openai,
       run,

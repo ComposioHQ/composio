@@ -23,18 +23,18 @@ import { CustomTools } from './CustomTools';
 import { CustomToolOptions } from '../types/customTool.types';
 import {
   ExecuteToolModifiers,
-  ToolsetOptions,
+  ProviderOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
-import { BaseComposioToolset } from '../toolset/BaseToolset';
+import { BaseComposioProvider } from '../provider/BaseProvider';
 import logger from '../utils/logger';
-import { ExecuteToolFn } from '../types/toolset.types';
+import { ExecuteToolFn } from '../types/provider.types';
 import {
   ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
   ComposioToolExecutionError,
   ComposioToolNotFoundError,
-  ComposioToolsetNotDefinedError,
+  ComposioProviderNotDefinedError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationError';
 
@@ -45,23 +45,23 @@ import { ValidationError } from '../errors/ValidationError';
 export class Tools<
   TToolCollection,
   TTool,
-  TToolset extends BaseComposioToolset<TToolCollection, TTool>,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool>,
 > {
   private client: ComposioClient;
   private readonly customTools: CustomTools;
-  private toolset: TToolset;
+  private provider: TProvider;
 
-  constructor(client: ComposioClient, toolset: TToolset) {
+  constructor(client: ComposioClient, provider: TProvider) {
     if (!client) {
       throw new Error('ComposioClient is required');
     }
-    if (!toolset) {
-      throw new ComposioToolsetNotDefinedError('Toolset not passed into Tools instance');
+    if (!provider) {
+      throw new ComposioProviderNotDefinedError('Provider not passed into Tools instance');
     }
 
     this.client = client;
     this.customTools = new CustomTools(client);
-    this.toolset = toolset;
+    this.provider = provider;
 
     // Bind methods that use customTools to ensure correct 'this' context
     this.execute = this.execute.bind(this);
@@ -200,7 +200,7 @@ export class Tools<
 
   /**
    * Lists all tools available in the Composio SDK as well as custom tools.
-   * This method fetches the tools from the Composio API and wraps them using the toolset.
+   * This method fetches the tools from the Composio API and wraps them using the provider.
    * @returns {ToolList} List of tools
    */
   async getComposioTools(
@@ -307,10 +307,10 @@ export class Tools<
    * const tool = await composio.tools.get('default', 'github');
    * ```
    */
-  async get<T extends TToolset>(
+  async get<T extends TProvider>(
     userId: string,
     slug: string,
-    options?: ToolsetOptions<TToolset>
+    options?: ProviderOptions<TProvider>
   ): Promise<ReturnType<T['wrapTool']>>;
 
   /**
@@ -327,10 +327,10 @@ export class Tools<
    * });
    * ```
    */
-  async get<T extends TToolset>(
+  async get<T extends TProvider>(
     userId: string,
     filters: ToolListParams,
-    options?: ToolsetOptions<TToolset>
+    options?: ProviderOptions<TProvider>
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
@@ -343,18 +343,18 @@ export class Tools<
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    options?: ToolsetOptions<TToolset>
+    options?: ProviderOptions<TProvider>
   ): Promise<TTool | TToolCollection> {
     // create the execute tool function
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
-      return this.toolset.wrapTool(tool, executeToolFn) as TTool;
+      return this.provider.wrapTool(tool, executeToolFn) as TTool;
     } else {
       // if the first argument is an object, get a list of tools
       const tools = await this.getComposioTools(userId, arg2, options?.modifyToolSchema);
-      return this.toolset.wrapTools(tools, executeToolFn) as TToolCollection;
+      return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
 

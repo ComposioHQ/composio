@@ -1,29 +1,29 @@
 import { vi, beforeEach } from 'vitest';
 import { Tools } from '../../src/models/Tools';
 import { mockClient } from './mocks/client.mock';
-import { MockToolset } from './mocks/toolset.mock';
+import { MockProvider } from './mocks/provider.mock';
 import { connectedAccountMocks, toolkitMocks, toolMocks } from './mocks/data.mock';
 import ComposioClient from '@composio/client';
 import { Tool } from '../../src/types/tool.types';
 
-export type TestTools = Tools<unknown, unknown, MockToolset>;
+export type TestTools = Tools<unknown, unknown, MockProvider>;
 
 export interface TestContext {
   tools: TestTools;
-  mockToolset: MockToolset;
+  mockProvider: MockProvider;
 }
 
 export const createTestContext = (): TestContext => {
-  const mockToolset = new MockToolset();
-  const tools = new Tools(mockClient as unknown as ComposioClient, mockToolset);
-  return { tools, mockToolset };
+  const mockProvider = new MockProvider();
+  const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider);
+  return { tools, mockProvider };
 };
 
 export const setupTest = (context: TestContext) => {
   beforeEach(() => {
     vi.clearAllMocks();
-    context.mockToolset = new MockToolset();
-    context.tools = new Tools(mockClient as unknown as ComposioClient, context.mockToolset);
+    context.mockProvider = new MockProvider();
+    context.tools = new Tools(mockClient as unknown as ComposioClient, context.mockProvider);
   });
 };
 

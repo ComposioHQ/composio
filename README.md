@@ -9,11 +9,11 @@ composio/
 ├── packages/                  # Main packages directory
 │   ├── core/                 # Core SDK package
 │   │   └── core/            # Core SDK package
-│   ├── toolsets/             # Toolset implementations
-│   │   ├── openai/          # OpenAI toolset
-│   │   ├── vercel/          # Vercel AI toolset
-│   │   ├── langchain/       # LangChain toolset
-│   │   └── cloudflare/      # Cloudflare toolset
+│   ├── providers/             # Provider implementations
+│   │   ├── openai/          # OpenAI provider
+│   │   ├── vercel/          # Vercel AI provider
+│   │   ├── langchain/       # LangChain provider
+│   │   └── cloudflare/      # Cloudflare provider
 │   └── wrappers/            # Runtime-specific wrappers
 ├── examples/                 # Example implementations
 │   ├── langchain/           # LangChain example
@@ -58,8 +58,8 @@ composio/
    # Format code
    pnpm format
 
-   # Create a new toolset
-   pnpm create:toolset <toolset-name> [--agentic]
+   # Create a new provider
+   pnpm create:provider <provider-name> [--agentic]
 
    # Check peer dependencies
    pnpm check:peer-deps
@@ -68,24 +68,24 @@ composio/
    pnpm update:peer-deps
    ```
 
-## Creating a New Toolset
+## Creating a New Provider
 
-1. Use the create:toolset script:
+1. Use the create:provider script:
 
    ```bash
-   pnpm create:toolset my-toolset [--agentic]
+   pnpm create:provider my-provider [--agentic]
    ```
 
-2. The script will create a new toolset in `packages/toolsets/my-toolset` with:
+2. The script will create a new provider in `packages/providers/my-provider` with:
 
-   - Basic toolset implementation
+   - Basic provider implementation
    - TypeScript configuration
    - Package configuration
    - README template
 
 3. Implement the required methods in `src/index.ts`:
-   - For non-agentic toolsets: `wrapTool` and `wrapTools`
-   - For agentic toolsets: `wrapTool`, `wrapTools`, and execution handlers
+   - For non-agentic providers: `wrapTool` and `wrapTools`
+   - For agentic providers: `wrapTool`, `wrapTools`, and execution handlers
 
 ## Release Process
 
@@ -149,31 +149,31 @@ yarn add @composio/core
 pnpm add @composio/core
 ```
 
-### Toolsets
+### Providers
 
 ```bash
-# Install OpenAI toolset (included in core)
+# Install OpenAI provider (included in core)
 npm install @composio/openai
 
-# Install Vercel AI toolset
+# Install Vercel AI provider
 npm install @composio/vercel
 
-# Install Langchain toolset
+# Install Langchain provider
 npm install @composio/langchain
 ```
 
 ## Getting Started
 
-### Basic Usage with OpenAI Toolset
+### Basic Usage with OpenAI Provider
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAIToolset } from '@composio/openai-toolset';
+import { OpenAIProvider } from '@composio/openai-provider';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  // OpenAIToolset is the default, so this is optional
-  toolset: new OpenAIToolset(),
+  // OpenAIProvider is the default, so this is optional
+  provider: new OpenAIProvider(),
 });
 
 // Fetch a single tool
@@ -186,17 +186,17 @@ const tools = await composio.tools.get('user123', {
 });
 ```
 
-## Using with a Toolset
+## Using with a Provider
 
-### Example with Vercel AI Toolset
+### Example with Vercel AI Provider
 
 ```typescript
 import { Composio } from '@composio/core';
-import { VercelToolset } from '@composio/vercel-toolset';
+import { VercelProvider } from '@composio/vercel-provider';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new VercelToolset(),
+  provider: new VercelProvider(),
 });
 
 // Fetch tools for Vercel AI SDK
@@ -238,7 +238,7 @@ const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
 
 ### Execution Modifiers
 
-For agentic toolsets (like Vercel AI and Langchain), you can also modify tool execution behavior:
+For agentic providers (like Vercel AI and Langchain), you can also modify tool execution behavior:
 
 ```typescript
 const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
@@ -344,14 +344,14 @@ Composio supports various authentication schemes:
 
 ## Development
 
-### Creating Custom Toolsets
+### Creating Custom Providers
 
-You can create custom toolsets by extending either `BaseNonAgenticToolset` or `BaseAgenticToolset`:
+You can create custom providers by extending either `BaseNonAgenticProvider` or `BaseAgenticProvider`:
 
-#### Non-Agentic Toolset
+#### Non-Agentic Provider
 
 ```typescript
-import { BaseNonAgenticToolset } from '@composio/core';
+import { BaseNonAgenticProvider } from '@composio/core';
 import type { Tool } from '@composio/core';
 
 interface CustomTool {
@@ -359,8 +359,8 @@ interface CustomTool {
   // ... custom tool properties
 }
 
-export class CustomToolset extends BaseNonAgenticToolset<CustomTool[], CustomTool> {
-  readonly name = 'custom-toolset';
+export class CustomProvider extends BaseNonAgenticProvider<CustomTool[], CustomTool> {
+  readonly name = 'custom-provider';
 
   wrapTool = (tool: Tool): CustomTool => ({
     name: tool.name,
@@ -371,14 +371,14 @@ export class CustomToolset extends BaseNonAgenticToolset<CustomTool[], CustomToo
 }
 ```
 
-#### Agentic Toolset
+#### Agentic Provider
 
 ```typescript
-import { BaseAgenticToolset } from '@composio/core';
+import { BaseAgenticProvider } from '@composio/core';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
 
-export class CustomAgenticToolset extends BaseAgenticToolset<CustomTool[], CustomTool> {
-  readonly name = 'custom-agentic-toolset';
+export class CustomAgenticProvider extends BaseAgenticProvider<CustomTool[], CustomTool> {
+  readonly name = 'custom-agentic-provider';
 
   wrapTool = (tool: Tool): CustomTool => ({
     name: tool.name,
@@ -407,14 +407,14 @@ export class CustomAgenticToolset extends BaseAgenticToolset<CustomTool[], Custo
 }
 ```
 
-To quickly create a new toolset project, use the provided script:
+To quickly create a new provider project, use the provided script:
 
 ```bash
-# Create a non-agentic toolset
-pnpm create:toolset my-toolset
+# Create a non-agentic provider
+pnpm create:provider my-provider
 
-# Create an agentic toolset
-pnpm create:toolset my-toolset --agentic
+# Create an agentic provider
+pnpm create:provider my-provider --agentic
 ```
 
 ## Environment Variables

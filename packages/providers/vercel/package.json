@@ -1,0 +1,42 @@
+{
+  "name": "@composio/vercel",
+  "version": "0.1.10-alpha.0",
+  "description": "",
+  "main": "src/index.ts",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "@composio/core": "^0.1.10-alpha.0",
+    "ai": "^4.3.8"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.3"
+  },
+  "gitHead": "8f757632d77f40800f7ebc0dddec87ee14d52720"
+}

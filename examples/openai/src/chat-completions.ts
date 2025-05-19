@@ -1,7 +1,7 @@
 /**
  * OpenAI Chat Completions with Composio Tool Example
  *
- * This example demonstrates how to use the Composio OpenAIToolset with OpenAI chat completions API.
+ * This example demonstrates how to use the Composio OpenAIProvider with OpenAI chat completions API.
  * It uses the HACKERNEWS_GET_USER tool to fetch information about a HackerNews user.
  */
 import { Composio } from '@composio/core';
@@ -50,7 +50,7 @@ async function main() {
         response.choices[0].message.tool_calls[0].function.name
       );
 
-      const toolResult = await composio.toolset.executeToolCall(
+      const toolResult = await composio.provider.executeToolCall(
         'default',
         response.choices[0].message.tool_calls[0],
         {

@@ -23,16 +23,16 @@ pnpm add @composio/core
 
 ## Getting Started
 
-### Basic Usage with OpenAI Toolset
+### Basic Usage with OpenAI Provider
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAIToolset } from '@composio/openai-toolset';
+import { OpenAIProvider } from '@composio/openai';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  // OpenAIToolset is the default, so this is optional
-  toolset: new OpenAIToolset(),
+  // OpenAIProvider is the default, so this is optional
+  provider: new OpenAIProvider(),
 });
 
 // Fetch a single tool
@@ -55,7 +55,7 @@ interface ComposioConfig {
   baseURL?: string; // Custom API base URL (optional)
   allowTracking?: boolean; // Enable/disable telemetry (default: true)
   allowTracing?: boolean; // Enable/disable tracing (default: true)
-  toolset?: TToolset; // Custom toolset (default: OpenAIToolset)
+  provider?: TProvider; // Custom provider (default: OpenAIProvider)
   telemetryTransport?: BaseTelemetryTransport; // Custom telemetry transport
 }
 ```
@@ -87,7 +87,7 @@ const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
 
 ### Execution Modifiers
 
-For agentic toolsets (like Vercel AI and Langchain), you can also modify tool execution behavior:
+For agentic providers (like Vercel AI and Langchain), you can also modify tool execution behavior:
 
 ```typescript
 const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {

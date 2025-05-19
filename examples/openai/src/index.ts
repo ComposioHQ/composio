@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 /**
  * Initialize Composio
- * OpenAI Toolset is automatically installed and initialized
+ * OpenAI Provider is automatically installed and initialized
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -15,7 +15,7 @@ const composio = new Composio({
 
 /**
  * Get the tool by slug
- * This tool is automatically typed and wrapped with the OpenAI Toolset
+ * This tool is automatically typed and wrapped with the OpenAI Provider
  */
 const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 /**
@@ -46,7 +46,7 @@ const response = await openai.chat.completions.create({
  */
 if (response.choices[0].message.tool_calls) {
   console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
-  const result = await composio.toolset.handleToolCall('default', response);
+  const result = await composio.provider.handleToolCall('default', response);
   const data = JSON.parse(result[0]);
   console.log(data);
 }

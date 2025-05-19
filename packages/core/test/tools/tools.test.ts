@@ -17,14 +17,14 @@ describe('Tools', () => {
 
   describe('constructor', () => {
     it('should throw an error if client is not provided', () => {
-      expect(() => new Tools(null as any, context.mockToolset)).toThrow(
+      expect(() => new Tools(null as any, context.mockProvider)).toThrow(
         'ComposioClient is required'
       );
     });
 
-    it('should throw an error if toolset is not provided', () => {
+    it('should throw an error if provider is not provided', () => {
       expect(() => new Tools(mockClient as unknown as ComposioClient, null as any)).toThrow(
-        'Toolset not passed into Tools instance'
+        'Provider not passed into Tools instance'
       );
     });
 
@@ -194,35 +194,35 @@ describe('Tools', () => {
   });
 
   describe('get', () => {
-    it('should get a single tool and wrap it with toolset', async () => {
+    it('should get a single tool and wrap it with provider', async () => {
       const userId = 'test-user';
       const slug = 'TOOL_SLUG';
 
       const getComposioToolBySlugSpy = vi.spyOn(context.tools, 'getComposioToolBySlug');
       getComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
 
-      context.mockToolset.wrapTool.mockReturnValueOnce('wrapped-tool');
+      context.mockProvider.wrapTool.mockReturnValueOnce('wrapped-tool');
 
       const result = await context.tools.get(userId, slug);
 
       expect(getComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, undefined);
-      expect(context.mockToolset.wrapTool).toHaveBeenCalled();
+      expect(context.mockProvider.wrapTool).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tool');
     });
 
-    it('should get multiple tools and wrap them with toolset', async () => {
+    it('should get multiple tools and wrap them with provider', async () => {
       const userId = 'test-user';
       const filters = { tools: ['TOOL1', 'TOOL2'] };
 
       const getComposioToolsSpy = vi.spyOn(context.tools, 'getComposioTools');
       getComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
 
-      context.mockToolset.wrapTools.mockReturnValueOnce('wrapped-tools');
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
 
       const result = await context.tools.get(userId, filters);
 
       expect(getComposioToolsSpy).toHaveBeenCalledWith(userId, filters, undefined);
-      expect(context.mockToolset.wrapTools).toHaveBeenCalled();
+      expect(context.mockProvider.wrapTools).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tools');
     });
 

@@ -17,7 +17,7 @@ Composio Wrappers provide runtime-specific implementations of Composio Core func
 ### Core Components
 
 - **@composio/core**: The main package containing core functionality and interfaces
-- **BaseComposioToolset**: Abstract base class for creating custom toolsets
+- **BaseComposioProvider**: Abstract base class for creating custom providers
 
 ### Telemetry
 
@@ -53,7 +53,7 @@ class BrowserRuntimeWrapper {
       ...config,
       // Add browser-specific configurations
       allowTracking: true,
-      telemetryTransport: new BrowserTelemetryTransport()
+      telemetryTransport: new BrowserTelemetryTransport(),
     });
   }
 
@@ -84,7 +84,7 @@ const config = {
   runtime: 'browser',
   userId: 'user-id',
   connectedAccountIds: {},
-  telemetryTransport: new RuntimeSpecificTelemetryTransport()
+  telemetryTransport: new RuntimeSpecificTelemetryTransport(),
 };
 ```
 
@@ -113,7 +113,7 @@ class BrowserWrapper {
     this.composio = new Composio({
       ...config,
       runtime: 'browser',
-      telemetryTransport: new BrowserTelemetryTransport()
+      telemetryTransport: new BrowserTelemetryTransport(),
     });
   }
 

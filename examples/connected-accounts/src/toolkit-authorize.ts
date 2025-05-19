@@ -1,7 +1,7 @@
 import { Composio } from '@composio/core';
 
 // Initialize Composio
-// OpenAI Toolset is automatically installed and initialized
+// OpenAI Provider is automatically installed and initialized
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });

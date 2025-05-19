@@ -3,11 +3,11 @@ import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { StateGraph, MessagesAnnotation } from '@langchain/langgraph';
 import { Composio } from '@composio/core';
-import { LangchainToolset } from '@composio/langchain';
+import { LangchainProvider } from '@composio/langchain';
 // initiate composio
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new LangchainToolset(),
+  provider: new LangchainProvider(),
 });
 
 // fetch the tool

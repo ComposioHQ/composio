@@ -10,16 +10,16 @@ export const ToolErrorCodes = {
   GLOBAL_EXECUTE_TOOL_FN_NOT_SET: 'GLOBAL_EXECUTE_TOOL_FN_NOT_SET',
 } as const;
 
-export class ComposioToolsetNotDefinedError extends ComposioError {
-  constructor(message: string = 'Toolset not defined', meta: Record<string, unknown> = {}) {
+export class ComposioProviderNotDefinedError extends ComposioError {
+  constructor(message: string = 'Provider not defined', meta: Record<string, unknown> = {}) {
     super(message, {
       code: ToolErrorCodes.TOOLSET_NOT_DEFINED,
       meta,
       possibleFixes: [
-        'Ensure that the toolset is defined in the Composio project and passed into the tool instance',
+        'Ensure that the provider is defined in the Composio project and passed into the tool instance',
       ],
     });
-    this.name = 'ComposioToolsetNotDefinedError';
+    this.name = 'ComposioProviderNotDefinedError';
   }
 }
 
@@ -97,7 +97,7 @@ export class ComposioGlobalExecuteToolFnNotSetError extends ComposioError {
     super(message, {
       code: ToolErrorCodes.GLOBAL_EXECUTE_TOOL_FN_NOT_SET,
       meta,
-      possibleFixes: ['Ensure the global execute tool function is set in the toolset'],
+      possibleFixes: ['Ensure the global execute tool function is set in the provider'],
     });
     this.name = 'ComposioGlobalExecuteToolFnNotSetError';
   }

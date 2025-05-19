@@ -1,17 +1,17 @@
 import { Composio } from '@composio/core';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { VercelToolset } from '@composio/vercel';
+import { VercelProvider } from '@composio/vercel';
 import dotenv from 'dotenv';
 import { Message, MessageRoles } from './types';
 dotenv.config();
 
 /**
- * Initialize the Composio SDK with the Vercel toolset
+ * Initialize the Composio SDK with the Vercel provider
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  toolset: new VercelToolset(),
+  provider: new VercelProvider(),
 });
 
 /**

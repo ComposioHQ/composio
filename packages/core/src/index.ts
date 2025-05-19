@@ -1,14 +1,14 @@
 // Core exports
 export { Composio } from './composio';
-export { ComposioToolset } from './toolset/ComposioToolset';
-export { BaseAgenticToolset, BaseNonAgenticToolset } from './toolset/BaseToolset';
-export type { BaseComposioToolset } from './toolset/BaseToolset';
-export { OpenAIToolset } from './toolset/OpenAIToolset';
+export { ComposioProvider } from './provider/ComposioProvider';
+export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProvider';
+export type { BaseComposioProvider } from './provider/BaseProvider';
+export { OpenAIProvider } from './provider/OpenAIProvider';
 export { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToModel } from './utils/jsonSchema';
 export { ToolListParamsSchema } from './types/tool.types';
 export type { Tool, ToolListParams, ToolExecuteParams } from './types/tool.types';
-export type { Toolset, ExecuteToolFn, ExecuteToolFnOptions } from './types/toolset.types';
+export type { Provider, ExecuteToolFn, ExecuteToolFnOptions } from './types/provider.types';
 export type { ExecuteMetadata } from './types/customTool.types';
 export { AuthConfigTypes, AuthSchemeTypes } from './types/authConfigs.types';
 export type { AuthConfigType, AuthSchemeType } from './types/authConfigs.types';

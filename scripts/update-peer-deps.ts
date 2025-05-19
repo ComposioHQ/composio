@@ -1,5 +1,5 @@
 /**
- * This script updates the peer dependencies of all toolsets to the latest version of the core package.
+ * This script updates the peer dependencies of all providers to the latest version of the core package.
  * It reads the core package version from the core package's package.json file.
  */
 
@@ -19,18 +19,18 @@ if (coreVersion.includes('rc') || coreVersion.includes('alpha') || coreVersion.i
   process.exit(0);
 }
 
-const toolsetsDir = path.resolve(__dirname, '../packages/toolsets');
-const toolsetDirs = fs.readdirSync(toolsetsDir).filter(name => {
-  const fullPath = path.resolve(toolsetsDir, name);
+const providersDir = path.resolve(__dirname, '../packages/providers');
+const providerDirs = fs.readdirSync(providersDir).filter(name => {
+  const fullPath = path.resolve(providersDir, name);
   return fs.existsSync(path.join(fullPath, 'package.json'));
 });
 
-for (const toolset of toolsetDirs) {
-  const toolsetPackageJson = path.resolve(toolsetsDir, toolset, 'package.json');
-  const toolsetPkg = JSON.parse(fs.readFileSync(toolsetPackageJson, 'utf-8'));
-  toolsetPkg.peerDependencies['@composio/core'] = `^${coreVersion}`;
-  fs.writeFileSync(toolsetPackageJson, JSON.stringify(toolsetPkg, null, 2));
+for (const provider of providerDirs) {
+  const providerPackageJson = path.resolve(providersDir, provider, 'package.json');
+  const providerPkg = JSON.parse(fs.readFileSync(providerPackageJson, 'utf-8'));
+  providerPkg.peerDependencies['@composio/core'] = `^${coreVersion}`;
+  fs.writeFileSync(providerPackageJson, JSON.stringify(providerPkg, null, 2));
   console.log(
-    `✅ Updated peer dependency for ${toolset} from ${toolsetPkg.peerDependencies['@composio/core']} -> ^${coreVersion}`
+    `✅ Updated peer dependency for ${provider} from ${providerPkg.peerDependencies['@composio/core']} -> ^${coreVersion}`
   );
 }

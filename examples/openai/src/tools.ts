@@ -28,6 +28,6 @@ const response = await openai.chat.completions.create({
   tool_choice: 'auto',
 });
 
-const toolCall = await composio.toolset.handleToolCall('default', response);
+const toolCall = await composio.provider.handleToolCall('default', response);
 
 console.log(toolCall);

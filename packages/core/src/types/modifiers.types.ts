@@ -1,4 +1,4 @@
-import { BaseAgenticToolset, BaseComposioToolset } from '../toolset/BaseToolset';
+import { BaseAgenticProvider, BaseComposioProvider } from '../provider/BaseProvider';
 import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
 
 /**
@@ -61,5 +61,5 @@ export type ExecuteToolModifiers = {
  */
 export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
 
-export type ToolsetOptions<T extends BaseComposioToolset<unknown, unknown>> =
-  T extends BaseAgenticToolset<unknown, unknown> ? AgenticToolOptions : ToolOptions;
+export type ProviderOptions<T extends BaseComposioProvider<unknown, unknown>> =
+  T extends BaseAgenticProvider<unknown, unknown> ? AgenticToolOptions : ToolOptions;

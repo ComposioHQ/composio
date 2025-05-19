@@ -19,27 +19,32 @@ This example demonstrates how to use the Composio SDK with Vercel's AI SDK to cr
 ## Getting Started
 
 1. Clone the repository and navigate to the example directory:
+
 ```bash
 cd examples/vercel
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Copy the `.env.example` file to `.env` and fill in your API keys:
+
 ```bash
 cp .env.example .env
 ```
 
 4. Update the `.env` file with your credentials:
+
 ```env
 COMPOSIO_API_KEY=your_composio_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
 5. Start the development server:
+
 ```bash
 pnpm start
 ```
@@ -47,7 +52,8 @@ pnpm start
 ## How It Works
 
 This example showcases how to:
-1. Initialize the Composio SDK with the Vercel toolset
+
+1. Initialize the Composio SDK with the Vercel provider
 2. Use the HackerNews tool to fetch front page data
 3. Generate AI responses using OpenAI's GPT-4
 4. Handle tool calls and results in a chat-like interface
