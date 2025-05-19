@@ -33,10 +33,10 @@
     "ai": "^4.3.8"
   },
   "devDependencies": {
-    "@composio/core": "workspace:*",
+    "@composio/core": "0.1.12-alpha.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   },
-  "gitHead": "8f757632d77f40800f7ebc0dddec87ee14d52720"
+  "gitHead": "fb9c8e7b65030f35e004dba81ae971bcbaed2dfd"
 }
