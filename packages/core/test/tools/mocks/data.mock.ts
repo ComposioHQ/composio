@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const toolMocks = {
   rawTool: {
     slug: 'COMPOSIO_TOOL',
