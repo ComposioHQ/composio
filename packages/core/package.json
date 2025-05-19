@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -31,7 +31,8 @@
   "devDependencies": {
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.3"
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.9",

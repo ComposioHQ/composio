@@ -170,18 +170,18 @@ export class Toolkits {
    * @param {string} authConfigId - The id of the auth config to use
    * @returns {Promise<ConnectionRequest>} The connection request object
    */
-  async authorize(
-    userId: string,
-    toolkitSlug: string,
-    authConfigId?: string
-  ): Promise<ConnectionRequest> {
+  async authorize(userId: string, toolkitSlug: string): Promise<ConnectionRequest> {
     const toolkit = await this.getToolkitBySlug(toolkitSlug);
     const composioAuthConfig = new AuthConfigs(this.client);
     let authConfigIdToUse: string;
-    if (authConfigId) {
-      const authConfig = await composioAuthConfig.get(authConfigId);
-      authConfigIdToUse = authConfig.id;
-    } else {
+    const authConfig = await composioAuthConfig.list({
+      toolkitSlug,
+    });
+    // pick the first auth config
+    authConfigIdToUse = authConfig.items[0]?.id;
+
+    // if no auth config is found, create one for the toolkit
+    if (!authConfigIdToUse) {
       // create authConfig using composioManagedAuthSchemes
       if (toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0) {
         const authConfig = await composioAuthConfig.create(toolkitSlug, {
@@ -195,6 +195,7 @@ export class Toolkits {
         });
       }
     }
+
     // create the auth config
     const composioConnectedAccount = new ConnectedAccounts(this.client);
     return await composioConnectedAccount.initiate(userId, authConfigIdToUse);

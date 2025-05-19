@@ -278,7 +278,9 @@ export class Tools<
     // if not, fetch the tool from the Composio API
     const tool = await this.client.tools.retrieve(slug);
     if (!tool) {
-      throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
+      throw new ComposioToolNotFoundError(
+        `[getComposioToolBySlug] Tool with slug ${slug} not found`
+      );
     }
     // change the case of the tool to camel case
     let modifiedToool = this.transformToolCases(tool);

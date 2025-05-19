@@ -79,9 +79,11 @@ export const ToolkitAuthConfigDetailsSchema = z.object({
       required: z.array(ToolkitAuthFieldSchema),
     }),
   }),
-  proxy: z.object({
-    baseUrl: z.string(),
-  }),
+  proxy: z
+    .object({
+      baseUrl: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const ToolkitRetrieveResponseSchema = z.object({

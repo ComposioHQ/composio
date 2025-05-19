@@ -40,6 +40,15 @@ export class AuthConfigs {
     this.client = client;
   }
 
+  /**
+   * Protected getter for the client instance.
+   * This is primarily used for testing purposes.
+   * @protected
+   */
+  protected getClient(): ComposioClient {
+    return this.client;
+  }
+
   private parseAuthConfigRetrieveResponse(
     authConfig: ComposioAuthConfigRetrieveResponse
   ): AuthConfigRetrieveResponse {

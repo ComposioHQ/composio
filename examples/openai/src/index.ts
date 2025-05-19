@@ -21,7 +21,7 @@ const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 /**
  * Define a task for the assistant based on the tools in hand
  */
-const task = "Fetch the details of the user 'pg'";
+const task = "Fetch the details of the user 'haxzie'";
 
 /**
  * Define the messages for the assistant
