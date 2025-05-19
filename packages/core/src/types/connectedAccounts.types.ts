@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const ConnectedAccountStatuses = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
-  PENDING: 'DELETED',
+  DELETED: 'DELETED',
   INITIATED: 'INITIATED',
   EXPIRED: 'EXPIRED',
   FAILED: 'FAILED',
@@ -14,7 +14,7 @@ export const ConnectedAccountStatuses = {
 export const ConnectedAccountStatusSchema = z.enum([
   ConnectedAccountStatuses.ACTIVE,
   ConnectedAccountStatuses.INACTIVE,
-  ConnectedAccountStatuses.PENDING,
+  ConnectedAccountStatuses.DELETED,
   ConnectedAccountStatuses.INITIATED,
   ConnectedAccountStatuses.EXPIRED,
   ConnectedAccountStatuses.FAILED,

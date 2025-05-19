@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CustomTools } from '../../src/models/CustomTools';
-import { mockClient } from './mocks/client.mock';
-import { toolMocks } from './mocks/data.mock';
+import { mockClient } from '../utils/mocks/client.mock';
+import { toolMocks } from '../utils/mocks/data.mock';
 import ComposioClient from '@composio/client';
 import { z } from 'zod';
 

@@ -1,3 +1,4 @@
+import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/toolset.types';
@@ -29,7 +30,7 @@ abstract class BaseToolset {
   /**
    * @internal
    * Set the function to execute a tool.
-   * This is set automatically injected by the core SDK.
+   * This is set automatically and injected by the core SDK.
    */
   _setExecuteToolFn(executeToolFn: GlobalExecuteToolFn): void {
     this._globalExecuteToolFn = executeToolFn;
@@ -49,6 +50,9 @@ abstract class BaseToolset {
     body: ToolExecuteParams,
     modifers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
+    if (!this._globalExecuteToolFn) {
+      throw new ComposioGlobalExecuteToolFnNotSetError('executeToolFn is not set');
+    }
     return this._globalExecuteToolFn(toolSlug, body, modifers);
   }
 }

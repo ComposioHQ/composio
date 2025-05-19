@@ -29,11 +29,7 @@ export const setupTest = (context: TestContext) => {
 
 export const mockToolExecution = async (
   tools: TestTools,
-  {
-    slug = 'COMPOSIO_TOOL',
-    customToolExists = false,
-    connectedAccountId = 'test-connected-account-id',
-  } = {}
+  { customToolExists = false, connectedAccountId = 'test-connected-account-id' } = {}
 ) => {
   // Mock client responses
   mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);

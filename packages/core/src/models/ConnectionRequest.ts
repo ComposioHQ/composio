@@ -15,7 +15,10 @@ import {
 import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
 import { ZodError } from 'zod';
 import logger from '../utils/logger';
-import { ConnectionRequestTimeoutError } from '../errors/ConnectionRequestError';
+import {
+  ConnectionRequestFailedError,
+  ConnectionRequestTimeoutError,
+} from '../errors/ConnectionRequestError';
 export class ConnectionRequest {
   private client: ComposioClient;
   private connectedAccountId: string;
@@ -77,31 +80,46 @@ export class ConnectionRequest {
   async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
     if (this.connectedAccountStatus === ConnectedAccountStatuses.ACTIVE) {
       const response = await this.client.connectedAccounts.retrieve(this.connectedAccountId);
-      return Promise.resolve(this.transformResponse(response));
+      return this.transformResponse(response);
     }
 
-    return new Promise((resolve, reject) => {
-      const interval = setInterval(async () => {
-        try {
-          const response = await this.client.connectedAccounts.retrieve(this.connectedAccountId);
-          if (response.status === ConnectedAccountStatuses.ACTIVE) {
-            clearInterval(interval);
-            resolve(this.transformResponse(response));
-          }
-        } catch (error) {
-          clearInterval(interval);
-          reject(error);
-        }
-      }, 1000);
+    const terminalErrorStates: ConnectedAccountStatus[] = [
+      ConnectedAccountStatuses.FAILED,
+      ConnectedAccountStatuses.EXPIRED,
+      ConnectedAccountStatuses.DELETED,
+    ];
 
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(
-          new ConnectionRequestTimeoutError(
-            `Connection request timed out for ${this.connectedAccountId}`
-          )
-        );
-      }, timeout);
-    });
+    const start = Date.now();
+    const pollInterval = 1000;
+
+    while (Date.now() - start < timeout) {
+      try {
+        const response = await this.client.connectedAccounts.retrieve(this.connectedAccountId);
+
+        if (response.status === ConnectedAccountStatuses.ACTIVE) {
+          return this.transformResponse(response);
+        }
+
+        if (terminalErrorStates.includes(response.status)) {
+          throw new ConnectionRequestFailedError(
+            `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
+            {
+              userId: response.user_id,
+              connectedAccountId: this.connectedAccountId,
+              status: response.status,
+              statusReason: response.status_reason,
+            }
+          );
+        }
+
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    throw new ConnectionRequestTimeoutError(
+      `Connection request timed out for ${this.connectedAccountId}`
+    );
   }
 }

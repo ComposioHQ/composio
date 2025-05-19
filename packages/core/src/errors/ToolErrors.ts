@@ -7,6 +7,7 @@ export const ToolErrorCodes = {
   CUSTOM_TOOLS_NOT_INITIALIZED: 'CUSTOM_TOOLS_NOT_INITIALIZED',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
   INVALID_EXECUTE_FUNCTION: 'INVALID_EXECUTE_FUNCTION',
+  GLOBAL_EXECUTE_TOOL_FN_NOT_SET: 'GLOBAL_EXECUTE_TOOL_FN_NOT_SET',
 } as const;
 
 export class ComposioToolsetNotDefinedError extends ComposioError {
@@ -85,5 +86,19 @@ export class ComposioInvalidExecuteFunctionError extends ComposioError {
       possibleFixes: ['Ensure the execute function is a valid function and returns a valid result'],
     });
     this.name = 'ComposioInvalidExecuteFunctionError';
+  }
+}
+
+export class ComposioGlobalExecuteToolFnNotSetError extends ComposioError {
+  constructor(
+    message: string = 'Global execute tool function not set',
+    meta: Record<string, unknown> = {}
+  ) {
+    super(message, {
+      code: ToolErrorCodes.GLOBAL_EXECUTE_TOOL_FN_NOT_SET,
+      meta,
+      possibleFixes: ['Ensure the global execute tool function is set in the toolset'],
+    });
+    this.name = 'ComposioGlobalExecuteToolFnNotSetError';
   }
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mockClient } from './mocks/client.mock';
-import { toolMocks } from './mocks/data.mock';
+import { mockClient } from '../utils/mocks/client.mock';
+import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool } from '../../src/types/tool.types';
 import {
   createTestContext,
@@ -8,7 +8,7 @@ import {
   mockToolExecution,
   createSchemaModifier,
   createExecutionModifiers,
-} from './test-utils';
+} from '../utils/toolExecuteUtils';
 
 describe('Tools Modifiers', () => {
   const context = createTestContext();
@@ -23,6 +23,7 @@ describe('Tools Modifiers', () => {
         description: 'Modified description',
       });
 
+      // mock client to send back the tool
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
       const result = await context.tools.getComposioToolBySlug(userId, slug, schemaModifier);
