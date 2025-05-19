@@ -33,7 +33,7 @@
     "ai": "^4.3.8"
   },
   "devDependencies": {
-    "@composio/core": "0.1.12-alpha.0",
+    "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"

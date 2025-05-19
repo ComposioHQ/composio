@@ -1,4 +1,4 @@
-name: CI
+name: Test Typescript SDK
 
 on:
   push:
@@ -27,12 +27,6 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Run Linting
-        run: pnpm lint
-
-      - name: Run Build
-        run: turbo build
 
       - name: Run Tests
         run: pnpm run test
