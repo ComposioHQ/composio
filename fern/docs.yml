@@ -248,14 +248,17 @@ navigation:
       - section: MCP
         icon: plug
         contents:
-          - page: Introduction
-            path: mcp/introduction.mdx
-          - page: Cursor
-            path: mcp/cursor.mdx
-          - page: Claude
-            path: mcp/claude.mdx
-          - page: Windsurf
-            path: mcp/windsurf.mdx
+        - page: Introduction
+          path: mcp/introduction.mdx
+        - section: MCP Clients
+          slug: clients
+          contents:
+            - page: Cursor
+              path: mcp/cursor.mdx
+            - page: Claude
+              path: mcp/claude.mdx
+            - page: Windsurf
+              path: mcp/windsurf.mdx
 
       - section: Changelog
         icon: calendar

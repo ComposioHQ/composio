@@ -1,46 +1,108 @@
-### What is MCP?
+---
+title: Embedding Composio MCP Servers
+---
 
-The [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) is an open standard developed by Anthropic to help AI models, especially Large Language Models (LLMs), connect with external data sources and tools. Think of it like a universal adapter that lets AI systems access real-time information from places like databases, APIs, or business tools, making their responses more relevant and accurate. This is particularly useful for AI-powered applications like chatbots or IDEs, where access to up-to-date data can enhance functionality.
+Composio MCP servers can be discovered, customized and embedded in an application with managed authentication for end-users.
 
-### How Server-Client Interactions Work
+This is to let user's pick, choose and authenticate through Composio's Hosted MCP Servers.
 
-MCP operates on a client-server model:
+**Partner**: A partner is an organization that has created a Composio MCP server.
 
-- The **client** (or host) is the AI application, like Claude Desktop or an IDE, that needs data.
-- The **server** exposes tools, prompts, and resources that the client can use.
+## Authentication Configuration
 
-<Frame caption="Credit: https://modelcontextprotocol.io/docs/concepts/architecture">
-  <img src="../assets/images/mcp_server_client.png" alt="Client and server"/>
-</Frame>
+Before creating an MCP server, you need to set up authentication for your integration. This configuration defines what permissions your application will request and how users will experience the consent flow.
 
-Interactions happen through two kinds of [transport layers](https://modelcontextprotocol.io/docs/concepts/transports#built-in-transport-types):
+### Setting Up Authentication
 
-- **Stdio transport:** Used when the server runs locally with the client, communicating through standard input and output. This is great for local development, as it’s simple and fast.
-- **HTTP with SSE (Server-Sent Events) transport:** Used for remote servers, allowing real-time updates over HTTP. This is ideal for cloud-based setups, enabling the server to push updates to the client as they happen.
+1. **Choose Required Scopes**
+   
+   Select the appropriate OAuth scopes based on what your application needs to access. For example, to access Google Drive files, include the scope `https://www.googleapis.com/auth/drive.file`.
 
-### How Servers Are Deployed
+2. **Configure Consent Experience**
+   
+   By default, Composio handles the authentication UI. For a fully branded experience, you can white-label the consent screen:
+   
+   - Provide your own OAuth client credentials
+   - Customize the appearance to match your application
+   - Create a seamless authorization flow for your users
 
-Servers can be set up in two main ways, depending on your needs:
+3. **Create the Auth Configuration**
+   
+   Use the Composio API to create your authentication configuration with the selected scopes and branding options.
 
-- **Local Deployment:** If you have the server code locally or can pull it from a repository, you can start it using simple commands. For example, the [GitHub MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/github) maintained by the `modelcontextprotocol` repository can be started by running `npx -y  @modelcontextprotocol/server-github` with the GitHub personal access token specified in the environment. Most MCP clients let you specify the command to run, so they can start the server directly when needed, which is great for development.
-- **Remote Deployment (SSE Servers):** For remote use, servers are deployed to a web endpoint somewhere, and all you need is the SSE URL to connect your client. There’s no need for local setup or running commands; the server is managed separately, making it hassle-free. Clients typically have an option to just take this URL and connect, which is convenient for cloud-based setups.
+> For detailed implementation guides, see our [Set-up Integrations](https://docs.composio.dev/auth/set-up-integrations) and [White-labelling](https://docs.composio.dev/auth/white-labelling) documentation.
 
-Composio manages SSE servers for users, handling setup and maintenance, which means you don’t need to worry about the technical details. Check out the full list of [servers here](https://mcp.composio.dev/).
+## API Endpoints
+
+### Listing all available partner apps
+<EndpointRequestSnippet endpoint="GET /api/partner/:partnerId/apps/list" />
+
+### Listing all available apps
+<EndpointRequestSnippet endpoint="GET /api/apps" />
+
+### Listing information for a specific app
+<EndpointRequestSnippet endpoint="GET /api/apps/:appKey" />
+
+### Installing an app
+<EndpointRequestSnippet endpoint="POST /api/apps/:appKey/install" />
+
+### Creating Custom MCP Servers (Optional)
+A custom MCP server can be created in two steps:
+
+1. **Create an auth configuration**  
+   • Pick the scopes the integration requires (e.g. `https://www.googleapis.com/auth/drive.file` for full‑drive access).  
+   • (Optional) White‑label the consent screen by supplying your own OAuth credentials.  
+   • Docs: [Set‑up integrations](https://docs.composio.dev/auth/set-up-integrations) · [White‑labelling](https://docs.composio.dev/auth/white-labelling)
+
+2. **Call the Composio MCP API**  
+   POST to `/v1/mcp/servers` with the `auth_config_id` and the list of tools you want to expose.  
+   The response looks like:
+
+```json
+{
+  "id": "5bc757cc-7a8e-431c-8616-7f57cbed2423",
+  "name": "gdrive_searcher",
+  "auth_config_id": "a8a244c4-4a52-488e-8a01-2e504d069d16",
+  "allowed_tools": [
+    "GOOGLEDRIVE_FIND_FILE",
+    "GOOGLEDRIVE_FIND_FOLDER",
+    "GOOGLEDRIVE_DOWNLOAD_FILE"
+  ],
+  "mcp_url": "https://mcp.composio.dev/composio/server/5bc757cc-7a8e-431c-8616-7f57cbed2423?transport=sse",
+  "commands": {
+    "cursor": "npx @composio/mcp@latest setup \"<mcp_url>\" --client cursor",
+    "claude":  "npx @composio/mcp@latest setup \"<mcp_url>\" --client claude",
+    "windsurf": "npx @composio/mcp@latest setup \"<mcp_url>\" --client windsurf"
+  },
+  "created_at": "2025-05-18T22:15:25.926Z",
+  "updated_at": "2025-05-18T22:15:25.926Z"
+}
+```
+
+Client applications connect to the server via the provided `mcp_url`.  
+The URL accepts three optional query parameters:
+
+| Query param | Purpose |
+|-------------|---------|
+| `user_id` | Bind the session to a user identifier from your app. |
+| `connected_account_id` | Pin the session to a specific Composio `connectedAccount` (skip account selection). |
+| `include_composio_helper_actions=true` | Inject helper tools so the agent can walk the user through authentication when needed. |
+
+**Transport selection** – today `transport=sse` is the default; `transport=http-stream` is coming soon.
+
+**Who handles auth?**  
+* **Client handles authentication (recommended):** Authenticate users up‑front via the Composio SDK/API.  
+* **Server‑side authentication:** Pass `include_composio_helper_actions=true` and the agent will guide the user through auth on demand.
+
+See the full step‑by‑step guide in our [blog post](https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch/).
 
 <Note>
-Currently we are not envisioning our fully managed MCP servers to function like a devtool and something you build on top of but rather for providers who have MCP as a way to quickly integrate with our tools. Read more about this here: [Building on top of Composio MCP](https://composio.notion.site/mcp-faq?pvs=4)
+Fully managed Composio MCP servers are meant for providers who want to expose tools quickly, not as a general‑purpose dev tool you extend arbitrarily. More in our <a href="https://composio.notion.site/mcp-faq?pvs=4">MCP FAQ</a>.
 </Note>
 
 ### Benefits of Using Composio MCP Servers
 
-Choosing Composio for hosting your MCP servers comes with several advantages:
-
-- **No Management Needed:** Composio takes care of server setup, updates, and maintenance, freeing you to focus on development.
-- **Automatic Authentication:** Authentication is handled through [Composio’s integrations](https://composio.dev/tools), so you don’t need to manage API keys or credentials, reducing setup friction.
-- **One-Click Installation:** You can connect to hundreds of servers with simple instructions, often integrating with clients in a single line of code, which is unexpectedly convenient for rapid deployment.
-
-### Exploring Further
-
-You can check out Composio’s offerings and find a list of available servers with one-click installation instructions at [Composio MCP](https://composio.dev/mcp/). For detailed setup guides on clients like Cursor, Windsurf, and Claude, refer to their documentation pages ([Cursor](./cursor.mdx), [Windsurf](./windsurf.mdx) and [Claude](./claude.mdx)).
-
-We also wrote an [extensive blogpost](https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch/) that has a step-by-step guide to building MCP servers from scratch, what the different components of MCP are, how they work and more details on the Composio MCP integration.
+- **Zero Hosting Overhead:** Servers run on Composio infrastructure with 99.9 % uptime—no deployment required by integrators or end‑users.  
+- **First‑Class User Auth:** Built‑in helper actions handle OAuth end‑to‑end, so client applications never handle access tokens.  
+- **Rich Catalogue:** Hundreds of pre‑built integrations are searchable via a single API call, enabling users to wire up tools in seconds.  
+- **Consistent Protocol:** Every server implements the same MCP dialect, keeping client code minimal and future‑proof.  
