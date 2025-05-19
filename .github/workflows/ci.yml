@@ -32,7 +32,7 @@ jobs:
         run: pnpm lint
 
       - name: Run Build
-        run: pnpm turbo run build
+        run: turbo build
 
       - name: Run Tests
-        run: pnpm turbo run test
+        run: pnpm run test
