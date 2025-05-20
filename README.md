@@ -106,15 +106,24 @@ composio/
 
    - Follow the prompts to describe your changes
    - Commit the generated changeset file
+   - if you want to do a pre release, execute the command `pnpm changeset:pre-enter` before the above command
 
-3. **Publish**
+3. **Version**
+
    ```bash
-   # This will:
-   # 1. Build all packages
-   # 2. Check peer dependencies
-   # 3. Publish packages to npm
-   pnpm run publish
+   pnpm changeset:version
    ```
+
+   - Follow the prompts to version the packages
+   - Commit the generated package bumps
+
+4. **Release**
+
+```bash
+pnpm changeset:release
+```
+
+- Follow the instructions to release the packages
 
 ## Contributing
 

@@ -21,7 +21,7 @@
     "prepublish": "pnpm run build",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:release": "changeset publish",
+    "changeset:release": "pnpm run build && changeset publish",
     "changeset:pre-enter": "changeset pre enter alpha",
     "changeset:pre-exit": "changeset pre exit alpha"
   },
@@ -33,7 +33,6 @@
     "eslint": "^9.25.1",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
-    "lerna": "^8.2.2",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
     "semver": "^7.7.2",
