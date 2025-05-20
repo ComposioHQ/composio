@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.12-alpha.8
+
+### Patch Changes
+
+- ca59bcd: Update documentations and fix API discrepencies
+- Updated dependencies [ca59bcd]
+  - @composio/core@0.1.12-alpha.8
+
 ## 0.1.12-alpha.7
 
 ### Patch Changes
