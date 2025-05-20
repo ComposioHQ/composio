@@ -69,6 +69,7 @@ fern/tools/*
 fern/code
 fern/api/openapi.json
 fern/api/openapi-v3.json
+fern/api/openapi-mcp.json
 
 # Cursor and GitHub styles
 .cursor/*
