@@ -62,9 +62,12 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = provider;
+    // Bind the execute method to ensure correct 'this' context
+    this.execute = this.execute.bind(this);
+    // Set the execute method for the provider
+    this.provider._setExecuteToolFn(this.execute);
 
     // Bind methods that use customTools to ensure correct 'this' context
-    this.execute = this.execute.bind(this);
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
   }
