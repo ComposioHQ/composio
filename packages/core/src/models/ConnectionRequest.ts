@@ -121,3 +121,15 @@ export class ConnectionRequest {
     throw new ConnectionRequestTimeoutError(`Connection request timed out for ${this.id}`);
   }
 }
+
+export const connectionRequest = (client: ComposioClient) => {
+  return {
+    waitForConnection: async (connectedAccountId: string, timeout: number = 60000) => {
+      return new ConnectionRequest(
+        client,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED
+      ).waitForConnection(timeout);
+    },
+  };
+};

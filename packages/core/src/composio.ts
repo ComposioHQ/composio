@@ -17,6 +17,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
+import { connectionRequest } from './models/ConnectionRequest';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
@@ -57,9 +58,13 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
   provider: TProvider;
   // auth configs
   authConfigs: AuthConfigs;
-  createAuthConfig: AuthConfigs['create'];
   // connected accounts
   connectedAccounts: ConnectedAccounts;
+  experimental: {
+    connectionRequest: ReturnType<typeof connectionRequest>;
+  };
+
+  createAuthConfig: AuthConfigs['create'];
   initiateConnection: ConnectedAccounts['initiate'];
 
   /**
@@ -113,6 +118,10 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.initiateConnection = this.connectedAccounts.initiate.bind(this.connectedAccounts);
+
+    this.experimental = {
+      connectionRequest: connectionRequest(this.client),
+    };
 
     /**
      * Initialize the client telemetry.
