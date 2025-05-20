@@ -194,7 +194,7 @@ describe('Tools', () => {
   });
 
   describe('get', () => {
-    it('should get a single tool and wrap it with provider', async () => {
+    it('should get a single tool by slug and wrap it with provider as a collection', async () => {
       const userId = 'test-user';
       const slug = 'TOOL_SLUG';
 
@@ -203,13 +203,16 @@ describe('Tools', () => {
         toolMocks.transformedTool as unknown as Tool
       );
 
-      context.mockProvider.wrapTool.mockReturnValueOnce('wrapped-tool');
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
 
       const result = await context.tools.get(userId, slug);
 
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, undefined);
-      expect(context.mockProvider.wrapTool).toHaveBeenCalled();
-      expect(result).toEqual('wrapped-tool');
+      expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
+        [toolMocks.transformedTool],
+        expect.any(Function)
+      );
+      expect(result).toEqual('wrapped-tools-collection');
     });
 
     it('should get multiple tools and wrap them with provider', async () => {
@@ -219,13 +222,13 @@ describe('Tools', () => {
       const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
       getRawComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
 
-      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
 
       const result = await context.tools.get(userId, filters);
 
       expect(getRawComposioToolsSpy).toHaveBeenCalledWith(userId, filters, undefined);
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
-      expect(result).toEqual('wrapped-tools');
+      expect(result).toEqual('wrapped-tools-collection');
     });
 
     it('should pass modifiers to the underlying methods', async () => {

@@ -8,8 +8,6 @@ import { BaseComposioProvider } from './provider/BaseProvider';
 import { Telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import type { TelemetryMetadata } from './types/telemetry.types';
-import type { ProviderOptions } from './types/modifiers.types';
-import type { ToolListParams } from './types/tool.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -173,33 +171,5 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
-  }
-
-  /**
-   * Fetch all the tools from Composio.
-   * @param {ToolListParams} params Parameters to fetch the tools.
-   * @param {ProviderOptions<TProvider>} modifiers Modifiers to apply to the tools.
-   * @returns {Promise<ReturnType<TProvider['getTools']>>} The tools from the provider.
-   */
-  getTools<T extends TProvider>(
-    userId: string,
-    filters: ToolListParams,
-    modifiers?: ProviderOptions<T>
-  ): Promise<ReturnType<T['wrapTools']>> {
-    return this.tools.get(userId, filters, modifiers) as Promise<ReturnType<T['wrapTools']>>;
-  }
-
-  /**
-   * Fetch a tool from Composio by its slug.
-   * @param {string} slug slug of the tool
-   * @param {ProviderOptions<TProvider>} modifiers to be applied to the tool
-   * @returns {Promise<ReturnType<TProvider['getToolBySlug']>>} The tool from the provider.
-   */
-  getToolBySlug<T extends TProvider>(
-    userId: string,
-    slug: string,
-    modifiers?: ProviderOptions<T>
-  ): Promise<ReturnType<T['wrapTool']>> {
-    return this.tools.get(userId, slug, modifiers) as Promise<ReturnType<T['wrapTool']>>;
   }
 }

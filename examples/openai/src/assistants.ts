@@ -25,7 +25,7 @@ async function main() {
   try {
     console.log('🔄 Setting up Composio and fetching tool...');
 
-    const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+    const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 
     console.log('🔄 Creating OpenAI Assistant with Composio tool...');
 
@@ -34,7 +34,7 @@ async function main() {
       instructions:
         'You are a helpful assistant that can fetch information about HackerNews users.',
       model: 'gpt-4o',
-      tools: [tool],
+      tools: tools,
     });
 
     console.log(`✅ Assistant created with ID: ${assistant.id}`);

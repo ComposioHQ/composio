@@ -65,7 +65,7 @@ class BrowserRuntimeWrapper {
   // Override or extend core methods as needed
   async getTools() {
     // Browser-specific implementation
-    return this.composio.getTools();
+    return this.composio.tools.get();
   }
 }
 ```
@@ -135,7 +135,7 @@ class BrowserWrapper {
   // Browser-specific implementation of core methods
   async getTools() {
     // Add browser-specific caching or other optimizations
-    return this.composio.getTools();
+    return this.composio.tools.get();
   }
 }
 ```

@@ -19,7 +19,7 @@ const composio = new Composio({
  * Alternatively, you can use the `composio.getToolBySlug` method
  */
 async function run() {
-  const hackerNewsTool = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE');
+  const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE');
 
   const messages: Message[] = [
     {
@@ -31,7 +31,7 @@ async function run() {
   const chatCompletion = async () => {
     const { text, toolCalls, toolResults } = await generateText({
       model: openai('gpt-4o-mini'),
-      tools: { ['HACKERNEWS_GET_FRONTPAGE']: hackerNewsTool },
+      tools: tools,
       messages,
     });
 

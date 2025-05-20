@@ -14,10 +14,10 @@ const composio = new Composio({
 });
 
 /**
- * Get the tool by slug
+ * Get the tools
  * This tool is automatically typed and wrapped with the OpenAI Provider
  */
-const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 /**
  * Define a task for the assistant based on the tools in hand
  */
@@ -37,7 +37,7 @@ const messages: OpenAI.ChatCompletionMessageParam[] = [
 const response = await openai.chat.completions.create({
   model: 'gpt-4o-mini',
   messages,
-  tools: [tool],
+  tools: tools,
   tool_choice: 'auto',
 });
 

@@ -25,7 +25,7 @@ async function main() {
   try {
     console.log('🔄 Setting up Composio and fetching tool...');
 
-    const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+    const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 
     const query = "Find information about the HackerNews user 'pg'";
 
@@ -40,7 +40,7 @@ async function main() {
         },
         { role: 'user', content: query },
       ],
-      tools: [tool],
+      tools: tools,
       tool_choice: 'auto',
     });
 

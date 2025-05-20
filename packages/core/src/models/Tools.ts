@@ -296,24 +296,6 @@ export class Tools<
   }
 
   /**
-   * Get a tool by its slug
-   * @param userId - The user id
-   * @param slug - The slug of the tool
-   * @param options - The options for the tool
-   * @returns The tool
-   *
-   * @example
-   * ```ts
-   * const tool = await composio.tools.get('default', 'github');
-   * ```
-   */
-  async get<T extends TProvider>(
-    userId: string,
-    slug: string,
-    options?: ProviderOptions<TProvider>
-  ): Promise<ReturnType<T['wrapTool']>>;
-
-  /**
    * Get a list of tools by their slugs
    * @param userId - The user id
    * @param filters - The filters for the tools
@@ -336,6 +318,24 @@ export class Tools<
   /**
    * Get a tool by its slug
    * @param userId - The user id
+   * @param slug - The slug of the tool
+   * @param options - The options for the tool
+   * @returns The tool
+   *
+   * @example
+   * ```ts
+   * const tool = await composio.tools.get('default', 'github');
+   * ```
+   */
+  async get<T extends TProvider>(
+    userId: string,
+    slug: string,
+    options?: ProviderOptions<TProvider>
+  ): Promise<ReturnType<T['wrapTools']>>;
+
+  /**
+   * Get a tool by its slug
+   * @param userId - The user id
    * @param arg2 - The slug of the tool or the filters for the tools
    * @param options - The options for the tools
    * @returns The tool or the tools
@@ -344,13 +344,13 @@ export class Tools<
     userId: string,
     arg2: ToolListParams | string,
     options?: ProviderOptions<TProvider>
-  ): Promise<TTool | TToolCollection> {
+  ): Promise<TToolCollection> {
     // create the execute tool function
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getRawComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
-      return this.provider.wrapTool(tool, executeToolFn) as TTool;
+      return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
       // if the first argument is an object, get a list of tools
       const tools = await this.getRawComposioTools(userId, arg2, options?.modifyToolSchema);

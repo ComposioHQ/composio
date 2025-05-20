@@ -35,8 +35,8 @@ const composio = new Composio({
   provider: new OpenAIProvider(),
 });
 
-// Fetch a single tool
-const searchTool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS');
+// Fetch a single tool by slig
+const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS');
 
 // Fetch multiple tools
 const tools = await composio.tools.get('user123', {
@@ -69,7 +69,7 @@ Composio SDK supports powerful modifiers to transform tool schemas and execution
 Schema modifiers allow you to transform tool schemas before they are used:
 
 ```typescript
-const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
+const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   modifyToolSchema: (toolSlug: string, toolkitSlug: string, tool: Tool) => ({
     ...tool,
     description: 'Enhanced HackerNews search with additional features',
@@ -90,7 +90,7 @@ const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
 For agentic providers (like Vercel AI and Langchain), you can also modify tool execution behavior:
 
 ```typescript
-const tool = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
+const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   // Transform input before execution
   beforeToolExecute: (toolSlug: string, toolkitSlug: string, params: ToolExecuteParams) => ({
     ...params,

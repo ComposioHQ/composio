@@ -12,10 +12,9 @@ const composio = new Composio({
 
 // fetch the tool
 console.log(`🔄 Fetching the tool...`);
-const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 
 // Define the tools for the agent to use
-const tools = [tool];
 const toolNode = new ToolNode(tools);
 
 // Create a model and give it access to the tools
