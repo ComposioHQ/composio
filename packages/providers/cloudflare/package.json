@@ -30,7 +30,7 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@cloudflare/workers-types": "^4.20250416.0",
-    "@composio/core": "0.1.12-alpha.3"
+    "@composio/core": "workspace:*"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
