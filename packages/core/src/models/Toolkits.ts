@@ -167,8 +167,12 @@ export class Toolkits {
    * This method will create an auth config if one doesn't exist and initiate a connection request.
    * @param {string} userId - The user id of the user to authorize
    * @param {string} toolkitSlug - The slug of the toolkit to authorize
-   * @param {string} authConfigId - The id of the auth config to use
    * @returns {Promise<ConnectionRequest>} The connection request object
+   * 
+   * @example
+   * ```typescript
+   * const connectionRequest = await composio.toolkits.authorize(userId, 'github');
+   * ```
    */
   async authorize(userId: string, toolkitSlug: string): Promise<ConnectionRequest> {
     const toolkit = await this.getToolkitBySlug(toolkitSlug);

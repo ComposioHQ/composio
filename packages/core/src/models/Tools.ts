@@ -300,7 +300,7 @@ export class Tools<
   }
 
   /**
-   * Get a list of tools by their slugs
+   * Get a list of tools from composio based on filters
    * @param userId - The user id
    * @param filters - The filters for the tools
    * @param options - The options for the tools
