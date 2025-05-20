@@ -10,6 +10,7 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test --filter=./packages/**",
+    "test:ui": "vitest --ui",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -23,6 +24,7 @@
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
     "@types/node": "^22.15.18",
+    "@vitest/ui": "^3.1.4",
     "eslint": "^9.25.1",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
@@ -32,7 +34,8 @@
     "semver": "^7.7.2",
     "tsx": "^4.19.3",
     "turbo": "^2.5.0",
-    "typescript-eslint": "^8.31.0"
+    "typescript-eslint": "^8.31.0",
+    "vitest": "^3.1.3"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
