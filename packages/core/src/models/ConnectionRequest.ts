@@ -19,16 +19,18 @@ import {
   ConnectionRequestFailedError,
   ConnectionRequestTimeoutError,
 } from '../errors/ConnectionRequestError';
+import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+import { log } from 'console';
 export class ConnectionRequest {
   private client: ComposioClient;
   public id: string;
-  public status: ConnectedAccountStatus;
+  public status?: ConnectedAccountStatus;
   public redirectUrl?: string | null;
 
   constructor(
     client: ComposioClient,
     connectedAccountId: string,
-    connectedAccountStatus: ConnectedAccountStatus,
+    connectedAccountStatus?: ConnectedAccountStatus,
     redirectUrl?: string | null
   ) {
     this.client = client;
@@ -78,9 +80,22 @@ export class ConnectionRequest {
    * @returns
    */
   async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
-    if (this.status === ConnectedAccountStatuses.ACTIVE) {
+    try {
       const response = await this.client.connectedAccounts.retrieve(this.id);
-      return this.transformResponse(response);
+      if (response.status === ConnectedAccountStatuses.ACTIVE) {
+        return this.transformResponse(response);
+      }
+    } catch (error) {
+      if (error instanceof ComposioClient.NotFoundError) {
+        throw new ComposioConnectedAccountNotFoundError(
+          `Connected account with id ${this.id} not found`,
+          {
+            connectedAccountId: this.id,
+          }
+        );
+      } else {
+        throw error;
+      }
     }
 
     const terminalErrorStates: ConnectedAccountStatus[] = [

@@ -13,6 +13,7 @@ import {
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
+  ConnectedAccountRetrieveResponse as ConnectedAccountRetrieveResponseRaw,
 } from '@composio/client/resources/connected-accounts';
 import {
   CreateConnectedAccountOptions,
@@ -20,9 +21,7 @@ import {
   ConnectedAccountRetrieveResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
-import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
 import { ValidationError } from '../errors/ValidationError';
-import logger from '../utils/logger';
 
 /**
  * ConnectedAccounts class
@@ -45,6 +44,35 @@ export class ConnectedAccounts {
    */
   async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse> {
     return this.client.connectedAccounts.list(query);
+  }
+
+  /**
+   * Transform the raw response from the API to the expected format
+   * @param {ConnectedAccountRetrieveResponseRaw} response - Raw response from the API
+   * @returns {ConnectedAccountRetrieveResponse} Transformed response
+   */
+  transformConnectedAccountResponse(
+    response: ConnectedAccountRetrieveResponseRaw
+  ): ConnectedAccountRetrieveResponse {
+    const result = ConnectedAccountRetrieveResponseSchema.safeParse({
+      ...response,
+      userId: response.user_id, // Add the missing userId property
+      authConfig: {
+        ...response.auth_config,
+        authScheme: response.auth_config.auth_scheme,
+        isComposioManaged: response.auth_config.is_composio_managed,
+        isDisabled: response.auth_config.is_disabled,
+      },
+      statusReason: response.status_reason,
+      isDisabled: response.is_disabled,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+      testRequestEndpoint: response.test_request_endpoint,
+    });
+    if (result.error) {
+      throw new ValidationError(result.error);
+    }
+    return result.data;
   }
 
   /**
@@ -87,24 +115,7 @@ export class ConnectedAccounts {
     connectedAccountId: string,
     timeout: number = 60000
   ): Promise<ConnectedAccountRetrieveResponse> {
-    let connectedAccount: ConnectedAccountRetrieveResponse;
-    try {
-      connectedAccount = await this.get(connectedAccountId);
-    } catch (error) {
-      logger.error(error);
-      throw new ComposioConnectedAccountNotFoundError(
-        `Unable to retrieve connected account with Id: ${connectedAccountId}`,
-        {
-          connectedAccountId,
-        }
-      );
-    }
-    const connectionRequest = new ConnectionRequest(
-      this.client,
-      connectedAccountId,
-      connectedAccount.status
-    );
-
+    const connectionRequest = new ConnectionRequest(this.client, connectedAccountId);
     return connectionRequest.waitForConnection(timeout);
   }
 
@@ -116,27 +127,7 @@ export class ConnectedAccounts {
    */
   async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
     const response = await this.client.connectedAccounts.retrieve(nanoid);
-    const parsedResult = ConnectedAccountRetrieveResponseSchema.safeParse({
-      ...response,
-      userId: response.user_id, // Add the missing userId property
-      authConfig: {
-        ...response.auth_config,
-        authScheme: response.auth_config.auth_scheme,
-        isComposioManaged: response.auth_config.is_composio_managed,
-        isDisabled: response.auth_config.is_disabled,
-      },
-      statusReason: response.status_reason,
-      isDisabled: response.is_disabled,
-      createdAt: response.created_at,
-      updatedAt: response.updated_at,
-      testRequestEndpoint: response.test_request_endpoint,
-    });
-
-    if (parsedResult.error) {
-      throw new ValidationError(parsedResult.error);
-    }
-
-    return parsedResult.data;
+    return this.transformConnectedAccountResponse(response);
   }
 
   /**

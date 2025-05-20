@@ -4,6 +4,7 @@ import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient from '@composio/client';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
+import { ComposioConnectedAccountNotFoundError } from '../../src/errors/ConnectedAccountsError';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -285,6 +286,106 @@ describe('ConnectedAccounts', () => {
         enabled: false,
       });
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('waitForConnection', () => {
+    it('should wait for a connected account to become active', async () => {
+      const nanoid = 'conn_123';
+      const authConfigId = 'auth_config_123';
+      const mockGetResponse = {
+        id: nanoid,
+        status: 'PENDING',
+        auth_scopes: ['read:user', 'write:user'],
+        auth_config: {
+          id: authConfigId,
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        user_id: 'user_123',
+        data: {},
+        params: {},
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+      } as unknown as ConnectedAccountRetrieveResponse;
+
+      const mockActiveResponse = {
+        ...mockGetResponse,
+        status: 'ACTIVE',
+      } as unknown as ConnectedAccountRetrieveResponse;
+
+      // Mock the get method first call
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockGetResponse);
+      // Mock the subsequent call in waitForConnection
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockActiveResponse);
+
+      const result = await connectedAccounts.waitForConnection(nanoid);
+
+      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
+      expect(result).toEqual(
+        connectedAccounts.transformConnectedAccountResponse(mockActiveResponse)
+      );
+    });
+
+    it('should throw ComposioConnectedAccountNotFoundError if connected account does not exist', async () => {
+      const nanoid = 'non_existent_conn';
+
+      extendedMockClient.connectedAccounts.retrieve.mockRejectedValueOnce(
+        new ComposioClient.NotFoundError(404, undefined, undefined, {} as Headers)
+      );
+
+      try {
+        await connectedAccounts.waitForConnection(nanoid);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ComposioConnectedAccountNotFoundError);
+      }
+    });
+
+    it('should use the provided timeout value', async () => {
+      const nanoid = 'conn_123';
+      const timeout = 30000;
+      const mockGetResponse = {
+        id: nanoid,
+        status: 'PENDING',
+        auth_config: {
+          id: 'auth_config_123',
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        user_id: 'user_123',
+        data: {},
+        params: {},
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        auth_scopes: ['read:user'],
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+      } as unknown as ConnectedAccountRetrieveResponse;
+
+      const mockActiveResponse = {
+        ...mockGetResponse,
+        status: 'ACTIVE',
+      } as unknown as ConnectedAccountRetrieveResponse;
+
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockGetResponse);
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockActiveResponse);
+
+      const result = await connectedAccounts.waitForConnection(nanoid, timeout);
+
+      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
+      expect(result).toEqual(
+        connectedAccounts.transformConnectedAccountResponse(mockActiveResponse)
+      );
     });
   });
 });
