@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.12-alpha.9
+
+### Patch Changes
+
+- ba8d991: Fix initiate connection flows and api issues
+
 ## 0.1.12-alpha.8
 
 ### Patch Changes

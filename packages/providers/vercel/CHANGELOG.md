@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.1.12-alpha.9
+
+### Patch Changes
+
+- ba8d991: Fix initiate connection flows and api issues
+- Updated dependencies [ba8d991]
+  - @composio/core@0.1.12-alpha.9
+
 ## 0.1.12-alpha.8
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai",
-  "version": "0.1.12-alpha.8",
+  "version": "0.1.12-alpha.9",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -29,7 +29,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
-    "@composio/core": "0.1.12-alpha.8",
+    "@composio/core": "0.1.12-alpha.9",
     "openai": "^4.3.8"
   },
   "devDependencies": {

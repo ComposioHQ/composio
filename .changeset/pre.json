@@ -9,6 +9,7 @@
     "@composio/vercel": "0.1.12-alpha.6"
   },
   "changesets": [
+    "great-pens-jog",
     "lovely-pets-yell",
     "ripe-clubs-love"
   ]
