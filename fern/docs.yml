@@ -248,14 +248,17 @@ navigation:
       - section: MCP
         icon: plug
         contents:
-          - page: Introduction
-            path: mcp/introduction.mdx
-          - page: Cursor
-            path: mcp/cursor.mdx
-          - page: Claude
-            path: mcp/claude.mdx
-          - page: Windsurf
-            path: mcp/windsurf.mdx
+        - page: Introduction
+          path: mcp/introduction.mdx
+        - section: MCP Clients
+          slug: clients
+          contents:
+            - page: Cursor
+              path: mcp/cursor.mdx
+            - page: Claude
+              path: mcp/claude.mdx
+            - page: Windsurf
+              path: mcp/windsurf.mdx
 
       - section: Changelog
         icon: calendar
@@ -351,14 +354,21 @@ navigation:
     layout:
       - section: API Reference
         contents:
-          - api: V1
+          - api: v1
             api-name: v1
             paginated: true
-            slug: v1
-          - api: V3
+            skip-slug: true
+            flattened: false
+          - api: v3
             api-name: v3
+            flattened: false
             paginated: true
             slug: v3
+          - api: MCP
+            api-name: mcp
+            slug: mcp
+            flattened: false
+            paginated: true
 
   - tab: sdk-reference
   - tab: tools
