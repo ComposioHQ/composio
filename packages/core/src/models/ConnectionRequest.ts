@@ -20,7 +20,6 @@ import {
   ConnectionRequestTimeoutError,
 } from '../errors/ConnectionRequestError';
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
-import { log } from 'console';
 export class ConnectionRequest {
   private client: ComposioClient;
   public id: string;
