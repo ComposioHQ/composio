@@ -22,6 +22,7 @@ import {
 import { ConnectionRequest } from './ConnectionRequest';
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
 import { ValidationError } from '../errors/ValidationError';
+import logger from '../utils/logger';
 
 /**
  * ConnectedAccounts class
@@ -90,6 +91,7 @@ export class ConnectedAccounts {
     try {
       connectedAccount = await this.get(connectedAccountId);
     } catch (error) {
+      logger.error(error);
       throw new ComposioConnectedAccountNotFoundError(
         `Unable to retrieve connected account with Id: ${connectedAccountId}`,
         {
