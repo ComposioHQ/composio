@@ -1,0 +1,14 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@composio/core": "0.1.12-alpha.6",
+    "@composio/cloudflare": "0.1.12-alpha.6",
+    "@composio/langchain": "0.1.12-alpha.6",
+    "@composio/openai": "0.1.12-alpha.6",
+    "@composio/vercel": "0.1.12-alpha.6"
+  },
+  "changesets": [
+    "ripe-clubs-love"
+  ]
+}
