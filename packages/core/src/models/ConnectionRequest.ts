@@ -21,8 +21,8 @@ import {
 } from '../errors/ConnectionRequestError';
 export class ConnectionRequest {
   private client: ComposioClient;
-  private connectedAccountId: string;
-  private connectedAccountStatus: ConnectedAccountStatus;
+  public id: string;
+  public status: ConnectedAccountStatus;
   public redirectUrl?: string | null;
 
   constructor(
@@ -32,8 +32,8 @@ export class ConnectionRequest {
     redirectUrl?: string | null
   ) {
     this.client = client;
-    this.connectedAccountId = connectedAccountId;
-    this.connectedAccountStatus = connectedAccountStatus;
+    this.id = connectedAccountId;
+    this.status = connectedAccountStatus;
     this.redirectUrl = redirectUrl;
   }
 
@@ -78,8 +78,8 @@ export class ConnectionRequest {
    * @returns
    */
   async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
-    if (this.connectedAccountStatus === ConnectedAccountStatuses.ACTIVE) {
-      const response = await this.client.connectedAccounts.retrieve(this.connectedAccountId);
+    if (this.status === ConnectedAccountStatuses.ACTIVE) {
+      const response = await this.client.connectedAccounts.retrieve(this.id);
       return this.transformResponse(response);
     }
 
@@ -94,7 +94,7 @@ export class ConnectionRequest {
 
     while (Date.now() - start < timeout) {
       try {
-        const response = await this.client.connectedAccounts.retrieve(this.connectedAccountId);
+        const response = await this.client.connectedAccounts.retrieve(this.id);
 
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
           return this.transformResponse(response);
@@ -105,7 +105,7 @@ export class ConnectionRequest {
             `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
             {
               userId: response.user_id,
-              connectedAccountId: this.connectedAccountId,
+              connectedAccountId: this.id,
               status: response.status,
               statusReason: response.status_reason,
             }
@@ -118,8 +118,6 @@ export class ConnectionRequest {
       }
     }
 
-    throw new ConnectionRequestTimeoutError(
-      `Connection request timed out for ${this.connectedAccountId}`
-    );
+    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${this.id}`);
   }
 }
