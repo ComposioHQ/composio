@@ -39,9 +39,16 @@ export class ConnectionRequest {
   }
 
   /**
-   * Transform the response from the Composio API to the SDK format
-   * @param response
-   * @returns
+   * Transforms the raw connected account response from the Composio API to the SDK format.
+   *
+   * This method converts property names from snake_case to camelCase and reorganizes
+   * the data structure to match the SDK's standardized format.
+   *
+   * @param {OriginalConnectedAccountResponse} response - The raw API response to transform
+   * @returns {Promise<ConnectedAccountRetrieveResponse>} The transformed response
+   * @throws {ZodError} If the response fails validation against the expected schema
+   *
+   * @private
    */
   private async transformResponse(
     response: OriginalConnectedAccountResponse
@@ -73,10 +80,30 @@ export class ConnectionRequest {
   }
 
   /**
-   * Wait for the connection to be established.
-   * The function will poll the Composio API every second until the connection is established or the timeout is reached.
-   * @param {number} timeout - The time in milliseconds to wait for the connection to be established. Default is 30 seconds.
-   * @returns
+   * Waits for the connection request to complete and become active.
+   *
+   * This method continuously polls the Composio API to check the status of the connection request
+   * until it either becomes active, enters a terminal error state, or times out.
+   *
+   * @param {number} [timeout=60000] - Maximum time to wait in milliseconds before timing out (default: 60 seconds)
+   * @returns {Promise<ConnectedAccountRetrieveResponse>} The final connected account response when successful
+   * @throws {ComposioConnectedAccountNotFoundError} If the connected account cannot be found
+   * @throws {ConnectionRequestFailedError} If the connection enters a failed, expired, or deleted state
+   * @throws {ConnectionRequestTimeoutError} If the connection request does not complete within the timeout period
+   *
+   * @example
+   * ```typescript
+   * // Wait for connection with default timeout (60 seconds)
+   * try {
+   *   const connection = await connectionRequest.waitForConnection();
+   *   console.log('Connection established:', connection.id);
+   * } catch (error) {
+   *   console.error('Connection failed:', error.message);
+   * }
+   *
+   * // Wait for connection with custom timeout (2 minutes)
+   * const connection = await connectionRequest.waitForConnection(120000);
+   * ```
    */
   async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
     try {

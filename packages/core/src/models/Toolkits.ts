@@ -33,9 +33,15 @@ export class Toolkits {
     this.authorize = this.authorize.bind(this);
   }
   /**
-   * List all toolkits available in the Composio SDK.
-   * This method fetches the toolkits from the Composio API.
-   * @returns {Promise<Toolkit[]>} List of toolkits
+   * Retrieves a list of toolkits based on the provided query parameters.
+   *
+   * This method fetches toolkits from the Composio API and transforms the response
+   * from snake_case to camelCase format for consistency with JavaScript/TypeScript conventions.
+   *
+   * @param {ToolkitListParams} query - The query parameters to filter toolkits
+   * @returns {Promise<ToolKitListResponse>} The transformed list of toolkits
+   *
+   * @private
    */
   private async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
     const parsedQuery = ToolkitsListParamsSchema.parse(query);
@@ -67,11 +73,73 @@ export class Toolkits {
   }
 
   /**
-   * Fetches a toolkit by its Slug.
-   * This method retrieves the toolkit from the Composio API.
-   * @param slug - The ID of the toolkit to be retrieved
-   * @param options - Request options
-   * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
+   * Retrieves a specific toolkit by its slug identifier.
+   *
+   * @param {string} slug - The unique slug identifier of the toolkit to retrieve
+   * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object with detailed information
+   * @throws {ComposioToolNotFoundError} If no toolkit with the given slug exists
+   *
+   * @example
+   * ```typescript
+   * // Get a specific toolkit
+   * const githubToolkit = await composio.toolkits.get('github');
+   * console.log(githubToolkit.name); // GitHub
+   * console.log(githubToolkit.authConfigDetails); // Authentication configuration details
+   * ```
+   */
+  async get(slug: string): Promise<ToolkitRetrieveResponse>;
+
+  /**
+   * Retrieves a list of toolkits based on the provided query parameters.
+   *
+   * @param {ToolkitListParams} query - The query parameters to filter toolkits
+   * @returns {Promise<ToolKitListResponse>} A paginated list of toolkits matching the query criteria
+   *
+   * @example
+   * ```typescript
+   * // Get all toolkits
+   * const allToolkits = await composio.toolkits.get({});
+   *
+   * // Get toolkits by category
+   * const devToolkits = await composio.toolkits.get({
+   *   category: 'developer-tools'
+   * });
+   *
+   * // Get local toolkits
+   * const localToolkits = await composio.toolkits.get({
+   *   isLocal: true
+   * });
+   * ```
+   */
+  async get(query: ToolkitListParams): Promise<ToolKitListResponse>;
+
+  /**
+   * Implementation method that handles both overloads for retrieving toolkits.
+   *
+   * @param {string | ToolkitListParams} arg - Either a toolkit slug or query parameters
+   * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit or list of toolkits
+   */
+  async get(
+    arg: string | ToolkitListParams
+  ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
+    if (typeof arg === 'string') {
+      return this.getToolkitBySlug(arg);
+    }
+    return this.getToolkits(arg);
+  }
+
+  /**
+   * Retrieves a specific toolkit by its slug identifier.
+   *
+   * This method fetches a single toolkit from the Composio API and transforms
+   * the response to use camelCase property naming consistent with JavaScript/TypeScript conventions.
+   *
+   * @param {string} slug - The unique slug identifier of the toolkit to retrieve
+   * @returns {Promise<ToolkitRetrieveResponse>} The transformed toolkit object
+   * @throws {ValidationError} If the response cannot be properly parsed
+   * @throws {ComposioToolNotFoundError} If no toolkit with the given slug exists
+   *
+   * @private
    */
   private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
     try {
@@ -113,38 +181,19 @@ export class Toolkits {
   }
 
   /**
-   * @overload
-   * Fetches a toolkit by its Slug or a list of toolkits.
-   * @param slug - The ID of the toolkit to be retrieved
-   * @returns {Promise<ToolkitRetrieveResponse>} The toolkit object
-   */
-  async get(slug: string): Promise<ToolkitRetrieveResponse>;
-  /**
-   * @overload
-   * Fetches a list of toolkits.
-   * @param query - The parameters to fetch the toolkits
-   * @returns {Promise<ToolKitListResponse>} The list of toolkits
-   */
-  async get(query: ToolkitListParams): Promise<ToolKitListResponse>;
-  /**
-   * Fetches a toolkit by its Slug or a list of toolkits.
-   * This method retrieves the toolkit from the Composio API.
-   * @param arg - The ID of the toolkit to be retrieved or a list of parameters
-   * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit object or a list of toolkits
-   */
-  async get(
-    arg: string | ToolkitListParams
-  ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
-    if (typeof arg === 'string') {
-      return this.getToolkitBySlug(arg);
-    }
-    return this.getToolkits(arg);
-  }
-
-  /**
-   * Fetches all categories available in the Composio SDK
+   * Retrieves all toolkit categories available in the Composio SDK.
    *
-   * @returns {Promise<ToolkitRetrieveCategoriesResponse>} List of categories
+   * This method fetches the complete list of categories from the Composio API
+   * and transforms the response to use camelCase property naming.
+   *
+   * @returns {Promise<ToolkitRetrieveCategoriesResponse>} The list of toolkit categories
+   *
+   * @example
+   * ```typescript
+   * // Get all toolkit categories
+   * const categories = await composio.toolkits.listCategories();
+   * console.log(categories.items); // Array of category objects
+   * ```
    */
   async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
     const result = await this.client.toolkits.retrieveCategories();
@@ -168,7 +217,7 @@ export class Toolkits {
    * @param {string} userId - The user id of the user to authorize
    * @param {string} toolkitSlug - The slug of the toolkit to authorize
    * @returns {Promise<ConnectionRequest>} The connection request object
-   * 
+   *
    * @example
    * ```typescript
    * const connectionRequest = await composio.toolkits.authorize(userId, 'github');

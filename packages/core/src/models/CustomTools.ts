@@ -140,8 +140,8 @@ export class CustomTools {
       });
     }
     const connectedAccounts = await this.client.connectedAccounts.list({
-      toolkit_slug: toolkitSlug,
-      user_id: metadata.userId,
+      toolkit_slugs: [toolkitSlug],
+      user_ids: [metadata.userId],
     });
 
     if (!connectedAccounts.items.length) {

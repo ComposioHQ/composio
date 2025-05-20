@@ -73,9 +73,15 @@ export class Tools<
   }
 
   /**
-   * Transform the tool cases
-   * @param {ToolRetrieveResponse | ComposioToolListResponse['items'][0]} tool - The tool to transform
-   * @returns {Tool} The transformed tool
+   * Transforms tool data from snake_case API format to camelCase for internal SDK use.
+   *
+   * This method standardizes the property naming convention for tools retrieved from the Composio API,
+   * making them more consistent with JavaScript/TypeScript conventions.
+   *
+   * @param {ToolRetrieveResponse | ComposioToolListResponse['items'][0]} tool - The tool object to transform
+   * @returns {Tool} The transformed tool with camelCase properties
+   *
+   * @private
    */
   private transformToolCases(
     tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0]
@@ -88,9 +94,15 @@ export class Tools<
   }
 
   /**
-   * Transform the tool execute response to camelcase
-   * @param {ComposioToolExecuteResponse} response - The response to transform
-   * @returns {ToolExecuteResponse} The transformed response
+   * Transforms tool execution response from snake_case API format to camelCase.
+   *
+   * This method converts the response received from the Composio API to a standardized format
+   * with consistent property naming that follows JavaScript/TypeScript conventions.
+   *
+   * @param {ComposioToolExecuteResponse} response - The raw API response to transform
+   * @returns {ToolExecuteResponse} The transformed response with camelCase properties
+   *
+   * @private
    */
   private transformToolExecuteResponse(response: ComposioToolExecuteResponse): ToolExecuteResponse {
     return ToolExecuteResponseSchema.parse({
@@ -202,9 +214,35 @@ export class Tools<
   }
 
   /**
-   * Lists all tools available in the Composio SDK as well as custom tools.
-   * This method fetches the tools from the Composio API in the raw format.
-   * @returns {ToolList} List of tools
+   * Lists all tools available in the Composio SDK including custom tools.
+   *
+   * This method fetches tools from the Composio API in raw format and combines them with
+   * any registered custom tools. The response can be filtered and modified as needed.
+   *
+   * @param {string} userId - The user ID for whom to fetch the tools
+   * @param {ToolListParams} [query={}] - Optional query parameters to filter the tools
+   * @param {TransformToolSchemaModifier} [modifier] - Optional function to transform tool schemas
+   * @returns {Promise<ToolList>} List of tools matching the query criteria
+   *
+   * @example
+   * ```typescript
+   * // Get all tools
+   * const tools = await composio.tools.getRawComposioTools('default');
+   *
+   * // Get tools with filters
+   * const githubTools = await composio.tools.getRawComposioTools('default', {
+   *   toolkits: ['github'],
+   *   important: true
+   * });
+   *
+   * // Get tools with schema transformation
+   * const tools = await composio.tools.getRawComposioTools('default', {},
+   *   (toolSlug, toolkitSlug, tool) => {
+   *     // Add custom properties to tool schema
+   *     return {...tool, customProperty: 'value'};
+   *   }
+   * );
+   * ```
    */
   async getRawComposioTools(
     userId: string,
@@ -300,16 +338,26 @@ export class Tools<
   }
 
   /**
-   * Get a list of tools from composio based on filters
-   * @param userId - The user id
-   * @param filters - The filters for the tools
-   * @param options - The options for the tools
-   * @returns The tools
+   * Get a list of tools from Composio based on filters.
+   * This method fetches the tools from the Composio API and wraps them using the provider.
+   *
+   * @param {string} userId - The user id to get the tools for
+   * @param {ToolListParams} filters - The filters to apply when fetching tools
+   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tools collection
    *
    * @example
-   * ```ts
+   * ```typescript
+   * // Get tools from the GitHub toolkit
    * const tools = await composio.tools.get('default', {
    *   toolkits: ['github'],
+   *   limit: 10
+   * });
+   *
+   * // Get tools with search
+   * const tools = await composio.tools.get('default', {
+   *   search: 'user',
+   *   important: true
    * });
    * ```
    */
@@ -320,15 +368,26 @@ export class Tools<
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
-   * Get a tool by its slug
-   * @param userId - The user id
-   * @param slug - The slug of the tool
-   * @param options - The options for the tool
-   * @returns The tool
+   * Get a specific tool by its slug.
+   * This method fetches the tool from the Composio API and wraps it using the provider.
+   *
+   * @param {string} userId - The user id to get the tool for
+   * @param {string} slug - The slug of the tool to fetch
+   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tool
    *
    * @example
-   * ```ts
-   * const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+   * ```typescript
+   * // Get a specific tool by slug
+   * const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+   *
+   * // Get a tool with schema modifications
+   * const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
+   *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => {
+   *     // Customize the tool schema
+   *     return {...schema, description: 'Custom description'};
+   *   }
+   * });
    * ```
    */
   async get<T extends TProvider>(
@@ -338,11 +397,13 @@ export class Tools<
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
-   * Get a tool by its slug
-   * @param userId - The user id
-   * @param arg2 - The slug of the tool or the filters for the tools
-   * @param options - The options for the tools
-   * @returns The tool or the tools
+   * Get a tool or list of tools based on the provided arguments.
+   * This is an implementation method that handles both overloads.
+   *
+   * @param {string} userId - The user id to get the tool(s) for
+   * @param {ToolListParams | string} arg2 - Either a slug string or filters object
+   * @param {ProviderOptions<TProvider>} [options] - Optional provider options
+   * @returns {Promise<TToolCollection>} The tool collection
    */
   async get(
     userId: string,
@@ -480,13 +541,43 @@ export class Tools<
   }
 
   /**
-   * Exectes a given tool with the provided parameters.
+   * Executes a given tool with the provided parameters.
    *
-   * This method calls the Composio API to execute the tool and returns the response.
+   * This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
+   * It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
    *
-   * @param {string} slug - The ID of the tool to be executed
+   * @param {string} slug - The slug/ID of the tool to be executed
    * @param {ToolExecuteParams} body - The parameters to be passed to the tool
+   * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
+   *
+   * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
+   * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
+   * @throws {ComposioToolExecutionError} If there is an error during tool execution
+   *
+   * @example
+   * ```typescript
+   * // Execute a Composio API tool
+   * const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
+   *   userId: 'default',
+   *   arguments: { userId: 'pg' }
+   * });
+   *
+   * // Execute with modifiers
+   * const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+   *   userId: 'default',
+   *   arguments: { owner: 'composio', repo: 'sdk' }
+   * }, {
+   *   beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+   *     // Modify params before execution
+   *     return params;
+   *   },
+   *   afterToolExecute: (toolSlug, toolkitSlug, result) => {
+   *     // Transform result after execution
+   *     return result;
+   *   }
+   * });
+   * ```
    */
   async execute(
     slug: string,
@@ -554,9 +645,39 @@ export class Tools<
   }
 
   /**
-   * Execute a custom tool
-   * @param body
-   * @returns
+   * Creates a custom tool that can be used within the Composio SDK.
+   *
+   * Custom tools allow you to extend the functionality of Composio with your own implementations
+   * while keeping a consistent interface for both built-in and custom tools.
+   *
+   * @param {CustomToolOptions} body - The configuration for the custom tool
+   * @returns {Promise<Tool>} The created custom tool
+   *
+   * @example
+   * ```typescript
+   * const customTool = await composio.tools.createCustomTool({
+   *   name: 'My Custom Tool',
+   *   description: 'A custom tool that does something specific',
+   *   slug: 'MY_CUSTOM_TOOL',
+   *   inputParameters: {
+   *     param1: {
+   *       type: 'string',
+   *       description: 'First parameter',
+   *       required: true
+   *     }
+   *   },
+   *   outputParameters: {
+   *     result: {
+   *       type: 'string',
+   *       description: 'The result of the operation'
+   *     }
+   *   },
+   *   handler: async (params, context) => {
+   *     // Custom logic here
+   *     return { data: { result: 'Success!' } };
+   *   }
+   * });
+   * ```
    */
   async createCustomTool(body: CustomToolOptions): Promise<Tool> {
     return this.customTools.createTool(body);

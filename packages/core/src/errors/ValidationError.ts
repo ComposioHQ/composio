@@ -41,5 +41,6 @@ export class ValidationError extends ComposioError {
       cause: zodErrorInstance,
     });
     this.zodError = zodErrorInstance;
+    this.name = 'ValidationError';
   }
 }

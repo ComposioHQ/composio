@@ -50,6 +50,18 @@ export class AuthConfigs {
     return this.client;
   }
 
+  /**
+   * Transforms an auth config response from API format to SDK format.
+   *
+   * This method converts property names from snake_case to camelCase and reorganizes
+   * the data structure to match the SDK's standardized format for auth configurations.
+   *
+   * @param {ComposioAuthConfigRetrieveResponse} authConfig - The raw API response to transform
+   * @returns {AuthConfigRetrieveResponse} The transformed auth config data
+   * @throws {ValidationError} If the response fails validation against the expected schema
+   *
+   * @private
+   */
   private parseAuthConfigRetrieveResponse(
     authConfig: ComposioAuthConfigRetrieveResponse
   ): AuthConfigRetrieveResponse {
@@ -78,10 +90,30 @@ export class AuthConfigs {
   }
 
   /**
-   * List all auth configs
-   * @param {AuthConfigListParams} query - Query parameters for filtering auth configs
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigListResponse>} List of auth configs
+   * Lists authentication configurations based on provided filter criteria.
+   *
+   * This method retrieves auth configs from the Composio API, transforms them to the SDK format,
+   * and supports filtering by various parameters.
+   *
+   * @param {AuthConfigListParams} [query] - Optional query parameters for filtering auth configs
+   * @returns {Promise<AuthConfigListResponse>} A paginated list of auth configurations
+   * @throws {ValidationError} If the query parameters or response fail validation
+   *
+   * @example
+   * ```typescript
+   * // List all auth configs
+   * const allConfigs = await composio.authConfigs.list();
+   *
+   * // List auth configs for a specific toolkit
+   * const githubConfigs = await composio.authConfigs.list({
+   *   toolkitSlug: 'github'
+   * });
+   *
+   * // List Composio-managed auth configs
+   * const managedConfigs = await composio.authConfigs.list({
+   *   isComposioManaged: true
+   * });
+   * ```
    */
   async list(query?: AuthConfigListParams): Promise<AuthConfigListResponse> {
     const parsedQuery = query ? AuthConfigListParamsSchema.parse(query) : undefined;
@@ -147,10 +179,23 @@ export class AuthConfigs {
   }
 
   /**
-   * Get an auth config by nanoid
-   * @param {string} nanoid - Unique identifier of the auth config
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigRetrieveResponse>} Auth config details
+   * Retrieves a specific authentication configuration by its ID.
+   *
+   * This method fetches detailed information about a single auth config
+   * and transforms the response to the SDK's standardized format.
+   *
+   * @param {string} nanoid - The unique identifier of the auth config to retrieve
+   * @returns {Promise<AuthConfigRetrieveResponse>} The auth config details
+   * @throws {Error} If the auth config cannot be found or an API error occurs
+   * @throws {ValidationError} If the response fails validation
+   *
+   * @example
+   * ```typescript
+   * // Get an auth config by ID
+   * const authConfig = await composio.authConfigs.get('auth_abc123');
+   * console.log(authConfig.name); // e.g., 'GitHub Auth'
+   * console.log(authConfig.toolkit.slug); // e.g., 'github'
+   * ```
    */
   async get(nanoid: string): Promise<AuthConfigRetrieveResponse> {
     const result = await this.client.authConfigs.retrieve(nanoid);
@@ -158,11 +203,34 @@ export class AuthConfigs {
   }
 
   /**
-   * Update an auth config
-   * @param {string} nanoid - Unique identifier of the auth config to update
-   * @param {AuthConfigUpdateParams} data - Data to update
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigUpdateResponse>} Updated auth config
+   * Updates an existing authentication configuration.
+   *
+   * This method allows you to modify properties of an auth config such as credentials,
+   * scopes, or tool restrictions. The update type (custom or default) determines which
+   * fields can be updated.
+   *
+   * @param {string} nanoid - The unique identifier of the auth config to update
+   * @param {AuthConfigUpdateParams} data - The data to update, which can be either custom or default type
+   * @returns {Promise<AuthConfigUpdateResponse>} The updated auth config
+   * @throws {ValidationError} If the update parameters are invalid
+   * @throws {Error} If the auth config cannot be found or updated
+   *
+   * @example
+   * ```typescript
+   * // Update a custom auth config with new credentials
+   * const updatedConfig = await composio.authConfigs.update('auth_abc123', {
+   *   type: 'custom',
+   *   credentials: {
+   *     apiKey: 'new-api-key-value'
+   *   }
+   * });
+   *
+   * // Update a default auth config with new scopes
+   * const updatedConfig = await composio.authConfigs.update('auth_abc123', {
+   *   type: 'default',
+   *   scopes: ['read:user', 'repo']
+   * });
+   * ```
    */
   async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
     const parsedData = AuthConfigUpdateParamsSchema.safeParse(data);
@@ -186,21 +254,46 @@ export class AuthConfigs {
   }
 
   /**
-   * Delete an auth config
-   * @param {string} nanoid - Unique identifier of the auth config to delete
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigDeleteResponse>} Response from deletion
+   * Deletes an authentication configuration.
+   *
+   * This method permanently removes an auth config from the Composio platform.
+   * This action cannot be undone and will prevent any connected accounts that use
+   * this auth config from functioning.
+   *
+   * @param {string} nanoid - The unique identifier of the auth config to delete
+   * @returns {Promise<AuthConfigDeleteResponse>} The deletion response
+   * @throws {Error} If the auth config doesn't exist or cannot be deleted
+   *
+   * @example
+   * ```typescript
+   * // Delete an auth config
+   * await composio.authConfigs.delete('auth_abc123');
+   * ```
    */
   async delete(nanoid: string): Promise<AuthConfigDeleteResponse> {
     return this.client.authConfigs.delete(nanoid);
   }
 
   /**
-   * Update the status of an auth config
-   * @param {string} status - The status to update the auth config to
-   * @param {string} nanoid - Unique identifier of the auth config
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
+   * Updates the status of an authentication configuration.
+   *
+   * This method allows you to enable or disable an auth config. When disabled,
+   * the auth config cannot be used to create new connected accounts or authenticate
+   * with third-party services.
+   *
+   * @param {string} status - The status to set ('ENABLED' or 'DISABLED')
+   * @param {string} nanoid - The unique identifier of the auth config
+   * @returns {Promise<AuthConfigUpdateStatusResponse>} The updated auth config details
+   * @throws {Error} If the auth config cannot be found or the status cannot be updated
+   *
+   * @example
+   * ```typescript
+   * // Disable an auth config
+   * await composio.authConfigs.updateStatus('DISABLED', 'auth_abc123');
+   *
+   * // Enable an auth config
+   * await composio.authConfigs.updateStatus('ENABLED', 'auth_abc123');
+   * ```
    */
   async updateStatus(
     status: 'ENABLED' | 'DISABLED',
@@ -210,20 +303,42 @@ export class AuthConfigs {
   }
 
   /**
-   * Enable an auth config
-   * @param {string} nanoid - Unique identifier of the auth config
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
+   * Enables an authentication configuration.
+   *
+   * This is a convenience method that calls updateStatus with 'ENABLED'.
+   * When enabled, the auth config can be used to create new connected accounts
+   * and authenticate with third-party services.
+   *
+   * @param {string} nanoid - The unique identifier of the auth config to enable
+   * @returns {Promise<AuthConfigUpdateStatusResponse>} The updated auth config details
+   * @throws {Error} If the auth config cannot be found or enabled
+   *
+   * @example
+   * ```typescript
+   * // Enable an auth config
+   * await composio.authConfigs.enable('auth_abc123');
+   * ```
    */
   async enable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
     return this.client.authConfigs.updateStatus('ENABLED', { nanoid });
   }
 
   /**
-   * Disable an auth config
-   * @param {string} nanoid - Unique identifier of the auth config
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<AuthConfigUpdateStatusResponse>} Updated auth config details
+   * Disables an authentication configuration.
+   *
+   * This is a convenience method that calls updateStatus with 'DISABLED'.
+   * When disabled, the auth config cannot be used to create new connected accounts
+   * or authenticate with third-party services, but existing connections may continue to work.
+   *
+   * @param {string} nanoid - The unique identifier of the auth config to disable
+   * @returns {Promise<AuthConfigUpdateStatusResponse>} The updated auth config details
+   * @throws {Error} If the auth config cannot be found or disabled
+   *
+   * @example
+   * ```typescript
+   * // Disable an auth config
+   * await composio.authConfigs.disable('auth_abc123');
+   * ```
    */
   async disable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
     return this.client.authConfigs.updateStatus('DISABLED', { nanoid });

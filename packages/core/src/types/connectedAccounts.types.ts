@@ -109,7 +109,7 @@ export const ConnectedAccountRetrieveResponseSchema = z.object({
   authConfig: ConnectedAccountAuthConfigSchema,
   userId: z.string(),
   data: z.record(z.string(), z.unknown()),
-  params: z.record(z.string(), z.unknown()),
+  params: z.record(z.string(), z.unknown()).optional(),
   status: ConnectedAccountStatusSchema,
   statusReason: z.string().nullable(),
   toolkit: z.object({
@@ -120,6 +120,62 @@ export const ConnectedAccountRetrieveResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+// for some reason the list item doesn't have params
+export const ConnectedAccountListResponseItemSchema = ConnectedAccountAuthConfigSchema;
 export type ConnectedAccountRetrieveResponse = z.infer<
   typeof ConnectedAccountRetrieveResponseSchema
 >;
+
+/**
+ * Type for list response item that doesn't include params
+ */
+export type ConnectedAccountListResponseItem = Omit<ConnectedAccountRetrieveResponse, 'params'>;
+
+export const ConnectedAccountListParamsSchema = z.object({
+  authConfigIds: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('The auth config ids of the connected accounts'),
+  cursor: z
+    .number()
+    .nullable()
+    .optional()
+    .describe('The cursor to paginate through the connected accounts'),
+  labels: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('The labels of the connected accounts'),
+  limit: z.number().nullable().optional().describe('The limit of the connected accounts to return'),
+  orderBy: z
+    .enum(['created_at', 'updated_at'])
+    .optional()
+    .describe('The order by of the connected accounts'),
+  statuses: z
+    .array(ConnectedAccountStatusSchema)
+    .nullable()
+    .optional()
+    .describe('The statuses of the connected accounts'),
+  toolkitSlugs: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('The toolkit slugs of the connected accounts'),
+  userIds: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('The user ids of the connected accounts'),
+});
+export type ConnectedAccountListParams = z.infer<typeof ConnectedAccountListParamsSchema>;
+
+export const ConnectedAccountListResponseSchema = z.object({
+  items: z.array(ConnectedAccountRetrieveResponseSchema).describe('The list of connected accounts'),
+  nextCursor: z
+    .string()
+    .nullable()
+    .describe('The next cursor to paginate through the connected accounts'),
+  totalPages: z.number().describe('The total number of pages of connected accounts'),
+});
+export type ConnectedAccountListResponse = z.infer<typeof ConnectedAccountListResponseSchema>;

@@ -42,25 +42,33 @@ describe('ConnectedAccounts', () => {
   describe('list', () => {
     it('should call client.connectedAccounts.list with the provided query', async () => {
       const query = { limit: 10 };
-      const mockResponse = { items: [], totalPages: 0 };
+      const mockResponse = { items: [], next_cursor: null, total_pages: 0 };
 
       extendedMockClient.connectedAccounts.list.mockResolvedValueOnce(mockResponse);
 
       const result = await connectedAccounts.list(query);
 
       expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(query);
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual({
+        items: [],
+        nextCursor: null,
+        totalPages: 0,
+      });
     });
 
     it('should call client.connectedAccounts.list without query if none provided', async () => {
-      const mockResponse = { items: [], totalPages: 0 };
+      const mockResponse = { items: [], total_pages: 0, next_cursor: null };
 
       extendedMockClient.connectedAccounts.list.mockResolvedValueOnce(mockResponse);
 
       const result = await connectedAccounts.list();
 
       expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(undefined);
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual({
+        items: [],
+        nextCursor: null,
+        totalPages: 0,
+      });
     });
   });
 
