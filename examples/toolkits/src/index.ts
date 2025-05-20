@@ -5,10 +5,4 @@ const composio = new Composio({
 });
 
 const toolkit = await composio.toolkits.get('hackernews');
-
-const connectedAccount = await composio.connectedAccounts.list({
-  user_id: 'default',
-  toolkit_slug: 'hackernews',
-});
-
-console.log(JSON.stringify(connectedAccount, null, 2));
+const client = composio.getClient();

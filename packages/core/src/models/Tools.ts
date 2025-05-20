@@ -200,7 +200,7 @@ export class Tools<
 
   /**
    * Lists all tools available in the Composio SDK as well as custom tools.
-   * This method fetches the tools from the Composio API and wraps them using the provider.
+   * This method fetches the tools from the Composio API in the raw format.
    * @returns {ToolList} List of tools
    */
   async getRawComposioTools(
@@ -257,6 +257,7 @@ export class Tools<
 
   /**
    * Retrieves a tool by its Slug.
+   * This method is used to get the raw tools from the composio API.
    * @param slug The ID of the tool to be retrieved
    * @returns {Promise<Tool>} The tool
    *
