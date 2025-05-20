@@ -296,6 +296,30 @@ const connectionRequest = await composio.createConnectedAccount(
 const connectedAccount = await connectionRequest.waitForConnection();
 ```
 
+### Waiting for Connection to be Established
+
+The SDK provides a convenient way to wait for a connection to be established using the `waitForConnection` method:
+
+```typescript
+// From a ConnectionRequest instance (after creating a connected account)
+// With default timeout (60 seconds)
+const connectedAccount = await connectionRequest.waitForConnection();
+
+// With custom timeout (2 minutes)
+const connectedAccount = await connectionRequest.waitForConnection(120000);
+
+// Directly from the ConnectedAccounts class (with an existing connected account ID)
+const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_abc123', 60000);
+```
+
+The method polls the Composio API until:
+
+- The connection becomes `ACTIVE` (returns the connected account)
+- The connection enters a terminal state (`FAILED`, `EXPIRED`, `DELETED`) and throws an error
+- The timeout is exceeded (throws a timeout error)
+
+This is particularly useful for OAuth flows where the user needs to authorize the connection in a browser.
+
 ### Managing Connected Accounts
 
 ```typescript
