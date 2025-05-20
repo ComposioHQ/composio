@@ -94,8 +94,8 @@ describe('ConnectedAccounts', () => {
       });
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
-      expect(connectionRequest).toHaveProperty('connectedAccountId', mockResponse.id);
-      expect(connectionRequest).toHaveProperty('connectedAccountStatus', mockResponse.status);
+      expect(connectionRequest).toHaveProperty('id', mockResponse.id);
+      expect(connectionRequest).toHaveProperty('status', mockResponse.status);
       expect(connectionRequest).toHaveProperty('redirectUrl', mockResponse.redirect_uri);
 
       extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce({

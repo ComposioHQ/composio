@@ -32,11 +32,8 @@ describe('ConnectionRequest', () => {
       );
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
-      expect(connectionRequest).toHaveProperty('connectedAccountId', connectedAccountId);
-      expect(connectionRequest).toHaveProperty(
-        'connectedAccountStatus',
-        ConnectedAccountStatuses.ACTIVE
-      );
+      expect(connectionRequest).toHaveProperty('id', connectedAccountId);
+      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
       expect(connectionRequest).toHaveProperty('redirectUrl', redirectUrl);
     });
 
@@ -49,10 +46,7 @@ describe('ConnectionRequest', () => {
       );
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
-      expect(connectionRequest).toHaveProperty(
-        'connectedAccountStatus',
-        ConnectedAccountStatuses.INITIATED
-      );
+      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
     });
 
     it('should create an instance without a redirectUrl', () => {
