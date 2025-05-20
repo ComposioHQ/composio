@@ -309,7 +309,7 @@ export class Tools<
    * @example
    * ```ts
    * const tools = await composio.tools.get('default', {
-   *   tools: ['github'],
+   *   toolkits: ['github'],
    * });
    * ```
    */
@@ -328,7 +328,7 @@ export class Tools<
    *
    * @example
    * ```ts
-   * const tool = await composio.tools.get('default', 'github');
+   * const tool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
    * ```
    */
   async get<T extends TProvider>(

@@ -54,8 +54,8 @@ importers:
   examples/connected-accounts:
     dependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.6
-        version: 0.1.12-alpha.6(encoding@0.1.13)
+        specifier: workspace:*
+        version: link:../../packages/core
       openai:
         specifier: ^4.94.0
         version: 4.98.0(encoding@0.1.13)(zod@3.24.4)
