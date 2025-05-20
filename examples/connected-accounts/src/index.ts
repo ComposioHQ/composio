@@ -9,7 +9,7 @@ const composio = new Composio({
 /**
  * Create a new auth config
  */
-const authConfig = await composio.createAuthConfig('my-toolkit', {
+const authConfig = await composio.authConfigs.create('my-toolkit', {
   type: AuthConfigTypes.CUSTOM,
   authScheme: AuthSchemeTypes.BASIC,
   credentials: {
@@ -21,7 +21,7 @@ const authConfig = await composio.createAuthConfig('my-toolkit', {
 /**
  * Create a new connected account
  */
-const ConnectionRequest = await composio.initiateConnection('default', authConfig.id);
+const ConnectionRequest = await composio.connectedAccounts.initiate('default', authConfig.id);
 const connectedAccount = await ConnectionRequest.waitForConnection();
 
 console.log(connectedAccount);

@@ -13,7 +13,11 @@ export const ValidationErrorCodes = {
 export class ValidationError extends ComposioError {
   public readonly zodError: ZodError;
 
-  constructor(zodError: ZodError, message = 'Input validation failed') {
+  constructor(
+    zodError: ZodError,
+    message = 'Input validation failed',
+    meta?: Record<string, unknown>
+  ) {
     // check if it is a zod error, or else fallback to a generic error
     let zodErrorInstance: ZodError;
     if (!(zodError instanceof ZodError)) {
@@ -27,18 +31,14 @@ export class ValidationError extends ComposioError {
     } else {
       zodErrorInstance = zodError;
     }
+    const issues = zodErrorInstance.issues.map(
+      issue => `[${issue.code}] ${issue.path.join('.')} - ${issue.message}`
+    );
+
     super(message, {
       code: ValidationErrorCodes.VALIDATION_ERROR,
-      meta: {
-        issues: JSON.stringify(
-          zodErrorInstance.issues.map(issue => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-            code: issue.code,
-          }))
-        ),
-      },
-      cause: zodErrorInstance,
+      meta: meta,
+      cause: issues.join('\n'),
     });
     this.zodError = zodErrorInstance;
     this.name = 'ValidationError';

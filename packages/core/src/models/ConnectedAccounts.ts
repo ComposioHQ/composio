@@ -168,11 +168,11 @@ export class ConnectedAccounts {
       },
       connection: {
         data: options?.data,
-        redirect_uri: options?.redirectUrl,
+        callback_url: options?.callbackUrl,
         user_id: userId,
       },
     });
-    return new ConnectionRequest(this.client, response.id, response.status, response.redirect_uri);
+    return new ConnectionRequest(this.client, response.id, response.status, response.redirect_url);
   }
 
   /**

@@ -29,7 +29,7 @@ export const CreateConnectedAccountParamsSchema = z.object({
   }),
   connection: z.object({
     data: z.record(z.string(), z.unknown()).optional(),
-    redirectUrl: z.string().optional(),
+    callbackUrl: z.string().optional(),
     userId: z.string().optional(),
   }),
 });
@@ -39,12 +39,12 @@ export const DefaultCreateConnectedAccountParamsSchema = z.object({
   }),
   connection: z.object({
     data: z.record(z.string(), z.unknown()).optional(),
-    redirect_uri: z.string().optional(),
+    callback_url: z.string().optional(),
     user_id: z.string().optional(),
   }),
 });
 export const CreateConnectedAccountOptionsSchema = z.object({
-  redirectUrl: z.string().optional(),
+  callbackUrl: z.string().optional(),
   data: z.record(z.string(), z.unknown()).optional(),
 });
 export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;

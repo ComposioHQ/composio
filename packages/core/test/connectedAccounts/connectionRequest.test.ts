@@ -23,21 +23,7 @@ describe('ConnectionRequest', () => {
   });
 
   describe('constructor', () => {
-    it('should create an instance with an ACTIVE status', () => {
-      connectionRequest = new ConnectionRequest(
-        mockClient as unknown as ComposioClient,
-        connectedAccountId,
-        ConnectedAccountStatuses.ACTIVE,
-        redirectUrl
-      );
-
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
-      expect(connectionRequest).toHaveProperty('id', connectedAccountId);
-      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
-      expect(connectionRequest).toHaveProperty('redirectUrl', redirectUrl);
-    });
-
-    it('should create an instance with a INITIATED status', () => {
+    it('should create an instance with an INITIATED status', () => {
       connectionRequest = new ConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
@@ -46,14 +32,15 @@ describe('ConnectionRequest', () => {
       );
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', connectedAccountId);
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
+      expect(connectionRequest).toHaveProperty('redirectUrl', redirectUrl);
     });
 
-    it('should create an instance without a redirectUrl', () => {
+    it('should create an instance without a callbackUrl', () => {
       connectionRequest = new ConnectionRequest(
         mockClient as unknown as ComposioClient,
-        connectedAccountId,
-        ConnectedAccountStatuses.ACTIVE
+        connectedAccountId
       );
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);

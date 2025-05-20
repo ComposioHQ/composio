@@ -29,12 +29,12 @@ export class ConnectionRequest {
   constructor(
     client: ComposioClient,
     connectedAccountId: string,
-    connectedAccountStatus?: ConnectedAccountStatus,
+    status?: ConnectedAccountStatus,
     redirectUrl?: string | null
   ) {
     this.client = client;
     this.id = connectedAccountId;
-    this.status = connectedAccountStatus;
+    this.status = status || ConnectedAccountStatuses.INITIATED;
     this.redirectUrl = redirectUrl;
   }
 
@@ -109,6 +109,7 @@ export class ConnectionRequest {
     try {
       const response = await this.client.connectedAccounts.retrieve(this.id);
       if (response.status === ConnectedAccountStatuses.ACTIVE) {
+        this.status = ConnectedAccountStatuses.ACTIVE;
         return this.transformResponse(response);
       }
     } catch (error) {
@@ -137,6 +138,7 @@ export class ConnectionRequest {
       try {
         const response = await this.client.connectedAccounts.retrieve(this.id);
 
+        this.status = response.status;
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
           return this.transformResponse(response);
         }

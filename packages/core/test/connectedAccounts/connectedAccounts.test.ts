@@ -78,13 +78,13 @@ describe('ConnectedAccounts', () => {
       const authConfigId = 'auth_config_123';
       const options = {
         data: { name: 'Test Account' },
-        redirectUrl: 'https://example.com/callback',
+        callbackUrl: 'https://example.com/callback',
       };
 
       const mockResponse = {
         id: 'conn_123',
         status: 'pending',
-        redirect_uri: 'https://auth.example.com/connect',
+        redirect_url: 'https://auth.example.com/connect',
       };
 
       extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
@@ -97,7 +97,7 @@ describe('ConnectedAccounts', () => {
         },
         connection: {
           data: options.data,
-          redirect_uri: options.redirectUrl,
+          callback_url: options.callbackUrl,
           user_id: userId,
         },
       });
@@ -105,7 +105,7 @@ describe('ConnectedAccounts', () => {
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
       expect(connectionRequest).toHaveProperty('id', mockResponse.id);
       expect(connectionRequest).toHaveProperty('status', mockResponse.status);
-      expect(connectionRequest).toHaveProperty('redirectUrl', mockResponse.redirect_uri);
+      expect(connectionRequest).toHaveProperty('redirectUrl', mockResponse.redirect_url);
 
       extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce({
         id: 'nanoid',
@@ -143,7 +143,7 @@ describe('ConnectedAccounts', () => {
       const mockResponse = {
         id: 'conn_123',
         status: 'pending',
-        redirect_uri: 'https://auth.example.com/connect',
+        callback_url: 'https://auth.example.com/connect',
       };
 
       extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
@@ -156,7 +156,7 @@ describe('ConnectedAccounts', () => {
         },
         connection: {
           data: undefined,
-          redirect_uri: undefined,
+          callback_url: undefined,
           user_id: userId,
         },
       });
