@@ -62,9 +62,6 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     connectionRequest: ReturnType<typeof connectionRequest>;
   };
 
-  createAuthConfig: AuthConfigs['create'];
-  initiateConnection: ConnectedAccounts['initiate'];
-
   /**
    * @param {Object} config Configuration for the Composio SDK.
    * @param {string} config.apiKey The API key for the Composio SDK.
@@ -107,15 +104,13 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      */
     this.provider = (config.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
-    this.provider._setExecuteToolFn(this.tools.execute);
+
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
-    this.createAuthConfig = this.authConfigs.create.bind(this.authConfigs);
 
     // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
-    this.initiateConnection = this.connectedAccounts.initiate.bind(this.connectedAccounts);
 
     this.experimental = {
       connectionRequest: connectionRequest(this.client),

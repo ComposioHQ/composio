@@ -10,13 +10,18 @@ import {
   ConnectedAccountListParams,
   ConnectedAccountListResponse,
   ConnectedAccountDeleteResponse,
-  ConnectedAccountRetrieveResponse,
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
 } from '@composio/client/resources/connected-accounts';
-import { CreateConnectedAccountOptions } from '../types/connectedAccounts.types';
+import {
+  CreateConnectedAccountOptions,
+  ConnectedAccountRetrieveResponse,
+  ConnectedAccountRetrieveResponseSchema,
+} from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
+import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+import { ValidationError } from '../errors/ValidationError';
 
 /**
  * ConnectedAccounts class
@@ -77,6 +82,30 @@ export class ConnectedAccounts {
     return new ConnectionRequest(this.client, response.id, response.status, response.redirect_uri);
   }
 
+  async waitForConnection(
+    connectedAccountId: string,
+    timeout: number = 60000
+  ): Promise<ConnectedAccountRetrieveResponse> {
+    let connectedAccount: ConnectedAccountRetrieveResponse;
+    try {
+      connectedAccount = await this.get(connectedAccountId);
+    } catch (error) {
+      throw new ComposioConnectedAccountNotFoundError(
+        `Unable to retrieve connected account with Id: ${connectedAccountId}`,
+        {
+          connectedAccountId,
+        }
+      );
+    }
+    const connectionRequest = new ConnectionRequest(
+      this.client,
+      connectedAccountId,
+      connectedAccount.status
+    );
+
+    return connectionRequest.waitForConnection(timeout);
+  }
+
   /**
    * Get a connected account by nanoid
    * @param {string} nanoid - Unique identifier of the connected account
@@ -84,7 +113,28 @@ export class ConnectedAccounts {
    * @returns {Promise<ConnectedAccountRetrieveResponse>} Connected account details
    */
   async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
-    return this.client.connectedAccounts.retrieve(nanoid);
+    const response = await this.client.connectedAccounts.retrieve(nanoid);
+    const parsedResult = ConnectedAccountRetrieveResponseSchema.safeParse({
+      ...response,
+      userId: response.user_id, // Add the missing userId property
+      authConfig: {
+        ...response.auth_config,
+        authScheme: response.auth_config.auth_scheme,
+        isComposioManaged: response.auth_config.is_composio_managed,
+        isDisabled: response.auth_config.is_disabled,
+      },
+      statusReason: response.status_reason,
+      isDisabled: response.is_disabled,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+      testRequestEndpoint: response.test_request_endpoint,
+    });
+
+    if (parsedResult.error) {
+      throw new ValidationError(parsedResult.error);
+    }
+
+    return parsedResult.data;
   }
 
   /**

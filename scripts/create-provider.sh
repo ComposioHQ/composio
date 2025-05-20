@@ -46,7 +46,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   ],
   "scripts": {
     "build": "tsup",
-    "test": "echo \\"Error: no test specified\\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],
   "author": "",

@@ -157,16 +157,56 @@ describe('ConnectedAccounts', () => {
   });
 
   describe('get', () => {
-    it('should retrieve a connected account by nanoid', async () => {
+    it('should retrieve a connected account by nanoid and transform the response', async () => {
       const nanoid = 'conn_123';
-      const mockResponse = { id: nanoid, name: 'Test Account' };
+      const mockResponse = {
+        id: 'nanoid',
+        status: 'ACTIVE',
+        auth_scopes: ['read:user', 'write:user'],
+        auth_config: {
+          id: 'test-auth-config',
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        user_id: 'user_123',
+        data: {},
+        params: {},
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+      };
 
       extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockResponse);
 
       const result = await connectedAccounts.get(nanoid);
 
       expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual({
+        id: 'nanoid',
+        status: 'ACTIVE',
+        authConfig: {
+          id: 'test-auth-config',
+          authScheme: 'OAUTH2',
+          isComposioManaged: true,
+          isDisabled: false,
+        },
+        userId: 'user_123',
+        data: {},
+        params: {},
+        statusReason: null,
+        isDisabled: false,
+        createdAt: '2023-01-01T00:00:00Z',
+        updatedAt: '2023-01-01T00:00:00Z',
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+        testRequestEndpoint: undefined,
+      });
     });
   });
 
