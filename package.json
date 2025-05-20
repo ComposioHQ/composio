@@ -21,7 +21,9 @@
     "prepublish": "pnpm run build",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:release": "changeset publish"
+    "changeset:release": "changeset publish",
+    "changeset:pre-enter": "changeset pre enter alpha",
+    "changeset:pre-exit": "changeset pre exit alpha"
   },
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
