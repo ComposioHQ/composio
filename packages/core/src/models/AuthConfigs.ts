@@ -122,7 +122,7 @@ export class AuthConfigs {
    */
   async create(
     toolkit: string,
-    options: CreateAuthConfigParams
+    options: CreateAuthConfigParams = { type: 'use_composio_managed_auth' }
   ): Promise<CreateAuthConfigResponse> {
     const parsedOptions = CreateAuthConfigParamsSchema.safeParse(options);
     if (parsedOptions.error) {
