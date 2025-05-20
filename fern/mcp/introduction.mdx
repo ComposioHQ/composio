@@ -1,86 +1,66 @@
 ---
-title: Embedding Composio MCP Servers
+title: Composio MCP Servers
 ---
+Composio MCP servers let you expose tools from various apps to any MCP client or SDK that can consume tools from an MCP server.
 
-Composio MCP servers can be discovered, customized and embedded in an application with managed authentication for end-users.
+To learn about the MCP clients, see the [clients](/mcp/clients) page.
 
-This is to let user's pick, choose and authenticate through Composio's Hosted MCP Servers.
+To build with agents, one can customize the MCP server too.
 
-**Partner**: A partner is an organization that has created a Composio MCP server.
 
-## Authentication Configuration
+## Creating Custom MCP Servers
+<Steps>
+  <Step title="Configure Authentication">
+    - **Configure app permissions:**
+      Select the specific scopes and permissions your integration requires for each connected application. This ensures your MCP server has the right level of access.
 
-Before creating an MCP server, you need to set up authentication for your integration. This configuration defines what permissions your application will request and how users will experience the consent flow.
+    - **Customize the authentication experience (Optional):**
+      Create a seamless, branded experience by providing your own OAuth credentials and customizing the consent screens.
 
-### Setting Up Authentication
+    **Learn more:**
+    - [Integration setup guide](https://docs.composio.dev/auth/set-up-integrations) - Detailed walkthrough of configuring app integrations
+    - [White-labeling guide](https://docs.composio.dev/auth/white-labelling) - Instructions for customizing the authentication UI
+  </Step>
+  <Step title="Create and configure an MCP server">
+    Making the following request:
+    ```bash
+    curl -X POST https://backend.composio.dev/api/v3/mcp/servers \
+      -H "x-api-key: <YOUR_API_KEY>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Gmail",
+        "apps": [
+          "gmail"
+        ],
+        "authConfigs": {}
+      }'
+    ```
+    The response looks like:
 
-1. **Choose Required Scopes**
-   
-   Select the appropriate OAuth scopes based on what your application needs to access. For example, to access Google Drive files, include the scope `https://www.googleapis.com/auth/drive.file`.
-
-2. **Configure Consent Experience**
-   
-   By default, Composio handles the authentication UI. For a fully branded experience, you can white-label the consent screen:
-   
-   - Provide your own OAuth client credentials
-   - Customize the appearance to match your application
-   - Create a seamless authorization flow for your users
-
-3. **Create the Auth Configuration**
-   
-   Use the Composio API to create your authentication configuration with the selected scopes and branding options.
-
-> For detailed implementation guides, see our [Set-up Integrations](https://docs.composio.dev/auth/set-up-integrations) and [White-labelling](https://docs.composio.dev/auth/white-labelling) documentation.
-
-## API Endpoints
-
-### Listing all available partner apps
-<EndpointRequestSnippet endpoint="GET /api/partner/:partnerId/apps/list" />
-
-### Listing all available apps
-<EndpointRequestSnippet endpoint="GET /api/apps" />
-
-### Listing information for a specific app
-<EndpointRequestSnippet endpoint="GET /api/apps/:appKey" />
-
-### Installing an app
-<EndpointRequestSnippet endpoint="POST /api/apps/:appKey/install" />
-
-### Creating Custom MCP Servers (Optional)
-A custom MCP server can be created in two steps:
-
-1. **Create an auth configuration**  
-   • Pick the scopes the integration requires (e.g. `https://www.googleapis.com/auth/drive.file` for full‑drive access).  
-   • (Optional) White‑label the consent screen by supplying your own OAuth credentials.  
-   • Docs: [Set‑up integrations](https://docs.composio.dev/auth/set-up-integrations) · [White‑labelling](https://docs.composio.dev/auth/white-labelling)
-
-2. **Call the Composio MCP API**  
-   POST to `/v1/mcp/servers` with the `auth_config_id` and the list of tools you want to expose.  
-   The response looks like:
-
-```json
-{
-  "id": "5bc757cc-7a8e-431c-8616-7f57cbed2423",
-  "name": "gdrive_searcher",
-  "auth_config_id": "a8a244c4-4a52-488e-8a01-2e504d069d16",
-  "allowed_tools": [
-    "GOOGLEDRIVE_FIND_FILE",
-    "GOOGLEDRIVE_FIND_FOLDER",
-    "GOOGLEDRIVE_DOWNLOAD_FILE"
-  ],
-  "mcp_url": "https://mcp.composio.dev/composio/server/5bc757cc-7a8e-431c-8616-7f57cbed2423?transport=sse",
-  "commands": {
-    "cursor": "npx @composio/mcp@latest setup \"<mcp_url>\" --client cursor",
-    "claude":  "npx @composio/mcp@latest setup \"<mcp_url>\" --client claude",
-    "windsurf": "npx @composio/mcp@latest setup \"<mcp_url>\" --client windsurf"
-  },
-  "created_at": "2025-05-18T22:15:25.926Z",
-  "updated_at": "2025-05-18T22:15:25.926Z"
-}
-```
-
-Client applications connect to the server via the provided `mcp_url`.  
-The URL accepts three optional query parameters:
+    ```json
+    {
+      "id": "5bc757cc-7a8e-431c-8616-7f57cbed2423",
+      "name": "gdrive_searcher",
+      "auth_config_id": "a8a244c4-4a52-488e-8a01-2e504d069d16",
+      "allowed_tools": [
+        "GOOGLEDRIVE_FIND_FILE",
+        "GOOGLEDRIVE_FIND_FOLDER",
+        "GOOGLEDRIVE_DOWNLOAD_FILE"
+      ],
+      "mcp_url": "https://mcp.composio.dev/composio/server/5bc757cc-7a8e-431c-8616-7f57cbed2423?transport=sse",
+      "commands": {
+        "cursor": "npx @composio/mcp@latest setup \"<mcp_url>\" --client cursor",
+        "claude":  "npx @composio/mcp@latest setup \"<mcp_url>\" --client claude",
+        "windsurf": "npx @composio/mcp@latest setup \"<mcp_url>\" --client windsurf"
+      },
+      "created_at": "2025-05-18T22:15:25.926Z",
+      "updated_at": "2025-05-18T22:15:25.926Z"
+    }
+    ```
+  </Step>
+  <Step title="Client applications connect to the server">
+    The resultant `mcp_url`; (`https://mcp.composio.dev/composio/server/<UUID>?transport=sse`) is used by the client applications to connect to the server.  
+    The URL accepts three optional query parameters:
 
 | Query param | Purpose |
 |-------------|---------|
@@ -88,21 +68,17 @@ The URL accepts three optional query parameters:
 | `connected_account_id` | Pin the session to a specific Composio `connectedAccount` (skip account selection). |
 | `include_composio_helper_actions=true` | Inject helper tools so the agent can walk the user through authentication when needed. |
 
-**Transport selection** – today `transport=sse` is the default; `transport=http-stream` is coming soon.
+  </Step>
+</Steps>
 
-**Who handles auth?**  
-* **Client handles authentication (recommended):** Authenticate users up‑front via the Composio SDK/API.  
-* **Server‑side authentication:** Pass `include_composio_helper_actions=true` and the agent will guide the user through auth on demand.
+<Tip>
+  Currently, the default transport is `sse`. Support for `transport=http-stream` will be available soon.
+</Tip>
 
-See the full step‑by‑step guide in our [blog post](https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch/).
+### Configuring authentication
+You or your users need to authenticate against an app to use it's MCP server through Composio!
+This can be done in two ways:
 
-<Note>
-Fully managed Composio MCP servers are meant for providers who want to expose tools quickly, not as a general‑purpose dev tool you extend arbitrarily. More in our <a href="https://composio.notion.site/mcp-faq?pvs=4">MCP FAQ</a>.
-</Note>
+* Authenticate users upfront via the Composio SDK/API. Follow [this guide](/auth/connection) to learn how to connect users. This is recommended for most use cases
+* Let the agent authenticate users on demand. Passing `include_composio_helper_actions=true` in the URL will include Composio's helper actions and the agent will guide the user through auth on demand.
 
-### Benefits of Using Composio MCP Servers
-
-- **Zero Hosting Overhead:** Servers run on Composio infrastructure with 99.9 % uptime—no deployment required by integrators or end‑users.  
-- **First‑Class User Auth:** Built‑in helper actions handle OAuth end‑to‑end, so client applications never handle access tokens.  
-- **Rich Catalogue:** Hundreds of pre‑built integrations are searchable via a single API call, enabling users to wire up tools in seconds.  
-- **Consistent Protocol:** Every server implements the same MCP dialect, keeping client code minimal and future‑proof.  
