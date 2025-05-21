@@ -24,6 +24,7 @@ import {
 } from '../errors/ToolErrors';
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
 import { ComposioError } from '../errors/ComposioError';
+import { telemetry } from '../telemetry/Telemetry';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -35,6 +36,7 @@ export class CustomTools {
     }
     this.client = client;
     this.customToolsRegistry = new Map();
+    telemetry.instrument(this);
   }
 
   /**

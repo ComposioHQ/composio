@@ -17,7 +17,7 @@ export type LogLevel = keyof typeof LOG_LEVELS;
  * @returns {LogLevel} The current log level
  */
 export const getLogLevel = (): LogLevel => {
-  const envLevel = getEnvVariable('COMPOSIO_LOGGING_LEVEL', 'info')?.toLowerCase();
+  const envLevel = getEnvVariable('COMPOSIO_LOG_LEVEL', 'info')?.toLowerCase();
   return envLevel && envLevel in LOG_LEVELS ? (envLevel as LogLevel) : 'info';
 };
 

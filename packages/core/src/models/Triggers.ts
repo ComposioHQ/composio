@@ -15,7 +15,7 @@ import { TriggerStatusEnum, TriggerSubscribeParams } from '../types/triggers.typ
 import { PusherUtils, TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
 import { Session } from './Session';
-
+import { telemetry } from '../telemetry/Telemetry';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -26,6 +26,7 @@ export class Triggers {
 
   constructor(client: ComposioClient) {
     this.client = client;
+    telemetry.instrument(this);
   }
 
   /**

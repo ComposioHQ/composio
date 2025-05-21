@@ -13,8 +13,9 @@ export type TelemetryEvent = (typeof TELEMETRY_EVENTS)[keyof typeof TELEMETRY_EV
 export type TelemetryMetadata = {
   apiKey: string;
   baseUrl: string;
-  composioVersion: string;
-  frameworkRuntime: string;
+  version: string;
+  framework: string;
+  isAgentic: boolean;
   source: string;
   sessionId: string;
   isBrowser?: boolean;

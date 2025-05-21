@@ -1,11 +1,13 @@
 import { SessionGetInfoResponse } from '@composio/client/resources/auth/session';
 import ComposioClient from '@composio/client';
+import { telemetry } from '../telemetry/Telemetry';
 
 export class Session {
   private client: ComposioClient;
 
   constructor(client: ComposioClient) {
     this.client = client;
+    telemetry.instrument(this);
   }
 
   /**

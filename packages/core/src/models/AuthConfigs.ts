@@ -27,7 +27,7 @@ import {
   CreateAuthConfigResponseSchema,
 } from '../types/authConfigs.types';
 import { ValidationError } from '../errors/ValidationError';
-
+import { telemetry } from '../telemetry/Telemetry';
 /**
  * AuthConfigs class
  *
@@ -39,6 +39,7 @@ export class AuthConfigs {
 
   constructor(client: ComposioClient) {
     this.client = client;
+    telemetry.instrument(this);
   }
 
   /**

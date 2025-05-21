@@ -26,7 +26,7 @@ import {
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
 import { ValidationError } from '../errors/ValidationError';
-
+import { telemetry } from '../telemetry/Telemetry';
 /**
  * ConnectedAccounts class
  *
@@ -38,6 +38,7 @@ export class ConnectedAccounts {
 
   constructor(client: ComposioClient) {
     this.client = client;
+    telemetry.instrument(this);
   }
 
   transformConnectedAccountRetrieveResponse(

@@ -18,7 +18,7 @@ import { AuthConfigs } from './AuthConfigs';
 import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
 import { ConnectedAccounts } from './ConnectedAccounts';
 import { ConnectionRequest } from './ConnectionRequest';
-
+import { telemetry } from '../telemetry/Telemetry';
 /**
  * Toolkits class
  *
@@ -31,6 +31,7 @@ export class Toolkits {
   constructor(client: ComposioClient) {
     this.client = client;
     this.authorize = this.authorize.bind(this);
+    telemetry.instrument(this);
   }
   /**
    * Retrieves a list of toolkits based on the provided query parameters.

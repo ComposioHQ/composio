@@ -20,6 +20,7 @@ import {
   ConnectionRequestTimeoutError,
 } from '../errors/ConnectionRequestError';
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+import { telemetry } from '../telemetry/Telemetry';
 export class ConnectionRequest {
   private client: ComposioClient;
   public id: string;
@@ -36,6 +37,7 @@ export class ConnectionRequest {
     this.id = connectedAccountId;
     this.status = status || ConnectedAccountStatuses.INITIATED;
     this.redirectUrl = redirectUrl;
+    telemetry.instrument(this);
   }
 
   /**

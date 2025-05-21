@@ -16,21 +16,21 @@ import { ProcessTelemetryTransport } from './transports/ProcessTransport';
  * const telemetry = new Telemetry({...});
  * const composio = new Composio({...})
  *
- * telemetry.instrumentTelemetry(composio);
- * telemetry.instrumentTelemetry(composio.tools);
- * telemetry.instrumentTelemetry(composio.toolkits);
- * telemetry.instrumentTelemetry(composio.triggers);
+ * telemetry.instrument(composio);
+ * telemetry.instrument(composio.tools);
+ * telemetry.instrument(composio.toolkits);
+ * telemetry.instrument(composio.triggers);
  *
  */
-export class Telemetry {
-  private telemetryMetadata: TelemetryMetadata;
-  private transport: BaseTelemetryTransport;
+export class TelemetryService {
+  private telemetryMetadata!: TelemetryMetadata;
+  private transport!: BaseTelemetryTransport;
 
   private batchProcessor = new BatchProcessor(100, 10, async data => {
     await this.sendTelemetry(data as TelemetryPayload[]);
   });
 
-  constructor(metadata: TelemetryMetadata, transport?: BaseTelemetryTransport) {
+  setup(metadata: TelemetryMetadata, transport?: BaseTelemetryTransport) {
     this.telemetryMetadata = metadata;
 
     const isBrowser = typeof window !== 'undefined';
@@ -61,7 +61,7 @@ export class Telemetry {
    * @param fileName - the file name of the instance
    * @returns
    */
-  instrumentTelemetry<T extends object>(instance: T, fileName?: string) {
+  instrument<T extends object>(instance: T, fileName?: string) {
     const proto = Object.getPrototypeOf(instance);
     const methodNames = Object.getOwnPropertyNames(proto).filter(key => {
       const descriptor = Object.getOwnPropertyDescriptor(proto, key);
@@ -139,3 +139,5 @@ export class Telemetry {
     this.transport.send(reqPayload);
   }
 }
+
+export const telemetry = new TelemetryService();

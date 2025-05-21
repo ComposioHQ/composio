@@ -5,9 +5,8 @@ import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { BaseComposioProvider } from './provider/BaseProvider';
-import { Telemetry } from './telemetry/Telemetry';
+import { telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
-import type { TelemetryMetadata } from './types/telemetry.types';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -15,6 +14,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
+import { getEnvVariable } from './utils/env';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
@@ -44,8 +44,6 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
    */
   private config: ComposioConfig<TProvider>;
 
-  private telemetry: Telemetry | undefined;
-
   /**
    * Core models for Composio.
    */
@@ -73,6 +71,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       config?.apiKey
     );
 
+    console.log(`Process.env.`, getEnvVariable('COMPOSIO_LOG_LEVEL'));
     if (IS_DEVELOPMENT_OR_CI) {
       logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
@@ -112,41 +111,26 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      * Initialize the client telemetry.
      */
     if (this.config.allowTracking ?? true) {
-      this.initializeTelemetry(
+      telemetry.setup(
         {
           apiKey: apiKeyParsed ?? '',
           baseUrl: baseURLParsed ?? '',
-          frameworkRuntime: 'node',
+          framework: this.provider?.name || 'unknown',
+          isAgentic: this.provider?._isAgentic || false,
           source: 'node', // @TODO: get the source
-          composioVersion: version,
+          version: version,
           isBrowser: typeof window !== 'undefined',
           sessionId: getRandomUUID(), // @TODO: get the session id
         },
         config.telemetryTransport
       );
     }
+    telemetry.instrument(this);
+    // instrument the provider since we are not using the provider class directly
+    telemetry.instrument(this.provider);
 
     // Check for the latest version of the Composio SDK from NPM.
     checkForLatestVersionFromNPM(version);
-  }
-
-  /**
-   * Initialize the instrumentations and telemetry for the Composio SDK.
-   * @param {TelemetryMetadata} config - The configuration for the telemetry.
-   * @param {BaseTelemetryTransport} transport - The transport for the telemetry.
-   */
-  private initializeTelemetry(config: TelemetryMetadata, transport?: BaseTelemetryTransport) {
-    this.telemetry = new Telemetry(config, transport);
-    /**
-     * Instrument the instance and all the models with telemetry.
-     */
-    this.telemetry.instrumentTelemetry(this);
-    this.telemetry.instrumentTelemetry(this.tools);
-    this.telemetry.instrumentTelemetry(this.toolkits);
-    this.telemetry.instrumentTelemetry(this.triggers);
-    this.telemetry.instrumentTelemetry(this.authConfigs);
-    this.telemetry.instrumentTelemetry(this.connectedAccounts);
-    this.telemetry.instrumentTelemetry(this.provider);
   }
 
   /**

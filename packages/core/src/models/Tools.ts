@@ -37,7 +37,7 @@ import {
   ComposioProviderNotDefinedError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationError';
-
+import { telemetry } from '../telemetry/Telemetry';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -70,6 +70,8 @@ export class Tools<
     // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
+
+    telemetry.instrument(this);
   }
 
   /**
