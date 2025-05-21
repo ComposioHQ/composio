@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.12-alpha.10
+
+### Patch Changes
+
+- eeec413: Rename modifiers, add docs and other miscellanious improvements
+- Updated dependencies [eeec413]
+  - @composio/core@0.1.12-alpha.10
+
 ## 0.1.12-alpha.9
 
 ### Patch Changes
