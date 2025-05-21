@@ -1,4 +1,4 @@
-# Middleware and Modifiers
+# Modifiers
 
 Composio SDK provides powerful middleware capabilities through modifiers that allow you to customize and extend the behavior of tools. This guide explains how to use modifiers to transform tool schemas, modify inputs before execution, and transform outputs after execution.
 
