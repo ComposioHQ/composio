@@ -270,4 +270,4 @@ Now that you understand the basics, you can:
 - Explore [more examples](../examples) to see how to use Composio in different scenarios
 - Learn about [custom providers](./api/providers.md) to integrate with other AI frameworks
 - Understand [error handling](./advanced/error-handling.md) to make your application more robust
-- Implement [middleware and modifiers](./advanced/middleware.md) to customize tool execution
+- Implement [modifiers](./advanced/modifiers.md) to customize tool execution

@@ -109,4 +109,4 @@ Check out our [examples directory](../examples) for complete code samples:
 - [Error Handling](./advanced/error-handling.md)
 - [Telemetry](./advanced/telemetry.md)
 - [Custom Providers](./advanced/custom-providers.md)
-- [Middleware and Modifiers](./advanced/middleware.md)
+- [Modifiers](./advanced/modifiers.md)

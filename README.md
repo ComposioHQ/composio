@@ -1,27 +1,214 @@
-# Composio SDK
+# Composio SDK v3
 
-The core Composio SDK which allows users to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various platforms and frameworks.
+The Composio SDK is a powerful toolkit that enables you to integrate third-party tools and services into your applications. It helps you connect to various services (toolkits), execute tools, and manage user connections seamlessly.
+
+## Features
+
+- Execute tools from various services (GitHub, Gmail, Slack, etc.)
+- Manage user connections to external services
+- Create custom tools with your own logic
+- Integrate with AI providers like OpenAI
+- Powerful middleware and modifier support
+- Extensive error handling
+
+## Documentation
+
+The SDK is thoroughly documented in the [docs](./docs) directory:
+
+- [Overview](./docs/overview.md) - Introduction and key concepts
+- [Getting Started](./docs/getting-started.md) - Quick start guide
+- [Core Concepts](./docs/core-concepts.md) - Fundamental SDK concepts
+
+### API Reference
+
+- [Composio Class](./docs/api/composio.md) - Main SDK class
+- [Tools](./docs/api/tools.md) - Using and creating tools
+- [Toolkits](./docs/api/toolkits.md) - Working with tool collections
+- [Connected Accounts](./docs/api/connected-accounts.md) - User authentication
+- [Auth Configs](./docs/api/auth-configs.md) - Authentication configuration
+- [Custom Tools](./docs/api/custom-tools.md) - Creating your own tools
+- [Providers](./docs/api/providers.md) - AI integration options
+
+### Provider Documentation
+
+- [OpenAI Provider](./docs/providers/openai.md) - Using OpenAI with Composio
+- [Custom Providers](./docs/providers/custom.md) - Creating new providers
+
+### Advanced Topics
+
+- [Error Handling](./docs/advanced/error-handling.md) - Managing errors
+- [Middleware and Modifiers](./docs/advanced/modifiers.md) - Customizing tools
+- [Telemetry](./docs/advanced/telemetry.md) - SDK usage tracking
+- [Custom Providers](./docs/advanced/custom-providers.md) - Detailed provider guide
+
+## Installation
+
+```bash
+# Using npm
+npm install @composio/core
+
+# Using yarn
+yarn add @composio/core
+
+# Using pnpm
+pnpm add @composio/core
+```
+
+## Quick Start
+
+```typescript
+import { Composio } from '@composio/core';
+
+// Initialize the SDK
+const composio = new Composio({
+  apiKey: 'your-api-key',
+});
+
+// Get tools from a specific toolkit
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+});
+
+// Execute a tool
+const result = await composio.tools.execute('GITHUB_GET_REPO', {
+  userId: 'default',
+  arguments: {
+    owner: 'composio',
+    repo: 'sdk',
+  },
+});
+
+console.log(result.data);
+```
+
+## OpenAI Integration
+
+```typescript
+import { Composio } from '@composio/core';
+import OpenAI from 'openai';
+
+// Initialize Composio and OpenAI
+const composio = new Composio({
+  apiKey: 'your-composio-api-key',
+});
+
+const openai = new OpenAI({
+  apiKey: 'your-openai-api-key',
+});
+
+// Get GitHub tools
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+});
+
+// Create a chat completion with the tools
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant with access to GitHub tools.' },
+    { role: 'user', content: 'Find information about the Composio SDK repository' },
+  ],
+  tools, // Pass the tools to OpenAI
+});
+
+// If the model wants to use a tool
+if (completion.choices[0].message.tool_calls) {
+  const toolCall = completion.choices[0].message.tool_calls[0];
+  const args = JSON.parse(toolCall.function.arguments);
+
+  // Execute the tool
+  const result = await composio.tools.execute(toolCall.function.name, {
+    userId: 'default',
+    arguments: args,
+  });
+
+  console.log(result.data);
+}
+```
+
+## Creating Custom Tools
+
+```typescript
+// Create a custom tool
+const customTool = await composio.tools.createCustomTool({
+  name: 'Weather Forecast',
+  description: 'Get the weather forecast for a location',
+  slug: 'WEATHER_FORECAST',
+  inputParameters: {
+    type: 'object',
+    properties: {
+      location: {
+        type: 'string',
+        description: 'The location to get the forecast for',
+      },
+      days: {
+        type: 'integer',
+        description: 'Number of days for the forecast',
+        default: 3,
+      },
+    },
+    required: ['location'],
+  },
+  outputParameters: {
+    type: 'object',
+    properties: {
+      forecast: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            date: { type: 'string' },
+            temperature: { type: 'number' },
+            conditions: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+  handler: async (params, context) => {
+    try {
+      const { location, days = 3 } = params.arguments;
+
+      // Your implementation here
+      const forecast = [
+        { date: '2025-05-21', temperature: 72, conditions: 'Sunny' },
+        { date: '2025-05-22', temperature: 68, conditions: 'Partly Cloudy' },
+        { date: '2025-05-23', temperature: 65, conditions: 'Rainy' },
+      ];
+
+      return {
+        data: { forecast },
+        successful: true,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        data: {},
+        successful: false,
+        error: error.message,
+      };
+    }
+  },
+});
+```
 
 ## Project Structure
 
 ```
 composio/
 ├── packages/                  # Main packages directory
-│   ├── core/                 # Core SDK package
-│   │   └── core/            # Core SDK package
-│   ├── providers/             # Provider implementations
-│   │   ├── openai/          # OpenAI provider
-│   │   ├── vercel/          # Vercel AI provider
-│   │   ├── langchain/       # LangChain provider
-│   │   └── cloudflare/      # Cloudflare provider
-│   └── wrappers/            # Runtime-specific wrappers
-├── examples/                 # Example implementations
-│   ├── langchain/           # LangChain example
-│   ├── openai/              # OpenAI example
-│   ├── pre-processors/      # Pre-processors example
-│   └── vercel/              # Vercel AI example
-├── scripts/                  # Development and build scripts
-└── .github/                  # GitHub configuration
+│   ├── core/                  # Core SDK package
+│   └── providers/             # Provider implementations
+├── examples/                  # Example implementations
+│   ├── connected-accounts/    # Connected accounts examples
+│   ├── langchain/            # LangChain integration examples
+│   ├── openai/               # OpenAI integration examples
+│   ├── modifiers/            # Modifiers examples
+│   ├── toolkits/             # Toolkits examples
+│   └── vercel/               # Vercel AI examples
+├── docs/                      # Documentation
+├── scripts/                   # Development and build scripts
+└── .github/                   # GitHub configuration
 ```
 
 ## Development Setup
@@ -125,6 +312,15 @@ pnpm changeset:release
 
 - Follow the instructions to release the packages
 
+## Environment Variables
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `COMPOSIO_BASE_URL`: Custom API base URL (optional)
+- `COMPOSIO_LOG_LEVEL`: Logging level (silent, error, warn, info, debug)
+- `COMPOSIO_DISABLE_TELEMETRY`: Disable telemetry when set to "true"
+- `DEVELOPMENT`: Development mode flag
+- `CI`: CI environment flag
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
@@ -135,325 +331,4 @@ ISC License
 
 ## Support
 
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
-
-## Core Features
-
-- **Tools**: Manage and execute tools within the Composio ecosystem. Includes functionality to list, retrieve, and execute tools.
-- **Toolkits**: Organize and manage collections of tools for specific use cases.
-- **Triggers**: Create and manage event triggers that can execute tools based on specific conditions.
-- **AuthConfigs**: Configure authentication providers and settings.
-- **ConnectedAccounts**: Manage third-party service connections.
-- **ActionExecution**: Track and manage the execution of actions within the platform.
-
-## Installation
-
-### Core SDK
-
-```bash
-npm install @composio/core
-# or
-yarn add @composio/core
-# or
-pnpm add @composio/core
-```
-
-### Providers
-
-```bash
-# Install OpenAI provider (included in core)
-npm install @composio/openai
-
-# Install Vercel AI provider
-npm install @composio/vercel
-
-# Install Langchain provider
-npm install @composio/langchain
-```
-
-## Getting Started
-
-### Basic Usage with OpenAI Provider
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai-provider';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  // OpenAIProvider is the default, so this is optional
-  provider: new OpenAIProvider(),
-});
-
-// Fetch a single tool by it's slug
-const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS');
-
-// Fetch multiple tools
-const tools = await composio.tools.get('user123', {
-  category: 'search',
-  limit: 10,
-});
-```
-
-## Using with a Provider
-
-### Example with Vercel AI Provider
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel-provider';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-// Fetch tools for Vercel AI SDK
-const tools = await composio.tools.get('user123', {
-  category: 'search',
-});
-
-// Use tools with Vercel AI SDK
-const completion = await ai.chat({
-  messages: [{ role: 'user', content: 'Search for posts about React' }],
-  tools: tools,
-});
-```
-
-## Modifiers
-
-Composio SDK supports powerful modifiers to transform tool schemas and execution behavior.
-
-### Schema Modifiers
-
-Schema modifiers allow you to transform tool schemas before they are used:
-
-```typescript
-const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
-  modifyToolSchema: (toolSlug: string, tool: Tool) => ({
-    ...tool,
-    description: 'Enhanced HackerNews search with additional features',
-    inputParameters: {
-      ...tool.inputParameters,
-      limit: {
-        type: 'number',
-        description: 'Maximum number of posts to return',
-        default: 10,
-      },
-    },
-  }),
-});
-```
-
-### Execution Modifiers
-
-For agentic providers (like Vercel AI and Langchain), you can also modify tool execution behavior:
-
-```typescript
-const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
-  // Transform input before execution
-  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
-    ...params,
-    arguments: {
-      ...params.arguments,
-      limit: Math.min((params.arguments?.limit as number) || 10, 100),
-    },
-  }),
-
-  // Transform output after execution
-  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
-    ...response,
-    data: {
-      ...response.data,
-      posts: (response.data?.posts as any[]).map(post => ({
-        ...post,
-        url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
-      })),
-    },
-  }),
-});
-```
-
-## Connected Accounts
-
-Composio SDK provides a powerful way to manage third-party service connections through Connected Accounts. This feature allows you to authenticate with various services and maintain those connections.
-
-### Creating a Connected Account
-
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-// Create a connected account
-const connectionRequest = await composio.createConnectedAccount(
-  'user123', // userId
-  'id-of-auth-config', // authConfigId
-  {
-    redirectUrl: 'https://your-app.com/callback',
-    data: {
-      // Additional data for the connection
-      scope: ['read', 'write'],
-    },
-  }
-);
-
-// Wait for the connection to be established
-// Default timeout is 60 seconds
-const connectedAccount = await connectionRequest.waitForConnection();
-```
-
-### Waiting for Connection to be Established
-
-The SDK provides a convenient way to wait for a connection to be established using the `waitForConnection` method:
-
-```typescript
-// From a ConnectionRequest instance (after creating a connected account)
-// With default timeout (60 seconds)
-const connectedAccount = await connectionRequest.waitForConnection();
-
-// With custom timeout (2 minutes)
-const connectedAccount = await connectionRequest.waitForConnection(120000);
-
-// Directly from the ConnectedAccounts class (with an existing connected account ID)
-const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_abc123', 60000);
-```
-
-The method polls the Composio API until:
-
-- The connection becomes `ACTIVE` (returns the connected account)
-- The connection enters a terminal state (`FAILED`, `EXPIRED`, `DELETED`) and throws an error
-- The timeout is exceeded (throws a timeout error)
-
-This is particularly useful for OAuth flows where the user needs to authorize the connection in a browser.
-
-### Managing Connected Accounts
-
-```typescript
-// List all connected accounts
-const accounts = await composio.connectedAccounts.list({
-  userId: 'user123',
-});
-
-// Get a specific connected account
-const account = await composio.connectedAccounts.get('account_id');
-
-// Enable/Disable a connected account
-await composio.connectedAccounts.enable('account_id');
-await composio.connectedAccounts.disable('account_id');
-
-// Refresh credentials
-await composio.connectedAccounts.refresh('account_id');
-
-// Delete a connected account
-await composio.connectedAccounts.delete('account_id');
-```
-
-### Connection Statuses
-
-Connected accounts can have the following statuses:
-
-- `ACTIVE`: Connection is established and working
-- `INACTIVE`: Connection is temporarily disabled
-- `PENDING`: Connection is being processed
-- `INITIATED`: Connection request has started
-- `EXPIRED`: Connection credentials have expired
-- `FAILED`: Connection attempt failed
-
-### Authentication Schemes
-
-Composio supports various authentication schemes:
-
-- OAuth2
-- OAuth1
-- OAuth1a
-- API Key
-- Basic Auth
-- Bearer Token
-- Google Service Account
-- And more...
-
-## Development
-
-### Creating Custom Providers
-
-You can create custom providers by extending either `BaseNonAgenticProvider` or `BaseAgenticProvider`:
-
-#### Non-Agentic Provider
-
-```typescript
-import { BaseNonAgenticProvider } from '@composio/core';
-import type { Tool } from '@composio/core';
-
-interface CustomTool {
-  name: string;
-  // ... custom tool properties
-}
-
-export class CustomProvider extends BaseNonAgenticProvider<CustomTool[], CustomTool> {
-  readonly name = 'custom-provider';
-
-  wrapTool = (tool: Tool): CustomTool => ({
-    name: tool.name,
-    // ... map other properties
-  });
-
-  wrapTools = (tools: Tool[]): CustomTool[] => tools.map(tool => this.wrapTool(tool));
-}
-```
-
-#### Agentic Provider
-
-```typescript
-import { BaseAgenticProvider } from '@composio/core';
-import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
-
-export class CustomAgenticProvider extends BaseAgenticProvider<CustomTool[], CustomTool> {
-  readonly name = 'custom-agentic-provider';
-
-  wrapTool = (tool: Tool): CustomTool => ({
-    name: tool.name,
-    // ... map other properties
-  });
-
-  wrapTools = (tools: Tool[]): CustomTool[] => tools.map(tool => this.wrapTool(tool));
-
-  async executeToolCall(
-    userId: string,
-    tool: { name: string; arguments: unknown },
-    options: pppppp,
-    modifiers?: ExecuteToolModifiers
-  ): Promise<string> {
-    const result = await this.executeTool(
-      tool.name,
-      {
-        arguments: tool.arguments,
-        userId,
-        ...options,
-      },
-      modifiers
-    );
-    return JSON.stringify(result);
-  }
-}
-```
-
-To quickly create a new provider project, use the provided script:
-
-```bash
-# Create a non-agentic provider
-pnpm create:provider my-provider
-
-# Create an agentic provider
-pnpm create:provider my-provider --agentic
-```
-
-## Environment Variables
-
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `COMPOSIO_BASE_URL`: Custom API base URL (optional)
-- `COMPOSIO_LOGGING_LEVEL`: Logging level (silent, error, warn, info, debug)
-- `DEVELOPMENT`: Development mode flag
-- `CI`: CI environment flag
+For support, please visit our [Documentation](./docs) or join our [Discord Community](https://discord.gg/composio).
