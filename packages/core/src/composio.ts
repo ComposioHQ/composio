@@ -114,7 +114,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
         {
           apiKey: apiKeyParsed ?? '',
           baseUrl: baseURLParsed ?? '',
-          framework: this.provider?.name || 'unknown',
+          frameworkRuntime: this.provider?.name || 'unknown',
           isAgentic: this.provider?._isAgentic || false,
           source: 'javascript',
           version: version,

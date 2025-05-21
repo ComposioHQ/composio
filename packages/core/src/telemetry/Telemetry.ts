@@ -60,7 +60,6 @@ export class TelemetryService {
       {
         eventName: TELEMETRY_EVENTS.SDK_INITIALIZED,
         data: {},
-        sdk_meta: this.telemetryMetadata,
       },
     ]);
   }
