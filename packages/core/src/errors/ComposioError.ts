@@ -1,5 +1,3 @@
-import { telemetry } from '../telemetry/Telemetry';
-
 /**
  * @fileoverview Error class for Composio.
  *
