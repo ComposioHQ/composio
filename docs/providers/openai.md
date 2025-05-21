@@ -285,7 +285,7 @@ const tools = await composio.tools.get(
   },
   {
     // Modify tool schema
-    modifyToolSchema: (toolSlug, toolkitSlug, tool) => {
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
       // Make tool descriptions more concise for OpenAI
       if (tool.description && tool.description.length > 100) {
         tool.description = tool.description.substring(0, 100) + '...';
@@ -294,13 +294,13 @@ const tools = await composio.tools.get(
     },
 
     // Modify parameters before execution
-    beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
       console.log(`Executing ${toolSlug} tool`);
       return params;
     },
 
     // Transform results after execution
-    afterToolExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: (toolSlug, toolkitSlug, result) => {
       // Format the result data for better presentation
       if (result.successful && toolSlug === 'GITHUB_GET_REPO') {
         result.data = {

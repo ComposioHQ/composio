@@ -121,6 +121,10 @@ export class TelemetryService {
    * @returns
    */
   async sendTelemetry(payload: TelemetryPayload[]) {
+    if (!this.transport) {
+      return;
+    }
+
     const isTelemetryDisabled = getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
 
     if (isTelemetryDisabled) {

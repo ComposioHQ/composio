@@ -22,7 +22,7 @@ const tools = await composio.tools.get(
     toolkits: ['github'],
   },
   {
-    modifyToolSchema: (toolSlug, toolkitSlug, tool) => {
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
       // Add a prefix to all tool descriptions
       if (tool.description) {
         tool.description = `[Enhanced] ${tool.description}`;
@@ -59,7 +59,7 @@ const result = await composio.tools.execute(
     },
   },
   {
-    beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
       // Convert owner names to lowercase
       if (params.arguments.owner) {
         params.arguments.owner = params.arguments.owner.toLowerCase();
@@ -95,7 +95,7 @@ const result = await composio.tools.execute(
     },
   },
   {
-    afterToolExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: (toolSlug, toolkitSlug, result) => {
       // Only when execution was successful
       if (result.successful) {
         // Filter out sensitive data
@@ -131,19 +131,19 @@ const tools = await composio.tools.get(
   },
   {
     // Schema modifier
-    modifyToolSchema: (toolSlug, toolkitSlug, tool) => {
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
       // Enhance tool schema
       return tool;
     },
 
     // Before execution modifier
-    beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
       // Modify execution parameters
       return params;
     },
 
     // After execution modifier
-    afterToolExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: (toolSlug, toolkitSlug, result) => {
       // Transform execution results
       return result;
     },
@@ -192,8 +192,8 @@ const result = await composio.tools.execute(
     },
   },
   {
-    beforeToolExecute: sanitizeInputs,
-    afterToolExecute: addTimestamps,
+    beforeExecute: sanitizeInputs,
+    afterExecute: addTimestamps,
   }
 );
 ```
@@ -253,8 +253,8 @@ try {
       },
     },
     {
-      beforeToolExecute: cacheModifier,
-      afterToolExecute: cacheAfterModifier,
+      beforeExecute: cacheModifier,
+      afterExecute: cacheAfterModifier,
     }
   );
 
@@ -300,7 +300,7 @@ const tools = await composio.tools.get(
     toolkits: ['custom-api'],
   },
   {
-    beforeToolExecute: authModifier,
+    beforeExecute: authModifier,
   }
 );
 ```
@@ -362,7 +362,7 @@ const result = await composio.tools.execute(
     },
   },
   {
-    afterToolExecute: pipeModifiers(addMetadata, formatDates, removeNulls),
+    afterExecute: pipeModifiers(addMetadata, formatDates, removeNulls),
   }
 );
 ```
@@ -374,14 +374,14 @@ const result = await composio.tools.execute(
 type TransformToolSchemaModifier = (toolSlug: string, toolkitSlug: string, tool: Tool) => Tool;
 
 // Before Execution Modifier
-type BeforeToolExecuteModifier = (
+type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   params: ToolExecuteParams
 ) => ToolExecuteParams;
 
 // After Execution Modifier
-type AfterToolExecuteModifier = (
+type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   result: ToolExecuteResponse
@@ -389,14 +389,14 @@ type AfterToolExecuteModifier = (
 
 // Modifiers Object
 interface ExecuteToolModifiers {
-  beforeToolExecute?: BeforeToolExecuteModifier;
-  afterToolExecute?: AfterToolExecuteModifier;
+  beforeExecute?: beforeExecuteModifier;
+  afterExecute?: afterExecuteModifier;
 }
 
 // Provider Options (includes schema modifier)
 interface ProviderOptions<TProvider> {
-  modifyToolSchema?: TransformToolSchemaModifier;
-  beforeToolExecute?: BeforeToolExecuteModifier;
-  afterToolExecute?: AfterToolExecuteModifier;
+  modifySchema?: TransformToolSchemaModifier;
+  beforeExecute?: beforeExecuteModifier;
+  afterExecute?: afterExecuteModifier;
 }
 ```

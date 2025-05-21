@@ -12,13 +12,13 @@ Retrieves tools based on the provided filters.
 // Get tools from a specific toolkit
 const githubTools = await composio.tools.get('default', {
   toolkits: ['github'],
-  limit: 10
+  limit: 10,
 });
 
 // Get tools with search
 const searchTools = await composio.tools.get('default', {
   search: 'user',
-  important: true
+  important: true,
 });
 
 // Get a specific tool by slug
@@ -26,10 +26,10 @@ const tool = await composio.tools.get('default', 'GITHUB_GET_REPO');
 
 // Get a tool with schema modifications
 const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
-  modifyToolSchema: (toolSlug, toolkitSlug, schema) => {
+  modifySchema: (toolSlug, toolkitSlug, schema) => {
     // Customize the tool schema
-    return {...schema, description: 'Custom description'};
-  }
+    return { ...schema, description: 'Custom description' };
+  },
 });
 ```
 
@@ -49,23 +49,27 @@ Executes a given tool with the provided parameters.
 // Execute a Composio API tool
 const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
   userId: 'default',
-  arguments: { userId: 'pg' }
+  arguments: { userId: 'pg' },
 });
 
 // Execute with modifiers
-const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
-  userId: 'default',
-  arguments: { owner: 'composio', repo: 'sdk' }
-}, {
-  beforeToolExecute: (toolSlug, toolkitSlug, params) => {
-    // Modify params before execution
-    return params;
+const result = await composio.tools.execute(
+  'GITHUB_GET_ISSUES',
+  {
+    userId: 'default',
+    arguments: { owner: 'composio', repo: 'sdk' },
   },
-  afterToolExecute: (toolSlug, toolkitSlug, result) => {
-    // Transform result after execution
-    return result;
+  {
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
+      // Modify params before execution
+      return params;
+    },
+    afterExecute: (toolSlug, toolkitSlug, result) => {
+      // Transform result after execution
+      return result;
+    },
   }
-});
+);
 ```
 
 **Parameters:**
@@ -77,6 +81,7 @@ const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
 **Returns:** Promise<ToolExecuteResponse> - The response from the tool execution
 
 **Throws:**
+
 - `ComposioCustomToolsNotInitializedError`: If the CustomTools instance is not initialized
 - `ComposioToolNotFoundError`: If the tool with the given slug is not found
 - `ComposioToolExecutionError`: If there is an error during tool execution
@@ -94,19 +99,19 @@ const customTool = await composio.tools.createCustomTool({
     param1: {
       type: 'string',
       description: 'First parameter',
-      required: true
-    }
+      required: true,
+    },
   },
   outputParameters: {
     result: {
       type: 'string',
-      description: 'The result of the operation'
-    }
+      description: 'The result of the operation',
+    },
   },
   handler: async (params, context) => {
     // Custom logic here
     return { data: { result: 'Success!' } };
-  }
+  },
 });
 ```
 
@@ -127,14 +132,16 @@ const tools = await composio.tools.getRawComposioTools('default');
 // Get tools with filters
 const githubTools = await composio.tools.getRawComposioTools('default', {
   toolkits: ['github'],
-  important: true
+  important: true,
 });
 
 // Get tools with schema transformation
-const tools = await composio.tools.getRawComposioTools('default', {},
+const tools = await composio.tools.getRawComposioTools(
+  'default',
+  {},
   (toolSlug, toolkitSlug, tool) => {
     // Add custom properties to tool schema
-    return {...tool, customProperty: 'value'};
+    return { ...tool, customProperty: 'value' };
   }
 );
 ```
@@ -169,12 +176,12 @@ const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
 
 ```typescript
 interface ToolListParams {
-  tools?: string[];           // List of tool slugs to filter by
-  cursor?: string;            // Pagination cursor
-  important?: string;         // Filter for important tools
-  limit?: string;             // Limit the number of results
-  search?: string;            // Search term
-  toolkits?: string[];        // List of toolkit slugs to filter by
+  tools?: string[]; // List of tool slugs to filter by
+  cursor?: string; // Pagination cursor
+  important?: string; // Filter for important tools
+  limit?: string; // Limit the number of results
+  search?: string; // Search term
+  toolkits?: string[]; // List of toolkit slugs to filter by
 }
 ```
 
@@ -182,13 +189,13 @@ interface ToolListParams {
 
 ```typescript
 interface ToolExecuteParams {
-  allowTracing?: boolean;           // Enable/disable tracing
-  connectedAccountId?: string;      // Connected account ID
+  allowTracing?: boolean; // Enable/disable tracing
+  connectedAccountId?: string; // Connected account ID
   customAuthParams?: CustomAuthParams; // Custom auth parameters
   arguments?: Record<string, unknown>; // Tool arguments
-  userId: string;                   // User ID
-  version?: string;                 // Tool version
-  text?: string;                    // Text input
+  userId: string; // User ID
+  version?: string; // Tool version
+  text?: string; // Text input
 }
 ```
 
@@ -196,11 +203,11 @@ interface ToolExecuteParams {
 
 ```typescript
 interface ToolExecuteResponse {
-  data: Record<string, unknown>;  // Tool execution data
-  error: string | null;           // Error message (if any)
-  successful: boolean;            // Whether the execution was successful
-  logId?: string;                 // Log ID for debugging
-  sessionInfo?: unknown;          // Session information
+  data: Record<string, unknown>; // Tool execution data
+  error: string | null; // Error message (if any)
+  successful: boolean; // Whether the execution was successful
+  logId?: string; // Log ID for debugging
+  sessionInfo?: unknown; // Session information
 }
 ```
 
@@ -208,9 +215,9 @@ interface ToolExecuteResponse {
 
 ```typescript
 interface CustomToolOptions {
-  name: string;                   // Name of the custom tool
-  description: string;            // Description of the custom tool
-  slug: string;                   // Unique slug for the custom tool
+  name: string; // Name of the custom tool
+  description: string; // Description of the custom tool
+  slug: string; // Unique slug for the custom tool
   inputParameters: Record<string, unknown>; // Input parameters schema
   outputParameters?: Record<string, unknown>; // Output parameters schema
   handler: (params: ToolExecuteParams, context: ExecuteMetadata) => Promise<ToolExecuteResponse>; // Handler function

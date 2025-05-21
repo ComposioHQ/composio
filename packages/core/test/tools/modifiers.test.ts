@@ -62,24 +62,24 @@ describe('Tools Modifiers', () => {
   });
 
   describe('Execution Modifiers', () => {
-    it('should apply beforeToolExecute modifier before executing a tool', async () => {
+    it('should apply beforeExecute modifier before executing a tool', async () => {
       const slug = 'COMPOSIO_TOOL';
       const body = {
         userId: 'test-user',
         arguments: { limit: 5 },
       };
 
-      const { beforeToolExecute } = createExecutionModifiers({
+      const { beforeExecute } = createExecutionModifiers({
         beforeModifications: {
           arguments: { limit: 10 },
         },
       });
 
       await mockToolExecution(context.tools);
-      await context.tools.execute(slug, body, { beforeToolExecute });
+      await context.tools.execute(slug, body, { beforeExecute });
 
-      expect(beforeToolExecute).toHaveBeenCalledTimes(1);
-      expect(beforeToolExecute).toHaveBeenCalledWith(slug, expect.any(String), body);
+      expect(beforeExecute).toHaveBeenCalledTimes(1);
+      expect(beforeExecute).toHaveBeenCalledWith(slug, expect.any(String), body);
       expect(mockClient.tools.execute).toHaveBeenCalledWith(
         slug,
         expect.objectContaining({
@@ -88,21 +88,21 @@ describe('Tools Modifiers', () => {
       );
     });
 
-    it('should apply afterToolExecute modifier after executing a tool', async () => {
+    it('should apply afterExecute modifier after executing a tool', async () => {
       const slug = 'COMPOSIO_TOOL';
       const body = { userId: 'test-user', arguments: {} };
 
-      const { afterToolExecute } = createExecutionModifiers({
+      const { afterExecute } = createExecutionModifiers({
         afterModifications: {
           data: { enhanced: true },
         },
       });
 
       await mockToolExecution(context.tools);
-      const result = await context.tools.execute(slug, body, { afterToolExecute });
+      const result = await context.tools.execute(slug, body, { afterExecute });
 
-      expect(afterToolExecute).toHaveBeenCalledTimes(1);
-      expect(afterToolExecute).toHaveBeenCalledWith(
+      expect(afterExecute).toHaveBeenCalledTimes(1);
+      expect(afterExecute).toHaveBeenCalledWith(
         slug,
         expect.any(String),
         expect.objectContaining({
@@ -134,7 +134,7 @@ describe('Tools Modifiers', () => {
       const createExecuteToolFnSpy = vi.spyOn(context.tools as any, 'createExecuteToolFn');
 
       await context.tools.get(userId, slug, {
-        modifyToolSchema: schemaModifier,
+        modifySchema: schemaModifier,
         ...executionModifiers,
       });
 

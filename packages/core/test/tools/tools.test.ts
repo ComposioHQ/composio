@@ -243,7 +243,7 @@ describe('Tools', () => {
         toolMocks.transformedTool as unknown as Tool
       );
 
-      await context.tools.get(userId, slug, { modifyToolSchema: schemaModifier });
+      await context.tools.get(userId, slug, { modifySchema: schemaModifier });
 
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
     });

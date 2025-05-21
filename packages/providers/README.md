@@ -46,11 +46,11 @@ These providers support full modifier capabilities, making them suitable for com
 
 1. **Schema Modifiers**: Transform tool schemas using `TransformToolSchemaModifier`
 2. **Execution Modifiers**: Transform tool execution behavior
-   - `beforeToolExecute`: Transform input parameters before execution
-   - `afterToolExecute`: Transform output after execution
+   - `beforeExecute`: Transform input parameters before execution
+   - `afterExecute`: Transform output after execution
 3. **Execute Modifiers**: Used during tool execution
-   - `beforeToolExecute`: Transform input parameters
-   - `afterToolExecute`: Transform output
+   - `beforeExecute`: Transform input parameters
+   - `afterExecute`: Transform output
 
 Example implementation:
 
@@ -91,17 +91,17 @@ export class AgenticProvider extends BaseAgenticProvider {
   ): Promise<ToolExecuteResponse> {
     let executeParams = params;
 
-    // Apply beforeToolExecute modifier if provided
-    if (modifiers?.beforeToolExecute) {
-      executeParams = modifiers.beforeToolExecute(tool.slug, executeParams);
+    // Apply beforeExecute modifier if provided
+    if (modifiers?.beforeExecute) {
+      executeParams = modifiers.beforeExecute(tool.slug, executeParams);
     }
 
     // Execute the tool
     const response = await this.client.executeTool(tool.slug, executeParams);
 
-    // Apply afterToolExecute modifier if provided
-    if (modifiers?.afterToolExecute) {
-      return modifiers.afterToolExecute(tool.slug, response.data);
+    // Apply afterExecute modifier if provided
+    if (modifiers?.afterExecute) {
+      return modifiers.afterExecute(tool.slug, response.data);
     }
 
     return response.data;
@@ -191,12 +191,12 @@ type TransformToolSchemaModifier = (toolSlug: string, tool: Tool) => Tool;
 ```typescript
 type ModifiersParams = {
   schema?: TransformToolSchemaModifier;
-  beforeToolExecute?: BeforeToolExecuteModifier;
-  afterToolExecute?: AfterToolExecuteModifier;
+  beforeExecute?: beforeExecuteModifier;
+  afterExecute?: afterExecuteModifier;
 };
 
-type BeforeToolExecuteModifier = (toolSlug: string, params: ToolExecuteParams) => ToolExecuteParams;
-type AfterToolExecuteModifier = (
+type beforeExecuteModifier = (toolSlug: string, params: ToolExecuteParams) => ToolExecuteParams;
+type afterExecuteModifier = (
   toolSlug: string,
   response: ToolExecuteResponse
 ) => ToolExecuteResponse;
@@ -284,17 +284,17 @@ export class VercelProvider extends BaseAgenticProvider {
   ): Promise<ToolExecuteResponse> {
     let executeParams = params;
 
-    // Apply beforeToolExecute modifier if provided
-    if (modifiers?.beforeToolExecute) {
-      executeParams = modifiers.beforeToolExecute(tool.slug, executeParams);
+    // Apply beforeExecute modifier if provided
+    if (modifiers?.beforeExecute) {
+      executeParams = modifiers.beforeExecute(tool.slug, executeParams);
     }
 
     // Execute the tool
     const response = await this.client.executeTool(tool.slug, executeParams);
 
-    // Apply afterToolExecute modifier if provided
-    if (modifiers?.afterToolExecute) {
-      return modifiers.afterToolExecute(tool.slug, response.data);
+    // Apply afterExecute modifier if provided
+    if (modifiers?.afterExecute) {
+      return modifiers.afterExecute(tool.slug, response.data);
     }
 
     return response.data;
@@ -359,14 +359,14 @@ const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
     },
   }),
   // Execution modifiers
-  beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+  beforeExecute: (toolSlug: string, params: ToolExecuteParams) => ({
     ...params,
     arguments: {
       ...params.arguments,
       limit: Math.min((params.arguments?.limit as number) || 10, 100),
     },
   }),
-  afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+  afterExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
     ...response,
     data: {
       ...response.data,
@@ -385,14 +385,14 @@ const result = await composio.provider.executeTool(
     arguments: { query: 'AI', limit: 20 },
   },
   {
-    beforeToolExecute: (toolSlug: string, params: ToolExecuteParams) => ({
+    beforeExecute: (toolSlug: string, params: ToolExecuteParams) => ({
       ...params,
       arguments: {
         ...params.arguments,
         limit: Math.min((params.arguments?.limit as number) || 10, 100),
       },
     }),
-    afterToolExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
+    afterExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
       ...response,
       data: {
         ...response.data,

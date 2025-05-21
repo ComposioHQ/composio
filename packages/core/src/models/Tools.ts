@@ -385,7 +385,7 @@ export class Tools<
    *
    * // Get a tool with schema modifications
    * const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
-   *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => {
+   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
    *     // Customize the tool schema
    *     return {...schema, description: 'Custom description'};
    *   }
@@ -416,11 +416,11 @@ export class Tools<
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(userId, arg2, options?.modifyToolSchema);
+      const tool = await this.getRawComposioToolBySlug(userId, arg2, options?.modifySchema);
       return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
       // if the first argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(userId, arg2, options?.modifyToolSchema);
+      const tools = await this.getRawComposioTools(userId, arg2, options?.modifySchema);
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
@@ -460,13 +460,11 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    if (modifiers?.beforeToolExecute) {
-      if (typeof modifiers.beforeToolExecute === 'function') {
-        body = modifiers.beforeToolExecute(tool.slug, 'unkown', body);
+    if (modifiers?.beforeExecute) {
+      if (typeof modifiers.beforeExecute === 'function') {
+        body = modifiers.beforeExecute(tool.slug, 'unkown', body);
       } else {
-        throw new ComposioInvalidModifierError(
-          'Invalid beforeToolExecute modifier. Not a function.'
-        );
+        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
     }
 
@@ -475,13 +473,11 @@ export class Tools<
       connectedAccountId: body.connectedAccountId,
     });
 
-    if (modifiers?.afterToolExecute) {
-      if (typeof modifiers.afterToolExecute === 'function') {
-        result = modifiers.afterToolExecute(tool.slug, 'unkown', result);
+    if (modifiers?.afterExecute) {
+      if (typeof modifiers.afterExecute === 'function') {
+        result = modifiers.afterExecute(tool.slug, 'unkown', result);
       } else {
-        throw new ComposioInvalidModifierError(
-          'Invalid afterToolExecute modifier. Not a function.'
-        );
+        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
     }
 
@@ -501,13 +497,11 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    if (modifiers?.beforeToolExecute) {
-      if (typeof modifiers.beforeToolExecute === 'function') {
-        body = modifiers.beforeToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', body);
+    if (modifiers?.beforeExecute) {
+      if (typeof modifiers.beforeExecute === 'function') {
+        body = modifiers.beforeExecute(tool.slug, tool.toolkit?.slug || 'unkown', body);
       } else {
-        throw new ComposioInvalidModifierError(
-          'Invalid beforeToolExecute modifier. Not a function.'
-        );
+        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
     }
     // fetch connected accounts if doesn't exist
@@ -530,13 +524,11 @@ export class Tools<
     result = this.transformToolExecuteResponse(result);
 
     // apply local modifiers if they are provided
-    if (modifiers?.afterToolExecute) {
-      if (typeof modifiers.afterToolExecute === 'function') {
-        result = modifiers.afterToolExecute(tool.slug, tool.toolkit?.slug || 'unkown', result);
+    if (modifiers?.afterExecute) {
+      if (typeof modifiers.afterExecute === 'function') {
+        result = modifiers.afterExecute(tool.slug, tool.toolkit?.slug || 'unkown', result);
       } else {
-        throw new ComposioInvalidModifierError(
-          'Invalid afterToolExecute modifier. Not a function.'
-        );
+        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
     }
     return result;
@@ -570,11 +562,11 @@ export class Tools<
    *   userId: 'default',
    *   arguments: { owner: 'composio', repo: 'sdk' }
    * }, {
-   *   beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+   *   beforeExecute: (toolSlug, toolkitSlug, params) => {
    *     // Modify params before execution
    *     return params;
    *   },
-   *   afterToolExecute: (toolSlug, toolkitSlug, result) => {
+   *   afterExecute: (toolSlug, toolkitSlug, result) => {
    *     // Transform result after execution
    *     return result;
    *   }

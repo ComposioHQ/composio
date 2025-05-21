@@ -19,7 +19,7 @@ import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
  * @example
  * ```typescript
  * // Add authentication headers to all tool requests
- * const beforeToolExecute = (toolSlug, toolkitSlug, params) => {
+ * const beforeExecute = (toolSlug, toolkitSlug, params) => {
  *   return {
  *     ...params,
  *     customAuthParams: {
@@ -33,7 +33,7 @@ import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
  * };
  *
  * // Transform input parameters for a specific tool
- * const beforeToolExecute = (toolSlug, toolkitSlug, params) => {
+ * const beforeExecute = (toolSlug, toolkitSlug, params) => {
  *   if (toolSlug === 'GITHUB_SEARCH_REPOS') {
  *     // Convert simple query to structured query format
  *     return {
@@ -48,7 +48,7 @@ import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
  * };
  * ```
  */
-export type BeforeToolExecuteModifier = (
+export type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteParams: ToolExecuteParams
@@ -72,7 +72,7 @@ export type BeforeToolExecuteModifier = (
  * @example
  * ```typescript
  * // Transform the response data format
- * const afterToolExecute = (toolSlug, toolkitSlug, response) => {
+ * const afterExecute = (toolSlug, toolkitSlug, response) => {
  *   if (toolSlug === 'GITHUB_LIST_REPOS' && response.successful) {
  *     // Transform the returned repos into a simpler format
  *     return {
@@ -90,7 +90,7 @@ export type BeforeToolExecuteModifier = (
  * };
  *
  * // Add error handling with custom messages
- * const afterToolExecute = (toolSlug, toolkitSlug, response) => {
+ * const afterExecute = (toolSlug, toolkitSlug, response) => {
  *   if (!response.successful) {
  *     return {
  *       ...response,
@@ -104,7 +104,7 @@ export type BeforeToolExecuteModifier = (
  * };
  * ```
  */
-export type AfterToolExecuteModifier = (
+export type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteResponse: ToolExecuteResponse
@@ -128,7 +128,7 @@ export type AfterToolExecuteModifier = (
  * @example
  * ```typescript
  * // Modify the input parameters for a specific tool
- * const modifyToolSchema = (toolSlug, toolkitSlug, toolSchema) => {
+ * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
  *   if (toolSlug === 'HACKERNEWS_GET_USER') {
  *     return {
  *       ...toolSchema,
@@ -146,7 +146,7 @@ export type AfterToolExecuteModifier = (
  * };
  *
  * // Add custom descriptions to all tools in a toolkit
- * const modifyToolSchema = (toolSlug, toolkitSlug, toolSchema) => {
+ * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
  *   if (toolkitSlug === 'github') {
  *     return {
  *       ...toolSchema,
@@ -158,7 +158,7 @@ export type AfterToolExecuteModifier = (
  * };
  *
  * // Simplify tool schemas for a specific consumer
- * const modifyToolSchema = (toolSlug, toolkitSlug, toolSchema) => {
+ * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
  *   // Remove advanced or complex parameters
  *   const { complexParam1, complexParam2, ...simpleInputParams } = toolSchema.inputParameters;
  *
@@ -187,7 +187,7 @@ export type TransformToolSchemaModifier = (
  * const tools = await composio.tools.get('default', {
  *   toolkits: ['github']
  * }, {
- *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => {
+ *   modifySchema: (toolSlug, toolkitSlug, schema) => {
  *     // Custom schema modifications
  *     return schema;
  *   }
@@ -199,7 +199,7 @@ export type ToolOptions = {
    * Function to transform tool schemas before they're exposed to consumers.
    * This allows customizing input/output parameters, descriptions, and other metadata.
    */
-  modifyToolSchema?: TransformToolSchemaModifier;
+  modifySchema?: TransformToolSchemaModifier;
 };
 
 /**
@@ -216,11 +216,11 @@ export type ToolOptions = {
  *   userId: 'default',
  *   arguments: { owner: 'composio' }
  * }, {
- *   beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+ *   beforeExecute: (toolSlug, toolkitSlug, params) => {
  *     console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
  *     return params;
  *   },
- *   afterToolExecute: (toolSlug, toolkitSlug, response) => {
+ *   afterExecute: (toolSlug, toolkitSlug, response) => {
  *     if (response.successful) {
  *       console.log(`Successfully executed ${toolSlug}`);
  *     }
@@ -234,13 +234,13 @@ export type ExecuteToolModifiers = {
    * Function to intercept and modify tool execution parameters before the tool is executed.
    * This allows customizing the request based on tool-specific needs.
    */
-  beforeToolExecute?: BeforeToolExecuteModifier;
+  beforeExecute?: beforeExecuteModifier;
 
   /**
    * Function to intercept and modify tool execution responses after the tool has executed.
    * This allows transforming the response or implementing custom error handling.
    */
-  afterToolExecute?: AfterToolExecuteModifier;
+  afterExecute?: afterExecuteModifier;
 };
 
 /**
@@ -254,7 +254,7 @@ export type ExecuteToolModifiers = {
  * ```typescript
  * // Configure agentic tools with schema and execution modifications
  * const agenticTools = await vercel.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => {
+ *   modifySchema: (toolSlug, toolkitSlug, schema) => {
  *     return {
  *       ...schema,
  *       description: `Enhanced ${toolSlug} for better context`
@@ -262,14 +262,14 @@ export type ExecuteToolModifiers = {
  *   },
  *
  *   // Intercept before execution
- *   beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+ *   beforeExecute: (toolSlug, toolkitSlug, params) => {
  *     // Add analytics tracking
  *     trackToolUsage(toolSlug);
  *     return params;
  *   },
  *
  *   // Transform after execution
- *   afterToolExecute: (toolSlug, toolkitSlug, response) => {
+ *   afterExecute: (toolSlug, toolkitSlug, response) => {
  *     // Log results and handle errors
  *     if (!response.successful) {
  *       logToolError(toolSlug, response.error);
@@ -293,7 +293,7 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * ```typescript
  * // With standard provider (non-agentic)
  * const tools = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => schema
+ *   modifySchema: (toolSlug, toolkitSlug, schema) => schema
  * });
  *
  * // With agentic provider (e.g., VercelProvider)
@@ -303,9 +303,9 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * });
  *
  * const agenticTools = await vercel.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifyToolSchema: (toolSlug, toolkitSlug, schema) => schema,
- *   beforeToolExecute: (toolSlug, toolkitSlug, params) => params,
- *   afterToolExecute: (toolSlug, toolkitSlug, response) => response
+ *   modifySchema: (toolSlug, toolkitSlug, schema) => schema,
+ *   beforeExecute: (toolSlug, toolkitSlug, params) => params,
+ *   afterExecute: (toolSlug, toolkitSlug, response) => response
  * });
  * ```
  */

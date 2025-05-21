@@ -102,8 +102,8 @@ const result = await openaiProvider.executeToolCall(
   toolCall,
   { connectedAccountId: 'conn_abc123' },
   {
-    beforeToolExecute: (toolSlug, toolkitSlug, params) => params,
-    afterToolExecute: (toolSlug, toolkitSlug, result) => result,
+    beforeExecute: (toolSlug, toolkitSlug, params) => params,
+    afterExecute: (toolSlug, toolkitSlug, result) => result,
   }
 );
 ```
@@ -262,8 +262,8 @@ interface ExecuteToolFnOptions {
 
 ```typescript
 interface ExecuteToolModifiers {
-  beforeToolExecute?: BeforeToolExecuteModifier;
-  afterToolExecute?: AfterToolExecuteModifier;
+  beforeExecute?: beforeExecuteModifier;
+  afterExecute?: afterExecuteModifier;
 }
 ```
 
@@ -273,20 +273,20 @@ interface ExecuteToolModifiers {
 type TransformToolSchemaModifier = (toolSlug: string, toolkitSlug: string, tool: Tool) => Tool;
 ```
 
-### BeforeToolExecuteModifier
+### beforeExecuteModifier
 
 ```typescript
-type BeforeToolExecuteModifier = (
+type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   params: ToolExecuteParams
 ) => ToolExecuteParams;
 ```
 
-### AfterToolExecuteModifier
+### afterExecuteModifier
 
 ```typescript
-type AfterToolExecuteModifier = (
+type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   result: ToolExecuteResponse

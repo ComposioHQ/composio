@@ -124,15 +124,15 @@ describe('OpenAIProvider', () => {
         },
       };
 
-      // Create a valid ExecuteToolModifiers object with beforeToolExecute and afterToolExecute functions
+      // Create a valid ExecuteToolModifiers object with beforeExecute and afterExecute functions
       const modifiers: ExecuteToolModifiers = {
-        beforeToolExecute: vi.fn((toolSlug, toolkitSlug, params) => {
+        beforeExecute: vi.fn((toolSlug, toolkitSlug, params) => {
           return {
             ...params,
             allowTracing: true,
           };
         }),
-        afterToolExecute: vi.fn((toolSlug, toolkitSlug, response) => {
+        afterExecute: vi.fn((toolSlug, toolkitSlug, response) => {
           return response;
         }),
       };

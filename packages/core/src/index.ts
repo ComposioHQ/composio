@@ -18,6 +18,6 @@ export type {
   AgenticToolOptions,
   ToolOptions,
   TransformToolSchemaModifier,
-  BeforeToolExecuteModifier,
-  AfterToolExecuteModifier,
+  beforeExecuteModifier,
+  afterExecuteModifier,
 } from './types/modifiers.types';

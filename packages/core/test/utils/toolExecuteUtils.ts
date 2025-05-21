@@ -84,11 +84,11 @@ export const createExecutionModifiers = ({
   afterModifications = {},
 } = {}) => {
   return {
-    beforeToolExecute: vi.fn((toolSlug: string, toolkitSlug: string, params: any) => ({
+    beforeExecute: vi.fn((toolSlug: string, toolkitSlug: string, params: any) => ({
       ...params,
       ...beforeModifications,
     })),
-    afterToolExecute: vi.fn((toolSlug: string, toolkitSlug: string, response: any) => ({
+    afterExecute: vi.fn((toolSlug: string, toolkitSlug: string, response: any) => ({
       ...response,
       ...afterModifications,
     })),
