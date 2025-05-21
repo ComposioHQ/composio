@@ -14,7 +14,6 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
-import { getEnvVariable } from './utils/env';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
