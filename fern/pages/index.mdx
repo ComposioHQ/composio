@@ -2,8 +2,8 @@
 layout: custom
 no-image-zoom: true
 description: >-
-  Composio is the skill layer for AI agents, helping developers add tools, authentication,
-  and integrations to their agents.
+  Cohere's API documentation helps developers easily integrate natural language
+  processing and generation into their products.
 ---
 
 <style>
@@ -93,47 +93,48 @@ export const EndpointLink = ({ href, title }) => (
 
 export const cards = [
   {
-    href: "/getting-started/quickstart",
-    title: "Quickstart",
+    href: "/docs",
+    imgSrc: "https://fern-image-hosting.s3.amazonaws.com/cohere/8da77c9-Frame_138972.png",
+    title: "Guides",
     description:
-      "Build an agent in minutes that can interact with the tools your users care about.",
+      "Understand how to use the Composio SDK and platform on a deeper level. Build with authenticated tools, triggers and more.",
   },
   {
-    href: "/tools",
-    title: "Work with tools",
+    href: "/api-reference/",
+    imgSrc: "https://fern-image-hosting.s3.amazonaws.com/cohere/8ff146a-Group_138977.png",
+    title: "Reference",
     description:
-      "Use tools to build agents that can work with 300+ apps your users already use.",
-  },
-  {
-    href: "/auth",
-    title: "Authentication",
-    description:
-      "Authenticate your agents across your users' apps reliably and securely.",
+      "Use Composio's tools and MCP servers into your agents with just a few lines of code.",
   },
   {
     href: "/cookbooks",
-    title: "Guides and Cookbooks",
+    imgSrc: "https://fern-image-hosting.s3.amazonaws.com/cohere/7fca92c-Group_138977_2.png",
+    title: "Cookbooks",
     description:
-      "Build production-ready agents with our guides and cookbooks.",
+      "A collection of resources to help developers get up and running with Composio.",
   },
 ];
 
 export const frameworks = [
   {
-    href: "/frameworks/openai",
-    title: "OPENAI",
+    href: "/frameworks/langchain",
+    title: "LangChain",
   },
   {
     href: "/frameworks/langgraph",
-    title: "LANGGRAPH",
+    title: "LangGraph",
   },
   {
-    href: "/frameworks/llamaindex",
-    title: "LLAMAINDEX",
+    href: "/frameworks/crewai",
+    title: "CrewAI",
   },
   {
     href: "/frameworks/vercel",
-    title: "VERCEL",
+    title: "Vercel",
+  },
+  {
+    href: "/frameworks/autogen",
+    title: "Autogen",
   },
 ];
 
@@ -148,12 +149,12 @@ export const frameworks = [
         description={card.description}
       />
     ))}
-    <div className="col-span-2">
-      <div className="mb-8 flex flex-col gap-9 px-6 py-5 md:!flex-row md:items-end md:gap-16 md:p-8 lg:gap-10 rounded-lg bg-[#F5F4F2] dark:bg-[#0F0F0F] hover:bg-[#E9E6DE] dark:hover:bg-[#292929] shadow-sm">
+    <a href="/frameworks" className="col-span-2" style={{ textDecoration: 'none' }}>
+      <div className="mb-8 flex flex-col gap-9 rounded-lg bg-[#F5F4F2] dark:bg-[#0F0F0F] px-6 py-5 hover:bg-[#E9E6DE] dark:hover:bg-[#292929] md:!flex-row md:items-end md:gap-16 md:p-8 lg:gap-10">
         <div className="md:w-1/2">
-          <h2 className="mb-8 mt-4 md:mt-0 text-2xl font-bold">Frameworks</h2>
-          <p className="p-lg w-full text-lg">
-            Composio integrates with popular AI agent frameworks, making it easy to add tools and authentication to your existing agents
+          <h2 className="mb-8 mt-4 md:mt-0">Frameworks</h2>
+          <p className="p-lg w-full">
+            Build with frameworks that support Composio's tools and MCP servers.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-5 md:w-1/2 md:gap-10 lg:w-1/3 lg:gap-8">
@@ -162,7 +163,33 @@ export const frameworks = [
           ))}
         </div>
       </div>
-    </div>
+    </a>
+  </div>
+  <div
+    className="block h-full w-full rounded-lg bg-cover bg-no-repeat p-6 md:hidden"
+    style={{
+      backgroundImage: "url('https://fern-image-hosting.s3.amazonaws.com/cohere/ddd53ed-Mask_group.png')",
+    }}
+  >
+    <a
+      href="https://cohere.com/llmu"
+      target="_blank"
+      className="flex h-full w-full flex-col justify-between !text-white md:!flex-row"
+    >
+      <div className="flex h-full flex-col justify-between">
+        <div className="flex flex-row">
+          <img
+            src="https://fern-image-hosting.s3.amazonaws.com/cohere/9d0694c-Symbol.svg"
+            alt=""
+            className="h-7 w-7 lg:h-10 lg:w-10"
+          />
+          <h2 className="h3 mb-28 ml-5 mt-0">LLM University</h2>
+        </div>
+        <p className="p-lg !text-white">
+          New to NLP? Learn about Natural Language processing and Large Language
+          Models through our structured curriculum.
+        </p>
+      </div>
+    </a>
   </div>
 </div>
-

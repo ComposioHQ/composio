@@ -1,7 +1,8 @@
 tabs:
   docs:
-    display-name: Docs
+    display-name: Guides
     icon: book
+    slug: docs
   sdk-reference:
     display-name: SDK Reference
     href: https://deepwiki.com/ComposioHQ/composio
@@ -10,16 +11,59 @@ tabs:
     display-name: API Reference
     icon: server
     skip-slug: true
+  toolsets:
+    display-name: Toolsets
+    icon: code
+    skip-slug: true
+  cookbooks:
+    display-name: Cookbooks
+    icon: utensils
 
+landing-page:
+  page: Composio Documentation
+  path: pages/index.mdx
 
 navigation:
   - tab: docs
     layout:
-      - section: Getting Started
+      - section: Get Started
         icon: rocket
         contents:
-          - page: Introduction
-            path: pages/v3/getting-started/welcome.mdx
+          - page: Welcome
+            path: pages/v3/get-started/welcome.mdx
+          - page: Installation
+            path: pages/v3/get-started/installation.mdx
+          - page: Quickstart
+            path: pages/v3/get-started/quickstart.mdx
+          - page: Providers and Toolsets
+            path: pages/v3/get-started/providers-and-toolsets.mdx
+      # - section: Guides
+      #   icon: map
+      #   contents:
+      #     - page: Open
+  - tab: toolsets
+    layout:
+      - section: Toolsets
+        icon: code
+        contents:
+          - page: OpenAI Toolset
+            path: pages/v3/toolsets/openai.mdx
+          - page: Anthropic Toolset
+            path: pages/v3/toolsets/anthropic.mdx
+          - page: LangGraph Toolset
+            path: pages/v3/toolsets/langgraph.mdx
+          - page: CrewAI Toolset
+            path: pages/v3/toolsets/crewai.mdx
+          - page: Vercel AI SDK Toolset
+            path: pages/v3/toolsets/vercel-ai-sdk.mdx
+          - page: Google ADK Toolset
+            path: pages/v3/toolsets/google-adk.mdx
+          - page: OpenAI Agents Toolset
+            path: pages/v3/toolsets/openai-agents.mdx
+          - page: Mastra Toolset
+            path: pages/v3/toolsets/mastra.mdx
+          - page: Custom Toolsets
+            path: pages/v3/toolsets/custom.mdx
   - tab: api-reference
     layout:
       - section: API Reference

@@ -12,6 +12,8 @@ dependencies = [
     "ruamel-yaml>=0.18.10",
     "typing-extensions>=4.13.0",
     "composio-core>=0.7.11",
+    "composio-client==0.1.0a11",
+    "openai>=1.79.0",
 ]
 
 [tool.ruff]

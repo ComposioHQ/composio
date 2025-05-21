@@ -8,44 +8,65 @@ instances:
         owner: ComposioHQ
         repo: composio
         branch: master
-analytics:
-  posthog:
-    api-key: ${POSTHOG_API_KEY}
+title: Composio Docs
 
-experimental:
-  openapi-parser-v3: true
-  mdx-components:
-    - ./components
+default-language: python
 
-title: Composio
-favicon: favicon.png
+versions:
+  - display-name: v3
+    path: v3.yml
+    slug: v3
+  - display-name: v1
+    path: v1.yml
+    slug: v1
+
+
 logo:
-  light: assets/logo/logo.svg
-  dark: assets/logo/logo.svg
-  height: 30
+  light: assets/logo.svg
+  dark: assets/logo-dark.svg
+  height: 16
   href: /
-colors:
-  accent-primary:
-    light: "#FF5A5F"   # vibrant coral-red accent for light mode
-    dark:  "#FF8A8F"   # lighter coral for dark mode
-  background:
-    light: "#F8F9FB"   # cooler, more neutral off-white for light mode
-    dark:  "#0E0C18"   # deep indigo-slate for dark mode
+
+favicon: assets/favicon.png
+
+css: dist/output.css
 
 typography:
   bodyFont:
-    name: Inter
+    name: CohereText
     paths:
-      - path: assets/fonts/Inter Regular.woff2
-        weight: 500
-        style: normal
-      - path: assets/fonts/Inter Bold.woff2
-        weight: 600
-        style: normal
-announcement:
-  message:
-    '⚠️ Deprecating the initiate connection API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
-    to learn more.'
+      - path: assets/CohereText-Regular.woff2
+        weight: "400"
+      - path: assets/CohereVariable.woff2
+        weight: "500 525"
+  headingsFont:
+    name: CohereHeadline
+    paths:
+      - path: assets/CohereHeadline-Regular.woff2
+        weight: "400"
+      - path: assets/CohereHeadline-Bold.woff2
+        weight: "500"
+  codeFont:
+    name: CohereMono
+    paths:
+      - path: assets/CohereMono-Regular.woff2
+        weight: "400"
+        # In the nature design system, bolded fonts always use Cohere Variable.
+      - path: assets/CohereVariable.woff2
+        weight: "500 525"
+navbar-links:
+  - type: secondary
+    text: DASHBOARD
+    url: https://app.composio.dev/
+  - type: secondary
+    text: DOCS
+    url: /
+  - type: secondary
+    text: COMMUNITY
+    url: https://dub.composio.dev/discord
+  - type: primary
+    text: LOG IN
+    url: https://app.composio.dev/login
 
 layout:
   page-width: full
@@ -54,127 +75,32 @@ layout:
   header-height: 50px
   sidebar-width: 298px
 
-navbar-links:
-  - type: secondary
-    text: Discord
-    href: https://dub.composio.dev/discord
-  - type: primary
-    text: Login
-    href: https://app.composio.dev/login
-css: dist/output.css
-redirects:
-  - source: /introduction/intro/overview
-    destination: /getting-started/welcome
-  - source: /introduction/intro/basic
-    destination: /getting-started/quickstart
-  - source: /introduction/intro/quickstart
-    destination: /getting-started/quickstart
-  - source: /introduction/intro/quickstart-tools
-    destination: /getting-started/quickstart
-  - source: /introduction/intro/quickstart-triggers
-    destination: /getting-started/quickstart
-  - source: /patterns/tools/what-are-tools
-    destination: /concepts/tool-calling/overview
-  - source: /patterns/tools/use-tools/:slug
-    destination: /concepts/tool-calling/overview
-  - source: /patterns/Auth/:slug
-    destination: /concepts/authentication/overview
-  - source: /patterns/triggers/:slug
-    destination: /concepts/triggers
-  - source: /framework/:slug
-    destination: /frameworks/:slug
-  - source: /cryptokit/:slug
-    destination: /
-  - source: /swe-kit/:slug
-    destination: /
-  - source: /sdrkit/:slug
-    destination: /
-  - source: /javascript/cloudflare
-    destination: /frameworks/javascript/cloudflare
-  - source: /javascript/vercel
-    destination: /frameworks/javascript/vercel
-  - source: /javascript/langchain
-    destination: /frameworks/javascript/langchain-js
-  - source: /javascript/openai
-    destination: /frameworks/javascript/openai-js
-  - source: /examples/combined/calendar-agent-javascript
-    destination: /examples/calendar-agent
-  - source: /examples/combined/calendar-agent-python
-    destination: /examples/calendar-agent
-  - source: /examples/combined/code-execution-agent-javascript
-    destination: /examples/code-execution-agent
-  - source: /examples/combined/code-execution-agent-python
-    destination: /examples/code-execution-agent
-  - source: /examples/combined/newsletter-summarizer-javascript
-    destination: /examples/newsletter-summarizer
-  - source: /examples/combined/newsletter-summarizer-python
-    destination: /examples/newsletter-summarizer
-  - source: /examples/combined/rag-agent-javascript
-    destination: /examples/rag-agent
-  - source: /examples/combined/rag-agent-python
-    destination: /examples/rag-agent
-  - source: /examples/combined/research-agent-javascript
-    destination: /examples/research-agent
-  - source: /examples/combined/research-agent-python
-    destination: /examples/research-agent
-  - source: /examples/combined/sql-agent-javascript
-    destination: /examples/sql-agent
-  - source: /examples/combined/sql-agent-python
-    destination: /examples/sql-agent
-  - source: /faq/api_key/api_key
-    destination: /getting-started/installation
-  - source: /faq/api_key/cli
-    destination: /getting-started/installation
-  - source: /faq/integrations_and_connections/list_of_tools
-    destination: /concepts/tool-calling/overview
-  - source: /faq/supported_llms/supported_llm
-    destination: /frameworks/
-  - source: /apps/gitlab
-    destination: https://app.composio.dev/apps
-  - source: /apps/bitbucket
-    destination: https://app.composio.dev/apps
-  - source: /apps/usecases/langchain_blogs/
-    destination: https://app.composio.dev/apps/
-  - source: /apps/usecases/crewai/:slug2*
-    destination: https://app.composio.dev/apps/:slug2*
-  - source: /apps/usecases/autogen_blogs/:slug2*
-    destination: https://app.composio.dev/apps/:slug2*
-  - source: /apps/:slug2*
-    destination: https://app.composio.dev/apps/:slug2*
-  - source: /apps
-    destination: https://app.composio.dev/apps
-  - source: /changelog
-    destination: https://github.com/ComposioHQ/composio/releases
-  - source: /introduction/foundations/howtos/get_api_key
-    destination: /getting-started/installation
-  - source: /sdk/cli/trigger
-    destination: /concepts/triggers
-  - source: /guides/:slug1*
-    destination: /examples/:slug1*
-  - source: /python/local_tools
-    destination: /concepts/tool-calling/overview
-  - source: /introduction/foundations/components/local_tools
-    destination: /concepts/tool-calling/overview
-  - source: /integrations/:slug
-    destination: /concepts/authentication/overview
-  - source: /introduction/foundations/components/workspace
-    destination: /concepts/workspaces/workspaces
-  - source: /swekit-examples/:slug
-    destination: /
-  - source: /swekit-js/:slug
-    destination: /
-  - source: /swekit-tools/:slug
-    destination: /
-  - source: /swekit/:slug
-    destination: /
-  - source: /introduction/foundations/components/integrations/custom-integration
-    destination: /concepts/authentication/overview
-js:
-  - ./custom.js
-versions:
-  - display-name: V3
-    path: v3.yml
-    slug: v3
-  - display-name: V1/V2
-    path: v1.yml
-    slug: v1
+colors:
+  accent-primary:
+    light: "#3A8F9E"
+    dark: "#79C6D1"
+  background:
+    light: "#F7F6F2"
+    dark: "#091015"
+  # sidebar-background:
+  #   light: "#FAFAFA"
+  #   dark: "#1C1C1C"
+  # header-background:
+  #   light: "#FAFAFA"
+  #   dark: "#1C1C1C"
+  # card-background:
+  #   light: "#E8E6DE"
+  #   dark: "#1A1A1A"
+  # border:
+  #   light: "#E0E0E0"
+  #   dark: "#292929"
+
+experimental:
+  mdx-components:
+    - ./components
+    - ./icons
+  disable-stream-toggle: true
+
+analytics:
+  posthog:
+    api-key: ${POSTHOG_API_KEY}

@@ -9,7 +9,8 @@
 		"docs:check": "pnpm compile && fern check",
 		"docs:publish": "pnpm compile && fern generate --docs",
 		"docs:preview": "pnpm compile && fern generate --docs --preview --log-level debug",
-		"prepublish": "exit 1"
+		"prepublish": "exit 1",
+		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10"
 	},
 	"dependencies": {
 		"gray-matter": "^4.0.3",
