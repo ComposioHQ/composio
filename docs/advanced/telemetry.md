@@ -20,6 +20,7 @@ The telemetry system collects the following types of data:
 - **Environment Information**: SDK version, provider used, runtime context
 
 No personal or sensitive information such as:
+
 - API keys
 - Tool arguments
 - Tool responses
@@ -31,7 +32,7 @@ No personal or sensitive information such as:
 You can disable telemetry when initializing the SDK:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: 'your-api-key',
@@ -51,18 +52,18 @@ COMPOSIO_DISABLE_TELEMETRY=true
 For advanced use cases, you can provide a custom telemetry transport to process the telemetry data according to your needs:
 
 ```typescript
-import { Composio, BaseTelemetryTransport, TelemetryEvent } from '@composio/sdk';
+import { Composio, BaseTelemetryTransport, TelemetryEvent } from '@composio/core';
 
 // Create a custom telemetry transport
 class CustomTelemetryTransport extends BaseTelemetryTransport {
   async send(event: TelemetryEvent): Promise<void> {
     // Process the telemetry event
     console.log(`Telemetry event: ${event.name}`, event.properties);
-    
+
     // You can send it to your own analytics system
     await yourAnalyticsSystem.track(event.name, event.properties);
   }
-  
+
   async flush(): Promise<void> {
     // Clean up any pending events
     await yourAnalyticsSystem.flush();
@@ -81,35 +82,35 @@ const composio = new Composio({
 To implement a custom telemetry transport, extend the `BaseTelemetryTransport` class:
 
 ```typescript
-import { BaseTelemetryTransport, TelemetryEvent } from '@composio/sdk';
+import { BaseTelemetryTransport, TelemetryEvent } from '@composio/core';
 
 export class CustomTelemetryTransport extends BaseTelemetryTransport {
   // Optional constructor for configuration
-  constructor(private config: { endpoint: string, batchSize: number }) {
+  constructor(private config: { endpoint: string; batchSize: number }) {
     super();
     this.events = [];
   }
-  
+
   // Local state for batching events
   private events: TelemetryEvent[];
-  
+
   // Required: Implement the send method
   async send(event: TelemetryEvent): Promise<void> {
     // Add the event to the batch
     this.events.push(event);
-    
+
     // If batch is full, flush it
     if (this.events.length >= this.config.batchSize) {
       await this.flush();
     }
   }
-  
+
   // Required: Implement the flush method
   async flush(): Promise<void> {
     if (this.events.length === 0) {
       return;
     }
-    
+
     try {
       // Send the batch to your endpoint
       await fetch(this.config.endpoint, {
@@ -122,7 +123,7 @@ export class CustomTelemetryTransport extends BaseTelemetryTransport {
           timestamp: new Date().toISOString(),
         }),
       });
-      
+
       // Clear the batch
       this.events = [];
     } catch (error) {
@@ -211,14 +212,14 @@ The telemetry system automatically includes environment context with each event:
 
 ```typescript
 interface TelemetryMetadata {
-  apiKey: string;        // The Composio API key (first 8 chars only, for identification)
-  baseUrl: string;       // The Composio API base URL
-  framework: string;     // The provider name
-  isAgentic: boolean;    // Whether the provider is agentic
-  source: string;        // The runtime environment 
-  version: string;       // The SDK version
-  isBrowser: boolean;    // Whether the SDK is running in a browser
-  sessionId: string;     // A random session ID (changes each init)
+  apiKey: string; // The Composio API key (first 8 chars only, for identification)
+  baseUrl: string; // The Composio API base URL
+  framework: string; // The provider name
+  isAgentic: boolean; // Whether the provider is agentic
+  source: string; // The runtime environment
+  version: string; // The SDK version
+  isBrowser: boolean; // Whether the SDK is running in a browser
+  sessionId: string; // A random session ID (changes each init)
 }
 ```
 

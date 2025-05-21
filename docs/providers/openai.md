@@ -16,7 +16,7 @@ The OpenAI Provider allows you to:
 The OpenAI Provider is used by default when you initialize the Composio SDK:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 // OpenAI Provider is used by default
 const composio = new Composio({
@@ -27,7 +27,8 @@ const composio = new Composio({
 You can also explicitly specify the OpenAI Provider:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
 // Explicitly specify the OpenAI Provider
 const composio = new Composio({
@@ -41,7 +42,7 @@ const composio = new Composio({
 The OpenAI Provider transforms Composio tools into OpenAI function tools:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 import OpenAI from 'openai';
 
 const composio = new Composio({
@@ -65,7 +66,7 @@ const completion = await openai.chat.completions.create({
   model: 'gpt-4',
   messages: [
     { role: 'system', content: 'You are a helpful assistant with GitHub tools.' },
-    { role: 'user', content: 'Find information about the Composio SDK repository' }
+    { role: 'user', content: 'Find information about the Composio SDK repository' },
   ],
   tools, // Pass the tools to OpenAI
 });
@@ -76,7 +77,8 @@ const completion = await openai.chat.completions.create({
 When OpenAI's model decides to call a tool, you can use the OpenAI Provider to handle it:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 import OpenAI from 'openai';
 
 const composio = new Composio({
@@ -100,7 +102,7 @@ const completion = await openai.chat.completions.create({
   model: 'gpt-4',
   messages: [
     { role: 'system', content: 'You are a helpful assistant with GitHub tools.' },
-    { role: 'user', content: 'Find information about the Composio SDK repository' }
+    { role: 'user', content: 'Find information about the Composio SDK repository' },
   ],
   tools,
 });
@@ -113,7 +115,7 @@ if (completion.choices[0].message.tool_calls) {
     completion,
     { connectedAccountId: 'connected_account_123' } // Optional
   );
-  
+
   // Continue the conversation with the tool outputs
   const followupCompletion = await openai.chat.completions.create({
     model: 'gpt-4',
@@ -121,11 +123,15 @@ if (completion.choices[0].message.tool_calls) {
       { role: 'system', content: 'You are a helpful assistant with GitHub tools.' },
       { role: 'user', content: 'Find information about the Composio SDK repository' },
       completion.choices[0].message,
-      { role: 'tool', content: toolOutputs[0], tool_call_id: completion.choices[0].message.tool_calls[0].id }
+      {
+        role: 'tool',
+        content: toolOutputs[0],
+        tool_call_id: completion.choices[0].message.tool_calls[0].id,
+      },
     ],
     tools,
   });
-  
+
   console.log(followupCompletion.choices[0].message.content);
 }
 ```
@@ -135,7 +141,8 @@ if (completion.choices[0].message.tool_calls) {
 The OpenAI Provider includes helper methods for working with OpenAI Assistants:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 import OpenAI from 'openai';
 
 const composio = new Composio({
@@ -195,7 +202,8 @@ console.log(messages.data[0].content);
 The OpenAI Provider can also handle streaming responses with tool calls:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 import OpenAI from 'openai';
 
 const composio = new Composio({
@@ -262,46 +270,51 @@ for await (const event of openaiProvider.waitAndHandleAssistantStreamToolCalls(
 You can use modifiers with the OpenAI Provider to transform tools and tool execution:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
 const composio = new Composio({
   apiKey: 'your-composio-api-key',
 });
 
 // Get GitHub tools with modifiers
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-}, {
-  // Modify tool schema
-  modifyToolSchema: (toolSlug, toolkitSlug, tool) => {
-    // Make tool descriptions more concise for OpenAI
-    if (tool.description && tool.description.length > 100) {
-      tool.description = tool.description.substring(0, 100) + '...';
-    }
-    return tool;
+const tools = await composio.tools.get(
+  'default',
+  {
+    toolkits: ['github'],
   },
-  
-  // Modify parameters before execution
-  beforeToolExecute: (toolSlug, toolkitSlug, params) => {
-    console.log(`Executing ${toolSlug} tool`);
-    return params;
-  },
-  
-  // Transform results after execution
-  afterToolExecute: (toolSlug, toolkitSlug, result) => {
-    // Format the result data for better presentation
-    if (result.successful && toolSlug === 'GITHUB_GET_REPO') {
-      result.data = {
-        name: result.data.name,
-        description: result.data.description,
-        stars: result.data.stargazers_count,
-        forks: result.data.forks_count,
-        url: result.data.html_url,
-      };
-    }
-    return result;
+  {
+    // Modify tool schema
+    modifyToolSchema: (toolSlug, toolkitSlug, tool) => {
+      // Make tool descriptions more concise for OpenAI
+      if (tool.description && tool.description.length > 100) {
+        tool.description = tool.description.substring(0, 100) + '...';
+      }
+      return tool;
+    },
+
+    // Modify parameters before execution
+    beforeToolExecute: (toolSlug, toolkitSlug, params) => {
+      console.log(`Executing ${toolSlug} tool`);
+      return params;
+    },
+
+    // Transform results after execution
+    afterToolExecute: (toolSlug, toolkitSlug, result) => {
+      // Format the result data for better presentation
+      if (result.successful && toolSlug === 'GITHUB_GET_REPO') {
+        result.data = {
+          name: result.data.name,
+          description: result.data.description,
+          stars: result.data.stargazers_count,
+          forks: result.data.forks_count,
+          url: result.data.html_url,
+        };
+      }
+      return result;
+    },
   }
-});
+);
 ```
 
 ## Type Definitions
@@ -318,31 +331,31 @@ type OpenAiToolCollection = Array<OpenAiTool>;
 // The provider class
 class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
   readonly name = 'openai';
-  
+
   wrapTool(tool: Tool): OpenAiTool;
   wrapTools(tools: Tool[]): OpenAiToolCollection;
-  
+
   executeToolCall(
     userId: string,
     tool: OpenAI.ChatCompletionMessageToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string>;
-  
+
   handleToolCall(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string[]>;
-  
+
   handleAssistantMessage(
     userId: string,
     run: OpenAI.Beta.Threads.Run,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>;
-  
+
   waitAndHandleAssistantStreamToolCalls(
     userId: string,
     client: OpenAI,
@@ -351,7 +364,7 @@ class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAi
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>;
-  
+
   waitAndHandleAssistantToolCalls(
     userId: string,
     client: OpenAI,

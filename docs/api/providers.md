@@ -26,7 +26,7 @@ abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends BaseProvid
 
   // Wrap a tool in the provider specific format
   abstract wrapTool(tool: Tool): TTool;
-  
+
   // Wrap a list of tools in the provider specific format
   abstract wrapTools(tools: Tool[]): TToolCollection;
 }
@@ -42,7 +42,7 @@ abstract class BaseAgenticProvider<TToolCollection, TTool> extends BaseProvider 
 
   // Wrap a tool in the provider specific format
   abstract wrapTool(tool: Tool, executeTool: ExecuteToolFn): TTool;
-  
+
   // Wrap a list of tools in the provider specific format
   abstract wrapTools(tools: Tool[], executeTool: ExecuteToolFn): TToolCollection;
 }
@@ -53,7 +53,8 @@ abstract class BaseAgenticProvider<TToolCollection, TTool> extends BaseProvider 
 The default provider for Composio SDK is the OpenAI Provider, which formats tools for use with OpenAI's API.
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
 const composio = new Composio({
   apiKey: 'your-api-key',
@@ -72,6 +73,7 @@ const openaiTool = openaiProvider.wrapTool(composioTool);
 ```
 
 **Parameters:**
+
 - `tool` (Tool): The Composio tool to transform
 
 **Returns:** OpenAI.ChatCompletionTool - The tool in OpenAI format
@@ -85,6 +87,7 @@ const openaiTools = openaiProvider.wrapTools(composioTools);
 ```
 
 **Parameters:**
+
 - `tools` (Tool[]): The list of Composio tools to transform
 
 **Returns:** Array<OpenAI.ChatCompletionTool> - The tools in OpenAI format
@@ -98,14 +101,15 @@ const result = await openaiProvider.executeToolCall(
   'user123',
   toolCall,
   { connectedAccountId: 'conn_abc123' },
-  { 
+  {
     beforeToolExecute: (toolSlug, toolkitSlug, params) => params,
-    afterToolExecute: (toolSlug, toolkitSlug, result) => result
+    afterToolExecute: (toolSlug, toolkitSlug, result) => result,
   }
 );
 ```
 
 **Parameters:**
+
 - `userId` (string): The user ID
 - `tool` (OpenAI.ChatCompletionMessageToolCall): The tool call from OpenAI
 - `options` (ExecuteToolFnOptions): Optional parameters for tool execution
@@ -118,13 +122,11 @@ const result = await openaiProvider.executeToolCall(
 Handles tool calls from an OpenAI chat completion.
 
 ```typescript
-const outputs = await openaiProvider.handleToolCall(
-  'user123',
-  chatCompletion
-);
+const outputs = await openaiProvider.handleToolCall('user123', chatCompletion);
 ```
 
 **Parameters:**
+
 - `userId` (string): The user ID
 - `chatCompletion` (OpenAI.ChatCompletion): The chat completion containing tool calls
 - `options` (ExecuteToolFnOptions): Optional parameters for tool execution
@@ -137,13 +139,11 @@ const outputs = await openaiProvider.handleToolCall(
 Handles tool calls from an OpenAI assistant run.
 
 ```typescript
-const toolOutputs = await openaiProvider.handleAssistantMessage(
-  'user123',
-  run
-);
+const toolOutputs = await openaiProvider.handleAssistantMessage('user123', run);
 ```
 
 **Parameters:**
+
 - `userId` (string): The user ID
 - `run` (OpenAI.Beta.Threads.Run): The run object containing tool calls
 - `options` (ExecuteToolFnOptions): Optional parameters for tool execution
@@ -167,6 +167,7 @@ for await (const event of openaiProvider.waitAndHandleAssistantStreamToolCalls(
 ```
 
 **Parameters:**
+
 - `userId` (string): The user ID
 - `client` (OpenAI): The OpenAI client
 - `runStream` (Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>): The run stream
@@ -190,6 +191,7 @@ const finalRun = await openaiProvider.waitAndHandleAssistantToolCalls(
 ```
 
 **Parameters:**
+
 - `userId` (string): The user ID
 - `client` (OpenAI): The OpenAI client
 - `run` (OpenAI.Beta.Threads.Run): The run object containing tool calls
@@ -204,7 +206,7 @@ const finalRun = await openaiProvider.waitAndHandleAssistantToolCalls(
 You can create custom providers by extending either `BaseNonAgenticProvider` or `BaseAgenticProvider`:
 
 ```typescript
-import { BaseNonAgenticProvider, Tool } from '@composio/sdk';
+import { BaseNonAgenticProvider, Tool } from '@composio/core';
 
 type AnthropicTool = {
   name: string;
@@ -214,7 +216,10 @@ type AnthropicTool = {
 
 type AnthropicToolCollection = AnthropicTool[];
 
-export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolCollection, AnthropicTool> {
+export class AnthropicProvider extends BaseNonAgenticProvider<
+  AnthropicToolCollection,
+  AnthropicTool
+> {
   readonly name = 'anthropic';
 
   override wrapTool(tool: Tool): AnthropicTool {
@@ -265,11 +270,7 @@ interface ExecuteToolModifiers {
 ### TransformToolSchemaModifier
 
 ```typescript
-type TransformToolSchemaModifier = (
-  toolSlug: string,
-  toolkitSlug: string,
-  tool: Tool
-) => Tool;
+type TransformToolSchemaModifier = (toolSlug: string, toolkitSlug: string, tool: Tool) => Tool;
 ```
 
 ### BeforeToolExecuteModifier

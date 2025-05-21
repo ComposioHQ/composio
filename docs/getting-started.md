@@ -8,13 +8,13 @@ Install the Composio SDK using npm, yarn, or pnpm:
 
 ```bash
 # Using npm
-npm install @composio/sdk
+npm install @composio/core
 
 # Using yarn
-yarn add @composio/sdk
+yarn add @composio/core
 
 # Using pnpm
-pnpm add @composio/sdk
+pnpm add @composio/core
 ```
 
 ## Initialization
@@ -22,7 +22,7 @@ pnpm add @composio/sdk
 To use the SDK, you need to initialize it with your API key:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 // Initialize the SDK
 const composio = new Composio({
@@ -33,7 +33,8 @@ const composio = new Composio({
 You can also customize the initialization with additional options:
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
 // Initialize with custom provider and options
 const composio = new Composio({
@@ -57,7 +58,7 @@ console.log(allToolkits.items);
 
 // Get toolkits by category
 const devToolkits = await composio.toolkits.get({
-  category: 'developer-tools'
+  category: 'developer-tools',
 });
 ```
 
@@ -139,7 +140,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
 Composio integrates seamlessly with OpenAI. Here's an example of using Composio tools with OpenAI:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 import OpenAI from 'openai';
 
 // Initialize Composio and OpenAI
@@ -161,7 +162,7 @@ const completion = await openai.chat.completions.create({
   model: 'gpt-4-turbo',
   messages: [
     { role: 'system', content: 'You are a helpful assistant with access to GitHub tools.' },
-    { role: 'user', content: 'List the repositories in the Composio organization' }
+    { role: 'user', content: 'List the repositories in the Composio organization' },
   ],
   tools, // Pass the tools to OpenAI
 });
@@ -172,13 +173,13 @@ if (completion.choices[0].message.tool_calls) {
   for (const toolCall of completion.choices[0].message.tool_calls) {
     // Parse the arguments
     const args = JSON.parse(toolCall.function.arguments);
-    
+
     // Execute the tool
     const result = await composio.tools.execute(toolCall.function.name, {
       userId: 'default',
       arguments: args,
     });
-    
+
     // Use the result in your application
     console.log(`Tool ${toolCall.function.name} result:`, result.data);
   }
@@ -202,15 +203,15 @@ const customTool = await composio.tools.createCustomTool({
     properties: {
       location: {
         type: 'string',
-        description: 'The location to get the forecast for'
+        description: 'The location to get the forecast for',
       },
       days: {
         type: 'integer',
         description: 'Number of days for the forecast',
-        default: 3
-      }
+        default: 3,
+      },
     },
-    required: ['location']
+    required: ['location'],
   },
   outputParameters: {
     type: 'object',
@@ -222,32 +223,32 @@ const customTool = await composio.tools.createCustomTool({
           properties: {
             date: { type: 'string' },
             temperature: { type: 'number' },
-            conditions: { type: 'string' }
-          }
-        }
-      }
-    }
+            conditions: { type: 'string' },
+          },
+        },
+      },
+    },
   },
   handler: async (params, context) => {
     try {
       const { location, days = 3 } = params.arguments;
-      
+
       // Here you would call your weather API
       const forecast = await getWeatherForecast(location, days);
-      
+
       return {
         data: { forecast },
         successful: true,
-        error: null
+        error: null,
       };
     } catch (error) {
       return {
         data: {},
         successful: false,
-        error: error.message
+        error: error.message,
       };
     }
-  }
+  },
 });
 
 // Now you can use your custom tool
@@ -255,8 +256,8 @@ const result = await composio.tools.execute('WEATHER_FORECAST', {
   userId: 'default',
   arguments: {
     location: 'San Francisco, CA',
-    days: 5
-  }
+    days: 5,
+  },
 });
 
 console.log(result.data.forecast);

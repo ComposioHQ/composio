@@ -49,7 +49,7 @@ Check out the [Core Concepts](./core-concepts.md) documentation for more detaile
 Here's a quick example of how to use the Composio SDK:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 // Initialize the SDK
 const composio = new Composio({

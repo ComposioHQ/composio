@@ -14,7 +14,7 @@ Composio supports two types of providers:
 Non-agentic providers extend the `BaseNonAgenticProvider` class:
 
 ```typescript
-import { BaseNonAgenticProvider, Tool } from '@composio/sdk';
+import { BaseNonAgenticProvider, Tool } from '@composio/core';
 
 // Define the tool type for your provider
 type AnthropicTool = {
@@ -27,7 +27,10 @@ type AnthropicTool = {
 type AnthropicToolCollection = AnthropicTool[];
 
 // Create the provider class
-export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolCollection, AnthropicTool> {
+export class AnthropicProvider extends BaseNonAgenticProvider<
+  AnthropicToolCollection,
+  AnthropicTool
+> {
   // Define the provider name (used for telemetry)
   readonly name = 'anthropic';
 
@@ -51,7 +54,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
       userId,
       arguments: params,
     });
-    
+
     return JSON.stringify(result);
   }
 }
@@ -62,7 +65,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
 Agentic providers extend the `BaseAgenticProvider` class:
 
 ```typescript
-import { BaseAgenticProvider, Tool, ExecuteToolFn } from '@composio/sdk';
+import { BaseAgenticProvider, Tool, ExecuteToolFn } from '@composio/core';
 
 // Define the tool type for your provider
 type LangchainTool = {
@@ -90,19 +93,19 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, Lan
       func: async (input: Record<string, unknown>) => {
         const result = await executeToolFn(tool.slug, input);
         return result.data;
-      }
+      },
     };
   }
 
   // Implement the wrapTools method (note the executeToolFn parameter)
   override wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): LangchainToolset {
     const langchainTools = tools.map(tool => this.wrapTool(tool, executeToolFn));
-    
+
     return {
       tools: langchainTools,
       executor: async (tool, input) => {
         return await tool.func(input);
-      }
+      },
     };
   }
 
@@ -114,7 +117,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, Lan
       run: async (prompt: string) => {
         // Run the agent with the prompt
         // The agent would use the tools.executor to execute tools
-      }
+      },
     };
   }
 }
@@ -125,7 +128,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, Lan
 Once you've created a custom provider, you can use it with the Composio SDK:
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 import { AnthropicProvider } from './providers/anthropic-provider';
 
 // Create an instance of your custom provider
@@ -169,11 +172,16 @@ Example:
 ```typescript
 class MyProvider extends BaseNonAgenticProvider<MyToolCollection, MyTool> {
   // Other methods...
-  
-  async executeWithContext(userId: string, toolSlug: string, args: Record<string, unknown>, context: string) {
+
+  async executeWithContext(
+    userId: string,
+    toolSlug: string,
+    args: Record<string, unknown>,
+    context: string
+  ) {
     // Add context to the arguments
     const argsWithContext = { ...args, context };
-    
+
     // Execute the tool
     return this.executeTool(toolSlug, {
       userId,
@@ -228,7 +236,7 @@ wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): TToolCollection;
 ### Claude Provider Example
 
 ```typescript
-import { BaseNonAgenticProvider, Tool } from '@composio/sdk';
+import { BaseNonAgenticProvider, Tool } from '@composio/core';
 
 type ClaudeTool = {
   name: string;
@@ -252,7 +260,7 @@ export class ClaudeProvider extends BaseNonAgenticProvider<ClaudeToolCollection,
       properties: tool.inputParameters?.properties || {},
       required: tool.inputParameters?.required || [],
     };
-    
+
     return {
       name: tool.slug,
       description: tool.description || '',
@@ -270,7 +278,7 @@ export class ClaudeProvider extends BaseNonAgenticProvider<ClaudeToolCollection,
       userId,
       arguments: input,
     });
-    
+
     return result.data;
   }
 }
@@ -279,7 +287,7 @@ export class ClaudeProvider extends BaseNonAgenticProvider<ClaudeToolCollection,
 ### LangChain Provider Example
 
 ```typescript
-import { BaseAgenticProvider, Tool, ExecuteToolFn } from '@composio/sdk';
+import { BaseAgenticProvider, Tool, ExecuteToolFn } from '@composio/core';
 
 // These types would match the actual LangChain API
 type LangChainTool = {
@@ -305,7 +313,7 @@ export class LangChainProvider extends BaseAgenticProvider<LangChainToolset, Lan
           throw new Error(result.error || 'Tool execution failed');
         }
         return result.data;
-      }
+      },
     };
   }
 
@@ -328,36 +336,36 @@ You can store provider-specific context or state in your provider class:
 ```typescript
 class ProviderWithContext extends BaseNonAgenticProvider<MyToolCollection, MyTool> {
   readonly name = 'provider-with-context';
-  
+
   // Provider-specific context
   private cache = new Map<string, any>();
   private config: any;
-  
+
   constructor(config: any) {
     super();
     this.config = config;
   }
-  
+
   override wrapTool(tool: Tool): MyTool {
     // Use the config when wrapping tools
     const customizedTool = {
       name: tool.slug,
-      description: this.config.addDescriptionPrefix 
-        ? `[${this.config.descriptionPrefix}] ${tool.description}` 
+      description: this.config.addDescriptionPrefix
+        ? `[${this.config.descriptionPrefix}] ${tool.description}`
         : tool.description,
       // Other properties...
     };
-    
+
     // Cache the tool for later use
     this.cache.set(tool.slug, customizedTool);
-    
+
     return customizedTool;
   }
-  
+
   override wrapTools(tools: Tool[]): MyToolCollection {
     return tools.map(tool => this.wrapTool(tool));
   }
-  
+
   // Custom method that uses the cache
   getTool(slug: string): MyTool | undefined {
     return this.cache.get(slug);

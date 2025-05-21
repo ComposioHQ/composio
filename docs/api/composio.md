@@ -5,7 +5,7 @@ The `Composio` class is the main entry point to the Composio SDK. It initializes
 ## Initialization
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: 'your-api-key',
@@ -21,27 +21,27 @@ const composio = new Composio({
 
 The `Composio` constructor accepts a configuration object with the following properties:
 
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `apiKey` | string | Yes | - | Your Composio API key |
-| `baseURL` | string | No | `https://api.composio.dev` | The base URL for the Composio API |
-| `allowTracking` | boolean | No | `true` | Whether to allow analytics/tracking |
-| `allowTracing` | boolean | No | `true` | Whether to allow tracing |
-| `provider` | `BaseComposioProvider` | No | `new OpenAIProvider()` | The provider to use for this Composio instance |
-| `telemetryTransport` | `BaseTelemetryTransport` | No | - | Custom transport for telemetry data |
+| Property             | Type                     | Required | Default                    | Description                                    |
+| -------------------- | ------------------------ | -------- | -------------------------- | ---------------------------------------------- |
+| `apiKey`             | string                   | Yes      | -                          | Your Composio API key                          |
+| `baseURL`            | string                   | No       | `https://api.composio.dev` | The base URL for the Composio API              |
+| `allowTracking`      | boolean                  | No       | `true`                     | Whether to allow analytics/tracking            |
+| `allowTracing`       | boolean                  | No       | `true`                     | Whether to allow tracing                       |
+| `provider`           | `BaseComposioProvider`   | No       | `new OpenAIProvider()`     | The provider to use for this Composio instance |
+| `telemetryTransport` | `BaseTelemetryTransport` | No       | -                          | Custom transport for telemetry data            |
 
 ## Properties
 
 The `Composio` class provides access to the following core models:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `tools` | `Tools` | Access to tools functionality |
-| `toolkits` | `Toolkits` | Access to toolkits functionality |
-| `triggers` | `Triggers` | Access to triggers functionality |
-| `authConfigs` | `AuthConfigs` | Access to auth configs functionality |
-| `connectedAccounts` | `ConnectedAccounts` | Access to connected accounts functionality |
-| `provider` | `BaseComposioProvider` | The provider being used |
+| Property            | Type                   | Description                                |
+| ------------------- | ---------------------- | ------------------------------------------ |
+| `tools`             | `Tools`                | Access to tools functionality              |
+| `toolkits`          | `Toolkits`             | Access to toolkits functionality           |
+| `triggers`          | `Triggers`             | Access to triggers functionality           |
+| `authConfigs`       | `AuthConfigs`          | Access to auth configs functionality       |
+| `connectedAccounts` | `ConnectedAccounts`    | Access to connected accounts functionality |
+| `provider`          | `BaseComposioProvider` | The provider being used                    |
 
 ## Methods
 
@@ -62,7 +62,7 @@ const client = composio.getClient();
 ### Basic Initialization
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -72,7 +72,8 @@ const composio = new Composio({
 ### Custom Provider
 
 ```typescript
-import { Composio, OpenAIProvider } from '@composio/sdk';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
 const openaiProvider = new OpenAIProvider();
 const composio = new Composio({
@@ -84,7 +85,7 @@ const composio = new Composio({
 ### Disable Tracking
 
 ```typescript
-import { Composio } from '@composio/sdk';
+import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
