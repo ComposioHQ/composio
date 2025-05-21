@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { TelemetryTransportParams } from '../types/telemetry.types';
 import logger from '../utils/logger';
 
@@ -15,7 +16,7 @@ export abstract class BaseTelemetryTransport {
  */
 export class ConsoleTelemetryTransport implements BaseTelemetryTransport {
   send(payload: TelemetryTransportParams): Promise<void> {
-    logger.info('payload', payload);
+    logger.debug(chalk.yellow('telemetry'), JSON.stringify(payload, null, 2));
     return Promise.resolve();
   }
 }

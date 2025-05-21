@@ -1,4 +1,9 @@
-import { TELEMETRY_EVENTS, TelemetryMetadata, TelemetryPayload } from '../types/telemetry.types';
+import {
+  TELEMETRY_EVENTS,
+  TELEMETRY_TYPES,
+  TelemetryMetadata,
+  TelemetryPayload,
+} from '../types/telemetry.types';
 import { TELEMETRY_URL } from '../utils/constants';
 import { getEnvVariable } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
@@ -25,6 +30,7 @@ import { ProcessTelemetryTransport } from './transports/ProcessTransport';
 export class TelemetryService {
   private telemetryMetadata!: TelemetryMetadata;
   private transport!: BaseTelemetryTransport;
+  private isTelemetryDisabled: boolean = true;
 
   private batchProcessor = new BatchProcessor(100, 10, async data => {
     await this.sendTelemetry(data as TelemetryPayload[]);
@@ -32,14 +38,17 @@ export class TelemetryService {
 
   setup(metadata: TelemetryMetadata, transport?: BaseTelemetryTransport) {
     this.telemetryMetadata = metadata;
+    this.isTelemetryDisabled = false;
 
     const isBrowser = typeof window !== 'undefined';
     if (transport) {
       this.transport = transport;
     } else if (isBrowser) {
       this.transport = new BrowserTelemetryTransport();
+      this.telemetryMetadata.transport = 'browser';
     } else {
       this.transport = new ProcessTelemetryTransport();
+      this.telemetryMetadata.transport = 'process';
     }
 
     // send telemetry event for SDK initialization
@@ -121,13 +130,10 @@ export class TelemetryService {
    * @returns
    */
   async sendTelemetry(payload: TelemetryPayload[]) {
-    if (!this.transport) {
-      return;
-    }
+    const isTelemetryDisabled =
+      this.isTelemetryDisabled || getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
 
-    const isTelemetryDisabled = getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
-
-    if (isTelemetryDisabled) {
+    if (!this.transport || isTelemetryDisabled) {
       return;
     }
 

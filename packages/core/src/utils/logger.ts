@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { getEnvVariable } from './env';
 
 // Define log levels with corresponding priorities
@@ -47,7 +48,7 @@ class Logger {
     }
 
     const timestamp = new Date().toISOString();
-    return `${timestamp} - ${formattedArgs}`;
+    return `${chalk.gray(timestamp)} - ${formattedArgs}`;
   }
 
   private shouldLog(level: LogLevel): boolean {

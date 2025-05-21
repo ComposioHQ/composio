@@ -1,12 +1,8 @@
+import chalk from 'chalk';
 import { TelemetryTransportParams } from '../../types/telemetry.types';
 import logger from '../../utils/logger';
 import { BaseTelemetryTransport } from '../TelemetryTransport';
-import { telemetry } from '../Telemetry';
 export class ProcessTelemetryTransport implements BaseTelemetryTransport {
-  constructor() {
-    telemetry.instrument(this);
-  }
-
   send(payload: TelemetryTransportParams): Promise<void> {
     if (typeof window !== 'undefined') {
       return Promise.reject(
@@ -60,6 +56,7 @@ export class ProcessTelemetryTransport implements BaseTelemetryTransport {
           .catch(() => {
             resolve();
           });
+        logger.debug(chalk.yellow('Process telemetry'), JSON.stringify(payload, null, 2));
       } catch (error) {
         logger.error('Error sending telemetry', error);
         resolve();

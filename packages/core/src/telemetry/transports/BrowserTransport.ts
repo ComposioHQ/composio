@@ -1,11 +1,7 @@
 import { TelemetryTransportParams } from '../../types/telemetry.types';
 import logger from '../../utils/logger';
 import { BaseTelemetryTransport } from '../TelemetryTransport';
-import { telemetry } from '../Telemetry';
 export class BrowserTelemetryTransport implements BaseTelemetryTransport {
-  constructor() {
-    telemetry.instrument(this);
-  }
   send(payload: TelemetryTransportParams): Promise<void> {
     if (typeof window === 'undefined') {
       return Promise.reject(

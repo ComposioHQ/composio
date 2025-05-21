@@ -90,6 +90,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     this.config = {
       ...config,
       allowTracking: config.allowTracking ?? true,
+      allowTracing: config.allowTracing ?? true,
     };
 
     /**
@@ -108,17 +109,20 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     /**
      * Initialize the client telemetry.
      */
-    if (this.config.allowTracking ?? true) {
+    if (this.config.allowTracking) {
       telemetry.setup(
         {
           apiKey: apiKeyParsed ?? '',
           baseUrl: baseURLParsed ?? '',
           framework: this.provider?.name || 'unknown',
           isAgentic: this.provider?._isAgentic || false,
-          source: 'node', // @TODO: get the source
+          source: 'javascript',
           version: version,
+          sdkType: 'Typescript-V3',
           isBrowser: typeof window !== 'undefined',
-          sessionId: getRandomUUID(), // @TODO: get the session id
+          // @TODO: Users might want to pass their own session id
+          // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
+          sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
         },
         config.telemetryTransport
       );

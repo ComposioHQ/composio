@@ -17,7 +17,9 @@ export type TelemetryMetadata = {
   framework: string;
   isAgentic: boolean;
   source: string;
-  sessionId: string;
+  transport?: string;
+  sdkType?: string;
+  sessionId?: string;
   isBrowser?: boolean;
 };
 
@@ -35,6 +37,13 @@ type AcceptableJSONValue =
   | boolean
   | null
   | undefined;
+
+export const TELEMETRY_TYPES = {
+  SDK_USAGE: 'SDK_USAGE',
+  SDK_ERROR: 'SDK_ERROR',
+} as const;
+
+export type TelemetryType = (typeof TELEMETRY_TYPES)[keyof typeof TELEMETRY_TYPES];
 
 export interface TelemetryTransportParams {
   url: string;
