@@ -1,10 +1,19 @@
-import { TELEMETRY_EVENTS, TelemetryMetadata, TelemetryPayload } from '../types/telemetry.types';
+import { ComposioError as ComposioClientError } from '@composio/client';
+import {
+  TELEMETRY_EVENTS,
+  TelemetryErrorPayload,
+  TelemetryErrorPayloadParams,
+  TelemetryMetadata,
+  TelemetryPayload,
+  TelemetryPayloadParams,
+} from '../types/telemetry.types';
 import { TELEMETRY_URL } from '../utils/constants';
 import { getEnvVariable } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
 import { BaseTelemetryTransport } from './TelemetryTransport';
 import { BrowserTelemetryTransport } from './transports/BrowserTransport';
 import { ProcessTelemetryTransport } from './transports/ProcessTransport';
+import { ComposioError } from '../errors/ComposioError';
 /**
  * The Telemetry class is used to log the telemetry for any given instance which extends InstrumentedInstance.
  *
@@ -85,14 +94,13 @@ export class TelemetryService {
       ) => Promise<unknown>;
 
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
-        const telemetryPayload: TelemetryPayload = {
+        const telemetryPayload: TelemetryPayloadParams = {
           eventName: TELEMETRY_EVENTS.SDK_METHOD_INVOKED,
           data: {
             fileName: instrumentedClassName,
             method: name,
             params: args,
           },
-          sdk_meta: this.telemetryMetadata,
         };
 
         this.batchProcessor.pushItem(telemetryPayload);
@@ -100,23 +108,46 @@ export class TelemetryService {
         try {
           return await originalMethod.apply(instance, args);
         } catch (error) {
-          const telemetryPayload: TelemetryPayload = {
-            eventName: TELEMETRY_EVENTS.SDK_METHOD_ERROR,
-            data: {
-              fileName: instrumentedClassName,
-              method: name,
-              params: args,
-              error: error,
-            },
-            sdk_meta: this.telemetryMetadata,
-          };
-          this.batchProcessor.pushItem(telemetryPayload);
+          // client error, this is likely handled by the API itseld
+          if (error instanceof ComposioClientError) {
+            const telemetryPayload: TelemetryErrorPayloadParams = {
+              error_id: error.name,
+              error_message: error.message,
+              original_error: error.cause,
+              current_stack: error.stack?.split('\n') || [],
+              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+            };
+            this.batchProcessor.pushItem(telemetryPayload);
+          } else if (error instanceof ComposioError) {
+            // Composio SDK Errors
+            const telemetryPayload: TelemetryErrorPayloadParams = {
+              error_id: error.name,
+              error_message: error.message,
+              original_error: error.cause,
+              current_stack: error.stack?.split('\n') || [],
+              error_code: error.code,
+              possible_fix: error.possibleFixes?.join('\n'),
+              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+            };
+            this.batchProcessor.pushItem(telemetryPayload);
+          } else if (error instanceof Error) {
+            // Unhandled errors
+            const telemetryPayload: TelemetryErrorPayloadParams = {
+              error_id: error.name,
+              error_message: error instanceof Error ? error.name : 'Unknown error',
+              original_error: error,
+              current_stack: error.stack?.split('\n') || [],
+              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+            };
+            this.batchProcessor.pushItem(telemetryPayload);
+          }
+          // rethrow the error to be handled by the caller
           throw error;
         }
       };
-    }
 
-    return instance;
+      return instance;
+    }
   }
 
   /**
@@ -139,7 +170,7 @@ export class TelemetryService {
    * @param payload - the telemetry payload to send
    * @returns
    */
-  async sendTelemetry(payload: TelemetryPayload[]) {
+  async sendTelemetry(payload: TelemetryPayloadParams[]) {
     if (!this.shouldSendTelemetry()) {
       return;
     }
@@ -147,7 +178,10 @@ export class TelemetryService {
     const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
 
     const reqPayload = {
-      data: payload,
+      data: payload.map(p => ({
+        ...p,
+        sdk_meta: this.telemetryMetadata,
+      })),
       url,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -156,7 +190,7 @@ export class TelemetryService {
     this.transport.send(reqPayload);
   }
 
-  async sendErrorTelemetry(error: Error) {
+  async sendErrorTelemetry(payload: TelemetryErrorPayload) {
     if (!this.shouldSendTelemetry()) {
       return;
     }
@@ -164,7 +198,10 @@ export class TelemetryService {
     const url = `${TELEMETRY_URL}/api/sdk_metrics/error`;
 
     const reqPayload = {
-      data: { error },
+      data: {
+        ...payload,
+        sdk_meta: this.telemetryMetadata,
+      },
       url,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

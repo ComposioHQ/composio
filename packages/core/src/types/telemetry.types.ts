@@ -14,7 +14,7 @@ export type TelemetryMetadata = {
   apiKey: string;
   baseUrl: string;
   version: string;
-  framework: string;
+  frameworkRuntime: string;
   isAgentic: boolean;
   source: string;
   transport?: string;
@@ -23,9 +23,24 @@ export type TelemetryMetadata = {
   isBrowser?: boolean;
 };
 
-export type TelemetryPayload = {
+export type TelemetryPayloadParams = {
   eventName: TelemetryEvent;
   data: Record<string, unknown>;
+};
+export type TelemetryPayload = TelemetryPayloadParams & {
+  sdk_meta: TelemetryMetadata;
+};
+
+export type TelemetryErrorPayloadParams = {
+  error_id: string;
+  error_message: string;
+  original_error: unknown;
+  error_code?: string | undefined;
+  possible_fix?: string | undefined;
+  description?: string;
+  current_stack?: string[];
+};
+export type TelemetryErrorPayload = TelemetryErrorPayloadParams & {
   sdk_meta: TelemetryMetadata;
 };
 

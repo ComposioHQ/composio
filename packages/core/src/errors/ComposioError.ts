@@ -1,3 +1,5 @@
+import { telemetry } from '../telemetry/Telemetry';
+
 /**
  * @fileoverview Error class for Composio.
  *
@@ -14,6 +16,7 @@ export type ComposioErrorOptions = {
   cause?: unknown;
   meta?: Record<string, unknown>;
   possibleFixes?: string[];
+  stack?: string;
 };
 export class ComposioError extends Error {
   public name = 'ComposioError';
@@ -22,6 +25,7 @@ export class ComposioError extends Error {
   public readonly cause?: unknown;
   public readonly meta?: Record<string, unknown>;
   public readonly possibleFixes?: string[];
+  public readonly stack?: string;
 
   constructor(message: string, options: ComposioErrorOptions = {}) {
     super(message);
