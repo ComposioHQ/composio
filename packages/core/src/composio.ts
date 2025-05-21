@@ -71,7 +71,6 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       config?.apiKey
     );
 
-    console.log(`Process.env.`, getEnvVariable('COMPOSIO_LOG_LEVEL'));
     if (IS_DEVELOPMENT_OR_CI) {
       logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
