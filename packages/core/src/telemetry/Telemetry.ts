@@ -120,15 +120,27 @@ export class TelemetryService {
   }
 
   /**
+   * Check if the telemetry should be sent.
+   * @returns true if the telemetry should be sent, false otherwise
+   */
+  private shouldSendTelemetry() {
+    const devEnvironments = ['test', 'development', 'CI'];
+    const nodeEnv = (getEnvVariable('NODE_ENV', 'development') || '').toLowerCase();
+    const isDevEnvironment = devEnvironments.includes(nodeEnv);
+    const isTelemetryDisabledByEnv = getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
+
+    return (
+      this.transport && !this.isTelemetryDisabled && !isTelemetryDisabledByEnv && !isDevEnvironment
+    );
+  }
+
+  /**
    * Send the telemetry payload to the server.
    * @param payload - the telemetry payload to send
    * @returns
    */
   async sendTelemetry(payload: TelemetryPayload[]) {
-    const isTelemetryDisabled =
-      this.isTelemetryDisabled || getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
-
-    if (!this.transport || isTelemetryDisabled) {
+    if (!this.shouldSendTelemetry()) {
       return;
     }
 
