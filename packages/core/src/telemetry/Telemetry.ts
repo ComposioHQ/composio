@@ -155,6 +155,23 @@ export class TelemetryService {
 
     this.transport.send(reqPayload);
   }
+
+  async sendErrorTelemetry(error: Error) {
+    if (!this.shouldSendTelemetry()) {
+      return;
+    }
+
+    const url = `${TELEMETRY_URL}/api/sdk_metrics/error`;
+
+    const reqPayload = {
+      data: { error },
+      url,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    };
+
+    this.transport.send(reqPayload);
+  }
 }
 
 export const telemetry = new TelemetryService();
