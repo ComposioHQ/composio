@@ -51,8 +51,8 @@ importers:
   examples/connected-accounts:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
-        version: link:../../packages/core
+        specifier: '*'
+        version: 0.1.12-alpha.6(encoding@0.1.13)
       openai:
         specifier: ^4.94.0
         version: 4.98.0(encoding@0.1.13)(zod@3.24.4)
@@ -67,8 +67,8 @@ importers:
   examples/langchain:
     dependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.6
-        version: 0.1.12-alpha.6(encoding@0.1.13)
+        specifier: 0.1.12-alpha.9
+        version: 0.1.12-alpha.9(encoding@0.1.13)
       '@composio/langchain':
         specifier: workspace:*
         version: link:../../packages/providers/langchain
@@ -101,8 +101,8 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: 0.1.12-alpha.6
-        version: 0.1.12-alpha.6(encoding@0.1.13)
+        specifier: 0.1.12-alpha.9
+        version: 0.1.12-alpha.9(encoding@0.1.13)
       '@composio/vercel':
         specifier: workspace:*
         version: link:../../packages/providers/vercel
@@ -120,8 +120,8 @@ importers:
   examples/openai:
     dependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.6
-        version: 0.1.12-alpha.6(encoding@0.1.13)
+        specifier: 0.1.12-alpha.9
+        version: 0.1.12-alpha.9(encoding@0.1.13)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
@@ -164,8 +164,8 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: 0.1.12-alpha.6
-        version: 0.1.12-alpha.6(encoding@0.1.13)
+        specifier: 0.1.12-alpha.9
+        version: 0.1.12-alpha.9(encoding@0.1.13)
       '@composio/vercel':
         specifier: workspace:*
         version: link:../../packages/providers/vercel
@@ -224,8 +224,8 @@ importers:
         version: 4.20250515.0
     devDependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.7
-        version: 0.1.12-alpha.7(encoding@0.1.13)
+        specifier: workspace:*
+        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -243,8 +243,8 @@ importers:
         version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
     devDependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.7
-        version: 0.1.12-alpha.7(encoding@0.1.13)
+        specifier: workspace:*
+        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -262,8 +262,8 @@ importers:
         version: 4.98.0(encoding@0.1.13)(zod@3.24.4)
     devDependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.7
-        version: 0.1.12-alpha.7(encoding@0.1.13)
+        specifier: workspace:*
+        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -281,8 +281,8 @@ importers:
         version: 4.3.15(react@19.1.0)(zod@3.24.4)
     devDependencies:
       '@composio/core':
-        specifier: 0.1.12-alpha.7
-        version: 0.1.12-alpha.7(encoding@0.1.13)
+        specifier: workspace:*
+        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -398,8 +398,8 @@ packages:
   '@composio/core@0.1.12-alpha.6':
     resolution: {integrity: sha512-WJjxDNYeKn0KeXoUBlmNeF8uDCj2Qd2hW4wtmNF5FnJogJmeym9FfiMmkGbXygcSk35Bl9xfbY/W7Ma51BQUlQ==}
 
-  '@composio/core@0.1.12-alpha.7':
-    resolution: {integrity: sha512-m6cH/GweBO3DyxvPLUlNzliQDbn2yyIG70A0x6QOg5j1rKhxnIyHPC2d4pl4xstShLcgmMqMNTFbtxFvBn7hEA==}
+  '@composio/core@0.1.12-alpha.9':
+    resolution: {integrity: sha512-EaiqULUlA8Lotxas+Sg72OaTm/WBNm4a+gBSgXCM0AHXc8FLL0/fx7bS5vvNFmXJFtrAn8KAyvrpX94EVJTZvg==}
 
   '@esbuild/aix-ppc64@0.25.4':
     resolution: {integrity: sha512-1VCICWypeQKhVbE9oW/sJaAmjLxhVqacdkvPLEjwlttjfwENRSClS8EjBz0KzRyFSCPDIkuXW34Je/vk7zdB7Q==}
@@ -2829,7 +2829,7 @@ snapshots:
       - encoding
       - ws
 
-  '@composio/core@0.1.12-alpha.7(encoding@0.1.13)':
+  '@composio/core@0.1.12-alpha.9(encoding@0.1.13)':
     dependencies:
       '@composio/client': 0.1.0-alpha.10
       openai: 4.98.0(encoding@0.1.13)(zod@3.24.4)

@@ -16,7 +16,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
-    "@composio/core": "0.1.12-alpha.6",
+    "@composio/core": "0.1.12-alpha.9",
     "dotenv": "^16.4.1",
     "openai": "^4.94.0"
   },
