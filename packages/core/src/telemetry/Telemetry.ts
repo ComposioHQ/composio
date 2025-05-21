@@ -1,9 +1,4 @@
-import {
-  TELEMETRY_EVENTS,
-  TELEMETRY_TYPES,
-  TelemetryMetadata,
-  TelemetryPayload,
-} from '../types/telemetry.types';
+import { TELEMETRY_EVENTS, TelemetryMetadata, TelemetryPayload } from '../types/telemetry.types';
 import { TELEMETRY_URL } from '../utils/constants';
 import { getEnvVariable } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
