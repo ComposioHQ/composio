@@ -13,7 +13,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
-    "@composio/core": "0.1.12-alpha.9",
+    "@composio/core": "workspace:*",
     "@composio/langchain": "workspace:*",
     "@langchain/core": "^0.3.56",
     "@langchain/langgraph": "^0.2.72",

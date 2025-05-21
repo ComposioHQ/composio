@@ -13,7 +13,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
-    "@composio/core": "*",
+    "@composio/core": "workspace:*",
     "openai": "^4.94.0"
   },
   "devDependencies": {
