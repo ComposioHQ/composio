@@ -93,7 +93,7 @@ export const AuthConfigListParamsSchema = z.object({
   cursor: z.string().optional(),
   isComposioManaged: z.boolean().optional(),
   limit: z.number().optional(),
-  toolkitSlug: z.string().optional(),
+  toolkit: z.string().optional(),
 });
 export type AuthConfigListParams = z.infer<typeof AuthConfigListParamsSchema>;
 

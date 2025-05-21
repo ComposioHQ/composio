@@ -14,7 +14,7 @@ const allAuthConfigs = await composio.authConfigs.list();
 
 // List auth configs for a specific toolkit
 const githubAuthConfigs = await composio.authConfigs.list({
-  toolkitSlug: 'github'
+  toolkit: 'github',
 });
 ```
 
@@ -44,7 +44,7 @@ console.log(authConfig.name); // Name of the auth config
 
 **Throws:** ComposioAuthConfigNotFoundError if the auth config cannot be found
 
-### create(toolkitSlug, data)
+### create(toolkit, data)
 
 Creates a new auth config for a toolkit.
 
@@ -58,12 +58,13 @@ const authConfig = await composio.authConfigs.create('github', {
 
 **Parameters:**
 
-- `toolkitSlug` (string): The slug of the toolkit to create an auth config for
+- `toolkit` (string): The slug of the toolkit to create an auth config for
 - `data` (AuthConfigCreateParams): The parameters for creating the auth config
 
 **Returns:** Promise<AuthConfigCreateResponse> - The created auth config
 
 **Throws:**
+
 - ValidationError if the parameters fail validation
 - ComposioToolNotFoundError if the toolkit cannot be found
 
@@ -114,10 +115,10 @@ await composio.authConfigs.delete('auth_config_123');
 
 ```typescript
 interface AuthConfigListParams {
-  cursor?: string;           // Pagination cursor
-  limit?: number;            // Limit the number of results
-  orderBy?: string;          // Order by field
-  toolkitSlug?: string;      // Filter by toolkit slug
+  cursor?: string; // Pagination cursor
+  limit?: number; // Limit the number of results
+  orderBy?: string; // Order by field
+  toolkit?: string; // Filter by toolkit slug
 }
 ```
 
@@ -126,8 +127,8 @@ interface AuthConfigListParams {
 ```typescript
 interface AuthConfigListResponse {
   items: AuthConfigRetrieveResponse[]; // List of auth configs
-  nextCursor: string | null;          // Pagination cursor
-  totalPages: number;                 // Total number of pages
+  nextCursor: string | null; // Pagination cursor
+  totalPages: number; // Total number of pages
 }
 ```
 
@@ -135,20 +136,21 @@ interface AuthConfigListResponse {
 
 ```typescript
 interface AuthConfigRetrieveResponse {
-  id: string;                // Auth config ID
-  name: string;              // Name of the auth config
-  type: AuthConfigType;      // Type of auth config
-  toolkit: {                 // Associated toolkit
-    id: string;              // Toolkit ID
-    slug: string;            // Toolkit slug
-    name: string;            // Toolkit name
+  id: string; // Auth config ID
+  name: string; // Name of the auth config
+  type: AuthConfigType; // Type of auth config
+  toolkit: {
+    // Associated toolkit
+    id: string; // Toolkit ID
+    slug: string; // Toolkit slug
+    name: string; // Toolkit name
   };
   authScheme: AuthSchemeType; // Auth scheme (e.g., 'oauth2', 'api_key')
-  isDisabled: boolean;       // Whether the auth config is disabled
+  isDisabled: boolean; // Whether the auth config is disabled
   fields: Record<string, unknown>; // Configuration fields
   meta: Record<string, unknown>; // Additional metadata
-  createdAt: string;         // Creation timestamp
-  updatedAt: string;         // Last update timestamp
+  createdAt: string; // Creation timestamp
+  updatedAt: string; // Last update timestamp
 }
 ```
 
@@ -156,9 +158,9 @@ interface AuthConfigRetrieveResponse {
 
 ```typescript
 interface AuthConfigCreateParams {
-  type: AuthConfigType;              // Type of auth config
-  name: string;                      // Name of the auth config
-  fields?: Record<string, unknown>;  // Configuration fields
+  type: AuthConfigType; // Type of auth config
+  name: string; // Name of the auth config
+  fields?: Record<string, unknown>; // Configuration fields
 }
 ```
 
@@ -166,8 +168,8 @@ interface AuthConfigCreateParams {
 
 ```typescript
 interface AuthConfigUpdateParams {
-  name?: string;                     // Name of the auth config
-  fields?: Record<string, unknown>;  // Configuration fields
+  name?: string; // Name of the auth config
+  fields?: Record<string, unknown>; // Configuration fields
 }
 ```
 

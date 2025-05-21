@@ -107,7 +107,7 @@ export class AuthConfigs {
    *
    * // List auth configs for a specific toolkit
    * const githubConfigs = await composio.authConfigs.list({
-   *   toolkitSlug: 'github'
+   *   toolkit: 'github'
    * });
    *
    * // List Composio-managed auth configs
@@ -122,7 +122,7 @@ export class AuthConfigs {
       cursor: parsedQuery?.cursor,
       is_composio_managed: parsedQuery?.isComposioManaged,
       limit: parsedQuery?.limit?.toString(),
-      toolkit_slug: parsedQuery?.toolkitSlug,
+      toolkit_slug: parsedQuery?.toolkit,
     });
     const parsedResult = AuthConfigListResponseSchema.safeParse({
       items: result.items.map(item => this.parseAuthConfigRetrieveResponse(item)),
