@@ -34,42 +34,22 @@ h2 {
   font-weight: 400 !important;
 }
 
-/* Styles for .fern-mdx-link to make them vibrant and visible */
+.fern-sidebar-heading-content {
+  font-weight: 500 !important;
+}
+
+.fern-header-tab-button .font-medium {
+  font-weight: 400 !important;
+}
+
 .fern-mdx-link {
-  font-weight: 400 !important; /* Existing font-weight */
-  color: #007bff !important;   /* Vibrant blue for light mode */
-  text-decoration: none !important; /* No underline by default */
-}
-
-.fern-mdx-link:visited {
-  color: #551A8B !important;   /* Traditional purple for visited links in light mode */
-  text-decoration: none !important; /* No underline for visited links by default */
-}
-
-.fern-mdx-link:hover,
-.fern-mdx-link:focus {
-  color: #0056b3 !important;   /* Darker blue on hover/focus for light mode */
-  text-decoration: underline !important; /* Underline on hover/focus for clarity */
-}
-
-/* Dark mode styles for .fern-mdx-link */
-.dark .fern-mdx-link {
-  color: #3399ff !important;   /* Brighter, vibrant blue for dark mode */
-}
-
-.dark .fern-mdx-link:visited {
-  color: #9d79d2 !important;   /* Lighter, visible purple for visited links in dark mode */
-}
-
-.dark .fern-mdx-link:hover,
-.dark .fern-mdx-link:focus {
-  color: #66b3ff !important;   /* Even lighter blue on hover/focus for dark mode */
-  /* text-decoration: underline !important; will be inherited from the non-dark mode hover/focus rule */
+  font-weight: 400 !important;
 }
 
 .fern-announcement .fern-mdx-link, .fern-announcement svg.external-link-icon {
-    color: #fff !important; /* This more specific rule will override the base .fern-mdx-link color for announcements */
+    color: #fff !important;
 }
+
 
 .font-semibold {
   font-weight: 500 !important;

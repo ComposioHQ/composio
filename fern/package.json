@@ -1,11 +1,12 @@
 {
-	"name": "compodio-dev-experience",
+	"name": "composio-docs",
 	"version": "0.0.0",
 	"type": "module",
+	"private": true,
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"clean": "rm -rf ./fern/dist && rm -rf ./node_modules",
-		"compile": "npx tailwindcss -i ./fern/assets/input.css -o ./fern/dist/output.css",
+		"clean": "rm -rf ./dist && rm -rf ./node_modules",
+		"compile": "npx tailwindcss -i ./assets/input.css -o ./dist/output.css",
 		"docs:check": "pnpm compile && fern check",
 		"docs:publish": "pnpm compile && fern generate --docs",
 		"docs:preview": "pnpm compile && fern generate --docs --preview --log-level debug",
@@ -13,17 +14,24 @@
 		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10"
 	},
 	"dependencies": {
-		"gray-matter": "^4.0.3",
+		"@composio/cloudflare": "0.1.12-alpha.9",
+		"@composio/core": "0.1.12-alpha.9",
+		"@composio/langchain": "0.1.12-alpha.9",
+		"@composio/openai": "0.1.12-alpha.9",
+		"@composio/vercel": "0.1.12-alpha.9",
 		"fern-api": "^0.51.36",
+		"gray-matter": "^4.0.3",
 		"react": "^18.3.1",
 		"supergateway": "^2.1.0"
 	},
 	"devDependencies": {
-		"@types/node": "^20.14.10",
+		"@types/convict": "^6.1.6",
+		"@types/glob": "^8.1.0",
+		"@types/node": "^20.17.50",
 		"@types/react": "^18.3.3",
 		"only-allow": "^1.2.1",
 		"tailwindcss": "^3.4.4",
-		"typedoc": "^0.28.1",
-		"typedoc-plugin-markdown": "^4.6.0"
+		"typescript": "^5.8.3",
+		"vitest": "^3.1.4"
 	}
 }

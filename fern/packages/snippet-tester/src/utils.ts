@@ -20,7 +20,11 @@ export const execCmd = async (cmd: string, cwd: string): Promise<{error: null | 
                 resolve({ error, stderr, stdout})
             })
         } catch (error) {
-            resolve({error, stderr: '', stdout: ''})
+            if (error instanceof Error) {
+                resolve({error: error as childProcess.ExecException, stderr: '', stdout: ''})
+            } else {
+                resolve({error: null, stderr: String(error), stdout: ''})
+            }
         }
     })
 }
@@ -43,7 +47,7 @@ export const getFilesByExtension = async (base: string, extension: string): Prom
 }
 
 export const execTypescriptFile = async (projectRoot: string, file: string) => {
-    const cmd = `npx ts-node ${file}`
+    const cmd = `bun run ${file}`
     return execCmd(cmd, projectRoot)
 }
 

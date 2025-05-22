@@ -4,28 +4,26 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "bun test",
+    "start": "bun run src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@jest/globals": "^29.7.0",
     "@pnpm/find-workspace-dir": "^7.0.2",
     "cohere": "^1.1.1",
     "cohere-ai": "^7.14.0",
     "convict": "^6.2.4",
     "glob": "^11.0.0",
-    "jest": "^29.7.0",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.8",
-    "@babel/preset-env": "^7.25.8",
-    "@babel/preset-typescript": "^7.25.7",
     "@types/convict": "^6.1.6",
-    "@types/jest": "^29.5.13",
-    "babel-jest": "^29.7.0"
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.0.0",
+    "bun-types": "latest"
   }
 }

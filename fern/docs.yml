@@ -77,11 +77,11 @@ layout:
 
 colors:
   accent-primary:
-    light: "#3A8F9E"
-    dark: "#79C6D1"
+    light: "#316DFF"
+    dark: "#9EB6FF"
   background:
-    light: "#F7F6F2"
-    dark: "#091015"
+    light: "#F5F3EA"
+    dark: "#0A0C12"
   # sidebar-background:
   #   light: "#FAFAFA"
   #   dark: "#1C1C1C"

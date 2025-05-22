@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test } from 'bun:test';
 import * as fs from "fs";
 import { glob } from "glob";
 import path from 'path';
@@ -20,13 +20,13 @@ const findPnpmWorkspaceDir = (curDir = __dirname) => {
 
 const workspaceDir = findPnpmWorkspaceDir()
 
-describe.each(config.languages.map(o => [o.name, o] as [string, Language]))("Testing language %s", (name, lang) => {
+describe.each(config.languages.map(o => [o.name, o] as [string, Language]))("Testing language %s", (name: string, lang: Language) => {
     const cwd = lang.snippetRoot(workspaceDir)
     const filePaths = glob.globSync(lang.glob, { cwd })
 
-    test.concurrent.each(filePaths)('testing file %s', async (filePath) => {
+    test.each(filePaths)('testing file %s', async (filePath: string) => {
         const { error } = await execCmd(lang.exec(filePath), cwd)
 
         expect(error).toMatchSnapshot()
-    }, 1000000);
+    }, { timeout: 1000000 });
 })

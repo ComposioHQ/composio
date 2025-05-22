@@ -31,8 +31,8 @@ navigation:
         contents:
           - page: Welcome
             path: pages/v3/get-started/welcome.mdx
-          - page: Installation
-            path: pages/v3/get-started/installation.mdx
+          # - page: Installation
+          #   path: pages/v3/get-started/installation.mdx
           - page: Quickstart
             path: pages/v3/get-started/quickstart.mdx
           - page: Providers and Toolsets
