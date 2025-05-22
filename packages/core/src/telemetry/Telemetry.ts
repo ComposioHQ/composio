@@ -119,7 +119,7 @@ export class TelemetryService {
           if (error instanceof Error && !error.errorId) {
             // if there is error id, it means the error is already handled
             error.errorId = getRandomUUID();
-            await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+            this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
           }
           // @TODO: check if this will send the error telemetry to the server
           // rethrow the error to be handled by the caller
@@ -148,11 +148,14 @@ export class TelemetryService {
 
   /**
    * Prepare and send the error telemetry.
+   *
+   * @TODO This currently blocks the thread and sends the telemetry to the server.
+   *
    * @param {unknown} error - The error to send.
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
    */
-  private async prepareAndSendErrorTelemetry(
+  private prepareAndSendErrorTelemetry(
     error: unknown,
     instrumentedClassName: string,
     name: string,
@@ -167,7 +170,7 @@ export class TelemetryService {
         current_stack: error.stack?.split('\n') || [],
         description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
       };
-      await this.sendErrorTelemetry(telemetryPayload);
+      this.sendErrorTelemetry(telemetryPayload);
     } else if (error instanceof ComposioError) {
       // Composio SDK Errors
       const telemetryPayload: TelemetryErrorPayloadParams = {
@@ -179,7 +182,7 @@ export class TelemetryService {
         possible_fix: error.possibleFixes?.join('\n'),
         description: `Original Call : ${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
       };
-      await this.sendErrorTelemetry(telemetryPayload);
+      this.sendErrorTelemetry(telemetryPayload);
     } else if (error instanceof Error) {
       // Unhandled errors
       const telemetryPayload: TelemetryErrorPayloadParams = {
@@ -189,7 +192,7 @@ export class TelemetryService {
         current_stack: error.stack?.split('\n') || [],
         description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
       };
-      await this.sendErrorTelemetry(telemetryPayload);
+      this.sendErrorTelemetry(telemetryPayload);
     }
   }
 
@@ -235,7 +238,7 @@ export class TelemetryService {
       headers: { 'Content-Type': 'application/json' },
     };
 
-    await this.transport.send(reqPayload);
+    this.transport.send(reqPayload);
   }
 }
 

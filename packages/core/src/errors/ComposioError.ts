@@ -81,7 +81,7 @@ export class ComposioError extends Error {
       options.statusCode ||
       (options.cause instanceof BadRequestError ? options.cause.status : undefined);
 
-    this.code = `TS-SDK:${options.code}`;
+    this.code = `TS-SDK::${options.code}`;
     // format the possible fixes
     this.possibleFixes = options.possibleFixes;
 
