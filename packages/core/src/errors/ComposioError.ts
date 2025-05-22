@@ -66,6 +66,7 @@ export class ComposioError extends Error {
   public name = 'ComposioError';
   public code?: string;
   public possibleFixes?: string[];
+  public errorId?: string;
 
   /**
    * Creates a new ComposioError
@@ -80,12 +81,15 @@ export class ComposioError extends Error {
       options.statusCode ||
       (options.cause instanceof BadRequestError ? options.cause.status : undefined);
 
-    // Only define properties that have values to avoid showing undefined in error display
-    this.code = options.code;
+    this.code = `TS-SDK:${options.code}`;
+    // format the possible fixes
     this.possibleFixes = options.possibleFixes;
 
+    // Only define properties that have values to avoid showing undefined in error display
+    // Node.js by default shows all the properties of the error object, so we are doing it conditionally
     this.definePropertyIfExists('statusCode', statusCode);
     this.definePropertyIfExists('cause', options.cause);
+    this.definePropertyIfExists('stack', options.stack);
 
     if (options.meta && Object.keys(options.meta).length > 0) {
       this.definePropertyIfExists('meta', options.meta);
@@ -197,9 +201,7 @@ export class ComposioError extends Error {
 
     if (data.possibleFixes?.length) {
       logger.error('\n' + chalk.cyan.bold('Try the following:'));
-      data.possibleFixes.forEach((fix, index) => {
-        logger.error('  ' + chalk.green(`${index + 1}. ${fix}`));
-      });
+      logger.error(data.possibleFixes);
     }
 
     if (data.stack?.length) {

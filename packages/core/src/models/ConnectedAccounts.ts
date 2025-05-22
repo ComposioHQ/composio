@@ -61,7 +61,7 @@ export class ConnectedAccounts {
     });
     if (!result.success) {
       throw new ValidationError('Failed to parse connected account retrieve response', {
-        zodError: result.error,
+        cause: result.error,
       });
     }
     return result.data;
@@ -98,7 +98,7 @@ export class ConnectedAccounts {
       const parsedQuery = ConnectedAccountListParamsSchema.safeParse(query);
       if (!parsedQuery.success) {
         throw new ValidationError('Failed to parse connected account list query', {
-          zodError: parsedQuery.error,
+          cause: parsedQuery.error,
         });
       }
       rawQuery = {
@@ -122,7 +122,7 @@ export class ConnectedAccounts {
     });
     if (!parsedResponse.success) {
       throw new ValidationError('Failed to parse connected account list response', {
-        zodError: parsedResponse.error,
+        cause: parsedResponse.error,
       });
     }
     return parsedResponse.data;

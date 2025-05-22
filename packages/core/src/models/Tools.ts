@@ -254,7 +254,7 @@ export class Tools<
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
       throw new ValidationError('Invalid tool list parameters', {
-        zodError: queryParams.error,
+        cause: queryParams.error,
       });
     }
 
@@ -322,12 +322,15 @@ export class Tools<
       return customTool;
     }
     // if not, fetch the tool from the Composio API
-    const tool = await this.client.tools.retrieve(slug);
-    if (!tool) {
-      throw new ComposioToolNotFoundError(
-        `[getRawComposioToolBySlug] Tool with slug ${slug} not found`
-      );
+    let tool: ToolRetrieveResponse;
+    try {
+      tool = await this.client.tools.retrieve(slug);
+    } catch (error) {
+      throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
+        cause: error,
+      });
     }
+
     // change the case of the tool to camel case
     let modifiedToool = this.transformToolCases(tool);
     // apply local modifiers if they are provided

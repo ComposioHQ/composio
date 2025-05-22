@@ -170,10 +170,10 @@ describe('Tools', () => {
 
       const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
       getCustomToolBySlugSpy.mockResolvedValueOnce(undefined);
-      mockClient.tools.retrieve.mockResolvedValueOnce(null);
+      mockClient.tools.retrieve.mockRejectedValue(null);
 
       await expect(context.tools.getRawComposioToolBySlug(userId, slug)).rejects.toThrow(
-        `Tool with slug ${slug} not found`
+        `Unable to retrieve tool with slug ${slug}`
       );
     });
 

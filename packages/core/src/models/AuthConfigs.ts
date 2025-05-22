@@ -86,7 +86,7 @@ export class AuthConfigs {
     });
     if (result.error) {
       throw new ValidationError('Failed to parse auth config response', {
-        zodError: result.error,
+        cause: result.error,
       });
     }
     return result.data;
@@ -133,7 +133,7 @@ export class AuthConfigs {
     });
     if (parsedResult.error) {
       throw new ValidationError('Failed to parse auth config list response', {
-        zodError: parsedResult.error,
+        cause: parsedResult.error,
       });
     }
     return parsedResult.data;
@@ -164,7 +164,7 @@ export class AuthConfigs {
     const parsedOptions = CreateAuthConfigParamsSchema.safeParse(options);
     if (parsedOptions.error) {
       throw new ValidationError('Failed to parse auth config create options', {
-        zodError: parsedOptions.error,
+        cause: parsedOptions.error,
       });
     }
     const result = await this.client.authConfigs.create({
@@ -181,7 +181,7 @@ export class AuthConfigs {
     });
     if (parsedResult.error) {
       throw new ValidationError('Failed to parse auth config create response', {
-        zodError: parsedResult.error,
+        cause: parsedResult.error,
       });
     }
     return parsedResult.data;
@@ -245,7 +245,7 @@ export class AuthConfigs {
     const parsedData = AuthConfigUpdateParamsSchema.safeParse(data);
     if (parsedData.error) {
       throw new ValidationError('Failed to parse auth config update data', {
-        zodError: parsedData.error,
+        cause: parsedData.error,
       });
     }
     return this.client.authConfigs.update(

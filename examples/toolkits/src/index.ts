@@ -4,5 +4,5 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const toolkit = await composio.toolkits.get('hackernews');
-const client = composio.getClient();
+const toolkit = await composio.tools.get('default', 'INvalid tool');
+// const client = composio.getClient();

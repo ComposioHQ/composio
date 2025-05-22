@@ -41,7 +41,7 @@ Some error classes have specific requirements:
 1. **ValidationError**: Accepts a `zodError` in the options.
 
    ```typescript
-   new ValidationError('Message', { zodError: someZodError });
+   new ValidationError('Message', { cause: someZodError });
    ```
 
 2. **ComposioToolExecutionError**: Accepts an `originalError` in the options.

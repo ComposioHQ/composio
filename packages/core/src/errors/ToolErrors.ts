@@ -37,7 +37,6 @@ export class ComposioToolNotFoundError extends ComposioError {
       possibleFixes: options.possibleFixes || [
         'Ensure the tool slug is correct and exists in the Composio project',
       ],
-      statusCode: 404,
     });
     this.name = 'ComposioToolNotFoundError';
   }

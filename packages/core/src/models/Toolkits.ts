@@ -48,7 +48,7 @@ export class Toolkits {
       const parsedQuery = ToolkitsListParamsSchema.safeParse(query);
       if (!parsedQuery.success) {
         throw new ValidationError('Failed to parse toolkit list query', {
-          zodError: parsedQuery.error,
+          cause: parsedQuery.error,
         });
       }
       const result = await this.client.toolkits.list({
@@ -77,7 +77,7 @@ export class Toolkits {
 
       if (!parsedResult.success) {
         throw new ValidationError('Failed to parse toolkit list response', {
-          zodError: parsedResult.error,
+          cause: parsedResult.error,
         });
       }
 
@@ -131,7 +131,7 @@ export class Toolkits {
       });
       if (!parsedResult.success) {
         throw new ValidationError('Failed to parse toolkit response', {
-          zodError: parsedResult.error,
+          cause: parsedResult.error,
         });
       }
       return parsedResult.data;

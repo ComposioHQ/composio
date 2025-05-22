@@ -11,14 +11,9 @@ export const ValidationErrorCodes = {
 } as const;
 
 export class ValidationError extends ComposioError {
-  public readonly zodError: ZodError;
-
-  constructor(
-    message: string = 'Input validation failed',
-    options: ComposioErrorOptions & { zodError?: ZodError } = {}
-  ) {
+  constructor(message: string = 'Input validation failed', options: ComposioErrorOptions = {}) {
     // Extract and process the ZodError
-    const { zodError: providedZodError, ...restOptions } = options;
+    const { cause: providedZodError, ...restOptions } = options;
 
     // Determine the ZodError instance to use
     let zodErrorInstance: ZodError;
@@ -49,10 +44,10 @@ export class ValidationError extends ComposioError {
     super(message, {
       ...restOptions,
       code: options.code || ValidationErrorCodes.VALIDATION_ERROR,
-      cause,
+      possibleFixes: issues,
+      cause: zodErrorInstance,
     });
 
-    this.zodError = zodErrorInstance;
     this.name = 'ValidationError';
 
     // Capture the original stack trace from where the error occurred
@@ -65,8 +60,8 @@ export class ValidationError extends ComposioError {
 
   private generateUserFriendlyMessage(): string {
     // Extract the most relevant information from the ZodError
-    if (this.zodError.issues.length > 0) {
-      const issue = this.zodError.issues[0];
+    if (this.cause instanceof ZodError && this.cause.issues.length > 0) {
+      const issue = this.cause.issues[0];
       const path = issue.path.join('.');
       const param = path || 'parameter';
 
