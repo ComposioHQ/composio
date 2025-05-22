@@ -7,11 +7,16 @@ jobs:
   create-pr:
     if: contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - uses: anthropics/claude-code-action@beta
         with:
-          prompt: "${{ github.event.comment.body }}"
-
+          direct_prompt: "${{ github.event.comment.body }}"
           allowed_tools: >
             Bash(git status),
             Bash(git log),
