@@ -34,13 +34,6 @@ export class ValidationError extends ComposioError {
       issue => `[${issue.code}] ${issue.path.join('.')} - ${issue.message}`
     );
 
-    const cause =
-      issues.length > 0
-        ? issues.join('\n')
-        : options.cause
-          ? String(options.cause)
-          : 'Validation failed';
-
     super(message, {
       ...restOptions,
       code: options.code || ValidationErrorCodes.VALIDATION_ERROR,
