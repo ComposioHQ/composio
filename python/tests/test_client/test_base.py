@@ -24,7 +24,7 @@ def test_raise_if_required() -> None:
             http=mock.MagicMock(
                 get=lambda **x: mock.MagicMock(
                     status_code=404,
-                    content=b"Not Found",
+                    text="Not Found",
                 )
             )
         )

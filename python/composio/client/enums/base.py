@@ -3,6 +3,7 @@ Enum helper base.
 """
 
 import typing as t
+from pathlib import Path
 
 from pydantic import Field
 
@@ -23,6 +24,12 @@ TAGS_CACHE = LOCAL_CACHE_DIRECTORY / "tags"
 APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
+
+APPS_ETAG = LOCAL_CACHE_DIRECTORY / "apps.etag"
+ACTIONS_ETAG = LOCAL_CACHE_DIRECTORY / "actions.etag"
+TRIGGERS_ETAG = LOCAL_CACHE_DIRECTORY / "triggers.etag"
+
+DEPRECATED_MARKER = "<<DEPRECATED use "
 
 
 class SentinalObject:
@@ -111,9 +118,6 @@ def get_runtime_actions() -> t.List:
     return list(_runtime_actions)
 
 
-DEPRECATED_MARKER = "<<DEPRECATED use "
-
-
 def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
     """If the action is deprecated, get the replacement action name."""
     if description is not None and DEPRECATED_MARKER in description:
@@ -121,3 +125,19 @@ def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
         return (app_name + "_" + newact.replace(">>", "")).upper()
 
     return None
+
+
+def create_action(response: dict[str, t.Any], storage_path: Path) -> ActionData:
+    return ActionData(
+        name=response["name"],
+        app=response["appName"],
+        tags=response["tags"],
+        no_auth=response["no_auth"],
+        is_local=False,
+        is_runtime=False,
+        shell=False,
+        path=storage_path,
+        replaced_by=replacement_action_name(
+            response["description"], response["appName"]
+        ),
+    )
