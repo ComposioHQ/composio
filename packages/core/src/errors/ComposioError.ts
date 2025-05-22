@@ -179,37 +179,42 @@ export class ComposioError extends Error {
   prettyPrint(includeStack = false): void {
     const data = this.getErrorData(includeStack);
 
-    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(data.message));
+    let output =
+      '\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(data.message) + '\n';
 
     if (data.code) {
-      logger.error(chalk.yellow(`Error Code: ${data.code}`));
+      output += chalk.yellow(`Error Code: ${data.code}`) + '\n';
     }
 
     if (data.statusCode !== undefined) {
-      logger.error(chalk.yellow(`Status: ${data.statusCode}`));
+      output += chalk.yellow(`Status: ${data.statusCode}`) + '\n';
     }
 
     if (data.cause) {
-      logger.error(chalk.gray('Reason:'));
-      logger.error('  ' + chalk.white(data.cause));
+      output += chalk.gray('Reason:') + '\n';
+      output += '  ' + chalk.white(data.cause) + '\n';
     }
 
     if (data.meta) {
-      logger.error(chalk.gray('Additional Information:'));
-      logger.error('  ' + chalk.white(JSON.stringify(data.meta, null, 2).replace(/\n/g, '\n  ')));
+      output += chalk.gray('Additional Information:') + '\n';
+      output +=
+        '  ' + chalk.white(JSON.stringify(data.meta, null, 2).replace(/\n/g, '\n  ')) + '\n';
     }
 
     if (data.possibleFixes?.length) {
-      logger.error('\n' + chalk.cyan.bold('Try the following:'));
-      logger.error(data.possibleFixes);
+      output += '\n' + chalk.cyan.bold('Try the following:') + '\n';
+      const fixes = data.possibleFixes?.map((fix, index) => ` ${index + 1}. ` + chalk.white(fix));
+      output += fixes?.join('\n') + '\n';
     }
 
     if (data.stack?.length) {
-      logger.error('\n' + chalk.gray('Stack Trace:'));
-      logger.error(chalk.gray(data.stack.join('\n')));
+      output += '\n' + chalk.gray('Stack Trace:') + '\n';
+      output += chalk.gray(data.stack.join('\n')) + '\n';
     }
 
-    logger.error(''); // Add a trailing empty line
+    output += '\n'; // Add a trailing empty line
+
+    logger.error(output);
   }
 
   /**
