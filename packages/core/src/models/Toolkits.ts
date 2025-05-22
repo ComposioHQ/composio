@@ -11,9 +11,8 @@ import {
   ToolkitRetrieveCategoriesResponseSchema,
   ToolkitCategorySchema,
 } from '../types/toolkit.types';
-import { ComposioToolNotFoundError } from '../errors/ToolErrors';
-import { ZodError } from 'zod';
-import { ValidationError } from '../errors/ValidationError';
+import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../errors';
+import { ValidationError } from '../errors/ValidationErrors';
 import { AuthConfigs } from './AuthConfigs';
 import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
 import { ConnectedAccounts } from './ConnectedAccounts';
@@ -45,32 +44,113 @@ export class Toolkits {
    * @private
    */
   private async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
-    const parsedQuery = ToolkitsListParamsSchema.parse(query);
-    const result = await this.client.toolkits.list({
-      category: parsedQuery.category,
-      is_local: parsedQuery.isLocal,
-      managed_by: parsedQuery.managedBy,
-      sort_by: parsedQuery.sortBy,
-    });
-
-    const parsedResult = ToolKitListResponseSchema.parse({
-      items: result.items.map(item => {
-        const parsedItem = ToolKitItemSchema.parse({
-          name: item.name,
-          slug: item.slug,
-          meta: item.meta,
-          isLocalToolkit: item.is_local_toolkit,
-          authSchemes: item.auth_schemes,
-          composioManagedAuthSchemes: item.composio_managed_auth_schemes,
-          noAuth: item.no_auth,
+    try {
+      const parsedQuery = ToolkitsListParamsSchema.safeParse(query);
+      if (!parsedQuery.success) {
+        throw new ValidationError('Failed to parse toolkit list query', {
+          zodError: parsedQuery.error,
         });
-        return parsedItem;
-      }),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    });
+      }
+      const result = await this.client.toolkits.list({
+        category: parsedQuery.data.category,
+        is_local: parsedQuery.data.isLocal,
+        managed_by: parsedQuery.data.managedBy,
+        sort_by: parsedQuery.data.sortBy,
+      });
 
-    return parsedResult;
+      const parsedResult = ToolKitListResponseSchema.safeParse({
+        items: result.items.map(item => {
+          const parsedItem = ToolKitItemSchema.parse({
+            name: item.name,
+            slug: item.slug,
+            meta: item.meta,
+            isLocalToolkit: item.is_local_toolkit,
+            authSchemes: item.auth_schemes,
+            composioManagedAuthSchemes: item.composio_managed_auth_schemes,
+            noAuth: item.no_auth,
+          });
+          return parsedItem;
+        }),
+        nextCursor: result.next_cursor,
+        totalPages: result.total_pages,
+      });
+
+      if (!parsedResult.success) {
+        throw new ValidationError('Failed to parse toolkit list response', {
+          zodError: parsedResult.error,
+        });
+      }
+
+      return parsedResult.data;
+    } catch (error) {
+      throw new ComposioToolkitFetchError('Failed to fetch toolkits', {
+        cause: error,
+      });
+    }
+  }
+  /**
+   * Retrieves a specific toolkit by its slug identifier.
+   *
+   * This method fetches a single toolkit from the Composio API and transforms
+   * the response to use camelCase property naming consistent with JavaScript/TypeScript conventions.
+   *
+   * @param {string} slug - The unique slug identifier of the toolkit to retrieve
+   * @returns {Promise<ToolkitRetrieveResponse>} The transformed toolkit object
+   * @throws {ValidationError} If the response cannot be properly parsed
+   * @throws {ComposioToolNotFoundError} If no toolkit with the given slug exists
+   *
+   * @private
+   */
+  private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+    try {
+      const result = await this.client.toolkits.retrieve(slug);
+      const parsedResult = ToolkitRetrieveResponseSchema.safeParse({
+        name: result.name,
+        slug: result.slug,
+        meta: {
+          ...result.meta,
+          createdAt: result.meta.created_at,
+          updatedAt: result.meta.updated_at,
+          toolsCount: result.meta.tools_count,
+          triggersCount: result.meta.triggers_count,
+          // appUrl: result.meta.app_url, @TODO Update the client type to include this
+        },
+        isLocalToolkit: result.is_local_toolkit,
+        composioManagedAuthSchemes: result.composio_managed_auth_schemes,
+        authConfigDetails: result.auth_config_details?.map(authConfig => ({
+          name: authConfig.name,
+          mode: authConfig.mode,
+          fields: {
+            authConfigCreation: authConfig.fields.auth_config_creation,
+            connectedAccountInitiation: authConfig.fields.connected_account_initiation,
+          },
+          proxy: {
+            baseUrl: authConfig.proxy?.base_url,
+          },
+        })),
+      });
+      if (!parsedResult.success) {
+        throw new ValidationError('Failed to parse toolkit response', {
+          zodError: parsedResult.error,
+        });
+      }
+      return parsedResult.data;
+    } catch (error) {
+      if (error instanceof ComposioClient.NotFoundError) {
+        throw new ComposioToolkitNotFoundError(`Toolkit with slug ${slug} not found`, {
+          meta: {
+            slug,
+          },
+          cause: error,
+        });
+      }
+      throw new ComposioToolkitFetchError(`Couldn't fetch Toolkit with slug: ${slug}`, {
+        meta: {
+          slug,
+        },
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -130,58 +210,6 @@ export class Toolkits {
   }
 
   /**
-   * Retrieves a specific toolkit by its slug identifier.
-   *
-   * This method fetches a single toolkit from the Composio API and transforms
-   * the response to use camelCase property naming consistent with JavaScript/TypeScript conventions.
-   *
-   * @param {string} slug - The unique slug identifier of the toolkit to retrieve
-   * @returns {Promise<ToolkitRetrieveResponse>} The transformed toolkit object
-   * @throws {ValidationError} If the response cannot be properly parsed
-   * @throws {ComposioToolNotFoundError} If no toolkit with the given slug exists
-   *
-   * @private
-   */
-  private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
-    try {
-      const result = await this.client.toolkits.retrieve(slug);
-      const parsedResult = ToolkitRetrieveResponseSchema.parse({
-        name: result.name,
-        slug: result.slug,
-        meta: {
-          ...result.meta,
-          createdAt: result.meta.created_at,
-          updatedAt: result.meta.updated_at,
-          toolsCount: result.meta.tools_count,
-          triggersCount: result.meta.triggers_count,
-          // appUrl: result.meta.app_url, @TODO Update the client type to include this
-        },
-        isLocalToolkit: result.is_local_toolkit,
-        composioManagedAuthSchemes: result.composio_managed_auth_schemes,
-        authConfigDetails: result.auth_config_details?.map(authConfig => ({
-          name: authConfig.name,
-          mode: authConfig.mode,
-          fields: {
-            authConfigCreation: authConfig.fields.auth_config_creation,
-            connectedAccountInitiation: authConfig.fields.connected_account_initiation,
-          },
-          proxy: {
-            baseUrl: authConfig.proxy?.base_url,
-          },
-        })),
-      });
-      return parsedResult;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new ValidationError(error);
-      }
-      throw new ComposioToolNotFoundError(`Toolkit with slug ${slug} not found`, {
-        slug,
-      });
-    }
-  }
-
-  /**
    * Retrieves all toolkit categories available in the Composio SDK.
    *
    * This method fetches the complete list of categories from the Composio API
@@ -229,7 +257,7 @@ export class Toolkits {
     const composioAuthConfig = new AuthConfigs(this.client);
     let authConfigIdToUse: string;
     const authConfig = await composioAuthConfig.list({
-      toolkitSlug,
+      toolkit: toolkitSlug,
     });
     // pick the first auth config
     authConfigIdToUse = authConfig.items[0]?.id;
@@ -245,7 +273,9 @@ export class Toolkits {
         authConfigIdToUse = authConfig.id;
       } else {
         throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
-          toolkitSlug,
+          meta: {
+            toolkitSlug,
+          },
         });
       }
     }

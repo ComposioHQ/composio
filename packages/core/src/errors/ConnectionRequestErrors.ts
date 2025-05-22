@@ -1,4 +1,4 @@
-import { ComposioError } from './ComposioError';
+import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const ConnectionRequestErrorCodes = {
   CONNECTION_REQUEST_TIMEOUT: 'CONNECTION_REQUEST_TIMEOUT',
@@ -8,21 +8,24 @@ export const ConnectionRequestErrorCodes = {
 export class ConnectionRequestTimeoutError extends ComposioError {
   constructor(
     message: string = 'Connection request timed out',
-    meta: Record<string, unknown> = {}
+    options: Omit<ComposioErrorOptions, 'code'> = {}
   ) {
     super(message, {
+      ...options,
       code: ConnectionRequestErrorCodes.CONNECTION_REQUEST_TIMEOUT,
-      meta,
     });
     this.name = 'ConnectionRequestTimeoutError';
   }
 }
 
 export class ConnectionRequestFailedError extends ComposioError {
-  constructor(message: string = 'Connection request failed', meta: Record<string, unknown> = {}) {
+  constructor(
+    message: string = 'Connection request failed',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ConnectionRequestErrorCodes.CONNECTION_REQUEST_FAILED,
-      meta,
     });
     this.name = 'ConnectionRequestFailedError';
   }

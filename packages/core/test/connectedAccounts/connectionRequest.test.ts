@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import ComposioClient, { ComposioError } from '@composio/client';
-import { ConnectionRequestTimeoutError } from '../../src/errors/ConnectionRequestError';
+import { ConnectionRequestTimeoutError } from '../../src/errors';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 
 // Mock ComposioClient

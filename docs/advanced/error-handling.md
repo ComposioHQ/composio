@@ -82,7 +82,7 @@ try {
       repo: 'sdk',
     },
   });
-  
+
   // Check if the execution was successful
   if (result.successful) {
     console.log('Repository details:', result.data);
@@ -104,7 +104,7 @@ Handle errors during the connection flow:
 try {
   // Step 1: Authorize the toolkit
   const connectionRequest = await composio.toolkits.authorize('user123', 'github');
-  
+
   // Step 2: Wait for the connection to be established
   try {
     const connectedAccount = await composio.connectedAccounts.waitForConnection(
@@ -163,7 +163,7 @@ try {
       repo: 'sdk',
     },
   });
-  
+
   if (!result.successful) {
     console.error('Execution failed:', result.error);
   }
@@ -184,15 +184,15 @@ const customTool = await composio.tools.createCustomTool({
   inputParameters: {
     type: 'object',
     properties: {
-      param1: { type: 'string' }
+      param1: { type: 'string' },
     },
-    required: ['param1']
+    required: ['param1'],
   },
   outputParameters: {
     type: 'object',
     properties: {
-      result: { type: 'string' }
-    }
+      result: { type: 'string' },
+    },
   },
   handler: async (params, context) => {
     try {
@@ -202,33 +202,120 @@ const customTool = await composio.tools.createCustomTool({
         return {
           data: {},
           successful: false,
-          error: 'param1 cannot be empty'
+          error: 'param1 cannot be empty',
         };
       }
-      
+
       // Process the request
       // This could throw various errors
       const result = await someExternalService(param1);
-      
+
       return {
         data: { result },
         successful: true,
-        error: null
+        error: null,
       };
     } catch (error) {
       // Log the error for debugging
       console.error('Error in custom tool:', error);
-      
+
       // Return a user-friendly error message
       return {
         data: {},
         successful: false,
-        error: error.message || 'An unexpected error occurred'
+        error: error.message || 'An unexpected error occurred',
       };
     }
-  }
+  },
 });
 ```
+
+## User-Friendly Error Display
+
+Composio SDK provides features to display errors in a more user-friendly way with colors and formatting:
+
+### Using toString()
+
+The `toString()` method on `ComposioError` and its subclasses provides a formatted string representation of the error:
+
+```typescript
+try {
+  // Some operation that might fail
+} catch (error) {
+  if (error instanceof ComposioError) {
+    // This will output a nicely formatted error message with color
+    console.error(error.toString());
+  }
+}
+```
+
+### Using prettyPrint()
+
+The `prettyPrint()` method provides an even more visually appealing error display:
+
+```typescript
+try {
+  // Some operation that might fail
+} catch (error) {
+  if (error instanceof ComposioError) {
+    // This will print a beautifully formatted error with color directly to console.error
+    error.prettyPrint();
+
+    // You can include the stack trace by passing true
+    error.prettyPrint(true);
+
+    // Important: Don't re-throw the error or log it again after pretty printing
+    // to avoid duplicate error messages
+  }
+}
+```
+
+> **Note:** When using `prettyPrint()`, avoid logging the error again or re-throwing it without handling, as this would result in duplicate error messages in the console.
+
+### Using the handle Utility
+
+For a more consistent approach to error handling, use the static `handle` method:
+
+```typescript
+try {
+  // Some operation that might fail
+} catch (error) {
+  // This handles all types of errors with proper formatting
+  ComposioError.handle(error);
+
+  // Include stack trace
+  ComposioError.handle(error, { includeStack: true });
+
+  // Exit process with code 1 after displaying the error
+  ComposioError.handle(error, {
+    includeStack: true,
+    exitProcess: true,
+    exitCode: 1,
+  });
+}
+```
+
+This method:
+
+- Automatically detects Composio errors and uses `prettyPrint` for them
+- Formats standard errors with a similar style
+- Handles unknown errors gracefully
+- Optionally exits the process with a specified code
+
+### Creating and Printing Errors
+
+You can use the static factory method to create and print errors in one step:
+
+```typescript
+// Create, print, and throw the error
+throw ComposioError.createAndPrint('Something went wrong', {
+  code: 'CUSTOM_ERROR',
+  cause: 'The operation failed because of XYZ',
+  possibleFixes: ['Try solution A', 'Try solution B'],
+});
+```
+
+This approach is particularly useful for creating custom error handlers or formatters.
 
 ## Best Practices
 
@@ -240,3 +327,69 @@ const customTool = await composio.tools.createCustomTool({
 6. **Set appropriate timeouts** for operations like waitForConnection
 7. **Validate inputs** before calling SDK methods
 8. **Implement retry logic** for transient errors
+
+## Importing Error Classes
+
+All error classes are exported from the main SDK package, making them easy to import:
+
+```typescript
+import {
+  ComposioError,
+  ComposioNoAPIKeyError,
+  ComposioToolNotFoundError,
+  ValidationError,
+} from '@composio/core';
+```
+
+You can also use the error handling utilities in your application:
+
+```typescript
+import { ComposioError } from '@composio/core';
+
+// Centralized error handler
+function handleApplicationError(error: unknown) {
+  // Use the built-in error handling utility
+  ComposioError.handle(error, {
+    includeStack: process.env.NODE_ENV === 'development',
+  });
+
+  // Add your custom application-specific error handling
+  // e.g., log to monitoring service, etc.
+}
+
+// Use in try/catch blocks
+try {
+  // Application code
+} catch (error) {
+  handleApplicationError(error);
+}
+```
+
+If you want to create custom error types that extend the Composio error system:
+
+```typescript
+import { ComposioError } from '@composio/core';
+
+class MyCustomError extends ComposioError {
+  constructor(message: string) {
+    super(message, {
+      code: 'MY_CUSTOM_ERROR',
+      possibleFixes: [
+        'Check your application configuration',
+        'Ensure all required dependencies are installed',
+      ],
+    });
+    this.name = 'MyCustomError';
+  }
+}
+
+// Use your custom error
+try {
+  // Some condition
+  if (!config.isValid) {
+    throw new MyCustomError('Invalid configuration');
+  }
+} catch (error) {
+  ComposioError.handle(error);
+}
+```

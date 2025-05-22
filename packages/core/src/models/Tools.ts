@@ -36,7 +36,7 @@ import {
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
 } from '../errors/ToolErrors';
-import { ValidationError } from '../errors/ValidationError';
+import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -253,7 +253,9 @@ export class Tools<
   ): Promise<ToolList> {
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
-      throw new ValidationError(queryParams.error);
+      throw new ValidationError('Invalid tool list parameters', {
+        zodError: queryParams.error,
+      });
     }
 
     const tools = await this.client.tools.list({
@@ -598,9 +600,12 @@ export class Tools<
         return this.handleComposioToolExecution(composioTool, body, modifiers);
       }
     } catch (error) {
-      throw new ComposioToolExecutionError(error as Error, `Error executing tool ${slug}`, {
-        toolSlug: slug,
-        body,
+      throw new ComposioToolExecutionError(`Error executing tool ${slug}`, {
+        originalError: error as Error,
+        meta: {
+          toolSlug: slug,
+          body,
+        },
       });
     }
   }

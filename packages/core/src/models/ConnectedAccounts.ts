@@ -25,7 +25,7 @@ import {
   ConnectedAccountListResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from './ConnectionRequest';
-import { ValidationError } from '../errors/ValidationError';
+import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 /**
  * ConnectedAccounts class
@@ -60,7 +60,9 @@ export class ConnectedAccounts {
       testRequestEndpoint: response.test_request_endpoint,
     });
     if (!result.success) {
-      throw new ValidationError(result.error);
+      throw new ValidationError('Failed to parse connected account retrieve response', {
+        zodError: result.error,
+      });
     }
     return result.data;
   }
@@ -95,7 +97,9 @@ export class ConnectedAccounts {
     if (query) {
       const parsedQuery = ConnectedAccountListParamsSchema.safeParse(query);
       if (!parsedQuery.success) {
-        throw new ValidationError(parsedQuery.error);
+        throw new ValidationError('Failed to parse connected account list query', {
+          zodError: parsedQuery.error,
+        });
       }
       rawQuery = {
         auth_config_ids: parsedQuery.data.authConfigIds,
@@ -117,7 +121,9 @@ export class ConnectedAccounts {
       totalPages: result.total_pages,
     });
     if (!parsedResponse.success) {
-      throw new ValidationError(parsedResponse.error);
+      throw new ValidationError('Failed to parse connected account list response', {
+        zodError: parsedResponse.error,
+      });
     }
     return parsedResponse.data;
   }

@@ -8,46 +8,326 @@
  * @module errors/ComposioError
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error}
  */
+import chalk from 'chalk';
+import { ZodError } from 'zod';
+import { BadRequestError } from '@composio/client';
+import logger from '../utils/logger';
+
+/**
+ * Options for error handling
+ */
+export interface ErrorHandleOptions {
+  /** Whether to include the stack trace in the output */
+  includeStack?: boolean;
+  /** Whether to exit the process after handling */
+  exitProcess?: boolean;
+  /** The exit code to use if exiting the process */
+  exitCode?: number;
+}
+
+/**
+ * Options for creating a ComposioError
+ */
 export type ComposioErrorOptions = {
+  /** Error code for categorizing errors */
   code?: string;
+  /** HTTP status code associated with the error */
   statusCode?: number;
+  /** The underlying cause of the error */
   cause?: unknown;
+  /** Additional metadata associated with the error */
   meta?: Record<string, unknown>;
+  /** Suggested fixes for the error */
   possibleFixes?: string[];
+  /** Custom stack trace */
   stack?: string;
 };
-export class ComposioError extends Error {
-  public name = 'ComposioError';
-  public readonly code?: string;
-  public readonly statusCode?: number;
-  public readonly cause?: unknown;
-  public readonly meta?: Record<string, unknown>;
-  public readonly possibleFixes?: string[];
-  public readonly stack?: string;
 
+/**
+ * Structure containing the error data used for formatting
+ * @private
+ */
+interface ErrorFormatData {
+  name: string;
+  message: string;
+  code?: string;
+  statusCode?: number;
+  cause?: string;
+  meta?: Record<string, unknown>;
+  possibleFixes?: string[];
+  stack?: string[];
+}
+
+/**
+ * Base error class for all Composio errors
+ */
+export class ComposioError extends Error {
+  /** @readonly Error name */
+  public name = 'ComposioError';
+  public code?: string;
+  public possibleFixes?: string[];
+
+  /**
+   * Creates a new ComposioError
+   * @param message Error message
+   * @param options Additional error options
+   */
   constructor(message: string, options: ComposioErrorOptions = {}) {
     super(message);
+
+    // Process the status code - either from options or from the cause if it's a BadRequestError
+    const statusCode =
+      options.statusCode ||
+      (options.cause instanceof BadRequestError ? options.cause.status : undefined);
+
+    // Only define properties that have values to avoid showing undefined in error display
     this.code = options.code;
-    this.statusCode = options.statusCode;
-    this.cause = options.cause;
-    this.meta = options.meta;
     this.possibleFixes = options.possibleFixes;
 
+    this.definePropertyIfExists('statusCode', statusCode);
+    this.definePropertyIfExists('cause', options.cause);
+
+    if (options.meta && Object.keys(options.meta).length > 0) {
+      this.definePropertyIfExists('meta', options.meta);
+    }
     // Captures stack trace excluding the constructor frame
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
   }
 
-  toJSON() {
-    return {
+  /**
+   * Helper method to define a property only if it has a value
+   * @param propertyName Name of the property to define
+   * @param value Value to assign to the property
+   * @private
+   */
+  private definePropertyIfExists(propertyName: string, value: unknown): void {
+    if (value !== undefined) {
+      Object.defineProperty(this, propertyName, {
+        value,
+        enumerable: true,
+        writable: false,
+        configurable: true,
+      });
+    }
+  }
+
+  /**
+   * Extract and normalize error data for formatting
+   * @param includeStack Whether to include stack trace information
+   * @returns Structured error data for formatting
+   * @private
+   */
+  private getErrorData(includeStack = false): ErrorFormatData {
+    const data: ErrorFormatData = {
       name: this.name,
       message: this.message,
-      code: this.code,
-      statusCode: this.statusCode,
-      cause: this.cause instanceof Error ? this.cause.message : this.cause,
-      meta: this.meta,
-      possibleFixes: this.possibleFixes?.length ? this.possibleFixes.join('\n') : undefined,
     };
+
+    const { cause, code, stack, statusCode, meta, possibleFixes } = this as unknown as {
+      cause: unknown;
+      code: string | undefined;
+      stack: string | undefined;
+      statusCode: number | undefined;
+      meta: Record<string, unknown> | undefined;
+      possibleFixes: string[] | undefined;
+    };
+
+    // Format cause properly if it exists
+    if (cause !== undefined) {
+      const rawCause = cause;
+      data.cause = rawCause instanceof Error ? rawCause.message : String(rawCause);
+    }
+
+    // Add code if exists
+    if (code) {
+      data.code = code;
+    }
+
+    // Add status code if exists
+    if (statusCode !== undefined) {
+      data.statusCode = statusCode;
+    }
+
+    // Add meta if exists
+    if (meta) {
+      data.meta = meta;
+    }
+
+    // Add possible fixes if exists
+    if (possibleFixes) {
+      data.possibleFixes = possibleFixes;
+    }
+
+    // Add stack trace if requested
+    if (includeStack && stack) {
+      data.stack = stack.split('\n').slice(1);
+    }
+
+    return data;
+  }
+
+  /**
+   * Prints a user-friendly, colorful representation of the error to the logger
+   * @param includeStack Whether to include the stack trace in the output (default: false)
+   */
+  prettyPrint(includeStack = false): void {
+    const data = this.getErrorData(includeStack);
+
+    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(data.message));
+
+    if (data.code) {
+      logger.error(chalk.yellow(`Error Code: ${data.code}`));
+    }
+
+    if (data.statusCode !== undefined) {
+      logger.error(chalk.yellow(`Status: ${data.statusCode}`));
+    }
+
+    if (data.cause) {
+      logger.error(chalk.gray('Reason:'));
+      logger.error('  ' + chalk.white(data.cause));
+    }
+
+    if (data.meta) {
+      logger.error(chalk.gray('Additional Information:'));
+      logger.error('  ' + chalk.white(JSON.stringify(data.meta, null, 2).replace(/\n/g, '\n  ')));
+    }
+
+    if (data.possibleFixes?.length) {
+      logger.error('\n' + chalk.cyan.bold('Try the following:'));
+      data.possibleFixes.forEach((fix, index) => {
+        logger.error('  ' + chalk.green(`${index + 1}. ${fix}`));
+      });
+    }
+
+    if (data.stack?.length) {
+      logger.error('\n' + chalk.gray('Stack Trace:'));
+      logger.error(chalk.gray(data.stack.join('\n')));
+    }
+
+    logger.error(''); // Add a trailing empty line
+  }
+
+  /**
+   * Static factory method to create and pretty print an error in one step
+   * @param message Error message
+   * @param options Error options
+   * @param includeStack Whether to include the stack trace in the output
+   * @returns The created error instance
+   */
+  static createAndPrint(
+    message: string,
+    options: ComposioErrorOptions = {},
+    includeStack = false
+  ): ComposioError {
+    const error = new ComposioError(message, options);
+    error.prettyPrint(includeStack);
+    return error;
+  }
+
+  /**
+   * Utility function to handle errors in a consistent way
+   * This properly displays the error and exits the process if needed
+   * @param error The error to handle
+   * @param options Options for error handling
+   */
+  static handle(error: unknown, options: ErrorHandleOptions = {}): void {
+    const { includeStack = false, exitProcess = false, exitCode = 1 } = options;
+
+    if (error instanceof ComposioError) {
+      // For Composio errors, use pretty printing
+      error.prettyPrint(includeStack);
+    } else if (error instanceof ZodError) {
+      // For Zod errors, create a specialized formatted output
+      this.handleZodError(error, includeStack);
+    } else if (error instanceof Error) {
+      // For standard errors, create a basic formatted output
+      this.handleStandardError(error, includeStack);
+    } else {
+      // For unknown errors
+      this.handleUnknownError(error);
+    }
+
+    // Exit the process if requested
+    if (exitProcess && typeof process !== 'undefined') {
+      process.exit(exitCode);
+    }
+  }
+
+  /**
+   * Helper method to handle Zod validation errors
+   * @param error The Zod error to handle
+   * @param includeStack Whether to include the stack trace
+   * @private
+   */
+  private static handleZodError(error: ZodError, includeStack: boolean): void {
+    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(error.message));
+
+    // print the invalid parameters
+    logger.error(chalk.gray('Invalid parameters:'));
+    error.errors.forEach(err => {
+      logger.error(chalk.yellow(err.path.join('.')) + ' ' + chalk.white(err.message));
+    });
+
+    logger.error(chalk.gray('Expected parameters:'));
+    error.errors.forEach(err => {
+      logger.error(chalk.yellow(err.path.join('.')) + ' ' + chalk.white(err.message));
+    });
+
+    if (includeStack) {
+      logger.error('\n' + chalk.gray('Validation Errors:'));
+      error.errors.forEach(err => {
+        const path = err.path.join('.');
+        logger.error(
+          chalk.gray('  • ') + chalk.yellow(path ? `${path}: ` : '') + chalk.white(err.message)
+        );
+      });
+
+      if (error.stack) {
+        logger.error('\n' + chalk.gray('Stack Trace:'));
+        const stackLines = error.stack.split('\n').slice(1);
+        logger.error(chalk.gray(stackLines.join('\n')));
+      }
+    }
+
+    logger.error(''); // Add a trailing empty line
+  }
+
+  /**
+   * Helper method to handle standard Error objects
+   * @param error The standard error to handle
+   * @param includeStack Whether to include the stack trace
+   * @private
+   */
+  private static handleStandardError(error: Error, includeStack: boolean): void {
+    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(error.message));
+
+    if (includeStack && error.stack) {
+      logger.error('\n' + chalk.gray('Stack Trace:'));
+      const stackLines = error.stack.split('\n').slice(1);
+      logger.error(chalk.gray(stackLines.join('\n')));
+    }
+
+    logger.error(''); // Add a trailing empty line
+  }
+
+  /**
+   * Helper method to handle unknown error types
+   * @param error The unknown error value
+   * @private
+   */
+  private static handleUnknownError(error: unknown): void {
+    logger.error(
+      '\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold('Unknown error occurred')
+    );
+
+    if (error !== null && error !== undefined) {
+      logger.error(chalk.gray('Error details:'));
+      logger.error('  ' + chalk.white(String(error)));
+    }
+
+    logger.error(''); // Add a trailing empty line
   }
 }

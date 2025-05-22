@@ -1,7 +1,7 @@
 import { ComposioError as ComposioClientError } from '@composio/client';
 import {
   TELEMETRY_EVENTS,
-  TelemetryErrorPayload,
+  // TelemetryErrorPayload,
   TelemetryErrorPayloadParams,
   TelemetryMetadata,
   TelemetryPayload,
@@ -107,39 +107,8 @@ export class TelemetryService {
         try {
           return await originalMethod.apply(instance, args);
         } catch (error) {
-          // client error, this is likely handled by the API itseld
-          if (error instanceof ComposioClientError) {
-            const telemetryPayload: TelemetryErrorPayloadParams = {
-              error_id: error.name,
-              error_message: error.message,
-              original_error: error.cause,
-              current_stack: error.stack?.split('\n') || [],
-              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
-            };
-            this.batchProcessor.pushItem(telemetryPayload);
-          } else if (error instanceof ComposioError) {
-            // Composio SDK Errors
-            const telemetryPayload: TelemetryErrorPayloadParams = {
-              error_id: error.name,
-              error_message: error.message,
-              original_error: error.cause,
-              current_stack: error.stack?.split('\n') || [],
-              error_code: error.code,
-              possible_fix: error.possibleFixes?.join('\n'),
-              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
-            };
-            this.batchProcessor.pushItem(telemetryPayload);
-          } else if (error instanceof Error) {
-            // Unhandled errors
-            const telemetryPayload: TelemetryErrorPayloadParams = {
-              error_id: error.name,
-              error_message: error instanceof Error ? error.name : 'Unknown error',
-              original_error: error,
-              current_stack: error.stack?.split('\n') || [],
-              description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
-            };
-            this.batchProcessor.pushItem(telemetryPayload);
-          }
+          // @TODO: check if this will send the error telemetry to the server
+          await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name);
           // rethrow the error to be handled by the caller
           throw error;
         }
@@ -162,6 +131,52 @@ export class TelemetryService {
     return (
       this.transport && !this.isTelemetryDisabled && !isTelemetryDisabledByEnv && !isDevEnvironment
     );
+  }
+
+  /**
+   * Prepare and send the error telemetry.
+   * @param {unknown} error - The error to send.
+   * @param {string} instrumentedClassName - The class name of the instrumented class.
+   * @param {string} name - The name of the method that threw the error.
+   */
+  private async prepareAndSendErrorTelemetry(
+    error: unknown,
+    instrumentedClassName: string,
+    name: string
+  ) {
+    // client error, this is likely handled by the API itseld
+    if (error instanceof ComposioClientError) {
+      const telemetryPayload: TelemetryErrorPayloadParams = {
+        error_id: error.name,
+        error_message: error.message,
+        original_error: error.cause || error,
+        current_stack: error.stack?.split('\n') || [],
+        description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+      };
+      await this.sendErrorTelemetry(telemetryPayload);
+    } else if (error instanceof ComposioError) {
+      // Composio SDK Errors
+      const telemetryPayload: TelemetryErrorPayloadParams = {
+        error_id: error.name,
+        error_message: error.message,
+        original_error: error.cause || error,
+        current_stack: error.stack?.split('\n') || [],
+        error_code: error.code,
+        possible_fix: error.possibleFixes?.join('\n'),
+        description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+      };
+      await this.sendErrorTelemetry(telemetryPayload);
+    } else if (error instanceof Error) {
+      // Unhandled errors
+      const telemetryPayload: TelemetryErrorPayloadParams = {
+        error_id: error.name,
+        error_message: error instanceof Error ? error.name : 'Unknown error',
+        original_error: error,
+        current_stack: error.stack?.split('\n') || [],
+        description: `${this.telemetryMetadata.source}:${instrumentedClassName}.${name}`,
+      };
+      await this.sendErrorTelemetry(telemetryPayload);
+    }
   }
 
   /**
@@ -188,8 +203,8 @@ export class TelemetryService {
 
     this.transport.send(reqPayload);
   }
-
-  async sendErrorTelemetry(payload: TelemetryErrorPayload) {
+  // @TODO: check if this will send the error telemetry to the server
+  async sendErrorTelemetry(payload: TelemetryErrorPayloadParams) {
     if (!this.shouldSendTelemetry()) {
       return;
     }

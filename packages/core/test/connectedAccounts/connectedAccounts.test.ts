@@ -4,7 +4,7 @@ import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient from '@composio/client';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
-import { ComposioConnectedAccountNotFoundError } from '../../src/errors/ConnectedAccountsError';
+import { ComposioConnectedAccountNotFoundError } from '../../src/errors';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {

@@ -22,7 +22,7 @@ import {
   ComposioInvalidExecuteFunctionError,
   ComposioToolNotFoundError,
 } from '../errors/ToolErrors';
-import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { ComposioError } from '../errors/ComposioError';
 import { telemetry } from '../telemetry/Telemetry';
 

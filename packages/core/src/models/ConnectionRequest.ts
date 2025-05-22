@@ -18,8 +18,8 @@ import logger from '../utils/logger';
 import {
   ConnectionRequestFailedError,
   ConnectionRequestTimeoutError,
-} from '../errors/ConnectionRequestError';
-import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsError';
+} from '../errors/ConnectionRequestErrors';
+import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { telemetry } from '../telemetry/Telemetry';
 export class ConnectionRequest {
   private client: ComposioClient;
@@ -119,7 +119,9 @@ export class ConnectionRequest {
         throw new ComposioConnectedAccountNotFoundError(
           `Connected account with id ${this.id} not found`,
           {
-            connectedAccountId: this.id,
+            meta: {
+              connectedAccountId: this.id,
+            },
           }
         );
       } else {
@@ -149,10 +151,12 @@ export class ConnectionRequest {
           throw new ConnectionRequestFailedError(
             `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
             {
-              userId: response.user_id,
-              connectedAccountId: this.id,
-              status: response.status,
-              statusReason: response.status_reason,
+              meta: {
+                userId: response.user_id,
+                connectedAccountId: this.id,
+                status: response.status,
+                statusReason: response.status_reason,
+              },
             }
           );
         }

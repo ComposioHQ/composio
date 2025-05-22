@@ -40,7 +40,20 @@ class Logger {
 
   private formatMessage(args: unknown[]): string {
     const formattedArgs = args
-      .map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+      .map((arg, index) => {
+        if (typeof arg === 'object') {
+          return JSON.stringify(arg);
+        } else {
+          if (index === 0) {
+            if (args.length > 1) {
+              return chalk.yellow(`${arg}`);
+            } else {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }
+      })
       .join('\n');
 
     if (!this.includeTimestamp) {

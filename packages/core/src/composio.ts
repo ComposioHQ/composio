@@ -18,8 +18,8 @@ import { getRandomUUID } from './utils/uuid';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
 > = {
-  apiKey?: string;
-  baseURL?: string;
+  apiKey?: string | null;
+  baseURL?: string | null;
   allowTracking?: boolean;
   allowTracing?: boolean;
   provider?: TProvider;
@@ -64,14 +64,14 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TProvider} config.provider The provider to use for this Composio instance.
    */
-  constructor(config: ComposioConfig<TProvider>) {
+  constructor({ ...config }: ComposioConfig<TProvider>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
       config?.apiKey
     );
 
     if (IS_DEVELOPMENT_OR_CI) {
-      logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
+      logger.debug(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
     }
 
     /**

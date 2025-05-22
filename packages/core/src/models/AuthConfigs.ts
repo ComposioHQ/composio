@@ -26,7 +26,7 @@ import {
   CreateAuthConfigResponse,
   CreateAuthConfigResponseSchema,
 } from '../types/authConfigs.types';
-import { ValidationError } from '../errors/ValidationError';
+import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 /**
  * AuthConfigs class
@@ -85,7 +85,9 @@ export class AuthConfigs {
       lastUpdatedAt: authConfig.last_updated_at,
     });
     if (result.error) {
-      throw new ValidationError(result.error);
+      throw new ValidationError('Failed to parse auth config response', {
+        zodError: result.error,
+      });
     }
     return result.data;
   }
@@ -130,7 +132,9 @@ export class AuthConfigs {
       totalPages: result.total_pages,
     });
     if (parsedResult.error) {
-      throw new ValidationError(parsedResult.error);
+      throw new ValidationError('Failed to parse auth config list response', {
+        zodError: parsedResult.error,
+      });
     }
     return parsedResult.data;
   }
@@ -159,7 +163,9 @@ export class AuthConfigs {
   ): Promise<CreateAuthConfigResponse> {
     const parsedOptions = CreateAuthConfigParamsSchema.safeParse(options);
     if (parsedOptions.error) {
-      throw new ValidationError(parsedOptions.error);
+      throw new ValidationError('Failed to parse auth config create options', {
+        zodError: parsedOptions.error,
+      });
     }
     const result = await this.client.authConfigs.create({
       toolkit: {
@@ -174,7 +180,9 @@ export class AuthConfigs {
       toolkit: result.toolkit.slug,
     });
     if (parsedResult.error) {
-      throw new ValidationError(parsedResult.error);
+      throw new ValidationError('Failed to parse auth config create response', {
+        zodError: parsedResult.error,
+      });
     }
     return parsedResult.data;
   }
@@ -236,7 +244,9 @@ export class AuthConfigs {
   async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
     const parsedData = AuthConfigUpdateParamsSchema.safeParse(data);
     if (parsedData.error) {
-      throw new ValidationError(parsedData.error);
+      throw new ValidationError('Failed to parse auth config update data', {
+        zodError: parsedData.error,
+      });
     }
     return this.client.authConfigs.update(
       nanoid,

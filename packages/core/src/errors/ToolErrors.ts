@@ -1,4 +1,4 @@
-import { ComposioError } from './ComposioError';
+import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
@@ -11,11 +11,14 @@ export const ToolErrorCodes = {
 } as const;
 
 export class ComposioProviderNotDefinedError extends ComposioError {
-  constructor(message: string = 'Provider not defined', meta: Record<string, unknown> = {}) {
+  constructor(
+    message: string = 'Provider not defined',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.TOOLSET_NOT_DEFINED,
-      meta,
-      possibleFixes: [
+      possibleFixes: options.possibleFixes || [
         'Ensure that the provider is defined in the Composio project and passed into the tool instance',
       ],
     });
@@ -24,22 +27,33 @@ export class ComposioProviderNotDefinedError extends ComposioError {
 }
 
 export class ComposioToolNotFoundError extends ComposioError {
-  constructor(message: string = 'Tool not found', meta: Record<string, unknown> = {}) {
+  constructor(
+    message: string = 'Tool not found',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.TOOL_NOT_FOUND,
-      meta,
-      possibleFixes: ['Ensure the tool slug is correct and exists in the Composio project'],
+      possibleFixes: options.possibleFixes || [
+        'Ensure the tool slug is correct and exists in the Composio project',
+      ],
+      statusCode: 404,
     });
     this.name = 'ComposioToolNotFoundError';
   }
 }
 
 export class ComposioInvalidModifierError extends ComposioError {
-  constructor(message: string = 'Invalid modifier', meta: Record<string, unknown> = {}) {
+  constructor(
+    message: string = 'Invalid modifier',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.INVALID_MODIFIER,
-      meta,
-      possibleFixes: ['Ensure the modifier is a function and returns a valid result'],
+      possibleFixes: options.possibleFixes || [
+        'Ensure the modifier is a function and returns a valid result',
+      ],
     });
     this.name = 'ComposioInvalidModifierError';
   }
@@ -48,12 +62,14 @@ export class ComposioInvalidModifierError extends ComposioError {
 export class ComposioCustomToolsNotInitializedError extends ComposioError {
   constructor(
     message: string = 'Custom tools not initialized',
-    meta: Record<string, unknown> = {}
+    options: Omit<ComposioErrorOptions, 'code'> = {}
   ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.CUSTOM_TOOLS_NOT_INITIALIZED,
-      meta,
-      possibleFixes: ['Ensure the custom tools class is initialized in the Tools instance'],
+      possibleFixes: options.possibleFixes || [
+        'Ensure the custom tools class is initialized in the Tools instance',
+      ],
     });
     this.name = 'ComposioCustomToolsNotInitializedError';
   }
@@ -62,28 +78,40 @@ export class ComposioCustomToolsNotInitializedError extends ComposioError {
 export class ComposioToolExecutionError extends ComposioError {
   public readonly error: Error;
   constructor(
-    error: Error,
     message: string = 'Tool execution error',
-    meta: Record<string, unknown> = {}
+    options: ComposioErrorOptions & { originalError?: Error } = {}
   ) {
+    const { originalError, ...restOptions } = options;
+
     super(message, {
-      code: ToolErrorCodes.TOOL_EXECUTION_ERROR,
-      cause: error,
-      meta,
-      possibleFixes: ['Ensure the tool is correctly configured and the input is valid'],
+      ...restOptions,
+      code: options.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
+      cause: options.cause || originalError,
+      possibleFixes: options.possibleFixes || [
+        'Ensure the tool is correctly configured and the input is valid',
+      ],
     });
 
-    this.error = error;
+    this.error =
+      originalError ||
+      (options.cause instanceof Error
+        ? (options.cause as Error)
+        : new Error(String(options.cause)));
     this.name = 'ComposioToolExecutionError';
   }
 }
 
 export class ComposioInvalidExecuteFunctionError extends ComposioError {
-  constructor(message: string = 'Invalid execute function', meta: Record<string, unknown> = {}) {
+  constructor(
+    message: string = 'Invalid execute function',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.INVALID_EXECUTE_FUNCTION,
-      meta,
-      possibleFixes: ['Ensure the execute function is a valid function and returns a valid result'],
+      possibleFixes: options.possibleFixes || [
+        'Ensure the execute function is a valid function and returns a valid result',
+      ],
     });
     this.name = 'ComposioInvalidExecuteFunctionError';
   }
@@ -92,12 +120,14 @@ export class ComposioInvalidExecuteFunctionError extends ComposioError {
 export class ComposioGlobalExecuteToolFnNotSetError extends ComposioError {
   constructor(
     message: string = 'Global execute tool function not set',
-    meta: Record<string, unknown> = {}
+    options: Omit<ComposioErrorOptions, 'code'> = {}
   ) {
     super(message, {
+      ...options,
       code: ToolErrorCodes.GLOBAL_EXECUTE_TOOL_FN_NOT_SET,
-      meta,
-      possibleFixes: ['Ensure the global execute tool function is set in the provider'],
+      possibleFixes: options.possibleFixes || [
+        'Ensure the global execute tool function is set in the provider',
+      ],
     });
     this.name = 'ComposioGlobalExecuteToolFnNotSetError';
   }
