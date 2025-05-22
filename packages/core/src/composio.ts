@@ -64,7 +64,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
    * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
    * @param {TProvider} config.provider The provider to use for this Composio instance.
    */
-  constructor({ ...config }: ComposioConfig<TProvider>) {
+  constructor(config?: ComposioConfig<TProvider>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
       config?.apiKey
@@ -89,14 +89,14 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      */
     this.config = {
       ...config,
-      allowTracking: config.allowTracking ?? true,
-      allowTracing: config.allowTracing ?? true,
+      allowTracking: config?.allowTracking ?? true,
+      allowTracing: config?.allowTracing ?? true,
     };
 
     /**
      * Set the default provider, if not provided by the user.
      */
-    this.provider = (config.provider ?? new OpenAIProvider()) as TProvider;
+    this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
 
     this.toolkits = new Toolkits(this.client);
@@ -124,7 +124,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
           // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
           sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
         },
-        config.telemetryTransport
+        config?.telemetryTransport
       );
     }
     telemetry.instrument(this);
