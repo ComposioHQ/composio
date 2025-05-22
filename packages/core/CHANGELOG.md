@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.12-alpha.11
+
+### Patch Changes
+
+- Improved error handling and telemetry
+
 ## 0.1.12-alpha.10
 
 ### Patch Changes
