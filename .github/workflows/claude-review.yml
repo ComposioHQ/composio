@@ -1,0 +1,32 @@
+name: Claude Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-review:
+    # Only run on PR comments containing /claude-review
+    if: ${{ github.event.issue.pull_request && contains(github.event.comment.body, '/claude-review') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+
+      - name: Run Code Review with Claude
+        uses: anthropics/claude-code-action@beta
+        with:
+          trigger_phrase: "/claude-review"
+          prompt: "Review the PR changes. Focus on code quality, potential bugs, and performance issues. Suggest improvements where appropriate."
+          allowed_tools: >
+            Bash(git diff --name-only HEAD~1),
+            Bash(git diff HEAD~1),
+            View,
+            GlobTool,
+            GrepTool
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
