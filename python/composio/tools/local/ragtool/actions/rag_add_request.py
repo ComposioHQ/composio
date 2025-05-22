@@ -1,8 +1,11 @@
+from curses import meta
+from pathlib import Path
 from typing import Dict
 
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
+from python.composio.tools.env.filemanager import file
 
 
 # pylint: disable=import-outside-toplevel
@@ -29,6 +32,12 @@ class AddContentToRagTool(LocalAction[RagToolAddRequest, RagToolAddResponse]):
             from embedchain import App
         except ImportError as e:
             raise ImportError(f"Failed to import App from embedchain: {e}") from e
+
+        file_path = metadata.get("file_path")
+        if file_path:
+            if not Path(file_path).exists():
+                raise FileNotFoundError(f"Error: {file_path} does not exist.")
+            App().add(file_path)
 
         App().add(request.content)
         return RagToolAddResponse(status="Content added successfully")
