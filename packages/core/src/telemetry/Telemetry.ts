@@ -115,14 +115,12 @@ export class TelemetryService {
         try {
           return await originalMethod.apply(instance, args);
         } catch (error) {
-          // inject error id to the error, this is to ensure we can track the error in logs
-          if (error instanceof Error && !error.errorId) {
-            // if there is error id, it means the error is already handled
-            error.errorId = getRandomUUID();
-            this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+          if (error instanceof Error) {
+            if (!error.errorId) {
+              error.errorId = getRandomUUID();
+              this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+            }
           }
-          // @TODO: check if this will send the error telemetry to the server
-          // rethrow the error to be handled by the caller
           throw error;
         }
       };
@@ -167,7 +165,7 @@ export class TelemetryService {
         error_id: error.errorId || '',
         error_message: error.message,
         original_error: error.cause || error,
-        current_stack: error.stack?.split('\n') || [],
+        current_stack: error.stack ? error.stack.split('\n') : [],
         description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
       };
       this.sendErrorTelemetry(telemetryPayload);
@@ -177,7 +175,7 @@ export class TelemetryService {
         error_id: error.errorId || '',
         error_message: error.message,
         original_error: error.cause || error,
-        current_stack: error.stack?.split('\n') || [],
+        current_stack: error.stack ? error.stack.split('\n') : [],
         error_code: error.code,
         possible_fix: error.possibleFixes?.join('\n'),
         description: `Original Call : ${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
@@ -189,7 +187,7 @@ export class TelemetryService {
         error_id: error.errorId || '',
         error_message: error instanceof Error ? error.name : 'Unknown error',
         original_error: error,
-        current_stack: error.stack?.split('\n') || [],
+        current_stack: error.stack ? error.stack.split('\n') : [],
         description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
       };
       this.sendErrorTelemetry(telemetryPayload);
