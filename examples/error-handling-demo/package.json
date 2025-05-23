@@ -1,0 +1,23 @@
+{
+  "name": "error-handling-example",
+  "private": true,
+  "version": "0.1.10-alpha.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.0",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "typescript": "^5.8.3"
+  }
+}
