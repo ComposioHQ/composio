@@ -93,7 +93,7 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^0.3.56
-        version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+        version: 0.3.56(openai@4.98.0(zod@3.24.4))
       '@langchain/langgraph':
         specifier: ^0.2.72
         version: 0.2.72(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))
@@ -306,7 +306,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.44
-        version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+        version: 0.3.56(openai@4.98.0(zod@3.24.4))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -3038,14 +3038,14 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))':
+  '@langchain/core@0.3.56(openai@4.98.0(zod@3.24.4))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.29(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      langsmith: 0.3.29(openai@4.98.0(zod@3.24.4))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -3057,7 +3057,7 @@ snapshots:
 
   '@langchain/langgraph-checkpoint@0.0.17(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))':
     dependencies:
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/core': 0.3.56(openai@4.98.0(zod@3.24.4))
       uuid: 10.0.0
 
   '@langchain/langgraph-sdk@0.0.74(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)':
@@ -3067,12 +3067,12 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/core': 0.3.56(openai@4.98.0(zod@3.24.4))
       react: 19.1.0
 
   '@langchain/langgraph@0.2.72(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))':
     dependencies:
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/core': 0.3.56(openai@4.98.0(zod@3.24.4))
       '@langchain/langgraph-checkpoint': 0.0.17(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))
       '@langchain/langgraph-sdk': 0.0.74(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)
       uuid: 10.0.0
@@ -3084,7 +3084,7 @@ snapshots:
 
   '@langchain/openai@0.5.10(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(encoding@0.1.13)':
     dependencies:
-      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/core': 0.3.56(openai@4.98.0(zod@3.24.4))
       js-tiktoken: 1.0.20
       openai: 4.98.0(encoding@0.1.13)(zod@3.24.4)
       zod: 3.24.4
@@ -4151,7 +4151,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langsmith@0.3.29(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)):
+  langsmith@0.3.29(openai@4.98.0(zod@3.24.4)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2

@@ -35,7 +35,7 @@ const composio = new Composio({
 
 // Get available tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail', 'googlecalendar'],
+  toolkits: ['gmail', 'googlecalendar'],
   limit: 10,
 });
 
@@ -92,7 +92,7 @@ import { openai } from '@ai-sdk/openai';
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail'],
+    toolkits: ['gmail'],
   });
 
   const result = streamText({
@@ -121,7 +121,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail', 'googlecalendar'],
+    toolkits: ['gmail', 'googlecalendar'],
   });
 
   const stream = streamText({
@@ -156,7 +156,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail'],
+    toolkits: ['gmail'],
   });
 
   const stream = streamObject({

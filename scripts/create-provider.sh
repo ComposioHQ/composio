@@ -190,7 +190,7 @@ const composio = new Composio({
 
 // Get available tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail', 'googlecalendar'],
+  toolkits: ['gmail', 'googlecalendar'],
   limit: 10,
 });
 \`\`\`
@@ -211,7 +211,7 @@ const composio = new Composio({
 
 // Get tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail'],
+  toolkits: ['gmail'],
 });
 
 // Use tools with ${CAPITAL_TOOLSET_NAME}
@@ -254,4 +254,4 @@ chmod +x "$TOOLSET_PATH"
 cd "$TOOLSET_PATH" && pnpm install
 
 echo "✨ Created new ${IS_AGENTIC:+agentic }provider at $TOOLSET_PATH"
-echo "✨ Dependencies installed successfully" 
+echo "✨ Dependencies installed successfully"    

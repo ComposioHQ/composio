@@ -38,7 +38,7 @@ const composio = new Composio({
 
 // Get available tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail', 'googlecalendar'],
+  toolkits: ['gmail', 'googlecalendar'],
   limit: 10,
 });
 ```
@@ -63,7 +63,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const ai = new Ai(env.AI);
     const tools = await composio.tools.get('user123', {
-      apps: ['gmail'],
+      toolkits: ['gmail'],
     });
 
     const messages = [
@@ -104,7 +104,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const ai = new Ai(env.AI);
     const tools = await composio.tools.get('user123', {
-      apps: ['gmail'],
+      toolkits: ['gmail'],
     });
 
     // Image analysis

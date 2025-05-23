@@ -35,7 +35,7 @@ const composio = new Composio({
 
 // Get available tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail', 'googlecalendar'],
+  toolkits: ['gmail', 'googlecalendar'],
   limit: 10,
 });
 
@@ -61,7 +61,7 @@ const composio = new Composio({
 
 // Get tools for the chain
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail'],
+  toolkits: ['gmail'],
   limit: 10,
 });
 
@@ -101,7 +101,7 @@ const composio = new Composio({
 
 // Get tools for the chain
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail'],
+  toolkits: ['gmail'],
 });
 
 const model = new ChatOpenAI({
@@ -144,7 +144,7 @@ const composio = new Composio({
 
 // Get tools for the chain
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail'],
+  toolkits: ['gmail'],
 });
 
 // Setup vector store and retriever

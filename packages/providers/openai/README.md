@@ -35,7 +35,7 @@ const composio = new Composio({
 
 // Get available tools
 const tools = await composio.tools.get('user123', {
-  apps: ['gmail', 'googlecalendar'],
+  toolkits: ['gmail', 'googlecalendar'],
   limit: 10,
 });
 
@@ -61,7 +61,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail'],
+    toolkits: ['gmail'],
   });
 
   const stream = await openai.chat.completions.create({
@@ -95,7 +95,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail', 'googlecalendar'],
+    toolkits: ['gmail', 'googlecalendar'],
   });
 
   const stream = await openai.chat.completions.create({
@@ -142,7 +142,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail'],
+    toolkits: ['gmail'],
   });
 
   const completion = await openai.chat.completions.create({
@@ -172,7 +172,7 @@ const composio = new Composio({
 export async function POST(req: Request) {
   const { messages, image } = await req.json();
   const tools = await composio.tools.get('user123', {
-    apps: ['gmail'],
+    toolkits: ['gmail'],
   });
 
   const completion = await openai.chat.completions.create({
