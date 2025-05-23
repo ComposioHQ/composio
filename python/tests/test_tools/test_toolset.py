@@ -19,7 +19,9 @@ from composio.exceptions import (
 )
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
-from composio.tools.local.filetool.tool import Filetool, FindFile
+from composio.tools.env.factory import WorkspaceFactory
+from composio.tools.local.filetool.actions.find import FindFile
+from composio.tools.local.filetool.tool import Filetool
 from composio.tools.toolset import ComposioToolSet
 from composio.utils.pypi import reset_installed_list
 
@@ -731,3 +733,32 @@ def test_invalid_handle_tool_calls() -> None:
     toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with mock.patch.object(toolset, "_execute_remote"):
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+
+def test_workspace_fallback_on_invalid_id() -> None:
+    """Test that workspace property gracefully handles non-existent workspace IDs."""
+    
+    # Mock all external dependencies to isolate our workspace logic test
+    with mock.patch("composio.tools.toolset.ComposioToolSet._init_client"), \
+         mock.patch("composio.tools.toolset.ComposioToolSet._validate_connection_ids") as mock_validate, \
+         mock.patch.object(ComposioToolSet, "_try_get_github_access_token_for_current_entity", return_value=None):
+        
+        # Mock validation to avoid API calls
+        mock_validate.return_value = {}
+        
+        # Create toolset with a non-existent workspace ID
+        toolset = ComposioToolSet(workspace_id="non-existent-workspace-12345")
+        
+        # Access workspace property - should not raise an error
+        # Should fall back to creating a new workspace instead of crashing
+        workspace = toolset.workspace
+        
+        # Verify we got a valid workspace object
+        assert workspace is not None
+        assert hasattr(workspace, 'id')
+        
+        # Verify the workspace ID is different from the invalid one we set
+        assert workspace.id != "non-existent-workspace-12345"
+        
+        # Verify workspace is properly registered in factory
+        assert WorkspaceFactory.get(id=workspace.id) == workspace
