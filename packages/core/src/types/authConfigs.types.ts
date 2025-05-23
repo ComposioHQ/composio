@@ -99,7 +99,7 @@ export type AuthConfigListParams = z.infer<typeof AuthConfigListParamsSchema>;
 
 export const AuthConfigListResponseSchema = z.object({
   items: z.array(AuthConfigRetrieveResponseSchema),
-  nextCursor: z.string().optional(),
+  nextCursor: z.string().nullable(),
   totalPages: z.number(),
 });
 export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema>;

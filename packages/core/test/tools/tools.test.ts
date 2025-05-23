@@ -54,7 +54,7 @@ describe('Tools', () => {
       const userId = 'test-user';
       const query = {
         tools: ['TOOL1', 'TOOL2'],
-        limit: '10',
+        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
