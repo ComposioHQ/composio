@@ -16,6 +16,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prepare": "husky",
     "create:provider": "bash scripts/create-provider.sh",
+    "create:example": "bash scripts/create-example.sh",
     "check:peer-deps": "tsx scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx scripts/update-peer-deps.ts",
     "prepublish": "pnpm run build",

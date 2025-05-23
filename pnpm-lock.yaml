@@ -183,6 +183,22 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/triggers:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.5.0
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/vercel:
     dependencies:
       '@ai-sdk/openai':
