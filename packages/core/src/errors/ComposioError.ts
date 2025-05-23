@@ -94,10 +94,11 @@ export class ComposioError extends Error {
     // Node.js by default shows all the properties of the error object, so we are doing it conditionally
     this.definePropertyIfExists('statusCode', statusCode);
     this.definePropertyIfExists('cause', options.cause);
-    
-    const combinedStack = options.cause instanceof Error 
-      ? ComposioError.combineStackTraces(options.cause.stack, this.stack)
-      : options.stack || this.stack;
+
+    const combinedStack =
+      options.cause instanceof Error
+        ? ComposioError.combineStackTraces(options.cause.stack, this.stack)
+        : (options.stack ?? this.stack);
     this.definePropertyIfExists('stack', combinedStack);
 
     if (options.meta && Object.keys(options.meta).length > 0) {
@@ -121,7 +122,7 @@ export class ComposioError extends Error {
       });
     }
   }
-  
+
   /**
    * Helper method to combine stack traces when wrapping errors
    * This ensures the full call chain is preserved
@@ -130,14 +131,17 @@ export class ComposioError extends Error {
    * @returns Combined stack trace
    * @private
    */
-  private static combineStackTraces(originalStack?: string, currentStack?: string): string | undefined {
+  private static combineStackTraces(
+    originalStack?: string,
+    currentStack?: string
+  ): string | undefined {
     if (!originalStack) return currentStack;
     if (!currentStack) return originalStack;
 
     const currentHeader = currentStack.split('\n')[0];
     const originalStackBody = originalStack.split('\n').slice(1).join('\n');
 
-    return `${currentHeader}\n${currentStack.split('\n').slice(1).join('\n')}\n\nCaused by:\n${originalStack}`;
+    return `${currentHeader}\n${currentStack.split('\n').slice(1).join('\n')}\n\nCaused by:\n${originalStackBody}`;
   }
 
   /**
@@ -191,7 +195,11 @@ export class ComposioError extends Error {
     if (includeStack && stack) {
       if (stack.includes('Caused by:')) {
         const [currentStack, causeStack] = stack.split('Caused by:');
-        data.stack = [...currentStack.split('\n').slice(1), 'Caused by:', ...causeStack.split('\n')];
+        data.stack = [
+          ...currentStack.split('\n').slice(1),
+          'Caused by:',
+          ...causeStack.split('\n'),
+        ];
       } else {
         data.stack = stack.split('\n').slice(1);
       }
