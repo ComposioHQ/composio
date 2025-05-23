@@ -43,12 +43,10 @@ export class ValidationError extends ComposioError {
 
     this.name = 'ValidationError';
 
-    // Capture the original stack trace from where the error occurred
-    // Error.captureStackTrace(this, this.constructor);
-
     // Create a friendly error message for users
     const userFriendlyMessage = this.generateUserFriendlyMessage();
     this.message = `${message}: ${userFriendlyMessage}`;
+    
   }
 
   private generateUserFriendlyMessage(): string {

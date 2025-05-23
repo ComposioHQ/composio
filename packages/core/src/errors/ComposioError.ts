@@ -76,6 +76,11 @@ export class ComposioError extends Error {
   constructor(message: string, options: ComposioErrorOptions = {}) {
     super(message);
 
+    // Captures stack trace excluding the constructor frame first
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+
     // Process the status code - either from options or from the cause if it's a BadRequestError
     const statusCode =
       options.statusCode ||
@@ -89,14 +94,14 @@ export class ComposioError extends Error {
     // Node.js by default shows all the properties of the error object, so we are doing it conditionally
     this.definePropertyIfExists('statusCode', statusCode);
     this.definePropertyIfExists('cause', options.cause);
-    this.definePropertyIfExists('stack', options.stack);
+    
+    const combinedStack = options.cause instanceof Error 
+      ? ComposioError.combineStackTraces(options.cause.stack, this.stack)
+      : options.stack || this.stack;
+    this.definePropertyIfExists('stack', combinedStack);
 
     if (options.meta && Object.keys(options.meta).length > 0) {
       this.definePropertyIfExists('meta', options.meta);
-    }
-    // Captures stack trace excluding the constructor frame
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
     }
   }
 
@@ -115,6 +120,24 @@ export class ComposioError extends Error {
         configurable: true,
       });
     }
+  }
+  
+  /**
+   * Helper method to combine stack traces when wrapping errors
+   * This ensures the full call chain is preserved
+   * @param originalStack The stack of the error being wrapped
+   * @param currentStack The stack of the wrapper error
+   * @returns Combined stack trace
+   * @private
+   */
+  private static combineStackTraces(originalStack?: string, currentStack?: string): string | undefined {
+    if (!originalStack) return currentStack;
+    if (!currentStack) return originalStack;
+
+    const currentHeader = currentStack.split('\n')[0];
+    const originalStackBody = originalStack.split('\n').slice(1).join('\n');
+
+    return `${currentHeader}\n${currentStack.split('\n').slice(1).join('\n')}\n\nCaused by:\n${originalStack}`;
   }
 
   /**
@@ -166,7 +189,12 @@ export class ComposioError extends Error {
 
     // Add stack trace if requested
     if (includeStack && stack) {
-      data.stack = stack.split('\n').slice(1);
+      if (stack.includes('Caused by:')) {
+        const [currentStack, causeStack] = stack.split('Caused by:');
+        data.stack = [...currentStack.split('\n').slice(1), 'Caused by:', ...causeStack.split('\n')];
+      } else {
+        data.stack = stack.split('\n').slice(1);
+      }
     }
 
     return data;
