@@ -1642,8 +1642,16 @@ class ComposioToolSet(_IntegrationMixin):
             return self._workspace
 
         if self._workspace_id is not None:
-            self._workspace = WorkspaceFactory.get(id=self._workspace_id)
-            return self._workspace
+            try:
+                self._workspace = WorkspaceFactory.get(id=self._workspace_id)
+                return self._workspace
+            except ComposioSDKError:
+                # If workspace with the given ID doesn't exist in the factory,
+                # fall back to creating a new workspace with the provided config
+                self.logger.debug(
+                    f"Workspace with ID {self._workspace_id} not found in factory, "
+                    "falling back to creating new workspace"
+                )
 
         workspace_config = self._workspace_config or HostWorkspaceConfig()
         if workspace_config.composio_api_key is None:
