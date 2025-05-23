@@ -71,6 +71,120 @@ const userId = user.externalId; // e.g., "auth0|507f1f77bcf86cd799439011"
 const userId = user.email; // e.g., "user@example.com"
 ```
 
+### Organization-Based Applications
+
+For **multi-user applications** where users are part of an organization and apps are connected at the **organization level** (not individual user level), use the **organization ID** as the `userId`:
+
+#### When to Use Organization IDs
+
+- **Team/Organization tools**: Apps like Slack, Microsoft Teams, or project management tools where the entire organization shares connections
+- **Enterprise applications**: Where IT administrators connect apps for the whole organization
+- **Shared resources**: When multiple users need access to the same connected accounts (shared Gmail account, company GitHub org, etc.)
+- **Role-based access**: Where permissions are managed at the organization level
+
+#### ✅ **Recommended: Organization ID Pattern**
+
+```typescript
+// Use the organization/team/workspace ID
+const userId = organization.id; // e.g., "org_550e8400-e29b-41d4-a716-446655440000"
+// or
+const userId = `org_${organization.slug}`; // e.g., "org_acme-corp"
+
+// All users in the organization share the same connected accounts
+const tools = await composio.tools.get(userId, {
+  toolkits: ['slack', 'github'],
+});
+
+// Execute tools in the organization context
+const result = await composio.tools.execute('SLACK_SEND_MESSAGE', {
+  userId: userId, // organization ID
+  arguments: {
+    channel: '#general',
+    text: 'Hello from the team!',
+  },
+});
+```
+
+#### Example: Organization-Based Application
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// 1. Admin connects Slack for the entire organization
+async function connectOrganizationToSlack(organizationId: string, adminUserId: string) {
+  // Use organization ID as userId in Composio
+  const connectionRequest = await composio.toolkits.authorize(organizationId, 'slack');
+
+  // Store the connection request for the admin to complete
+  await storeConnectionRequest(organizationId, adminUserId, connectionRequest);
+
+  return connectionRequest.redirectUrl;
+}
+
+// 2. Any user in the organization can use the connected tools
+async function sendSlackMessage(organizationId: string, channel: string, message: string) {
+  return await composio.tools.execute('SLACK_SEND_MESSAGE', {
+    userId: organizationId, // organization ID, not individual user ID
+    arguments: {
+      channel: channel,
+      text: message,
+    },
+  });
+}
+
+// 3. Check if organization has required connections
+async function getOrganizationTools(organizationId: string) {
+  return await composio.tools.get(organizationId, {
+    toolkits: ['slack', 'github', 'jira'],
+  });
+}
+
+// Usage in your API endpoint
+app.post('/api/slack/message', async (req, res) => {
+  const { channel, message } = req.body;
+  const organizationId = req.user.organizationId; // Get from your auth system
+
+  // Verify user has permission to send messages for this organization
+  if (!(await userCanSendMessages(req.user.id, organizationId))) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  try {
+    const result = await sendSlackMessage(organizationId, channel, message);
+    res.json(result.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+```
+
+#### Organization vs Individual User Pattern
+
+```typescript
+// ❌ Wrong: Using individual user IDs when apps are connected at org level
+const userTools = await composio.tools.get(req.user.id, {
+  toolkits: ['slack'], // This would fail if Slack is connected to the org, not the user
+});
+
+// ✅ Correct: Using organization ID for org-level connections
+const orgTools = await composio.tools.get(req.user.organizationId, {
+  toolkits: ['slack'], // This works because Slack is connected to the organization
+});
+
+// ✅ Hybrid: Some tools at user level, some at org level
+const userPersonalTools = await composio.tools.get(req.user.id, {
+  toolkits: ['gmail'], // User's personal Gmail
+});
+
+const orgSharedTools = await composio.tools.get(req.user.organizationId, {
+  toolkits: ['slack', 'jira'], // Organization's shared tools
+});
+```
+
 ### Example: Multi-User Application Flow
 
 ```typescript
