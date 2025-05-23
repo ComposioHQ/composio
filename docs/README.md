@@ -35,6 +35,7 @@ npm install @composio/core
 
 The Composio SDK is built around several key concepts:
 
+- **UserIds**: Unique identifier for a user in your application (eg. UUID for a user in your database)
 - **Tools**: Individual actions that can be performed (e.g., "Get GitHub Repository", "Send Email")
 - **Toolkits**: Collections of related tools (e.g., GitHub, Gmail)
 - **Connected Accounts**: User connections to external services
