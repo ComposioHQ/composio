@@ -248,12 +248,38 @@ composio/
    # Create a new provider
    pnpm create:provider <provider-name> [--agentic]
 
+   # Create a new example
+   pnpm create:example <example-name>
+
    # Check peer dependencies
    pnpm check:peer-deps
 
    # Update peer dependencies
    pnpm update:peer-deps
    ```
+
+## Creating a New Example
+
+1. Use the create:example script:
+
+   ```bash
+   pnpm create:example my-example
+   ```
+
+2. The script will create a new example in `examples/my-example` with:
+
+   - `package.json` with minimal dependencies (`@composio/core` and `dotenv`)
+   - `tsconfig.json` for TypeScript configuration
+   - `.env.example` and `.env` files for environment variables
+   - `src/index.ts` with basic Composio SDK setup
+   - `README.md` with setup and usage instructions
+   - Dependencies automatically installed
+
+3. Next steps after creation:
+   - Edit `.env` and add your `COMPOSIO_API_KEY`
+   - Customize `src/index.ts` with your example logic
+   - Add any additional dependencies as needed
+   - Run with `pnpm start` or `pnpm dev` (with file watching)
 
 ## Creating a New Provider
 

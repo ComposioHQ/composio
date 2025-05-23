@@ -29,7 +29,7 @@ async function main() {
     // Get available tools
     const tools = await composio.tools.get('default', {
       // Specify the apps you want to use
-      // apps: ['gmail', 'googlecalendar'],
+      toolkits: ['gmail', 'googlecalendar'],
       limit: 10,
     });
 
