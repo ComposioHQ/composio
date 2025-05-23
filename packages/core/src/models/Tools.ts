@@ -262,7 +262,7 @@ export class Tools<
       tool_slugs: queryParams.data.tools,
       toolkit_slug: queryParams.data.toolkits?.join(','),
       cursor: queryParams.data.cursor,
-      important: queryParams.data.important,
+      important: queryParams.data.important?.toString(),
       limit: queryParams.data.limit?.toString(),
       search: queryParams.data.search,
     });

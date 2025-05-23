@@ -58,7 +58,7 @@ export type ToolList = Array<Tool>;
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
   cursor: z.string().optional(),
-  important: z.string().optional(),
+  important: z.boolean().optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
   toolkits: z.array(z.string()).optional(),
