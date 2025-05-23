@@ -737,28 +737,32 @@ def test_invalid_handle_tool_calls() -> None:
 
 def test_workspace_fallback_on_invalid_id() -> None:
     """Test that workspace property gracefully handles non-existent workspace IDs."""
-    
+
     # Mock all external dependencies to isolate our workspace logic test
-    with mock.patch("composio.tools.toolset.ComposioToolSet._init_client"), \
-         mock.patch("composio.tools.toolset.ComposioToolSet._validate_connection_ids") as mock_validate, \
-         mock.patch.object(ComposioToolSet, "_try_get_github_access_token_for_current_entity", return_value=None):
-        
+    with mock.patch("composio.tools.toolset.ComposioToolSet._init_client"), mock.patch(
+        "composio.tools.toolset.ComposioToolSet._validate_connection_ids"
+    ) as mock_validate, mock.patch.object(
+        ComposioToolSet,
+        "_try_get_github_access_token_for_current_entity",
+        return_value=None,
+    ):
+
         # Mock validation to avoid API calls
         mock_validate.return_value = {}
-        
+
         # Create toolset with a non-existent workspace ID
         toolset = ComposioToolSet(workspace_id="non-existent-workspace-12345")
-        
+
         # Access workspace property - should not raise an error
         # Should fall back to creating a new workspace instead of crashing
         workspace = toolset.workspace
-        
+
         # Verify we got a valid workspace object
         assert workspace is not None
-        assert hasattr(workspace, 'id')
-        
+        assert hasattr(workspace, "id")
+
         # Verify the workspace ID is different from the invalid one we set
         assert workspace.id != "non-existent-workspace-12345"
-        
+
         # Verify workspace is properly registered in factory
         assert WorkspaceFactory.get(id=workspace.id) == workspace
