@@ -217,4 +217,65 @@ describe('ConnectionRequest', () => {
       await expect(connectionPromise).rejects.toBe(apiError);
     });
   });
+
+  describe('serialization methods', () => {
+    it('should return a JSON-serializable object with toJSON()', () => {
+      // Create a connection request instance
+      connectionRequest = new ConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED,
+        redirectUrl
+      );
+
+      const jsonObj = connectionRequest.toJSON();
+      
+      expect(jsonObj).toHaveProperty('id', connectedAccountId);
+      expect(jsonObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
+      expect(jsonObj).toHaveProperty('redirectUrl', redirectUrl);
+      
+      expect(jsonObj).not.toHaveProperty('client');
+    });
+
+    it('should return a formatted JSON string with toString()', () => {
+      // Create a connection request instance
+      connectionRequest = new ConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED,
+        redirectUrl
+      );
+
+      const jsonString = connectionRequest.toString();
+      
+      expect(() => JSON.parse(jsonString)).not.toThrow();
+      
+      const parsedObj = JSON.parse(jsonString);
+      expect(parsedObj).toHaveProperty('id', connectedAccountId);
+      expect(parsedObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
+      expect(parsedObj).toHaveProperty('redirectUrl', redirectUrl);
+      
+      expect(jsonString).toContain('\n');
+      expect(jsonString).toContain('  ');
+    });
+
+    it('should be serializable with JSON.stringify without cyclic reference errors', () => {
+      // Create a connection request instance
+      connectionRequest = new ConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED,
+        redirectUrl
+      );
+
+      expect(() => JSON.stringify(connectionRequest)).not.toThrow();
+      
+      const stringified = JSON.stringify(connectionRequest);
+      const parsed = JSON.parse(stringified);
+      
+      expect(parsed).toHaveProperty('id', connectedAccountId);
+      expect(parsed).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
+      expect(parsed).toHaveProperty('redirectUrl', redirectUrl);
+    });
+  });
 });

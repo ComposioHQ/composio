@@ -169,6 +169,25 @@ export class ConnectionRequest {
 
     throw new ConnectionRequestTimeoutError(`Connection request timed out for ${this.id}`);
   }
+
+  /**
+   * Returns a JSON-serializable representation of the connection request
+   * Excludes the private client property to avoid cyclic reference issues
+   */
+  toJSON(): Record<string, unknown> {
+    return {
+      id: this.id,
+      status: this.status,
+      redirectUrl: this.redirectUrl,
+    };
+  }
+
+  /**
+   * Returns a string representation of the connection request
+   */
+  toString(): string {
+    return JSON.stringify(this.toJSON(), null, 2);
+  }
 }
 
 export const connectionRequest = (client: ComposioClient) => {
