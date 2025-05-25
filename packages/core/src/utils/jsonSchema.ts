@@ -140,6 +140,23 @@ function jsonSchemaPropertiesToTSTypes(value: {
   return zodType;
 }
 
+/**
+ * Convert a JSON schema to a Zod schema
+ * @param jsonSchema - The JSON schema to convert
+ * @returns The Zod schema
+ *
+ * @example
+ * ```ts
+ * const zodSchema = jsonSchemaToModel({
+ *   type: 'object',
+ *   properties: {
+ *     name: { type: 'string' },
+ *   },
+ * });
+ *
+ * console.log(zodSchema);
+ * ```
+ */
 export function jsonSchemaToModel(
   jsonSchema: Record<string, unknown>
 ): z.ZodObject<Record<string, z.ZodTypeAny>> {
