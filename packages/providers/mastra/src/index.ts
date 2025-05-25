@@ -9,7 +9,7 @@
 import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToModel } from '@composio/core';
 import { createTool } from '@mastra/core';
 
-export interface MastraTool extends ReturnType<typeof createTool> {}
+export type MastraTool = ReturnType<typeof createTool>;
 
 export interface MastraToolCollection {
   [key: string]: MastraTool;
