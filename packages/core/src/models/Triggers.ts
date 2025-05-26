@@ -1,9 +1,7 @@
 import ComposioClient from '@composio/client';
 import { RequestOptions } from '@composio/client/internal/request-options';
 import {
-  TriggerInstanceDeleteResponse,
   TriggerInstanceListActiveParams,
-  TriggerInstanceUpdateStatusParams,
   TriggerInstanceUpsertParams,
   TriggerInstanceUpsertResponse,
   TriggersTypeListParams,
@@ -16,6 +14,10 @@ import { PusherUtils, TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
 import { Session } from './Session';
 import { telemetry } from '../telemetry/Telemetry';
+import {
+  ManageDeleteResponse,
+  ManageUpdateParams,
+} from '@composio/client/resources/trigger-instances/manage';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -72,8 +74,8 @@ export class Triggers {
    * @param {string} triggerId - The slug of the trigger instance
    * @returns
    */
-  async delete(triggerId: string): Promise<TriggerInstanceDeleteResponse> {
-    return this.client.triggerInstances.delete(triggerId);
+  async delete(triggerId: string): Promise<ManageDeleteResponse> {
+    return this.client.triggerInstances.manage.delete(triggerId);
   }
 
   /**
@@ -86,10 +88,10 @@ export class Triggers {
    */
   async updateStatus(
     status: TriggerStatusEnum,
-    params: TriggerInstanceUpdateStatusParams,
+    params: ManageUpdateParams,
     options?: RequestOptions
   ) {
-    return this.client.triggerInstances.updateStatus(status, params, options);
+    return this.client.triggerInstances.manage.update(status, params, options);
   }
 
   /**
@@ -99,8 +101,10 @@ export class Triggers {
    * @param {RequestOptions options - Request options
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
-  async disable(triggerId: string, options?: RequestOptions) {
-    return this.client.triggerInstances.updateStatus('disable', { triggerId }, options);
+  async disable(triggerId: string) {
+    return this.client.triggerInstances.manage.update(triggerId, {
+      status: 'disable',
+    });
   }
 
   /**
@@ -110,8 +114,10 @@ export class Triggers {
    * @param {RequestOptions options - Request options
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
-  async enable(triggerId: string, options?: RequestOptions) {
-    return this.client.triggerInstances.updateStatus('enable', { triggerId }, options);
+  async enable(triggerId: string) {
+    return this.client.triggerInstances.manage.update(triggerId, {
+      status: 'enable',
+    });
   }
 
   /**

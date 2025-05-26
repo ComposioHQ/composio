@@ -37,6 +37,10 @@ async function main() {
 
     // TODO: Add your example implementation here
     console.log('📝 Implement your triggers logic here!');
+
+    composio.triggers.subscribe(data => {
+      console.log('🔔 Trigger received:', data);
+    });
   } catch (error) {
     console.error('❌ Error running example:', error);
   }

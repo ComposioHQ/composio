@@ -118,7 +118,7 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^0.3.56
-        version: 0.3.57(openai@4.103.0(zod@3.25.32))
+        version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
       '@langchain/langgraph':
         specifier: ^0.2.72
         version: 0.2.73(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.25.32))
@@ -301,8 +301,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.14
-        version: 0.1.0-alpha.14
+        specifier: 0.1.0-alpha.15
+        version: 0.1.0-alpha.15
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -385,7 +385,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.44
-        version: 0.3.57(openai@4.103.0(zod@3.25.32))
+        version: 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -399,7 +399,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^3.1.3
-        version: 3.1.4(@types/node@22.15.23)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
+        version: 3.1.3(@types/node@22.15.18)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
 
   packages/providers/mastra:
     dependencies:
@@ -419,7 +419,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^3.1.3
-        version: 3.1.4(@types/node@22.15.23)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
+        version: 3.1.4(@types/node@22.15.18)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
 
   packages/providers/openai:
     dependencies:
@@ -705,17 +705,11 @@ packages:
   '@cloudflare/workers-types@4.20250528.0':
     resolution: {integrity: sha512-q4yNRSw7At9nm1GsN+KUGfbrl5nGuiS+q/1esbhcXL/FQUDUZbVdutbPBMtJLaXAd5PCLdOST/nZni8GzJkaYg==}
 
-  '@composio/client@0.1.0-alpha.14':
-    resolution: {integrity: sha512-oDGR1N5gRqVWaoPD0pqgD26ZtwGCICRio7nSzcelgN4fRoVCRTGREXDo6WMXkA3hBsLjg9LqoMQvMMELvo4A6w==}
+  '@composio/client@0.1.0-alpha.15':
+    resolution: {integrity: sha512-fgUx9uo+wWKuS2+WnzqcQsUuID89hD1nqWs9VOCQw/UiRdwNpA0gZdfHAEQEcjPti7wy7mYLOzT9LCVrR+vs7g==}
 
-  '@esbuild/aix-ppc64@0.21.5':
-    resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
-    engines: {node: '>=12'}
-    cpu: [ppc64]
-    os: [aix]
-
-  '@esbuild/aix-ppc64@0.25.5':
-    resolution: {integrity: sha512-9o3TMmpmftaCMepOdA5k/yDw8SfInyzWWTjYTFCX3kPSDJMROQTb8jg+h9Cnwnmm1vOzvxN7gIfB5V2ewpjtGA==}
+  '@esbuild/aix-ppc64@0.25.4':
+    resolution: {integrity: sha512-1VCICWypeQKhVbE9oW/sJaAmjLxhVqacdkvPLEjwlttjfwENRSClS8EjBz0KzRyFSCPDIkuXW34Je/vk7zdB7Q==}
     engines: {node: '>=18'}
     cpu: [ppc64]
     os: [aix]
@@ -4937,7 +4931,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250528.0': {}
 
-  '@composio/client@0.1.0-alpha.14': {}
+  '@composio/client@0.1.0-alpha.15': {}
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
@@ -5211,7 +5205,7 @@ snapshots:
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.29(openai@4.103.0(zod@3.25.32))
+      langsmith: 0.3.29(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -5223,7 +5217,7 @@ snapshots:
 
   '@langchain/langgraph-checkpoint@0.0.17(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))':
     dependencies:
-      '@langchain/core': 0.3.57(openai@4.103.0(zod@3.25.32))
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
       uuid: 10.0.0
 
   '@langchain/langgraph-sdk@0.0.78(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))(react@19.1.0)':
@@ -5233,14 +5227,14 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.3.57(openai@4.103.0(zod@3.25.32))
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
       react: 19.1.0
 
   '@langchain/langgraph@0.2.73(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.25.32))':
     dependencies:
-      '@langchain/core': 0.3.57(openai@4.103.0(zod@3.25.32))
-      '@langchain/langgraph-checkpoint': 0.0.17(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))
-      '@langchain/langgraph-sdk': 0.0.78(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))(react@19.1.0)
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
+      '@langchain/langgraph-checkpoint': 0.0.17(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))
+      '@langchain/langgraph-sdk': 0.0.74(@langchain/core@0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)))(react@19.1.0)
       uuid: 10.0.0
       zod: 3.25.32
     optionalDependencies:
@@ -5250,7 +5244,7 @@ snapshots:
 
   '@langchain/openai@0.5.11(@langchain/core@0.3.57(openai@4.103.0(zod@3.25.32)))':
     dependencies:
-      '@langchain/core': 0.3.57(openai@4.103.0(zod@3.25.32))
+      '@langchain/core': 0.3.56(openai@4.98.0(encoding@0.1.13)(zod@3.24.4))
       js-tiktoken: 1.0.20
       openai: 4.103.0(zod@3.25.32)
       zod: 3.25.32
@@ -7635,7 +7629,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langsmith@0.3.29(openai@4.103.0(zod@3.25.32)):
+  langsmith@0.3.29(openai@4.98.0(encoding@0.1.13)(zod@3.24.4)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
