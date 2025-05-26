@@ -9,7 +9,7 @@
  * @packageDocumentation
  * @module providers/langchain
  */
-import { BaseAgenticProvider, jsonSchemaToModel, Tool, ExecuteToolFn } from '@composio/core';
+import { BaseAgenticProvider, jsonSchemaToZodSchema, Tool, ExecuteToolFn } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
@@ -38,7 +38,7 @@ export class LangchainProvider extends BaseAgenticProvider<
     if (!tool.inputParameters) {
       throw new Error('Tool input parameters are not defined');
     }
-    const parameters = jsonSchemaToModel(tool.inputParameters);
+    const parameters = jsonSchemaToZodSchema(tool.inputParameters);
     return new DynamicStructuredTool({
       name: toolName,
       description: description || '',

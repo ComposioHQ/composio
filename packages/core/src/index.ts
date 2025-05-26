@@ -5,7 +5,7 @@ export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProv
 export type { BaseComposioProvider } from './provider/BaseProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
 export { BaseTelemetryTransport, ConsoleTelemetryTransport } from './telemetry/TelemetryTransport';
-export { jsonSchemaToModel } from './utils/jsonSchema';
+export { jsonSchemaToZodSchema } from './utils/jsonSchema';
 export { ToolListParamsSchema } from './types/tool.types';
 export type { Tool, ToolListParams, ToolExecuteParams } from './types/tool.types';
 export type { Provider, ExecuteToolFn, ExecuteToolFnOptions } from './types/provider.types';

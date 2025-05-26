@@ -23,12 +23,12 @@ vi.mock('@langchain/core/tools', () => {
   };
 });
 
-// Mock the jsonSchemaToModel function from @composio/core
+// Mock the jsonSchemaToZodSchema function from @composio/core
 vi.mock('@composio/core', async () => {
   const actual = await vi.importActual('@composio/core');
   return {
     ...(actual as object),
-    jsonSchemaToModel: vi.fn().mockImplementation(schema => {
+    jsonSchemaToZodSchema: vi.fn().mockImplementation(schema => {
       return { type: 'mock-schema', originalSchema: schema };
     }),
   };

@@ -6,7 +6,7 @@
  * @packageDocumentation
  * @module providers/mastra
  */
-import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToModel } from '@composio/core';
+import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
 import { createTool } from '@mastra/core';
 
 export type MastraTool = ReturnType<typeof createTool>;
@@ -22,8 +22,10 @@ export class MastraProvider extends BaseAgenticProvider<MastraToolCollection, Ma
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      inputSchema: tool.inputParameters ? jsonSchemaToModel(tool.inputParameters) : undefined,
-      outputSchema: tool.outputParameters ? jsonSchemaToModel(tool.outputParameters) : undefined,
+      inputSchema: tool.inputParameters ? jsonSchemaToZodSchema(tool.inputParameters) : undefined,
+      outputSchema: tool.outputParameters
+        ? jsonSchemaToZodSchema(tool.outputParameters)
+        : undefined,
       execute: async ({ context }) => {
         const result = await executeTool(tool.slug, context);
         return result;

@@ -30,7 +30,7 @@ export function jsonSchemaToTsType(jsonSchema: Record<string, unknown>): unknown
   if (type === 'object') {
     const properties = jsonSchema.properties;
     if (properties) {
-      const nestedModel = jsonSchemaToModel(jsonSchema);
+      const nestedModel = jsonSchemaToZodSchema(jsonSchema);
       return nestedModel;
     }
     return Object;
@@ -125,7 +125,7 @@ function jsonSchemaPropertiesToTSTypes(value: {
         );
       break;
     case 'object':
-      zodType = jsonSchemaToModel(value).describe(
+      zodType = jsonSchemaToZodSchema(value).describe(
         (value.description || '') +
           (value.examples ? `\nExamples: ${value.examples.join(', ')}` : '')
       );
@@ -147,7 +147,7 @@ function jsonSchemaPropertiesToTSTypes(value: {
  *
  * @example
  * ```ts
- * const zodSchema = jsonSchemaToModel({
+ * const zodSchema = jsonSchemaToZodSchema({
  *   type: 'object',
  *   properties: {
  *     name: { type: 'string' },
@@ -157,7 +157,7 @@ function jsonSchemaPropertiesToTSTypes(value: {
  * console.log(zodSchema);
  * ```
  */
-export function jsonSchemaToModel(
+export function jsonSchemaToZodSchema(
   jsonSchema: Record<string, unknown>
 ): z.ZodObject<Record<string, z.ZodTypeAny>> {
   const properties = jsonSchema.properties as Record<string, unknown>;
