@@ -2,13 +2,15 @@
 
 Composio SDK provides powerful middleware capabilities through modifiers that allow you to customize and extend the behavior of tools. This guide explains how to use modifiers to transform tool schemas, modify inputs before execution, and transform outputs after execution.
 
+> **Important:** Not all modifiers are supported by all provider types. Schema modifiers work with all providers, but execution modifiers (beforeExecute and afterExecute) are only supported by agentic providers. See the [Provider-Specific Modifier Support](#provider-specific-modifier-support) section for details.
+
 ## What are Modifiers?
 
 Modifiers are functions that intercept and modify the normal flow of tool operations. Composio supports three types of modifiers:
 
-1. **Schema Modifiers**: Transform a tool's schema before it's wrapped for the provider
-2. **Before Execution Modifiers**: Modify inputs before a tool is executed
-3. **After Execution Modifiers**: Transform outputs after a tool has executed
+1. **Schema Modifiers**: Transform a tool's schema before it's wrapped for the provider (supported by all providers)
+2. **Before Execution Modifiers**: Modify inputs before a tool is executed (supported by agentic providers only)
+3. **After Execution Modifiers**: Transform outputs after a tool has executed (supported by agentic providers only)
 
 ### Schema Modifiers
 
@@ -121,9 +123,17 @@ const result = await composio.tools.execute(
 
 ### Using Multiple Modifiers
 
-You can use all three types of modifiers together:
+You can use multiple modifiers together, but remember that execution modifiers (beforeExecute and afterExecute) only work with agentic providers:
 
 ```typescript
+// With an agentic provider (e.g., Vercel, Langchain)
+const agenticProvider = new VercelProvider();
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  provider: agenticProvider,
+});
+
+// All modifiers work with agentic providers
 const tools = await composio.tools.get(
   'default',
   {
@@ -136,17 +146,43 @@ const tools = await composio.tools.get(
       return tool;
     },
 
-    // Before execution modifier
+    // Before execution modifier (only works with agentic providers)
     beforeExecute: (toolSlug, toolkitSlug, params) => {
       // Modify execution parameters
       return params;
     },
 
-    // After execution modifier
+    // After execution modifier (only works with agentic providers)
     afterExecute: (toolSlug, toolkitSlug, result) => {
       // Transform execution results
       return result;
     },
+  }
+);
+
+// With a non-agentic provider (e.g., OpenAI)
+const nonAgenticProvider = new OpenAIProvider();
+const composioNonAgentic = new Composio({
+  apiKey: 'your-api-key',
+  provider: nonAgenticProvider,
+});
+
+// Only schema modifiers work with non-agentic providers
+const openaiTools = await composioNonAgentic.tools.get(
+  'default',
+  {
+    toolkits: ['github'],
+  },
+  {
+    // Schema modifier (works with all providers)
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
+      // Enhance tool schema
+      return tool;
+    },
+    
+    // These will be ignored by non-agentic providers
+    beforeExecute: () => {}, // No effect with non-agentic providers
+    afterExecute: () => {},  // No effect with non-agentic providers
   }
 );
 ```
@@ -200,7 +236,98 @@ const result = await composio.tools.execute(
 
 ## Practical Use Cases
 
-### Caching Tool Results
+### Comparing Agentic and Non-Agentic Provider Usage
+
+Here's a side-by-side comparison of how to use modifiers with different provider types:
+
+```typescript
+// Example from examples/modifiers/src/index.ts
+
+// Non-agentic provider example (OpenAI)
+const openai = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new OpenAIProvider(),
+});
+
+// Schema modifiers work with non-agentic providers
+const nonAgenticTools = await openai.tools.get(
+  'default',
+  'HACKERNEWS_GET_USER',
+  {
+    // Schema modifier works with all providers
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
+      // Customize the input parameters
+      if (tool.inputParameters?.properties?.userId) {
+        tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
+      }
+      return tool;
+    },
+  }
+);
+
+// Agentic provider example (Vercel)
+const vercel = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+// All modifiers work with agentic providers
+const agenticTools = await vercel.tools.get(
+  'default',
+  'HACKERNEWS_GET_USER',
+  {
+    // Schema modifier
+    modifySchema: (toolSlug, toolkitSlug, tool) => {
+      if (tool.inputParameters?.properties?.userId) {
+        tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
+      }
+      return tool;
+    },
+    // Execution modifiers (only work with agentic providers)
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
+      console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
+      return params;
+    },
+    afterExecute: (toolSlug, toolkitSlug, result) => {
+      if (result.successful) {
+        result.data.processedAt = new Date().toISOString();
+      }
+      return result;
+    },
+  }
+);
+```
+
+### Manual Execution Modifiers with Non-Agentic Providers
+
+For non-agentic providers, you can use the provider's helper methods to apply execution modifiers:
+
+```typescript
+// Get the OpenAI provider instance
+const openaiProvider = composio.provider as OpenAIProvider;
+
+// When handling a tool call from OpenAI
+const toolOutputs = await openaiProvider.handleToolCall(
+  'default', // userId
+  completion, // OpenAI completion object
+  { connectedAccountId: 'account_123' }, // Options
+  {
+    // Manually apply execution modifiers
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
+      console.log(`Executing ${toolSlug}`);
+      return params;
+    },
+    afterExecute: (toolSlug, toolkitSlug, result) => {
+      result.data.processedAt = new Date().toISOString();
+      return result;
+    }
+  }
+);
+```
+
+### Caching Tool Results (Agentic Providers Only)
+
+> Note: This example uses execution modifiers and will only work with agentic providers.
 
 ```typescript
 // Simple in-memory cache
@@ -367,20 +494,97 @@ const result = await composio.tools.execute(
 );
 ```
 
+## Provider-Specific Modifier Support
+
+Composio SDK supports two types of providers:
+
+1. **Agentic Providers**: Providers that have control over tool execution (e.g., Vercel, Langchain)
+2. **Non-Agentic Providers**: Providers that only format tools but don't control execution (e.g., OpenAI)
+
+### Technical Differences
+
+The key technical distinction between these provider types affects which modifiers they support:
+
+- **Agentic Providers** receive an `ExecuteToolFn` parameter in their `wrapTool`/`wrapTools` methods, allowing them to embed execution modifiers directly into the wrapped tools. This means they support all three types of modifiers: schema, beforeExecute, and afterExecute.
+
+- **Non-Agentic Providers** only format tools for external consumption and don't control execution. When tools are wrapped by non-agentic providers, the context is lost, making it impossible to automatically apply execution modifiers. These providers only support schema modifiers.
+
+Here's how the provider implementations differ:
+
+```typescript
+// Non-Agentic Provider (e.g., OpenAI)
+class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
+  // No executeToolFn parameter
+  override wrapTool(tool: Tool): OpenAiTool {
+    // Simply formats the tool for OpenAI
+    return {
+      type: 'function',
+      function: {
+        name: tool.slug,
+        description: tool.description,
+        parameters: tool.inputParameters,
+      },
+    };
+  }
+}
+
+// Agentic Provider (e.g., Vercel)
+class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
+  // Receives executeToolFn parameter
+  wrapTool(tool: Tool, executeTool: ExecuteToolFn): VercelTool {
+    return tool({
+      description: tool.description,
+      parameters: jsonSchema(tool.inputParameters ?? {}),
+      execute: async params => {
+        // Can apply modifiers through executeTool
+        return await executeTool(tool.slug, params);
+      },
+    });
+  }
+}
+```
+
+### Using Modifiers with Non-Agentic Providers
+
+For non-agentic providers like OpenAI, you can still apply execution modifiers manually using the provider's helper methods:
+
+```typescript
+// Get OpenAI provider instance
+const openaiProvider = composio.provider as OpenAIProvider;
+
+// Execute a tool call with modifiers
+const result = await openaiProvider.executeToolCall(
+  'default', // userId
+  toolCall, // OpenAI tool call object
+  { connectedAccountId: 'account_123' }, // Options
+  {
+    // Manually apply execution modifiers
+    beforeExecute: (toolSlug, toolkitSlug, params) => {
+      console.log(`Executing ${toolSlug}`);
+      return params;
+    },
+    afterExecute: (toolSlug, toolkitSlug, result) => {
+      result.data.processedAt = new Date().toISOString();
+      return result;
+    }
+  }
+);
+```
+
 ## Type Definitions
 
 ```typescript
-// Schema Modifier
+// Schema Modifier (supported by all providers)
 type TransformToolSchemaModifier = (toolSlug: string, toolkitSlug: string, tool: Tool) => Tool;
 
-// Before Execution Modifier
+// Before Execution Modifier (supported by agentic providers only)
 type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   params: ToolExecuteParams
 ) => ToolExecuteParams;
 
-// After Execution Modifier
+// After Execution Modifier (supported by agentic providers only)
 type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
@@ -393,10 +597,10 @@ interface ExecuteToolModifiers {
   afterExecute?: afterExecuteModifier;
 }
 
-// Provider Options (includes schema modifier)
+// Provider Options
 interface ProviderOptions<TProvider> {
   modifySchema?: TransformToolSchemaModifier;
-  beforeExecute?: beforeExecuteModifier;
-  afterExecute?: afterExecuteModifier;
+  beforeExecute?: beforeExecuteModifier; // Only applied by agentic providers
+  afterExecute?: afterExecuteModifier;  // Only applied by agentic providers
 }
 ```

@@ -1,6 +1,6 @@
-import { SessionGetInfoResponse } from '@composio/client/resources/auth/session';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
+import { SessionRetrieveResponse } from '@composio/client/resources/auth/session';
 
 export class Session {
   private client: ComposioClient;
@@ -12,9 +12,9 @@ export class Session {
 
   /**
    * Get the active session info
-   * @returns {Promise<SessionGetInfoResponse>} Session info
+   * @returns {Promise<SessionInfoResponse>} Session info
    */
-  async getInfo(): Promise<SessionGetInfoResponse> {
-    return this.client.auth.session.getInfo();
+  async getInfo(): Promise<SessionRetrieveResponse> {
+    return this.client.auth.session.retrieve();
   }
 }

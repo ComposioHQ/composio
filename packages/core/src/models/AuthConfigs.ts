@@ -123,7 +123,7 @@ export class AuthConfigs {
     const result = await this.client.authConfigs.list({
       cursor: parsedQuery?.cursor,
       is_composio_managed: parsedQuery?.isComposioManaged,
-      limit: parsedQuery?.limit?.toString(),
+      limit: parsedQuery?.limit,
       toolkit_slug: parsedQuery?.toolkit,
     });
     const parsedResult = AuthConfigListResponseSchema.safeParse({

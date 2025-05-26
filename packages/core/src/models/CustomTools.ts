@@ -137,8 +137,7 @@ export class CustomTools {
       await this.client.toolkits.retrieve(toolkitSlug);
     } catch (error) {
       throw new ComposioToolNotFoundError(`Toolkit with slug ${toolkitSlug} not found`, {
-        toolkitSlug,
-        error,
+        cause: error,
       });
     }
     const connectedAccounts = await this.client.connectedAccounts.list({
@@ -148,10 +147,7 @@ export class CustomTools {
 
     if (!connectedAccounts.items.length) {
       throw new ComposioConnectedAccountNotFoundError(
-        `No connected accounts found for toolkit ${toolkitSlug}`,
-        {
-          toolkitSlug,
-        }
+        `No connected accounts found for toolkit ${toolkitSlug}`
       );
     }
 
@@ -174,9 +170,7 @@ export class CustomTools {
   ): Promise<ToolExecuteResponse> {
     const tool = this.customToolsRegistry.get(slug.toLowerCase());
     if (!tool) {
-      throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
-        toolSlug: slug,
-      });
+      throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
     }
 
     let authCredentials: Record<string, unknown> = {};
@@ -188,8 +182,10 @@ export class CustomTools {
         throw new ComposioConnectedAccountNotFoundError(
           `Connected account not found for toolkit ${toolkitSlug} for user ${metadata.userId}`,
           {
-            toolkitSlug,
-            userId: metadata.userId,
+            meta: {
+              toolkitSlug,
+              userId: metadata.userId,
+            },
           }
         );
       }
@@ -198,7 +194,9 @@ export class CustomTools {
 
     if (typeof execute !== 'function') {
       throw new ComposioInvalidExecuteFunctionError('Invalid execute function', {
-        toolSlug: slug,
+        meta: {
+          toolSlug: slug,
+        },
       });
     }
     // create a tool proxy request for users to execute in case of a toolkit being used

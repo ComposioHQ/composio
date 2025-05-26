@@ -259,10 +259,15 @@ export class Tools<
     }
 
     const tools = await this.client.tools.list({
-      tool_slugs: queryParams.data.tools,
+      tool_slugs: queryParams.data.tools?.join(','),
       toolkit_slug: queryParams.data.toolkits?.join(','),
       cursor: queryParams.data.cursor,
-      important: queryParams.data.important?.toString(),
+      important:
+        typeof queryParams.data.important === 'undefined'
+          ? undefined
+          : queryParams.data.important
+            ? 'true'
+            : 'false',
       limit: queryParams.data.limit?.toString(),
       search: queryParams.data.search,
     });

@@ -193,7 +193,7 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.list).toHaveBeenCalledWith({
         cursor: 'cursor_123',
         is_composio_managed: true,
-        limit: '10',
+        limit: 10,
         toolkit_slug: 'github',
       });
 
