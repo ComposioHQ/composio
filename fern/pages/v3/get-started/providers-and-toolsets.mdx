@@ -1,24 +1,20 @@
 ---
-title: Toolsets
+title: Providers
 slug: /docs/toolsets
 image: ""   # image for socials
 keywords: ""
 hide-nav-links: false
 ---
 
-Companies such as OpenAI and Anthropic (providers) offer access to a range of large language models (LLMs) with differing strengths and capabilities through their own APIs and SDKs.
+Every LLM framework and provider essentially does the same thing - **tool calling and giving agents skills** - but each has its own unique syntax and implementation. Whether you're using OpenAI, Anthropic, CrewAI, or LangGraph, you're solving the same problems with different APIs.
 
-Coupled with provider specific SDKs, there also exist a range of LLM and Agentic frameworks that offer different ways to build and deploy AI agents.
-
-Each provider and framework typically has its own unique method for interfacing with their models, complicating the process of switching providers and increasing the risk of vendor lock-in.
-
-To solve these challenges, Composio offers a standardized approach to interacting with LLMs through a language model specification that abstracts differences between providers. This unified interface allows you to switch between providers with ease while using the same API for all providers.
+Composio standardizes this mess. Use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't support yet. No more rewriting tool integrations when you switch providers.
 
 <Frame>
-  <img src="../../../assets/images/providers-and-toolsets.png" alt="Providers and Toolsets" width="500px" height="auto"/>
+  <img src="../../../assets/images/providers-and-toolsets.png" alt="Providers and Toolsets" width="400px" height="auto"/>
 </Frame>
 
-## Supported Providers & Toolsets
+## Supported Providers
 
 - [OpenAI Provider](/toolsets/openai)
 - [Anthropic Provider](/toolsets/anthropic)

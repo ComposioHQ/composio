@@ -51,6 +51,38 @@ bun add composio-core
 </Tab>
 </Tabs>
 
+## Initialise
+
+To use the SDK, you need to initialize it with your API key:
+
+<CodeGroup>
+```typescript
+import { Composio } from '@composio/core';
+
+// Initialize the SDK
+const composio = new Composio({
+  apiKey: 'your-api-key',
+});
+```
+</CodeGroup>
+
+You can also customize the initialization with additional options.
+
+<CodeGroup>
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+// Initialize with custom provider and options
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
+  allowTracking: true, // Optional: Enable/disable telemetry
+  provider: new OpenAIProvider(), // Default provider is OpenAI
+});
+```
+
+</CodeGroup>
 
 ## Authenticate and run tools
 <Tabs>
@@ -89,12 +121,10 @@ completion = openai.chat.completions.create(
 )
 
 if completion.choices[0].message.tool_calls:
-    tool_result = composio.provider.execute_tool_call(
-        userId,
-        completion.choices[0].message.tool_calls[0]
-    )
-    print("✅ Tool execution result:", tool_result)
-
+    print(f"✅ Calling tool {completion.choices[0].message.tool_calls[0].function.name}")
+    result = composio.provider.handle_tool_call(userId, completion)
+    data = result[0]
+    print(data)
 ```
 ```typescript Typescript maxLines=60 wordWrap
 import { Composio } from "@composio/core";
@@ -130,16 +160,82 @@ const completion = await openai.chat.completions.create({
 });
 
 if (completion.choices[0].message.tool_calls) {
-  const toolResult = await composio.provider.executeToolCall(
-    userId,
-    completion.choices[0].message.tool_calls[0]
+  console.log(
+    `✅ Calling tool ${completion.choices[0].message.tool_calls[0].function.name}`
   );
-
-  console.log("✅ Tool execution result:", JSON.parse(toolResult));
+  const result = await composio.provider.handleToolCall(userId, completion);
+  const data = JSON.parse(result[0]);
+  console.log(data);
 }
-
 ```
 </CodeGroup>
+</Tab>
+<Tab title="Vercel AI SDK">
+```typescript Typescript maxLines=60 wordWrap
+import { Composio } from '@composio/core';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { VercelProvider } from '@composio/vercel';
+import dotenv from 'dotenv';
+import { Message, MessageRoles } from './types';
+dotenv.config();
+
+/**
+ * Initialize the Composio SDK with the Vercel provider
+ */
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+/**
+ * Get the hacker news tool
+ * Alternatively, you can use the `composio.getToolBySlug` method
+ */
+async function run() {
+  const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE');
+
+  const messages: Message[] = [
+    {
+      role: MessageRoles.USER,
+      content: 'Summarize the front page of HackerNews',
+    },
+  ];
+
+  const chatCompletion = async () => {
+    const { text, toolCalls, toolResults } = await generateText({
+      model: openai('gpt-4o-mini'),
+      tools: tools,
+      messages,
+    });
+
+    if (toolResults.length > 0 && toolCalls.length > 0) {
+      toolCalls.forEach(async toolCall => {
+        console.log(`Executing tool call: ${toolCall.toolName}`);
+      });
+
+      messages.push({
+        role: MessageRoles.ASSISTANT,
+        content: toolCalls,
+      });
+
+      messages.push({
+        role: MessageRoles.TOOL,
+        content: toolResults,
+      });
+
+      await chatCompletion();
+    } else {
+      messages.push({ role: MessageRoles.ASSISTANT, content: text });
+      console.log(`Assistant: ${text}\n`);
+    }
+  };
+
+  chatCompletion();
+}
+
+run();
+```
 </Tab>
 <Tab title="LangGraph">
 <CodeGroup>
@@ -176,12 +272,10 @@ completion = openai.chat.completions.create(
 )
 
 if completion.choices[0].message.tool_calls:
-    tool_result = composio.provider.execute_tool_call(
-        userId,
-        completion.choices[0].message.tool_calls[0]
-    )
-    print("✅ Tool execution result:", tool_result)
-
+    print(f"✅ Calling tool {completion.choices[0].message.tool_calls[0].function.name}")
+    result = composio.provider.handle_tool_call(userId, completion)
+    data = result[0]
+    print(data)
 ```
 ```typescript Typescript maxLines=60 wordWrap
 import { Composio } from "@composio/core";
@@ -217,14 +311,13 @@ const completion = await openai.chat.completions.create({
 });
 
 if (completion.choices[0].message.tool_calls) {
-  const toolResult = await composio.provider.executeToolCall(
-    userId,
-    completion.choices[0].message.tool_calls[0]
+  console.log(
+    `✅ Calling tool ${completion.choices[0].message.tool_calls[0].function.name}`
   );
-
-  console.log("✅ Tool execution result:", JSON.parse(toolResult));
+  const result = await composio.provider.handleToolCall(userId, completion);
+  const data = JSON.parse(result[0]);
+  console.log(data);
 }
-
 ```
 </CodeGroup>
 </Tab>
@@ -263,12 +356,10 @@ completion = openai.chat.completions.create(
 )
 
 if completion.choices[0].message.tool_calls:
-    tool_result = composio.provider.execute_tool_call(
-        userId,
-        completion.choices[0].message.tool_calls[0]
-    )
-    print("✅ Tool execution result:", tool_result)
-
+    print(f"✅ Calling tool {completion.choices[0].message.tool_calls[0].function.name}")
+    result = composio.provider.handle_tool_call(userId, completion)
+    data = result[0]
+    print(data)
 ```
 ```typescript Typescript maxLines=60 wordWrap
 import { Composio } from "@composio/core";
@@ -304,14 +395,13 @@ const completion = await openai.chat.completions.create({
 });
 
 if (completion.choices[0].message.tool_calls) {
-  const toolResult = await composio.provider.executeToolCall(
-    userId,
-    completion.choices[0].message.tool_calls[0]
+  console.log(
+    `✅ Calling tool ${completion.choices[0].message.tool_calls[0].function.name}`
   );
-
-  console.log("✅ Tool execution result:", JSON.parse(toolResult));
+  const result = await composio.provider.handleToolCall(userId, completion);
+  const data = JSON.parse(result[0]);
+  console.log(data);
 }
-
 ```
 </CodeGroup>
 </Tab>

@@ -5,14 +5,14 @@ set -e
 
 # Define the OpenAPI specification URL and paths
 OPENAPI_URL="https://hermes.composio.dev/openapi.json"
-OPENAPI_V3_URL="https://backend.composio.dev/api/v3/openapi.json"
+OPENAPI_V3_URL="https://app.stainless.com/api/spec/documented/composio-sdk/openapi.documented.yml"
 
 # Get the directory where the script is located, works in both CI and local environments
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || dirname "$0")" && pwd)"
 FERN_DIR="$(dirname "$SCRIPT_DIR")"
 API_DIR="$FERN_DIR/api"
 OUTPUT_FILE="$API_DIR/openapi.json"
-OUTPUT_V3_FILE="$API_DIR/openapi-v3.json"
+OUTPUT_V3_FILE="$API_DIR/openapi-v3.yml"
 
 # Debug information
 echo "Script directory: $SCRIPT_DIR"

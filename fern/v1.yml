@@ -207,112 +207,112 @@ navigation:
         contents:
           - page: Introduction
             path: pages/tools/introduction.mdx
-          - page: Ably
-            path: pages/tools/ably.mdx
-          - page: Accelo
-            path: pages/tools/accelo.mdx
-          - page: Acculynx
-            path: pages/tools/acculynx.mdx
-          - page: Active Campaign
-            path: pages/tools/active_campaign.mdx
-          - page: Adobe
-            path: pages/tools/adobe.mdx
-          - page: Aero Workflow
-            path: pages/tools/aero_workflow.mdx
-          - page: Affinity
-            path: pages/tools/affinity.mdx
-          - page: Agencyzoom
-            path: pages/tools/agencyzoom.mdx
-          - page: Ahrefs
-            path: pages/tools/ahrefs.mdx
-          - page: Airtable
-            path: pages/tools/airtable.mdx
-          - page: Alchemy
-            path: pages/tools/alchemy.mdx
-          - page: Altoviz
-            path: pages/tools/altoviz.mdx
-          - page: Amazon
-            path: pages/tools/amazon.mdx
-          - page: Amcards
-            path: pages/tools/amcards.mdx
-          - page: Amplitude
-            path: pages/tools/amplitude.mdx
-          - page: Apaleo
-            path: pages/tools/apaleo.mdx
-          - page: Apollo
-            path: pages/tools/apollo.mdx
-          - page: Appdrag
-            path: pages/tools/appdrag.mdx
-          - page: Appsflyer
-            path: pages/tools/appsflyer.mdx
-          - page: Asana
-            path: pages/tools/asana.mdx
-          - page: Ashby
-            path: pages/tools/ashby.mdx
-          - page: Atlassian
-            path: pages/tools/atlassian.mdx
-          - page: Attio
-            path: pages/tools/attio.mdx
-          - page: Auth0
-            path: pages/tools/auth0.mdx
-          - page: Axonaut
-            path: pages/tools/axonaut.mdx
-          - page: Bamboohr
-            path: pages/tools/bamboohr.mdx
-          - page: Bannerbear
-            path: pages/tools/bannerbear.mdx
-          - page: Baserow
-            path: pages/tools/baserow.mdx
-          - page: Battlenet
-            path: pages/tools/battlenet.mdx
-          - page: Beeminder
-            path: pages/tools/beeminder.mdx
-          - page: Bitbucket
-            path: pages/tools/bitbucket.mdx
-          - page: Bitwarden
-            path: pages/tools/bitwarden.mdx
-          - page: Blackbaud
-            path: pages/tools/blackbaud.mdx
-          - page: Blackboard
-            path: pages/tools/blackboard.mdx
-          - page: Boldsign
-            path: pages/tools/boldsign.mdx
-          - page: Bolna
-            path: pages/tools/bolna.mdx
-          - page: Borneo
-            path: pages/tools/borneo.mdx
-          - page: Botbaba
-            path: pages/tools/botbaba.mdx
-          - page: Box
-            path: pages/tools/box.mdx
-          - page: Braintree
-            path: pages/tools/braintree.mdx
-          - page: Brandfetch
-            path: pages/tools/brandfetch.mdx
-          - page: Breezy Hr
-            path: pages/tools/breezy_hr.mdx
-          - page: Brevo
-            path: pages/tools/brevo.mdx
-          - page: Brex
-            path: pages/tools/brex.mdx
-          - page: Brex Staging
-            path: pages/tools/brex_staging.mdx
-          - page: Brightpearl
-            path: pages/tools/brightpearl.mdx
-          - page: Browseai
-            path: pages/tools/browseai.mdx
-          - page: Browserbase Tool
-            path: pages/tools/browserbase_tool.mdx
-          - page: Browserhub
-            path: pages/tools/browserhub.mdx
-          - page: Bubble
-            path: pages/tools/bubble.mdx
-          - page: Cal
-            path: pages/tools/cal.mdx
-          - page: Calendly
-            path: pages/tools/calendly.mdx
-          - page: Canva
-            path: pages/tools/canva.mdx
+          # - page: Ably
+          #   path: pages/tools/ably.mdx
+          # - page: Accelo
+          #   path: pages/tools/accelo.mdx
+          # - page: Acculynx
+          #   path: pages/tools/acculynx.mdx
+          # - page: Active Campaign
+          #   path: pages/tools/active_campaign.mdx
+          # - page: Adobe
+          #   path: pages/tools/adobe.mdx
+          # - page: Aero Workflow
+          #   path: pages/tools/aero_workflow.mdx
+          # - page: Affinity
+          #   path: pages/tools/affinity.mdx
+          # - page: Agencyzoom
+          #   path: pages/tools/agencyzoom.mdx
+          # - page: Ahrefs
+          #   path: pages/tools/ahrefs.mdx
+          # - page: Airtable
+          #   path: pages/tools/airtable.mdx
+          # - page: Alchemy
+          #   path: pages/tools/alchemy.mdx
+          # - page: Altoviz
+          #   path: pages/tools/altoviz.mdx
+          # - page: Amazon
+          #   path: pages/tools/amazon.mdx
+          # - page: Amcards
+          #   path: pages/tools/amcards.mdx
+          # - page: Amplitude
+          #   path: pages/tools/amplitude.mdx
+          # - page: Apaleo
+          #   path: pages/tools/apaleo.mdx
+          # - page: Apollo
+          #   path: pages/tools/apollo.mdx
+          # - page: Appdrag
+          #   path: pages/tools/appdrag.mdx
+          # - page: Appsflyer
+          #   path: pages/tools/appsflyer.mdx
+          # - page: Asana
+          #   path: pages/tools/asana.mdx
+          # - page: Ashby
+          #   path: pages/tools/ashby.mdx
+          # - page: Atlassian
+          #   path: pages/tools/atlassian.mdx
+          # - page: Attio
+          #   path: pages/tools/attio.mdx
+          # - page: Auth0
+          #   path: pages/tools/auth0.mdx
+          # - page: Axonaut
+          #   path: pages/tools/axonaut.mdx
+          # - page: Bamboohr
+          #   path: pages/tools/bamboohr.mdx
+          # - page: Bannerbear
+          #   path: pages/tools/bannerbear.mdx
+          # - page: Baserow
+          #   path: pages/tools/baserow.mdx
+          # - page: Battlenet
+          #   path: pages/tools/battlenet.mdx
+          # - page: Beeminder
+          #   path: pages/tools/beeminder.mdx
+          # - page: Bitbucket
+          #   path: pages/tools/bitbucket.mdx
+          # - page: Bitwarden
+          #   path: pages/tools/bitwarden.mdx
+          # - page: Blackbaud
+          #   path: pages/tools/blackbaud.mdx
+          # - page: Blackboard
+          #   path: pages/tools/blackboard.mdx
+          # - page: Boldsign
+          #   path: pages/tools/boldsign.mdx
+          # - page: Bolna
+          #   path: pages/tools/bolna.mdx
+          # - page: Borneo
+          #   path: pages/tools/borneo.mdx
+          # - page: Botbaba
+          #   path: pages/tools/botbaba.mdx
+          # - page: Box
+          #   path: pages/tools/box.mdx
+          # - page: Braintree
+          #   path: pages/tools/braintree.mdx
+          # - page: Brandfetch
+          #   path: pages/tools/brandfetch.mdx
+          # - page: Breezy Hr
+          #   path: pages/tools/breezy_hr.mdx
+          # - page: Brevo
+          #   path: pages/tools/brevo.mdx
+          # - page: Brex
+          #   path: pages/tools/brex.mdx
+          # - page: Brex Staging
+          #   path: pages/tools/brex_staging.mdx
+          # - page: Brightpearl
+          #   path: pages/tools/brightpearl.mdx
+          # - page: Browseai
+          #   path: pages/tools/browseai.mdx
+          # - page: Browserbase Tool
+          #   path: pages/tools/browserbase_tool.mdx
+          # - page: Browserhub
+          #   path: pages/tools/browserhub.mdx
+          # - page: Bubble
+          #   path: pages/tools/bubble.mdx
+          # - page: Cal
+          #   path: pages/tools/cal.mdx
+          # - page: Calendly
+          #   path: pages/tools/calendly.mdx
+          # - page: Canva
+          #   path: pages/tools/canva.mdx
           # - page: Canvas
           #   path: tools/canvas.mdx
           # - page: Chatwork

@@ -31,16 +31,28 @@ navigation:
         contents:
           - page: Welcome
             path: pages/v3/get-started/welcome.mdx
-          # - page: Installation
-          #   path: pages/v3/get-started/installation.mdx
           - page: Quickstart
             path: pages/v3/get-started/quickstart.mdx
-          - page: Providers and Toolsets
+          - page: Providers
             path: pages/v3/get-started/providers-and-toolsets.mdx
-      # - section: Guides
-      #   icon: map
-      #   contents:
-      #     - page: Open
+      - section: Tools
+        icon: tools
+        contents:
+          - page: Using Tools
+            path: pages/v3/tool-calling/using-tools.mdx
+          - page: Processing Tools
+            path: pages/v3/tool-calling/processing-tools.mdx
+      - section: Authentication
+        icon: lock
+        contents:
+          - page: Authenticated Tool Calling
+            path: pages/v3/authentication/introduction.mdx
+          - section: OAuth
+            contents:
+              - page: Bring your own OAuth credentials
+                path: pages/v3/authentication/oauth-keys.mdx
+              - page: White-labelling
+                path: pages/v3/authentication/white-labelling.mdx
   - tab: toolsets
     layout:
       - section: Toolsets
