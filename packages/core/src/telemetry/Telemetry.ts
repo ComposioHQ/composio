@@ -93,7 +93,7 @@ export class TelemetryService {
       );
     });
     // use the constructor name if available, otherwise use the file name
-    const instrumentedClassName = instance.constructor?.name || fileName || 'unknown';
+    const instrumentedClassName = (instance.constructor?.name || fileName) ?? 'unknown';
 
     for (const name of methodNames) {
       const originalMethod = (instance as unknown as Record<string, Function>)[name] as (

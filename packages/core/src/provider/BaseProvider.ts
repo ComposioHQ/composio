@@ -38,7 +38,7 @@ abstract class BaseProvider {
 
   /**
    * @public
-   * Gloabl function to execute a tool.
+   * Global function to execute a tool.
    * This function is used by provider providers to implement helper functions to execute tools.
    * This is a 1:1 mapping of the `execute` method in the `Tools` class.
    * @param {string} toolSlug - The slug of the tool to execute.

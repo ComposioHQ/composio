@@ -295,7 +295,7 @@ export class Tools<
     if (modifier) {
       if (typeof modifier === 'function') {
         modifiedTools = modifiedTools.map(tool => {
-          return modifier(tool.slug, tool.toolkit?.slug || 'unkown', tool);
+          return modifier(tool.slug, tool.toolkit?.slug ?? 'unknown', tool);
         });
       } else {
         throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
@@ -337,16 +337,16 @@ export class Tools<
     }
 
     // change the case of the tool to camel case
-    let modifiedToool = this.transformToolCases(tool);
+    let modifiedTool = this.transformToolCases(tool);
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedToool = modifier(slug, modifiedToool.toolkit?.slug || 'unkown', modifiedToool);
+        modifiedTool = modifier(slug, modifiedTool.toolkit?.slug ?? 'unknown', modifiedTool);
       } else {
         throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
     }
-    return modifiedToool;
+    return modifiedTool;
   }
 
   /**
@@ -472,7 +472,7 @@ export class Tools<
   ): Promise<ToolExecuteResponse> {
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
-        body = modifiers.beforeExecute(tool.slug, 'unkown', body);
+        body = modifiers.beforeExecute(tool.slug, 'unknown', body);
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -485,7 +485,7 @@ export class Tools<
 
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
-        result = modifiers.afterExecute(tool.slug, 'unkown', result);
+        result = modifiers.afterExecute(tool.slug, 'unknown', result);
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
@@ -509,7 +509,7 @@ export class Tools<
   ): Promise<ToolExecuteResponse> {
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
-        body = modifiers.beforeExecute(tool.slug, tool.toolkit?.slug || 'unkown', body);
+        body = modifiers.beforeExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', body);
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -536,7 +536,7 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
-        result = modifiers.afterExecute(tool.slug, tool.toolkit?.slug || 'unkown', result);
+        result = modifiers.afterExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', result);
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
