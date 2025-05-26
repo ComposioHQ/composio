@@ -80,3 +80,4 @@ fern/api/openapi-v3.json
 styles/*
 styles/config/*
 styles/config/vocabularies/*
+fern/pages/tools/
