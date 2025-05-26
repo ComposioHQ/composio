@@ -24,8 +24,10 @@ const createMockClient = () => ({
   triggerInstances: {
     listActive: vi.fn(),
     upsert: vi.fn(),
-    delete: vi.fn(),
-    updateStatus: vi.fn(),
+    manage: {
+      delete: vi.fn(),
+      update: vi.fn(),
+    },
   },
   triggersTypes: {
     list: vi.fn(),
@@ -150,6 +152,10 @@ const mockTriggerData: TriggerData = {
   },
 };
 
+const mockTriggerUpdateResponse = {
+  status: 'success',
+};
+
 describe('Triggers', () => {
   let triggers: Triggers;
   let mockClient: ReturnType<typeof createMockClient>;
@@ -261,11 +267,11 @@ describe('Triggers', () => {
     it('should delete a trigger instance', async () => {
       const triggerId = 'trigger-123';
       const deleteResponse = { success: true, message: 'Trigger deleted successfully' };
-      mockClient.triggerInstances.delete.mockResolvedValue(deleteResponse);
+      mockClient.triggerInstances.manage.delete.mockResolvedValue(deleteResponse as any);
 
       const result = await triggers.delete(triggerId);
 
-      expect(mockClient.triggerInstances.delete).toHaveBeenCalledWith(triggerId);
+      expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId);
       expect(result).toEqual(deleteResponse);
     });
   });
@@ -273,95 +279,46 @@ describe('Triggers', () => {
   describe('updateStatus', () => {
     it('should update the status of a trigger', async () => {
       const status: TriggerStatusEnum = 'enable';
-      const params = { triggerId: 'trigger-123' };
+      const params = { triggerId: 'trigger-123', status: status };
       const options = { timeout: 5000 };
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
+      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse as any);
 
       const result = await triggers.updateStatus(status, params, options);
 
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
         status,
         params,
         options
       );
-      expect(result).toEqual(mockTriggerInstance);
-    });
-
-    it('should update the status without options', async () => {
-      const status: TriggerStatusEnum = 'disable';
-      const params = { triggerId: 'trigger-123' };
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
-
-      const result = await triggers.updateStatus(status, params);
-
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
-        status,
-        params,
-        undefined
-      );
-      expect(result).toEqual(mockTriggerInstance);
+      expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
 
   describe('disable', () => {
     it('should disable a trigger instance', async () => {
       const triggerId = 'trigger-123';
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
+      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse as any);
 
       const result = await triggers.disable(triggerId);
 
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
-        'disable',
-        { triggerId },
-        undefined
-      );
-      expect(result).toEqual(mockTriggerInstance);
-    });
-
-    it('should disable a trigger instance with options', async () => {
-      const triggerId = 'trigger-123';
-      const options = { timeout: 5000 };
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
-
-      const result = await triggers.disable(triggerId, options);
-
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
-        'disable',
-        { triggerId },
-        options
-      );
-      expect(result).toEqual(mockTriggerInstance);
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
+        status: 'disable',
+      });
+      expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
 
   describe('enable', () => {
     it('should enable a trigger instance', async () => {
       const triggerId = 'trigger-123';
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
+      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse);
 
       const result = await triggers.enable(triggerId);
 
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
-        'enable',
-        { triggerId },
-        undefined
-      );
-      expect(result).toEqual(mockTriggerInstance);
-    });
-
-    it('should enable a trigger instance with options', async () => {
-      const triggerId = 'trigger-123';
-      const options = { timeout: 5000 };
-      mockClient.triggerInstances.updateStatus.mockResolvedValue(mockTriggerInstance);
-
-      const result = await triggers.enable(triggerId, options);
-
-      expect(mockClient.triggerInstances.updateStatus).toHaveBeenCalledWith(
-        'enable',
-        { triggerId },
-        options
-      );
-      expect(result).toEqual(mockTriggerInstance);
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
+        status: 'enable',
+      });
+      expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
 
