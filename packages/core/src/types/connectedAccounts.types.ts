@@ -4,20 +4,18 @@ import { z } from 'zod';
  * Connected Account create parameters
  */
 export const ConnectedAccountStatuses = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  DELETED: 'DELETED',
+  INITIALIZING: 'INITIALIZING',
   INITIATED: 'INITIATED',
-  EXPIRED: 'EXPIRED',
+  ACTIVE: 'ACTIVE',
   FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
 } as const;
 export const ConnectedAccountStatusSchema = z.enum([
-  ConnectedAccountStatuses.ACTIVE,
-  ConnectedAccountStatuses.INACTIVE,
-  ConnectedAccountStatuses.DELETED,
+  ConnectedAccountStatuses.INITIALIZING,
   ConnectedAccountStatuses.INITIATED,
-  ConnectedAccountStatuses.EXPIRED,
+  ConnectedAccountStatuses.ACTIVE,
   ConnectedAccountStatuses.FAILED,
+  ConnectedAccountStatuses.EXPIRED,
 ]);
 export type ConnectedAccountStatus =
   (typeof ConnectedAccountStatuses)[keyof typeof ConnectedAccountStatuses];

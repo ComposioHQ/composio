@@ -132,7 +132,6 @@ export class ConnectionRequest {
     const terminalErrorStates: ConnectedAccountStatus[] = [
       ConnectedAccountStatuses.FAILED,
       ConnectedAccountStatuses.EXPIRED,
-      ConnectedAccountStatuses.DELETED,
     ];
 
     const start = Date.now();
