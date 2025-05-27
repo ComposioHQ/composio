@@ -71,7 +71,7 @@ def test_docstring_args() -> None:
 def test_annotated_args() -> None:
     @action(toolname="math")
     def square(
-        number: te.Annotated[int, "Number to calculate square"]
+        number: te.Annotated[int, "Number to calculate square"],
     ) -> te.Annotated[int, "Square of a number"]:
         """Calculate square of a number"""
         return number**2
@@ -145,14 +145,14 @@ def test_tool_namespace() -> None:
 
     @action(toolname="maths")
     def square(
-        number: te.Annotated[int, "Number to calculate square"]
+        number: te.Annotated[int, "Number to calculate square"],
     ) -> te.Annotated[int, "Square of a number"]:
         """Calculate square of a number"""
         return number**2
 
     @action(toolname="maths")
     def inverse(
-        number: te.Annotated[float, "Number to inverse"]
+        number: te.Annotated[float, "Number to inverse"],
     ) -> te.Annotated[float, "Inverse of a number"]:
         """Calculate inverse of a number"""
         return 1 / number
@@ -184,3 +184,66 @@ def test_untyped_param() -> None:
             :return repositories: Repositories
             """
             return []
+
+
+def test_multiline_docstring() -> None:
+    @action(toolname="math")
+    def multiply(a: int, b: int, c: int) -> int:
+        """
+        Multiply three numbers
+
+        Lorem ipsum
+
+        :param a: Number a
+        :param b: Number b
+        :param c: Number c
+        :return result: Result of the multiplication
+        """
+        return a * b * c
+
+    assert multiply.description == "Multiply three numbers\nLorem ipsum"
+
+
+def test_multiline_param_desc() -> None:
+    @action(toolname="math")
+    def multiply(a: int, b: int, c: int) -> int:
+        """
+        Multiply three numbers
+
+        Lorem ipsum
+
+        :param a: Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s, when an unknown printer took a galley of type
+            and scrambled it to make a type specimen book.
+        :param b: Number b
+        :param c: Number c
+        :return result: Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s, when an unknown printer took a galley of type
+            and scrambled it to make a type specimen book.
+        """
+        return a * b * c
+
+    assert multiply.description == "Multiply three numbers\nLorem ipsum"
+    assert multiply.request.schema().get("properties", {}).get("a", {}).get(
+        "description"
+    ) == (
+        "Lorem Ipsum is simply dummy text of the printing and typesetting "
+        "industry. Lorem Ipsum has been the industry's standard dummy text "
+        "ever since the 1500s, when an unknown printer took a galley of type "
+        "and scrambled it to make a type specimen book."
+    )
+    assert (
+        multiply.response.schema()
+        .get("properties", {})
+        .get("data", {})
+        .get("properties", {})
+        .get("result", {})
+        .get("description")
+    ) == (
+        "Lorem Ipsum is simply dummy text of the printing and typesetting "
+        "industry. Lorem Ipsum has been the industry's standard dummy text "
+        "ever since the 1500s, when an unknown printer took a galley of type "
+        "and scrambled it to make a type specimen book."
+    )

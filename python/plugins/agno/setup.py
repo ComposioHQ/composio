@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_agno",
-    version="0.7.16-rc.1",
+    version="0.7.16",
     author="Devanshu",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Agno Plugin.",

@@ -59,7 +59,7 @@ agent = FunctionCallingAgentWorker(
 ).as_agent()
 
 response = agent.chat(
-    """
+    f"""
 Book slots according to {todo}. 
 Properly Label them with the work provided to be done in that time period. 
 Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) 

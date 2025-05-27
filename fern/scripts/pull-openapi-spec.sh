@@ -4,8 +4,9 @@
 set -e
 
 # Define the OpenAPI specification URL and paths
-OPENAPI_URL="https://backend.composio.dev/openapi.json"
+OPENAPI_URL="https://hermes.composio.dev/openapi.json"
 OPENAPI_V3_URL="https://backend.composio.dev/api/v3/openapi.json"
+OPENAPI_MCP_URL="https://mcp.composio.dev/api/openapi.json"
 
 # Get the directory where the script is located, works in both CI and local environments
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || dirname "$0")" && pwd)"
@@ -13,6 +14,7 @@ FERN_DIR="$(dirname "$SCRIPT_DIR")"
 API_DIR="$FERN_DIR/api"
 OUTPUT_FILE="$API_DIR/openapi.json"
 OUTPUT_V3_FILE="$API_DIR/openapi-v3.json"
+OUTPUT_MCP_FILE="$API_DIR/openapi-mcp.json"
 
 # Debug information
 echo "Script directory: $SCRIPT_DIR"
@@ -54,6 +56,23 @@ if [ -s "$OUTPUT_V3_FILE" ]; then
     echo "Verified OpenAPI v3 specification file exists and is not empty"
 else
     echo "Error: OpenAPI v3 specification file is empty or does not exist"
+    exit 1
+fi
+
+# Fetch the MCP OpenAPI specification directly to output file
+echo "Pulling latest MCP OpenAPI specification from $OPENAPI_MCP_URL"
+if curl -f -o "$OUTPUT_MCP_FILE" "$OPENAPI_MCP_URL"; then
+    echo "Successfully downloaded MCP OpenAPI specification to $OUTPUT_MCP_FILE"
+else
+    echo "Failed to download MCP OpenAPI specification"
+    exit 1
+fi
+
+# Validate that the MCP file exists and is not empty
+if [ -s "$OUTPUT_MCP_FILE" ]; then
+    echo "Verified MCP OpenAPI specification file exists and is not empty"
+else
+    echo "Error: MCP OpenAPI specification file is empty or does not exist"
     exit 1
 fi
 

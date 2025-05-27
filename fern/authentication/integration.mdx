@@ -79,50 +79,36 @@ This example creates a basic integration using Composio's default settings where
 
 <CodeGroup>
 ```python Python
-from composio_openai import ComposioToolSet, App
+from composio_openai import App, ComposioToolSet
 
-# Assumes toolset is initialized
 toolset = ComposioToolSet()
-app_key = App.SLACK # The app identifier
 
-try:
-    # Creates a basic integration, using Composio's OAuth app if Slack uses OAuth
-    integration = toolset.client.integrations.create(
-        app_id=app_key.slug,
-        name=f"My Code-Based {app_key.value} Integration",
-        # For OAuth, defaults to use_composio_auth=True
-        # Add 'auth_config' here for custom credentials - see SDK Ref & specific guides
-    )
-    integration_id = integration.id
-    print(f"Integration created/found with ID: {integration_id}")
-except Exception as e:
-    print(f"Error creating integration: {e}")
+integration = toolset.create_integration(
+    app=App.GITHUB,
+    auth_mode="OAUTH2",
+    use_composio_oauth_app=True,
+    # For use_composio_oauth_app=False, you can provide your own OAuth app credentials here
+    # auth_config={
+    #     "client_id": "123456",
+    #     "client_secret": "123456"
+    # }
+)
+print(integration.id)
 
 ```
 ```typescript TypeScript
-import { ComposioToolSet, App } from "composio-core";
+import { OpenAIToolSet } from "composio-core";
 
-// Assumes toolset is initialized
-const toolset = new ComposioToolSet();
-const appKey = App.SLACK; // The app identifier
+const composioToolset = new OpenAIToolSet();
 
-async function createIntegrationProgrammatically() {
-    try {
-        // Creates a basic integration, using Composio's OAuth app if Slack uses OAuth
-        const integration = await toolset.client.integrations.create({
-            appUniqueKey: appKey,
-            name: `My Code-Based ${appKey} Integration`,
-            // For OAuth, defaults to useComposioAuth: true
-            // Add 'authConfig' here for custom credentials - see SDK Ref & specific guides
-        });
-        const integrationId = integration.id;
-        console.log(`Integration created/found with ID: ${integrationId}`);
-    } catch (error) {
-        console.error("Error creating integration:", error);
-    }
-}
+const integration = await composioToolset.integrations.create({
+    name: "gmail_integration",
+    appUniqueKey: "gmail",
+    useComposioAuth: true,
+    forceNewIntegration: true,
+})
 
-createIntegrationProgrammatically();
+console.log(integration.id)
 ```
 </CodeGroup>
 <Info>
