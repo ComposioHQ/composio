@@ -33,27 +33,27 @@ css: dist/output.css
 
 typography:
   bodyFont:
-    name: CohereText
+    name: Roobert
     paths:
-      - path: assets/CohereText-Regular.woff2
+      - path: assets/Roobert-Regular.woff2
         weight: "400"
-      - path: assets/CohereVariable.woff2
-        weight: "500 525"
+      - path: assets/Roobert-Medium.woff2
+        weight: "500"
   headingsFont:
-    name: CohereHeadline
+    name: Roobert
     paths:
-      - path: assets/CohereHeadline-Regular.woff2
+      - path: assets/Roobert-Regular.woff2
         weight: "400"
-      - path: assets/CohereHeadline-Bold.woff2
+      - path: assets/Roobert-Medium.woff2
         weight: "500"
   codeFont:
-    name: CohereMono
+    name: IBM Plex Mono
     paths:
-      - path: assets/CohereMono-Regular.woff2
+      - path: assets/IBMPlexMono-Light.ttf
         weight: "400"
         # In the nature design system, bolded fonts always use Cohere Variable.
-      - path: assets/CohereVariable.woff2
-        weight: "500 525"
+      # - path: assets/IBMPlexMono-Medium.woff2
+      #   weight: "500 525"
 navbar-links:
   - type: secondary
     text: DASHBOARD

@@ -53,6 +53,23 @@ navigation:
                 path: pages/v3/authentication/oauth-keys.mdx
               - page: White-labelling
                 path: pages/v3/authentication/white-labelling.mdx
+      - section: Triggers
+        icon: bolt
+        contents:
+          - page: Using Triggers
+            path: pages/v3/triggers/using-triggers.mdx
+      - section: MCP
+        icon: server
+        contents:
+          - page: Introduction
+            path: pages/v3/mcp/introduction.mdx
+  - tab: cookbooks
+    layout:
+      - section: Cookbooks
+        icon: utensils
+        contents:
+          - page: Gmail Filterer
+            path: pages/v3/cookbooks/gmail-filterer.mdx
   - tab: toolsets
     layout:
       - section: Toolsets
@@ -85,3 +102,15 @@ navigation:
             skip-slug: true
             paginated: false
             flattened: true
+  - tab: sdk-reference
+    layout:
+      - section: Python
+        icon: python
+        contents:
+          - page: Python SDK
+            path: pages/v3/sdk/python/index.mdx
+      - section: TypeScript
+        icon: typescript
+        contents:
+          - page: TypeScript SDK
+            path: pages/v3/sdk/typescript/index.mdx
