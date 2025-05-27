@@ -1,23 +1,35 @@
 import ComposioClient from '@composio/client';
-import { RequestOptions } from '@composio/client/internal/request-options';
 import {
-  TriggerInstanceListActiveParams,
-  TriggerInstanceUpsertParams,
-  TriggerInstanceUpsertResponse,
+  TriggerInstanceListActiveResponse as TriggerInstanceListActiveResponseComposio,
   TriggersTypeListParams,
   TriggersTypeListResponse,
   TriggersTypeRetrieveEnumResponse,
   TriggersTypeRetrieveResponse,
 } from '@composio/client/resources/index';
-import { TriggerStatusEnum, TriggerSubscribeParams } from '../types/triggers.types';
+import {
+  TriggerInstanceUpsertResponseSchema,
+  TriggerInstanceUpsertResponse,
+  TriggerInstanceUpsertParamsSchema,
+  TriggerInstanceUpsertParams,
+  TriggerInstanceListActiveParams,
+  TriggerInstanceListActiveParamsSchema,
+  TriggerInstanceListActiveResponse,
+  TriggerInstanceListActiveResponseItemSchema,
+  TriggerInstanceListActiveResponseSchema,
+  TriggerSubscribeParams,
+  TriggerInstanceManageUpdateParams,
+  TriggerInstanceManageUpdateResponse,
+  TriggerInstanceManageDeleteResponse,
+  TriggerInstanceManageDeleteResponseSchema,
+  TriggerSubscribeParamSchema,
+  IncomingTriggerPayloadSchema,
+  IncomingTriggerPayload,
+} from '../types/triggers.types';
 import { PusherUtils, TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
 import { Session } from './Session';
 import { telemetry } from '../telemetry/Telemetry';
-import {
-  ManageDeleteResponse,
-  ManageUpdateParams,
-} from '@composio/client/resources/trigger-instances/manage';
+import { ValidationError } from '../errors';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -32,11 +44,90 @@ export class Triggers {
   }
 
   /**
-   * Fetch list of all the active triggers
-   * @returns {Promise<TriggerInstance[]>} List of trigger instances
+   * Parse the trigger instance list active item
+   *
+   * @param response - The response from the composio client
+   * @returns The parsed trigger instance list active item
    */
-  async list(query?: TriggerInstanceListActiveParams, options?: RequestOptions) {
-    return this.client.triggerInstances.listActive(query, options);
+  private parseTriggerInstanceListActiveItem(
+    response: TriggerInstanceListActiveResponseComposio['items'][0]
+  ) {
+    const parsed = TriggerInstanceListActiveResponseItemSchema.safeParse({
+      id: response.id,
+      connectedAccountId: response.connected_account_id,
+      disabledAt: response.disabled_at,
+      state: response.state,
+      triggerConfig: response.trigger_config,
+      triggerName: response.trigger_name,
+      updatedAt: response.updated_at,
+      triggerData: response.trigger_data,
+      uuid: response.uuid,
+    });
+    if (!parsed.success) {
+      throw new ValidationError(`Invalid trigger instance list active item`, {
+        cause: parsed.error,
+      });
+    }
+    return parsed.data;
+  }
+
+  /**
+   * Fetch list of all the active triggers
+   *
+   * @param {TriggerInstanceListActiveParams} query - The query parameters to filter the trigger instances
+   * @returns {Promise<TriggerInstanceListActiveResponse>} List of trigger instances
+   *
+   * @throws {ValidationError} If the parameters are invalid
+   * @throws {Error} If the client is not authenticated
+   *
+   * @example
+   * ```ts
+   * const triggers = await triggers.listActive({
+   *   authConfigIds: ['123'],
+   *   connectedAccountIds: ['456'],
+   * });
+   * ```
+   */
+  async listActive(
+    query?: TriggerInstanceListActiveParams
+  ): Promise<TriggerInstanceListActiveResponse> {
+    // Validate the parameters if provided
+
+    const parsedParams = TriggerInstanceListActiveParamsSchema.safeParse(query ?? {});
+
+    if (!parsedParams.success) {
+      throw new ValidationError(`Invalid parameters passed to list triggers`, {
+        cause: parsedParams.error,
+      });
+    }
+
+    const result = await this.client.triggerInstances.listActive(
+      query
+        ? {
+            auth_config_ids: parsedParams.data.authConfigIds,
+            connected_account_ids: parsedParams.data.connectedAccountIds,
+            limit: parsedParams.data.limit,
+            page: parsedParams.data.page,
+            show_disabled: parsedParams.data.showDisabled,
+            trigger_ids: parsedParams.data.triggerIds,
+            trigger_names: parsedParams.data.triggerNames,
+          }
+        : undefined
+    );
+
+    const parsedResult = TriggerInstanceListActiveResponseSchema.safeParse({
+      items: result.items.map(item => this.parseTriggerInstanceListActiveItem(item)),
+      nextCursor: result.next_cursor,
+      totalPages: result.total_pages,
+    } as TriggerInstanceListActiveResponse);
+
+    if (!parsedResult.success) {
+      throw new ValidationError(`Invalid trigger instance list active response`, {
+        cause: parsedResult.error,
+      });
+    }
+
+    return parsedResult.data;
   }
 
   /**
@@ -48,24 +139,45 @@ export class Triggers {
    */
   async create(
     slug: string,
-    body: TriggerInstanceUpsertParams,
-    options?: RequestOptions
+    body: TriggerInstanceUpsertParams
   ): Promise<TriggerInstanceUpsertResponse> {
-    return this.client.triggerInstances.upsert(slug, body, options);
+    const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      throw new ValidationError(`Invalid parameters passed to create trigger`, {
+        cause: parsedBody.error,
+      });
+    }
+
+    const result = await this.client.triggerInstances.upsert(slug, {
+      connected_account_id: parsedBody.data.connectedAccountId,
+      trigger_config: parsedBody.data.triggerConfig,
+    });
+    const parsedResult = TriggerInstanceUpsertResponseSchema.safeParse({
+      triggerId: result.trigger_id,
+    } as TriggerInstanceUpsertResponse);
+
+    if (!parsedResult.success) {
+      throw new ValidationError(`Invalid trigger instance upsert response`, {
+        cause: parsedResult.error,
+      });
+    }
+
+    return parsedResult.data;
   }
 
   /**
    * Update an existing trigger instance
    *
    * @param {string} slug - The slug of the trigger instance
-   * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
+   * @param {TriggerInstanceManageUpdateParams} body - The parameters to create the trigger instance
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
   async update(
     slug: string,
-    body: TriggerInstanceUpsertParams
-  ): Promise<TriggerInstanceUpsertResponse> {
-    return this.client.triggerInstances.upsert(slug, body);
+    body: TriggerInstanceManageUpdateParams
+  ): Promise<TriggerInstanceManageUpdateResponse> {
+    return this.client.triggerInstances.manage.update(slug, body);
   }
 
   /**
@@ -74,31 +186,25 @@ export class Triggers {
    * @param {string} triggerId - The slug of the trigger instance
    * @returns
    */
-  async delete(triggerId: string): Promise<ManageDeleteResponse> {
-    return this.client.triggerInstances.manage.delete(triggerId);
-  }
+  async delete(triggerId: string): Promise<TriggerInstanceManageDeleteResponse> {
+    const result = await this.client.triggerInstances.manage.delete(triggerId);
+    const parsedResult = TriggerInstanceManageDeleteResponseSchema.safeParse({
+      triggerId: result.trigger_id,
+    } as TriggerInstanceManageDeleteResponse);
 
-  /**
-   * Update the status of a trigger
-   *
-   * @param {TriggerStatusEnum} status - The new status of the trigger
-   * @param {TriggerInstanceUpdateStatusParams} params - The parameters to update the trigger instance
-   * @param {RequestOptions} options - Request options
-   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
-   */
-  async updateStatus(
-    status: TriggerStatusEnum,
-    params: ManageUpdateParams,
-    options?: RequestOptions
-  ) {
-    return this.client.triggerInstances.manage.update(status, params, options);
+    if (!parsedResult.success) {
+      throw new ValidationError(`Invalid trigger instance manage delete response`, {
+        cause: parsedResult.error,
+      });
+    }
+
+    return parsedResult.data;
   }
 
   /**
    * Disable a trigger instance
    *
    * @param {string} triggerId - The id of the trigger instance
-   * @param {RequestOptions options - Request options
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
   async disable(triggerId: string) {
@@ -111,7 +217,6 @@ export class Triggers {
    * Enable a trigger instance
    *
    * @param {string} triggerId - The id of the trigger instance
-   * @param {RequestOptions options - Request options
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
   async enable(triggerId: string) {
@@ -130,11 +235,8 @@ export class Triggers {
    * @param {RequestOptions} options - Request options
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
-  async listTypes(
-    query?: TriggersTypeListParams,
-    options?: RequestOptions
-  ): Promise<TriggersTypeListResponse> {
-    return this.client.triggersTypes.list(query, options);
+  async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse> {
+    return this.client.triggersTypes.list(query);
   }
 
   /**
@@ -144,8 +246,8 @@ export class Triggers {
    * @param {RequestOptions} options - request options
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
-  async getType(slug: string, options?: RequestOptions): Promise<TriggersTypeRetrieveResponse> {
-    return this.client.triggersTypes.retrieve(slug, options);
+  async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
+    return this.client.triggersTypes.retrieve(slug);
   }
 
   /**
@@ -155,12 +257,37 @@ export class Triggers {
    * @param options
    * @returns
    */
-  async listEnum(options?: RequestOptions): Promise<TriggersTypeRetrieveEnumResponse> {
-    return this.client.triggersTypes.retrieveEnum(options);
+  async listEnum(): Promise<TriggersTypeRetrieveEnumResponse> {
+    return this.client.triggersTypes.retrieveEnum();
   }
 
-  async subscribe(fn: (_data: TriggerData) => void, filters: TriggerSubscribeParams = {}) {
+  /**
+   * Subscribe to all the triggers
+   *
+   * @param fn - The function to call when a trigger is received
+   * @param filters - The filters to apply to the triggers
+   *
+   * @example
+   * ```ts
+   *
+   * triggers.subscribe((data) => {
+   *   console.log(data);
+   * }, );
+   * ```
+   */
+  async subscribe(
+    fn: (_data: IncomingTriggerPayload) => void,
+    filters: TriggerSubscribeParams = {}
+  ) {
     if (!fn) throw new Error('Function is required for trigger subscription');
+
+    const parsedFilters = TriggerSubscribeParamSchema.safeParse(filters);
+
+    if (!parsedFilters.success) {
+      throw new ValidationError(`Invalid parameters passed to subscribe to triggers`, {
+        cause: parsedFilters.error,
+      });
+    }
 
     // @TODO: Get the client id from the backend
     const session = new Session(this.client);
@@ -172,35 +299,142 @@ export class Triggers {
 
     await PusherUtils.getPusherClient(this.client.baseURL, this.client.apiKey);
 
-    const shouldSendTrigger = (data: TriggerData) => {
-      if (Object.keys(filters).length === 0) return true;
-      else {
-        return (
-          (!filters.appName || data.appName.toLowerCase() === filters.appName.toLowerCase()) &&
-          (!filters.triggerId ||
-            data.metadata.id.toLowerCase() === filters.triggerId.toLowerCase()) &&
-          (!filters.connectionId ||
-            data.metadata.connectionId.toLowerCase() === filters.connectionId.toLowerCase()) &&
-          (!filters.triggerName ||
-            data.metadata.triggerName.toLowerCase() === filters.triggerName.toLowerCase()) &&
-          (!filters.entityId ||
-            data.metadata.connection.clientUniqueUserId.toLowerCase() ===
-              filters.entityId.toLowerCase()) &&
-          (!filters.integrationId ||
-            data.metadata.connection.integrationId.toLowerCase() ===
-              filters.integrationId.toLowerCase())
+    /**
+     * Applies compound filters to the trigger data
+     * @param data data to apply filters to
+     * @returns True if the trigger data matches the filters, false otherwise
+     */
+    const shouldSendTriggerAfterFilters = (data: IncomingTriggerPayload): boolean => {
+      // Check if toolkits filter is provided and matches
+      if (
+        parsedFilters.data.toolkits?.length &&
+        !parsedFilters.data.toolkits
+          .map(toolkit => toolkit.toLowerCase())
+          .includes(data.toolkitSlug.toLowerCase())
+      ) {
+        logger.debug(
+          'Trigger does not match toolkits filter',
+          JSON.stringify(parsedFilters.data.toolkits, null, 2)
         );
+        return false;
       }
+
+      // Check if triggerId filter matches
+      if (parsedFilters.data.triggerId && parsedFilters.data.triggerId !== data.id) {
+        logger.debug(
+          'Trigger does not match triggerId filter',
+          JSON.stringify(parsedFilters.data.triggerId, null, 2)
+        );
+        return false;
+      }
+
+      // Check if connectedAccountId filter matches
+      if (
+        parsedFilters.data.connectedAccountId &&
+        parsedFilters.data.connectedAccountId !== data.metadata.connectedAccountId
+      ) {
+        logger.debug(
+          'Trigger does not match connectedAccountId filter',
+          JSON.stringify(parsedFilters.data.connectedAccountId, null, 2)
+        );
+        return false;
+      }
+
+      // Check if triggerName filter matches
+      if (
+        parsedFilters.data.triggerName &&
+        parsedFilters.data.triggerName !== data.metadata.triggerName
+      ) {
+        logger.debug(
+          'Trigger does not match triggerName filter',
+          JSON.stringify(parsedFilters.data.triggerName, null, 2)
+        );
+        return false;
+      }
+
+      // Check if triggerData filter matches
+      if (
+        parsedFilters.data.triggerData &&
+        parsedFilters.data.triggerData !== data.metadata.triggerData
+      ) {
+        logger.debug(
+          'Trigger does not match triggerData filter',
+          JSON.stringify(parsedFilters.data.triggerData, null, 2)
+        );
+        return false;
+      }
+
+      // Check if userId (clientUniqueUserId) filter matches
+      if (
+        parsedFilters.data.userId &&
+        parsedFilters.data.userId !== data.metadata.connection.clientUniqueUserId
+      ) {
+        logger.debug(
+          'Trigger does not match userId filter',
+          JSON.stringify(parsedFilters.data.userId, null, 2)
+        );
+        return false;
+      }
+
+      logger.debug('Trigger matches all filters', JSON.stringify(parsedFilters.data, null, 2));
+      // If all filters pass or no filters were provided, return true
+      return true;
     };
 
-    logger.debug('Subscribing to triggers', filters);
+    logger.debug('Subscribing to triggers', JSON.stringify(filters, null, 2));
     PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
-      if (shouldSendTrigger(data)) {
-        fn(data);
+      logger.debug('Received trigger data', JSON.stringify(data, null, 2));
+
+      const parsedData = IncomingTriggerPayloadSchema.safeParse({
+        id: data.metadata.id,
+        clientId: String(data.clientId),
+        triggerSlug: data.metadata.triggerName,
+        toolkitSlug: data.appName,
+        payload: data.payload,
+        originalPayload: data.originalPayload,
+        metadata: {
+          ...data.metadata,
+          id: data.metadata.id,
+          connectedAccountId: data.metadata.connection.id,
+          triggerSlug: data.metadata.triggerName,
+          triggerName: data.metadata.triggerName,
+          triggerData: data.metadata.triggerData,
+          triggerConfig: data.metadata.triggerConfig,
+          connection: {
+            id: data.metadata.connection.id,
+            integrationId: data.metadata.connection.integrationId,
+            clientUniqueUserId: data.metadata.connection.clientUniqueUserId,
+            status: data.metadata.connection.status,
+          },
+        },
+      } as IncomingTriggerPayload);
+      if (!parsedData.success) {
+        throw new ValidationError(`Invalid trigger payload`, {
+          cause: parsedData.error,
+        });
+      }
+      if (shouldSendTriggerAfterFilters(parsedData.data)) {
+        fn(parsedData.data);
+      } else {
+        logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
     });
   }
 
+  /**
+   * Unsubscribe from all the triggers
+   *
+   * @returns {Promise<void>}
+   *
+   * @example
+   * ```ts
+   * composio.trigger.subscribe((data) => {
+   *   console.log(data);
+   * });
+   *
+   * await triggers.unsubscribe();
+   * ```
+   */
   async unsubscribe() {
     const session = new Session(this.client);
     const sessionInfo = await session.getInfo();

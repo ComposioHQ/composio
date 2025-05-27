@@ -6,6 +6,7 @@ import { PusherUtils, TriggerData } from '../../src/utils/pusher';
 import logger from '../../src/utils/logger';
 import { TriggerStatusEnum, TriggerSubscribeParams } from '../../src/types/triggers.types';
 import { telemetry } from '../../src/telemetry/Telemetry';
+import { ValidationError } from '../../src/errors';
 
 // Mock dependencies
 vi.mock('../../src/models/Session');
@@ -46,36 +47,41 @@ const mockTriggerInstances = {
   items: [
     {
       id: 'trigger-1',
-      slug: 'github_webhook',
-      status: 'active',
-      connectedAccountId: 'conn-123',
-      config: { webhook_url: 'https://example.com/webhook' },
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
+      connected_account_id: 'conn-123',
+      disabled_at: null,
+      state: { lastRun: '2024-01-01T00:00:00Z' },
+      trigger_config: { webhook_url: 'https://example.com/webhook' },
+      trigger_name: 'github_webhook',
+      updated_at: '2024-01-01T00:00:00Z',
+      trigger_data: '{"event":"push"}',
+      uuid: 'uuid-123',
     },
     {
       id: 'trigger-2',
-      slug: 'slack_message',
-      status: 'inactive',
-      connectedAccountId: 'conn-456',
-      config: { channel: '#general' },
-      createdAt: '2024-01-02T00:00:00Z',
-      updatedAt: '2024-01-02T00:00:00Z',
+      connected_account_id: 'conn-456',
+      disabled_at: '2024-01-02T00:00:00Z',
+      state: { lastRun: '2024-01-02T00:00:00Z' },
+      trigger_config: { channel: '#general' },
+      trigger_name: 'slack_message',
+      updated_at: '2024-01-02T00:00:00Z',
+      trigger_data: '{"event":"message"}',
+      uuid: 'uuid-456',
     },
   ],
-  totalPages: 1,
-  page: 1,
-  pageSize: 10,
+  next_cursor: null,
+  total_pages: 1,
 };
 
-const mockTriggerInstance = {
-  id: 'trigger-123',
-  slug: 'test_trigger',
-  status: 'active',
-  connectedAccountId: 'conn-123',
-  config: { param1: 'value1' },
-  createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z',
+const mockTriggerUpsertResponse = {
+  trigger_id: 'trigger-123',
+};
+
+const mockTriggerUpdateResponse = {
+  status: 'success',
+};
+
+const mockTriggerDeleteResponse = {
+  trigger_id: 'trigger-123',
 };
 
 const mockTriggerTypes = {
@@ -87,15 +93,6 @@ const mockTriggerTypes = {
       config: {
         required: ['webhook_url'],
         optional: ['secret'],
-      },
-    },
-    {
-      slug: 'slack_message',
-      name: 'Slack Message',
-      description: 'Triggered when a Slack message is received',
-      config: {
-        required: ['channel'],
-        optional: ['pattern'],
       },
     },
   ],
@@ -110,10 +107,6 @@ const mockTriggerType = {
   config: {
     required: ['webhook_url'],
     optional: ['secret'],
-  },
-  toolkit: {
-    slug: 'github',
-    name: 'GitHub',
   },
 };
 
@@ -147,13 +140,32 @@ const mockTriggerData: TriggerData = {
       id: 'conn-123',
       integrationId: 'github',
       clientUniqueUserId: 'user-456',
-      status: 'active',
+      status: 'enable',
     },
   },
 };
 
-const mockTriggerUpdateResponse = {
-  status: 'success',
+const mockIncomingTriggerPayload = {
+  id: 'trigger-123',
+  clientId: '123',
+  triggerSlug: 'github_webhook',
+  toolkitSlug: 'github',
+  payload: { action: 'push', repository: 'test-repo' },
+  originalPayload: { action: 'push', repository: 'test-repo' },
+  metadata: {
+    id: 'trigger-123',
+    connectedAccountId: 'conn-123',
+    triggerSlug: 'github_webhook',
+    triggerName: 'github_webhook',
+    triggerData: '{"action":"push"}',
+    triggerConfig: { webhook_url: 'https://example.com/webhook' },
+    connection: {
+      id: 'conn-123',
+      integrationId: 'github',
+      clientUniqueUserId: 'user-456',
+      status: 'enable',
+    },
+  },
 };
 
 describe('Triggers', () => {
@@ -198,21 +210,58 @@ describe('Triggers', () => {
     it('should list active trigger instances', async () => {
       mockClient.triggerInstances.listActive.mockResolvedValue(mockTriggerInstances);
 
-      const result = await triggers.list();
+      const result = await triggers.listActive();
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined, undefined);
-      expect(result).toEqual(mockTriggerInstances);
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual({
+        items: mockTriggerInstances.items.map(item => ({
+          id: item.id,
+          connectedAccountId: item.connected_account_id,
+          disabledAt: item.disabled_at,
+          state: item.state,
+          triggerConfig: item.trigger_config,
+          triggerName: item.trigger_name,
+          updatedAt: item.updated_at,
+          triggerData: item.trigger_data,
+          uuid: item.uuid,
+        })),
+        nextCursor: null,
+        totalPages: 1,
+      });
+    });
+
+    it('should throw validation error for invalid response', async () => {
+      mockClient.triggerInstances.listActive.mockResolvedValue({
+        items: [{ invalid: 'data' }],
+      });
+
+      await expect(triggers.listActive()).rejects.toThrow(ValidationError);
     });
 
     it('should list active trigger instances with query parameters', async () => {
-      const query = { limit: 5, page: 2 };
-      const options = { timeout: 5000 };
+      const query = {
+        authConfigIds: ['auth-1'],
+        connectedAccountIds: ['conn-1'],
+        limit: 5,
+        page: 2,
+        showDisabled: true,
+        triggerIds: ['trigger-1'],
+        triggerNames: ['github_webhook'],
+      };
+
       mockClient.triggerInstances.listActive.mockResolvedValue(mockTriggerInstances);
 
-      const result = await triggers.list(query, options);
+      await triggers.listActive(query);
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(query, options);
-      expect(result).toEqual(mockTriggerInstances);
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith({
+        auth_config_ids: query.authConfigIds,
+        connected_account_ids: query.connectedAccountIds,
+        limit: query.limit,
+        page: query.page,
+        show_disabled: query.showDisabled,
+        trigger_ids: query.triggerIds,
+        trigger_names: query.triggerNames,
+      });
     });
   });
 
@@ -221,83 +270,56 @@ describe('Triggers', () => {
       const slug = 'github_webhook';
       const body = {
         connectedAccountId: 'conn-123',
-        config: { webhook_url: 'https://example.com/webhook' },
-      } as any;
-      mockClient.triggerInstances.upsert.mockResolvedValue(mockTriggerInstance);
+        triggerConfig: { webhook_url: 'https://example.com/webhook' },
+      };
+      mockClient.triggerInstances.upsert.mockResolvedValue(mockTriggerUpsertResponse);
 
       const result = await triggers.create(slug, body);
 
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, body, undefined);
-      expect(result).toEqual(mockTriggerInstance);
-    });
-
-    it('should create a new trigger instance with options', async () => {
-      const slug = 'github_webhook';
-      const body = {
-        connectedAccountId: 'conn-123',
-        config: { webhook_url: 'https://example.com/webhook' },
-      } as any;
-      const options = { timeout: 5000 };
-      mockClient.triggerInstances.upsert.mockResolvedValue(mockTriggerInstance);
-
-      const result = await triggers.create(slug, body, options);
-
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, body, options);
-      expect(result).toEqual(mockTriggerInstance);
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
+        connected_account_id: body.connectedAccountId,
+        trigger_config: body.triggerConfig,
+      });
+      expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
     });
   });
 
   describe('update', () => {
-    it('should update an existing trigger instance', async () => {
-      const slug = 'github_webhook';
-      const body = {
-        connectedAccountId: 'conn-123',
-        config: { webhook_url: 'https://updated.example.com/webhook' },
-      } as any;
-      mockClient.triggerInstances.upsert.mockResolvedValue(mockTriggerInstance);
+    it('should update a trigger instance status', async () => {
+      const triggerId = 'trigger-123';
+      const body = { status: 'enable' as const };
+      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse);
 
-      const result = await triggers.update(slug, body);
+      const result = await triggers.update(triggerId, body);
 
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, body);
-      expect(result).toEqual(mockTriggerInstance);
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, body);
+      expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
 
   describe('delete', () => {
     it('should delete a trigger instance', async () => {
       const triggerId = 'trigger-123';
-      const deleteResponse = { success: true, message: 'Trigger deleted successfully' };
-      mockClient.triggerInstances.manage.delete.mockResolvedValue(deleteResponse as any);
+      mockClient.triggerInstances.manage.delete.mockResolvedValue(mockTriggerDeleteResponse);
 
       const result = await triggers.delete(triggerId);
 
       expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId);
-      expect(result).toEqual(deleteResponse);
+      expect(result).toEqual({ triggerId: mockTriggerDeleteResponse.trigger_id });
     });
-  });
 
-  describe('updateStatus', () => {
-    it('should update the status of a trigger', async () => {
-      const status: TriggerStatusEnum = 'enable';
-      const params = { triggerId: 'trigger-123', status: status };
-      const options = { timeout: 5000 };
-      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse as any);
+    it('should throw validation error for invalid response', async () => {
+      const triggerId = 'trigger-123';
+      mockClient.triggerInstances.manage.delete.mockResolvedValue({ invalid: 'response' });
 
-      const result = await triggers.updateStatus(status, params, options);
-
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
-        status,
-        params,
-        options
-      );
-      expect(result).toEqual(mockTriggerUpdateResponse);
+      await expect(triggers.delete(triggerId)).rejects.toThrow(ValidationError);
     });
   });
 
   describe('disable', () => {
     it('should disable a trigger instance', async () => {
       const triggerId = 'trigger-123';
-      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse as any);
+      mockClient.triggerInstances.manage.update.mockResolvedValue(mockTriggerUpdateResponse);
 
       const result = await triggers.disable(triggerId);
 
@@ -328,18 +350,17 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes();
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(undefined, undefined);
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(undefined);
       expect(result).toEqual(mockTriggerTypes);
     });
 
     it('should list trigger types with query parameters', async () => {
       const query = { limit: 10, toolkit: 'github' };
-      const options = { timeout: 5000 };
       mockClient.triggersTypes.list.mockResolvedValue(mockTriggerTypes);
 
-      const result = await triggers.listTypes(query, options);
+      const result = await triggers.listTypes(query);
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(query, options);
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(query);
       expect(result).toEqual(mockTriggerTypes);
     });
   });
@@ -351,18 +372,7 @@ describe('Triggers', () => {
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, undefined);
-      expect(result).toEqual(mockTriggerType);
-    });
-
-    it('should retrieve a trigger type with options', async () => {
-      const slug = 'github_webhook';
-      const options = { timeout: 5000 };
-      mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
-
-      const result = await triggers.getType(slug, options);
-
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, options);
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug);
       expect(result).toEqual(mockTriggerType);
     });
   });
@@ -373,17 +383,7 @@ describe('Triggers', () => {
 
       const result = await triggers.listEnum();
 
-      expect(mockClient.triggersTypes.retrieveEnum).toHaveBeenCalledWith(undefined);
-      expect(result).toEqual(mockTriggerEnum);
-    });
-
-    it('should fetch trigger enums with options', async () => {
-      const options = { timeout: 5000 };
-      mockClient.triggersTypes.retrieveEnum.mockResolvedValue(mockTriggerEnum);
-
-      const result = await triggers.listEnum(options);
-
-      expect(mockClient.triggersTypes.retrieveEnum).toHaveBeenCalledWith(options);
+      expect(mockClient.triggersTypes.retrieveEnum).toHaveBeenCalled();
       expect(result).toEqual(mockTriggerEnum);
     });
   });
@@ -393,6 +393,7 @@ describe('Triggers', () => {
 
     beforeEach(() => {
       mockCallback.mockClear();
+      vi.mocked(logger.debug).mockClear();
     });
 
     it('should throw error if function is not provided', async () => {
@@ -422,14 +423,17 @@ describe('Triggers', () => {
         mockClient.apiKey
       );
       expect(PusherUtils.triggerSubscribe).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith('Subscribing to triggers', {});
+      expect(logger.debug).toHaveBeenCalledWith('Subscribing to triggers', `{}`);
     });
 
     it('should subscribe to triggers with filters', async () => {
       const filters: TriggerSubscribeParams = {
-        appName: 'github',
+        toolkits: ['github'],
         triggerId: 'trigger-123',
-        connectionId: 'conn-123',
+        connectedAccountId: 'conn-123',
+        triggerName: 'github_webhook',
+        triggerData: '{"action":"push"}',
+        userId: 'user-456',
       };
 
       await triggers.subscribe(mockCallback, filters);
@@ -440,197 +444,155 @@ describe('Triggers', () => {
         mockClient.apiKey
       );
       expect(PusherUtils.triggerSubscribe).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith('Subscribing to triggers', filters);
     });
 
-    it('should filter triggers based on appName', async () => {
-      const filters: TriggerSubscribeParams = { appName: 'github' };
-      await triggers.subscribe(mockCallback, filters);
-
-      // Get the filter function that was passed to PusherUtils.triggerSubscribe
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
-
-      // Test data that should match the filter
-      const matchingData = { ...mockTriggerData, appName: 'github' };
-      const nonMatchingData = { ...mockTriggerData, appName: 'slack' };
-
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
-    });
-
-    it('should filter triggers based on triggerId', async () => {
-      const filters: TriggerSubscribeParams = { triggerId: 'trigger-123' };
+    it('should filter triggers based on toolkits case-insensitively', async () => {
+      const filters: TriggerSubscribeParams = { toolkits: ['GITHUB'] };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData };
-      const nonMatchingData = {
-        ...mockTriggerData,
-        metadata: { ...mockTriggerData.metadata, id: 'trigger-456' },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
+      expect(mockCallback).toHaveBeenCalledWith(mockIncomingTriggerPayload);
       expect(mockCallback).toHaveBeenCalledTimes(1);
     });
 
-    it('should filter triggers based on connectionId', async () => {
-      const filters: TriggerSubscribeParams = { connectionId: 'conn-123' };
+    it('should log debug message when toolkit filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { toolkits: ['slack'] };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData };
-      const nonMatchingData = {
-        ...mockTriggerData,
-        metadata: { ...mockTriggerData.metadata, connectionId: 'conn-456' },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match toolkits filter',
+        expect.any(String)
+      );
     });
 
-    it('should filter triggers based on triggerName', async () => {
-      const filters: TriggerSubscribeParams = { triggerName: 'github_webhook' };
+    it('should log debug message when triggerId filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { triggerId: 'trigger-456' };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData };
-      const nonMatchingData = {
-        ...mockTriggerData,
-        metadata: { ...mockTriggerData.metadata, triggerName: 'slack_message' },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match triggerId filter',
+        expect.any(String)
+      );
     });
 
-    it('should filter triggers based on entityId', async () => {
-      const filters: TriggerSubscribeParams = { entityId: 'user-456' };
+    it('should log debug message when connectedAccountId filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { connectedAccountId: 'conn-456' };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData };
-      const nonMatchingData = {
-        ...mockTriggerData,
-        metadata: {
-          ...mockTriggerData.metadata,
-          connection: {
-            ...mockTriggerData.metadata.connection,
-            clientUniqueUserId: 'user-789',
-          },
-        },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match connectedAccountId filter',
+        expect.any(String)
+      );
     });
 
-    it('should filter triggers based on integrationId', async () => {
-      const filters: TriggerSubscribeParams = { integrationId: 'github' };
+    it('should log debug message when triggerName filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { triggerName: 'slack_message' };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData };
-      const nonMatchingData = {
-        ...mockTriggerData,
-        metadata: {
-          ...mockTriggerData.metadata,
-          connection: {
-            ...mockTriggerData.metadata.connection,
-            integrationId: 'slack',
-          },
-        },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match triggerName filter',
+        expect.any(String)
+      );
     });
 
-    it('should apply multiple filters correctly', async () => {
+    it('should log debug message when triggerData filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { triggerData: '{"action":"comment"}' };
+      await triggers.subscribe(mockCallback, filters);
+
+      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
+      const filterCallback = triggerSubscribeCall[1];
+
+      filterCallback(mockTriggerData);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match triggerData filter',
+        expect.any(String)
+      );
+    });
+
+    it('should log debug message when userId filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { userId: 'user-789' };
+      await triggers.subscribe(mockCallback, filters);
+
+      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
+      const filterCallback = triggerSubscribeCall[1];
+
+      filterCallback(mockTriggerData);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match userId filter',
+        expect.any(String)
+      );
+    });
+
+    it('should log debug message when trigger matches all filters', async () => {
       const filters: TriggerSubscribeParams = {
-        appName: 'github',
+        toolkits: ['github'],
         triggerId: 'trigger-123',
-        connectionId: 'conn-123',
+        connectedAccountId: 'conn-123',
+        triggerName: 'github_webhook',
+        triggerData: '{"action":"push"}',
+        userId: 'user-456',
       };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData, appName: 'github' };
-      const nonMatchingDataApp = { ...mockTriggerData, appName: 'slack' };
-      const nonMatchingDataTrigger = {
-        ...mockTriggerData,
-        appName: 'github',
-        metadata: { ...mockTriggerData.metadata, id: 'trigger-456' },
-      };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-      filterCallback(nonMatchingDataApp);
-      filterCallback(nonMatchingDataTrigger);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
+      expect(mockCallback).toHaveBeenCalledWith(mockIncomingTriggerPayload);
       expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(logger.debug).toHaveBeenCalledWith('Trigger matches all filters', expect.any(String));
     });
 
-    it('should pass all triggers when no filters are provided', async () => {
-      await triggers.subscribe(mockCallback);
-
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
-
-      const testData1 = { ...mockTriggerData, appName: 'github' };
-      const testData2 = { ...mockTriggerData, appName: 'slack' };
-
-      filterCallback(testData1);
-      filterCallback(testData2);
-
-      expect(mockCallback).toHaveBeenCalledWith(testData1);
-      expect(mockCallback).toHaveBeenCalledWith(testData2);
-      expect(mockCallback).toHaveBeenCalledTimes(2);
-    });
-
-    it('should be case insensitive for filters', async () => {
-      const filters: TriggerSubscribeParams = { appName: 'GITHUB' };
+    it('should log debug message when trigger does not match any filters', async () => {
+      const filters: TriggerSubscribeParams = {
+        toolkits: ['slack'],
+        triggerId: 'trigger-456',
+      };
       await triggers.subscribe(mockCallback, filters);
 
       const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
       const filterCallback = triggerSubscribeCall[1];
 
-      const matchingData = { ...mockTriggerData, appName: 'github' };
+      filterCallback(mockTriggerData);
 
-      filterCallback(matchingData);
-
-      expect(mockCallback).toHaveBeenCalledWith(matchingData);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Trigger does not match filters',
+        expect.any(String)
+      );
     });
   });
 
@@ -642,7 +604,7 @@ describe('Triggers', () => {
       expect(PusherUtils.triggerUnsubscribe).toHaveBeenCalledWith('client-123');
     });
 
-    it('should throw error if client ID is not found during unsubscribe', async () => {
+    it('should throw error if client ID is not found', async () => {
       mockSession.getInfo = vi.fn().mockResolvedValue({ project: null });
 
       await expect(triggers.unsubscribe()).rejects.toThrow('Client ID not found');
@@ -654,7 +616,7 @@ describe('Triggers', () => {
       const apiError = new Error('API request failed');
       mockClient.triggerInstances.listActive.mockRejectedValue(apiError);
 
-      await expect(triggers.list()).rejects.toThrow('API request failed');
+      await expect(triggers.listActive()).rejects.toThrow('API request failed');
     });
 
     it('should handle session retrieval errors', async () => {

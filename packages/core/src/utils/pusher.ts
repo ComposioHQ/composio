@@ -1,24 +1,22 @@
-import logger from "./logger";
+import { PusherSubscriptionError } from '../errors/PusherErrors';
+import logger from './logger';
 
-const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || "ff9f18c208855d77a152";
-const PUSHER_CLUSTER = "mt1";
+const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || 'ff9f18c208855d77a152';
+const PUSHER_CLUSTER = 'mt1';
 
 type Channel = {
   subscribe: (channelName: string) => unknown;
   unsubscribe: (channelName: string) => unknown;
-  bind: (
-    event: string,
-    callback: (data: Record<string, unknown>) => void
-  ) => unknown;
+  bind: (event: string, callback: (data: Record<string, unknown>) => void) => unknown;
 };
 
 type PusherClient = {
   subscribe: (channelName: string) => Channel;
   unsubscribe: (channelName: string) => unknown;
-  bind: (
-    event: string,
-    callback: (data: Record<string, unknown>) => void
-  ) => unknown;
+  bind: (event: string, callback: (data: Record<string, unknown>) => void) => unknown;
+  connection: {
+    bind: (event: string, callback: (error: Error) => void) => void;
+  };
 };
 
 type TChunkedTriggerData = {
@@ -51,25 +49,38 @@ export type TriggerData = {
 export class PusherUtils {
   static pusherClient: PusherClient;
 
-  static getPusherClient(baseURL: string, apiKey: string): PusherClient {
-    if (!PusherUtils.pusherClient) {
-      // Dynamic import not available, using require for now
-      // TODO: Update to use dynamic import when available
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const PusherClient = require("pusher-js");
-      PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
-        cluster: PUSHER_CLUSTER,
-        channelAuthorization: {
-          endpoint: `${baseURL}/api/v1/client/auth/pusher_auth`,
-          headers: {
-            "x-api-key": apiKey,
+  static async getPusherClient(baseURL: string, apiKey: string): Promise<PusherClient> {
+    try {
+      if (!PusherUtils.pusherClient) {
+        // Dynamic import not available, using require for now
+        // TODO: Update to use dynamic import when available
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const PusherClient = require('pusher-js');
+        PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
+          cluster: PUSHER_CLUSTER,
+          channelAuthorization: {
+            endpoint: `${baseURL}/api/v1/client/auth/pusher_auth`,
+            headers: {
+              'x-api-key': apiKey,
+            },
+            transport: 'ajax',
           },
-          transport: "ajax",
-        },
-      });
+        });
+
+        // Add connection error handling
+        PusherUtils.pusherClient.connection.bind('error', (err: Error) => {
+          logger.error('Pusher connection error:', err);
+          throw new Error(`Pusher connection error: ${err.message}`);
+        });
+      }
+      return PusherUtils.pusherClient;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to initialize Pusher client:', error);
+      throw new Error(`Failed to initialize Pusher client: ${errorMessage}`);
     }
-    return PusherUtils.pusherClient;
   }
+
   /**
    * Subscribes to a Pusher channel and binds an event to a callback function.
    * @param {string} channelName - The name of the channel to subscribe to.
@@ -85,9 +96,7 @@ export class PusherUtils {
     try {
       await PusherUtils.pusherClient.subscribe(channelName).bind(event, fn);
     } catch (error) {
-      logger.error(
-        `Error subscribing to ${channelName} with event ${event}: ${error}`
-      );
+      logger.error(`Error subscribing to ${channelName} with event ${event}: ${error}`);
     }
   }
 
@@ -111,54 +120,139 @@ export class PusherUtils {
     event: string,
     callback: (data: Record<string, unknown>) => void
   ): void {
-    channel.bind(event, callback); // Allow normal unchunked events.
+    try {
+      // Wrap the callback to handle errors
+      const safeCallback = (data: Record<string, unknown>) => {
+        try {
+          callback(data);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Error in chunked event callback:', errorMessage);
+          // Don't throw here to prevent breaking the subscription
+        }
+      };
 
-    // Now the chunked variation. Allows arbitrarily long messages.
-    const events: {
-      [key: string]: { chunks: string[]; receivedFinal: boolean };
-    } = {};
-    channel.bind("chunked-" + event, (data) => {
-      const typedData = data as TChunkedTriggerData;
-      if (!events.hasOwnProperty(typedData.id)) {
-        events[typedData.id] = { chunks: [], receivedFinal: false };
-      }
-      const ev = events[typedData.id];
-      ev.chunks[typedData.index] = typedData.chunk;
-      if (typedData.final) ev.receivedFinal = true;
-      if (
-        ev.receivedFinal &&
-        ev.chunks.length === Object.keys(ev.chunks).length
-      ) {
-        callback(JSON.parse(ev.chunks.join("")));
-        delete events[typedData.id];
-      }
-    });
+      channel.bind(event, safeCallback);
+
+      // Now the chunked variation. Allows arbitrarily long messages.
+      const events: {
+        [key: string]: { chunks: string[]; receivedFinal: boolean };
+      } = {};
+
+      channel.bind('chunked-' + event, data => {
+        try {
+          const typedData = data as TChunkedTriggerData;
+
+          // Validate chunked data
+          if (
+            !typedData ||
+            typeof typedData.id !== 'string' ||
+            typeof typedData.index !== 'number'
+          ) {
+            throw new Error('Invalid chunked trigger data format');
+          }
+
+          if (!events.hasOwnProperty(typedData.id)) {
+            events[typedData.id] = { chunks: [], receivedFinal: false };
+          }
+
+          const ev = events[typedData.id];
+          ev.chunks[typedData.index] = typedData.chunk;
+
+          if (typedData.final) ev.receivedFinal = true;
+
+          if (ev.receivedFinal && ev.chunks.length === Object.keys(ev.chunks).length) {
+            try {
+              const parsedData = JSON.parse(ev.chunks.join(''));
+              safeCallback(parsedData);
+            } catch (parseError: unknown) {
+              const errorMessage =
+                parseError instanceof Error ? parseError.message : String(parseError);
+              logger.error('Failed to parse chunked data:', errorMessage);
+            } finally {
+              delete events[typedData.id];
+            }
+          }
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Error processing chunked trigger data:', errorMessage);
+          // Clean up the event data to prevent memory leaks
+          if (data && typeof data === 'object' && 'id' in data) {
+            delete events[data.id as string];
+          }
+        }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to bind chunked events:', error);
+      throw new Error(`Failed to bind chunked events: ${errorMessage}`);
+    }
   }
 
   /**
    * Subscribes to a trigger channel for a client and handles chunked data.
    * @param {string} clientId - The unique identifier for the client subscribing to the events.
    * @param {(data: TriggerData) => void} fn - The callback function to execute when trigger data is received.
+   *
+   * @example
+   * ```ts
+   * composio.trigger.subscribe((data) => {
+   *   console.log(data);
+   * });
+   * ```
    */
-  static triggerSubscribe(
-    clientId: string,
-    fn: (data: TriggerData) => void
-  ): void {
-    const channel = PusherUtils.pusherClient.subscribe(
-      `private-${clientId}_triggers`
-    );
-    PusherUtils.bindWithChunking(
-      channel as PusherClient,
-      "trigger_to_client",
-      fn as (data: unknown) => void
-    );
+  static triggerSubscribe(clientId: string, fn: (data: TriggerData) => void): void {
+    try {
+      if (!PusherUtils.pusherClient) {
+        throw new Error('Pusher client not initialized');
+      }
 
-    logger.info(
-      `Subscribed to triggers. You should start receiving events now.`
-    );
+      const channel = PusherUtils.pusherClient.subscribe(`private-${clientId}_triggers`);
+
+      // Add subscription error handling
+      channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
+        const error = data.error ? String(data.error) : 'Unknown subscription error';
+        throw new PusherSubscriptionError(`Trigger subscription error`, {
+          cause: error,
+        });
+      });
+
+      // Wrap the callback to handle errors
+      const safeCallback = (data: TriggerData) => {
+        try {
+          fn(data);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Error in trigger callback:', errorMessage);
+          // Don't throw here to prevent breaking the subscription
+        }
+      };
+
+      PusherUtils.bindWithChunking(
+        channel as PusherClient,
+        'trigger_to_client',
+        safeCallback as (data: unknown) => void
+      );
+
+      logger.info(`Subscribed to triggers. You should start receiving events now.`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to subscribe to triggers:', error);
+      throw new Error(`Failed to subscribe to triggers: ${errorMessage}`);
+    }
   }
 
   static triggerUnsubscribe(clientId: string): void {
-    PusherUtils.pusherClient.unsubscribe(`${clientId}_triggers`);
+    try {
+      if (!PusherUtils.pusherClient) {
+        throw new Error('Pusher client not initialized');
+      }
+      PusherUtils.pusherClient.unsubscribe(`${clientId}_triggers`);
+      logger.info('Successfully unsubscribed from triggers');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to unsubscribe from triggers:', error);
+      throw new Error(`Failed to unsubscribe from triggers: ${errorMessage}`);
+    }
   }
 }
