@@ -233,23 +233,62 @@ def _parse_annotated_type(
     return annottype, description, default
 
 
+def _clean_multiline_str(string: str) -> str:
+    return "\n".join(
+        filter(
+            lambda x: x,  # Filter empty lines
+            map(
+                lambda x: x.strip(),
+                string.split("\n"),
+            ),
+        )
+    )
+
+
+def _create_docstring_partitions(docstr: str) -> t.Tuple[str, list[str]]:
+    if ":param" in docstr:
+        header, *remaining = docstr.lstrip().rstrip().partition(":param")
+        return (
+            _clean_multiline_str(string=header),
+            _clean_multiline_str(string="".join(remaining)).split("\n"),
+        )
+
+    if ":return" in docstr:
+        header, *remaining = docstr.lstrip().rstrip().partition(":return")
+        return (
+            _clean_multiline_str(string=header),
+            _clean_multiline_str(string="".join(remaining)).split("\n"),
+        )
+
+    return _clean_multiline_str(string=docstr), []
+
+
 def _parse_docstring(
     docstr: str,
 ) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]]]:
     """Parse docstring for descriptions."""
-    header, *descriptions = docstr.lstrip().rstrip().split("\n")
+    header, descriptions = _create_docstring_partitions(docstr=docstr)
+    returns: t.Optional[t.Tuple[str, str]] = None
+    last_param: t.Optional[str] = None
+    is_return = False
     params = {}
-    returns = None
-    for description in descriptions:
+    while descriptions:
+        description = descriptions.pop(0)
         if not description:
             continue
 
         if ":param" in description:
+            if last_param is not None:
+                last_param = None
+
             param, description = description.replace(":param ", "").split(
                 ":",
                 maxsplit=1,
             )
-            params[param.lstrip().rstrip()] = description.lstrip().rstrip()
+            param = param.lstrip().rstrip()
+            params[param] = description.lstrip().rstrip()
+            last_param = param
+            continue
 
         if ":return" in description:
             param, description = description.replace(":return ", "").split(
@@ -257,6 +296,17 @@ def _parse_docstring(
                 maxsplit=1,
             )
             returns = (param.lstrip().strip(), description.lstrip().rstrip())
+            is_return = True
+            last_param = None
+            continue
+
+        if last_param is not None:
+            params[last_param] += " " + description.strip()
+            continue
+
+        if is_return and returns is not None:
+            r_name, r_desc = returns
+            returns = (r_name, r_desc + " " + description.strip())
 
     return header, params, returns
 
