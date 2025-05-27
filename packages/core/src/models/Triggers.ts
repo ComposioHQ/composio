@@ -25,11 +25,11 @@ import {
   IncomingTriggerPayloadSchema,
   IncomingTriggerPayload,
 } from '../types/triggers.types';
-import { PusherUtils, TriggerData } from '../utils/pusher';
+import { TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
-import { Session } from './Session';
 import { telemetry } from '../telemetry/Telemetry';
 import { ValidationError } from '../errors';
+import { PusherService } from '../services/pusher/Pusher';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -37,9 +37,11 @@ import { ValidationError } from '../errors';
  */
 export class Triggers {
   private client: ComposioClient;
+  private pusherService: PusherService;
 
   constructor(client: ComposioClient) {
     this.client = client;
+    this.pusherService = new PusherService(client);
     telemetry.instrument(this);
   }
 
@@ -289,16 +291,6 @@ export class Triggers {
       });
     }
 
-    // @TODO: Get the client id from the backend
-    const session = new Session(this.client);
-    const sessionInfo = await session.getInfo();
-    const clientId = sessionInfo.project?.id;
-
-    if (!clientId) throw new Error('Client ID not found');
-    if (!this.client.apiKey) throw new Error('API key not found');
-
-    await PusherUtils.getPusherClient(this.client.baseURL, this.client.apiKey);
-
     /**
      * Applies compound filters to the trigger data
      * @param data data to apply filters to
@@ -381,10 +373,12 @@ export class Triggers {
       return true;
     };
 
-    logger.debug('Subscribing to triggers', JSON.stringify(filters, null, 2));
-    PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
-      logger.debug('Received trigger data', JSON.stringify(data, null, 2));
-
+    logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
+    this.pusherService.subscribe((_data: Record<string, unknown>) => {
+      logger.debug('Received trigger data', JSON.stringify(_data, null, 2));
+      // @TODO: This is a temporary fix to get the trigger data
+      // ideally we should have a type for the trigger data
+      const data = _data as TriggerData;
       const parsedData = IncomingTriggerPayloadSchema.safeParse({
         id: data.metadata.id,
         clientId: String(data.clientId),
@@ -436,12 +430,6 @@ export class Triggers {
    * ```
    */
   async unsubscribe() {
-    const session = new Session(this.client);
-    const sessionInfo = await session.getInfo();
-    const clientId = sessionInfo.project?.id;
-
-    if (!clientId) throw new Error('Client ID not found');
-
-    PusherUtils.triggerUnsubscribe(clientId);
+    await this.pusherService.unsubscribe();
   }
 }

@@ -75,13 +75,13 @@ type LangchainTool = {
 };
 
 // Define the collection type for your provider
-type LangchainToolset = {
+type LangchainToolCollection = {
   tools: LangchainTool[];
   executor: (tool: LangchainTool, input: Record<string, unknown>) => Promise<unknown>;
 };
 
 // Create the provider class
-export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, LangchainTool> {
+export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollection, LangchainTool> {
   // Define the provider name (used for telemetry)
   readonly name = 'langchain';
 
@@ -98,7 +98,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, Lan
   }
 
   // Implement the wrapTools method (note the executeToolFn parameter)
-  override wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): LangchainToolset {
+  override wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): LangchainToolCollection {
     const langchainTools = tools.map(tool => this.wrapTool(tool, executeToolFn));
 
     return {
@@ -110,7 +110,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolset, Lan
   }
 
   // Add provider-specific methods
-  async createAgent(tools: LangchainToolset, model: any) {
+  async createAgent(tools: LangchainToolCollection, model: any) {
     // Create a Langchain agent with the tools
     // This is just an example, the actual implementation would depend on the Langchain API
     return {
@@ -297,9 +297,9 @@ type LangChainTool = {
   call: (input: Record<string, unknown>) => Promise<any>;
 };
 
-type LangChainToolset = LangChainTool[];
+type LangChainToolCollection = LangChainTool[];
 
-export class LangChainProvider extends BaseAgenticProvider<LangChainToolset, LangChainTool> {
+export class LangChainProvider extends BaseAgenticProvider<LangChainToolCollection, LangChainTool> {
   readonly name = 'langchain';
 
   override wrapTool(tool: Tool, executeToolFn: ExecuteToolFn): LangChainTool {
@@ -317,12 +317,12 @@ export class LangChainProvider extends BaseAgenticProvider<LangChainToolset, Lan
     };
   }
 
-  override wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): LangChainToolset {
+  override wrapTools(tools: Tool[], executeToolFn: ExecuteToolFn): LangChainToolCollection {
     return tools.map(tool => this.wrapTool(tool, executeToolFn));
   }
 
   // LangChain-specific helper methods
-  createAgent(tools: LangChainToolset, model: any) {
+  createAgent(tools: LangChainToolCollection, model: any) {
     // Implement LangChain agent creation
     // This is just a placeholder - the actual implementation would use the LangChain API
   }
