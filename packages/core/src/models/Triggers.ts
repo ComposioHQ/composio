@@ -24,8 +24,8 @@ import {
   TriggerSubscribeParamSchema,
   IncomingTriggerPayloadSchema,
   IncomingTriggerPayload,
+  TriggerData,
 } from '../types/triggers.types';
-import { TriggerData } from '../utils/pusher';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
 import { ValidationError } from '../errors';

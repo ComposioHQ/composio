@@ -117,3 +117,31 @@ export const IncomingTriggerPayloadSchema = z.object({
 });
 
 export type IncomingTriggerPayload = z.infer<typeof IncomingTriggerPayloadSchema>;
+
+type TChunkedTriggerData = {
+  id: string;
+  index: number;
+  chunk: string;
+  final: boolean;
+};
+
+export type TriggerData = {
+  appName: string;
+  clientId: number;
+  payload: Record<string, unknown>;
+  originalPayload: Record<string, unknown>;
+  metadata: {
+    id: string;
+    triggerName: string;
+    triggerData: string;
+    triggerConfig: Record<string, unknown>;
+    connection: {
+      id: string;
+      connectedAccountNanoId: string;
+      integrationId: string;
+      authConfigNanoId: string;
+      clientUniqueUserId: string;
+      status: string;
+    };
+  };
+};

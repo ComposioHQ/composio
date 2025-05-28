@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { Triggers } from '../../src/models/triggers';
 import ComposioClient from '@composio/client';
-import { TriggerData } from '../../src/utils/pusher';
 import logger from '../../src/utils/logger';
-import { TriggerSubscribeParams } from '../../src/types/triggers.types';
+import {
+  TriggerSubscribeParams,
+  TriggerData,
+  IncomingTriggerPayload,
+} from '../../src/types/triggers.types';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors';
 import { PusherService } from '../../src/services/pusher/Pusher';
@@ -127,38 +130,40 @@ const mockTriggerData: TriggerData = {
   originalPayload: { action: 'push', repository: 'test-repo' },
   metadata: {
     id: 'trigger-123',
-    connectionId: 'conn-123',
     triggerName: 'github_webhook',
     triggerData: '{"action":"push"}',
     triggerConfig: { webhook_url: 'https://example.com/webhook' },
     connection: {
       id: 'conn-123',
+      connectedAccountNanoId: 'conn-123',
       integrationId: 'github',
+      authConfigNanoId: 'auth-123',
       clientUniqueUserId: 'user-456',
       status: 'enable',
     },
   },
 };
 
-const mockIncomingTriggerPayload = {
+const mockIncomingTriggerPayload: IncomingTriggerPayload = {
   id: 'trigger-123',
-  clientId: '123',
   triggerSlug: 'github_webhook',
   toolkitSlug: 'github',
+  userId: 'user-456',
   payload: { action: 'push', repository: 'test-repo' },
   originalPayload: { action: 'push', repository: 'test-repo' },
   metadata: {
     id: 'trigger-123',
-    connectedAccountId: 'conn-123',
+    toolkitSlug: 'github',
     triggerSlug: 'github_webhook',
-    triggerName: 'github_webhook',
     triggerData: '{"action":"push"}',
     triggerConfig: { webhook_url: 'https://example.com/webhook' },
-    connection: {
+    connectedAccount: {
       id: 'conn-123',
-      integrationId: 'github',
-      clientUniqueUserId: 'user-456',
-      status: 'enable',
+      uuid: 'conn-123',
+      authConfigId: 'auth-123',
+      authConfigUUID: 'github',
+      userId: 'user-456',
+      status: 'ACTIVE',
     },
   },
 };
@@ -409,7 +414,7 @@ describe('Triggers', () => {
         toolkits: ['github'],
         triggerId: 'trigger-123',
         connectedAccountId: 'conn-123',
-        triggerName: 'github_webhook',
+        triggerSlug: ['github_webhook'],
         triggerData: '{"action":"push"}',
         userId: 'user-456',
       };
@@ -484,8 +489,8 @@ describe('Triggers', () => {
       );
     });
 
-    it('should log debug message when triggerName filter does not match', async () => {
-      const filters: TriggerSubscribeParams = { triggerName: 'slack_message' };
+    it('should log debug message when triggerSlug filter does not match', async () => {
+      const filters: TriggerSubscribeParams = { triggerSlug: ['slack_message'] };
       await triggers.subscribe(mockCallback, filters);
 
       const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
@@ -495,7 +500,7 @@ describe('Triggers', () => {
 
       expect(mockCallback).not.toHaveBeenCalled();
       expect(logger.debug).toHaveBeenCalledWith(
-        'Trigger does not match triggerName filter',
+        'Trigger does not match triggerSlug filter',
         expect.any(String)
       );
     });
@@ -537,9 +542,10 @@ describe('Triggers', () => {
         toolkits: ['github'],
         triggerId: 'trigger-123',
         connectedAccountId: 'conn-123',
-        triggerName: 'github_webhook',
+        triggerSlug: ['github_webhook'],
         triggerData: '{"action":"push"}',
         userId: 'user-456',
+        authConfigId: 'auth-123',
       };
       await triggers.subscribe(mockCallback, filters);
 
@@ -557,6 +563,7 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = {
         toolkits: ['slack'],
         triggerId: 'trigger-456',
+        triggerSlug: ['slack_message'],
       };
       await triggers.subscribe(mockCallback, filters);
 
