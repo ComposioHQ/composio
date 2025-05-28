@@ -323,7 +323,7 @@ export class Triggers {
       // Check if connectedAccountId filter matches
       if (
         parsedFilters.data.connectedAccountId &&
-        parsedFilters.data.connectedAccountId !== data.metadata.connectedAccountId
+        parsedFilters.data.connectedAccountId !== data.metadata.connectedAccount.id
       ) {
         logger.debug(
           'Trigger does not match connectedAccountId filter',
@@ -334,12 +334,14 @@ export class Triggers {
 
       // Check if triggerName filter matches
       if (
-        parsedFilters.data.triggerName &&
-        parsedFilters.data.triggerName !== data.metadata.triggerName
+        parsedFilters.data.triggerSlug?.length &&
+        !parsedFilters.data.triggerSlug
+          .map(triggerSlug => triggerSlug.toLowerCase())
+          .includes(data.triggerSlug.toLowerCase())
       ) {
         logger.debug(
-          'Trigger does not match triggerName filter',
-          JSON.stringify(parsedFilters.data.triggerName, null, 2)
+          'Trigger does not match triggerSlug filter',
+          JSON.stringify(parsedFilters.data.triggerSlug, null, 2)
         );
         return false;
       }
@@ -359,7 +361,7 @@ export class Triggers {
       // Check if userId (clientUniqueUserId) filter matches
       if (
         parsedFilters.data.userId &&
-        parsedFilters.data.userId !== data.metadata.connection.clientUniqueUserId
+        parsedFilters.data.userId !== data.metadata.connectedAccount.userId
       ) {
         logger.debug(
           'Trigger does not match userId filter',
@@ -375,33 +377,35 @@ export class Triggers {
 
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
     await this.pusherService.subscribe((_data: Record<string, unknown>) => {
-      logger.debug('Received trigger data', JSON.stringify(_data, null, 2));
+      logger.debug('Received raw trigger data', JSON.stringify(_data, null, 2));
       // @TODO: This is a temporary fix to get the trigger data
       // ideally we should have a type for the trigger data
       const data = _data as TriggerData;
       const parsedData = IncomingTriggerPayloadSchema.safeParse({
         id: data.metadata.id,
-        clientId: String(data.clientId),
         triggerSlug: data.metadata.triggerName,
         toolkitSlug: data.appName,
+        userId: data.metadata.connection.clientUniqueUserId,
         payload: data.payload,
         originalPayload: data.originalPayload,
         metadata: {
-          ...data.metadata,
           id: data.metadata.id,
-          connectedAccountId: data.metadata.connection?.id,
-          triggerSlug: data.metadata.triggerName,
-          triggerName: data.metadata.triggerName,
-          triggerData: data.metadata.triggerData,
           triggerConfig: data.metadata.triggerConfig,
-          connection: {
-            id: data.metadata?.connection?.id,
-            integrationId: data.metadata?.connection?.integrationId,
-            clientUniqueUserId: data.metadata?.connection?.clientUniqueUserId,
-            status: data.metadata?.connection?.status,
+          triggerSlug: data.metadata.triggerName,
+          toolkitSlug: data.appName,
+          connectedAccount: {
+            id: data.metadata.connection.connectedAccountNanoId,
+            uuid: data.metadata.connection.id,
+            authConfigId: data.metadata.connection.authConfigNanoId,
+            authConfigUUID: data.metadata.connection.integrationId,
+            userId: data.metadata.connection.clientUniqueUserId,
+            status: data.metadata.connection.status,
           },
         },
       } as IncomingTriggerPayload);
+
+      logger.debug('Parsed trigger data', JSON.stringify(parsedData.data, null, 2));
+
       if (parsedData.error) {
         throw new ValidationError(`Invalid trigger payload`, {
           cause: parsedData.error,

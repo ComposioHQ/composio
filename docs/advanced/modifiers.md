@@ -179,10 +179,10 @@ const openaiTools = await composioNonAgentic.tools.get(
       // Enhance tool schema
       return tool;
     },
-    
+
     // These will be ignored by non-agentic providers
     beforeExecute: () => {}, // No effect with non-agentic providers
-    afterExecute: () => {},  // No effect with non-agentic providers
+    afterExecute: () => {}, // No effect with non-agentic providers
   }
 );
 ```
@@ -250,20 +250,16 @@ const openai = new Composio({
 });
 
 // Schema modifiers work with non-agentic providers
-const nonAgenticTools = await openai.tools.get(
-  'default',
-  'HACKERNEWS_GET_USER',
-  {
-    // Schema modifier works with all providers
-    modifySchema: (toolSlug, toolkitSlug, tool) => {
-      // Customize the input parameters
-      if (tool.inputParameters?.properties?.userId) {
-        tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
-      }
-      return tool;
-    },
-  }
-);
+const nonAgenticTools = await openai.tools.get('default', 'HACKERNEWS_GET_USER', {
+  // Schema modifier works with all providers
+  modifySchema: (toolSlug, toolkitSlug, tool) => {
+    // Customize the input parameters
+    if (tool.inputParameters?.properties?.userId) {
+      tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
+    }
+    return tool;
+  },
+});
 
 // Agentic provider example (Vercel)
 const vercel = new Composio({
@@ -272,30 +268,26 @@ const vercel = new Composio({
 });
 
 // All modifiers work with agentic providers
-const agenticTools = await vercel.tools.get(
-  'default',
-  'HACKERNEWS_GET_USER',
-  {
-    // Schema modifier
-    modifySchema: (toolSlug, toolkitSlug, tool) => {
-      if (tool.inputParameters?.properties?.userId) {
-        tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
-      }
-      return tool;
-    },
-    // Execution modifiers (only work with agentic providers)
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
-      console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
-      return params;
-    },
-    afterExecute: (toolSlug, toolkitSlug, result) => {
-      if (result.successful) {
-        result.data.processedAt = new Date().toISOString();
-      }
-      return result;
-    },
-  }
-);
+const agenticTools = await vercel.tools.get('default', 'HACKERNEWS_GET_USER', {
+  // Schema modifier
+  modifySchema: (toolSlug, toolkitSlug, tool) => {
+    if (tool.inputParameters?.properties?.userId) {
+      tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
+    }
+    return tool;
+  },
+  // Execution modifiers (only work with agentic providers)
+  beforeExecute: (toolSlug, toolkitSlug, params) => {
+    console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
+    return params;
+  },
+  afterExecute: (toolSlug, toolkitSlug, result) => {
+    if (result.successful) {
+      result.data.processedAt = new Date().toISOString();
+    }
+    return result;
+  },
+});
 ```
 
 ### Manual Execution Modifiers with Non-Agentic Providers
@@ -307,7 +299,7 @@ For non-agentic providers, you can use the provider's helper methods to apply ex
 const openaiProvider = composio.provider as OpenAIProvider;
 
 // When handling a tool call from OpenAI
-const toolOutputs = await openaiProvider.handleToolCall(
+const toolOutputs = await openaiProvider.handleToolCalls(
   'default', // userId
   completion, // OpenAI completion object
   { connectedAccountId: 'account_123' }, // Options
@@ -320,7 +312,7 @@ const toolOutputs = await openaiProvider.handleToolCall(
     afterExecute: (toolSlug, toolkitSlug, result) => {
       result.data.processedAt = new Date().toISOString();
       return result;
-    }
+    },
   }
 );
 ```
@@ -566,7 +558,7 @@ const result = await openaiProvider.executeToolCall(
     afterExecute: (toolSlug, toolkitSlug, result) => {
       result.data.processedAt = new Date().toISOString();
       return result;
-    }
+    },
   }
 );
 ```
@@ -601,6 +593,6 @@ interface ExecuteToolModifiers {
 interface ProviderOptions<TProvider> {
   modifySchema?: TransformToolSchemaModifier;
   beforeExecute?: beforeExecuteModifier; // Only applied by agentic providers
-  afterExecute?: afterExecuteModifier;  // Only applied by agentic providers
+  afterExecute?: afterExecuteModifier; // Only applied by agentic providers
 }
 ```

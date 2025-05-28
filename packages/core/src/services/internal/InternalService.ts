@@ -11,7 +11,8 @@ import {
   SDKRealtimeCredentialsResponseSchema,
 } from './InternalService.types';
 import { ValidationError } from '../../errors';
-const SDK_REALTIME_CREDENTIALS_ENDPOINT = '/v3/internal/sdk/realtime/credentials';
+import logger from '../../utils/logger';
+const SDK_REALTIME_CREDENTIALS_ENDPOINT = '/api/v3/internal/sdk/realtime/credentials';
 
 export class InternalService {
   constructor(private readonly client: ComposioClitent) {
@@ -31,7 +32,12 @@ export class InternalService {
     const parsedResponse = SDKRealtimeCredentialsResponseSchema.safeParse({
       pusherKey: response.pusher_key,
       projectId: response.project_id,
+      pusherCluster: response.pusher_cluster,
     });
+
+    logger.debug(
+      `[InternalService] SDK realtime credentials: ${JSON.stringify(parsedResponse, null, 2)}`
+    );
 
     if (!parsedResponse.success) {
       throw new ValidationError(`Failed to parse SDK realtime credentials`, {

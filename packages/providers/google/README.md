@@ -6,8 +6,9 @@ Google GenAI Provider for Composio SDK.
 
 - **Google GenAI Integration**: Seamless integration with Google's Generative AI models (Gemini)
 - **Function Calling Support**: Convert Composio tools to Google GenAI function declarations
-- **Multiple Authentication Methods**: Support for both API key and Vertex AI authentication
 - **Type Safety**: Full TypeScript support with proper type definitions
+- **Execution Modifiers**: Support for transforming tool inputs and outputs
+- **Flexible Authentication**: Support for custom authentication parameters
 
 ## Installation
 
@@ -24,12 +25,10 @@ pnpm add @composio/google @google/genai
 ```typescript
 import { Composio } from '@composio/core';
 import { GoogleProvider } from '@composio/google';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/genai';
 
 // Initialize Google GenAI
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Initialize Composio with Google provider
 const composio = new Composio({
@@ -38,7 +37,10 @@ const composio = new Composio({
 });
 
 // Get available tools
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+const tools = await composio.tools.get('user123', {
+  toolkits: ['gmail', 'calendar'],
+  limit: 10,
+});
 ```
 
 ## Usage Examples
@@ -48,12 +50,10 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
 ```typescript
 import { Composio } from '@composio/core';
 import { GoogleProvider } from '@composio/google';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/genai';
 
 // Initialize Google GenAI
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Initialize Composio
 const composio = new Composio({
@@ -61,29 +61,52 @@ const composio = new Composio({
   provider: new GoogleProvider(),
 });
 
-// Get tools
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
-
-// Define task
-const task = "Fetch the details of the user 'haxzie'";
-
-// Generate content with function calling
-const response = await ai.models.generateContent({
-  model: 'gemini-2.0-flash-001',
-  contents: task,
-  config: {
-    tools: [{ functionDeclarations: tools }],
+// Handle tool execution with modifiers
+const modifiers = {
+  beforeExecute: params => {
+    // Transform tool parameters before execution
+    return params;
   },
-});
+  afterExecute: response => {
+    // Transform tool response after execution
+    return response;
+  },
+};
 
-// Handle function calls
-if (response.functionCalls) {
-  const result = await composio.tools.execute(response.functionCalls[0].name, {
-    userId: 'default',
-    arguments: response.functionCalls[0].args,
-  });
-  console.log(result.data);
-}
+// Execute a tool with options
+const result = await provider.executeTool(
+  'tool-name',
+  {
+    userId: 'user123',
+    arguments: { input: 'value' },
+    connectedAccountId: 'account123',
+    customAuthParams: {
+      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
+    },
+  },
+  modifiers
+);
+
+// Handle function calls from Google GenAI
+const functionCall = {
+  name: 'tool-name',
+  args: { param: 'value' },
+};
+
+const toolResult = await provider.executeToolCall(
+  'user123',
+  functionCall,
+  {
+    connectedAccountId: 'account123',
+    customAuthParams: {
+      /* ... */
+    },
+  },
+  {
+    beforeExecute: params => params,
+    afterExecute: response => response,
+  }
+);
 ```
 
 ## API Reference
@@ -94,7 +117,7 @@ The `GoogleProvider` class extends `BaseNonAgenticProvider` and provides Google 
 
 #### Methods
 
-##### `wrapTool(tool: Tool): GoogleGenAIFunctionDeclaration`
+##### `wrapTool(tool: Tool): GoogleTool`
 
 Wraps a Composio tool in the Google GenAI function declaration format.
 
@@ -104,10 +127,35 @@ const wrappedTool = provider.wrapTool(composioTool);
 
 ##### `wrapTools(tools: Tool[]): GoogleGenAIToolCollection`
 
-Wraps a list of Composio tools in the Google GenAI function declaration format.
+Wraps multiple Composio tools in the Google GenAI function declaration format.
 
 ```typescript
 const wrappedTools = provider.wrapTools(composioTools);
+```
+
+##### `executeToolCall(userId: string, tool: GoogleGenAIFunctionCall, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string>`
+
+Executes a tool call from Google GenAI and returns the result as a JSON string.
+
+```typescript
+const result = await provider.executeToolCall('user123', functionCall, options, modifiers);
+```
+
+#### Types
+
+```typescript
+interface GoogleGenAIFunctionCall {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+type GoogleTool = {
+  name: string;
+  description: string;
+  parameters: Schema;
+};
+
+type GoogleGenAIToolCollection = GoogleTool[];
 ```
 
 ## Contributing

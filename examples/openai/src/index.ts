@@ -46,7 +46,7 @@ const response = await openai.chat.completions.create({
  */
 if (response.choices[0].message.tool_calls) {
   console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
-  const result = await composio.provider.handleToolCall('default', response);
+  const result = await composio.provider.handleToolCalls('default', response);
   const data = JSON.parse(result[0]);
   console.log(data);
 }

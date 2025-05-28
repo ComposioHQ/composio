@@ -16,7 +16,14 @@ type PusherClient = {
   bind: (event: string, callback: (data: Record<string, unknown>) => void) => unknown;
   connection: {
     bind: (event: string, callback: (error: Error) => void) => void;
+    socket_id?: string;
   };
+};
+
+type AuthOptions = {
+  endpoint: string;
+  headers: Record<string, string>;
+  params?: Record<string, string>;
 };
 
 type TChunkedTriggerData = {
@@ -33,13 +40,14 @@ export type TriggerData = {
   originalPayload: Record<string, unknown>;
   metadata: {
     id: string;
-    connectionId: string;
     triggerName: string;
     triggerData: string;
     triggerConfig: Record<string, unknown>;
     connection: {
       id: string;
+      connectedAccountNanoId: string;
       integrationId: string;
+      authConfigNanoId: string;
       clientUniqueUserId: string;
       status: string;
     };
@@ -64,6 +72,29 @@ export class PusherUtils {
               'x-api-key': apiKey,
             },
             transport: 'ajax',
+            customHandler: async (authOptions: AuthOptions) => {
+              try {
+                const response = await fetch(authOptions.endpoint, {
+                  method: 'POST',
+                  headers: {
+                    ...authOptions.headers,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(authOptions.params),
+                });
+                const data = await response.text();
+                logger.debug('Pusher auth response:', data);
+                try {
+                  return JSON.parse(data);
+                } catch (e) {
+                  logger.error('Failed to parse auth response:', data);
+                  throw new Error('Invalid auth response format');
+                }
+              } catch (error) {
+                logger.error('Pusher auth request failed:', error);
+                throw error;
+              }
+            },
           },
         });
 
@@ -247,7 +278,7 @@ export class PusherUtils {
       if (!PusherUtils.pusherClient) {
         throw new Error('Pusher client not initialized');
       }
-      PusherUtils.pusherClient.unsubscribe(`${clientId}_triggers`);
+      PusherUtils.pusherClient.unsubscribe(`private-${clientId}_triggers`);
       logger.info('Successfully unsubscribed from triggers');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);

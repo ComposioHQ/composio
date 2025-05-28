@@ -70,7 +70,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {string} userId - The user id.
    * @returns {Promise<string[]>} The results of the tool call.
    */
-  async handleToolCall(
+  async handleToolCalls(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,

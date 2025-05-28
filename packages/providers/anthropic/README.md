@@ -1,12 +1,14 @@
 # @composio/anthropic
 
-Agentic Provider for Anthropic in Composio SDK.
+Non-Agentic Provider for Anthropic in Composio SDK.
 
 ## Features
 
-- **Full Modifier Support**: Support for both schema and execution modifiers
-- **Tool Execution**: Execute tools with proper parameter handling
+- **Tool Integration**: Seamless integration with Anthropic's tool calling capabilities
 - **Type Safety**: Full TypeScript support with proper type definitions
+- **Tool Execution**: Execute tools with proper parameter handling and response formatting
+- **Caching Support**: Optional tool caching for improved performance
+- **Modifier Support**: Support for execution modifiers to transform tool inputs and outputs
 
 ## Installation
 
@@ -27,7 +29,8 @@ import { AnthropicProvider } from '@composio/anthropic';
 // Initialize Composio with Anthropic provider
 const composio = new Composio({
   apiKey: 'your-composio-api-key',
-  provider: new AnthropicProvider(),
+  // Initialize with optional caching
+  provider: new AnthropicProvider({ cacheTools: true }),
 });
 
 // Get available tools
@@ -56,24 +59,97 @@ const tools = await composio.tools.get('user123', {
   toolkits: ['gmail'],
 });
 
-// Use tools with Anthropic
-// Add your usage example here
+// Handle tool execution with modifiers
+const modifiers = {
+  beforeExecute: params => {
+    // Transform tool parameters before execution
+    return params;
+  },
+  afterExecute: response => {
+    // Transform tool response after execution
+    return response;
+  },
+};
+
+// Execute a tool with options
+const result = await provider.executeTool(
+  'tool-name',
+  {
+    userId: 'user123',
+    arguments: { input: 'value' },
+    connectedAccountId: 'account123',
+    customAuthParams: {
+      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
+    },
+  },
+  modifiers
+);
 ```
 
 ## API Reference
 
 ### AnthropicProvider Class
 
-The `AnthropicProvider` class extends `BaseAgenticProvider` and provides anthropic-specific functionality.
+The `AnthropicProvider` class extends `BaseNonAgenticProvider` and provides Anthropic-specific functionality.
+
+#### Constructor
+
+```typescript
+new AnthropicProvider(options?: { cacheTools?: boolean })
+```
+
+- `options.cacheTools`: Optional boolean to enable tool caching (default: false)
 
 #### Methods
 
-##### `wrapTool(tool: Tool, executeTool: ExecuteToolFn): AnthropicTool`
+##### `wrapTool(tool: Tool): AnthropicTool`
 
-Wraps a tool in the anthropic format.
+Wraps a Composio tool in the Anthropic format.
 
 ```typescript
-const tool = provider.wrapTool(composioTool, executeTool);
+const tool = provider.wrapTool(composioTool);
+```
+
+##### `wrapTools(tools: Tool[]): AnthropicToolCollection`
+
+Wraps multiple Composio tools in the Anthropic format.
+
+```typescript
+const tools = provider.wrapTools(composioTools);
+```
+
+##### `executeToolCall(userId: string, toolUse: AnthropicToolUseBlock, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string>`
+
+Executes a tool call from Anthropic and returns the result as a string.
+
+```typescript
+const result = await provider.executeToolCall(
+  'user123',
+  {
+    type: 'tool_use',
+    id: 'tu_123',
+    name: 'tool-name',
+    input: { param: 'value' },
+  },
+  {
+    connectedAccountId: 'account123',
+    customAuthParams: {
+      /* ... */
+    },
+  },
+  {
+    beforeExecute: params => params,
+    afterExecute: response => response,
+  }
+);
+```
+
+##### `handleToolCalls(userId: string, message: Message, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string[]>`
+
+Handles tool calls from an Anthropic message response.
+
+```typescript
+const results = await provider.handleToolCalls('user123', message, options, modifiers);
 ```
 
 ## Contributing

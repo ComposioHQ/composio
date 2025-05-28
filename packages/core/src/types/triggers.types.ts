@@ -12,7 +12,7 @@ export const TriggerSubscribeParamSchema = z.object({
   triggerId: z.string().optional(),
   connectedAccountId: z.string().optional(),
   authConfigId: z.string().optional(),
-  triggerName: z.string().optional(),
+  triggerSlug: z.array(z.string()).optional(),
   triggerData: z.string().optional(),
   userId: z.string().optional(),
 });
@@ -94,23 +94,24 @@ export type TriggerInstanceManageDeleteResponse = z.infer<
 
 export const IncomingTriggerPayloadSchema = z.object({
   id: z.string().describe('The ID of the trigger'),
-  clientId: z.string().describe('The ID of the client that triggered the event'),
   triggerSlug: z.string().describe('The slug of the trigger that triggered the event'),
   toolkitSlug: z.string().describe('The slug of the toolkit that triggered the event'),
+  userId: z.string().describe('The ID of the user that triggered the event'),
   payload: z.record(z.unknown()).describe('The payload of the trigger'),
   originalPayload: z.record(z.unknown()).describe('The original payload of the trigger'),
   metadata: z.object({
     id: z.string(),
-    connectedAccountId: z.string(),
+    toolkitSlug: z.string(),
     triggerSlug: z.string(),
-    triggerName: z.string(),
     triggerData: z.string().optional(),
     triggerConfig: z.record(z.unknown()),
-    connection: z.object({
+    connectedAccount: z.object({
       id: z.string(),
-      integrationId: z.string(),
-      clientUniqueUserId: z.string(),
-      status: z.enum(['enable', 'disable']),
+      uuid: z.string(),
+      authConfigId: z.string(),
+      authConfigUUID: z.string(),
+      userId: z.string(),
+      status: z.enum(['ACTIVE', 'INACTIVE']),
     }),
   }),
 });

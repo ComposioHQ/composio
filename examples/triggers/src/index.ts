@@ -17,6 +17,7 @@ import 'dotenv/config';
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  baseURL: 'http://localhost:9900',
 });
 
 /**

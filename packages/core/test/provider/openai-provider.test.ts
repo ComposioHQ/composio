@@ -152,7 +152,7 @@ describe('OpenAIProvider', () => {
     });
   });
 
-  describe('handleToolCall', () => {
+  describe('handleToolCalls', () => {
     it('should handle tool calls from chat completion', async () => {
       const userId = 'test-user';
       const chatCompletion = {
@@ -191,7 +191,7 @@ describe('OpenAIProvider', () => {
       const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
       executeToolCallSpy.mockResolvedValue(JSON.stringify({ result: 'success' }));
 
-      const results = await provider.handleToolCall(userId, chatCompletion);
+      const results = await provider.handleToolCalls(userId, chatCompletion);
 
       expect(executeToolCallSpy).toHaveBeenCalledWith(
         userId,
@@ -241,7 +241,7 @@ describe('OpenAIProvider', () => {
       const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
       executeToolCallSpy.mockResolvedValue(JSON.stringify({ result: 'success' }));
 
-      const results = await provider.handleToolCall(userId, chatCompletion);
+      const results = await provider.handleToolCalls(userId, chatCompletion);
 
       expect(executeToolCallSpy).toHaveBeenCalledTimes(1);
       expect(results).toEqual([JSON.stringify({ result: 'success' })]);

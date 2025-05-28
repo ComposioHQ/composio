@@ -110,7 +110,7 @@ const completion = await openai.chat.completions.create({
 // Check if there are tool calls
 if (completion.choices[0].message.tool_calls) {
   // Handle the tool calls
-  const toolOutputs = await openaiProvider.handleToolCall(
+  const toolOutputs = await openaiProvider.handleToolCalls(
     'default', // userId
     completion,
     { connectedAccountId: 'connected_account_123' } // Optional
@@ -342,7 +342,7 @@ class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAi
     modifiers?: ExecuteToolModifiers
   ): Promise<string>;
 
-  handleToolCall(
+  handleToolCalls(
     userId: string,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,

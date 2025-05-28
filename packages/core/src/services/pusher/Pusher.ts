@@ -55,7 +55,9 @@ export class PusherService {
       this.pusherCluster = sdkRealtimeCredentials.pusherCluster;
       this.pusherChannel = `private-${this.clientId}_triggers`;
 
-      logger.debug(`[PusherService] Creating Pusher client for client ID: ${this.clientId}`);
+      logger.debug(
+        `[PusherService] Creating Pusher client for client ID: ${this.clientId} in cluster ${this.pusherCluster}`
+      );
 
       // create the Pusher client
       try {
@@ -63,7 +65,7 @@ export class PusherService {
         this.pusherClient = new Pusher(this.pusherKey, {
           cluster: this.pusherCluster,
           channelAuthorization: {
-            endpoint: `${this.pusherBaseURL}/api/v1/client/auth/pusher_auth`,
+            endpoint: `${this.pusherBaseURL}/api/v3/internal/sdk/realtime/auth`,
             headers: {
               'x-api-key': this.apiKey,
             },
@@ -170,9 +172,12 @@ export class PusherService {
       // add subscription error handling
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
         const error = data.error ? String(data.error) : 'Unknown subscription error';
-        throw new ComposioFailedToSubscribeToPusherChannelError(`Trigger subscription error`, {
-          cause: error,
-        });
+        throw new ComposioFailedToSubscribeToPusherChannelError(
+          `Trigger subscription error: ${error}`,
+          {
+            cause: error,
+          }
+        );
       });
 
       // wrap the callback to handle errors

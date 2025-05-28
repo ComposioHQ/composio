@@ -117,12 +117,12 @@ const result = await openaiProvider.executeToolCall(
 
 **Returns:** Promise<string> - The result of the tool call as JSON string
 
-#### handleToolCall(userId, chatCompletion, options?, modifiers?)
+#### handleToolCalls(userId, chatCompletion, options?, modifiers?)
 
 Handles tool calls from an OpenAI chat completion.
 
 ```typescript
-const outputs = await openaiProvider.handleToolCall('user123', chatCompletion);
+const outputs = await openaiProvider.handleToolCalls('user123', chatCompletion);
 ```
 
 **Parameters:**
