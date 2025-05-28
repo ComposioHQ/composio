@@ -12,6 +12,7 @@ Composio SDK is a powerful toolkit that enables you to integrate third-party too
 - [Providers](#providers)
 - [Examples](#examples)
 - [Advanced Topics](#advanced-topics)
+- [Internal Documentation](#internal-documentation)
 
 ## Overview
 
@@ -92,8 +93,18 @@ The complete API reference documentation is available here:
 
 Composio SDK comes with built-in support for different providers:
 
-- [OpenAI Provider](./providers/openai.md)
-- [Custom Providers](./providers/custom.md)
+### Non-Agentic Providers
+
+- [OpenAI Provider](../packages/providers/openai/README.md) - OpenAI integration with GPT-4, GPT-3.5, etc.
+- [Anthropic Provider](../packages/providers/anthropic/README.md) - Anthropic Claude integration
+- [Google Provider](../packages/providers/google/README.md) - Google Gemini integration
+- [Cloudflare Provider](../packages/providers/cloudflare/README.md) - Cloudflare Workers AI integration
+
+### Agentic Providers
+
+- [LangChain Provider](../packages/providers/langchain/README.md) - LangChain integration with LCEL support
+- [Mastra Provider](../packages/providers/mastra/README.md) - Agentic provider for autonomous behavior
+- [Vercel Provider](../packages/providers/vercel/README.md) - Vercel AI SDK integration
 
 ## Examples
 
@@ -103,6 +114,7 @@ Check out our [examples directory](../examples) for complete code samples:
 - [OpenAI Integration](../examples/openai)
 - [LangChain Integration](../examples/langchain)
 - [Toolkits](../examples/toolkits)
+- [Triggers](../examples/triggers)
 - [Modifiers](../examples/modifiers)
 
 ## Advanced Topics
@@ -111,3 +123,10 @@ Check out our [examples directory](../examples) for complete code samples:
 - [Telemetry](./advanced/telemetry.md)
 - [Custom Providers](./advanced/custom-providers.md)
 - [Modifiers](./advanced/modifiers.md)
+
+## Internal Documentation
+
+For SDK maintainers and contributors:
+
+- [Configuration and Environment Variables](./internal/configuration.md) - Detailed guide on SDK configuration
+- [Triggers Implementation](./internal/triggers.md) - Internal workings of the trigger system

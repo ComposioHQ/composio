@@ -9,6 +9,7 @@ Non-Agentic Provider for Anthropic in Composio SDK.
 - **Tool Execution**: Execute tools with proper parameter handling and response formatting
 - **Caching Support**: Optional tool caching for improved performance
 - **Modifier Support**: Support for execution modifiers to transform tool inputs and outputs
+- **Streaming Support**: First-class support for streaming responses
 
 ## Installation
 
@@ -19,6 +20,17 @@ yarn add @composio/anthropic
 # or
 pnpm add @composio/anthropic
 ```
+
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+
+Optional environment variables:
+
+- `ANTHROPIC_API_URL`: Custom API base URL (defaults to Anthropic's API)
 
 ## Quick Start
 
@@ -40,13 +52,24 @@ const tools = await composio.tools.get('user123', {
 });
 ```
 
-## Usage Examples
+## Examples
+
+Check out our complete example implementations:
+
+- [Basic Anthropic Integration](../../examples/anthropic/src/index.ts)
+- [Streaming Example](../../examples/anthropic/src/streaming.ts)
 
 ### Basic Example
 
 ```typescript
 import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+// Initialize Anthropic
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 // Initialize Composio
 const composio = new Composio({
@@ -59,31 +82,93 @@ const tools = await composio.tools.get('user123', {
   toolkits: ['gmail'],
 });
 
-// Handle tool execution with modifiers
-const modifiers = {
-  beforeExecute: params => {
-    // Transform tool parameters before execution
-    return params;
-  },
-  afterExecute: response => {
-    // Transform tool response after execution
-    return response;
-  },
-};
+// Create a message with tools
+const message = await anthropic.messages.create({
+  model: 'claude-3-sonnet-20240229',
+  max_tokens: 1024,
+  tools: tools,
+  messages: [
+    {
+      role: 'user',
+      content: 'Send an email to support@example.com',
+    },
+  ],
+});
 
-// Execute a tool with options
-const result = await provider.executeTool(
-  'tool-name',
-  {
-    userId: 'user123',
-    arguments: { input: 'value' },
+// Handle tool calls
+if (message.content[0].type === 'tool_calls') {
+  const toolCall = message.content[0];
+  const result = await composio.provider.executeToolCall('user123', toolCall, {
     connectedAccountId: 'account123',
-    customAuthParams: {
-      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
+  });
+  console.log('Tool execution result:', result);
+}
+```
+
+### Streaming Example
+
+```typescript
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new AnthropicProvider(),
+});
+
+const tools = await composio.tools.get('user123', {
+  toolkits: ['gmail'],
+});
+
+const stream = await anthropic.messages.stream({
+  model: 'claude-3-sonnet-20240229',
+  max_tokens: 1024,
+  tools: tools,
+  messages: [
+    {
+      role: 'user',
+      content: 'Send an email to support@example.com',
+    },
+  ],
+});
+
+for await (const messageChunk of stream) {
+  if (messageChunk.type === 'content_block_delta' && messageChunk.delta.type === 'tool_calls') {
+    const result = await composio.provider.executeToolCall('user123', messageChunk.delta, {
+      connectedAccountId: 'account123',
+    });
+    console.log('Tool execution result:', result);
+  } else {
+    console.log('Message chunk:', messageChunk);
+  }
+}
+```
+
+## Provider Configuration
+
+The Anthropic provider can be configured with various options:
+
+```typescript
+const provider = new AnthropicProvider({
+  // Enable tool caching
+  cacheTools: true,
+  // Custom execution modifiers
+  modifiers: {
+    beforeExecute: params => {
+      // Transform parameters before execution
+      return params;
+    },
+    afterExecute: response => {
+      // Transform response after execution
+      return response;
     },
   },
-  modifiers
-);
+});
 ```
 
 ## API Reference

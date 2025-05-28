@@ -14,12 +14,24 @@ The Vercel AI SDK provider for Composio SDK, providing seamless integration with
 ## Installation
 
 ```bash
-npm install @composio/vercel
+npm install @composio/vercel ai
 # or
-yarn add @composio/vercel
+yarn add @composio/vercel ai
 # or
-pnpm add @composio/vercel
+pnpm add @composio/vercel ai
 ```
+
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+
+Optional environment variables (based on model choice):
+
+- `OPENAI_API_KEY`: Your OpenAI API key (if using OpenAI)
+- `ANTHROPIC_API_KEY`: Your Anthropic API key (if using Anthropic)
+- `GEMINI_API_KEY`: Your Google AI API key (if using Gemini)
 
 ## Quick Start
 
@@ -43,7 +55,11 @@ const tools = await composio.tools.get('user123', {
 const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
 ```
 
-## Usage Examples
+## Examples
+
+Check out our complete example implementations:
+
+- [Basic Vercel Integration](../../examples/vercel/src/index.ts)
 
 ### Basic Chat Completion with Streaming
 
@@ -140,42 +156,26 @@ export async function POST(req: Request) {
 }
 ```
 
-### Structured Output with Streaming
+## Provider Configuration
+
+The Vercel provider can be configured with various options:
 
 ```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { streamObject } from 'ai';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-// Example API route that returns structured data
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const tools = await composio.tools.get('user123', {
-    toolkits: ['gmail'],
-  });
-
-  const stream = streamObject({
-    model: openai('gpt-4'),
-    messages,
-    tools,
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        age: { type: 'number' },
-        interests: { type: 'array', items: { type: 'string' } },
-      },
-      required: ['name', 'age', 'interests'],
+const provider = new VercelProvider({
+  // Default model configuration
+  model: openai('gpt-4'),
+  // Custom execution modifiers
+  modifiers: {
+    beforeExecute: params => {
+      // Transform parameters before execution
+      return params;
     },
-  });
-
-  return stream.toDataStreamResponse();
-}
+    afterExecute: response => {
+      // Transform response after execution
+      return response;
+    },
+  },
+});
 ```
 
 ## API Reference

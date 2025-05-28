@@ -21,6 +21,18 @@ yarn add @composio/openai
 pnpm add @composio/openai
 ```
 
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `OPENAI_API_KEY`: Your OpenAI API key
+
+Optional environment variables:
+
+- `OPENAI_API_BASE`: Custom API base URL (for Azure OpenAI)
+- `OPENAI_ORGANIZATION`: OpenAI organization ID
+
 ## Quick Start
 
 ```typescript
@@ -43,7 +55,14 @@ const tools = await composio.tools.get('user123', {
 const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
 ```
 
-## Usage Examples
+## Examples
+
+Check out our complete example implementations:
+
+- [Basic OpenAI Integration](../../examples/openai/src/index.ts)
+- [Chat Completions Example](../../examples/openai/src/chat-completions.ts)
+- [Assistants Example](../../examples/openai/src/assistants.ts)
+- [Tools Example](../../examples/openai/src/tools.ts)
 
 ### Basic Chat Completion with Streaming
 
@@ -195,6 +214,25 @@ export async function POST(req: Request) {
     content: completion.choices[0].message.content,
   });
 }
+```
+
+## Provider Configuration
+
+The OpenAI provider can be configured with various options:
+
+```typescript
+const provider = new OpenAIProvider({
+  // Custom base URL for Azure OpenAI
+  baseURL: 'https://your-azure-endpoint.openai.azure.com',
+  // Organization ID
+  organization: 'org-123',
+  // Default model to use
+  defaultModel: 'gpt-4',
+  // Custom headers
+  headers: {
+    'api-key': process.env.OPENAI_API_KEY,
+  },
+});
 ```
 
 ## API Reference

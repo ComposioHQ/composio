@@ -37,7 +37,9 @@ async function main() {
     console.log(`✅ Found ${tools.length} tools`);
 
     // TODO: Add your example implementation here
-    console.log('📝 Implement your triggers logic here!');
+    console.log(
+      '📝 Go to https://app.composio.dev to create an app and add a trigger, Once you have an incoming trigger, you will see the events'
+    );
 
     composio.triggers.subscribe(data => {
       console.log('🔔 Trigger received:', data);

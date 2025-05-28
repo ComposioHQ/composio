@@ -14,12 +14,25 @@ The LangChain provider for Composio SDK, providing seamless integration with Lan
 ## Installation
 
 ```bash
-npm install @composio/langchain
+npm install @composio/core @composio/langchain @langchain/core @langchain/openai
 # or
-yarn add @composio/langchain
+yarn add @composio/core @composio/langchain @langchain/core @langchain/openai
 # or
-pnpm add @composio/langchain
+pnpm add @composio/core @composio/langchain @langchain/core @langchain/openai
 ```
+
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `OPENAI_API_KEY`: Your OpenAI API key (or other LLM provider's key)
+
+Optional environment variables:
+
+- `LANGCHAIN_TRACING_V2`: Enable LangChain tracing (set to "true")
+- `LANGCHAIN_ENDPOINT`: Custom LangChain API endpoint
+- `LANGCHAIN_API_KEY`: Your LangChain API key (for hosted services)
 
 ## Quick Start
 
@@ -43,7 +56,14 @@ const tools = await composio.tools.get('user123', {
 const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
 ```
 
-## Usage Examples
+## Examples
+
+Check out our complete example implementations:
+
+- [Basic LangChain Integration](../../examples/langchain/src/index.ts)
+- [LCEL Example](../../examples/langchain/src/lcel.ts)
+- [RAG Example](../../examples/langchain/src/rag.ts)
+- [Streaming Example](../../examples/langchain/src/streaming.ts)
 
 ### Basic Chain with Streaming
 
@@ -125,65 +145,31 @@ for await (const event of eventStream) {
 }
 ```
 
-### RAG Application Example
+## Provider Configuration
+
+The LangChain provider can be configured with various options:
 
 ```typescript
-import { Composio } from '@composio/core';
-import { LangChainProvider } from '@composio/langchain';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import { MemoryVectorStore } from 'langchain/vectorstores/memory';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { ChatOpenAI } from '@langchain/openai';
-import { RunnableSequence, RunnablePassthrough } from '@langchain/core/runnables';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new LangChainProvider(),
-});
-
-// Get tools for the chain
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail'],
-});
-
-// Setup vector store and retriever
-const vectorstore = await MemoryVectorStore.fromTexts(
-  ['some text', 'more text'],
-  [{ id: 1 }, { id: 2 }],
-  new OpenAIEmbeddings()
-);
-
-const retriever = vectorstore.asRetriever();
-
-// Create RAG chain
-const template = `Answer the question based only on the following context:
-{context}
-
-Question: {question}`;
-
-const prompt = ChatPromptTemplate.fromTemplate(template);
-const model = new ChatOpenAI({
-  modelName: 'gpt-4',
-  streaming: true,
-});
-
-const chain = RunnableSequence.from([
-  {
-    context: retriever.pipe(formatDocs),
-    question: new RunnablePassthrough(),
+const provider = new LangChainProvider({
+  // Default model configuration
+  model: new ChatOpenAI({
+    modelName: 'gpt-4',
+    streaming: true,
+  }),
+  // Custom execution modifiers
+  modifiers: {
+    beforeExecute: params => {
+      // Transform parameters before execution
+      return params;
+    },
+    afterExecute: response => {
+      // Transform response after execution
+      return response;
+    },
   },
-  prompt,
-  model,
-  new StringOutputParser(),
-]);
-
-// Stream the response
-const stream = await chain.stream('What is the answer?');
-
-for await (const chunk of stream) {
-  console.log(chunk);
-}
+  // Enable tracing
+  tracing: true,
+});
 ```
 
 ## API Reference

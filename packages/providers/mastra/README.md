@@ -7,16 +7,31 @@ Agentic Provider for Mastra in Composio SDK.
 - **Full Modifier Support**: Support for both schema and execution modifiers
 - **Tool Execution**: Execute tools with proper parameter handling
 - **Type Safety**: Full TypeScript support with proper type definitions
+- **Agentic Capabilities**: Full support for autonomous agent behavior
+- **Streaming Support**: First-class support for streaming responses
+- **Custom Execution**: Support for custom tool execution strategies
 
 ## Installation
 
 ```bash
-npm install @composio/mastra
+npm install @composio/core @composio/mastra
 # or
-yarn add @composio/mastra
+yarn add @composio/core @composio/mastra
 # or
-pnpm add @composio/mastra
+pnpm add @composio/core @composio/mastra
 ```
+
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `MASTRA_API_KEY`: Your Mastra API key
+
+Optional environment variables:
+
+- `MASTRA_API_URL`: Custom API base URL (defaults to Mastra's API)
+- `MASTRA_DEBUG`: Enable debug logging (set to "true")
 
 ## Quick Start
 
@@ -26,8 +41,10 @@ import { MastraProvider } from '@composio/mastra';
 
 // Initialize Composio with Mastra provider
 const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  provider: new MastraProvider(),
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new MastraProvider({
+    apiKey: process.env.MASTRA_API_KEY,
+  }),
 });
 
 // Get available tools
@@ -37,43 +54,89 @@ const tools = await composio.tools.get('user123', {
 });
 ```
 
-## Usage Examples
+## Examples
 
-### Basic Example
+Check out our complete example implementations:
+
+- [Basic Mastra Integration](../../examples/mastra/src/index.ts)
+
+## Provider Configuration
+
+The Mastra provider can be configured with various options:
 
 ```typescript
-import { Composio } from '@composio/core';
-import { MastraProvider } from '@composio/mastra';
-
-// Initialize Composio
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
+const provider = new MastraProvider({
+  // API configuration
+  apiKey: process.env.MASTRA_API_KEY,
+  apiUrl: 'https://custom-api.mastra.ai',
+  // Debug mode
+  debug: true,
+  // Custom execution modifiers
+  modifiers: {
+    beforeExecute: params => {
+      // Transform parameters before execution
+      return params;
+    },
+    afterExecute: response => {
+      // Transform response after execution
+      return response;
+    },
+  },
+  // Custom tool execution strategy
+  executionStrategy: {
+    maxRetries: 3,
+    retryDelay: 1000,
+    timeout: 30000,
+  },
 });
-
-// Get tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail'],
-});
-
-// Use tools with Mastra
-// Add your usage example here
 ```
 
 ## API Reference
 
 ### MastraProvider Class
 
-The `MastraProvider` class extends `BaseAgenticProvider` and provides mastra-specific functionality.
+The `MastraProvider` class extends `BaseAgenticProvider` and provides Mastra-specific functionality.
+
+#### Constructor
+
+```typescript
+new MastraProvider(options?: MastraProviderOptions)
+```
+
+Options:
+
+- `apiKey`: Your Mastra API key
+- `apiUrl`: Custom API base URL
+- `debug`: Enable debug logging
+- `modifiers`: Custom execution modifiers
+- `executionStrategy`: Custom tool execution strategy
 
 #### Methods
 
 ##### `wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool`
 
-Wraps a tool in the mastra format.
+Wraps a tool in the Mastra format.
 
 ```typescript
 const tool = provider.wrapTool(composioTool, executeTool);
+```
+
+##### `wrapTools(tools: Tool[], executeTool: ExecuteToolFn): MastraToolCollection`
+
+Wraps multiple tools in the Mastra format.
+
+```typescript
+const tools = provider.wrapTools(composioTools, executeTool);
+```
+
+##### `executeToolCall(userId: string, toolCall: MastraToolCall, options?: ExecuteToolFnOptions): Promise<string>`
+
+Executes a tool call from Mastra and returns the result.
+
+```typescript
+const result = await provider.executeToolCall('user123', toolCall, {
+  connectedAccountId: 'account123',
+});
 ```
 
 ## Contributing

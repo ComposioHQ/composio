@@ -9,16 +9,29 @@ Google GenAI Provider for Composio SDK.
 - **Type Safety**: Full TypeScript support with proper type definitions
 - **Execution Modifiers**: Support for transforming tool inputs and outputs
 - **Flexible Authentication**: Support for custom authentication parameters
+- **Streaming Support**: First-class support for streaming responses
 
 ## Installation
 
 ```bash
-npm install @composio/google @google/genai
+npm install @composio/core @composio/google @google/genai
 # or
-yarn add @composio/google @google/genai
+yarn add @composio/core @composio/google @google/genai
 # or
-pnpm add @composio/google @google/genai
+pnpm add @composio/core @composio/google @google/genai
 ```
+
+## Environment Variables
+
+Required environment variables:
+
+- `COMPOSIO_API_KEY`: Your Composio API key
+- `GEMINI_API_KEY`: Your Google AI API key
+
+Optional environment variables:
+
+- `GOOGLE_PROJECT_ID`: Your Google Cloud project ID (for custom deployments)
+- `GOOGLE_LOCATION`: Your Google Cloud location (for custom deployments)
 
 ## Quick Start
 
@@ -43,70 +56,33 @@ const tools = await composio.tools.get('user123', {
 });
 ```
 
-## Usage Examples
+## Examples
 
-### Function Calling Example
+Check out our complete example implementations:
+
+- [Basic Google Integration](../../examples/google/src/index.ts)
+
+## Provider Configuration
+
+The Google provider can be configured with various options:
 
 ```typescript
-import { Composio } from '@composio/core';
-import { GoogleProvider } from '@composio/google';
-import { GoogleGenerativeAI } from '@google/genai';
-
-// Initialize Google GenAI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Initialize Composio
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new GoogleProvider(),
+const provider = new GoogleProvider({
+  // Custom project configuration
+  projectId: 'your-project-id',
+  location: 'your-location',
+  // Custom execution modifiers
+  modifiers: {
+    beforeExecute: params => {
+      // Transform parameters before execution
+      return params;
+    },
+    afterExecute: response => {
+      // Transform response after execution
+      return response;
+    },
+  },
 });
-
-// Handle tool execution with modifiers
-const modifiers = {
-  beforeExecute: params => {
-    // Transform tool parameters before execution
-    return params;
-  },
-  afterExecute: response => {
-    // Transform tool response after execution
-    return response;
-  },
-};
-
-// Execute a tool with options
-const result = await provider.executeTool(
-  'tool-name',
-  {
-    userId: 'user123',
-    arguments: { input: 'value' },
-    connectedAccountId: 'account123',
-    customAuthParams: {
-      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
-    },
-  },
-  modifiers
-);
-
-// Handle function calls from Google GenAI
-const functionCall = {
-  name: 'tool-name',
-  args: { param: 'value' },
-};
-
-const toolResult = await provider.executeToolCall(
-  'user123',
-  functionCall,
-  {
-    connectedAccountId: 'account123',
-    customAuthParams: {
-      /* ... */
-    },
-  },
-  {
-    beforeExecute: params => params,
-    afterExecute: response => response,
-  }
-);
 ```
 
 ## API Reference

@@ -18,6 +18,7 @@ The SDK is thoroughly documented in the [docs](./docs) directory:
 - [Overview](./docs/overview.md) - Introduction and key concepts
 - [Getting Started](./docs/getting-started.md) - Quick start guide
 - [Core Concepts](./docs/core-concepts.md) - Fundamental SDK concepts
+- [Configuration](./docs/internal/configuration.md) - Environment variables and SDK configuration
 
 ### API Reference
 
@@ -41,6 +42,13 @@ The SDK is thoroughly documented in the [docs](./docs) directory:
 - [Middleware and Modifiers](./docs/advanced/modifiers.md) - Customizing tools
 - [Telemetry](./docs/advanced/telemetry.md) - SDK usage tracking
 - [Custom Providers](./docs/advanced/custom-providers.md) - Detailed provider guide
+
+### Internal Documentation
+
+For SDK maintainers and contributors:
+
+- [Configuration and Environment Variables](./docs/internal/configuration.md) - Detailed guide on SDK configuration
+- [Triggers Implementation](./docs/internal/triggers.md) - Internal workings of the trigger system
 
 ## Installation
 
