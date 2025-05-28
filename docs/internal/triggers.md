@@ -60,7 +60,8 @@ The SDK interacts with the following Composio API endpoints for trigger manageme
 
 ### Pusher Authentication
 
-- `POST /api/v3/pusher/auth` - Authenticate Pusher connection
+- `POST /api/v3/internal/sdk/realtime/auth` - Authenticate Pusher connection
+- `GET /api/v3/internal/sdk/realtime/credentials` - Necessary credentials to create pusher client
 
 ## Data Processing
 

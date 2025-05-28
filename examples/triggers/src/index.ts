@@ -17,7 +17,7 @@ import 'dotenv/config';
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  baseURL: 'https://staging-backend.composio.dev',
+  // baseURL: 'https://staging-backend.composio.dev',
 });
 
 /**
