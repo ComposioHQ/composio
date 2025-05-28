@@ -1,25 +1,22 @@
 /**
  * Example for using Anthropic provider with Composio SDK
+ * 
+ * Required environment variables:
+ * - COMPOSIO_API_KEY: Your Composio API key (get one at https://app.composio.dev)
+ * - ANTHROPIC_API_KEY: Your Anthropic API key (get one at https://console.anthropic.com)
  */
 import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
 
-if (!process.env.COMPOSIO_API_KEY) {
-  console.error('Missing COMPOSIO_API_KEY environment variable');
-  process.exit(1);
-}
-
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('Missing ANTHROPIC_API_KEY environment variable');
-  process.exit(1);
-}
-
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+/**
+ * Initialize Composio with the Anthropic provider
+ */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new AnthropicProvider(),
@@ -28,14 +25,21 @@ const composio = new Composio({
 async function main() {
   try {
     console.log('Fetching tools from Composio...');
+    /**
+     * Get the Hacker News user tool
+     * This tool is automatically wrapped with the Anthropic provider format
+     */
     const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
     console.log(`Fetched ${tools.length} tools`);
 
     console.log('Creating message with Anthropic...');
+    /**
+     * Create a message with Anthropic that may use tools
+     */
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
       max_tokens: 1024,
-      tools: tools,
+      tools,
       messages: [
         {
           role: 'user',
@@ -46,13 +50,19 @@ async function main() {
 
     console.log('Message created, processing tool calls if any...');
     
+    /**
+     * Extract tool use blocks from the message content
+     */
     const toolUseBlocks = message.content.filter(
-      (content: any) => content.type === 'tool_use'
+      (content) => content.type === 'tool_use'
     );
 
     if (toolUseBlocks.length > 0) {
       console.log(`Found ${toolUseBlocks.length} tool calls`);
       
+      /**
+       * Execute the tool calls using Composio
+       */
       const toolResults = await composio.provider.handleToolCalls(
         'default',
         message
@@ -60,6 +70,9 @@ async function main() {
       
       console.log('Tool results:', toolResults);
       
+      /**
+       * Send a follow-up message with the tool results
+       */
       const followUpMessage = await anthropic.messages.create({
         model: 'claude-3-sonnet-20240229',
         max_tokens: 1024,
@@ -91,17 +104,23 @@ async function main() {
         ],
       });
       
+      /**
+       * Extract the text response from the follow-up message
+       */
       const finalResponse = followUpMessage.content
-        .filter((content: any) => content.type === 'text')
-        .map((content: any) => content.text)
+        .filter((content) => content.type === 'text')
+        .map((content) => content.text)
         .join('\n');
       
       console.log('Final response:');
       console.log(finalResponse);
     } else {
+      /**
+       * If no tool calls were made, just show the text response
+       */
       const response = message.content
-        .filter((content: any) => content.type === 'text')
-        .map((content: any) => content.text)
+        .filter((content) => content.type === 'text')
+        .map((content) => content.text)
         .join('\n');
       
       console.log('Response (no tool calls):');
