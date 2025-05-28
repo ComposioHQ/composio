@@ -6,13 +6,17 @@
     "@composio/cloudflare": "0.1.12-alpha.6",
     "@composio/langchain": "0.1.12-alpha.6",
     "@composio/openai": "0.1.12-alpha.6",
-    "@composio/vercel": "0.1.12-alpha.6"
+    "@composio/vercel": "0.1.12-alpha.6",
+    "@composio/anthropic": "0.1.12-alpha.11",
+    "@composio/google": "0.1.12-alpha.11",
+    "@composio/mastra": "0.1.12-alpha.11"
   },
   "changesets": [
     "afraid-pandas-enjoy",
     "great-pens-jog",
     "lovely-pets-yell",
     "ripe-clubs-love",
+    "silver-times-fall",
     "witty-masks-sleep"
   ]
 }
