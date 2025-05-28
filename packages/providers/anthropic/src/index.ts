@@ -7,27 +7,15 @@
  * @packageDocumentation
  * @module providers/anthropic
  */
-import { 
-  BaseNonAgenticProvider, 
-  Tool, 
+import {
+  BaseNonAgenticProvider,
+  Tool as ComposioTool,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  ToolExecuteParams 
+  ToolExecuteParams,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
-
-/**
- * Anthropic tool format based on their API docs
- */
-export interface AnthropicTool {
-  name: string;
-  description: string;
-  input_schema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required: string[];
-  };
-}
+import { AnthropicTool } from './types';
 
 /**
  * Collection of Anthropic tools
@@ -55,7 +43,10 @@ export type AnthropicContentBlock = {
 /**
  * Anthropic Provider implementation for Composio
  */
-export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolCollection, AnthropicTool> {
+export class AnthropicProvider extends BaseNonAgenticProvider<
+  AnthropicToolCollection,
+  AnthropicTool
+> {
   readonly name = 'anthropic';
 
   /**
@@ -63,17 +54,14 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
    * @param tool - The tool to wrap.
    * @returns The wrapped tool in Anthropic format.
    */
-  override wrapTool(tool: Tool): AnthropicTool {
-    const properties = tool.inputParameters?.properties || {};
-    const required = tool.inputParameters?.required || [];
-    
+  override wrapTool(tool: ComposioTool): AnthropicTool {
     return {
       name: tool.slug,
       description: tool.description || '',
       input_schema: {
         type: 'object',
-        properties: properties as Record<string, unknown>,
-        required: required as string[],
+        properties: (tool.inputParameters?.properties || {}) as Record<string, unknown>,
+        required: (tool.inputParameters?.required || []) as string[],
       },
     };
   }
@@ -83,7 +71,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
    * @param tools - The tools to wrap.
    * @returns The wrapped tools in Anthropic format.
    */
-  override wrapTools(tools: Tool[]): AnthropicToolCollection {
+  override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
     return tools.map(tool => this.wrapTool(tool));
   }
 
@@ -126,15 +114,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
     modifiers?: ExecuteToolModifiers
   ): Promise<string[]> {
     const outputs: string[] = [];
-    
+
     // Filter and map tool use blocks from message content
     const toolUseBlocks: AnthropicToolUseBlock[] = [];
-    
+
     for (const content of message.content) {
       if (
-        typeof content === 'object' && 
-        content !== null && 
-        'type' in content && 
+        typeof content === 'object' &&
+        content !== null &&
+        'type' in content &&
         typeof content.type === 'string' &&
         content.type.toString() === 'tool_use' &&
         'id' in content &&
@@ -145,15 +133,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<AnthropicToolColle
           type: 'tool_use',
           id: String(content.id),
           name: String(content.name),
-          input: content.input as Record<string, unknown>
+          input: content.input as Record<string, unknown>,
         });
       }
     }
-    
+
     for (const toolUse of toolUseBlocks) {
       outputs.push(await this.executeToolCall(userId, toolUse, options, modifiers));
     }
-    
+
     return outputs;
   }
 }

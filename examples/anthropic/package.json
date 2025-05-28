@@ -13,7 +13,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.18.0",
+    "@anthropic-ai/sdk": "^0.52.0",
     "@composio/core": "workspace:*",
     "@composio/anthropic": "workspace:*",
     "dotenv": "^16.4.1"

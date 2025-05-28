@@ -32,11 +32,9 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.18.0"
-  },
   "peerDependencies": {
-    "@composio/core": "^0.1.0"
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@composio/core": "workspace:*"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
