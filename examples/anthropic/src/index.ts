@@ -19,7 +19,7 @@ const anthropic = new Anthropic({
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider(),
+  provider: new AnthropicProvider({ cacheTools: true }),
 });
 
 async function main() {

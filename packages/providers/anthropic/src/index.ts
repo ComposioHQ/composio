@@ -13,9 +13,10 @@ import {
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
   ToolExecuteParams,
+  logger,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
-import { AnthropicTool } from './types';
+import { AnthropicTool, InputSchema } from './types';
 
 /**
  * Collection of Anthropic tools
@@ -48,6 +49,13 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicTool
 > {
   readonly name = 'anthropic';
+  private chacheTools: boolean = false;
+
+  constructor(options?: { cacheTools?: boolean }) {
+    super();
+    this.chacheTools = options?.cacheTools ?? false;
+    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.chacheTools}]`);
+  }
 
   /**
    * Wrap a tool in the Anthropic format.
@@ -58,11 +66,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: {
+      input_schema: (tool.inputParameters || {
         type: 'object',
-        properties: (tool.inputParameters?.properties || {}) as Record<string, unknown>,
-        required: (tool.inputParameters?.required || []) as string[],
-      },
+        properties: {},
+        required: [],
+      }) as InputSchema,
+      cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
 

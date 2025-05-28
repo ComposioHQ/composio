@@ -26,7 +26,7 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
   wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): VercelTool {
     return tool({
       description: composioTool.description,
-      parameters: jsonSchema(composioTool.inputParameters ?? {}),
+      parameters: jsonSchema((composioTool.inputParameters as Record<string, unknown>) ?? {}),
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
         return await executeTool(composioTool.slug, input);

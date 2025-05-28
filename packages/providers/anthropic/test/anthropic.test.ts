@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AnthropicProvider, AnthropicTool, AnthropicToolUseBlock } from '../src';
-import { Tool } from '@composio/core';
+import { AnthropicProvider, AnthropicToolUseBlock } from '../src';
+import type { AnthropicTool } from '../src/types';
+import type { Tool } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 
 vi.mock('@anthropic-ai/sdk', () => {
@@ -168,9 +169,7 @@ describe('AnthropicProvider', () => {
         },
         undefined
       );
-      expect(result).toBe(
-        JSON.stringify({ result: 'success' })
-      );
+      expect(result).toBe(JSON.stringify({ result: 'success' }));
     });
 
     it('should pass options to executeTool', async () => {
@@ -307,9 +306,7 @@ describe('AnthropicProvider', () => {
       const userId = 'test-user';
       const message = {
         id: 'msg_123',
-        content: [
-          { type: 'text', text: 'Hello' },
-        ],
+        content: [{ type: 'text', text: 'Hello' }],
       } as Anthropic.Message;
 
       const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');

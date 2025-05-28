@@ -12,7 +12,7 @@ export type { Provider, ExecuteToolFn, ExecuteToolFnOptions } from './types/prov
 export type { ExecuteMetadata } from './types/customTool.types';
 export { AuthConfigTypes, AuthSchemeTypes } from './types/authConfigs.types';
 export type { AuthConfigType, AuthSchemeType } from './types/authConfigs.types';
-
+export { default as logger } from './utils/logger';
 // Error handling exports
 export * from './errors';
 

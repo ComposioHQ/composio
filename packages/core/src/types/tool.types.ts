@@ -13,6 +13,38 @@ export const ToolkitSchema = z.object({
 });
 export type Toolkit = z.infer<typeof ToolkitSchema>;
 
+// JSON Schema primitive types
+const JSONSchemaType = z.enum([
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'object',
+  'array',
+  'null',
+]);
+
+// JSON Schema property definition
+const JSONSchemaProperty: z.ZodType<unknown> = z.object({
+  type: JSONSchemaType.optional(),
+  description: z.string().optional(),
+  title: z.string().optional(),
+  default: z.any().optional(),
+  properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
+  required: z.array(z.string()).optional(),
+  items: z.lazy(() => JSONSchemaProperty).optional(),
+});
+
+// Schema for parameters (input/output)
+const ParametersSchema = z.object({
+  type: z.literal('object'),
+  properties: z.record(z.string(), JSONSchemaProperty),
+  required: z.array(z.string()).optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  additionalProperties: z.boolean().optional(),
+});
+
 /**
  * Tool is a single action that can be performed by a toolkit.
  * Tool is simlar to an action that an app can perform.
@@ -23,14 +55,8 @@ export const ToolSchema = z.object({
   slug: z.string().describe('The slug of the tool. eg. "GOOGLE_SEARCH"'),
   name: z.string().describe(`The name of the tool. eg. "Google Search"`),
   description: z.string().optional().describe('The description of the tool'),
-  inputParameters: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe('The input parameters of the tool'),
-  outputParameters: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe('The output parameters of the tool'),
+  inputParameters: ParametersSchema.optional().describe('The input parameters of the tool'),
+  outputParameters: ParametersSchema.optional().describe('The output parameters of the tool'),
   tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
   toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
   version: z.optional(z.string()).describe('The version of the tool, e.g. "1.0.0"'),
