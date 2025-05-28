@@ -7,28 +7,20 @@
  * @packageDocumentation
  * @module providers/google
  */
-import { 
-  BaseNonAgenticProvider, 
-  Tool, 
+import {
+  BaseNonAgenticProvider,
+  Tool,
   ToolExecuteParams,
   ExecuteToolModifiers,
-  ExecuteToolFnOptions 
+  ExecuteToolFnOptions,
 } from '@composio/core';
+import { FunctionDeclaration, Schema } from '@google/genai';
 
 /**
  * Interface for Google GenAI function declaration
  * Based on the FunctionDeclaration type from @google/genai
  */
-export interface GoogleGenAIFunctionDeclaration {
-  name?: string;
-  description?: string;
-  parameters?: {
-    type: 'object';
-    description?: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
+export type GoogleTool = FunctionDeclaration;
 
 /**
  * Interface for Google GenAI function call
@@ -42,13 +34,13 @@ export interface GoogleGenAIFunctionCall {
 /**
  * Type for a collection of Google GenAI function declarations
  */
-export type GoogleGenAIToolCollection = GoogleGenAIFunctionDeclaration[];
+export type GoogleGenAIToolCollection = GoogleTool[];
 
 /**
  * Google GenAI Provider for Composio SDK
  * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
-export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleGenAIFunctionDeclaration> {
+export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
   readonly name = 'google';
 
   /**
@@ -56,16 +48,15 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
    * @param tool - The Composio tool to wrap.
    * @returns The wrapped tool in Google GenAI format.
    */
-  wrapTool(tool: Tool): GoogleGenAIFunctionDeclaration {
+  wrapTool(tool: Tool): GoogleTool {
     return {
       name: tool.slug,
       description: tool.description || '',
-      parameters: {
+      parameters: (tool.inputParameters ?? {
         type: 'object',
-        description: tool.description || '',
-        properties: (tool.inputParameters?.properties || {}) as Record<string, unknown>,
-        required: Array.isArray(tool.inputParameters?.required) ? tool.inputParameters.required : [],
-      },
+        properties: {},
+        required: [],
+      }) as unknown as Schema,
     };
   }
 

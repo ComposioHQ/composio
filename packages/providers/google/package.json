@@ -24,7 +24,13 @@
     "build": "tsup",
     "test": "vitest run"
   },
-  "keywords": ["composio", "provider", "google", "genai", "gemini"],
+  "keywords": [
+    "composio",
+    "provider",
+    "google",
+    "genai",
+    "gemini"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",

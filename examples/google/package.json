@@ -9,7 +9,13 @@
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["composio", "example", "google", "genai", "gemini"],
+  "keywords": [
+    "composio",
+    "example",
+    "google",
+    "genai",
+    "gemini"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
