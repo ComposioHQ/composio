@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { Triggers } from '../../src/models/triggers';
 import ComposioClient from '@composio/client';
 import { Session } from '../../src/models/Session';
@@ -7,6 +7,7 @@ import logger from '../../src/utils/logger';
 import { TriggerStatusEnum, TriggerSubscribeParams } from '../../src/types/triggers.types';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors';
+import { PusherService } from '../../src/services/pusher/Pusher';
 
 // Mock dependencies
 vi.mock('../../src/models/Session');
@@ -17,6 +18,7 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
     instrument: vi.fn(),
   },
 }));
+vi.mock('../../src/services/pusher/Pusher');
 
 // Create mock client with trigger-related methods
 const createMockClient = () => ({
@@ -172,12 +174,19 @@ describe('Triggers', () => {
   let triggers: Triggers;
   let mockClient: ReturnType<typeof createMockClient>;
   let mockSession: Session;
+  let mockPusherService: {
+    subscribe: Mock;
+    unsubscribe: Mock;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     mockClient = createMockClient();
-    triggers = new Triggers(mockClient as unknown as ComposioClient);
+    mockPusherService = {
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    } as unknown as { subscribe: Mock; unsubscribe: Mock };
 
     // Mock Session
     mockSession = {
@@ -189,6 +198,11 @@ describe('Triggers', () => {
     vi.mocked(PusherUtils.getPusherClient).mockResolvedValue({} as any);
     vi.mocked(PusherUtils.triggerSubscribe).mockImplementation(() => {});
     vi.mocked(PusherUtils.triggerUnsubscribe).mockImplementation(() => {});
+
+    // Mock PusherService constructor
+    (PusherService as unknown as Mock).mockImplementation(() => mockPusherService);
+
+    triggers = new Triggers(mockClient as unknown as ComposioClient);
   });
 
   afterEach(() => {
@@ -417,13 +431,8 @@ describe('Triggers', () => {
     it('should subscribe to triggers without filters', async () => {
       await triggers.subscribe(mockCallback);
 
-      expect(mockSession.getInfo).toHaveBeenCalled();
-      expect(PusherUtils.getPusherClient).toHaveBeenCalledWith(
-        mockClient.baseURL,
-        mockClient.apiKey
-      );
-      expect(PusherUtils.triggerSubscribe).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith('Subscribing to triggers', `{}`);
+      expect(mockPusherService.subscribe).toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith('🔄 Subscribing to triggers with filters: ', '{}');
     });
 
     it('should subscribe to triggers with filters', async () => {
@@ -438,20 +447,20 @@ describe('Triggers', () => {
 
       await triggers.subscribe(mockCallback, filters);
 
-      expect(mockSession.getInfo).toHaveBeenCalled();
-      expect(PusherUtils.getPusherClient).toHaveBeenCalledWith(
-        mockClient.baseURL,
-        mockClient.apiKey
+      expect(mockPusherService.subscribe).toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith(
+        '🔄 Subscribing to triggers with filters: ',
+        JSON.stringify(filters, null, 2)
       );
-      expect(PusherUtils.triggerSubscribe).toHaveBeenCalled();
     });
 
     it('should filter triggers based on toolkits case-insensitively', async () => {
       const filters: TriggerSubscribeParams = { toolkits: ['GITHUB'] };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      // Get the callback function passed to PusherService.subscribe
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -463,8 +472,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { toolkits: ['slack'] };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -479,8 +488,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { triggerId: 'trigger-456' };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -495,8 +504,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { connectedAccountId: 'conn-456' };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -511,8 +520,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { triggerName: 'slack_message' };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -527,8 +536,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { triggerData: '{"action":"comment"}' };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -543,8 +552,8 @@ describe('Triggers', () => {
       const filters: TriggerSubscribeParams = { userId: 'user-789' };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -566,8 +575,8 @@ describe('Triggers', () => {
       };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -583,8 +592,8 @@ describe('Triggers', () => {
       };
       await triggers.subscribe(mockCallback, filters);
 
-      const triggerSubscribeCall = vi.mocked(PusherUtils.triggerSubscribe).mock.calls[0];
-      const filterCallback = triggerSubscribeCall[1];
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
 
       filterCallback(mockTriggerData);
 
@@ -594,14 +603,28 @@ describe('Triggers', () => {
         expect.any(String)
       );
     });
+
+    it('should throw validation error for invalid trigger data', async () => {
+      const invalidTriggerData = {
+        ...mockTriggerData,
+        metadata: {
+          ...mockTriggerData.metadata,
+          id: undefined, // Make the data invalid
+        },
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      expect(() => filterCallback(invalidTriggerData)).toThrow(ValidationError);
+    });
   });
 
   describe('unsubscribe', () => {
     it('should unsubscribe from triggers', async () => {
       await triggers.unsubscribe();
-
-      expect(mockSession.getInfo).toHaveBeenCalled();
-      expect(PusherUtils.triggerUnsubscribe).toHaveBeenCalledWith('client-123');
+      expect(mockPusherService.unsubscribe).toHaveBeenCalled();
     });
 
     it('should throw error if client ID is not found', async () => {
@@ -626,9 +649,9 @@ describe('Triggers', () => {
       await expect(triggers.subscribe(vi.fn())).rejects.toThrow('Session retrieval failed');
     });
 
-    it('should handle pusher client errors gracefully', async () => {
+    it('should handle pusher service errors gracefully', async () => {
       const pusherError = new Error('Pusher connection failed');
-      vi.mocked(PusherUtils.getPusherClient).mockRejectedValue(pusherError);
+      mockPusherService.subscribe.mockRejectedValue(pusherError);
 
       await expect(triggers.subscribe(vi.fn())).rejects.toThrow('Pusher connection failed');
     });
