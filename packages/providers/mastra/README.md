@@ -60,37 +60,6 @@ Check out our complete example implementations:
 
 - [Basic Mastra Integration](../../examples/mastra/src/index.ts)
 
-## Provider Configuration
-
-The Mastra provider can be configured with various options:
-
-```typescript
-const provider = new MastraProvider({
-  // API configuration
-  apiKey: process.env.MASTRA_API_KEY,
-  apiUrl: 'https://custom-api.mastra.ai',
-  // Debug mode
-  debug: true,
-  // Custom execution modifiers
-  modifiers: {
-    beforeExecute: params => {
-      // Transform parameters before execution
-      return params;
-    },
-    afterExecute: response => {
-      // Transform response after execution
-      return response;
-    },
-  },
-  // Custom tool execution strategy
-  executionStrategy: {
-    maxRetries: 3,
-    retryDelay: 1000,
-    timeout: 30000,
-  },
-});
-```
-
 ## API Reference
 
 ### MastraProvider Class
