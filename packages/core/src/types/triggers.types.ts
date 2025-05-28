@@ -97,8 +97,8 @@ export const IncomingTriggerPayloadSchema = z.object({
   triggerSlug: z.string().describe('The slug of the trigger that triggered the event'),
   toolkitSlug: z.string().describe('The slug of the toolkit that triggered the event'),
   userId: z.string().describe('The ID of the user that triggered the event'),
-  payload: z.record(z.unknown()).describe('The payload of the trigger'),
-  originalPayload: z.record(z.unknown()).describe('The original payload of the trigger'),
+  payload: z.record(z.unknown()).describe('The payload of the trigger').optional(),
+  originalPayload: z.record(z.unknown()).describe('The original payload of the trigger').optional(),
   metadata: z.object({
     id: z.string(),
     toolkitSlug: z.string(),

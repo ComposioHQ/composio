@@ -139,7 +139,7 @@ const mockTriggerData: TriggerData = {
       integrationId: 'github',
       authConfigNanoId: 'auth-123',
       clientUniqueUserId: 'user-456',
-      status: 'enable',
+      status: 'ACTIVE',
     },
   },
 };
@@ -607,14 +607,15 @@ describe('Triggers', () => {
         originalPayload: { action: 'push', repository: 'test-repo' },
         metadata: {
           id: 'trigger-123',
-          connectionId: 'conn-123',
           triggerName: 'github_webhook',
           triggerConfig: { webhook_url: 'https://example.com/webhook' },
           connection: {
             id: 'conn-123',
+            connectedAccountNanoId: 'conn-123',
             integrationId: 'github',
+            authConfigNanoId: 'auth-123',
             clientUniqueUserId: 'user-456',
-            status: 'enable',
+            status: 'ACTIVE',
           },
         },
       };
@@ -630,8 +631,19 @@ describe('Triggers', () => {
       expect(mockCallback).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'trigger-123',
+          triggerSlug: 'github_webhook',
+          toolkitSlug: 'github',
+          payload: { action: 'push', repository: 'test-repo' },
           metadata: expect.objectContaining({
-            triggerData: undefined,
+            id: 'trigger-123',
+            triggerSlug: 'github_webhook',
+            toolkitSlug: 'github',
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+              uuid: 'conn-123',
+              authConfigId: 'auth-123',
+              status: 'ACTIVE',
+            }),
           }),
         })
       );
@@ -672,6 +684,40 @@ describe('Triggers', () => {
       // Trigger should only call callback2
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledTimes(1);
+    });
+
+    it('should pass the parsed trigger data to callback when filters match', async () => {
+      await triggers.subscribe(mockCallback);
+
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockTriggerData);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'trigger-123',
+          triggerSlug: 'github_webhook',
+          toolkitSlug: 'github',
+          userId: 'user-456',
+          payload: { action: 'push', repository: 'test-repo' },
+          metadata: expect.objectContaining({
+            id: 'trigger-123',
+            triggerSlug: 'github_webhook',
+            toolkitSlug: 'github',
+            triggerConfig: { webhook_url: 'https://example.com/webhook' },
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+              uuid: 'conn-123',
+              authConfigId: 'auth-123',
+              authConfigUUID: 'github',
+              userId: 'user-456',
+              status: 'ACTIVE',
+            }),
+          }),
+        })
+      );
     });
   });
 
@@ -728,13 +774,23 @@ describe('Triggers', () => {
       expect(mockCallback).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'trigger-123',
-          clientId: '123',
           triggerSlug: 'github_webhook',
           toolkitSlug: 'github',
+          userId: 'user-456',
           payload: { action: 'push', repository: 'test-repo' },
           metadata: expect.objectContaining({
-            connectedAccountId: 'conn-123',
-            triggerName: 'github_webhook',
+            id: 'trigger-123',
+            triggerSlug: 'github_webhook',
+            toolkitSlug: 'github',
+            triggerConfig: { webhook_url: 'https://example.com/webhook' },
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+              uuid: 'conn-123',
+              authConfigId: 'auth-123',
+              authConfigUUID: 'github',
+              userId: 'user-456',
+              status: 'ACTIVE',
+            }),
           }),
         })
       );
@@ -793,44 +849,6 @@ describe('Triggers', () => {
 
       expect(() => filterCallback(invalidTriggerData)).toThrow(ValidationError);
       expect(mockCallback).not.toHaveBeenCalled();
-    });
-
-    it('should handle partial trigger data with missing optional fields', async () => {
-      const partialTriggerData = {
-        appName: 'github',
-        clientId: 123,
-        payload: { action: 'push', repository: 'test-repo' },
-        originalPayload: { action: 'push', repository: 'test-repo' },
-        metadata: {
-          id: 'trigger-123',
-          connectionId: 'conn-123',
-          triggerName: 'github_webhook',
-          triggerConfig: { webhook_url: 'https://example.com/webhook' },
-          connection: {
-            id: 'conn-123',
-            integrationId: 'github',
-            clientUniqueUserId: 'user-456',
-            status: 'enable',
-          },
-        },
-      };
-
-      await triggers.subscribe(mockCallback);
-
-      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const filterCallback = subscribeCall[0];
-
-      // Should not throw for missing optional fields
-      expect(() => filterCallback(partialTriggerData)).not.toThrow();
-      expect(mockCallback).toHaveBeenCalledTimes(1);
-      expect(mockCallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'trigger-123',
-          metadata: expect.objectContaining({
-            triggerData: undefined,
-          }),
-        })
-      );
     });
 
     it('should handle multiple callbacks with different filters', async () => {

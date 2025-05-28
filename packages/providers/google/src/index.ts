@@ -52,11 +52,12 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
     return {
       name: tool.slug,
       description: tool.description || '',
-      parameters: (tool.inputParameters ?? {
+      parameters: {
         type: 'object',
-        properties: {},
-        required: [],
-      }) as unknown as Schema,
+        description: tool.description || '',
+        properties: tool.inputParameters?.properties || {},
+        required: tool.inputParameters?.required || [],
+      } as unknown as Schema,
     };
   }
 
