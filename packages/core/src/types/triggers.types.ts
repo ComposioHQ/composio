@@ -104,7 +104,7 @@ export const IncomingTriggerPayloadSchema = z.object({
     connectedAccountId: z.string(),
     triggerSlug: z.string(),
     triggerName: z.string(),
-    triggerData: z.string(),
+    triggerData: z.string().optional(),
     triggerConfig: z.record(z.unknown()),
     connection: z.object({
       id: z.string(),

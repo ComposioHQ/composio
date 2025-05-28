@@ -374,7 +374,7 @@ export class Triggers {
     };
 
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
-    this.pusherService.subscribe((_data: Record<string, unknown>) => {
+    await this.pusherService.subscribe((_data: Record<string, unknown>) => {
       logger.debug('Received trigger data', JSON.stringify(_data, null, 2));
       // @TODO: This is a temporary fix to get the trigger data
       // ideally we should have a type for the trigger data
@@ -389,26 +389,30 @@ export class Triggers {
         metadata: {
           ...data.metadata,
           id: data.metadata.id,
-          connectedAccountId: data.metadata.connection.id,
+          connectedAccountId: data.metadata.connection?.id,
           triggerSlug: data.metadata.triggerName,
           triggerName: data.metadata.triggerName,
           triggerData: data.metadata.triggerData,
           triggerConfig: data.metadata.triggerConfig,
           connection: {
-            id: data.metadata.connection.id,
-            integrationId: data.metadata.connection.integrationId,
-            clientUniqueUserId: data.metadata.connection.clientUniqueUserId,
-            status: data.metadata.connection.status,
+            id: data.metadata?.connection?.id,
+            integrationId: data.metadata?.connection?.integrationId,
+            clientUniqueUserId: data.metadata?.connection?.clientUniqueUserId,
+            status: data.metadata?.connection?.status,
           },
         },
       } as IncomingTriggerPayload);
-      if (!parsedData.success) {
+      if (parsedData.error) {
         throw new ValidationError(`Invalid trigger payload`, {
           cause: parsedData.error,
         });
       }
       if (shouldSendTriggerAfterFilters(parsedData.data)) {
-        fn(parsedData.data);
+        try {
+          fn(parsedData.data);
+        } catch (error) {
+          logger.error('❌ Error in trigger callback:', error);
+        }
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
