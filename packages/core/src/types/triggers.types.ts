@@ -118,13 +118,6 @@ export const IncomingTriggerPayloadSchema = z.object({
 
 export type IncomingTriggerPayload = z.infer<typeof IncomingTriggerPayloadSchema>;
 
-type TChunkedTriggerData = {
-  id: string;
-  index: number;
-  chunk: string;
-  final: boolean;
-};
-
 export type TriggerData = {
   appName: string;
   clientId: number;
