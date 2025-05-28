@@ -62,29 +62,6 @@ Check out our complete example implementations:
 
 - [Basic Google Integration](../../examples/google/src/index.ts)
 
-## Provider Configuration
-
-The Google provider can be configured with various options:
-
-```typescript
-const provider = new GoogleProvider({
-  // Custom project configuration
-  projectId: 'your-project-id',
-  location: 'your-location',
-  // Custom execution modifiers
-  modifiers: {
-    beforeExecute: params => {
-      // Transform parameters before execution
-      return params;
-    },
-    afterExecute: response => {
-      // Transform response after execution
-      return response;
-    },
-  },
-});
-```
-
 ## API Reference
 
 ### GoogleProvider Class
