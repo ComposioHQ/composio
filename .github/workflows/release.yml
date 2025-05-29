@@ -35,6 +35,8 @@ jobs:
 
       - name: Run Build
         run: pnpm run build
+      - name: Set up .npmrc
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@v1
@@ -45,11 +47,3 @@ jobs:
           publish: pnpm changeset:release
           commit: 'build: update version'
           title: 'build: update version'
-      - name: Set up .npmrc
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-      - name: Publish to public npm registry
-        if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch' # run when the package is published via changeset or if a release is triggered manually.
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
-        run: pnpm changeset:release
