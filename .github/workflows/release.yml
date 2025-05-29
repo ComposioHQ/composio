@@ -10,7 +10,7 @@ env:
 
 jobs:
   release:
-    name: Release
+    name: Release Typescript SDK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -45,6 +45,11 @@ jobs:
           publish: pnpm changeset:release
           commit: 'build: update version'
           title: 'build: update version'
+      - name: Setup npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish to public npm registry
         if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch' # run when the package is published via changeset or if a release is triggered manually.
         env:

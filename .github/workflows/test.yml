@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test Typescript SDK
     runs-on: ubuntu-latest
 
     steps:

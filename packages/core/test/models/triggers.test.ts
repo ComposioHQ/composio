@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { Triggers } from '../../src/models/triggers';
+import { Triggers } from '../../src/models/Triggers';
 import ComposioClient from '@composio/client';
 import logger from '../../src/utils/logger';
 import {

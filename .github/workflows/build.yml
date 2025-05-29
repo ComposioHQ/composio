@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build Typescript SDK
     runs-on: ubuntu-latest
 
     steps:
