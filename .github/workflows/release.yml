@@ -1,36 +1,53 @@
-name: Release & Publish
+name: TS SDK Release
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [master]
+
+env:
+  GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
 
 jobs:
   release:
-    name: Version Bump, Release, and Publish
+    name: Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
         with:
-          fetch-depth: 0
+          version: 10.8.0 # Match the version in package.json
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '20'
+          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
-        shell: bash
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Create version PR or publish
+      - name: Run Linting
+        run: pnpm lint
+
+      - name: Run Build
+        run: pnpm run build
+      - name: Create Release Pull Request & Publish packages
+        id: changesets
         uses: changesets/action@v1
-        with:
-          version: pnpm changeset:version
-          publish: pnpm changeset:release
+        if: github.event_name != 'workflow_dispatch' # only run on master merges
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+        with:
+          publish: pnpm changeset:release
+          commit: 'build: update version'
+          title: 'build: update version'
+      - name: Publish to public npm registry
+        if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch' # run when the package is published via changeset or if a release is triggered manually.
+        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: yarn publish-npm
