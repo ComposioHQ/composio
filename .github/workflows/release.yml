@@ -3,7 +3,7 @@ name: TS SDK Release
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [main]
 
 env:
   GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
