@@ -10,6 +10,7 @@ import {
   mockToolExecution,
   createSchemaModifier,
 } from '../utils/toolExecuteUtils';
+import { ValidationError } from '../../src/errors/ValidationErrors';
 
 describe('Tools', () => {
   const context = createTestContext();
@@ -42,7 +43,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getRawComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId, { tools: ['TEST_TOOL'] });
 
       expect(mockClient.tools.list).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
@@ -54,7 +55,6 @@ describe('Tools', () => {
       const userId = 'test-user';
       const query = {
         tools: ['TOOL1', 'TOOL2'],
-        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -66,11 +66,62 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
-        limit: '10',
+        limit: undefined,
         cursor: undefined,
         important: undefined,
         search: undefined,
         toolkit_slug: undefined,
+      });
+    });
+
+    it('should handle toolkit query parameters correctly', async () => {
+      const userId = 'test-user';
+      const query = {
+        toolkits: ['github'],
+        limit: 10,
+        important: true,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(userId, query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        tool_slugs: undefined,
+        toolkit_slug: 'github',
+        limit: '10',
+        cursor: undefined,
+        important: 'true',
+        search: undefined,
+      });
+    });
+
+    it('should handle toolkit search parameters correctly', async () => {
+      const userId = 'test-user';
+      const query = {
+        toolkits: ['github'],
+        search: 'test',
+        limit: 10,
+        cursor: 'next-page',
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(userId, query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        tool_slugs: undefined,
+        toolkit_slug: 'github',
+        limit: '10',
+        cursor: 'next-page',
+        important: undefined,
+        search: 'test',
       });
     });
 
@@ -82,7 +133,7 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getRawComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId, { tools: ['TEST_TOOL'] });
 
       expect(result[0].inputParameters).toEqual(toolMocks.transformedTool.inputParameters);
       expect(result[0].outputParameters).toEqual(toolMocks.transformedTool.outputParameters);
@@ -99,7 +150,7 @@ describe('Tools', () => {
       const getCustomToolsSpy = vi.spyOn(context.tools['customTools'], 'getCustomTools');
       getCustomToolsSpy.mockResolvedValueOnce([toolMocks.customTool as unknown as Tool]);
 
-      const result = await context.tools.getRawComposioTools(userId);
+      const result = await context.tools.getRawComposioTools(userId, { tools: ['TEST_TOOL'] });
 
       expect(result).toHaveLength(2);
       expect(result[1].slug).toEqual(toolMocks.customTool.slug);
@@ -116,7 +167,11 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getRawComposioTools(userId, {}, schemaModifier);
+      const result = await context.tools.getRawComposioTools(
+        userId,
+        { tools: ['TEST_TOOL'] },
+        schemaModifier
+      );
 
       expect(schemaModifier).toHaveBeenCalled();
       expect(result[0].description).toEqual('Modified description');
@@ -131,8 +186,35 @@ describe('Tools', () => {
         totalPages: 1,
       });
 
-      await expect(context.tools.getRawComposioTools(userId, {}, invalidModifier)).rejects.toThrow(
-        'Invalid schema modifier. Not a function.'
+      await expect(
+        context.tools.getRawComposioTools(
+          userId,
+          {
+            toolkits: ['invalid'],
+          },
+          invalidModifier
+        )
+      ).rejects.toThrow('Invalid schema modifier. Not a function.');
+    });
+
+    it('should throw a validation error when both tools and toolkits are provided', async () => {
+      const userId = 'test-user';
+      const invalidQuery = {
+        tools: ['TOOL1'],
+        toolkits: ['github'],
+      } as any;
+
+      await expect(context.tools.getRawComposioTools(userId, invalidQuery)).rejects.toThrow(
+        'Invalid tool list parameters'
+      );
+    });
+
+    it('should throw a validation error when no required parameters are provided', async () => {
+      const userId = 'test-user';
+      const emptyQuery = {} as any;
+
+      await expect(context.tools.getRawComposioTools(userId, emptyQuery)).rejects.toThrow(
+        ValidationError
       );
     });
   });

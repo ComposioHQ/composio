@@ -248,28 +248,47 @@ export class Tools<
    */
   async getRawComposioTools(
     userId: string,
-    query: ToolListParams = {},
+    query: ToolListParams,
     modifier?: TransformToolSchemaModifier
   ): Promise<ToolList> {
+    if ('tools' in query && 'toolkits' in query) {
+      throw new ValidationError(
+        'Invalid tool list parameters. You should not use tools and toolkits filter together.'
+      );
+    }
+
     const queryParams = ToolListParamsSchema.safeParse(query);
     if (queryParams.error) {
       throw new ValidationError('Invalid tool list parameters', {
         cause: queryParams.error,
       });
     }
+    // check if the query params contains atleast one of the following: tools, toolkits, search
+    if (
+      !(
+        'tools' in queryParams.data ||
+        'toolkits' in queryParams.data ||
+        'search' in queryParams.data
+      )
+    ) {
+      throw new ValidationError(
+        'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search'
+      );
+    }
 
     const tools = await this.client.tools.list({
-      tool_slugs: queryParams.data.tools?.join(','),
-      toolkit_slug: queryParams.data.toolkits?.join(','),
-      cursor: queryParams.data.cursor,
+      tool_slugs: 'tools' in queryParams.data ? queryParams.data.tools?.join(',') : undefined,
+      toolkit_slug:
+        'toolkits' in queryParams.data ? queryParams.data.toolkits?.join(',') : undefined,
+      cursor: 'cursor' in queryParams.data ? queryParams.data.cursor : undefined,
       important:
-        typeof queryParams.data.important === 'undefined'
-          ? undefined
-          : queryParams.data.important
+        'important' in queryParams.data
+          ? queryParams.data.important
             ? 'true'
-            : 'false',
-      limit: queryParams.data.limit?.toString(),
-      search: queryParams.data.search,
+            : 'false'
+          : undefined,
+      limit: 'limit' in queryParams.data ? queryParams.data.limit?.toString() : undefined,
+      search: 'search' in queryParams.data ? queryParams.data.search : undefined,
     });
 
     if (!tools) {
@@ -285,7 +304,7 @@ export class Tools<
     //   console.warn('No connected accounts found for the given tools');
     // }
     const customTools = await this.customTools.getCustomTools({
-      toolSlugs: queryParams.data.tools,
+      toolSlugs: 'tools' in queryParams.data ? queryParams.data.tools : undefined,
     });
 
     let modifiedTools = [...caseTransformedTools, ...customTools];

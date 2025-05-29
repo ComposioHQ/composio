@@ -78,18 +78,65 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
-/**
- * ToolListParams is the parameters for the list of tools.
- */
-export const ToolListParamsSchema = z.object({
-  tools: z.array(z.string()).optional(),
-  cursor: z.string().optional(),
+export const ToolListFilterByToolsSchema = z.object({
+  tools: z.array(z.string()),
+});
+export type ToolListFilterByTools = z.infer<typeof ToolListFilterByToolsSchema>;
+
+export const ToolListFilterByToolkitsSchema = z.object({
+  toolkits: z.array(z.string()),
   important: z.boolean().optional(),
+  cursor: z.string().optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
-  toolkits: z.array(z.string()).optional(),
 });
-export type ToolListParams = z.infer<typeof ToolListParamsSchema>;
+export type ToolListFilterByToolkits = z.infer<typeof ToolListFilterByToolkitsSchema>;
+
+export const ToolListFilterBySearchSchema = z.object({
+  search: z.string(),
+  toolkits: z.array(z.string()).optional(),
+  cursor: z.string().optional(),
+  limit: z.number().optional(),
+});
+export type ToolListFilterBySearch = z.infer<typeof ToolListFilterBySearchSchema>;
+
+type ToolsOnlyParams = {
+  tools: string[];
+  toolkits?: never;
+  important?: never;
+  cursor?: never;
+  limit?: never;
+  search?: never;
+};
+
+type ToolkitsOnlyParams = {
+  tools?: never;
+  toolkits?: string[];
+  important?: boolean;
+  cursor?: string;
+  limit?: number;
+  search?: never;
+};
+
+type ToolkitSearchOnlyParams = {
+  tools?: never;
+  toolkits?: string[];
+  important?: never;
+  cursor?: string;
+  limit?: number;
+  search?: string;
+};
+/**
+ * ToolListParams is the parameters for the list of tools.
+ * You must provide either tools or toolkits, but not both.
+ */
+export type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
+
+export const ToolListParamsSchema = z.union([
+  ToolListFilterByToolsSchema,
+  ToolListFilterByToolkitsSchema,
+  ToolListFilterBySearchSchema,
+]);
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.

@@ -70,7 +70,7 @@ export class CustomTools {
       outputParameters: {
         type: 'object',
         title: `Response for ${name}`,
-        properties: [],
+        properties: {},
       },
       tags: [],
       toolkit: { name: 'custom', slug: 'custom' },

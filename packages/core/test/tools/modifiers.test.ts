@@ -53,7 +53,11 @@ describe('Tools Modifiers', () => {
         totalPages: 1,
       });
 
-      const result = await context.tools.getRawComposioTools(userId, {}, schemaModifier);
+      const result = await context.tools.getRawComposioTools(
+        userId,
+        { tools: ['TOOL1', 'TOOL2'] },
+        schemaModifier
+      );
 
       expect(schemaModifier).toHaveBeenCalledTimes(2);
       expect(result[0].name).toContain('Modified');

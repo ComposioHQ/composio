@@ -175,14 +175,69 @@ const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
 ### ToolListParams
 
 ```typescript
-interface ToolListParams {
-  tools?: string[]; // List of tool slugs to filter by
+// You must provide one of the following parameter combinations:
+// 1. tools array only
+// 2. toolkits with optional important flag
+// 3. toolkits with search functionality
+
+type ToolsOnlyParams = {
+  tools: string[]; // List of tool slugs to filter by
+  toolkits?: never; // Cannot be used with tools
+  important?: never;
+  cursor?: never;
+  limit?: never;
+  search?: never;
+};
+
+type ToolkitsOnlyParams = {
+  tools?: never; // Cannot be used with toolkits
+  toolkits: string[]; // List of toolkit slugs to filter by
+  important?: boolean; // Filter for important tools
   cursor?: string; // Pagination cursor
-  important?: string; // Filter for important tools
-  limit?: string; // Limit the number of results
-  search?: string; // Search term
-  toolkits?: string[]; // List of toolkit slugs to filter by
-}
+  limit?: number; // Limit the number of results
+  search?: never; // Cannot be used with important flag
+};
+
+type ToolkitSearchOnlyParams = {
+  tools?: never; // Cannot be used with search
+  toolkits?: string[]; // Optional list of toolkit slugs to filter by
+  important?: never; // Cannot be used with search
+  cursor?: string; // Pagination cursor
+  limit?: number; // Limit the number of results
+  search: string; // Search term
+};
+
+type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
+```
+
+Note: The parameters are organized into three mutually exclusive combinations:
+
+1. Using `tools` array to fetch specific tools by their slugs
+2. Using `toolkits` with optional `important` flag to fetch tools from specific toolkits
+3. Using `search` with optional `toolkits` to search for tools by name/description
+
+Examples:
+
+```typescript
+// Get specific tools by slug
+const specificTools = await composio.tools.get('default', {
+  tools: ['GITHUB_GET_REPO', 'GITHUB_LIST_ISSUES'],
+});
+
+// Get all tools from specific toolkits
+const toolkitTools = await composio.tools.get('default', {
+  toolkits: ['github', 'gitlab'],
+  important: true,
+  limit: 10,
+});
+
+// Search for tools across all or specific toolkits
+const searchResults = await composio.tools.get('default', {
+  search: 'repository',
+  toolkits: ['github'], // optional
+  limit: 10,
+  cursor: 'next-page',
+});
 ```
 
 ### ToolExecuteParams
