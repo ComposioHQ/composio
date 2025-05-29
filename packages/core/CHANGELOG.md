@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.12-alpha.13
+
+### Patch Changes
+
+- a2f9537: Update tools.get to accept discriminated unions
+
 ## 0.1.12-alpha.12
 
 ### Patch Changes
