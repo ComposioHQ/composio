@@ -311,41 +311,7 @@ composio/
 
 ## Release Process
 
-1. **Prepare for Release**
-
-   - Ensure all changes are committed
-   - Run tests and checks:
-     ```bash
-     pnpm build
-     pnpm check:peer-deps
-     ```
-
-2. **Create Changeset**
-
-   ```bash
-   pnpm changeset
-   ```
-
-   - Follow the prompts to describe your changes
-   - Commit the generated changeset file
-   - if you want to do a pre release, execute the command `pnpm changeset:pre-enter` before the above command
-
-3. **Version**
-
-   ```bash
-   pnpm changeset:version
-   ```
-
-   - Follow the prompts to version the packages
-   - Commit the generated package bumps
-
-4. **Release**
-
-```bash
-pnpm changeset:release
-```
-
-- Follow the instructions to release the packages
+For detailed information about both automated and manual release processes, please refer to our [Release Process Documentation](./docs/internal/release.md).
 
 ## Environment Variables
 
