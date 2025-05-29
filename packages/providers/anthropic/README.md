@@ -208,7 +208,7 @@ const tools = provider.wrapTools(composioTools);
 Executes a tool call from Anthropic and returns the result as a string.
 
 ```typescript
-const result = await provider.executeToolCall(
+const result = await composio.provider.executeToolCall(
   'user123',
   {
     type: 'tool_use',
@@ -231,10 +231,62 @@ const result = await provider.executeToolCall(
 
 ##### `handleToolCalls(userId: string, message: Message, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string[]>`
 
-Handles tool calls from an Anthropic message response.
+Processes and executes all tool calls found in an Anthropic message response. This method automatically extracts tool calls from the message content, executes them, and returns their results.
+
+**Parameters:**
+
+- `userId` (string): The ID of the user making the tool calls
+- `message` (Message): The Anthropic message response containing tool calls
+- `options` (optional): Additional options for tool execution
+  - `connectedAccountId`: ID of the connected account
+  - `customAuthParams`: Custom authentication parameters
+- `modifiers` (optional): Functions to modify tool execution
+  - `beforeExecute`: Transform parameters before execution
+  - `afterExecute`: Transform response after execution
+
+**Returns:**
+Promise<string[]>: Array of JSON-stringified results from each tool execution
+
+**Example:**
 
 ```typescript
-const results = await provider.handleToolCalls('user123', message, options, modifiers);
+const message = {
+  id: 'msg_123',
+  content: [
+    { type: 'text', text: 'Hello' },
+    {
+      type: 'tool_use',
+      id: 'tu_123',
+      name: 'test-tool',
+      input: { param: 'value' },
+    },
+    {
+      type: 'tool_use',
+      id: 'tu_456',
+      name: 'another-tool',
+      input: { param: 'value2' },
+    },
+  ],
+};
+
+const results = await provider.handleToolCalls(
+  'user123',
+  message,
+  {
+    connectedAccountId: 'account123',
+    customAuthParams: {
+      parameters: [{ name: 'token', value: 'abc123', in: 'header' }],
+    },
+  },
+  {
+    beforeExecute: params => params,
+    afterExecute: response => response,
+  }
+);
+
+// results will be an array of stringified JSON responses
+// from each tool execution in the order they appeared
+// in the message content
 ```
 
 ## Contributing
