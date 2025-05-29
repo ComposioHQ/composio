@@ -276,7 +276,7 @@ export class Tools<
       return [];
     }
     const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
-    // @TODO add checks for connectedAccounts for fetched tools
+    // @TODO: Add checks for connectedAccounts for fetched tools
     // const connectedAccountExists = await this.checkIfConnectedAccountExistsForTools(
     //   userId,
     //   caseTransformedTools
@@ -284,7 +284,6 @@ export class Tools<
     // if (!connectedAccountExists) {
     //   console.warn('No connected accounts found for the given tools');
     // }
-
     const customTools = await this.customTools.getCustomTools({
       toolSlugs: queryParams.data.tools,
     });
@@ -294,9 +293,10 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedTools = modifiedTools.map(tool => {
-          return modifier(tool.slug, tool.toolkit?.slug ?? 'unknown', tool);
-        });
+        const modifiedPromises = modifiedTools.map(tool =>
+          modifier(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
+        );
+        modifiedTools = await Promise.all(modifiedPromises);
       } else {
         throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
@@ -341,7 +341,7 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedTool = modifier(slug, modifiedTool.toolkit?.slug ?? 'unknown', modifiedTool);
+        modifiedTool = await modifier(slug, modifiedTool.toolkit?.slug ?? 'unknown', modifiedTool);
       } else {
         throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
@@ -437,8 +437,10 @@ export class Tools<
 
   /**
    * @internal
+   * @description
    * Creates a function that executes a tool.
-   * This function is used by agentic the toolsets to execute the tool
+   * This function is used by agentic toolsets to execute the tool
+   *
    * @param {string} userId - The user id
    * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
    * @returns {ExecuteToolFn} The execute tool function
@@ -472,7 +474,7 @@ export class Tools<
   ): Promise<ToolExecuteResponse> {
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
-        body = modifiers.beforeExecute(tool.slug, 'unknown', body);
+        body = await modifiers.beforeExecute(tool.slug, 'unknown', body);
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -485,7 +487,7 @@ export class Tools<
 
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
-        result = modifiers.afterExecute(tool.slug, 'unknown', result);
+        result = await modifiers.afterExecute(tool.slug, 'unknown', result);
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
@@ -509,7 +511,7 @@ export class Tools<
   ): Promise<ToolExecuteResponse> {
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
-        body = modifiers.beforeExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', body);
+        body = await modifiers.beforeExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', body);
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -536,7 +538,7 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
-        result = modifiers.afterExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', result);
+        result = await modifiers.afterExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', result);
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }

@@ -52,7 +52,7 @@ export type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteParams: ToolExecuteParams
-) => ToolExecuteParams;
+) => Promise<ToolExecuteParams>;
 
 /**
  * Modifier for altering the tool execution response after execution completes.
@@ -108,7 +108,7 @@ export type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteResponse: ToolExecuteResponse
-) => ToolExecuteResponse;
+) => Promise<ToolExecuteResponse>;
 
 /**
  * Modifier for altering the tool schema before it's exposed to consumers.
@@ -173,7 +173,7 @@ export type TransformToolSchemaModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolSchema: Tool
-) => Tool;
+) => Tool | Promise<Tool>;
 
 /**
  * Options for non-agentic tool configuration.
