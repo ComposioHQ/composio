@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.12-alpha.15
+
+### Patch Changes
+
+- f144202: Update tsdocs across all the functions
+
 ## 0.1.12-alpha.14
 
 ### Patch Changes

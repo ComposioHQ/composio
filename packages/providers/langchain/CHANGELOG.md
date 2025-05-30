@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.12-alpha.15
+
+### Patch Changes
+
+- f144202: Update tsdocs across all the functions
+- Updated dependencies [f144202]
+  - @composio/core@0.1.12-alpha.15
+
 ## 0.1.12-alpha.14
 
 ### Patch Changes
