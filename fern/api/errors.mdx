@@ -1,6 +1,547 @@
 ---
-slug: Composio Error Codes
+title: 'Error Handling'
+subtitle: 'Understanding and handling errors in Composio API'
 ---
 
-##### ERR_400
-This a prisma related error.
+Composio uses standard HTTP status codes:
+- `2xx` - Success
+- `4xx` - Client errors (invalid request, missing parameters, etc.)
+- `5xx` - Server errors (rare)
+
+All errors include a `.code` property that contains the specific error code for programmatic handling.
+
+For additional support, contact us at support@composio.dev
+
+---
+
+## Basic Error Codes
+---
+
+### HTTP Status Code Errors
+
+### Error 10400
+**Bad Request** - HTTP request was malformed
+
+**Solution:** Check your request format, ensure all required parameters are included and properly formatted.
+
+### Error 10401
+**Unauthorized** - HTTP request lacks valid authentication
+
+**Solution:** Verify your API key is correct and included in the request headers.
+
+### Error 10403
+**Forbidden** - HTTP request is forbidden
+
+**Solution:** Check if your API key has the necessary permissions for this operation.
+
+### Error 10404
+**URL Not Found** - HTTP URL not found
+
+**Solution:** Verify the endpoint URL is correct and the resource exists.
+
+### Error 10410
+**Gone** - HTTP resource is no longer available
+
+**Solution:** The resource has been permanently removed. Check for updated endpoints or alternatives.
+
+### Error 10424
+**Resource Not Found** - HTTP resource not found
+
+**Solution:** Ensure the resource ID is correct and the resource exists in your account.
+
+### Error 10429
+**Too Many Requests** - HTTP rate limit exceeded
+
+**Solution:** Implement rate limiting in your application and retry after the specified time.
+
+### Error 10500
+**Internal Server Error** - HTTP service internal error
+
+**Solution:** This is a server-side issue. Please retry after a few moments or contact support.
+
+### Error 10501
+**Not Implemented** - HTTP method not implemented
+
+**Solution:** Use a supported HTTP method for this endpoint.
+
+### Error 10502
+**Unreachable** - HTTP service is unreachable
+
+**Solution:** Check your network connection and try again later.
+
+### Error 10503
+**Service Unavailable** - HTTP service is temporarily unavailable
+
+**Solution:** The service is temporarily down. Please retry after a few minutes.
+
+---
+
+## Error Code Reference
+
+### 900-999: Auth Service Errors
+
+### Error 900
+**Bad Request** - The auth request was malformed or missing required parameters
+
+**Solution:** Review the authentication documentation and ensure all required parameters are provided.
+
+### Error 901
+**Internal Server Error** - An error occurred in the authentication service
+
+**Solution:** Retry the authentication request. If the issue persists, contact support.
+
+### Error 902
+**Unauthorized** - Authentication credentials are invalid or expired
+
+**Solution:** Refresh your authentication credentials or re-authenticate.
+
+### Error 903
+**No Cookie** - Required authentication cookie is missing
+
+**Solution:** Ensure cookies are enabled and the authentication flow is completed properly.
+
+### Error 904
+**Invalid Project Access** - User does not have access to the requested project
+
+**Solution:** Verify you have the correct permissions for this project or contact your administrator.
+
+### Error 905
+**Validation Error** - Authentication request failed validation
+
+**Solution:** Check that all authentication parameters meet the required format and constraints.
+
+### Error 906
+**No Auth Provided** - No authentication credentials were provided
+
+**Solution:** Include valid authentication credentials in your request.
+
+---
+### 100-199: Resource Errors
+
+### Error 100
+**Bad Request** - Database query was malformed or invalid
+
+**Solution:** Review your query parameters and ensure they follow the correct format.
+
+### Error 101
+**Internal Server Error** - Database operation failed
+
+**Solution:** Retry the operation. If it continues to fail, contact support.
+
+### Error 102
+**Unknown Error** - An unexpected database error occurred
+
+**Solution:** Contact support with details about your request.
+
+### Error 103
+**Resource Not Found** - Requested database resource does not exist
+
+**Solution:** Verify the resource ID is correct and the resource exists.
+
+### Error 104
+**Already Exists** - Resource already exists in the database
+
+**Solution:** Use a different identifier or update the existing resource instead.
+
+---
+### 300-399: Auth Config Errors
+
+### Error 300
+**Bad Request** - Auth configuration request was invalid
+
+**Solution:** Review the auth configuration documentation and correct the request format.
+
+### Error 301
+**Validation Error** - Auth configuration failed validation
+
+**Solution:** Ensure all configuration values meet the required criteria.
+
+### Error 302
+**Not Found** - Auth configuration not found
+
+**Solution:** Create the auth configuration first or verify the configuration ID.
+
+---
+### 400-499: Toolkit Errors
+
+### Error 400
+**Toolkit Not Enabled** - The requested toolkit is not enabled
+
+**Solution:** Enable the toolkit in your dashboard or contact support for access.
+
+### Error 401
+**Toolkit Not Found** - The requested toolkit does not exist
+
+**Solution:** Verify the toolkit name is correct or browse available toolkits.
+
+### Error 402
+**Internal Server Error** - Toolkit service encountered an error
+
+**Solution:** Retry the request. If the issue persists, contact support.
+
+---
+### 500-599: Security Provider Errors
+
+### Error 500
+**Bad Request** - Security provider request was invalid
+
+**Solution:** Review the security provider documentation and correct the request.
+
+### Error 501
+**Encryption Error** - Failed to encrypt data
+
+**Solution:** Check your encryption keys and parameters. Contact support if needed.
+
+### Error 502
+**Decryption Error** - Failed to decrypt data
+
+**Solution:** Verify your decryption keys are correct and the data format is valid.
+
+### Error 503
+**Signing Error** - Failed to sign data
+
+**Solution:** Check your signing credentials and data format.
+
+---
+### 600-699: Connected Account Errors
+
+### Error 600
+**Bad Request** - Connected account request was invalid
+
+**Solution:** Review the connected account API documentation and correct the request.
+
+### Error 601
+**Internal Server Error** - Connected account service error
+
+**Solution:** Retry the operation. If it fails repeatedly, contact support.
+
+### Error 602
+**Invalid Auth Scheme** - Authentication scheme is not valid
+
+**Solution:** Use a supported authentication scheme for this integration.
+
+### Error 603
+**Invalid App Schema** - Application schema is invalid
+
+**Solution:** Verify your app configuration matches the required schema.
+
+### Error 604
+**OAuth1 Request Token Error** - Failed to get OAuth1 request token
+
+**Solution:** Check your OAuth1 credentials and callback URL configuration.
+
+### Error 605
+**JWT Token Error** - JWT token is invalid or expired
+
+**Solution:** Refresh your JWT token or re-authenticate.
+
+### Error 606
+**Resource Not Found** - Connected account not found
+
+**Solution:** Verify the connected account ID is correct and the account exists.
+
+---
+### 700-799: Redis Errors
+
+### Error 700
+**Internal Server Error** - Redis operation failed
+
+**Solution:** This is a temporary server issue. Please retry after a few moments.
+
+### Error 701
+**Not Found** - Redis key or data not found
+
+**Solution:** Verify the data key exists or create it first.
+
+---
+### 800-899: API Key Errors
+
+### Error 800
+**Validation Error** - API key validation failed
+
+**Solution:** Check that your API key format is correct and not corrupted.
+
+### Error 801
+**Invalid API Key** - The provided API key is invalid
+
+**Solution:** Generate a new API key from your dashboard and update your application.
+
+### Error 802
+**Unauthorized** - API key does not have required permissions
+
+**Solution:** Check your API key permissions in the dashboard or contact your administrator.
+
+### Error 803
+**Cannot Fetch API Keys** - Failed to retrieve API keys
+
+**Solution:** Try refreshing the page or contact support if the issue persists.
+
+### Error 804
+**No API Keys Found** - No API keys found for the user
+
+**Solution:** Generate an API key from your dashboard first.
+
+---
+### 1000-1099: Email Service Errors
+
+### Error 1000
+**Failed To Send Email** - Email delivery failed
+
+**Solution:** Check the email address is valid and try again. Contact support if needed.
+
+---
+### 1100-1199: Pusher Service Errors
+
+### Error 1100
+**Internal Server Error** - Pusher service encountered an error
+
+**Solution:** This is a temporary issue. Please retry after a few moments.
+
+### Error 1101
+**Invalid Channel Name** - The channel name is invalid
+
+**Solution:** Use a valid channel name format as specified in the documentation.
+
+---
+### 1141-1199: MCP (Model Context Protocol) Errors
+
+### Error 1141
+**Auth Config Not Found** - MCP authentication configuration not found
+
+**Solution:** Set up MCP authentication configuration first.
+
+### Error 1142
+**Validation Error** - MCP request failed validation
+
+**Solution:** Review your MCP request format and ensure all required fields are provided.
+
+### Error 1143
+**Resource Not Found** - MCP resource not found
+
+**Solution:** Verify the MCP resource ID is correct and the resource exists.
+
+### Error 1144
+**Partner Already Exists** - MCP partner already exists
+
+**Solution:** Use the existing partner or choose a different identifier.
+
+---
+### 1200-1299: Trigger Instance Errors
+
+### Error 1200
+**Bad Request** - Trigger instance request was invalid
+
+**Solution:** Review the trigger configuration and ensure all parameters are correct.
+
+### Error 1201
+**Internal Server Error** - Trigger instance service error
+
+**Solution:** Retry the operation. Contact support if the issue continues.
+
+### Error 1202
+**Trigger Instance Gone** - The trigger instance has been deleted
+
+**Solution:** Create a new trigger instance or verify the correct trigger ID.
+
+### Error 1203
+**Resource Not Found** - Trigger instance not found
+
+**Solution:** Verify the trigger instance ID is correct and the trigger exists.
+
+---
+### 1300-1399: JWT Errors
+
+### Error 1300
+**Unable To Verify Token** - JWT token verification failed
+
+**Solution:** Ensure your JWT token is valid and not expired. Re-authenticate if necessary.
+
+### Error 1301
+**Invalid Token** - JWT token is malformed or invalid
+
+**Solution:** Generate a new JWT token through the proper authentication flow.
+
+---
+### 1400-1499: Workflow Errors
+
+### Error 1400
+**Start Workflow Error** - Failed to start workflow
+
+**Solution:** Check your workflow configuration and retry. Contact support if needed.
+
+### Error 1401
+**Kill Workflow Error** - Failed to terminate workflow
+
+**Solution:** Verify the workflow ID is correct and try again.
+
+---
+### 1500-1599: Stripe Payment Errors
+
+### Error 1500
+**User Organisation Not Found Error** - User or organization not found for payment processing
+
+**Solution:** Verify your organization exists and you have proper access rights.
+
+---
+### 1600-1699: Internal Service Errors
+
+### Error 1600
+**Bad Request** - Internal service request was invalid
+
+**Solution:** Review the Internal API documentation and correct your request format.
+
+### Error 1601
+**Internal Server Error** - Internal service encountered an error
+
+**Solution:** This is a temporary server issue. Please retry after a few moments.
+
+### Error 1602
+**Service Unavailable** - Internal service is temporarily unavailable
+
+**Solution:** The service is temporarily down. Please retry after a few minutes.
+
+---
+### 1700-1799: Tool Authentication Errors (Deprecated)
+
+### Error 1700
+**Bad State** - Tool authentication is in an invalid state
+
+**Solution:** Reset the authentication flow and try again.
+
+### Error 1701
+**Not Implemented** - Tool authentication method not implemented
+
+**Solution:** Use a supported authentication method for this tool.
+
+### Error 1702
+**Bad Request** - Tool authentication request was invalid
+
+**Solution:** Review the authentication parameters and ensure they're correctly formatted.
+
+### Error 1703
+**Unreachable** - Tool authentication service is unreachable
+
+**Solution:** Check your network connection and retry. The service may be temporarily down.
+
+### Error 1704
+**Bad Callback State** - OAuth callback state is invalid
+
+**Solution:** Restart the OAuth flow to generate a new valid state parameter.
+
+### Error 1705
+**Failed OAuth2 Token Exchange** - OAuth2 token exchange failed
+
+**Solution:** Verify your OAuth2 configuration and credentials are correct.
+
+### Error 1706
+**Bad Connected Account State** - Connected account is in an invalid state
+
+**Solution:** Reconnect the account through the proper authentication flow.
+
+---
+### 1800-1899: Action Execute Errors
+
+### Error 1800
+**Tool Not Found** - The requested tool does not exist
+
+**Solution:** Verify the tool name is correct or browse available tools in your dashboard.
+
+### Error 1801
+**Execution Error** - Tool execution failed
+
+**Solution:** Check your tool parameters and try again. Review the tool documentation for proper usage.
+
+### Error 1802
+**Unauthorized** - Not authorized to execute the tool
+
+**Solution:** Ensure you have the necessary permissions to use this tool.
+
+### Error 1803
+**Connected Account Not Found** - Required connected account not found
+
+**Solution:** Connect the required account first before using this tool.
+
+### Error 1804
+**Failed To Get Authorization** - Authorization retrieval failed
+
+**Solution:** Re-authenticate the connected account and try again.
+
+### Error 1805
+**No API Key Found** - Required API key not found
+
+**Solution:** Configure the required API key for this integration.
+
+### Error 1806
+**Connected Account Gone** - The connected account has been deleted
+
+**Solution:** Reconnect the account or use a different connected account.
+
+---
+### 1800-1999: Project Errors
+
+### Error 1800
+**Bad Request** - Project request was invalid
+
+**Solution:** Review the project API documentation and correct your request format.
+
+### Error 1801
+**Internal Server Error** - Project service encountered an error
+
+**Solution:** Retry the operation. If it continues to fail, contact support.
+
+### Error 1802
+**Project Gone** - The project has been deleted
+
+**Solution:** Verify the project ID is correct or create a new project.
+
+### Error 1803
+**Resource Not Found** - Project resource not found
+
+**Solution:** Ensure the project resource exists and you have access to it.
+
+---
+### 1900-1999: Tools List Errors
+
+### Error 1900
+**Internal Service Error** - Error occurred in Internal service while listing tools
+
+**Solution:** Retry the request. If the issue persists, contact support.
+
+### Error 1901
+**Cursor Error** - Invalid cursor for pagination
+
+**Solution:** Use a valid pagination cursor or start from the beginning.
+
+---
+### 2000-2099: Team Members Errors
+
+### Error 2000
+**Member Not Found** - Team member not found
+
+**Solution:** Verify the member ID is correct and the member exists in your team.
+
+### Error 2001
+**Member Already Exists** - Team member already exists
+
+**Solution:** The member is already part of the team. No action needed.
+
+---
+### 2100-2199: CLI Errors
+
+### Error 2100
+**Session Not Found** - CLI session not found
+
+**Solution:** Restart your CLI session or re-authenticate.
+
+### Error 2101
+**User Not Found** - CLI user not found
+
+**Solution:** Verify your user credentials and re-authenticate if necessary.
+
+---
+### 2200-2299: Organization Errors
+
+### Error 2200
+**Resource Not Found** - Organization resource not found
+
+**Solution:** Verify the organization ID is correct and you have access to it.
