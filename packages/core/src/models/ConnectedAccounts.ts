@@ -279,8 +279,21 @@ export class ConnectedAccounts {
    * Update the status of a connected account
    * @param {string} nanoid - Unique identifier of the connected account
    * @param {ConnectedAccountUpdateStatusParams} params - Parameters for updating the status
-   * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
+   * 
+   * @example
+   * ```typescript
+   * // Enable a connected account
+   * const updatedAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+   *   enabled: true
+   * });
+   * 
+   * // Disable a connected account with a reason
+   * const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+   *   enabled: false,
+   *   reason: 'Token expired'
+   * });
+   * ```
    */
   async updateStatus(
     nanoid: string,
@@ -292,8 +305,14 @@ export class ConnectedAccounts {
   /**
    * Enable a connected account
    * @param {string} nanoid - Unique identifier of the connected account
-   * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
+   * 
+   * @example
+   * ```typescript
+   * // Enable a previously disabled connected account
+   * const enabledAccount = await composio.connectedAccounts.enable('conn_abc123');
+   * console.log(enabledAccount.isDisabled); // false
+   * ```
    */
   async enable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
@@ -302,8 +321,20 @@ export class ConnectedAccounts {
   /**
    * Disable a connected account
    * @param {string} nanoid - Unique identifier of the connected account
-   * @param {RequestOptions} options - Request options
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
+   * 
+   * @example
+   * ```typescript
+   * // Disable a connected account
+   * const disabledAccount = await composio.connectedAccounts.disable('conn_abc123');
+   * console.log(disabledAccount.isDisabled); // true
+   * 
+   * // You can also use updateStatus with a reason
+   * // const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+   * //   enabled: false,
+   * //   reason: 'No longer needed'
+   * // });
+   * ```
    */
   async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });

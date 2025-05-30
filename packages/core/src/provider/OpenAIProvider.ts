@@ -19,11 +19,57 @@ export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
   readonly name = 'openai';
+  
   /**
-   * Absract method to wrap a tool in the provider.
-   * This method is implemented by the provider.
-   * @param tool - The tool to wrap.
-   * @returns The wrapped tool.
+   * Creates a new instance of the OpenAIProvider.
+   * 
+   * This is the default provider for the Composio SDK and is automatically
+   * available without additional installation.
+   * 
+   * @example
+   * ```typescript
+   * // The OpenAIProvider is used by default when initializing Composio
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key'
+   * });
+   * 
+   * // You can also explicitly specify it
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   provider: new OpenAIProvider()
+   * });
+   * ```
+   */
+  constructor() {
+    super();
+  }
+  
+  /**
+   * Wraps a Composio tool in the OpenAI function calling format.
+   * 
+   * This method transforms a Composio tool definition into the format
+   * expected by OpenAI's function calling API.
+   * 
+   * @param tool - The Composio tool to wrap
+   * @returns The wrapped tool in OpenAI format
+   * 
+   * @example
+   * ```typescript
+   * // Wrap a single tool for use with OpenAI
+   * const composioTool = {
+   *   slug: 'SEARCH_TOOL',
+   *   description: 'Search for information',
+   *   inputParameters: {
+   *     type: 'object',
+   *     properties: {
+   *       query: { type: 'string' }
+   *     },
+   *     required: ['query']
+   *   }
+   * };
+   * 
+   * const openAITool = provider.wrapTool(composioTool);
+   * ```
    */
   override wrapTool = (tool: Tool): OpenAiTool => {
     const formattedSchema: OpenAI.FunctionDefinition = {
@@ -37,15 +83,79 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
     };
   };
 
+  /**
+   * Wraps multiple Composio tools in the OpenAI function calling format.
+   * 
+   * This method transforms a list of Composio tools into the format
+   * expected by OpenAI's function calling API.
+   * 
+   * @param tools - Array of Composio tools to wrap
+   * @returns Array of wrapped tools in OpenAI format
+   * 
+   * @example
+   * ```typescript
+   * // Wrap multiple tools for use with OpenAI
+   * const composioTools = [
+   *   {
+   *     slug: 'SEARCH_TOOL',
+   *     description: 'Search for information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         query: { type: 'string' }
+   *       }
+   *     }
+   *   },
+   *   {
+   *     slug: 'WEATHER_TOOL',
+   *     description: 'Get weather information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         location: { type: 'string' }
+   *       }
+   *     }
+   *   }
+   * ];
+   * 
+   * const openAITools = provider.wrapTools(composioTools);
+   * ```
+   */
   override wrapTools = (tools: Tool[]): OpenAiToolCollection => {
     return tools.map(tool => this.wrapTool(tool));
   };
 
   /**
-   * Execute a tool call.
-   * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool to execute.
-   * @param {string} userId - The user id.
-   * @returns {Promise<string>} The result of the tool call.
+   * Executes a tool call from OpenAI's chat completion.
+   * 
+   * This method processes a tool call from OpenAI's chat completion API,
+   * executes the corresponding Composio tool, and returns the result.
+   * 
+   * @param {string} userId - The user ID for authentication and tracking
+   * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool call from OpenAI
+   * @param {ExecuteToolFnOptions} [options] - Optional execution options
+   * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
+   * @returns {Promise<string>} The result of the tool call as a JSON string
+   * 
+   * @example
+   * ```typescript
+   * // Execute a tool call from OpenAI
+   * const toolCall = {
+   *   id: 'call_abc123',
+   *   type: 'function',
+   *   function: {
+   *     name: 'SEARCH_TOOL',
+   *     arguments: '{"query":"composio documentation"}'
+   *   }
+   * };
+   * 
+   * const result = await provider.executeToolCall(
+   *   'user123',
+   *   toolCall,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * console.log(JSON.parse(result));
+   * ```
    */
   async executeToolCall(
     userId: string,
@@ -64,11 +174,46 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   }
 
   /**
-   * Handle the tool call from the assistant.
+   * Handles tool calls from OpenAI's chat completion response.
    *
-   * @param {OpenAI.ChatCompletion} chatCompletion - The chat completion object.
-   * @param {string} userId - The user id.
-   * @returns {Promise<string[]>} The results of the tool call.
+   * This method processes tool calls from an OpenAI chat completion response,
+   * executes each tool call, and returns the results.
+   *
+   * @param {string} userId - The user ID for authentication and tracking
+   * @param {OpenAI.ChatCompletion} chatCompletion - The chat completion response from OpenAI
+   * @param {ExecuteToolFnOptions} [options] - Optional execution options
+   * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
+   * @returns {Promise<string[]>} Array of tool execution results as JSON strings
+   * 
+   * @example
+   * ```typescript
+   * // Handle tool calls from a chat completion response
+   * const chatCompletion = {
+   *   choices: [
+   *     {
+   *       message: {
+   *         tool_calls: [
+   *           {
+   *             id: 'call_abc123',
+   *             type: 'function',
+   *             function: {
+   *               name: 'SEARCH_TOOL',
+   *               arguments: '{"query":"composio documentation"}'
+   *             }
+   *           }
+   *         ]
+   *       }
+   *     }
+   *   ]
+   * };
+   * 
+   * const results = await provider.handleToolCalls(
+   *   'user123',
+   *   chatCompletion,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * console.log(results); // Array of tool execution results
+   * ```
    */
   async handleToolCalls(
     userId: string,
@@ -88,11 +233,51 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   }
 
   /**
-   * Handles all the tool calls from the assistant.
+   * Handles all the tool calls from the OpenAI Assistant API.
    *
-   * @param {OpenAI.Beta.Threads.Run} run - The run object.
-   * @param {string} userId - The user id.
-   * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} The tool outputs.
+   * This method processes tool calls from an OpenAI Assistant run,
+   * executes each tool call, and returns the tool outputs for submission.
+   *
+   * @param {string} userId - The user ID for authentication and tracking
+   * @param {OpenAI.Beta.Threads.Run} run - The Assistant run object containing tool calls
+   * @param {ExecuteToolFnOptions} [options] - Optional execution options
+   * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
+   * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} Array of tool outputs for submission
+   * 
+   * @example
+   * ```typescript
+   * // Handle tool calls from an OpenAI Assistant run
+   * const run = {
+   *   id: 'run_abc123',
+   *   required_action: {
+   *     submit_tool_outputs: {
+   *       tool_calls: [
+   *         {
+   *           id: 'call_xyz789',
+   *           type: 'function',
+   *           function: {
+   *             name: 'SEARCH_TOOL',
+   *             arguments: '{"query":"composio documentation"}'
+   *           }
+   *         }
+   *       ]
+   *     }
+   *   }
+   * };
+   * 
+   * const toolOutputs = await provider.handleAssistantMessage(
+   *   'user123',
+   *   run,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * 
+   * // Submit tool outputs back to OpenAI
+   * await openai.beta.threads.runs.submitToolOutputs(
+   *   thread.id,
+   *   run.id,
+   *   { tool_outputs: toolOutputs }
+   * );
+   * ```
    */
   async handleAssistantMessage(
     userId: string,
@@ -128,11 +313,43 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   /**
    * Waits for the assistant stream and handles the tool calls.
    *
-   * @param {OpenAI} client - The OpenAI client.
-   * @param {Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>} runStream - The run stream.
-   * @param {OpenAI.Beta.Threads.Thread} thread - The thread object.
-   * @param {string} userId - The user id.
-   * @returns {AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>} The run stream.
+   * This method processes an OpenAI Assistant stream, handles any tool calls
+   * that require action, and yields each event from the stream. It's designed
+   * for streaming Assistant responses while handling tool calls in real-time.
+   *
+   * @param {string} userId - The user ID for authentication and tracking
+   * @param {OpenAI} client - The OpenAI client instance
+   * @param {Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>} runStream - The Assistant run stream
+   * @param {OpenAI.Beta.Threads.Thread} thread - The thread object
+   * @param {ExecuteToolFnOptions} [options] - Optional execution options
+   * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
+   * @returns {AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>} Generator yielding stream events
+   * 
+   * @example
+   * ```typescript
+   * // Process an OpenAI Assistant stream with tool calls
+   * const thread = await openai.beta.threads.create();
+   * const runStream = openai.beta.threads.runs.stream(thread.id, {
+   *   assistant_id: 'asst_abc123',
+   *   tools: provider.wrapTools(composioTools)
+   * });
+   * 
+   * // Process the stream and handle tool calls
+   * const streamProcessor = provider.waitAndHandleAssistantStreamToolCalls(
+   *   'user123',
+   *   openai,
+   *   runStream,
+   *   thread,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * 
+   * // Consume the stream events
+   * for await (const event of streamProcessor) {
+   *   if (event.event === 'thread.message.delta') {
+   *     console.log(event.data.delta.content);
+   *   }
+   * }
+   * ```
    */
   async *waitAndHandleAssistantStreamToolCalls(
     userId: string,
@@ -212,11 +429,45 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   /**
    * Waits for the assistant tool calls and handles them.
    *
-   * @param {OpenAI} client - The OpenAI client.
-   * @param {OpenAI.Beta.Threads.Run} run - The run object.
-   * @param {OpenAI.Beta.Threads.Thread} thread - The thread object.
-   * @param {string} userId - The user id.
-   * @returns {Promise<OpenAI.Beta.Threads.Run>} The run object.
+   * This method polls an OpenAI Assistant run until it completes or requires action,
+   * handles any tool calls, and returns the final run object. It's designed for
+   * non-streaming Assistant interactions.
+   *
+   * @param {string} userId - The user ID for authentication and tracking
+   * @param {OpenAI} client - The OpenAI client instance
+   * @param {OpenAI.Beta.Threads.Run} run - The initial run object
+   * @param {OpenAI.Beta.Threads.Thread} thread - The thread object
+   * @param {ExecuteToolFnOptions} [options] - Optional execution options
+   * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
+   * @returns {Promise<OpenAI.Beta.Threads.Run>} The final run object after completion
+   * 
+   * @example
+   * ```typescript
+   * // Process an OpenAI Assistant run with tool calls
+   * const thread = await openai.beta.threads.create();
+   * await openai.beta.threads.messages.create(thread.id, {
+   *   role: 'user',
+   *   content: 'Find information about Composio'
+   * });
+   * 
+   * let run = await openai.beta.threads.runs.create(thread.id, {
+   *   assistant_id: 'asst_abc123',
+   *   tools: provider.wrapTools(composioTools)
+   * });
+   * 
+   * // Wait for the run to complete, handling any tool calls
+   * run = await provider.waitAndHandleAssistantToolCalls(
+   *   'user123',
+   *   openai,
+   *   run,
+   *   thread,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * 
+   * // Get the final messages after run completion
+   * const messages = await openai.beta.threads.messages.list(thread.id);
+   * console.log(messages.data[0].content);
+   * ```
    */
   async waitAndHandleAssistantToolCalls(
     userId: string,

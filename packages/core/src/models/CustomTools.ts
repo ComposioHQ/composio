@@ -44,6 +44,26 @@ export class CustomTools {
    * This is just an in memory registry and is not persisted.
    * @param {CustomToolOptions} toolOptions CustomToolOptions
    * @returns {Tool} The tool created
+   * 
+   * @example
+   * ```typescript
+   * // Create a custom tool with input parameters
+   * const customTool = await composio.customTools.createTool({
+   *   name: 'My Custom Tool',
+   *   description: 'A tool that performs a custom operation',
+   *   slug: 'MY_CUSTOM_TOOL',
+   *   inputParams: z.object({
+   *     query: z.string().describe('The search query'),
+   *     limit: z.number().optional().describe('Maximum number of results')
+   *   }),
+   *   execute: async (input, authCredentials, executeToolRequest) => {
+   *     // Custom implementation logic
+   *     return {
+   *       data: { results: ['result1', 'result2'] }
+   *     };
+   *   }
+   * });
+   * ```
    */
   async createTool(toolOptions: CustomToolOptions): Promise<Tool> {
     const { slug, execute, inputParams, name, description } = toolOptions;
@@ -87,6 +107,17 @@ export class CustomTools {
    * Get all the custom tools from the registry.
    * @param {string[]} param0.toolSlugs The slugs of the tools to get
    * @returns {ToolList} The list of tools
+   * 
+   * @example
+   * ```typescript
+   * // Get all custom tools
+   * const allTools = await composio.customTools.getCustomTools({});
+   * 
+   * // Get specific custom tools by slug
+   * const specificTools = await composio.customTools.getCustomTools({
+   *   toolSlugs: ['MY_CUSTOM_TOOL', 'ANOTHER_CUSTOM_TOOL']
+   * });
+   * ```
    */
   async getCustomTools({ toolSlugs }: { toolSlugs?: string[] }): Promise<ToolList> {
     const tools: Tool[] = [];
@@ -111,6 +142,17 @@ export class CustomTools {
    * Get a custom tool by slug from the registry.
    * @param {string} slug The slug of the tool to get
    * @returns {Tool} The tool
+   * 
+   * @example
+   * ```typescript
+   * // Get a specific custom tool by its slug
+   * const myTool = await composio.customTools.getCustomToolBySlug('MY_CUSTOM_TOOL');
+   * if (myTool) {
+   *   console.log(`Found tool: ${myTool.name}`);
+   * } else {
+   *   console.log('Tool not found');
+   * }
+   * ```
    */
   async getCustomToolBySlug(slug: string): Promise<Tool | undefined> {
     if (!slug) {

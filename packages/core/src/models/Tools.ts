@@ -642,9 +642,16 @@ export class Tools<
   /**
    * Fetches the list of all available tools in the Composio SDK.
    *
-   * This method is mostly used by the CLI  to get the list of tools.
+   * This method is mostly used by the CLI to get the list of tools.
    * No filtering is done on the tools, the list is cached in the backend, no further optimization is required.
-   * @returns {string} - The list of all available tools as a string
+   * @returns {Promise<ToolRetrieveEnumResponse>} The complete list of all available tools with their metadata
+   *
+   * @example
+   * ```typescript
+   * // Get all available tools as an enum
+   * const toolsEnum = await composio.tools.getToolsEnum();
+   * console.log(toolsEnum.items);
+   * ```
    */
   async getToolsEnum(): Promise<ToolRetrieveEnumResponse> {
     return this.client.tools.retrieveEnum();
@@ -657,16 +664,43 @@ export class Tools<
    *
    * @param {string} slug - The ID of the tool to find input for
    * @param {ToolGetInputParams} body - The parameters to be passed to the tool
-   * @returns
+   * @returns {Promise<ToolGetInputResponse>} The input parameters schema for the specified tool
+   * 
+   * @example
+   * ```typescript
+   * // Get input parameters for a specific tool
+   * const inputParams = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   *   userId: 'default'
+   * });
+   * console.log(inputParams.schema);
+   * ```
    */
   async getInput(slug: string, body: ToolGetInputParams): Promise<ToolGetInputResponse> {
     return this.client.tools.getInput(slug, body);
   }
 
   /**
-   * Proxies a custom request to a toolkit/integration
-   * @param body
-   * @returns
+   * Proxies a custom request to a toolkit/integration.
+   * 
+   * This method allows sending custom requests to a specific toolkit or integration
+   * when you need more flexibility than the standard tool execution methods provide.
+   *
+   * @param {ToolProxyParams} body - The parameters for the proxy request including toolkit slug and custom data
+   * @returns {Promise<ToolProxyResponse>} The response from the proxied request
+   * 
+   * @example
+   * ```typescript
+   * // Send a custom request to a toolkit
+   * const response = await composio.tools.proxyExecute({
+   *   toolkitSlug: 'github',
+   *   userId: 'default',
+   *   data: {
+   *     endpoint: '/repos/owner/repo/issues',
+   *     method: 'GET'
+   *   }
+   * });
+   * console.log(response.data);
+   * ```
    */
   async proxyExecute(body: ToolProxyParams): Promise<ToolProxyResponse> {
     return this.client.tools.proxy(body);

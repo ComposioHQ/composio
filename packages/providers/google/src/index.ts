@@ -44,9 +44,64 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
   readonly name = 'google';
 
   /**
-   * Wrap a Composio tool in the Google GenAI function declaration format.
-   * @param tool - The Composio tool to wrap.
-   * @returns The wrapped tool in Google GenAI format.
+   * Creates a new instance of the GoogleProvider.
+   * 
+   * This provider enables integration with Google's GenAI API,
+   * supporting both the Gemini Developer API and Vertex AI implementations.
+   * 
+   * @example
+   * ```typescript
+   * // Initialize the Google provider
+   * const provider = new GoogleProvider();
+   * 
+   * // Use with Composio
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   provider: new GoogleProvider()
+   * });
+   * 
+   * // Use the provider to wrap tools for Google GenAI
+   * const googleTools = provider.wrapTools(composioTools);
+   * ```
+   */
+  constructor() {
+    super();
+  }
+
+  /**
+   * Wraps a Composio tool in the Google GenAI function declaration format.
+   * 
+   * This method transforms a Composio tool definition into the format
+   * expected by Google's GenAI API for function calling.
+   * 
+   * @param tool - The Composio tool to wrap
+   * @returns The wrapped tool in Google GenAI format
+   * 
+   * @example
+   * ```typescript
+   * // Wrap a single tool for use with Google GenAI
+   * const composioTool = {
+   *   slug: 'SEARCH_TOOL',
+   *   description: 'Search for information',
+   *   inputParameters: {
+   *     type: 'object',
+   *     properties: {
+   *       query: { type: 'string' }
+   *     },
+   *     required: ['query']
+   *   }
+   * };
+   * 
+   * const googleTool = provider.wrapTool(composioTool);
+   * // Use with Google GenAI SDK
+   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
+   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * 
+   * const result = await model.generateContent({
+   *   contents: [{ role: 'user', parts: [{ text: 'Search for Composio' }] }],
+   *   tools: [googleTool]
+   * });
+   * ```
    */
   wrapTool(tool: Tool): GoogleTool {
     return {
@@ -62,21 +117,101 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
   }
 
   /**
-   * Wrap a list of Composio tools in the Google GenAI function declaration format.
-   * @param tools - The Composio tools to wrap.
-   * @returns The wrapped tools in Google GenAI format.
+   * Wraps a list of Composio tools in the Google GenAI function declaration format.
+   * 
+   * This method transforms multiple Composio tool definitions into the format
+   * expected by Google's GenAI API for function calling.
+   * 
+   * @param tools - Array of Composio tools to wrap
+   * @returns Array of wrapped tools in Google GenAI format
+   * 
+   * @example
+   * ```typescript
+   * // Wrap multiple tools for use with Google GenAI
+   * const composioTools = [
+   *   {
+   *     slug: 'SEARCH_TOOL',
+   *     description: 'Search for information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         query: { type: 'string' }
+   *       },
+   *       required: ['query']
+   *     }
+   *   },
+   *   {
+   *     slug: 'WEATHER_TOOL',
+   *     description: 'Get weather information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         location: { type: 'string' }
+   *       },
+   *       required: ['location']
+   *     }
+   *   }
+   * ];
+   * 
+   * const googleTools = provider.wrapTools(composioTools);
+   * 
+   * // Use with Google GenAI SDK
+   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
+   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * 
+   * const result = await model.generateContent({
+   *   contents: [{ role: 'user', parts: [{ text: 'How is the weather in New York?' }] }],
+   *   tools: googleTools
+   * });
+   * ```
    */
   wrapTools(tools: Tool[]): GoogleGenAIToolCollection {
     return tools.map(tool => this.wrapTool(tool));
   }
 
   /**
-   * Execute a tool call from Google GenAI.
-   * @param userId - The user id.
-   * @param tool - The Google GenAI function call to execute.
-   * @param options - Optional execution options.
-   * @param modifiers - Optional execution modifiers.
-   * @returns The result of the tool call as a JSON string.
+   * Executes a tool call from Google GenAI.
+   * 
+   * This method processes a function call from Google's GenAI API,
+   * executes the corresponding Composio tool, and returns the result.
+   * 
+   * @param userId - The user ID for authentication and tracking
+   * @param tool - The Google GenAI function call to execute
+   * @param options - Optional execution options like connected account ID
+   * @param modifiers - Optional execution modifiers for tool behavior
+   * @returns The result of the tool execution as a JSON string
+   * 
+   * @example
+   * ```typescript
+   * // Execute a tool call from Google GenAI
+   * const functionCall = {
+   *   name: 'SEARCH_TOOL',
+   *   args: {
+   *     query: 'composio documentation'
+   *   }
+   * };
+   * 
+   * const result = await provider.executeToolCall(
+   *   'user123',
+   *   functionCall,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * 
+   * // Parse the result and use it in your application
+   * const searchResults = JSON.parse(result);
+   * console.log(searchResults);
+   * 
+   * // You can also use the result to continue the conversation
+   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
+   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * 
+   * await model.generateContent({
+   *   contents: [
+   *     { role: 'user', parts: [{ text: 'Search for Composio' }] },
+   *     { role: 'model', parts: [{ functionResponse: { name: 'SEARCH_TOOL', response: result } }] }
+   *   ]
+   * });
+   * ```
    */
   async executeToolCall(
     userId: string,

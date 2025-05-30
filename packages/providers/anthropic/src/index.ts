@@ -51,6 +51,31 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
 
+  /**
+   * Creates a new instance of the AnthropicProvider.
+   *
+   * @param {Object} [options] - Configuration options for the provider
+   * @param {boolean} [options.cacheTools=false] - Whether to cache tools using Anthropic's ephemeral cache
+   *
+   * @example
+   * ```typescript
+   * // Initialize with default settings (no caching)
+   * const provider = new AnthropicProvider();
+   *
+   * // Initialize with tool caching enabled
+   * const providerWithCaching = new AnthropicProvider({
+   *   cacheTools: true
+   * });
+   *
+   * // Use with Composio
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   provider: new AnthropicProvider({
+   *     cacheTools: true
+   *   })
+   * });
+   * ```
+   */
   constructor(options?: { cacheTools?: boolean }) {
     super();
     this.chacheTools = options?.cacheTools ?? false;
@@ -58,9 +83,31 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   }
 
   /**
-   * Wrap a tool in the Anthropic format.
-   * @param tool - The tool to wrap.
-   * @returns The wrapped tool in Anthropic format.
+   * Wraps a Composio tool in the Anthropic format.
+   *
+   * This method transforms a Composio tool definition into the format
+   * expected by Anthropic's Claude API for tool use.
+   *
+   * @param tool - The Composio tool to wrap
+   * @returns The wrapped tool in Anthropic format
+   *
+   * @example
+   * ```typescript
+   * // Wrap a single tool for use with Anthropic
+   * const composioTool = {
+   *   slug: 'SEARCH_TOOL',
+   *   description: 'Search for information',
+   *   inputParameters: {
+   *     type: 'object',
+   *     properties: {
+   *       query: { type: 'string' }
+   *     },
+   *     required: ['query']
+   *   }
+   * };
+   *
+   * const anthropicTool = provider.wrapTool(composioTool);
+   * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
     return {
@@ -76,21 +123,78 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   }
 
   /**
-   * Wrap a list of tools in the Anthropic format.
-   * @param tools - The tools to wrap.
-   * @returns The wrapped tools in Anthropic format.
+   * Wraps a list of Composio tools in the Anthropic format.
+   *
+   * This method transforms multiple Composio tool definitions into the format
+   * expected by Anthropic's Claude API for tool use.
+   *
+   * @param tools - Array of Composio tools to wrap
+   * @returns Array of wrapped tools in Anthropic format
+   *
+   * @example
+   * ```typescript
+   * // Wrap multiple tools for use with Anthropic
+   * const composioTools = [
+   *   {
+   *     slug: 'SEARCH_TOOL',
+   *     description: 'Search for information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         query: { type: 'string' }
+   *       }
+   *     }
+   *   },
+   *   {
+   *     slug: 'WEATHER_TOOL',
+   *     description: 'Get weather information',
+   *     inputParameters: {
+   *       type: 'object',
+   *       properties: {
+   *         location: { type: 'string' }
+   *       }
+   *     }
+   *   }
+   * ];
+   *
+   * const anthropicTools = provider.wrapTools(composioTools);
+   * ```
    */
   override wrapTools(tools: ComposioTool[]): AnthropicToolCollection {
     return tools.map(tool => this.wrapTool(tool));
   }
 
   /**
-   * Execute a tool call from Anthropic.
-   * @param userId - The user ID
+   * Executes a tool call from Anthropic's Claude API.
+   *
+   * This method processes a tool call from Anthropic's Claude API,
+   * executes the corresponding Composio tool, and returns the result.
+   *
+   * @param userId - The user ID for authentication and tracking
    * @param toolUse - The tool use object from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
-   * @returns The result of the tool execution as a string
+   * @returns The result of the tool execution as a JSON string
+   *
+   * @example
+   * ```typescript
+   * // Execute a tool call from Anthropic
+   * const toolUse = {
+   *   type: 'tool_use',
+   *   id: 'tu_abc123',
+   *   name: 'SEARCH_TOOL',
+   *   input: {
+   *     query: 'composio documentation'
+   *   }
+   * };
+   *
+   * const result = await provider.executeToolCall(
+   *   'user123',
+   *   toolUse,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   * console.log(JSON.parse(result));
+   * ```
    */
   async executeToolCall(
     userId: string,
@@ -109,12 +213,44 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   }
 
   /**
-   * Handle tool calls from Anthropic's message response
-   * @param userId - The user ID
+   * Handles tool calls from Anthropic's message response.
+   *
+   * This method processes tool calls from an Anthropic message response,
+   * extracts the tool use blocks, executes each tool call, and returns the results.
+   *
+   * @param userId - The user ID for authentication and tracking
    * @param message - The message response from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
-   * @returns Array of tool execution results
+   * @returns Array of tool execution results as JSON strings
+   *
+   * @example
+   * ```typescript
+   * // Handle tool calls from an Anthropic message response
+   * const anthropic = new Anthropic({ apiKey: 'your-anthropic-api-key' });
+   *
+   * const message = await anthropic.messages.create({
+   *   model: 'claude-3-opus-20240229',
+   *   max_tokens: 1024,
+   *   tools: provider.wrapTools(composioTools),
+   *   messages: [
+   *     {
+   *       role: 'user',
+   *       content: 'Search for information about Composio'
+   *     }
+   *   ]
+   * });
+   *
+   * // Process any tool calls in the response
+   * const results = await provider.handleToolCalls(
+   *   'user123',
+   *   message,
+   *   { connectedAccountId: 'conn_xyz456' }
+   * );
+   *
+   * // Use the results to continue the conversation
+   * console.log(results);
+   * ```
    */
   async handleToolCalls(
     userId: string,

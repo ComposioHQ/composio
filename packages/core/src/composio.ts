@@ -56,13 +56,36 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
   connectedAccounts: ConnectedAccounts;
 
   /**
-   * @param {Object} config Configuration for the Composio SDK.
-   * @param {string} config.apiKey The API key for the Composio SDK.
-   * @param {string} config.baseURL The base URL for the Composio SDK.
-   * @param {string} config.runtime The runtime for the Composio SDK.
-   * @param {boolean} config.allowTracking Whether to allow analytics / tracking. Defaults to true.
-   * @param {boolean} config.allowTracing Whether to allow tracing. Defaults to true.
-   * @param {TProvider} config.provider The provider to use for this Composio instance.
+   * Creates a new instance of the Composio SDK.
+   * 
+   * The constructor initializes the SDK with the provided configuration options,
+   * sets up the API client, and initializes all core models (tools, toolkits, etc.).
+   * 
+   * @param {ComposioConfig<TProvider>} config - Configuration options for the Composio SDK
+   * @param {string} [config.apiKey] - The API key for authenticating with the Composio API
+   * @param {string} [config.baseURL] - The base URL for the Composio API (defaults to production URL)
+   * @param {boolean} [config.allowTracking=true] - Whether to allow anonymous usage analytics
+   * @param {boolean} [config.allowTracing=true] - Whether to allow request tracing for debugging
+   * @param {TProvider} [config.provider] - The provider to use for this Composio instance (defaults to OpenAIProvider)
+   * @param {BaseTelemetryTransport} [config.telemetryTransport] - Custom telemetry transport implementation
+   * 
+   * @example
+   * ```typescript
+   * // Initialize with default configuration
+   * const composio = new Composio();
+   * 
+   * // Initialize with custom API key and base URL
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   baseURL: 'https://api.composio.dev'
+   * });
+   * 
+   * // Initialize with custom provider
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   provider: new CustomProvider()
+   * });
+   * ```
    */
   constructor(config?: ComposioConfig<TProvider>) {
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
