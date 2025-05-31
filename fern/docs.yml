@@ -266,6 +266,14 @@ navigation:
           - page: API V3 Migration
             path: changelogs/overview.mdx
 
+
+      - section: API
+        icon: calendar
+        contents:
+          - page: Error Codes
+            path: api/errors.mdx
+
+
   - tab: frameworks
     layout:
       - section: Model Providers
