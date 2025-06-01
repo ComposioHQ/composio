@@ -98,10 +98,14 @@ To contribute to the documentation:
    export COMPOSIO_API_KEY=your_api_key_here && cd fern/ && pnpm run tools:generate
    ```
 
-   d. Install Fern globally:
+   d. Install Fern globally and login:
 
    ```bash
    npm install -g fern-api
+   ```
+
+   ```bash
+   fern login
    ```
 
 3. Start the docs server from the project root:
