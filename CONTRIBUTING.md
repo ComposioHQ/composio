@@ -86,6 +86,12 @@ To contribute to the documentation:
     curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
+   b. Download OpenAPI spec:
+
+   ```bash
+   sh scripts/pull-openapi-spec.sh
+   ```
+
    c. Generate Tool documentation:
 
    ```bash
