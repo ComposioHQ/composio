@@ -82,3 +82,4 @@ styles/config/*
 styles/config/vocabularies/*
 fern/pages/tools/
 fern/api/openapi-v3.yml
+fern/snippets/**

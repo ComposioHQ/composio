@@ -1,0 +1,109 @@
+---
+title: Fetching and Filtering Tools
+image: ""   # image for socials
+keywords: ""
+subtitle: "Learn how to fetch and filter Composio's tools and toolsets"
+hide-nav-links: false
+---
+
+To effectively use tools, it is recommended to fetch, inspect, and filter them based on your criteria. 
+
+This process returns a union of all tools that match the specified criteria, ensuring you provide the most relevant tools to the agents.
+
+## Filtering by toolkit
+Toolkits are collections of tools that from a specific app!
+
+Fetching tools from a toolkit is a good way to get a sense of the tools available.
+
+<Tip title="Tools are ordered by importance" icon="info">
+When you fetch tools from a toolkit, the most important tools are returned first.
+
+Composio determines the importance of a tool based on the usage and relevance of the tool.
+</Tip>
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(
+  userId,
+  {
+    toolkits: ["GITHUB", "LINEAR"],
+  }
+);
+```
+
+```python Python maxLines=60 wordWrap
+tools = composio.tools.get(
+    user_id,
+    toolkits=["GITHUB", "HACKERNEWS"],
+)
+```
+</CodeGroup>
+
+**Limiting the results**
+
+Multiple toolkits have 100s of tools. These can easily overwhelm the LLM. Hence, the SDK allows you to limit the number of tools returned.
+
+The default `limit` is 20 -- meaning you get the top 20 important tools from the toolkit.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  toolkits: ["GITHUB"],
+  limit: 5, // Returns the top 5 important tools from the toolkit
+});
+```
+```python Python maxLines=60 wordWrap
+tools = composio.tools.get(
+    user_id,
+    toolkits=["GITHUB"],
+    limit=5,  # Returns the top 5 important tools from the toolkit
+)
+```
+</CodeGroup>
+
+## Filtering by tool
+You may specify the list of tools to fetch by directly providing the tool names. Browse the list of tools [here](/tools) to view and inspect the tools for each toolkit.
+
+<CodeGroup>
+
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  tools: [
+    "GITHUB_CREATE_AN_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE_COMMENT",
+    "GITHUB_CREATE_A_COMMIT",
+  ],
+});
+```
+
+```python Python maxLines=60 wordWrap
+tools = composio.tools.get(
+    user_id,
+    tools=[
+        "GITHUB_CREATE_AN_ISSUE",
+        "GITHUB_CREATE_AN_ISSUE_COMMENT",
+        "GITHUB_CREATE_A_COMMIT",
+    ],
+)
+```
+</CodeGroup>
+
+## Filtering by search (Experimental)
+You may also filter tools by searching for them. This is a good way to find tools that are relevant to a given use case.
+
+This step runs a semantic search on the tool names and descriptions and returns the most relevant tools.
+
+<CodeGroup>
+
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  search: "hubspot organize contacts",
+});
+```
+
+```python Python maxLines=60 wordWrap
+tools = composio.tools.get(
+    user_id,
+    search="hubspot organize contacts",
+)
+```
+</CodeGroup> 

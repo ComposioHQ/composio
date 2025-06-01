@@ -10,7 +10,7 @@ instances:
         branch: master
 title: Composio Docs
 
-default-language: python
+default-language: typescript
 
 versions:
   - display-name: v3
@@ -29,7 +29,7 @@ logo:
 
 favicon: assets/favicon.png
 
-css: dist/output.css
+# css: dist/output.css
 
 typography:
   bodyFont:
@@ -51,7 +51,6 @@ typography:
     paths:
       - path: assets/IBMPlexMono-Light.ttf
         weight: "400"
-        # In the nature design system, bolded fonts always use Cohere Variable.
       # - path: assets/IBMPlexMono-Medium.woff2
       #   weight: "500 525"
 navbar-links:
@@ -67,7 +66,6 @@ navbar-links:
   - type: primary
     text: LOG IN
     url: https://app.composio.dev/login
-
 layout:
   page-width: full
   tabs-placement: header

@@ -80,20 +80,19 @@ To contribute to the documentation:
 1. Make sure you have Node.js installed on your system.
 
 2. Setup dependencies:
-
    a. Install `uv` (required for generating Tool & Python documentation):
 
    ```bash
     curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-   b. Generate Tool documentation:
+   c. Generate Tool documentation:
 
    ```bash
-   make tools-generate
+   export COMPOSIO_API_KEY=your_api_key_here && cd fern/ && pnpm run tools:generate
    ```
 
-   c. Install Fern globally:
+   d. Install Fern globally:
 
    ```bash
    npm install -g fern-api
@@ -102,9 +101,8 @@ To contribute to the documentation:
 3. Start the docs server from the project root:
 
    ```bash
-   make docs-dev
-   # or
-   # fern docs dev
+   cd fern/
+   pnpm run docs:preview
    ```
 
 4. View and edit docs at http://localhost:3000
@@ -112,7 +110,8 @@ To contribute to the documentation:
 5. Before submitting your PR, check for broken links:
 
    ```bash
-   fern docs broken-links
+   cd fern/
+   pnpm run docs:check
    ```
 
    This will ensure your documentation changes don't introduce any broken references.
