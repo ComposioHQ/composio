@@ -4,6 +4,9 @@ import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import ComposioClient from '@composio/client';
 import { z } from 'zod';
+import { ComposioToolNotFoundError } from '../../src/errors/ToolErrors';
+import { ComposioConnectedAccountNotFoundError } from '../../src/errors/ConnectedAccountsErrors';
+import { ValidationError } from '../../src/errors';
 
 describe('CustomTools', () => {
   let customTools: CustomTools;
@@ -89,61 +92,168 @@ describe('CustomTools', () => {
   });
 
   describe('executeCustomTool', () => {
+    const executeParams = {
+      arguments: { query: 'test query' },
+      userId: 'test-user',
+    };
+
     it('should execute a custom tool with provided parameters', async () => {
       // Add a tool to the registry
       await customTools.createTool(toolOptions);
 
-      const inputParams = { query: 'test query' };
-      const metadata = { userId: 'test-user' };
+      const result = await customTools.executeCustomTool(toolOptions.slug, executeParams);
 
-      const result = await customTools.executeCustomTool(toolOptions.slug, inputParams, metadata);
-
-      expect(toolOptions.execute).toHaveBeenCalledWith(inputParams, {}, expect.any(Function));
+      expect(toolOptions.execute).toHaveBeenCalledWith(
+        executeParams.arguments,
+        {},
+        expect.any(Function)
+      );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
     it('should throw an error if tool does not exist', async () => {
       const nonExistentSlug = 'NON_EXISTENT';
-      const inputParams = { query: 'test query' };
-      const metadata = { userId: 'test-user' };
 
-      await expect(
-        customTools.executeCustomTool(nonExistentSlug, inputParams, metadata)
-      ).rejects.toThrow(`Tool with slug ${nonExistentSlug} not found`);
+      await expect(customTools.executeCustomTool(nonExistentSlug, executeParams)).rejects.toThrow(
+        ComposioToolNotFoundError
+      );
     });
 
-    it('should fetch auth credentials for toolkit-based custom tools', async () => {
-      // Add a toolkit-based tool
+    it('should throw validation error for invalid input parameters', async () => {
+      await customTools.createTool(toolOptions);
+      const invalidParams = {
+        ...executeParams,
+        arguments: { invalidField: 'test' },
+      };
+
+      await expect(customTools.executeCustomTool(toolOptions.slug, invalidParams)).rejects.toThrow(
+        ValidationError
+      );
+    });
+
+    describe('toolkit-based custom tools', () => {
       const toolkitTool = {
         ...toolOptions,
         toolkitSlug: 'TEST_TOOLKIT',
       };
-      await customTools.createTool(toolkitTool);
 
-      // Mock toolkit and connected account retrieval
-      mockClient.toolkits.retrieve.mockResolvedValueOnce({ slug: 'TEST_TOOLKIT' });
-      mockClient.connectedAccounts.list.mockResolvedValueOnce({
-        items: [
-          {
-            id: 'conn-123',
-            data: {
-              connectionParams: { apiKey: 'test-key' },
-            },
-          },
-        ],
-        totalPages: 1,
+      const mockConnectedAccount = {
+        id: 'conn-123',
+        auth_config: {
+          id: 'auth-123',
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        user_id: 'test-user',
+        data: {
+          apiKey: 'test-key',
+        },
+        status: 'ACTIVE',
+        status_reason: null,
+        toolkit: {
+          slug: 'TEST_TOOLKIT',
+        },
+        test_request_endpoint: 'https://api.test.com',
+        is_disabled: false,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      beforeEach(async () => {
+        await customTools.createTool(toolkitTool);
+        mockClient.toolkits.retrieve.mockResolvedValue({ slug: 'TEST_TOOLKIT' });
       });
 
-      const inputParams = { query: 'test query' };
-      const metadata = { userId: 'test-user' };
+      it('should fetch and use auth credentials for toolkit-based custom tools', async () => {
+        mockClient.connectedAccounts.list.mockResolvedValueOnce({
+          items: [mockConnectedAccount],
+          totalPages: 1,
+        });
 
-      await customTools.executeCustomTool(toolkitTool.slug, inputParams, metadata);
+        await customTools.executeCustomTool(toolkitTool.slug, executeParams);
 
-      expect(toolkitTool.execute).toHaveBeenCalledWith(
-        inputParams,
-        { apiKey: 'test-key' },
-        expect.any(Function)
-      );
+        expect(toolkitTool.execute).toHaveBeenCalledWith(
+          executeParams.arguments,
+          mockConnectedAccount.data,
+          expect.any(Function)
+        );
+      });
+
+      it('should use specified connected account when connectedAccountId is provided', async () => {
+        const specificConnectedAccountId = 'conn-456';
+        const specificConnectedAccount = {
+          ...mockConnectedAccount,
+          id: specificConnectedAccountId,
+        };
+
+        mockClient.connectedAccounts.list.mockResolvedValueOnce({
+          items: [mockConnectedAccount, specificConnectedAccount],
+          totalPages: 1,
+        });
+
+        await customTools.executeCustomTool(toolkitTool.slug, {
+          ...executeParams,
+          connectedAccountId: specificConnectedAccountId,
+        });
+
+        expect(toolkitTool.execute).toHaveBeenCalledWith(
+          executeParams.arguments,
+          specificConnectedAccount.data,
+          expect.any(Function)
+        );
+      });
+
+      it('should throw error when toolkit is not found', async () => {
+        mockClient.toolkits.retrieve.mockRejectedValueOnce(new Error('Toolkit not found'));
+
+        await expect(
+          customTools.executeCustomTool(toolkitTool.slug, executeParams)
+        ).rejects.toThrow(ComposioToolNotFoundError);
+      });
+
+      it('should throw error when no connected accounts are found', async () => {
+        mockClient.connectedAccounts.list.mockResolvedValueOnce({
+          items: [],
+          totalPages: 1,
+        });
+
+        await expect(
+          customTools.executeCustomTool(toolkitTool.slug, executeParams)
+        ).rejects.toThrow(ComposioConnectedAccountNotFoundError);
+      });
+
+      it('should throw error when specified connected account is not found', async () => {
+        mockClient.connectedAccounts.list.mockResolvedValueOnce({
+          items: [mockConnectedAccount],
+          totalPages: 1,
+        });
+
+        await expect(
+          customTools.executeCustomTool(toolkitTool.slug, {
+            ...executeParams,
+            connectedAccountId: 'non-existent-id',
+          })
+        ).rejects.toThrow(ComposioConnectedAccountNotFoundError);
+      });
+
+      it('should throw error when trying to use executeToolRequest with custom toolkit', async () => {
+        const customToolkitTool = {
+          ...toolOptions,
+          toolkitSlug: 'custom',
+          execute: async (input: any, auth: any, executeToolRequest: any) => {
+            return executeToolRequest({ slug: 'TEST_TOOL', arguments: {} });
+          },
+        };
+
+        await customTools.createTool(customToolkitTool);
+
+        await expect(
+          customTools.executeCustomTool(customToolkitTool.slug, executeParams)
+        ).rejects.toThrow(
+          'Custom tools without a toolkit cannot be executed using the executeToolRequest function'
+        );
+      });
     });
   });
 });

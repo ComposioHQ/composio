@@ -1,48 +1,51 @@
-import { z, ZodObject, ZodString, ZodNumber, ZodBoolean, ZodOptional } from 'zod';
-import { Tool, ToolExecuteResponse } from './tool.types';
-import { ToolProxyParams, ToolProxyResponse } from '@composio/client/resources/tools';
-import { JsonSchema7Type } from 'zod-to-json-schema';
+import { z } from 'zod';
+import { Tool } from './tool.types';
+import { ToolExecuteResponse, ToolProxyParams } from '@composio/client/resources/tools';
 
-export type CustomToolInputParameter = ZodObject<{
-  [key: string]:
-    | ZodString
-    | ZodNumber
-    | ZodBoolean
-    | ZodOptional<ZodString | ZodNumber | ZodBoolean>;
-}>;
-
-export type CustomToolInput<T extends CustomToolInputParameter> = {
-  [K in keyof z.infer<T>]: z.infer<T>[K];
+type BaseCustomToolOptions<T extends z.ZodType> = {
+  name: string;
+  description?: string;
+  slug: string;
+  inputParams: T;
 };
 
-export interface CustomToolOptions<T extends CustomToolInputParameter = CustomToolInputParameter> {
-  slug: string;
-  name: string;
-  toolkitSlug?: string | null;
-  description?: string;
-  inputParams: T;
+type ToolkitBasedExecute<T extends z.ZodType> = {
   execute: (
-    input: CustomToolInput<T>,
-    authCredentials?: Record<string, unknown>,
-    executeAppRequest?: (data: ToolProxyParams) => Promise<ToolProxyResponse>
+    input: z.infer<T>,
+    authCredentials: Record<string, unknown>,
+    executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>
   ) => Promise<ToolExecuteResponse>;
-}
+  toolkitSlug: string;
+};
+
+type StandaloneExecute<T extends z.ZodType> = {
+  execute: (input: z.infer<T>) => Promise<ToolExecuteResponse>;
+  toolkitSlug?: never;
+};
+
+export type CustomToolOptions<T extends z.ZodType> = BaseCustomToolOptions<T> &
+  (ToolkitBasedExecute<T> | StandaloneExecute<T>);
 
 export type CustomToolRegistry = Map<
   string,
-  {
-    options: CustomToolOptions;
-    schema: Tool;
-  }
+  { options: CustomToolOptions<CustomToolInputParameter>; schema: Tool }
 >;
 
-export interface InputParamsSchema {
+export type InputParamsSchema = {
   definitions: {
     input: {
-      properties: Record<string, JsonSchema7Type>;
+      type: string;
+      properties: Record<string, unknown>;
       required?: string[];
     };
   };
+};
+
+export type CustomToolInputParameter = z.ZodType;
+
+export interface CustomToolRegistryItem {
+  options: CustomToolOptions<CustomToolInputParameter>;
+  schema: Tool;
 }
 
 export interface ExecuteMetadata {

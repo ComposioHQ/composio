@@ -346,7 +346,7 @@ describe('Tools', () => {
       const result = await context.tools.execute(slug, body);
 
       expect(getCustomToolBySlugSpy).toHaveBeenCalledWith(slug);
-      expect(executeCustomToolSpy).toHaveBeenCalledWith(slug, body, expect.any(Object));
+      expect(executeCustomToolSpy).toHaveBeenCalledWith(slug, body);
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 

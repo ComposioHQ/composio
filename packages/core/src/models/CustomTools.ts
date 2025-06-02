@@ -7,15 +7,13 @@
  */
 import ComposioClient from '@composio/client';
 import {
-  CustomToolInput,
   CustomToolInputParameter,
   CustomToolOptions,
   CustomToolRegistry,
-  ExecuteMetadata,
   InputParamsSchema,
 } from '../types/customTool.types';
 import zodToJsonSchema from 'zod-to-json-schema';
-import { Tool, ToolExecuteResponse, ToolList } from '../types/tool.types';
+import { Tool, ToolExecuteParams, ToolExecuteResponse, ToolList } from '../types/tool.types';
 import { ToolProxyParams } from '@composio/client/resources/tools';
 import logger from '../utils/logger';
 import {
@@ -25,6 +23,11 @@ import {
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { ComposioError } from '../errors/ComposioError';
 import { telemetry } from '../telemetry/Telemetry';
+import {
+  ConnectedAccountRetrieveResponse,
+  ConnectedAccountRetrieveResponseSchema,
+} from '../types/connectedAccounts.types';
+import { ValidationError } from '../errors';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -44,7 +47,7 @@ export class CustomTools {
    * This is just an in memory registry and is not persisted.
    * @param {CustomToolOptions} toolOptions CustomToolOptions
    * @returns {Tool} The tool created
-   * 
+   *
    * @example
    * ```typescript
    * // Create a custom tool with input parameters
@@ -65,7 +68,9 @@ export class CustomTools {
    * });
    * ```
    */
-  async createTool(toolOptions: CustomToolOptions): Promise<Tool> {
+  async createTool<T extends CustomToolInputParameter>(
+    toolOptions: CustomToolOptions<T>
+  ): Promise<Tool> {
     const { slug, execute, inputParams, name, description } = toolOptions;
     if (!slug || !execute || !inputParams || !name) {
       throw new Error('Invalid tool options');
@@ -93,11 +98,13 @@ export class CustomTools {
         properties: {},
       },
       tags: [],
+      // this is never set to the user provided toolkitslug so that we can differentiate
+      // the toolkitslug is used via the execute function.
       toolkit: { name: 'custom', slug: 'custom' },
     };
 
     this.customToolsRegistry.set(slug.toLowerCase(), {
-      options: toolOptions,
+      options: toolOptions as unknown as CustomToolOptions<CustomToolInputParameter>,
       schema: toolSchema,
     });
     return toolSchema;
@@ -107,12 +114,12 @@ export class CustomTools {
    * Get all the custom tools from the registry.
    * @param {string[]} param0.toolSlugs The slugs of the tools to get
    * @returns {ToolList} The list of tools
-   * 
+   *
    * @example
    * ```typescript
    * // Get all custom tools
    * const allTools = await composio.customTools.getCustomTools({});
-   * 
+   *
    * // Get specific custom tools by slug
    * const specificTools = await composio.customTools.getCustomTools({
    *   toolSlugs: ['MY_CUSTOM_TOOL', 'ANOTHER_CUSTOM_TOOL']
@@ -142,7 +149,7 @@ export class CustomTools {
    * Get a custom tool by slug from the registry.
    * @param {string} slug The slug of the tool to get
    * @returns {Tool} The tool
-   * 
+   *
    * @example
    * ```typescript
    * // Get a specific custom tool by its slug
@@ -174,7 +181,11 @@ export class CustomTools {
    * @param {ExecuteMetadata} metadata The metadata of the execution
    * @returns {ConnectedAccount} The connected account
    */
-  private async getConnectedAccount(toolkitSlug: string, metadata: ExecuteMetadata) {
+  private async getConnectedAccountForToolkit(
+    toolkitSlug: string,
+    userId: string,
+    connectedAccountId?: string
+  ): Promise<ConnectedAccountRetrieveResponse> {
     try {
       await this.client.toolkits.retrieve(toolkitSlug);
     } catch (error) {
@@ -184,7 +195,7 @@ export class CustomTools {
     }
     const connectedAccounts = await this.client.connectedAccounts.list({
       toolkit_slugs: [toolkitSlug],
-      user_ids: [metadata.userId],
+      user_ids: [userId],
     });
 
     if (!connectedAccounts.items.length) {
@@ -192,46 +203,96 @@ export class CustomTools {
         `No connected accounts found for toolkit ${toolkitSlug}`
       );
     }
-
-    return metadata.connectedAccountId
-      ? connectedAccounts.items.find(item => item.id === metadata.connectedAccountId)
+    // if a connected account id is provided, use it, otherwise use the first connected account
+    const connectedAccount = connectedAccountId
+      ? connectedAccounts.items.find(item => item.id === connectedAccountId)
       : connectedAccounts.items[0];
+
+    if (!connectedAccount) {
+      throw new ComposioConnectedAccountNotFoundError(
+        `Connected account not found for toolkit ${toolkitSlug} for user ${userId}`
+      );
+    }
+
+    const connectedAccountResponse = await ConnectedAccountRetrieveResponseSchema.safeParse({
+      id: connectedAccount.id,
+      authConfig: {
+        id: connectedAccount.auth_config.id,
+        authScheme: connectedAccount.auth_config.auth_scheme,
+        isComposioManaged: connectedAccount.auth_config.is_composio_managed,
+        isDisabled: connectedAccount.auth_config.is_disabled,
+      },
+      userId: connectedAccount.user_id,
+      data: connectedAccount.data || {},
+      status: connectedAccount.status,
+      statusReason: connectedAccount.status_reason,
+      toolkit: {
+        slug: connectedAccount.toolkit.slug,
+      },
+      testRequestEndpoint: connectedAccount.test_request_endpoint,
+      isDisabled: connectedAccount.is_disabled,
+      createdAt: connectedAccount.created_at,
+      updatedAt: connectedAccount.updated_at,
+    });
+
+    if (!connectedAccountResponse.success) {
+      throw new ValidationError(
+        `Validation error for connected account of ${toolkitSlug} for user ${userId}`,
+        {
+          cause: connectedAccountResponse.error,
+        }
+      );
+    }
+
+    return connectedAccountResponse.data;
   }
 
   /**
    * Execute a custom tool
+   *
+   * @description If a toolkit is used, the connected account id is used to execute the tool.
+   * If a connected account id is provided, it is used to execute the tool.
+   * If a connected account id is not provided, the first connected account for the toolkit is used.
+   *
    * @param {slug} slug The slug of the tool to execute
    * @param {Record<string, unknown>} inputParams The input parameters for the tool
    * @param {ExecuteMetadata} metadata The metadata of the execution
    * @returns {Promise<ToolExecuteResponse>} The response from the tool
    */
-  async executeCustomTool(
-    slug: string,
-    inputParams: Record<string, unknown>,
-    metadata: ExecuteMetadata
-  ): Promise<ToolExecuteResponse> {
+  async executeCustomTool(slug: string, body: ToolExecuteParams): Promise<ToolExecuteResponse> {
     const tool = this.customToolsRegistry.get(slug.toLowerCase());
     if (!tool) {
       throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
     }
 
     let authCredentials: Record<string, unknown> = {};
-    const { toolkitSlug, execute } = tool.options;
+    const { toolkitSlug, execute, inputParams } = tool.options;
     // if a toolkit is used, get the connected account, and auth credentials
+    let connectedAccountId: string | undefined = body.connectedAccountId;
+
     if (toolkitSlug && toolkitSlug !== 'custom') {
-      const connectedAccount = await this.getConnectedAccount(toolkitSlug, metadata);
+      const connectedAccount = await this.getConnectedAccountForToolkit(
+        toolkitSlug,
+        body.userId,
+        body.connectedAccountId
+      );
+      logger.debug(
+        `[CustomTool] Connected account for ${toolkitSlug} found for user ${body.userId}`,
+        JSON.stringify(connectedAccount, null, 2)
+      );
       if (!connectedAccount) {
         throw new ComposioConnectedAccountNotFoundError(
-          `Connected account not found for toolkit ${toolkitSlug} for user ${metadata.userId}`,
+          `Connected account not found for toolkit ${toolkitSlug} for user ${body.userId}`,
           {
             meta: {
               toolkitSlug,
-              userId: metadata.userId,
+              userId: body.userId,
             },
           }
         );
       }
-      authCredentials = connectedAccount.data?.connectionParams as Record<string, unknown>;
+      authCredentials = connectedAccount.data as Record<string, unknown>;
+      connectedAccountId = connectedAccount.id;
     }
 
     if (typeof execute !== 'function') {
@@ -242,17 +303,40 @@ export class CustomTools {
       });
     }
     // create a tool proxy request for users to execute in case of a toolkit being used
-    const executeToolRequest = async (data: ToolProxyParams) => {
-      return this.client.tools.proxy({
+    const executeToolRequest = async (data: ToolProxyParams): Promise<ToolExecuteResponse> => {
+      if (toolkitSlug && toolkitSlug === 'custom') {
+        throw new ComposioInvalidExecuteFunctionError(
+          'Custom tools without a toolkit cannot be executed using the executeToolRequest function',
+          {
+            possibleFixes: [
+              'Please manually execute the tool using your logic.',
+              'Pass a toolkit slug to execute the tool on behalf of a toolkit credentials',
+            ],
+          }
+        );
+      }
+      const response = await this.client.tools.proxy({
         ...data,
-        connected_account_id: metadata.connectedAccountId,
+        connected_account_id: connectedAccountId,
       });
+
+      return {
+        data: response.data as Record<string, unknown>,
+        error: null,
+        successful: true,
+        logId: undefined,
+        sessionInfo: undefined,
+      };
     };
 
-    return execute(
-      inputParams as CustomToolInput<CustomToolInputParameter>,
-      authCredentials,
-      executeToolRequest
-    );
+    // Parse and validate the input using the tool's schema
+    const parsedInput = inputParams.safeParse(body.arguments);
+    if (!parsedInput.success) {
+      throw new ValidationError('Invalid input parameters', {
+        cause: parsedInput.error,
+      });
+    }
+
+    return execute(parsedInput.data, authCredentials, executeToolRequest);
   }
 }

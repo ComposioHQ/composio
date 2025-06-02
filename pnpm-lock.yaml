@@ -89,6 +89,25 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/custom-tools:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.5.0
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.4
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/error-handling-demo:
     dependencies:
       '@composio/core':

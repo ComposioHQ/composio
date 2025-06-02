@@ -20,7 +20,7 @@ import {
   ToolExecuteResponse as ComposioToolExecuteResponse,
 } from '@composio/client/resources/tools';
 import { CustomTools } from './CustomTools';
-import { CustomToolOptions } from '../types/customTool.types';
+import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
 import {
   ExecuteToolModifiers,
   ProviderOptions,
@@ -343,7 +343,10 @@ export class Tools<
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
+      logger.debug(`Found ${slug} to be a custom tool`, JSON.stringify(customTool, null, 2));
       return customTool;
+    } else {
+      logger.debug(`Tool ${slug} is not a custom tool. Fetching from Composio API`);
     }
     // if not, fetch the tool from the Composio API
     let tool: ToolRetrieveResponse;
@@ -499,10 +502,7 @@ export class Tools<
       }
     }
 
-    let result = await this.customTools.executeCustomTool(tool.slug, body, {
-      userId: body.userId || 'default',
-      connectedAccountId: body.connectedAccountId,
-    });
+    let result = await this.customTools.executeCustomTool(tool.slug, body);
 
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
@@ -665,7 +665,7 @@ export class Tools<
    * @param {string} slug - The ID of the tool to find input for
    * @param {ToolGetInputParams} body - The parameters to be passed to the tool
    * @returns {Promise<ToolGetInputResponse>} The input parameters schema for the specified tool
-   * 
+   *
    * @example
    * ```typescript
    * // Get input parameters for a specific tool
@@ -681,13 +681,13 @@ export class Tools<
 
   /**
    * Proxies a custom request to a toolkit/integration.
-   * 
+   *
    * This method allows sending custom requests to a specific toolkit or integration
    * when you need more flexibility than the standard tool execution methods provide.
    *
    * @param {ToolProxyParams} body - The parameters for the proxy request including toolkit slug and custom data
    * @returns {Promise<ToolProxyResponse>} The response from the proxied request
-   * 
+   *
    * @example
    * ```typescript
    * // Send a custom request to a toolkit
@@ -717,31 +717,43 @@ export class Tools<
    *
    * @example
    * ```typescript
-   * const customTool = await composio.tools.createCustomTool({
+   * // creating a custom tool with a toolkit
+   * await composio.tools.createCustomTool({
    *   name: 'My Custom Tool',
    *   description: 'A custom tool that does something specific',
    *   slug: 'MY_CUSTOM_TOOL',
-   *   inputParameters: {
-   *     param1: {
-   *       type: 'string',
-   *       description: 'First parameter',
-   *       required: true
-   *     }
-   *   },
-   *   outputParameters: {
-   *     result: {
-   *       type: 'string',
-   *       description: 'The result of the operation'
-   *     }
-   *   },
-   *   handler: async (params, context) => {
+   *   userId: 'default',
+   *   connectedAccountId: '123',
+   *   toolkitSlug: 'github',
+   *   inputParameters: z.object({
+   *     param1: z.string().describe('First parameter'),
+   *   }),
+   *   execute: async (input, authCredentials, executeToolRequest) => {
    *     // Custom logic here
    *     return { data: { result: 'Success!' } };
    *   }
    * });
    * ```
+   *
+   * @example
+   * ```typescript
+   * // creating a custom tool without a toolkit
+   * await composio.tools.createCustomTool({
+   *   name: 'My Custom Tool',
+   *   description: 'A custom tool that does something specific',
+   *   slug: 'MY_CUSTOM_TOOL',
+   *   inputParameters: z.object({
+   *     param1: z.string().describe('First parameter'),
+   *   }),
+   *   execute: async (input) => {
+   *     // Custom logic here
+   *     return { data: { result: 'Success!' } };
+   *   }
+   * });
    */
-  async createCustomTool(body: CustomToolOptions): Promise<Tool> {
+  async createCustomTool<T extends CustomToolInputParameter>(
+    body: CustomToolOptions<T>
+  ): Promise<Tool> {
     return this.customTools.createTool(body);
   }
 }
