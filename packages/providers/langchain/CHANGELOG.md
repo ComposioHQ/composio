@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.12-alpha.16
+
+### Patch Changes
+
+- 0b15376: Add custom toolkit examples
+- Updated dependencies [0b15376]
+  - @composio/core@0.1.12-alpha.16
+
 ## 0.1.12-alpha.15
 
 ### Patch Changes
