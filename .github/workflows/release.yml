@@ -45,5 +45,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
         with:
           publish: pnpm changeset:release
-          commit: 'build: update version'
-          title: 'build: update version'
+          commit: 'Release: update version'
+          title: 'Release: update version'
