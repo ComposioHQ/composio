@@ -39,10 +39,11 @@ abstract class BaseProvider {
   /**
    * @public
    * Global function to execute a tool.
-   * This function is used by provider providers to implement helper functions to execute tools.
+   * This function is used by providerds to implement helper functions to execute tools.
    * This is a 1:1 mapping of the `execute` method in the `Tools` class.
    * @param {string} toolSlug - The slug of the tool to execute.
-   * @param {Record<string, unknown>} input - The input to the tool.
+   * @param {ToolExecuteParams} body - The body of the tool execution.
+   * @param {ExecuteToolModifiers} modifers - The modifiers of the tool execution.
    * @returns {Promise<string>} The result of the tool execution.
    */
   executeTool(

@@ -13,8 +13,13 @@ import {
   InputParamsSchema,
 } from '../types/customTool.types';
 import zodToJsonSchema from 'zod-to-json-schema';
-import { Tool, ToolExecuteParams, ToolExecuteResponse, ToolList } from '../types/tool.types';
-import { ToolProxyParams } from '@composio/client/resources/tools';
+import {
+  Tool,
+  ToolExecuteParams,
+  ToolExecuteResponse,
+  ToolList,
+  ToolProxyParams,
+} from '../types/tool.types';
 import logger from '../utils/logger';
 import {
   ComposioInvalidExecuteFunctionError,
@@ -315,9 +320,20 @@ export class CustomTools {
           }
         );
       }
+      // map the parameters to the composio format
+      const parameters = data.parameters?.map(param => ({
+        name: param.name,
+        type: param.in,
+        value: param.value.toString(),
+      }));
+
+      // execute the tool
       const response = await this.client.tools.proxy({
-        ...data,
-        connected_account_id: connectedAccountId,
+        endpoint: data.endpoint,
+        method: data.method,
+        parameters: parameters,
+        body: data.body,
+        connected_account_id: data.connectedAccountId ?? connectedAccountId,
       });
 
       return {

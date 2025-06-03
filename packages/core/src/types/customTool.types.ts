@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Tool } from './tool.types';
-import { ToolExecuteResponse, ToolProxyParams } from '@composio/client/resources/tools';
+import { Tool, ToolProxyParams } from './tool.types';
+import { ToolExecuteResponse } from '@composio/client/resources/tools';
 
 type BaseCustomToolOptions<T extends z.ZodType> = {
   name: string;

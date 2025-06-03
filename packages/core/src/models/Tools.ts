@@ -8,11 +8,13 @@ import {
   ToolSchema,
   ToolListParams,
   ToolExecuteResponseSchema,
+  ToolProxyParamsSchema,
+  ToolProxyParams,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
   ToolGetInputResponse,
-  ToolProxyParams,
+  ToolProxyParams as ComposioToolProxyParams,
   ToolProxyResponse,
   ToolRetrieveEnumResponse,
   ToolRetrieveResponse,
@@ -703,7 +705,35 @@ export class Tools<
    * ```
    */
   async proxyExecute(body: ToolProxyParams): Promise<ToolProxyResponse> {
-    return this.client.tools.proxy(body);
+    const toolProxyParams = ToolProxyParamsSchema.safeParse(body);
+    if (!toolProxyParams.success) {
+      throw new ValidationError('Invalid tool proxy parameters', { cause: toolProxyParams.error });
+    }
+    // convert the headers and query to the composio format
+    // { name: string, type: 'header' | 'query', value: string }
+    const parameters: ComposioToolProxyParams.Parameter[] = [];
+    const parameterTypes = {
+      header: 'header',
+      query: 'query',
+    } as const;
+
+    if (toolProxyParams.data.parameters) {
+      parameters.push(
+        ...Object.entries(toolProxyParams.data.parameters).map(([key, value]) => ({
+          name: key,
+          type: value.in === 'header' ? parameterTypes.header : parameterTypes.query,
+          value: value.value.toString(),
+        }))
+      );
+    }
+
+    return this.client.tools.proxy({
+      endpoint: toolProxyParams.data.endpoint,
+      method: toolProxyParams.data.method,
+      body: toolProxyParams.data.body,
+      connected_account_id: toolProxyParams.data.connectedAccountId,
+      parameters: parameters,
+    });
   }
 
   /**

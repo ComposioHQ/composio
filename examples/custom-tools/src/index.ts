@@ -37,7 +37,7 @@ const tool = await composio.tools.createCustomTool({
     console.log('🚀 ~ execute: ~ authCredentials:', authCredentials);
 
     const result = await executeToolRequest({
-      endpoint: `https://api.github.com/user/starred/composiohq/${input.repository}`,
+      endpoint: `/user/starred/composiohq/${input.repository}`,
       method: 'PUT',
       body: {},
     });

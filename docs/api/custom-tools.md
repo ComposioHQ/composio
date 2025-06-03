@@ -34,33 +34,43 @@ const tool = await composio.tools.createCustomTool({
 
 A toolkit-based tool has access to two ways of making authenticated requests:
 
-1. Using `executeToolRequest` - The recommended way to make authenticated requests to the toolkit's API endpoints. Composio automatically handles credential injection using the connected account:
+1. Using `executeToolRequest` - The recommended way to make authenticated requests to the toolkit's API endpoints. Composio automatically handles credential injection and baseURL resolution:
 
 ```typescript
 const tool = await composio.tools.createCustomTool({
-  slug: 'GITHUB_STAR_COMPOSIO_REPOSITORY',
-  name: 'Star Composios Repository',
-  description: 'Stars a repository under composiohq org',
+  slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
+  name: 'Github star composio repositories',
   toolkitSlug: 'github',
+  description: 'For any given repository of the user composiohq, star the repository',
   inputParams: z.object({
-    repository: z.string().describe('Name of the repository to star'),
+    repository: z.string().describe('The repository to star'),
+    page: z.number().optional().describe('Page number for pagination'),
+    customHeader: z.string().optional().describe('Custom header value'),
   }),
   execute: async (input, authCredentials, executeToolRequest) => {
     // executeToolRequest makes authenticated requests to the toolkit's API
-    // It automatically uses the connected account's credentials
-    const starResult = await executeToolRequest({
-      endpoint: `https://api.github.com/user/starred/composiohq/${input.repository}`,
+    // You can use relative paths - Composio will automatically inject the baseURL
+    const result = await executeToolRequest({
+      endpoint: `/user/starred/composiohq/${input.repository}`,
       method: 'PUT',
       body: {},
+      // Add custom headers or query parameters
+      parameters: [
+        // Add query parameters
+        {
+          name: 'page',
+          value: input.page?.toString() || '1',
+          in: 'query',
+        },
+        // Add custom headers
+        {
+          name: 'x-custom-header',
+          value: input.customHeader || 'default-value',
+          in: 'header',
+        },
+      ],
     });
-
-    return {
-      data: {
-        message: 'Successfully stared repository',
-      },
-      error: null,
-      successful: true,
-    };
+    return result;
   },
 });
 ```
@@ -76,7 +86,7 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repo: z.string().describe('Repository name'),
   }),
-  execute: async (input, authCredentials) => {
+  execute: async (input, authCredentials, executeToolRequest) => {
     // Use authCredentials for direct API calls
     const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
       headers: {
@@ -89,6 +99,55 @@ const tool = await composio.tools.createCustomTool({
       error: null,
       successful: true,
     };
+  },
+});
+```
+
+### Using Custom Headers and Query Parameters
+
+You can add custom headers and query parameters to your toolkit-based tools using the `parameters` option in `executeToolRequest`:
+
+```typescript
+const tool = await composio.tools.createCustomTool({
+  slug: 'GITHUB_SEARCH_REPOSITORIES',
+  name: 'Search GitHub Repositories',
+  description: 'Search for repositories with custom parameters',
+  toolkitSlug: 'github',
+  inputParams: z.object({
+    query: z.string().describe('Search query'),
+    perPage: z.number().optional().describe('Results per page'),
+    acceptType: z.string().optional().describe('Custom accept header'),
+  }),
+  execute: async (input, authCredentials, executeToolRequest) => {
+    const result = await executeToolRequest({
+      endpoint: '/search/repositories',
+      method: 'GET',
+      parameters: [
+        // Add query parameters for pagination
+        {
+          name: 'q',
+          value: input.query,
+          in: 'query',
+        },
+        {
+          name: 'per_page',
+          value: (input.perPage || 30).toString(),
+          in: 'query',
+        },
+        // Add custom headers
+        {
+          name: 'Accept',
+          value: input.acceptType || 'application/vnd.github.v3+json',
+          in: 'header',
+        },
+        {
+          name: 'X-Custom-Header',
+          value: 'custom-value',
+          in: 'header',
+        },
+      ],
+    });
+    return result;
   },
 });
 ```
@@ -123,6 +182,14 @@ The custom tools implementation provides full type safety:
 3. Handle errors gracefully in your execute function
 4. For toolkit-based tools:
    - Prefer `executeToolRequest` over direct API calls when possible
+   - Use relative paths with `executeToolRequest` - Composio will automatically inject the correct baseURL
+   - Use the `parameters` option to add custom headers or query parameters:
+     ```typescript
+     parameters: [
+       { name: 'page', value: '1', in: 'query' }, // Adds ?page=1 to URL
+       { name: 'x-custom', value: 'value', in: 'header' }, // Adds header
+     ];
+     ```
    - Remember that `executeToolRequest` can only call tools from the same toolkit
    - Use `executeToolRequest` to leverage Composio's automatic credential handling
    - Only use `authCredentials` when you need to make direct API calls or interact with different services
