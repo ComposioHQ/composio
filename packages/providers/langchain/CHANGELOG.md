@@ -1,5 +1,33 @@
 # @composio/langchain
 
+## 0.1.12
+
+### Patch Changes
+
+- c1443db: Improved error handling and telemetry
+- b121e73: Update packages to stable version
+- f144202: Update tsdocs across all the functions
+- ba8d991: Fix initiate connection flows and api issues
+- ca59bcd: Update documentations and fix API discrepencies
+- e51680c: Fix versioning with changesets
+- 0b15376: Add custom toolkit examples
+- de3f522: Stable version with test coverage and other stuff
+- a2f9537: Update tools.get to accept discriminated unions
+- 83a0d15: Test github ci publish
+- eeec413: Rename modifiers, add docs and other miscellanious improvements
+- Updated dependencies [c1443db]
+- Updated dependencies [b121e73]
+- Updated dependencies [f144202]
+- Updated dependencies [ba8d991]
+- Updated dependencies [ca59bcd]
+- Updated dependencies [e51680c]
+- Updated dependencies [0b15376]
+- Updated dependencies [de3f522]
+- Updated dependencies [a2f9537]
+- Updated dependencies [83a0d15]
+- Updated dependencies [eeec413]
+  - @composio/core@0.1.12
+
 ## 0.1.12-alpha.16
 
 ### Patch Changes
