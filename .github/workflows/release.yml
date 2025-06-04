@@ -48,13 +48,18 @@ jobs:
           commit: 'Release: update version'
           title: 'Release: update version'
 
+      - name: Format published packages for Slack
+        id: format_packages
+        run: |
+          echo "SLACK_VERSIONS=$(echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | \"⚡️ \\(.name) -> \\(.version)\"' | paste -sd '\\n' -)" >> $GITHUB_ENV
+
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
             {
-              "text": "🚀 New SDK version published!\n*Repository:* ${{ github.repository }}\n*Versions:* ${{ steps.changesets.outputs.publishedPackages }}\n*Commit:* ${{ github.sha }}"
+              "text": "🚀 New SDK version published!\n*Repository:* ${{ github.repository }}\n*Versions:*\n${{ env.SLACK_VERSIONS }}\n*Commit:* ${{ github.sha }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
