@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import ComposioClient, { ComposioError } from '@composio/client';
 import { ConnectionRequestTimeoutError } from '../../src/errors';
-import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
+import {
+  ConnectedAccountAuthSchemes,
+  ConnectedAccountStatuses,
+} from '../../src/types/connectedAccounts.types';
 
 // Mock ComposioClient
 const mockClient = {
@@ -64,9 +67,16 @@ describe('ConnectionRequest', () => {
         status: ConnectedAccountStatuses.ACTIVE,
         auth_config: {
           id: 'auth_config_123',
-          auth_scheme: 'OAUTH2',
           is_composio_managed: true,
           is_disabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: 'ACTIVE',
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
         },
         user_id: 'user_123',
         data: {},
@@ -88,7 +98,7 @@ describe('ConnectionRequest', () => {
       expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(1);
       expect(result).toHaveProperty('id', connectedAccountId);
       expect(result).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
-      expect(result).toHaveProperty('authConfig.authScheme', 'OAUTH2');
+      expect(result).toHaveProperty('state.authScheme', 'OAUTH2');
     });
 
     it('should poll until status becomes ACTIVE', async () => {
@@ -229,11 +239,11 @@ describe('ConnectionRequest', () => {
       );
 
       const jsonObj = connectionRequest.toJSON();
-      
+
       expect(jsonObj).toHaveProperty('id', connectedAccountId);
       expect(jsonObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(jsonObj).toHaveProperty('redirectUrl', redirectUrl);
-      
+
       expect(jsonObj).not.toHaveProperty('client');
     });
 
@@ -247,14 +257,14 @@ describe('ConnectionRequest', () => {
       );
 
       const jsonString = connectionRequest.toString();
-      
+
       expect(() => JSON.parse(jsonString)).not.toThrow();
-      
+
       const parsedObj = JSON.parse(jsonString);
       expect(parsedObj).toHaveProperty('id', connectedAccountId);
       expect(parsedObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(parsedObj).toHaveProperty('redirectUrl', redirectUrl);
-      
+
       expect(jsonString).toContain('\n');
       expect(jsonString).toContain('  ');
     });
@@ -269,10 +279,10 @@ describe('ConnectionRequest', () => {
       );
 
       expect(() => JSON.stringify(connectionRequest)).not.toThrow();
-      
+
       const stringified = JSON.stringify(connectionRequest);
       const parsed = JSON.parse(stringified);
-      
+
       expect(parsed).toHaveProperty('id', connectedAccountId);
       expect(parsed).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(parsed).toHaveProperty('redirectUrl', redirectUrl);

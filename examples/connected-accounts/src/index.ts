@@ -9,19 +9,30 @@ const composio = new Composio({
 /**
  * Create a new auth config
  */
-const authConfig = await composio.authConfigs.create('my-toolkit', {
-  type: AuthConfigTypes.CUSTOM,
-  authScheme: AuthSchemeTypes.BASIC,
-  credentials: {
-    // this should error not like the credentials should come from the auth scheme type
-    apiKey: '1234567890',
-  },
+const authConfig = await composio.authConfigs.create('github', {
+  type: AuthConfigTypes.COMPOSIO_MANAGED,
+  name: 'My GitHub Auth Config',
 });
+
+console.log(`✅ Auth config created: ${authConfig.id}`);
+console.log(`🔄 Createting a connection request`);
 
 /**
  * Create a new connected account
  */
 const ConnectionRequest = await composio.connectedAccounts.initiate('default', authConfig.id);
+
+console.log(
+  `🔗 Please visit the following URL to authorize the user: ${ConnectionRequest.redirectUrl}`
+);
 const connectedAccount = await ConnectionRequest.waitForConnection();
 
+console.log(`✅ Connected account created: ${connectedAccount.id}`);
 console.log(connectedAccount);
+console.log(`🔄 Getting the GitHub tools`);
+
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+});
+
+console.log(tools);

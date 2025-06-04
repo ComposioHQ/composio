@@ -26,7 +26,6 @@ export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTyp
 export const AuthSchemeEnum = z.enum([
   'OAUTH2',
   'OAUTH1',
-  'OAUTH1A',
   'API_KEY',
   'BASIC',
   'BILLCOM_AUTH',
@@ -43,12 +42,14 @@ export const CreateCustomAuthConfigParamsSchema = z.object({
   name: z.string().optional(),
   credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   authScheme: AuthSchemeEnum,
+  restrictToFollowingTools: z.array(z.string()).optional(),
 });
 
 export const CreateComposioManagedAuthConfigParamsSchema = z.object({
   type: z.literal('use_composio_managed_auth'),
   name: z.string().optional(),
   credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  restrictToFollowingTools: z.array(z.string()).optional(),
 });
 
 /**

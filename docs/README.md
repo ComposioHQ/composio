@@ -123,6 +123,7 @@ Check out our [examples directory](../examples) for complete code samples:
 - [Telemetry](./advanced/telemetry.md)
 - [Custom Providers](./advanced/custom-providers.md)
 - [Modifiers](./advanced/modifiers.md)
+- [Session Management](./advanced/session-management.md)
 
 ## Internal Documentation
 

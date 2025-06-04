@@ -367,7 +367,7 @@ describe('Tools', () => {
         connected_account_id: undefined,
         custom_auth_params: undefined,
         arguments: body.arguments,
-        entity_id: body.userId,
+        user_id: body.userId,
         version: undefined,
         text: undefined,
       });
@@ -391,7 +391,7 @@ describe('Tools', () => {
         connected_account_id: 'test-connected-account-id',
         custom_auth_params: undefined,
         arguments: body.arguments,
-        entity_id: body.userId,
+        user_id: body.userId,
         version: undefined,
         text: undefined,
       });

@@ -243,6 +243,22 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/session-management:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.5.0
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.13
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/telemetry:
     dependencies:
       '@ai-sdk/openai':
@@ -331,8 +347,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.15
-        version: 0.1.0-alpha.15
+        specifier: 0.1.0-alpha.16
+        version: 0.1.0-alpha.16
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -744,8 +760,8 @@ packages:
   '@cloudflare/workers-types@4.20250515.0':
     resolution: {integrity: sha512-KoHFMH04gOXp3KEI+wrFIU+3ZfoSXnwqZTpybNQjalHoN3pWjtWBb/030cCRAZ639YX+DAHAxNF7AvEYGz1oaA==}
 
-  '@composio/client@0.1.0-alpha.15':
-    resolution: {integrity: sha512-fgUx9uo+wWKuS2+WnzqcQsUuID89hD1nqWs9VOCQw/UiRdwNpA0gZdfHAEQEcjPti7wy7mYLOzT9LCVrR+vs7g==}
+  '@composio/client@0.1.0-alpha.16':
+    resolution: {integrity: sha512-NWHGVzdbPNvrQhFrhUnpEBEuvw2WZDBT3uj3Lw8T3qYa6U4sB35khR/shxLYLq30mmh/G7LHhymSCe8SOas3uA==}
 
   '@esbuild/aix-ppc64@0.25.4':
     resolution: {integrity: sha512-1VCICWypeQKhVbE9oW/sJaAmjLxhVqacdkvPLEjwlttjfwENRSClS8EjBz0KzRyFSCPDIkuXW34Je/vk7zdB7Q==}
@@ -4994,7 +5010,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250515.0': {}
 
-  '@composio/client@0.1.0-alpha.15': {}
+  '@composio/client@0.1.0-alpha.16': {}
 
   '@esbuild/aix-ppc64@0.25.4':
     optional: true
@@ -6765,7 +6781,7 @@ snapshots:
       flatted: 3.3.3
       pathe: 2.0.3
       sirv: 3.0.1
-      tinyglobby: 0.2.13
+      tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
       vitest: 3.1.4(@types/node@22.15.18)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
 

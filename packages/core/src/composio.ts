@@ -14,7 +14,8 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
-import { MergedRequestInit } from '@composio/client/internal/types';
+import type { ComposioRequestHeaders } from './types/composio.types';
+import { LogLevel } from '@composio/client/client';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
@@ -25,7 +26,19 @@ export type ComposioConfig<
   allowTracing?: boolean;
   provider?: TProvider;
   telemetryTransport?: BaseTelemetryTransport;
-  fetchOptions?: MergedRequestInit;
+  /**
+   * Request options to be passed to the Composio API client.
+   * This is useful for passing in a custom fetch implementation.
+   * @example
+   * ```typescript
+   * const composio = new Composio({
+   *   defaultHeaders: {
+   *      'x-request-id': '1234567890',
+   *   },
+   * });
+   * ```
+   */
+  defaultHeaders?: ComposioRequestHeaders;
 };
 
 /**
@@ -59,10 +72,10 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
 
   /**
    * Creates a new instance of the Composio SDK.
-   * 
+   *
    * The constructor initializes the SDK with the provided configuration options,
    * sets up the API client, and initializes all core models (tools, toolkits, etc.).
-   * 
+   *
    * @param {ComposioConfig<TProvider>} config - Configuration options for the Composio SDK
    * @param {string} [config.apiKey] - The API key for authenticating with the Composio API
    * @param {string} [config.baseURL] - The base URL for the Composio API (defaults to production URL)
@@ -70,18 +83,18 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
    * @param {boolean} [config.allowTracing=true] - Whether to allow request tracing for debugging
    * @param {TProvider} [config.provider] - The provider to use for this Composio instance (defaults to OpenAIProvider)
    * @param {BaseTelemetryTransport} [config.telemetryTransport] - Custom telemetry transport implementation
-   * 
+   *
    * @example
    * ```typescript
    * // Initialize with default configuration
    * const composio = new Composio();
-   * 
+   *
    * // Initialize with custom API key and base URL
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
    *   baseURL: 'https://api.composio.dev'
    * });
-   * 
+   *
    * // Initialize with custom provider
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
@@ -106,7 +119,8 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     this.client = new ComposioClient({
       apiKey: apiKeyParsed,
       baseURL: baseURLParsed,
-      fetchOptions: config?.fetchOptions,
+      defaultHeaders: config?.defaultHeaders,
+      logLevel: (process.env.COMPOSIO_LOG_LEVEL as LogLevel) ?? undefined,
     });
 
     /**
@@ -170,5 +184,46 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
+  }
+
+  /**
+   * Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
+   * This method is particularly useful when you need to:
+   * - Add custom headers for specific requests
+   * - Track request contexts with unique identifiers
+   * - Override default request behavior for a subset of operations
+   *
+   * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
+   * but allows you to specify custom request options that will be used for all API calls made through this session.
+   *
+   * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
+   *                                          This follows the Fetch API RequestInit interface with additional options.
+   * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
+   *
+   * @example
+   * ```typescript
+   * // Create a base Composio instance
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key'
+   * });
+   *
+   * // Create a session with request tracking headers
+   * const composioWithCustomHeaders = composio.createSession({
+   *   headers: {
+   *     'x-request-id': '1234567890',
+   *     'x-correlation-id': 'session-abc-123',
+   *     'x-custom-header': 'custom-value'
+   *   }
+   * });
+   *
+   * // Use the session for making API calls with the custom headers
+   * await composioWithCustomHeaders.tools.list();
+   * ```
+   */
+  createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
+    return new Composio({
+      ...this.config,
+      defaultHeaders: options?.headers,
+    });
   }
 }

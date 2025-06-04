@@ -263,6 +263,8 @@ const result = await composio.tools.execute('WEATHER_FORECAST', {
 console.log(result.data.forecast);
 ```
 
+For more advanced session management features, check out the [Session Management Guide](./advanced/session-management.md).
+
 ## Next Steps
 
 Now that you understand the basics, you can:

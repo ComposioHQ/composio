@@ -5,6 +5,11 @@ import ComposioClient from '@composio/client';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
 import { ComposioConnectedAccountNotFoundError } from '../../src/errors';
+import { ConnectionStatusEnum } from '../../src/types/connectedAccountAuthStates.types';
+import {
+  ConnectedAccountAuthSchemes,
+  ConnectedAccountStatuses,
+} from '../../src/types/connectedAccounts.types';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -77,14 +82,18 @@ describe('ConnectedAccounts', () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
       const options = {
-        data: { name: 'Test Account' },
         callbackUrl: 'https://example.com/callback',
       };
 
       const mockResponse = {
         id: 'conn_123',
-        status: 'pending',
-        redirect_url: 'https://auth.example.com/connect',
+        connectionData: {
+          val: {
+            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
       };
 
       extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
@@ -96,7 +105,7 @@ describe('ConnectedAccounts', () => {
           id: authConfigId,
         },
         connection: {
-          data: options.data,
+          state: undefined,
           callback_url: options.callbackUrl,
           user_id: userId,
         },
@@ -104,18 +113,28 @@ describe('ConnectedAccounts', () => {
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
       expect(connectionRequest).toHaveProperty('id', mockResponse.id);
-      expect(connectionRequest).toHaveProperty('status', mockResponse.status);
-      expect(connectionRequest).toHaveProperty('redirectUrl', mockResponse.redirect_url);
+      expect(connectionRequest).toHaveProperty('status', mockResponse.connectionData.val.status);
+      expect(connectionRequest).toHaveProperty(
+        'redirectUrl',
+        mockResponse.connectionData.val.redirectUrl
+      );
 
       extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce({
         id: 'nanoid',
-        status: 'ACTIVE',
+        status: ConnectedAccountStatuses.ACTIVE,
         auth_scopes: ['read:user', 'write:user'],
         auth_config: {
           id: authConfigId,
-          auth_scheme: 'OAUTH2',
           is_composio_managed: true,
           is_disabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.ACTIVE,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
         },
         user_id: userId,
         data: {},
@@ -134,6 +153,10 @@ describe('ConnectedAccounts', () => {
       expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(mockResponse.id);
       expect(connectedAccount).toHaveProperty('id', 'nanoid');
       expect(connectedAccount).toHaveProperty('status', 'ACTIVE');
+      expect(connectedAccount).toHaveProperty(
+        'state.authScheme',
+        ConnectedAccountAuthSchemes.OAUTH2
+      );
     });
 
     it('should work without optional parameters', async () => {
@@ -142,8 +165,12 @@ describe('ConnectedAccounts', () => {
 
       const mockResponse = {
         id: 'conn_123',
-        status: 'pending',
-        callback_url: 'https://auth.example.com/connect',
+        connectionData: {
+          val: {
+            status: 'INITIALIZING',
+            redirectUrl: null,
+          },
+        },
       };
 
       extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
@@ -155,7 +182,7 @@ describe('ConnectedAccounts', () => {
           id: authConfigId,
         },
         connection: {
-          data: undefined,
+          state: undefined,
           callback_url: undefined,
           user_id: userId,
         },
@@ -174,9 +201,16 @@ describe('ConnectedAccounts', () => {
         auth_scopes: ['read:user', 'write:user'],
         auth_config: {
           id: 'test-auth-config',
-          auth_scheme: 'OAUTH2',
           is_composio_managed: true,
           is_disabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: 'ACTIVE',
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
         },
         user_id: 'user_123',
         data: {},
@@ -200,11 +234,17 @@ describe('ConnectedAccounts', () => {
         status: 'ACTIVE',
         authConfig: {
           id: 'test-auth-config',
-          authScheme: 'OAUTH2',
           isComposioManaged: true,
           isDisabled: false,
         },
-        userId: 'user_123',
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: 'ACTIVE',
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
+        },
         data: {},
         params: {},
         statusReason: null,
@@ -303,13 +343,21 @@ describe('ConnectedAccounts', () => {
       const authConfigId = 'auth_config_123';
       const mockGetResponse = {
         id: nanoid,
-        status: 'PENDING',
+        status: ConnectedAccountStatuses.INITIALIZING,
         auth_scopes: ['read:user', 'write:user'],
         auth_config: {
           id: authConfigId,
-          auth_scheme: 'OAUTH2',
+          auth_scheme: ConnectedAccountAuthSchemes.OAUTH2,
           is_composio_managed: true,
           is_disabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.INITIALIZING,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
         },
         user_id: 'user_123',
         data: {},
@@ -325,7 +373,15 @@ describe('ConnectedAccounts', () => {
 
       const mockActiveResponse = {
         ...mockGetResponse,
-        status: 'ACTIVE',
+        status: ConnectedAccountStatuses.ACTIVE,
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.ACTIVE,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
+        },
       } as unknown as ConnectedAccountRetrieveResponse;
 
       // Mock the get method first call
@@ -336,9 +392,33 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.waitForConnection(nanoid);
 
       expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
-      expect(result).toEqual(
-        connectedAccounts.transformConnectedAccountResponse(mockActiveResponse)
-      );
+      expect(result).toEqual({
+        id: nanoid,
+        status: ConnectedAccountStatuses.ACTIVE,
+        authConfig: {
+          id: 'auth_config_123',
+          isComposioManaged: true,
+          isDisabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.ACTIVE,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
+        },
+        data: {},
+        params: {},
+        statusReason: null,
+        isDisabled: false,
+        createdAt: '2023-01-01T00:00:00Z',
+        updatedAt: '2023-01-01T00:00:00Z',
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+        testRequestEndpoint: undefined,
+      });
     });
 
     it('should throw ComposioConnectedAccountNotFoundError if connected account does not exist', async () => {
@@ -360,12 +440,19 @@ describe('ConnectedAccounts', () => {
       const timeout = 30000;
       const mockGetResponse = {
         id: nanoid,
-        status: 'PENDING',
+        status: ConnectedAccountStatuses.INITIALIZING,
         auth_config: {
           id: 'auth_config_123',
-          auth_scheme: 'OAUTH2',
           is_composio_managed: true,
           is_disabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.INITIALIZING,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
         },
         user_id: 'user_123',
         data: {},
@@ -383,6 +470,14 @@ describe('ConnectedAccounts', () => {
       const mockActiveResponse = {
         ...mockGetResponse,
         status: 'ACTIVE',
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.ACTIVE,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
+        },
       } as unknown as ConnectedAccountRetrieveResponse;
 
       extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockGetResponse);
@@ -391,9 +486,33 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.waitForConnection(nanoid, timeout);
 
       expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
-      expect(result).toEqual(
-        connectedAccounts.transformConnectedAccountResponse(mockActiveResponse)
-      );
+      expect(result).toEqual({
+        id: nanoid,
+        status: ConnectedAccountStatuses.ACTIVE,
+        authConfig: {
+          id: 'auth_config_123',
+          isComposioManaged: true,
+          isDisabled: false,
+        },
+        state: {
+          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          val: {
+            status: ConnectedAccountStatuses.ACTIVE,
+            access_token: 'access_token_123',
+            token_type: 'Bearer',
+          },
+        },
+        data: {},
+        params: {},
+        statusReason: null,
+        isDisabled: false,
+        createdAt: '2023-01-01T00:00:00Z',
+        updatedAt: '2023-01-01T00:00:00Z',
+        toolkit: {
+          slug: 'test-toolkit',
+        },
+        testRequestEndpoint: undefined,
+      });
     });
   });
 });

@@ -12,13 +12,10 @@ import {
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
-  ConnectedAccountRetrieveResponse as ConnectedAccountRetrieveResponseRaw,
-  ConnectedAccountListResponse as ConnectedAccountListResponseRaw,
 } from '@composio/client/resources/connected-accounts';
 import {
   CreateConnectedAccountOptions,
   ConnectedAccountRetrieveResponse,
-  ConnectedAccountRetrieveResponseSchema,
   ConnectedAccountListParams,
   ConnectedAccountListParamsSchema,
   ConnectedAccountListResponse,
@@ -27,6 +24,7 @@ import {
 import { ConnectionRequest } from './ConnectionRequest';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
+import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 /**
  * ConnectedAccounts class
  *
@@ -39,32 +37,6 @@ export class ConnectedAccounts {
   constructor(client: ComposioClient) {
     this.client = client;
     telemetry.instrument(this);
-  }
-
-  transformConnectedAccountRetrieveResponse(
-    response: ConnectedAccountRetrieveResponseRaw | ConnectedAccountListResponseRaw['items'][0]
-  ): ConnectedAccountRetrieveResponse {
-    const result = ConnectedAccountRetrieveResponseSchema.safeParse({
-      ...response,
-      userId: response.user_id, // Add the missing userId property
-      authConfig: {
-        ...response.auth_config,
-        authScheme: response.auth_config.auth_scheme,
-        isComposioManaged: response.auth_config.is_composio_managed,
-        isDisabled: response.auth_config.is_disabled,
-      },
-      statusReason: response.status_reason,
-      isDisabled: response.is_disabled,
-      createdAt: response.created_at,
-      updatedAt: response.updated_at,
-      testRequestEndpoint: response.test_request_endpoint,
-    });
-    if (!result.success) {
-      throw new ValidationError('Failed to parse connected account retrieve response', {
-        cause: result.error,
-      });
-    }
-    return result.data;
   }
 
   /**
@@ -116,7 +88,7 @@ export class ConnectedAccounts {
     const result = await this.client.connectedAccounts.list(rawQuery);
 
     const parsedResponse = ConnectedAccountListResponseSchema.safeParse({
-      items: result.items.map(this.transformConnectedAccountRetrieveResponse),
+      items: result.items.map(transformConnectedAccountResponse),
       nextCursor: result.next_cursor,
       totalPages: result.total_pages,
     });
@@ -126,24 +98,6 @@ export class ConnectedAccounts {
       });
     }
     return parsedResponse.data;
-  }
-
-  /**
-   * Transforms connected account data from API format to SDK format.
-   *
-   * This method converts property names from snake_case to camelCase and reorganizes
-   * the data structure to match the SDK's standardized format for connected accounts.
-   *
-   * @param {ConnectedAccountRetrieveResponseRaw} response - The raw API response to transform
-   * @returns {ConnectedAccountRetrieveResponse} The transformed connected account data
-   * @throws {ValidationError} If the response fails validation against the expected schema
-   *
-   * @private
-   */
-  transformConnectedAccountResponse(
-    response: ConnectedAccountRetrieveResponseRaw
-  ): ConnectedAccountRetrieveResponse {
-    return this.transformConnectedAccountRetrieveResponse(response);
   }
 
   /**
@@ -174,12 +128,22 @@ export class ConnectedAccounts {
         id: authConfigId,
       },
       connection: {
-        data: options?.data,
+        state: options?.state,
         callback_url: options?.callbackUrl,
         user_id: userId,
       },
     });
-    return new ConnectionRequest(this.client, response.id, response.status, response.redirect_url);
+    const redirectUrl =
+      typeof response.connectionData?.val?.redirectUrl === 'string'
+        ? response.connectionData.val.redirectUrl
+        : null;
+
+    return new ConnectionRequest(
+      this.client,
+      response.id,
+      response.connectionData.val.status,
+      redirectUrl
+    );
   }
 
   /**
@@ -232,7 +196,7 @@ export class ConnectedAccounts {
    */
   async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
     const response = await this.client.connectedAccounts.retrieve(nanoid);
-    return this.transformConnectedAccountResponse(response);
+    return transformConnectedAccountResponse(response);
   }
 
   /**
@@ -280,14 +244,14 @@ export class ConnectedAccounts {
    * @param {string} nanoid - Unique identifier of the connected account
    * @param {ConnectedAccountUpdateStatusParams} params - Parameters for updating the status
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
-   * 
+   *
    * @example
    * ```typescript
    * // Enable a connected account
    * const updatedAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
    *   enabled: true
    * });
-   * 
+   *
    * // Disable a connected account with a reason
    * const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
    *   enabled: false,
@@ -306,7 +270,7 @@ export class ConnectedAccounts {
    * Enable a connected account
    * @param {string} nanoid - Unique identifier of the connected account
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
-   * 
+   *
    * @example
    * ```typescript
    * // Enable a previously disabled connected account
@@ -322,13 +286,13 @@ export class ConnectedAccounts {
    * Disable a connected account
    * @param {string} nanoid - Unique identifier of the connected account
    * @returns {Promise<ConnectedAccountUpdateStatusResponse>} Updated connected account details
-   * 
+   *
    * @example
    * ```typescript
    * // Disable a connected account
    * const disabledAccount = await composio.connectedAccounts.disable('conn_abc123');
    * console.log(disabledAccount.isDisabled); // true
-   * 
+   *
    * // You can also use updateStatus with a reason
    * // const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
    * //   enabled: false,

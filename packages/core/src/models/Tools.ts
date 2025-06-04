@@ -549,7 +549,7 @@ export class Tools<
       connected_account_id: body.connectedAccountId,
       custom_auth_params: body.customAuthParams,
       arguments: body.arguments,
-      entity_id: body.userId,
+      user_id: body.userId,
       version: body.version,
       text: body.text,
     });

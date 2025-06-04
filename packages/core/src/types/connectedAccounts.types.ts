@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConnectionDataSchema } from './connectedAccountAuthStates.types';
 
 /**
  * Connected Account create parameters
@@ -36,14 +37,16 @@ export const DefaultCreateConnectedAccountParamsSchema = z.object({
     id: z.string(),
   }),
   connection: z.object({
+    state: ConnectionDataSchema.optional(),
     data: z.record(z.string(), z.unknown()).optional(),
     callback_url: z.string().optional(),
     user_id: z.string().optional(),
   }),
 });
+
 export const CreateConnectedAccountOptionsSchema = z.object({
   callbackUrl: z.string().optional(),
-  data: z.record(z.string(), z.unknown()).optional(),
+  state: ConnectionDataSchema.optional(),
 });
 export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;
 export type CreateConnectedAccountParams = z.infer<typeof CreateConnectedAccountParamsSchema>;
@@ -97,7 +100,6 @@ export type ConnectedAccountAuthSchemes =
 
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
-  authScheme: ConnectedAccountAuthSchemesSchema,
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
 });
@@ -105,7 +107,6 @@ export const ConnectedAccountAuthConfigSchema = z.object({
 export const ConnectedAccountRetrieveResponseSchema = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
-  userId: z.string(),
   data: z.record(z.string(), z.unknown()),
   params: z.record(z.string(), z.unknown()).optional(),
   status: ConnectedAccountStatusSchema,
@@ -113,6 +114,7 @@ export const ConnectedAccountRetrieveResponseSchema = z.object({
   toolkit: z.object({
     slug: z.string(),
   }),
+  state: ConnectionDataSchema.optional(),
   testRequestEndpoint: z.string().optional(),
   isDisabled: z.boolean(),
   createdAt: z.string(),

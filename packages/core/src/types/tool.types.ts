@@ -184,13 +184,15 @@ export const ToolProxyParamsSchema = z.object({
   endpoint: z.string(),
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
   body: z.unknown().optional(),
-  parameters: z.array(
-    z.object({
-      in: z.enum(['query', 'header']),
-      name: z.string(),
-      value: z.union([z.string(), z.number()]),
-    })
-  ),
+  parameters: z
+    .array(
+      z.object({
+        in: z.enum(['query', 'header']),
+        name: z.string(),
+        value: z.union([z.string(), z.number()]),
+      })
+    )
+    .optional(),
   connectedAccountId: z.string().optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;

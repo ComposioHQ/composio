@@ -171,15 +171,15 @@ export class Triggers {
   /**
    * Update an existing trigger instance
    *
-   * @param {string} slug - The slug of the trigger instance
-   * @param {TriggerInstanceManageUpdateParams} body - The parameters to create the trigger instance
-   * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
+   * @param {string} triggerId - The Id of the trigger instance
+   * @param {TriggerInstanceManageUpdateParams} body - The parameters to update the trigger instance
+   * @returns {Promise<TriggerInstanceManageUpdateResponse>} The updated trigger instance response
    */
   async update(
-    slug: string,
+    triggerId: string,
     body: TriggerInstanceManageUpdateParams
   ): Promise<TriggerInstanceManageUpdateResponse> {
-    return this.client.triggerInstances.manage.update(slug, body);
+    return this.client.triggerInstances.manage.update(triggerId, body);
   }
 
   /**

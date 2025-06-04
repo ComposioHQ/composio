@@ -171,7 +171,21 @@ export class AuthConfigs {
       toolkit: {
         slug: toolkit,
       },
-      auth_config: parsedOptions.data,
+      auth_config:
+        parsedOptions.data.type === 'use_custom_auth'
+          ? {
+              type: parsedOptions.data.type,
+              name: parsedOptions.data.name,
+              authScheme: parsedOptions.data.authScheme,
+              credentials: parsedOptions.data.credentials,
+              restrict_to_following_tools: parsedOptions.data.restrictToFollowingTools,
+            }
+          : {
+              type: parsedOptions.data.type,
+              credentials: parsedOptions.data.credentials,
+              name: parsedOptions.data.name,
+              restrict_to_following_tools: parsedOptions.data.restrictToFollowingTools,
+            },
     });
     const parsedResult = CreateAuthConfigResponseSchema.safeParse({
       id: result.auth_config.id,

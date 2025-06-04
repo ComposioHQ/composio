@@ -10,17 +10,14 @@ import {
   ConnectedAccountStatus,
   ConnectedAccountStatuses,
   ConnectedAccountRetrieveResponse,
-  ConnectedAccountRetrieveResponseSchema,
 } from '../types/connectedAccounts.types';
-import { ConnectedAccountRetrieveResponse as OriginalConnectedAccountResponse } from '@composio/client/resources/connected-accounts';
-import { ZodError } from 'zod';
-import logger from '../utils/logger';
 import {
   ConnectionRequestFailedError,
   ConnectionRequestTimeoutError,
 } from '../errors/ConnectionRequestErrors';
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { telemetry } from '../telemetry/Telemetry';
+import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 export class ConnectionRequest {
   private client: ComposioClient;
   public id: string;
@@ -38,47 +35,6 @@ export class ConnectionRequest {
     this.status = status || ConnectedAccountStatuses.INITIATED;
     this.redirectUrl = redirectUrl;
     telemetry.instrument(this);
-  }
-
-  /**
-   * Transforms the raw connected account response from the Composio API to the SDK format.
-   *
-   * This method converts property names from snake_case to camelCase and reorganizes
-   * the data structure to match the SDK's standardized format.
-   *
-   * @param {OriginalConnectedAccountResponse} response - The raw API response to transform
-   * @returns {Promise<ConnectedAccountRetrieveResponse>} The transformed response
-   * @throws {ZodError} If the response fails validation against the expected schema
-   *
-   * @private
-   */
-  private async transformResponse(
-    response: OriginalConnectedAccountResponse
-  ): Promise<ConnectedAccountRetrieveResponse> {
-    try {
-      const parsedResponse = ConnectedAccountRetrieveResponseSchema.parse({
-        ...response,
-        userId: response.user_id, // Add the missing userId property
-        authConfig: {
-          ...response.auth_config,
-          authScheme: response.auth_config.auth_scheme,
-          isComposioManaged: response.auth_config.is_composio_managed,
-          isDisabled: response.auth_config.is_disabled,
-        },
-        statusReason: response.status_reason,
-        isDisabled: response.is_disabled,
-        createdAt: response.created_at,
-        updatedAt: response.updated_at,
-        testRequestEndpoint: response.test_request_endpoint,
-      });
-      return parsedResponse;
-    } catch (error) {
-      logger.error('Error transforming response', error);
-      if (error instanceof ZodError) {
-        logger.error(JSON.stringify(error.errors, null, 2));
-      }
-      throw error;
-    }
   }
 
   /**
@@ -112,7 +68,7 @@ export class ConnectionRequest {
       const response = await this.client.connectedAccounts.retrieve(this.id);
       if (response.status === ConnectedAccountStatuses.ACTIVE) {
         this.status = ConnectedAccountStatuses.ACTIVE;
-        return this.transformResponse(response);
+        return transformConnectedAccountResponse(response);
       }
     } catch (error) {
       if (error instanceof ComposioClient.NotFoundError) {
@@ -143,7 +99,7 @@ export class ConnectionRequest {
 
         this.status = response.status;
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
-          return this.transformResponse(response);
+          return transformConnectedAccountResponse(response);
         }
 
         if (terminalErrorStates.includes(response.status)) {
@@ -151,7 +107,6 @@ export class ConnectionRequest {
             `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
             {
               meta: {
-                userId: response.user_id,
                 connectedAccountId: this.id,
                 status: response.status,
                 statusReason: response.status_reason,

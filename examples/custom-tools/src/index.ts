@@ -39,7 +39,6 @@ const tool = await composio.tools.createCustomTool({
     const result = await executeToolRequest({
       endpoint: `/user/starred/composiohq/${input.repository}`,
       method: 'PUT',
-      body: {},
     });
     return result;
   },
