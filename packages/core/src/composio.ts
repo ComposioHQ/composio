@@ -14,6 +14,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
+import { MergedRequestInit } from '@composio/client/internal/types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
@@ -24,6 +25,7 @@ export type ComposioConfig<
   allowTracing?: boolean;
   provider?: TProvider;
   telemetryTransport?: BaseTelemetryTransport;
+  fetchOptions?: MergedRequestInit;
 };
 
 /**
@@ -104,6 +106,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
     this.client = new ComposioClient({
       apiKey: apiKeyParsed,
       baseURL: baseURLParsed,
+      fetchOptions: config?.fetchOptions,
     });
 
     /**
