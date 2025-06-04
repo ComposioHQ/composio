@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.13
+
+### Patch Changes
+
+- 040b5a4: Ability to create sessions for transferring request ids
+
 ## 0.1.12
 
 ### Patch Changes

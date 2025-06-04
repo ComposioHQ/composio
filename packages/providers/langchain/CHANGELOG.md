@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.13
+
+### Patch Changes
+
+- 040b5a4: Ability to create sessions for transferring request ids
+- Updated dependencies [040b5a4]
+  - @composio/core@0.1.13
+
 ## 0.1.12
 
 ### Patch Changes
