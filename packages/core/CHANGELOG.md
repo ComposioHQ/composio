@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.15
+
+### Patch Changes
+
+- 208e320: Update json schema transformations issues related to strict mode
+- Updated dependencies [208e320]
+  - @composio/json-schema-to-zod@0.1.2
+
 ## 0.1.14
 
 ### Patch Changes
