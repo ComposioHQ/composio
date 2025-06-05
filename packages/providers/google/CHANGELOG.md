@@ -1,5 +1,13 @@
 # @composio/google
 
+## 0.1.14
+
+### Patch Changes
+
+- 4ddfafc: Add json schema to zod schema
+- Updated dependencies [4ddfafc]
+  - @composio/core@0.1.14
+
 ## 0.1.13
 
 ### Patch Changes

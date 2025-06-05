@@ -353,8 +353,8 @@ importers:
         specifier: 0.1.0-alpha.16
         version: 0.1.0-alpha.16
       '@composio/json-schema-to-zod':
-        specifier: workspace:^
-        version: link:../json-schema-to-zod
+        specifier: 0.1.1
+        version: 0.1.1
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -784,6 +784,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.16':
     resolution: {integrity: sha512-NWHGVzdbPNvrQhFrhUnpEBEuvw2WZDBT3uj3Lw8T3qYa6U4sB35khR/shxLYLq30mmh/G7LHhymSCe8SOas3uA==}
+
+  '@composio/json-schema-to-zod@0.1.1':
+    resolution: {integrity: sha512-bSZbYtwKSRGURERoF8R/fR2QpYD397aR7qqp2PezzOtlCPvE95Bzci8slwTiuXvvt6lrgoA7M7jkOipoceo0sw==}
 
   '@esbuild/aix-ppc64@0.25.4':
     resolution: {integrity: sha512-1VCICWypeQKhVbE9oW/sJaAmjLxhVqacdkvPLEjwlttjfwENRSClS8EjBz0KzRyFSCPDIkuXW34Je/vk7zdB7Q==}
@@ -5033,6 +5036,10 @@ snapshots:
   '@cloudflare/workers-types@4.20250515.0': {}
 
   '@composio/client@0.1.0-alpha.16': {}
+
+  '@composio/json-schema-to-zod@0.1.1':
+    dependencies:
+      zod: 3.24.4
 
   '@esbuild/aix-ppc64@0.25.4':
     optional: true
