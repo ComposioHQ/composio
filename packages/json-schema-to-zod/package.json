@@ -1,6 +1,6 @@
 {
-  "name": "@composio/core",
-  "version": "0.1.13",
+  "name": "@composio/json-schema-to-zod",
+  "version": "0.1.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -29,22 +29,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
-    "@types/semver": "^7.7.0",
     "tsup": "^8.4.0",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.16",
-    "@composio/json-schema-to-zod": "workspace:^",
-    "chalk": "^5.4.1",
-    "openai": "^4.94.0",
-    "pusher-js": "^8.4.0",
-    "semver": "^7.7.2",
-    "uuid": "^11.1.0",
-    "zod": "^3.24.2",
-    "zod-to-json-schema": "^3.24.5"
-  },
-  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
+    "zod": "^3.24.2"
+  }
 }

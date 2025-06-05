@@ -1,239 +1,158 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { LangchainProvider } from '../src';
 import { Tool } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
-// Define an interface for our mocked LangChain tool
-interface MockedLangChainTool extends DynamicStructuredTool {
-  _isMockedLangChainTool: boolean;
-}
-
-// Mock the @langchain/core/tools module
-vi.mock('@langchain/core/tools', () => {
-  return {
-    DynamicStructuredTool: vi.fn().mockImplementation(config => {
-      return {
-        name: config.name,
-        description: config.description,
-        schema: config.schema,
-        func: config.func,
-        _isMockedLangChainTool: true,
-      } as MockedLangChainTool;
-    }),
-  };
-});
-
-// Mock the jsonSchemaToZodSchema function from @composio/core
-vi.mock('@composio/core', async () => {
-  const actual = await vi.importActual('@composio/core');
-  return {
-    ...(actual as object),
-    jsonSchemaToZodSchema: vi.fn().mockImplementation(schema => {
-      return { type: 'mock-schema', originalSchema: schema };
-    }),
-  };
-});
-
 describe('LangchainProvider', () => {
   let provider: LangchainProvider;
-  let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let sampleTool: Tool;
+  let executeToolFn: (
+    toolSlug: string,
+    params: Record<string, unknown>,
+    modifiers?: any
+  ) => Promise<any>;
 
   beforeEach(() => {
     provider = new LangchainProvider();
 
-    // Mock the global execute tool function
-    mockExecuteToolFn = vi.fn().mockResolvedValue({
-      data: { result: 'success' },
-      error: null,
-      successful: true,
-    });
-    provider._setExecuteToolFn(mockExecuteToolFn);
+    // Create a real execute function that simulates tool execution
+    executeToolFn = async (toolSlug: string, params: Record<string, unknown>) => {
+      // Simulate actual tool execution with realistic response
+      return {
+        data: { toolSlug, params },
+        error: null,
+        successful: true,
+      };
+    };
 
-    // Create a mock Composio tool
-    mockTool = {
-      slug: 'test-tool',
-      name: 'Test Tool',
-      description: 'A tool for testing',
+    // Create a real sample tool that matches actual tool structure
+    sampleTool = {
+      slug: 'SEARCH_TOOL',
+      name: 'Search Tool',
+      description: 'Search for information in the knowledge base',
       inputParameters: {
         type: 'object',
         properties: {
-          input: {
+          query: {
             type: 'string',
-            description: 'Test input',
+            description: 'The search query',
           },
         },
-        required: ['input'],
+        required: ['query'],
+        additionalProperties: false,
       },
       toolkit: {
-        slug: 'test-toolkit',
-        name: 'Test Toolkit',
+        slug: 'search_toolkit',
+        name: 'Search Toolkit',
       },
-      tags: [],
+      tags: ['search', 'knowledge'],
     };
-
-    // Reset mocks before each test
-    vi.clearAllMocks();
   });
 
-  describe('name property', () => {
-    it('should have the correct name', () => {
+  describe('Provider Configuration', () => {
+    it('should be properly initialized with correct name', () => {
       expect(provider.name).toBe('langchain');
     });
-  });
 
-  describe('_isAgentic property', () => {
-    it('should be agentic', () => {
+    it('should be marked as agentic', () => {
       expect(provider._isAgentic).toBe(true);
     });
   });
 
-  describe('wrapTool', () => {
-    it('should wrap a tool in LangChain DynamicStructuredTool format', () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as MockedLangChainTool;
+  describe('Tool Wrapping', () => {
+    it('should successfully wrap a valid tool into LangChain format', () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
 
-      expect(DynamicStructuredTool).toHaveBeenCalledWith({
-        name: mockTool.slug,
-        description: mockTool.description,
-        schema: expect.objectContaining({
-          type: 'mock-schema',
-          originalSchema: mockTool.inputParameters,
-        }),
-        func: expect.any(Function),
-      });
-
-      expect(wrapped._isMockedLangChainTool).toBe(true);
+      // Verify the wrapped tool has the correct structure
+      expect(wrappedTool).toBeInstanceOf(DynamicStructuredTool);
+      expect(wrappedTool.name).toBe(sampleTool.slug);
+      expect(wrappedTool.description).toBe(sampleTool.description);
+      expect(typeof wrappedTool.func).toBe('function');
     });
 
-    it('should throw an error if toolkit name is not defined', () => {
-      const toolWithoutToolkit: Tool = {
-        ...mockTool,
-        toolkit: undefined,
-      };
+    it('should wrap a tool that can be executed with parameters', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+      const searchParams = { query: 'test search' };
 
-      expect(() => {
-        provider.wrapTool(toolWithoutToolkit, mockExecuteToolFn);
-      }).toThrow('App name is not defined');
-    });
+      const result = await wrappedTool.func(searchParams);
+      const parsedResult = JSON.parse(result as string);
 
-    it('should throw an error if inputParameters are not defined', () => {
-      const toolWithoutParams: Tool = {
-        ...mockTool,
-        inputParameters: undefined,
-      };
-
-      expect(() => {
-        provider.wrapTool(toolWithoutParams, mockExecuteToolFn);
-      }).toThrow('Tool input parameters are not defined');
-    });
-
-    it('should create a function that executes the tool with the right parameters', async () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn);
-
-      // Extract the function from the constructor call
-      const executeFunction = (DynamicStructuredTool as any).mock.calls[0][0].func;
-
-      // Test the execute function
-      const params = { input: 'test-value' };
-      const result = await executeFunction(params);
-
-      // Check that executeToolFn was called with the right parameters
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
-
-      // Check that the result was stringified
-      expect(result).toBe(
-        JSON.stringify({
-          data: { result: 'success' },
-          error: null,
-          successful: true,
-        })
-      );
-    });
-  });
-
-  describe('wrapTools', () => {
-    it('should wrap multiple tools', () => {
-      const anotherTool: Tool = {
-        ...mockTool,
-        slug: 'another-tool',
-        name: 'Another Tool',
-      };
-      const tools = [mockTool, anotherTool];
-
-      const wrapped = provider.wrapTools(tools, mockExecuteToolFn);
-
-      // Verify the result is an array of the right length
-      expect(wrapped).toHaveLength(2);
-
-      // Verify the DynamicStructuredTool constructor was called with the right parameters for each tool
-      expect(DynamicStructuredTool).toHaveBeenCalledTimes(2);
-      expect(DynamicStructuredTool).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: mockTool.slug,
-        })
-      );
-      expect(DynamicStructuredTool).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: anotherTool.slug,
-        })
-      );
-    });
-
-    it('should return an empty array for empty tools array', () => {
-      const wrapped = provider.wrapTools([], mockExecuteToolFn);
-      expect(wrapped).toEqual([]);
-      expect(DynamicStructuredTool).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
+      expect(parsedResult).toEqual({
+        data: {
+          toolSlug: sampleTool.slug,
+          params: searchParams,
+        },
         error: null,
         successful: true,
       });
     });
 
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
+    it('should fail to wrap a tool without toolkit', () => {
+      const invalidTool = { ...sampleTool, toolkit: undefined };
 
-      const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
-      };
+      expect(() => {
+        provider.wrapTool(invalidTool, executeToolFn);
+      }).toThrow('App name is not defined');
+    });
 
-      await provider.executeTool(toolSlug, toolParams, modifiers);
+    it('should fail to wrap a tool without input parameters', () => {
+      const invalidTool = { ...sampleTool, inputParameters: undefined };
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
+      expect(() => {
+        provider.wrapTool(invalidTool, executeToolFn);
+      }).toThrow('Tool input parameters are not defined');
     });
   });
 
-  describe('integration with LangChain', () => {
-    it('should produce tools compatible with LangChain', () => {
-      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as MockedLangChainTool;
+  describe('Multiple Tools Wrapping', () => {
+    it('should wrap multiple tools correctly', () => {
+      const anotherTool: Tool = {
+        ...sampleTool,
+        slug: 'WEATHER_TOOL',
+        name: 'Weather Tool',
+        description: 'Get weather information',
+        inputParameters: {
+          type: 'object',
+          properties: {
+            location: {
+              type: 'string',
+              description: 'Location to get weather for',
+            },
+          },
+          required: ['location'],
+          additionalProperties: false,
+        },
+      };
 
-      // Verify the wrapped tool has the expected structure
-      expect(wrapped).toHaveProperty('name');
-      expect(wrapped).toHaveProperty('description');
-      expect(wrapped).toHaveProperty('schema');
-      expect(wrapped).toHaveProperty('func');
+      const tools = [sampleTool, anotherTool];
+      const wrappedTools = provider.wrapTools(tools, executeToolFn);
 
-      // The func property should be a function
-      expect(typeof wrapped.func).toBe('function');
+      expect(wrappedTools).toHaveLength(2);
+      expect(wrappedTools[0].name).toBe('SEARCH_TOOL');
+      expect(wrappedTools[1].name).toBe('WEATHER_TOOL');
+      expect(wrappedTools.every(tool => tool instanceof DynamicStructuredTool)).toBe(true);
+    });
+
+    it('should handle empty tools array', () => {
+      const wrappedTools = provider.wrapTools([], executeToolFn);
+      expect(wrappedTools).toEqual([]);
+    });
+  });
+
+  describe('LangChain Integration', () => {
+    it('should produce tools that can be used with LangChain', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      // Verify the tool has all required LangChain properties
+      expect(wrappedTool).toHaveProperty('name');
+      expect(wrappedTool).toHaveProperty('description');
+      expect(wrappedTool).toHaveProperty('schema');
+      expect(wrappedTool).toHaveProperty('func');
+
+      // Test actual execution through LangChain interface
+      const result = await wrappedTool.func({ query: 'test query' });
+      expect(typeof result).toBe('string');
+      expect(() => JSON.parse(result as string)).not.toThrow();
     });
   });
 });

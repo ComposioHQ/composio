@@ -13,6 +13,7 @@ export const toolMocks = {
           description: 'The search query',
         },
       },
+      additionalProperties: false,
     },
     output_parameters: {
       type: 'object',
@@ -24,6 +25,7 @@ export const toolMocks = {
           },
         },
       },
+      additionalProperties: false,
     },
     toolkit: {
       logo: 'https://example.com/logo.png',
@@ -75,6 +77,7 @@ export const toolMocks = {
           description: 'The search query',
         },
       },
+      additionalProperties: false,
     },
     outputParameters: {
       type: 'object',
@@ -86,6 +89,7 @@ export const toolMocks = {
           },
         },
       },
+      additionalProperties: false,
     },
   },
   // transformed response from the sdk

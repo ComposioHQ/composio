@@ -52,7 +52,7 @@ export type beforeExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteParams: ToolExecuteParams
-) => Promise<ToolExecuteParams>;
+) => Promise<ToolExecuteParams> | ToolExecuteParams;
 
 /**
  * Modifier for altering the tool execution response after execution completes.
@@ -108,7 +108,7 @@ export type afterExecuteModifier = (
   toolSlug: string,
   toolkitSlug: string,
   toolExecuteResponse: ToolExecuteResponse
-) => Promise<ToolExecuteResponse>;
+) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
 
 /**
  * Modifier for altering the tool schema before it's exposed to consumers.
@@ -309,5 +309,9 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * });
  * ```
  */
-export type ProviderOptions<T extends BaseComposioProvider<unknown, unknown>> =
-  T extends BaseAgenticProvider<unknown, unknown> ? AgenticToolOptions : ToolOptions;
+export type ProviderOptions<TProvider> =
+  TProvider extends BaseComposioProvider<infer TToolCollection, infer TTool>
+    ? TProvider extends BaseAgenticProvider<TToolCollection, TTool>
+      ? AgenticToolOptions
+      : ToolOptions
+    : never;

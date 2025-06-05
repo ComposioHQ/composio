@@ -27,11 +27,17 @@ const composio = new Composio({
  * Attach beforeExecute and afterExecute hooks to the tools for logging
  */
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  beforeExecute: (toolkitSlug, toolSlug, input) => {
+  modifySchema: (toolSlug, toolkitSlug, schema) => {
+    console.log(
+      `🔄 Modifying schema for tool ${toolSlug}/${toolkitSlug} with schema ${JSON.stringify(schema)}`
+    );
+    return schema;
+  },
+  beforeExecute: (toolSlug, toolkitSlug, input) => {
     console.log(`🔄 Executing tool ${toolSlug}/${toolkitSlug} with input ${JSON.stringify(input)}`);
     return input;
   },
-  afterExecute: (toolkitSlug, toolSlug, output) => {
+  afterExecute: (toolSlug, toolkitSlug, output) => {
     console.log(
       `✅ Tool ${toolSlug}/${toolkitSlug} executed successfully with output ${JSON.stringify(output)}`
     );

@@ -5,6 +5,7 @@
   "description": "",
   "workspaces": [
     "packages/core",
+    "packages/json-schema-to-zod",
     "packages/providers/*"
   ],
   "scripts": {

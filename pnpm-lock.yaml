@@ -235,6 +235,9 @@ importers:
       openai:
         specifier: ^4.94.0
         version: 4.98.0(encoding@0.1.13)(ws@8.18.2)(zod@3.24.4)
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.4
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -349,6 +352,9 @@ importers:
       '@composio/client':
         specifier: 0.1.0-alpha.16
         version: 0.1.0-alpha.16
+      '@composio/json-schema-to-zod':
+        specifier: workspace:^
+        version: link:../json-schema-to-zod
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -380,6 +386,22 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.19.4
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: ^3.1.4
+        version: 3.1.4(@types/node@22.15.18)(@vitest/ui@3.1.4)(tsx@4.19.4)(yaml@2.8.0)
+
+  packages/json-schema-to-zod:
+    dependencies:
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.4
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.4.0(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3

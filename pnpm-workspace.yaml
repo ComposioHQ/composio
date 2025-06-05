@@ -1,5 +1,6 @@
 packages:
   - 'packages/core'
+  - 'packages/json-schema-to-zod'
   - 'packages/providers/*'
   - 'packages/wrappers/*'
   - 'examples/*'

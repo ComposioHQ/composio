@@ -8,6 +8,7 @@ import { ComposioError, ComposioErrorOptions } from './ComposioError';
  */
 export const ValidationErrorCodes = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+  JSON_SCHEMA_TO_ZOD_ERROR: 'JSON_SCHEMA_TO_ZOD_ERROR',
 } as const;
 
 export class ValidationError extends ComposioError {
@@ -46,7 +47,6 @@ export class ValidationError extends ComposioError {
     // Create a friendly error message for users
     const userFriendlyMessage = this.generateUserFriendlyMessage();
     this.message = `${message}: ${userFriendlyMessage}`;
-    
   }
 
   private generateUserFriendlyMessage(): string {
@@ -65,5 +65,17 @@ export class ValidationError extends ComposioError {
     }
 
     return 'Please check your input parameters';
+  }
+}
+
+export class JsonSchemaToZodError extends ComposioError {
+  constructor(
+    message: string = 'Failed to convert JSON schema to Zod schema',
+    options: ComposioErrorOptions = {}
+  ) {
+    super(message, {
+      ...options,
+      code: options.code || ValidationErrorCodes.JSON_SCHEMA_TO_ZOD_ERROR,
+    });
   }
 }

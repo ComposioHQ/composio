@@ -42,7 +42,7 @@ const ParametersSchema = z.object({
   required: z.array(z.string()).optional(),
   title: z.string().optional(),
   description: z.string().optional(),
-  additionalProperties: z.boolean().optional(),
+  additionalProperties: z.boolean().default(false).optional(),
 });
 
 /**
