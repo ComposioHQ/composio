@@ -19,7 +19,7 @@ For additional support, contact us at support@composio.dev
 
 ## Error Code Reference
 
-### 900-999: Auth Service Errors
+<Accordion title='900-999: Auth Service Errors'>
 
 ### Error 900
 **Bad Request** - The auth request was malformed or missing required parameters
@@ -56,8 +56,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Include valid authentication credentials in your request.
 
----
-### 300-399: Auth Config Errors
+</Accordion>
+
+<Accordion title='300-399: Auth Config Errors'>
 
 ### Error 300
 **Bad Request** - Auth configuration request was invalid
@@ -74,8 +75,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Create the auth configuration first or verify the configuration ID.
 
----
-### 400-499: Toolkit Errors
+</Accordion>
+
+<Accordion title='400-499: Toolkit Errors'>
 
 ### Error 400
 **Toolkit Not Enabled** - The requested toolkit is not enabled
@@ -92,8 +94,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Retry the request. If the issue persists, contact support.
 
----
-### 500-599: Security Provider Errors
+</Accordion>
+
+<Accordion title='500-599: Security Provider Errors'>
 
 ### Error 500
 **Bad Request** - Security provider request was invalid
@@ -115,8 +118,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Check your signing credentials and data format.
 
----
-### 600-699: Connected Account Errors
+</Accordion>
+
+<Accordion title='600-699: Connected Account Errors'>
 
 ### Error 600
 **Bad Request** - Connected account request was invalid
@@ -153,8 +157,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Verify the connected account ID is correct and the account exists.
 
----
-### 800-899: API Key Errors
+</Accordion>
+
+<Accordion title='800-899: API Key Errors'>
 
 ### Error 800
 **Validation Error** - API key validation failed
@@ -181,8 +186,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Generate an API key from your dashboard first.
 
----
-### 1141-1199: MCP (Model Context Protocol) Errors
+</Accordion>
+
+<Accordion title='1141-1199: MCP (Model Context Protocol) Errors'>
 
 ### Error 1141
 **Auth Config Not Found** - MCP authentication configuration not found
@@ -204,8 +210,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Use the existing partner or choose a different identifier.
 
----
-### 1200-1299: Trigger Instance Errors
+</Accordion>
+
+<Accordion title='1200-1299: Trigger Instance Errors'>
 
 ### Error 1200
 **Bad Request** - Trigger instance request was invalid
@@ -227,8 +234,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Verify the trigger instance ID is correct and the trigger exists.
 
----
-### 1300-1399: JWT Errors
+</Accordion>
+
+<Accordion title='1300-1399: JWT Errors'>
 
 ### Error 1300
 **Unable To Verify Token** - JWT token verification failed
@@ -240,8 +248,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Generate a new JWT token through the proper authentication flow.
 
----
-### 1700-1799: Tool Authentication Errors
+</Accordion>
+
+<Accordion title='1700-1799: Tool Authentication Errors'>
 
 ### Error 1700
 **Bad State** - Tool authentication is in an invalid state
@@ -278,8 +287,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Reconnect the account through the proper authentication flow.
 
----
-### 1800-1899: Action Execute Errors
+</Accordion>
+
+<Accordion title='1800-1899: Action Execute Errors'>
 
 ### Error 1800
 **Tool Not Found** - The requested tool does not exist
@@ -316,8 +326,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Reconnect the account or use a different connected account.
 
----
-### 1800-1999: Project Errors
+</Accordion>
+
+<Accordion title='1800-1999: Project Errors'>
 
 ### Error 1800
 **Bad Request** - Project request was invalid
@@ -339,8 +350,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Ensure the project resource exists and you have access to it.
 
----
-### 1900-1999: Tools List Errors
+</Accordion>
+
+<Accordion title='1900-1999: Tools List Errors'>
 
 ### Error 1900
 **Internal Service Error** - Error occurred in Internal service while listing tools
@@ -352,8 +364,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Use a valid pagination cursor or start from the beginning.
 
----
-### 2000-2099: Team Members Errors
+</Accordion>
+
+<Accordion title='2000-2099: Team Members Errors'>
 
 ### Error 2000
 **Member Not Found** - Team member not found
@@ -365,8 +378,9 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** The member is already part of the team. No action needed.
 
----
-### 2100-2199: CLI Errors
+</Accordion>
+
+<Accordion title='2100-2199: CLI Errors'>
 
 ### Error 2100
 **Session Not Found** - CLI session not found
@@ -378,10 +392,13 @@ For additional support, contact us at support@composio.dev
 
 **Solution:** Verify your user credentials and re-authenticate if necessary.
 
----
-### 2200-2299: Organization Errors
+</Accordion>
+
+<Accordion title='2200-2299: Organization Errors'>
 
 ### Error 2200
 **Resource Not Found** - Organization resource not found
 
 **Solution:** Verify the organization ID is correct and you have access to it.
+
+</Accordion>

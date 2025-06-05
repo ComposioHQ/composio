@@ -267,10 +267,10 @@ navigation:
             path: changelogs/overview.mdx
 
 
-      - section: API
-        icon: calendar
+      - section: Errors
+        icon: bug
         contents:
-          - page: Error Codes
+          - page: Error Handling
             path: api/errors.mdx
 
 
