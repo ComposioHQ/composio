@@ -329,6 +329,136 @@ describe('Tools', () => {
 
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
     });
+
+    it('should remove non-required properties when strict mode is enabled', async () => {
+      const userId = 'test-user';
+      const filters = {
+        tools: ['TOOL1'],
+        strict: true,
+      };
+
+      const toolWithOptionalParams = {
+        ...toolMocks.transformedTool,
+        inputParameters: {
+          type: 'object',
+          required: ['requiredParam'],
+          properties: {
+            requiredParam: {
+              type: 'string',
+              description: 'Required parameter',
+            },
+            optionalParam: {
+              type: 'string',
+              description: 'Optional parameter',
+            },
+          },
+        },
+        outputParameters: {
+          type: 'object',
+          required: ['requiredOutput'],
+          properties: {
+            requiredOutput: {
+              type: 'string',
+              description: 'Required output',
+            },
+            optionalOutput: {
+              type: 'string',
+              description: 'Optional output',
+            },
+          },
+        },
+      };
+
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolWithOptionalParams as unknown as Tool]);
+
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
+
+      const result = await context.tools.get(userId, filters);
+
+      expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
+        [
+          {
+            ...toolWithOptionalParams,
+            inputParameters: {
+              type: 'object',
+              required: ['requiredParam'],
+              properties: {
+                requiredParam: {
+                  type: 'string',
+                  description: 'Required parameter',
+                },
+              },
+            },
+            outputParameters: {
+              type: 'object',
+              required: ['requiredOutput'],
+              properties: {
+                requiredOutput: {
+                  type: 'string',
+                  description: 'Required output',
+                },
+              },
+            },
+          },
+        ],
+        expect.any(Function)
+      );
+      expect(result).toEqual('wrapped-tools-collection');
+    });
+
+    it('should not modify properties when strict mode is disabled', async () => {
+      const userId = 'test-user';
+      const filters = {
+        tools: ['TOOL1'],
+        strict: false,
+      };
+
+      const toolWithOptionalParams = {
+        ...toolMocks.transformedTool,
+        inputParameters: {
+          type: 'object',
+          required: ['requiredParam'],
+          properties: {
+            requiredParam: {
+              type: 'string',
+              description: 'Required parameter',
+            },
+            optionalParam: {
+              type: 'string',
+              description: 'Optional parameter',
+            },
+          },
+        },
+        outputParameters: {
+          type: 'object',
+          required: ['requiredOutput'],
+          properties: {
+            requiredOutput: {
+              type: 'string',
+              description: 'Required output',
+            },
+            optionalOutput: {
+              type: 'string',
+              description: 'Optional output',
+            },
+          },
+        },
+      };
+
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolWithOptionalParams as unknown as Tool]);
+
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
+
+      const result = await context.tools.get(userId, filters);
+
+      expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
+        [toolWithOptionalParams],
+        expect.any(Function)
+      );
+      expect(result).toEqual('wrapped-tools-collection');
+    });
   });
 
   describe('execute', () => {

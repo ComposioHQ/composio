@@ -40,6 +40,7 @@ import {
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
+import { removeNonRequiredProperties } from '../utils/jsonSchema';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -454,7 +455,19 @@ export class Tools<
       return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
       // if the first argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(userId, arg2, options?.modifySchema);
+      let tools = await this.getRawComposioTools(userId, arg2, options?.modifySchema);
+      // if the strict flag is true, remove all non-required properties from the input and output parameters
+      if (arg2?.strict) {
+        tools = tools.map(tool => ({
+          ...tool,
+          inputParameters: tool.inputParameters
+            ? removeNonRequiredProperties(tool.inputParameters)
+            : undefined,
+          outputParameters: tool.outputParameters
+            ? removeNonRequiredProperties(tool.outputParameters)
+            : undefined,
+        }));
+      }
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }

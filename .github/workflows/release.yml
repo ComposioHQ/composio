@@ -48,10 +48,11 @@ jobs:
           commit: 'Release: update version'
           title: 'Release: update version'
 
-      - name: Format published packages for Slack
-        id: format_packages
+      - name: Set Version Info
+        if: steps.changesets.outputs.published == 'true'
         run: |
-          echo "SLACK_VERSIONS=$(echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | \"⚡️ \\(.name) -> \\(.version)\"' | paste -sd '\\n' -)" >> $GITHUB_ENV
+          VERSIONS=$(pnpm changeset status --json | jq -r '.releases[] | "⚡️ \(.name) -> \(.version)"' || echo "No version info available")
+          echo "SLACK_VERSIONS=$VERSIONS" >> $GITHUB_ENV
 
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'

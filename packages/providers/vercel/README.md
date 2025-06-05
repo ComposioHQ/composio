@@ -178,6 +178,27 @@ const provider = new VercelProvider({
 });
 ```
 
+### Strict Mode
+
+When using tools with Vercel AI SDK, you might need to ensure that all tool parameters are marked as required. This is because Vercel AI SDK's function calling implementation requires all fields to be marked as required. You can enable strict mode when fetching tools to automatically remove all non-required properties from both input and output parameters:
+
+```typescript
+// Get tools with strict mode enabled
+const tools = await composio.tools.get('user123', {
+  toolkits: ['gmail', 'googlecalendar'],
+  strict: true, // This will remove all non-required properties from tool parameters
+});
+
+// Use these tools with Vercel AI SDK
+const stream = streamText({
+  model: openai('gpt-4'),
+  messages,
+  tools, // These tools will only have required parameters
+});
+```
+
+For more information about strict mode in function calling, see [OpenAI's documentation](https://platform.openai.com/docs/guides/function-calling#strict-mode).
+
 ## API Reference
 
 ### VercelProvider Class
