@@ -1,0 +1,590 @@
+---
+title: 'Error Handling'
+subtitle: 'Understanding and handling errors in Composio API'
+---
+
+Composio uses standard HTTP status codes:
+- `2xx` - Success
+- `4xx` - Client errors (invalid request, missing parameters, etc.)
+- `5xx` - Server errors (rare)
+
+All errors include a `.code` property that contains the specific error code for programmatic handling.
+
+For additional support, contact us at support@composio.dev
+
+
+## 900-999: Auth Service Errors
+
+<AccordionGroup>
+<Accordion title='Error 900'>
+**Name**: Bad Request
+
+**Error**: The auth request was malformed or missing required parameters
+
+**Solution:** Review the authentication documentation and ensure all required parameters are provided.
+</Accordion>
+
+<Accordion title='Error 901'>
+**Name**: Internal Server Error
+
+**Error**: An error occurred in the authentication service
+
+**Solution:** Retry the authentication request. If the issue persists, contact support.
+</Accordion>
+
+<Accordion title='Error 902'>
+**Name**: Unauthorized
+
+**Error**: Authentication credentials are invalid or expired
+
+**Solution:** Refresh your authentication credentials or re-authenticate.
+</Accordion>
+
+<Accordion title='Error 903'>
+**Name**: No Cookie
+
+**Error**: Required authentication cookie is missing
+
+**Solution:** Ensure cookies are enabled and the authentication flow is completed properly.
+</Accordion>
+
+<Accordion title='Error 904'>
+**Name**: Invalid Project Access
+
+**Error**: User does not have access to the requested project
+
+**Solution:** Verify you have the correct permissions for this project or contact your administrator.
+</Accordion>
+
+<Accordion title='Error 905'>
+**Name**: Validation Error
+
+**Error**: Authentication request failed validation
+
+**Solution:** Check that all authentication parameters meet the required format and constraints.
+</Accordion>
+
+<Accordion title='Error 906'>
+**Name**: No Auth Provided
+
+**Error**: No authentication credentials were provided
+
+**Solution:** Include valid authentication credentials in your request.
+</Accordion>
+</AccordionGroup>
+
+## 300-399: Auth Config Errors
+
+<AccordionGroup>
+<Accordion title='Error 300'>
+**Name**: Bad Request
+
+**Error**: Auth configuration request was invalid
+
+**Solution:** Review the auth configuration documentation and correct the request format.
+</Accordion>
+
+<Accordion title='Error 301'>
+**Name**: Validation Error
+
+**Error**: Auth configuration failed validation
+
+**Solution:** Ensure all configuration values meet the required criteria.
+</Accordion>
+
+<Accordion title='Error 302'>
+**Name**: Not Found
+
+**Error**: Auth configuration not found
+
+**Solution:** Create the auth configuration first or verify the configuration ID.
+</Accordion>
+</AccordionGroup>
+
+## 400-499: Toolkit Errors
+
+<AccordionGroup>
+<Accordion title='Error 400'>
+**Name**: Toolkit Not Enabled
+
+**Error**: The requested toolkit is not enabled
+
+**Solution:** Enable the toolkit in your dashboard or contact support for access.
+</Accordion>
+
+<Accordion title='Error 401'>
+**Name**: Toolkit Not Found
+
+**Error**: The requested toolkit does not exist
+
+**Solution:** Verify the toolkit name is correct or browse available toolkits.
+</Accordion>
+
+<Accordion title='Error 402'>
+**Name**: Internal Server Error
+
+**Error**: Toolkit service encountered an error
+
+**Solution:** Retry the request. If the issue persists, contact support.
+</Accordion>
+</AccordionGroup>
+
+## 500-599: Security Provider Errors
+
+<AccordionGroup>
+<Accordion title='Error 500'>
+**Name**: Bad Request
+
+**Error**: Security provider request was invalid
+
+**Solution:** Review the security provider documentation and correct the request.
+</Accordion>
+
+<Accordion title='Error 501'>
+**Name**: Encryption Error
+
+**Error**: Failed to encrypt data
+
+**Solution:** Check your encryption keys and parameters. Contact support if needed.
+</Accordion>
+
+<Accordion title='Error 502'>
+**Name**: Decryption Error
+
+**Error**: Failed to decrypt data
+
+**Solution:** Verify your decryption keys are correct and the data format is valid.
+</Accordion>
+
+<Accordion title='Error 503'>
+**Name**: Signing Error
+
+**Error**: Failed to sign data
+
+**Solution:** Check your signing credentials and data format.
+</Accordion>
+</AccordionGroup>
+
+## 600-699: Connected Account Errors
+
+<AccordionGroup>
+<Accordion title='Error 600'>
+**Name**: Bad Request
+
+**Error**: Connected account request was invalid
+
+**Solution:** Review the connected account API documentation and correct the request.
+</Accordion>
+
+<Accordion title='Error 601'>
+**Name**: Internal Server Error
+
+**Error**: Connected account service error
+
+**Solution:** Retry the operation. If it fails repeatedly, contact support.
+</Accordion>
+
+<Accordion title='Error 602'>
+**Name**: Invalid Auth Scheme
+
+**Error**: Authentication scheme is not valid
+
+**Solution:** Use a supported authentication scheme for this integration.
+</Accordion>
+
+<Accordion title='Error 603'>
+**Name**: Invalid App Schema
+
+**Error**: Application schema is invalid
+
+**Solution:** Verify your app configuration matches the required schema.
+</Accordion>
+
+<Accordion title='Error 604'>
+**Name**: OAuth1 Request Token Error
+
+**Error**: Failed to get OAuth1 request token
+
+**Solution:** Check your OAuth1 credentials and callback URL configuration.
+</Accordion>
+
+<Accordion title='Error 605'>
+**Name**: JWT Token Error
+
+**Error**: JWT token is invalid or expired
+
+**Solution:** Refresh your JWT token or re-authenticate.
+</Accordion>
+
+<Accordion title='Error 606'>
+**Name**: Resource Not Found
+
+**Error**: Connected account not found
+
+**Solution:** Verify the connected account ID is correct and the account exists.
+</Accordion>
+</AccordionGroup>
+
+## 800-899: API Key Errors
+
+<AccordionGroup>
+<Accordion title='Error 800'>
+**Name**: Validation Error
+
+**Error**: API key validation failed
+
+**Solution:** Check that your API key format is correct and not corrupted.
+</Accordion>
+
+<Accordion title='Error 801'>
+**Name**: Invalid API Key
+
+**Error**: The provided API key is invalid
+
+**Solution:** Generate a new API key from your dashboard and update your application.
+</Accordion>
+
+<Accordion title='Error 802'>
+**Name**: Unauthorized
+
+**Error**: API key does not have required permissions
+
+**Solution:** Check your API key permissions in the dashboard or contact your administrator.
+</Accordion>
+
+<Accordion title='Error 803'>
+**Name**: Cannot Fetch API Keys
+
+**Error**: Failed to retrieve API keys
+
+**Solution:** Try refreshing the page or contact support if the issue persists.
+</Accordion>
+
+<Accordion title='Error 804'>
+**Name**: No API Keys Found
+
+**Error**: No API keys found for the user
+
+**Solution:** Generate an API key from your dashboard first.
+</Accordion>
+</AccordionGroup>
+
+## 1141-1199: MCP (Model Context Protocol) Errors
+
+<AccordionGroup>
+<Accordion title='Error 1141'>
+**Name**: Auth Config Not Found
+
+**Error**: MCP authentication configuration not found
+
+**Solution:** Set up MCP authentication configuration first.
+</Accordion>
+
+<Accordion title='Error 1142'>
+**Name**: Validation Error
+
+**Error**: MCP request failed validation
+
+**Solution:** Review your MCP request format and ensure all required fields are provided.
+</Accordion>
+
+<Accordion title='Error 1143'>
+**Name**: Resource Not Found
+
+**Error**: MCP resource not found
+
+**Solution:** Verify the MCP resource ID is correct and the resource exists.
+</Accordion>
+
+<Accordion title='Error 1144'>
+**Name**: Partner Already Exists
+
+**Error**: MCP partner already exists
+
+**Solution:** Use the existing partner or choose a different identifier.
+</Accordion>
+</AccordionGroup>
+
+## 1200-1299: Trigger Instance Errors
+
+<AccordionGroup>
+<Accordion title='Error 1200'>
+**Name**: Bad Request
+
+**Error**: Trigger instance request was invalid
+
+**Solution:** Review the trigger configuration and ensure all parameters are correct.
+</Accordion>
+
+<Accordion title='Error 1201'>
+**Name**: Internal Server Error
+
+**Error**: Trigger instance service error
+
+**Solution:** Retry the operation. Contact support if the issue continues.
+</Accordion>
+
+<Accordion title='Error 1202'>
+**Name**: Trigger Instance Gone
+
+**Error**: The trigger instance has been deleted
+
+**Solution:** Create a new trigger instance or verify the correct trigger ID.
+</Accordion>
+
+<Accordion title='Error 1203'>
+**Name**: Resource Not Found
+
+**Error**: Trigger instance not found
+
+**Solution:** Verify the trigger instance ID is correct and the trigger exists.
+</Accordion>
+</AccordionGroup>
+
+## 1300-1399: JWT Errors
+
+<AccordionGroup>
+<Accordion title='Error 1300'>
+**Name**: Unable To Verify Token
+
+**Error**: JWT token verification failed
+
+**Solution:** Ensure your JWT token is valid and not expired. Re-authenticate if necessary.
+</Accordion>
+
+<Accordion title='Error 1301'>
+**Name**: Invalid Token
+
+**Error**: JWT token is malformed or invalid
+
+**Solution:** Generate a new JWT token through the proper authentication flow.
+</Accordion>
+</AccordionGroup>
+
+## 1700-1799: Tool Authentication Errors
+
+<AccordionGroup>
+<Accordion title='Error 1700'>
+**Name**: Bad State
+
+**Error**: Tool authentication is in an invalid state
+
+**Solution:** Reset the authentication flow and try again.
+</Accordion>
+
+<Accordion title='Error 1701'>
+**Name**: Not Implemented
+
+**Error**: Tool authentication method not implemented
+
+**Solution:** Use a supported authentication method for this tool.
+</Accordion>
+
+<Accordion title='Error 1702'>
+**Name**: Bad Request
+
+**Error**: Tool authentication request was invalid
+
+**Solution:** Review the authentication parameters and ensure they're correctly formatted.
+</Accordion>
+
+<Accordion title='Error 1703'>
+**Name**: Unreachable
+
+**Error**: Tool authentication service is unreachable
+
+**Solution:** Check your network connection and retry. The service may be temporarily down.
+</Accordion>
+
+<Accordion title='Error 1704'>
+**Name**: Bad Callback State
+
+**Error**: OAuth callback state is invalid
+
+**Solution:** Restart the OAuth flow to generate a new valid state parameter.
+</Accordion>
+
+<Accordion title='Error 1705'>
+**Name**: Failed OAuth2 Token Exchange
+
+**Error**: OAuth2 token exchange failed
+
+**Solution:** Verify your OAuth2 configuration and credentials are correct.
+</Accordion>
+
+<Accordion title='Error 1706'>
+**Name**: Bad Connected Account State
+
+**Error**: Connected account is in an invalid state
+
+**Solution:** Reconnect the account through the proper authentication flow.
+</Accordion>
+</AccordionGroup>
+
+## 1800-1899: Action Execute Errors
+
+<AccordionGroup>
+<Accordion title='Error 1800'>
+**Name**: Tool Not Found
+
+**Error**: The requested tool does not exist
+
+**Solution:** Verify the tool name is correct or browse available tools in your dashboard.
+</Accordion>
+
+<Accordion title='Error 1801'>
+**Name**: Execution Error
+
+**Error**: Tool execution failed
+
+**Solution:** Check your tool parameters and try again. Review the tool documentation for proper usage.
+</Accordion>
+
+<Accordion title='Error 1802'>
+**Name**: Unauthorized
+
+**Error**: Not authorized to execute the tool
+
+**Solution:** Ensure you have the necessary permissions to use this tool.
+</Accordion>
+
+<Accordion title='Error 1803'>
+**Name**: Connected Account Not Found
+
+**Error**: Required connected account not found
+
+**Solution:** Connect the required account first before using this tool.
+</Accordion>
+
+<Accordion title='Error 1804'>
+**Name**: Failed To Get Authorization
+
+**Error**: Authorization retrieval failed
+
+**Solution:** Re-authenticate the connected account and try again.
+</Accordion>
+
+<Accordion title='Error 1805'>
+**Name**: No API Key Found
+
+**Error**: Required API key not found
+
+**Solution:** Configure the required API key for this integration.
+</Accordion>
+
+<Accordion title='Error 1806'>
+**Name**: Connected Account Gone
+
+**Error**: The connected account has been deleted
+
+**Solution:** Reconnect the account or use a different connected account.
+</Accordion>
+</AccordionGroup>
+
+## 1800-1999: Project Errors
+
+<AccordionGroup>
+<Accordion title='Error 1800'>
+**Name**: Bad Request
+
+**Error**: Project request was invalid
+
+**Solution:** Review the project API documentation and correct your request format.
+</Accordion>
+
+<Accordion title='Error 1801'>
+**Name**: Internal Server Error
+
+**Error**: Project service encountered an error
+
+**Solution:** Retry the operation. If it continues to fail, contact support.
+</Accordion>
+
+<Accordion title='Error 1802'>
+**Name**: Project Gone
+
+**Error**: The project has been deleted
+
+**Solution:** Verify the project ID is correct or create a new project.
+</Accordion>
+
+<Accordion title='Error 1803'>
+**Name**: Resource Not Found
+
+**Error**: Project resource not found
+
+**Solution:** Ensure the project resource exists and you have access to it.
+</Accordion>
+</AccordionGroup>
+
+## 1900-1999: Tools List Errors
+
+<AccordionGroup>
+<Accordion title='Error 1900'>
+**Name**: Internal Service Error
+
+**Error**: Error occurred in Internal service while listing tools
+
+**Solution:** Retry the request. If the issue persists, contact support.
+</Accordion>
+
+<Accordion title='Error 1901'>
+**Name**: Cursor Error
+
+**Error**: Invalid cursor for pagination
+
+**Solution:** Use a valid pagination cursor or start from the beginning.
+</Accordion>
+</AccordionGroup>
+
+## 2000-2099: Team Members Errors
+
+<AccordionGroup>
+<Accordion title='Error 2000'>
+**Name**: Member Not Found
+
+**Error**: Team member not found
+
+**Solution:** Verify the member ID is correct and the member exists in your team.
+</Accordion>
+
+<Accordion title='Error 2001'>
+**Name**: Member Already Exists
+
+**Error**: Team member already exists
+
+**Solution:** The member is already part of the team. No action needed.
+</Accordion>
+</AccordionGroup>
+
+## 2100-2199: CLI Errors
+
+<AccordionGroup>
+<Accordion title='Error 2100'>
+**Name**: Session Not Found
+
+**Error**: CLI session not found
+
+**Solution:** Restart your CLI session or re-authenticate.
+</Accordion>
+
+<Accordion title='Error 2101'>
+**Name**: User Not Found
+
+**Error**: CLI user not found
+
+**Solution:** Verify your user credentials and re-authenticate if necessary.
+</Accordion>
+</AccordionGroup>
+
+## 2200-2299: Organization Errors
+
+<AccordionGroup>
+<Accordion title='Error 2200'>
+**Name**: Resource Not Found
+
+**Error**: Organization resource not found
+
+**Solution:** Verify the organization ID is correct and you have access to it.
+</Accordion>
+</AccordionGroup>
