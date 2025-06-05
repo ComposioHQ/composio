@@ -17,65 +17,6 @@ For additional support, contact us at support@composio.dev
 ## Basic Error Codes
 ---
 
-### HTTP Status Code Errors
-
-### Error 10400
-**Bad Request** - HTTP request was malformed
-
-**Solution:** Check your request format, ensure all required parameters are included and properly formatted.
-
-### Error 10401
-**Unauthorized** - HTTP request lacks valid authentication
-
-**Solution:** Verify your API key is correct and included in the request headers.
-
-### Error 10403
-**Forbidden** - HTTP request is forbidden
-
-**Solution:** Check if your API key has the necessary permissions for this operation.
-
-### Error 10404
-**URL Not Found** - HTTP URL not found
-
-**Solution:** Verify the endpoint URL is correct and the resource exists.
-
-### Error 10410
-**Gone** - HTTP resource is no longer available
-
-**Solution:** The resource has been permanently removed. Check for updated endpoints or alternatives.
-
-### Error 10424
-**Resource Not Found** - HTTP resource not found
-
-**Solution:** Ensure the resource ID is correct and the resource exists in your account.
-
-### Error 10429
-**Too Many Requests** - HTTP rate limit exceeded
-
-**Solution:** Implement rate limiting in your application and retry after the specified time.
-
-### Error 10500
-**Internal Server Error** - HTTP service internal error
-
-**Solution:** This is a server-side issue. Please retry after a few moments or contact support.
-
-### Error 10501
-**Not Implemented** - HTTP method not implemented
-
-**Solution:** Use a supported HTTP method for this endpoint.
-
-### Error 10502
-**Unreachable** - HTTP service is unreachable
-
-**Solution:** Check your network connection and try again later.
-
-### Error 10503
-**Service Unavailable** - HTTP service is temporarily unavailable
-
-**Solution:** The service is temporarily down. Please retry after a few minutes.
-
----
-
 ## Error Code Reference
 
 ### 900-999: Auth Service Errors
@@ -114,34 +55,6 @@ For additional support, contact us at support@composio.dev
 **No Auth Provided** - No authentication credentials were provided
 
 **Solution:** Include valid authentication credentials in your request.
-
----
-### 100-199: Resource Errors
-
-### Error 100
-**Bad Request** - Database query was malformed or invalid
-
-**Solution:** Review your query parameters and ensure they follow the correct format.
-
-### Error 101
-**Internal Server Error** - Database operation failed
-
-**Solution:** Retry the operation. If it continues to fail, contact support.
-
-### Error 102
-**Unknown Error** - An unexpected database error occurred
-
-**Solution:** Contact support with details about your request.
-
-### Error 103
-**Resource Not Found** - Requested database resource does not exist
-
-**Solution:** Verify the resource ID is correct and the resource exists.
-
-### Error 104
-**Already Exists** - Resource already exists in the database
-
-**Solution:** Use a different identifier or update the existing resource instead.
 
 ---
 ### 300-399: Auth Config Errors
@@ -328,38 +241,7 @@ For additional support, contact us at support@composio.dev
 **Solution:** Generate a new JWT token through the proper authentication flow.
 
 ---
-### 1400-1499: Workflow Errors
-
-### Error 1400
-**Start Workflow Error** - Failed to start workflow
-
-**Solution:** Check your workflow configuration and retry. Contact support if needed.
-
-### Error 1401
-**Kill Workflow Error** - Failed to terminate workflow
-
-**Solution:** Verify the workflow ID is correct and try again.
-
----
-### 1600-1699: Internal Service Errors
-
-### Error 1600
-**Bad Request** - Internal service request was invalid
-
-**Solution:** Review the Internal API documentation and correct your request format.
-
-### Error 1601
-**Internal Server Error** - Internal service encountered an error
-
-**Solution:** This is a temporary server issue. Please retry after a few moments.
-
-### Error 1602
-**Service Unavailable** - Internal service is temporarily unavailable
-
-**Solution:** The service is temporarily down. Please retry after a few minutes.
-
----
-### 1700-1799: Tool Authentication Errors (Deprecated)
+### 1700-1799: Tool Authentication Errors
 
 ### Error 1700
 **Bad State** - Tool authentication is in an invalid state
