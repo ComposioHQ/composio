@@ -485,13 +485,24 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
                 body: t.Optional[t.Dict] = None,
                 parameters: t.Optional[t.List[CustomAuthParameter]] = None,
             ):
-                return toolset.execute_request(
-                    endpoint=endpoint,
-                    method=method,
-                    body=body,
-                    app=app,
-                    parameters=parameters,
-                )
+                entity_id = metadata.get("entity_id", toolset.entity_id)
+                try:
+                    connection_id = toolset.get_entity(id=entity_id).get_connection(app=app).id
+                    return toolset.execute_request(
+                        endpoint=endpoint,
+                        method=method,
+                        body=body,
+                        connection_id=connection_id,
+                        parameters=parameters,
+                    )
+                except Exception:
+                    return toolset.execute_request(
+                        endpoint=endpoint,
+                        method=method,
+                        body=body,
+                        app=app,
+                        parameters=parameters,
+                    )
 
             kwargs["execute_request"] = execute_request
 
