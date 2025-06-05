@@ -6,7 +6,7 @@ set -e
 # Define the OpenAPI specification URL and paths
 OPENAPI_URL="https://hermes.composio.dev/openapi.json"
 OPENAPI_V3_URL="https://backend.composio.dev/api/v3/openapi.json"
-OPENAPI_MCP_URL="https://mcp.composio.dev/api/openapi.json"
+OPENAPI_MCP_URL="https://mcp.composio.dev/openapi.json"
 
 # Get the directory where the script is located, works in both CI and local environments
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || dirname "$0")" && pwd)"
