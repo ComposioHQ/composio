@@ -22,6 +22,7 @@ tabs:
   examples:
     display-name: Examples
     icon: running
+    skip-slug: true
   changelog:
     display-name: Changelog
     icon: history
@@ -72,6 +73,9 @@ navigation:
               - page: After Tool Execution
                 path: pages/v3/tool-calling/after-execution-modifiers.mdx
                 slug: after-execution
+          - page: Extending Toolkits with your own tools
+            path: pages/v3/tool-calling/extending-toolkits.mdx
+            slug: extending-toolkits
       - section: Authentication
         icon: lock
         skip-slug: true
@@ -104,6 +108,8 @@ navigation:
       - section: Examples
         icon: utensils
         contents:
+          - page: Full Stack Chat App
+            path: pages/v3/examples/vercel-composio.mdx
           - page: Gmail Filterer
             path: pages/v3/examples/gmail-filterer.mdx
   - tab: providers
