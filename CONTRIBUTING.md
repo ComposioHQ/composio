@@ -71,7 +71,7 @@ To contribute to the documentation:
    export COMPOSIO_API_KEY=<your_api_key>
    pnpm tools:generate
    ```
-   Optionally you may comment out the tool docs from `docs.yml`.
+   Optionally you mayac comment out the tool docs from `docs.yml`.
 
 4. Generate SDK references
    ```bash
@@ -97,4 +97,4 @@ To contribute to the documentation:
 
    This will ensure your documentation changes don't introduce any broken references.
 
-8. When you're happy with your changes, create a PR to this branch!
+8. When you're happy with your changes, create a PR to this branch

@@ -7,12 +7,17 @@
 		"preinstall": "npx only-allow pnpm",
 		"clean": "rm -rf ./dist && rm -rf ./node_modules",
 		"compile": "npx tailwindcss -i ./assets/input.css -o ./dist/output.css",
-		"docs:check": "pnpm compile && fern check",
-		"docs:publish": "pnpm compile && fern generate --docs",
-		"docs:preview": "pnpm compile && fern generate --docs --preview --log-level debug",
-		"prepublish": "exit 1",
 		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10",
-		"sdkdocs": "typedoc"
+		"tools:comment": "uv run python scripts/manage-tool-docs.py comment",
+		"tools:uncomment": "uv run python scripts/manage-tool-docs.py uncomment",
+		"sdkdocs": "typedoc",
+		"check": "pnpm tools:comment && fern check",
+		"dev": "pnpm tools:comment && fern docs dev",
+		"links": "pnpm tools:uncomment && fern docs broken-links",
+		"preview": "pnpm tools:uncomment && fern generate --docs --preview --log-level debug",
+		"publish": "echo 'use only in emergencies, recommend making a PR' && pnpm tools:uncomment && fern generate --docs",
+		"generate": "pnpm tools:generate && pnpm sdkdocs",
+		"prepublish": "exit 1"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^1.2.12",
@@ -36,11 +41,14 @@
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
+		"@types/yaml": "^1.9.7",
 		"only-allow": "^1.2.1",
 		"tailwindcss": "^3.4.17",
 		"typedoc": "^0.28.5",
 		"typedoc-plugin-markdown": "^4.6.4",
+		"typedoc-plugin-zod": "^1.4.1",
 		"typescript": "^5.8.3",
-		"vitest": "^3.1.4"
+		"vitest": "^3.1.4",
+		"yaml": "^2.8.0"
 	}
 }

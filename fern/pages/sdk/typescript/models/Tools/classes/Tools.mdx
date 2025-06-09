@@ -80,6 +80,44 @@ The configuration for the custom tool
 
 The created custom tool
 
+#### Examples
+
+```typescript
+// creating a custom tool with a toolkit
+await composio.tools.createCustomTool({
+  name: 'My Custom Tool',
+  description: 'A custom tool that does something specific',
+  slug: 'MY_CUSTOM_TOOL',
+  userId: 'default',
+  connectedAccountId: '123',
+  toolkitSlug: 'github',
+  inputParameters: z.object({
+    param1: z.string().describe('First parameter'),
+  }),
+  execute: async (input, authCredentials, executeToolRequest) => {
+    // Custom logic here
+    return { data: { result: 'Success!' } };
+  }
+});
+```
+
+```typescript
+// creating a custom tool without a toolkit
+await composio.tools.createCustomTool({
+  name: 'My Custom Tool',
+  description: 'A custom tool that does something specific',
+  slug: 'MY_CUSTOM_TOOL',
+  inputParameters: z.object({
+    param1: z.string().describe('First parameter'),
+  }),
+  execute: async (input) => {
+    // Custom logic here
+    return { data: { result: 'Success!' } };
+  }
+});
+
+***
+
 ### execute()
 
 > **execute**(`slug`, `body`, `modifiers?`): `Promise`\<\{ \}\>

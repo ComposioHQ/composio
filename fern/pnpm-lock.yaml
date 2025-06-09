@@ -66,6 +66,9 @@ importers:
       '@types/react':
         specifier: ^18.3.23
         version: 18.3.23
+      '@types/yaml':
+        specifier: ^1.9.7
+        version: 1.9.7
       only-allow:
         specifier: ^1.2.1
         version: 1.2.1
@@ -78,12 +81,18 @@ importers:
       typedoc-plugin-markdown:
         specifier: ^4.6.4
         version: 4.6.4(typedoc@0.28.5(typescript@5.8.3))
+      typedoc-plugin-zod:
+        specifier: ^1.4.1
+        version: 1.4.1(typedoc@0.28.5(typescript@5.8.3))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
       vitest:
         specifier: ^3.1.4
         version: 3.1.4(@types/node@20.17.57)(jiti@1.21.7)(yaml@2.8.0)
+      yaml:
+        specifier: ^2.8.0
+        version: 2.8.0
 
   packages/snippet-tester:
     dependencies:
@@ -1517,6 +1526,10 @@ packages:
 
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
+
+  '@types/yaml@1.9.7':
+    resolution: {integrity: sha512-8WMXRDD1D+wCohjfslHDgICd2JtMATZU8CkhH8LVJqcJs6dyYj5TGptzP8wApbmEullGBSsCEzzap73DQ1HJaA==}
+    deprecated: This is a stub types definition. yaml provides its own type definitions, so you do not need this installed.
 
   '@vitest/expect@3.1.4':
     resolution: {integrity: sha512-xkD/ljeliyaClDYqHPNCiJ0plY5YIcM0OlRiZizLhlPmpXWpxnGMyTZXOHFhFeG7w9P5PBeL4IdtJ/HeQwTbQA==}
@@ -3132,6 +3145,11 @@ packages:
     engines: {node: '>= 18'}
     peerDependencies:
       typedoc: 0.28.x
+
+  typedoc-plugin-zod@1.4.1:
+    resolution: {integrity: sha512-D7+uhPFCyKMcKnUSZip/BldE08Jo/yykvbxlIcY11fI8dKyCe23/igOiZ7rPW2mXD5N9kHEA2he9LkCoU+6HtA==}
+    peerDependencies:
+      typedoc: 0.23.x || 0.24.x || 0.25.x || 0.26.x || 0.27.x || 0.28.x
 
   typedoc@0.28.5:
     resolution: {integrity: sha512-5PzUddaA9FbaarUzIsEc4wNXCiO4Ot3bJNeMF2qKpYlTmM9TTaSHQ7162w756ERCkXER/+o2purRG6YOAv6EMA==}
@@ -5383,6 +5401,10 @@ snapshots:
 
   '@types/uuid@9.0.8': {}
 
+  '@types/yaml@1.9.7':
+    dependencies:
+      yaml: 2.8.0
+
   '@vitest/expect@3.1.4':
     dependencies:
       '@vitest/spy': 3.1.4
@@ -7078,6 +7100,10 @@ snapshots:
       mime-types: 3.0.1
 
   typedoc-plugin-markdown@4.6.4(typedoc@0.28.5(typescript@5.8.3)):
+    dependencies:
+      typedoc: 0.28.5(typescript@5.8.3)
+
+  typedoc-plugin-zod@1.4.1(typedoc@0.28.5(typescript@5.8.3)):
     dependencies:
       typedoc: 0.28.5(typescript@5.8.3)
 
