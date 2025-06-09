@@ -29,50 +29,6 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 _Note:_ When opening a PR make sure you open the PR against `development` and not the `master` branch.
 
-## Development setup
-
-- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `uv`, then run the following:
-
-      # Install uv
-      pip install uv
-
-      # Create and activate virtual environment
-      uv venv
-      source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-      # Install dependencies
-      uv pip install -e .
-      uv pip install -e python/swe
-
-      # Install plugins as needed
-      uv pip install -e python/plugins/autogen
-      uv pip install -e python/plugins/claude
-      uv pip install -e python/plugins/crew_ai
-      uv pip install -e python/plugins/griptape
-      uv pip install -e python/plugins/julep
-      uv pip install -e python/plugins/langchain
-      uv pip install -e python/plugins/llamaindex
-      uv pip install -e python/plugins/lyzr
-      uv pip install -e python/plugins/openai
-
-## For a clean PR run checks in the following order before pushing the code on a PR
-
-- make clean
-- make format-code
-- make check-code
-
-## Further commands needed during development
-
-The following commands are helpful during development:
-
-- For independent linting and static analysis:
-  - Use `tox -e isort` and `tox -e black` for formatting code
-  - Use `tox -e isort-check` and `tox -e black-check` for checking code formatting
-  - Use `tox -e flake8` and `tox -e pylint` to run code linters
-  - Use `tox -e mypy` for type checking
-
-Read more detailed guides on development [here](python/docs/development.md).
-
 ## Contributing to docs
 
 To contribute to the documentation:
@@ -108,16 +64,31 @@ To contribute to the documentation:
    fern login
    ```
 
-3. Start the docs server from the project root:
+3. Generate tool documentation
+   This is only needed to inspect the tool documentation locally.
+   ```bash
+   cd fern/
+   export COMPOSIO_API_KEY=<your_api_key>
+   pnpm tools:generate
+   ```
+   Optionally you may comment out the tool docs from `docs.yml`.
+
+4. Generate SDK references
+   ```bash
+   cd fern/
+   pnpm sdkdocs
+   ```
+
+5. Start the docs server from the project root:
 
    ```bash
    cd fern/
    pnpm run docs:preview
    ```
 
-4. View and edit docs at http://localhost:3000
+6. View and edit docs at http://localhost:3000
 
-5. Before submitting your PR, check for broken links:
+7. Before submitting your PR, check for broken links:
 
    ```bash
    cd fern/
@@ -126,4 +97,4 @@ To contribute to the documentation:
 
    This will ensure your documentation changes don't introduce any broken references.
 
-6. When you're happy with your changes, create a PR.
+8. When you're happy with your changes, create a PR to this branch!
