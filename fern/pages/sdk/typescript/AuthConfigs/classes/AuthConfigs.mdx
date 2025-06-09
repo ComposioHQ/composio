@@ -1,0 +1,409 @@
+[**@composio/core**](../../README.mdx)
+
+***
+
+[@composio/core](../../README.mdx) / [AuthConfigs](../README.mdx) / AuthConfigs
+
+# Class: AuthConfigs
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:37](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L37)
+
+AuthConfigs class
+
+This class is used to manage authentication configurations in the Composio SDK.
+Auth configs are used to configure authentication providers and settings.
+
+## Constructors
+
+### Constructor
+
+> **new AuthConfigs**(`client`): `AuthConfigs`
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:40](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L40)
+
+#### Parameters
+
+##### client
+
+`Composio`
+
+#### Returns
+
+`AuthConfigs`
+
+## Methods
+
+### create()
+
+> **create**(`toolkit`, `options`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:160](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L160)
+
+Create a new auth config
+
+#### Parameters
+
+##### toolkit
+
+`string`
+
+Unique identifier of the toolkit
+
+##### options
+
+Options for creating a new auth config
+
+\{ \} | \{ \}
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+Created auth config
+
+#### Example
+
+```ts
+const authConfig = await authConfigs.create('my-toolkit', {
+  type: AuthConfigTypes.CUSTOM,
+  name: 'My Custom Auth Config',
+  authScheme: AuthSchemeTypes.API_KEY,
+  credentials: {
+    apiKey: '1234567890',
+  },
+});
+```
+
+#### Link
+
+https://docs.composio.dev/reference/auth-configs/create-auth-config
+
+***
+
+### delete()
+
+> **delete**(`nanoid`): `Promise`\<`unknown`\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:298](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L298)
+
+Deletes an authentication configuration.
+
+This method permanently removes an auth config from the Composio platform.
+This action cannot be undone and will prevent any connected accounts that use
+this auth config from functioning.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config to delete
+
+#### Returns
+
+`Promise`\<`unknown`\>
+
+The deletion response
+
+#### Throws
+
+If the auth config doesn't exist or cannot be deleted
+
+#### Example
+
+```typescript
+// Delete an auth config
+await composio.authConfigs.delete('auth_abc123');
+```
+
+***
+
+### disable()
+
+> **disable**(`nanoid`): `Promise`\<`unknown`\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:368](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L368)
+
+Disables an authentication configuration.
+
+This is a convenience method that calls updateStatus with 'DISABLED'.
+When disabled, the auth config cannot be used to create new connected accounts
+or authenticate with third-party services, but existing connections may continue to work.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config to disable
+
+#### Returns
+
+`Promise`\<`unknown`\>
+
+The updated auth config details
+
+#### Throws
+
+If the auth config cannot be found or disabled
+
+#### Example
+
+```typescript
+// Disable an auth config
+await composio.authConfigs.disable('auth_abc123');
+```
+
+***
+
+### enable()
+
+> **enable**(`nanoid`): `Promise`\<`unknown`\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:347](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L347)
+
+Enables an authentication configuration.
+
+This is a convenience method that calls updateStatus with 'ENABLED'.
+When enabled, the auth config can be used to create new connected accounts
+and authenticate with third-party services.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config to enable
+
+#### Returns
+
+`Promise`\<`unknown`\>
+
+The updated auth config details
+
+#### Throws
+
+If the auth config cannot be found or enabled
+
+#### Example
+
+```typescript
+// Enable an auth config
+await composio.authConfigs.enable('auth_abc123');
+```
+
+***
+
+### get()
+
+> **get**(`nanoid`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:223](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L223)
+
+Retrieves a specific authentication configuration by its ID.
+
+This method fetches detailed information about a single auth config
+and transforms the response to the SDK's standardized format.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config to retrieve
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The auth config details
+
+#### Throws
+
+If the auth config cannot be found or an API error occurs
+
+#### Throws
+
+If the response fails validation
+
+#### Example
+
+```typescript
+// Get an auth config by ID
+const authConfig = await composio.authConfigs.get('auth_abc123');
+console.log(authConfig.name); // e.g., 'GitHub Auth'
+console.log(authConfig.toolkit.slug); // e.g., 'github'
+```
+
+***
+
+### getClient()
+
+> `protected` **getClient**(): `Composio`
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:50](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L50)
+
+Protected getter for the client instance.
+This is primarily used for testing purposes.
+
+#### Returns
+
+`Composio`
+
+***
+
+### list()
+
+> **list**(`query?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:121](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L121)
+
+Lists authentication configurations based on provided filter criteria.
+
+This method retrieves auth configs from the Composio API, transforms them to the SDK format,
+and supports filtering by various parameters.
+
+#### Parameters
+
+##### query?
+
+Optional query parameters for filtering auth configs
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+A paginated list of auth configurations
+
+#### Throws
+
+If the query parameters or response fail validation
+
+#### Example
+
+```typescript
+// List all auth configs
+const allConfigs = await composio.authConfigs.list();
+
+// List auth configs for a specific toolkit
+const githubConfigs = await composio.authConfigs.list({
+  toolkit: 'github'
+});
+
+// List Composio-managed auth configs
+const managedConfigs = await composio.authConfigs.list({
+  isComposioManaged: true
+});
+```
+
+***
+
+### update()
+
+> **update**(`nanoid`, `data`): `Promise`\<`unknown`\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:258](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L258)
+
+Updates an existing authentication configuration.
+
+This method allows you to modify properties of an auth config such as credentials,
+scopes, or tool restrictions. The update type (custom or default) determines which
+fields can be updated.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config to update
+
+##### data
+
+The data to update, which can be either custom or default type
+
+\{ \} | \{ \}
+
+#### Returns
+
+`Promise`\<`unknown`\>
+
+The updated auth config
+
+#### Throws
+
+If the update parameters are invalid
+
+#### Throws
+
+If the auth config cannot be found or updated
+
+#### Example
+
+```typescript
+// Update a custom auth config with new credentials
+const updatedConfig = await composio.authConfigs.update('auth_abc123', {
+  type: 'custom',
+  credentials: {
+    apiKey: 'new-api-key-value'
+  }
+});
+
+// Update a default auth config with new scopes
+const updatedConfig = await composio.authConfigs.update('auth_abc123', {
+  type: 'default',
+  scopes: ['read:user', 'repo']
+});
+```
+
+***
+
+### updateStatus()
+
+> **updateStatus**(`status`, `nanoid`): `Promise`\<`unknown`\>
+
+Defined in: [packages/core/src/models/AuthConfigs.ts:323](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/AuthConfigs.ts#L323)
+
+Updates the status of an authentication configuration.
+
+This method allows you to enable or disable an auth config. When disabled,
+the auth config cannot be used to create new connected accounts or authenticate
+with third-party services.
+
+#### Parameters
+
+##### status
+
+The status to set ('ENABLED' or 'DISABLED')
+
+`"ENABLED"` | `"DISABLED"`
+
+##### nanoid
+
+`string`
+
+The unique identifier of the auth config
+
+#### Returns
+
+`Promise`\<`unknown`\>
+
+The updated auth config details
+
+#### Throws
+
+If the auth config cannot be found or the status cannot be updated
+
+#### Example
+
+```typescript
+// Disable an auth config
+await composio.authConfigs.updateStatus('DISABLED', 'auth_abc123');
+
+// Enable an auth config
+await composio.authConfigs.updateStatus('ENABLED', 'auth_abc123');
+```

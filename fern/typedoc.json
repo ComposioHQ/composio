@@ -1,0 +1,40 @@
+{
+  "plugin": ["typedoc-plugin-zod", "typedoc-plugin-markdown"],
+  "out": "./pages/sdk/typescript",
+  "fileExtension": ".mdx",
+  "flattenOutputFiles": false,
+  "useHTMLEncodedBrackets": false,
+  "sanitizeComments": false,
+  "readme": "none",
+  "entryPoints": [
+    "../ts/packages/core/src/composio.ts",
+    "../ts/packages/core/src/models/AuthConfigs.ts",
+    "../ts/packages/core/src/models/ConnectedAccounts.ts",
+    "../ts/packages/core/src/models/ConnectionRequest.ts",
+    "../ts/packages/core/src/models/CustomTools.ts",
+    "../ts/packages/core/src/models/Session.ts",
+    "../ts/packages/core/src/models/Toolkits.ts",
+    "../ts/packages/core/src/models/Tools.ts",
+    "../ts/packages/core/src/models/Triggers.ts",
+    "../ts/packages/core/src/provider/BaseProvider.ts",
+    "../ts/packages/core/src/provider/ComposioProvider.ts",
+    "../ts/packages/core/src/provider/OpenAIProvider.ts"
+  ],
+  "tsconfig": "./tsconfig.typedoc.json",
+  "skipErrorChecking": true,
+  "treatWarningsAsErrors": false,
+  "validation": {
+    "notExported": false,
+    "invalidLink": false,
+    "notDocumented": false
+  },
+  "exclude": [
+    "**/errors/**",
+    "**/types/**",
+    "**/utils/**",
+    "**/services/**",
+    "**/telemetry/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

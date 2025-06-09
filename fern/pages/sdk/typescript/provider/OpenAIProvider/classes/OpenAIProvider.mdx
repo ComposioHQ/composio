@@ -1,0 +1,655 @@
+[**@composio/core**](../../../README.mdx)
+
+***
+
+[@composio/core](../../../README.mdx) / [provider/OpenAIProvider](../README.mdx) / OpenAIProvider
+
+# Class: OpenAIProvider
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:20](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L20)
+
+Base class for all non-agentic toolsets.
+This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
+
+## Extends
+
+- [`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx)\<[`OpenAiToolCollection`](../type-aliases/OpenAiToolCollection.mdx), [`OpenAiTool`](../type-aliases/OpenAiTool.mdx)\>
+
+## Constructors
+
+### Constructor
+
+> **new OpenAIProvider**(): `OpenAIProvider`
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:43](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L43)
+
+Creates a new instance of the OpenAIProvider.
+
+This is the default provider for the Composio SDK and is automatically
+available without additional installation.
+
+#### Returns
+
+`OpenAIProvider`
+
+#### Example
+
+```typescript
+// The OpenAIProvider is used by default when initializing Composio
+const composio = new Composio({
+  apiKey: 'your-api-key'
+});
+
+// You can also explicitly specify it
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  provider: new OpenAIProvider()
+});
+```
+
+#### Overrides
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`constructor`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#constructor)
+
+## Properties
+
+### \_isAgentic
+
+> `readonly` **\_isAgentic**: `false` = `false`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:67](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L67)
+
+**`Internal`**
+
+Whether the provider is agentic.
+This is set automatically set by the core SDK implementation for different provider types.
+
+#### Inherited from
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`_isAgentic`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#_isagentic)
+
+***
+
+### name
+
+> `readonly` **name**: `"openai"` = `'openai'`
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:21](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L21)
+
+The name of the provider.
+Used to identify the provider in the telemetry.
+
+#### Overrides
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`name`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#name)
+
+## Methods
+
+### \_setExecuteToolFn()
+
+> **\_setExecuteToolFn**(`executeToolFn`): `void`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:35](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L35)
+
+**`Internal`**
+
+Set the function to execute a tool.
+This is set automatically and injected by the core SDK.
+
+#### Parameters
+
+##### executeToolFn
+
+`GlobalExecuteToolFn`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`_setExecuteToolFn`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#_setexecutetoolfn)
+
+***
+
+### executeTool()
+
+> **executeTool**(`toolSlug`, `body`, `modifers?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:49](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L49)
+
+Global function to execute a tool.
+This function is used by providerds to implement helper functions to execute tools.
+This is a 1:1 mapping of the `execute` method in the `Tools` class.
+
+#### Parameters
+
+##### toolSlug
+
+`string`
+
+The slug of the tool to execute.
+
+##### body
+
+The body of the tool execution.
+
+##### modifers?
+
+`ExecuteToolModifiers`
+
+The modifiers of the tool execution.
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The result of the tool execution.
+
+#### Inherited from
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`executeTool`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#executetool)
+
+***
+
+### executeToolCall()
+
+> **executeToolCall**(`userId`, `tool`, `options?`, `modifiers?`): `Promise`\<`string`\>
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:160](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L160)
+
+Executes a tool call from OpenAI's chat completion.
+
+This method processes a tool call from OpenAI's chat completion API,
+executes the corresponding Composio tool, and returns the result.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+The user ID for authentication and tracking
+
+##### tool
+
+`ChatCompletionMessageToolCall`
+
+The tool call from OpenAI
+
+##### options?
+
+`ExecuteToolFnOptions`
+
+Optional execution options
+
+##### modifiers?
+
+`ExecuteToolModifiers`
+
+Optional execution modifiers
+
+#### Returns
+
+`Promise`\<`string`\>
+
+The result of the tool call as a JSON string
+
+#### Example
+
+```typescript
+// Execute a tool call from OpenAI
+const toolCall = {
+  id: 'call_abc123',
+  type: 'function',
+  function: {
+    name: 'SEARCH_TOOL',
+    arguments: '{"query":"composio documentation"}'
+  }
+};
+
+const result = await provider.executeToolCall(
+  'user123',
+  toolCall,
+  { connectedAccountId: 'conn_xyz456' }
+);
+console.log(JSON.parse(result));
+```
+
+***
+
+### handleAssistantMessage()
+
+> **handleAssistantMessage**(`userId`, `run`, `options?`, `modifiers?`): `Promise`\<`ToolOutput`[]\>
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:282](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L282)
+
+Handles all the tool calls from the OpenAI Assistant API.
+
+This method processes tool calls from an OpenAI Assistant run,
+executes each tool call, and returns the tool outputs for submission.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+The user ID for authentication and tracking
+
+##### run
+
+`Run`
+
+The Assistant run object containing tool calls
+
+##### options?
+
+`ExecuteToolFnOptions`
+
+Optional execution options
+
+##### modifiers?
+
+`ExecuteToolModifiers`
+
+Optional execution modifiers
+
+#### Returns
+
+`Promise`\<`ToolOutput`[]\>
+
+Array of tool outputs for submission
+
+#### Example
+
+```typescript
+// Handle tool calls from an OpenAI Assistant run
+const run = {
+  id: 'run_abc123',
+  required_action: {
+    submit_tool_outputs: {
+      tool_calls: [
+        {
+          id: 'call_xyz789',
+          type: 'function',
+          function: {
+            name: 'SEARCH_TOOL',
+            arguments: '{"query":"composio documentation"}'
+          }
+        }
+      ]
+    }
+  }
+};
+
+const toolOutputs = await provider.handleAssistantMessage(
+  'user123',
+  run,
+  { connectedAccountId: 'conn_xyz456' }
+);
+
+// Submit tool outputs back to OpenAI
+await openai.beta.threads.runs.submitToolOutputs(
+  thread.id,
+  run.id,
+  { tool_outputs: toolOutputs }
+);
+```
+
+***
+
+### handleToolCalls()
+
+> **handleToolCalls**(`userId`, `chatCompletion`, `options?`, `modifiers?`): `Promise`\<`string`[]\>
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:218](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L218)
+
+Handles tool calls from OpenAI's chat completion response.
+
+This method processes tool calls from an OpenAI chat completion response,
+executes each tool call, and returns the results.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+The user ID for authentication and tracking
+
+##### chatCompletion
+
+`ChatCompletion`
+
+The chat completion response from OpenAI
+
+##### options?
+
+`ExecuteToolFnOptions`
+
+Optional execution options
+
+##### modifiers?
+
+`ExecuteToolModifiers`
+
+Optional execution modifiers
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+Array of tool execution results as JSON strings
+
+#### Example
+
+```typescript
+// Handle tool calls from a chat completion response
+const chatCompletion = {
+  choices: [
+    {
+      message: {
+        tool_calls: [
+          {
+            id: 'call_abc123',
+            type: 'function',
+            function: {
+              name: 'SEARCH_TOOL',
+              arguments: '{"query":"composio documentation"}'
+            }
+          }
+        ]
+      }
+    }
+  ]
+};
+
+const results = await provider.handleToolCalls(
+  'user123',
+  chatCompletion,
+  { connectedAccountId: 'conn_xyz456' }
+);
+console.log(results); // Array of tool execution results
+```
+
+***
+
+### waitAndHandleAssistantStreamToolCalls()
+
+> **waitAndHandleAssistantStreamToolCalls**(`userId`, `client`, `runStream`, `thread`, `options?`, `modifiers?`): `AsyncGenerator`\<`AssistantStreamEvent`, `void`, `unknown`\>
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:354](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L354)
+
+Waits for the assistant stream and handles the tool calls.
+
+This method processes an OpenAI Assistant stream, handles any tool calls
+that require action, and yields each event from the stream. It's designed
+for streaming Assistant responses while handling tool calls in real-time.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+The user ID for authentication and tracking
+
+##### client
+
+`OpenAI`
+
+The OpenAI client instance
+
+##### runStream
+
+`Stream`\<`AssistantStreamEvent`\>
+
+The Assistant run stream
+
+##### thread
+
+`Thread`
+
+The thread object
+
+##### options?
+
+`ExecuteToolFnOptions`
+
+Optional execution options
+
+##### modifiers?
+
+`ExecuteToolModifiers`
+
+Optional execution modifiers
+
+#### Returns
+
+`AsyncGenerator`\<`AssistantStreamEvent`, `void`, `unknown`\>
+
+Generator yielding stream events
+
+#### Example
+
+```typescript
+// Process an OpenAI Assistant stream with tool calls
+const thread = await openai.beta.threads.create();
+const runStream = openai.beta.threads.runs.stream(thread.id, {
+  assistant_id: 'asst_abc123',
+  tools: provider.wrapTools(composioTools)
+});
+
+// Process the stream and handle tool calls
+const streamProcessor = provider.waitAndHandleAssistantStreamToolCalls(
+  'user123',
+  openai,
+  runStream,
+  thread,
+  { connectedAccountId: 'conn_xyz456' }
+);
+
+// Consume the stream events
+for await (const event of streamProcessor) {
+  if (event.event === 'thread.message.delta') {
+    console.log(event.data.delta.content);
+  }
+}
+```
+
+***
+
+### waitAndHandleAssistantToolCalls()
+
+> **waitAndHandleAssistantToolCalls**(`userId`, `client`, `run`, `thread`, `options?`, `modifiers?`): `Promise`\<`Run`\>
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:472](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L472)
+
+Waits for the assistant tool calls and handles them.
+
+This method polls an OpenAI Assistant run until it completes or requires action,
+handles any tool calls, and returns the final run object. It's designed for
+non-streaming Assistant interactions.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+The user ID for authentication and tracking
+
+##### client
+
+`OpenAI`
+
+The OpenAI client instance
+
+##### run
+
+`Run`
+
+The initial run object
+
+##### thread
+
+`Thread`
+
+The thread object
+
+##### options?
+
+`ExecuteToolFnOptions`
+
+Optional execution options
+
+##### modifiers?
+
+`ExecuteToolModifiers`
+
+Optional execution modifiers
+
+#### Returns
+
+`Promise`\<`Run`\>
+
+The final run object after completion
+
+#### Example
+
+```typescript
+// Process an OpenAI Assistant run with tool calls
+const thread = await openai.beta.threads.create();
+await openai.beta.threads.messages.create(thread.id, {
+  role: 'user',
+  content: 'Find information about Composio'
+});
+
+let run = await openai.beta.threads.runs.create(thread.id, {
+  assistant_id: 'asst_abc123',
+  tools: provider.wrapTools(composioTools)
+});
+
+// Wait for the run to complete, handling any tool calls
+run = await provider.waitAndHandleAssistantToolCalls(
+  'user123',
+  openai,
+  run,
+  thread,
+  { connectedAccountId: 'conn_xyz456' }
+);
+
+// Get the final messages after run completion
+const messages = await openai.beta.threads.messages.list(thread.id);
+console.log(messages.data[0].content);
+```
+
+***
+
+### wrapTool()
+
+> **wrapTool**(`tool`): `ChatCompletionTool`
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:74](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L74)
+
+Wraps a Composio tool in the OpenAI function calling format.
+
+This method transforms a Composio tool definition into the format
+expected by OpenAI's function calling API.
+
+#### Parameters
+
+##### tool
+
+The Composio tool to wrap
+
+#### Returns
+
+`ChatCompletionTool`
+
+The wrapped tool in OpenAI format
+
+#### Example
+
+```typescript
+// Wrap a single tool for use with OpenAI
+const composioTool = {
+  slug: 'SEARCH_TOOL',
+  description: 'Search for information',
+  inputParameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string' }
+    },
+    required: ['query']
+  }
+};
+
+const openAITool = provider.wrapTool(composioTool);
+```
+
+#### Overrides
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`wrapTool`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#wraptool)
+
+***
+
+### wrapTools()
+
+> **wrapTools**(`tools`): [`OpenAiToolCollection`](../type-aliases/OpenAiToolCollection.mdx)
+
+Defined in: [packages/core/src/provider/OpenAIProvider.ts:124](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/OpenAIProvider.ts#L124)
+
+Wraps multiple Composio tools in the OpenAI function calling format.
+
+This method transforms a list of Composio tools into the format
+expected by OpenAI's function calling API.
+
+#### Parameters
+
+##### tools
+
+`object`[]
+
+Array of Composio tools to wrap
+
+#### Returns
+
+[`OpenAiToolCollection`](../type-aliases/OpenAiToolCollection.mdx)
+
+Array of wrapped tools in OpenAI format
+
+#### Example
+
+```typescript
+// Wrap multiple tools for use with OpenAI
+const composioTools = [
+  {
+    slug: 'SEARCH_TOOL',
+    description: 'Search for information',
+    inputParameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' }
+      }
+    }
+  },
+  {
+    slug: 'WEATHER_TOOL',
+    description: 'Get weather information',
+    inputParameters: {
+      type: 'object',
+      properties: {
+        location: { type: 'string' }
+      }
+    }
+  }
+];
+
+const openAITools = provider.wrapTools(composioTools);
+```
+
+#### Overrides
+
+[`BaseNonAgenticProvider`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx).[`wrapTools`](../../BaseProvider/classes/BaseNonAgenticProvider.mdx#wraptools)

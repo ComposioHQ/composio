@@ -4,3 +4,4 @@ packages:
   - 'packages/providers/*'
   - 'packages/wrappers/*'
   - 'examples/*'
+  - 'fern/*'

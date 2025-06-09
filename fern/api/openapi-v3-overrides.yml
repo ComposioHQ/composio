@@ -1,0 +1,16 @@
+paths:
+  /api/v3/mcp/validate/{uuid}:
+    get:
+      x-fern-ignore: true
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key authentication
+    CookieAuth:
+      # type: apiKey
+      # in: header
+      # name: authToken
+      # description: Cookie based authentication
