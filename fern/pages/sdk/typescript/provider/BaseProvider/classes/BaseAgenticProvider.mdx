@@ -1,0 +1,193 @@
+[**@composio/core**](../../../README.mdx)
+
+***
+
+[@composio/core](../../../README.mdx) / [provider/BaseProvider](../README.mdx) / BaseAgenticProvider
+
+# Class: `abstract` BaseAgenticProvider\<TToolCollection, TTool\>
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:88](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L88)
+
+Base class for all agentic toolsets.
+This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
+
+## Extends
+
+- `BaseProvider`
+
+## Type Parameters
+
+### TToolCollection
+
+`TToolCollection`
+
+### TTool
+
+`TTool`
+
+## Constructors
+
+### Constructor
+
+> **new BaseAgenticProvider**\<`TToolCollection`, `TTool`\>(): `BaseAgenticProvider`\<`TToolCollection`, `TTool`\>
+
+#### Returns
+
+`BaseAgenticProvider`\<`TToolCollection`, `TTool`\>
+
+#### Inherited from
+
+`BaseProvider.constructor`
+
+## Properties
+
+### \_isAgentic
+
+> `readonly` **\_isAgentic**: `true` = `true`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:89](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L89)
+
+**`Internal`**
+
+Whether the provider is agentic.
+This is set automatically set by the core SDK implementation for different provider types.
+
+#### Overrides
+
+`BaseProvider._isAgentic`
+
+***
+
+### name
+
+> `abstract` `readonly` **name**: `string`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:17](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L17)
+
+The name of the provider.
+Used to identify the provider in the telemetry.
+
+#### Inherited from
+
+`BaseProvider.name`
+
+## Methods
+
+### \_setExecuteToolFn()
+
+> **\_setExecuteToolFn**(`executeToolFn`): `void`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:35](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L35)
+
+**`Internal`**
+
+Set the function to execute a tool.
+This is set automatically and injected by the core SDK.
+
+#### Parameters
+
+##### executeToolFn
+
+`GlobalExecuteToolFn`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+`BaseProvider._setExecuteToolFn`
+
+***
+
+### executeTool()
+
+> **executeTool**(`toolSlug`, `body`, `modifers?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:49](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L49)
+
+Global function to execute a tool.
+This function is used by providerds to implement helper functions to execute tools.
+This is a 1:1 mapping of the `execute` method in the `Tools` class.
+
+#### Parameters
+
+##### toolSlug
+
+`string`
+
+The slug of the tool to execute.
+
+##### body
+
+The body of the tool execution.
+
+##### modifers?
+
+`ExecuteToolModifiers`
+
+The modifiers of the tool execution.
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The result of the tool execution.
+
+#### Inherited from
+
+`BaseProvider.executeTool`
+
+***
+
+### wrapTool()
+
+> `abstract` **wrapTool**(`tool`, `executeTool`): `TTool`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:96](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L96)
+
+Wrap a tool in the provider specific format.
+
+#### Parameters
+
+##### tool
+
+The tool to wrap.
+
+##### executeTool
+
+`ExecuteToolFn`
+
+#### Returns
+
+`TTool`
+
+The wrapped tool.
+
+***
+
+### wrapTools()
+
+> `abstract` **wrapTools**(`tools`, `executeTool`): `TToolCollection`
+
+Defined in: [packages/core/src/provider/BaseProvider.ts:102](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/provider/BaseProvider.ts#L102)
+
+Wrap a list of tools in the provider specific format.
+
+#### Parameters
+
+##### tools
+
+`object`[]
+
+The tools to wrap.
+
+##### executeTool
+
+`ExecuteToolFn`
+
+#### Returns
+
+`TToolCollection`
+
+The wrapped tools.

@@ -1,78 +1,62 @@
 # yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
 
 instances:
-  - url: composio.docs.buildwithfern.com
-    custom-domain: docs.composio.dev
-    edit-this-page:
-      github:
-        owner: ComposioHQ
-        repo: composio
-        branch: master
+- url: v3composio.docs.buildwithfern.com
+  custom-domain: v3.docs.composio.dev
+  edit-this-page:
+    github:
+      owner: ComposioHQ
+      repo: composio
+      branch: master
 title: Composio Docs
 
-default-language: typescript
-
-versions:
-  - display-name: v3
-    path: v3.yml
-    slug: v3
-  - display-name: v1
-    path: v1.yml
-    slug: v1
-
+default-language: typescript # TODO: change to python
 
 logo:
   light: assets/logo.svg
   dark: assets/logo-dark.svg
   height: 16
   href: /
-
 favicon: assets/favicon.png
-
+js:
+  - path: js/search.js
+    strategy: afterInteractive
 # css: dist/output.css
-
 typography:
   bodyFont:
     name: Roobert
     paths:
-      - path: assets/Roobert-Regular.woff2
-        weight: "400"
-      - path: assets/Roobert-Medium.woff2
-        weight: "500"
+    - path: assets/Roobert-Regular.woff2
+      weight: "400"
+    - path: assets/Roobert-Medium.woff2
+      weight: "500"
   headingsFont:
     name: Roobert
     paths:
-      - path: assets/Roobert-Regular.woff2
-        weight: "400"
-      - path: assets/Roobert-Medium.woff2
-        weight: "500"
+    - path: assets/Roobert-Regular.woff2
+      weight: "400"
+    - path: assets/Roobert-Medium.woff2
+      weight: "500"
   codeFont:
     name: IBM Plex Mono
     paths:
-      - path: assets/IBMPlexMono-Light.ttf
-        weight: "400"
-      # - path: assets/IBMPlexMono-Medium.woff2
-      #   weight: "500 525"
+    - path: assets/IBMPlexMono-Light.ttf
+      weight: "400"
+    # - path: assets/IBMPlexMono-Medium.woff2
+    #   weight: "500 525"
 navbar-links:
-  - type: secondary
-    text: DASHBOARD
-    url: https://app.composio.dev/
-  - type: secondary
-    text: DOCS
-    url: /
-  - type: secondary
-    text: COMMUNITY
-    url: https://dub.composio.dev/discord
-  - type: primary
-    text: LOG IN
-    url: https://app.composio.dev/login
+- type: primary
+  text: V1 Docs
+  url: https://docs.composio.dev
+- type: filled
+  text: LOG IN
+  url: https://app.composio.dev/login
 layout:
   page-width: full
   tabs-placement: header
   searchbar-placement: header-tabs
   header-height: 50px
   sidebar-width: 298px
-
 colors:
   accent-primary:
     light: "#316DFF"
@@ -92,13 +76,771 @@ colors:
   # border:
   #   light: "#E0E0E0"
   #   dark: "#292929"
-
-experimental:
-  mdx-components:
-    - ./components
-    - ./icons
-  disable-stream-toggle: true
-
+# experimental:
+#   mdx-components:
+#   - ./components
+#   - ./icons
+#   disable-stream-toggle: true
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
+
+tabs:
+  docs:
+    display-name: Guides
+    icon: book
+    slug: docs
+  sdk-reference:
+    display-name: SDK Reference
+    href: https://deepwiki.com/ComposioHQ/composio
+    icon: code
+  api-reference:
+    display-name: API Reference
+    icon: server
+    skip-slug: true
+  tools:
+    display-name: Tools
+    icon: tools
+    skip-slug: true
+  providers:
+    display-name: Providers
+    icon: code
+    skip-slug: true
+  examples:
+    display-name: Examples
+    icon: running
+    skip-slug: true
+  changelog:
+    display-name: Changelog
+    icon: history
+    changelog: ./pages/changelog
+
+# landing-page:
+#   page: Composio Documentation
+#   path: pages/index.mdx
+
+navigation:
+- tab: docs
+  layout:
+  - section: Get Started
+    icon: rocket
+    skip-slug: true
+    contents:
+    - page: Welcome
+      path: pages/get-started/welcome.mdx
+      slug: welcome
+    - page: Quickstart
+      path: pages/get-started/quickstart.mdx
+      slug: quickstart
+    - page: Providers
+      path: pages/get-started/providers.mdx
+      slug: providers
+  - section: Tools
+    icon: tools
+    skip-slug: true
+    contents:
+    - page: Executing Tools
+      path: pages/tool-calling/executing-tools.mdx
+      slug: executing-tools
+    - page: Authenticating Tools
+      path: pages/tool-calling/authenticating-tools.mdx
+      slug: authenticating-tools
+    - page: Fetch and Filter Tools
+      path: pages/tool-calling/fetching-tools.mdx
+      slug: fetching-tools
+    - section: Modifiers
+      slug: modifiers
+      contents:
+      - page: Schema Modifiers
+        path: pages/tool-calling/schema-modifiers.mdx
+        slug: schema-modifiers
+      - page: Before Tool Execution
+        path: pages/tool-calling/before-execution-modifiers.mdx
+        slug: before-execution
+      - page: After Tool Execution
+        path: pages/tool-calling/after-execution-modifiers.mdx
+        slug: after-execution
+    - page: Extending Toolkits with your own tools
+      path: pages/tool-calling/extending-toolkits.mdx
+      slug: extending-toolkits
+  - section: Authentication
+    icon: lock
+    skip-slug: true
+    contents:
+    - page: Custom Auth Configs
+      path: pages/authentication/custom-auth-configs.mdx
+      slug: custom-auth-configs
+    - page: Programmatic Auth Configs
+      path: pages/authentication/programmatic-auth-configs.mdx
+      slug: programmatic-auth-configs
+    - page: Custom Auth Parameters
+      path: pages/authentication/custom-auth-params.mdx
+      slug: custom-auth-params
+  - section: Triggers
+    icon: bolt
+    skip-slug: true
+    contents:
+    - page: Using Triggers
+      path: pages/triggers/using-triggers.mdx
+      slug: using-triggers
+  - section: MCP
+    icon: server
+    skip-slug: true
+    contents:
+    - page: Introduction
+      path: pages/mcp/introduction.mdx
+      slug: mcp-introduction
+- tab: examples
+  layout:
+  - section: Examples
+    icon: utensils
+    contents:
+    - page: Full Stack Chat App
+      path: pages/examples/vercel-composio.mdx
+    - page: Gmail Filterer
+      path: pages/examples/gmail-filterer.mdx
+- tab: providers
+  layout:
+  - section: Providers
+    icon: code
+    contents:
+    - page: OpenAI Provider
+      path: pages/providers/openai.mdx
+    - page: Anthropic Provider
+      path: pages/providers/anthropic.mdx
+    - page: LangGraph Provider
+      path: pages/providers/langgraph.mdx
+    - page: CrewAI Provider
+      path: pages/providers/crewai.mdx
+    - page: Vercel AI SDK Provider
+      path: pages/providers/vercel.mdx
+    - page: Google ADK Provider
+      path: pages/providers/google-adk.mdx
+    - page: OpenAI Agents Provider
+      path: pages/providers/openai-agents.mdx
+    - page: Mastra Provider
+      path: pages/providers/mastra.mdx
+    - page: Custom Provider
+      path: pages/providers/custom.mdx
+- tab: tools
+  layout:
+  - section: Tools
+    contents:
+    - page: Introduction
+      path: pages/tools/introduction.mdx
+    - page: Ably
+      path: pages/tools/ably.mdx
+    - page: Accelo
+      path: pages/tools/accelo.mdx
+    # - page: Acculynx
+    #   path: pages/tools/acculynx.mdx
+    # - page: Active Campaign
+    #   path: pages/tools/active_campaign.mdx
+    # - page: Adobe
+    #   path: pages/tools/adobe.mdx
+    # - page: Aero Workflow
+    #   path: pages/tools/aero_workflow.mdx
+    # - page: Affinity
+    #   path: pages/tools/affinity.mdx
+    # - page: Agencyzoom
+    #   path: pages/tools/agencyzoom.mdx
+    # - page: Ahrefs
+    #   path: pages/tools/ahrefs.mdx
+    # - page: Airtable
+    #   path: pages/tools/airtable.mdx
+    # - page: Alchemy
+    #   path: pages/tools/alchemy.mdx
+    # - page: Altoviz
+    #   path: pages/tools/altoviz.mdx
+    # - page: Amazon
+    #   path: pages/tools/amazon.mdx
+    # - page: Amcards
+    #   path: pages/tools/amcards.mdx
+    # - page: Amplitude
+    #   path: pages/tools/amplitude.mdx
+    # - page: Apaleo
+    #   path: pages/tools/apaleo.mdx
+    # - page: Apollo
+    #   path: pages/tools/apollo.mdx
+    # - page: Appdrag
+    #   path: pages/tools/appdrag.mdx
+    # - page: Appsflyer
+    #   path: pages/tools/appsflyer.mdx
+    # - page: Asana
+    #   path: pages/tools/asana.mdx
+    # - page: Ashby
+    #   path: pages/tools/ashby.mdx
+    # - page: Atlassian
+    #   path: pages/tools/atlassian.mdx
+    # - page: Attio
+    #   path: pages/tools/attio.mdx
+    # - page: Auth0
+    #   path: pages/tools/auth0.mdx
+    # - page: Axonaut
+    #   path: pages/tools/axonaut.mdx
+    # - page: Bamboohr
+    #   path: pages/tools/bamboohr.mdx
+    # - page: Bannerbear
+    #   path: pages/tools/bannerbear.mdx
+    # - page: Baserow
+    #   path: pages/tools/baserow.mdx
+    # - page: Battlenet
+    #   path: pages/tools/battlenet.mdx
+    # - page: Beeminder
+    #   path: pages/tools/beeminder.mdx
+    # - page: Bitbucket
+    #   path: pages/tools/bitbucket.mdx
+    # - page: Bitwarden
+    #   path: pages/tools/bitwarden.mdx
+    # - page: Blackbaud
+    #   path: pages/tools/blackbaud.mdx
+    # - page: Blackboard
+    #   path: pages/tools/blackboard.mdx
+    # - page: Boldsign
+    #   path: pages/tools/boldsign.mdx
+    # - page: Bolna
+    #   path: pages/tools/bolna.mdx
+    # - page: Borneo
+    #   path: pages/tools/borneo.mdx
+    # - page: Botbaba
+    #   path: pages/tools/botbaba.mdx
+    # - page: Box
+    #   path: pages/tools/box.mdx
+    # - page: Braintree
+    #   path: pages/tools/braintree.mdx
+    # - page: Brandfetch
+    #   path: pages/tools/brandfetch.mdx
+    # - page: Breezy Hr
+    #   path: pages/tools/breezy_hr.mdx
+    # - page: Brevo
+    #   path: pages/tools/brevo.mdx
+    # - page: Brex
+    #   path: pages/tools/brex.mdx
+    # - page: Brex Staging
+    #   path: pages/tools/brex_staging.mdx
+    # - page: Brightpearl
+    #   path: pages/tools/brightpearl.mdx
+    # - page: Browseai
+    #   path: pages/tools/browseai.mdx
+    # - page: Browserbase Tool
+    #   path: pages/tools/browserbase_tool.mdx
+    # - page: Browserhub
+    #   path: pages/tools/browserhub.mdx
+    # - page: Bubble
+    #   path: pages/tools/bubble.mdx
+    # - page: Cal
+    #   path: pages/tools/cal.mdx
+    # - page: Calendly
+    #   path: pages/tools/calendly.mdx
+    # - page: Canva
+    #   path: pages/tools/canva.mdx
+    # - page: Canvas
+    #   path: pages/tools/canvas.mdx
+    # - page: Chatwork
+    #   path: pages/tools/chatwork.mdx
+    # - page: Chmeetings
+    #   path: pages/tools/chmeetings.mdx
+    # - page: Clickup
+    #   path: pages/tools/clickup.mdx
+    # - page: Close
+    #   path: pages/tools/close.mdx
+    # - page: Cloudflare
+    #   path: pages/tools/cloudflare.mdx
+    # - page: Coda
+    #   path: pages/tools/coda.mdx
+    # - page: Codeinterpreter
+    #   path: pages/tools/codeinterpreter.mdx
+    # - page: Coinbase
+    #   path: pages/tools/coinbase.mdx
+    # - page: Coinmarketcal
+    #   path: pages/tools/coinmarketcal.mdx
+    # - page: Composio
+    #   path: pages/tools/composio.mdx
+    # - page: Composio Search
+    #   path: pages/tools/composio_search.mdx
+    # - page: Confluence
+    #   path: pages/tools/confluence.mdx
+    # - page: Contentful
+    #   path: pages/tools/contentful.mdx
+    # - page: Crustdata
+    #   path: pages/tools/crustdata.mdx
+    # - page: Customer Io
+    #   path: pages/tools/customer_io.mdx
+    # - page: D2Lbrightspace
+    #   path: pages/tools/d2lbrightspace.mdx
+    # - page: Dailybot
+    #   path: pages/tools/dailybot.mdx
+    # - page: Datadog
+    #   path: pages/tools/datadog.mdx
+    # - page: Datagma
+    #   path: pages/tools/datagma.mdx
+    # - page: Datarobot
+    #   path: pages/tools/datarobot.mdx
+    # - page: Deel
+    #   path: pages/tools/deel.mdx
+    # - page: Demio
+    #   path: pages/tools/demio.mdx
+    # - page: Dialpad
+    #   path: pages/tools/dialpad.mdx
+    # - page: Digicert
+    #   path: pages/tools/digicert.mdx
+    # - page: Discord
+    #   path: pages/tools/discord.mdx
+    # - page: Discordbot
+    #   path: pages/tools/discordbot.mdx
+    # - page: Docmosis
+    #   path: pages/tools/docmosis.mdx
+    # - page: Docusign
+    #   path: pages/tools/docusign.mdx
+    # - page: Dropbox
+    #   path: pages/tools/dropbox.mdx
+    # - page: Dropbox Sign
+    #   path: pages/tools/dropbox_sign.mdx
+    # - page: Dynamics365
+    #   path: pages/tools/dynamics365.mdx
+    # - page: Echtpost
+    #   path: pages/tools/echtpost.mdx
+    # - page: Elevenlabs
+    #   path: pages/tools/elevenlabs.mdx
+    # - page: Entelligence
+    #   path: pages/tools/entelligence.mdx
+    # - page: Epic Games
+    #   path: pages/tools/epic_games.mdx
+    # - page: Eventbrite
+    #   path: pages/tools/eventbrite.mdx
+    # - page: Exa
+    #   path: pages/tools/exa.mdx
+    # - page: Exist
+    #   path: pages/tools/exist.mdx
+    # - page: Facebook
+    #   path: pages/tools/facebook.mdx
+    # - page: Factorial
+    #   path: pages/tools/factorial.mdx
+    # - page: Figma
+    #   path: pages/tools/figma.mdx
+    # - page: Finage
+    #   path: pages/tools/finage.mdx
+    # - page: Firecrawl
+    #   path: pages/tools/firecrawl.mdx
+    # - page: Fireflies
+    #   path: pages/tools/fireflies.mdx
+    # - page: Fitbit
+    #   path: pages/tools/fitbit.mdx
+    # - page: Flutterwave
+    #   path: pages/tools/flutterwave.mdx
+    # - page: Fomo
+    #   path: pages/tools/fomo.mdx
+    # - page: Formcarry
+    #   path: pages/tools/formcarry.mdx
+    # - page: Formsite
+    #   path: pages/tools/formsite.mdx
+    # - page: Foursquare
+    #   path: pages/tools/foursquare.mdx
+    # - page: Freshbooks
+    #   path: pages/tools/freshbooks.mdx
+    # - page: Freshdesk
+    #   path: pages/tools/freshdesk.mdx
+    # - page: Front
+    #   path: pages/tools/front.mdx
+    # - page: Github
+    #   path: pages/tools/github.mdx
+    # - page: Gmail
+    #   path: pages/tools/gmail.mdx
+    # - page: Go To Webinar
+    #   path: pages/tools/go_to_webinar.mdx
+    # - page: Gong
+    #   path: pages/tools/gong.mdx
+    # - page: Google Analytics
+    #   path: pages/tools/google_analytics.mdx
+    # - page: Google Maps
+    #   path: pages/tools/google_maps.mdx
+    # - page: Googleads
+    #   path: pages/tools/googleads.mdx
+    # - page: Googlebigquery
+    #   path: pages/tools/googlebigquery.mdx
+    # - page: Googlecalendar
+    #   path: pages/tools/googlecalendar.mdx
+    # - page: Googledocs
+    #   path: pages/tools/googledocs.mdx
+    # - page: Googledrive
+    #   path: pages/tools/googledrive.mdx
+    # - page: Googlemeet
+    #   path: pages/tools/googlemeet.mdx
+    # - page: Googlephotos
+    #   path: pages/tools/googlephotos.mdx
+    # - page: Googlesheets
+    #   path: pages/tools/googlesheets.mdx
+    # - page: Googlesuper
+    #   path: pages/tools/googlesuper.mdx
+    # - page: Googletasks
+    #   path: pages/tools/googletasks.mdx
+    # - page: Gorgias
+    #   path: pages/tools/gorgias.mdx
+    # - page: Gumroad
+    #   path: pages/tools/gumroad.mdx
+    # - page: Guru
+    #   path: pages/tools/guru.mdx
+    # - page: Hackernews
+    #   path: pages/tools/hackernews.mdx
+    # - page: Hackerrank Work
+    #   path: pages/tools/hackerrank_work.mdx
+    # - page: Harvest
+    #   path: pages/tools/harvest.mdx
+    # - page: Helcim
+    #   path: pages/tools/helcim.mdx
+    # - page: Heygen
+    #   path: pages/tools/heygen.mdx
+    # - page: Highlevel
+    #   path: pages/tools/highlevel.mdx
+    # - page: Hubspot
+    #   path: pages/tools/hubspot.mdx
+    # - page: Humanloop
+    #   path: pages/tools/humanloop.mdx
+    # - page: Icims Talent Cloud
+    #   path: pages/tools/icims_talent_cloud.mdx
+    # - page: Idea Scale
+    #   path: pages/tools/idea_scale.mdx
+    # - page: Intercom
+    #   path: pages/tools/intercom.mdx
+    # - page: Interzoid
+    #   path: pages/tools/interzoid.mdx
+    # - page: Jira
+    #   path: pages/tools/jira.mdx
+    # - page: Junglescout
+    #   path: pages/tools/junglescout.mdx
+    # - page: Keap
+    #   path: pages/tools/keap.mdx
+    # - page: Klaviyo
+    #   path: pages/tools/klaviyo.mdx
+    # - page: Klipfolio
+    #   path: pages/tools/klipfolio.mdx
+    # - page: Kommo
+    #   path: pages/tools/kommo.mdx
+    # - page: Lastpass
+    #   path: pages/tools/lastpass.mdx
+    # - page: Launch Darkly
+    #   path: pages/tools/launch_darkly.mdx
+    # - page: Lever
+    #   path: pages/tools/lever.mdx
+    # - page: Lever Sandbox
+    #   path: pages/tools/lever_sandbox.mdx
+    # - page: Lexoffice
+    #   path: pages/tools/lexoffice.mdx
+    # - page: Linear
+    #   path: pages/tools/linear.mdx
+    # - page: Linkedin
+    #   path: pages/tools/linkedin.mdx
+    # - page: Linkhut
+    #   path: pages/tools/linkhut.mdx
+    # - page: Linkup
+    #   path: pages/tools/linkup.mdx
+    # - page: Listennotes
+    #   path: pages/tools/listennotes.mdx
+    # - page: Lmnt
+    #   path: pages/tools/lmnt.mdx
+    # - page: Mailchimp
+    #   path: pages/tools/mailchimp.mdx
+    # - page: Mailerlite
+    #   path: pages/tools/mailerlite.mdx
+    # - page: Maintainx
+    #   path: pages/tools/maintainx.mdx
+    # - page: Mboum
+    #   path: pages/tools/mboum.mdx
+    # - page: Mem0
+    #   path: pages/tools/mem0.mdx
+    # - page: Metaads
+    #   path: pages/tools/metaads.mdx
+    # - page: Metatextai
+    #   path: pages/tools/metatextai.mdx
+    # - page: Microsoft Clarity
+    #   path: pages/tools/microsoft_clarity.mdx
+    # - page: Microsoft Teams
+    #   path: pages/tools/microsoft_teams.mdx
+    # - page: Microsoft Tenant
+    #   path: pages/tools/microsoft_tenant.mdx
+    # - page: Miro
+    #   path: pages/tools/miro.mdx
+    # - page: Mixpanel
+    #   path: pages/tools/mixpanel.mdx
+    # - page: Mocean
+    #   path: pages/tools/mocean.mdx
+    # - page: Monday
+    #   path: pages/tools/monday.mdx
+    # - page: Mopinion
+    #   path: pages/tools/mopinion.mdx
+    # - page: More Trees
+    #   path: pages/tools/more_trees.mdx
+    # - page: Moxie
+    #   path: pages/tools/moxie.mdx
+    # - page: Moz
+    #   path: pages/tools/moz.mdx
+    # - page: Mural
+    #   path: pages/tools/mural.mdx
+    # - page: Ncscale
+    #   path: pages/tools/ncscale.mdx
+    # - page: Neon
+    #   path: pages/tools/neon.mdx
+    # - page: Netsuite
+    #   path: pages/tools/netsuite.mdx
+    # - page: Ngrok
+    #   path: pages/tools/ngrok.mdx
+    # - page: Notion
+    #   path: pages/tools/notion.mdx
+    # - page: Oncehub
+    #   path: pages/tools/oncehub.mdx
+    # - page: One Drive
+    #   path: pages/tools/one_drive.mdx
+    # - page: Onepage
+    #   path: pages/tools/onepage.mdx
+    # - page: Open Sea
+    #   path: pages/tools/open_sea.mdx
+    # - page: Outlook
+    #   path: pages/tools/outlook.mdx
+    # - page: Pagerduty
+    #   path: pages/tools/pagerduty.mdx
+    # - page: Pandadoc
+    #   path: pages/tools/pandadoc.mdx
+    # - page: Peopledatalabs
+    #   path: pages/tools/peopledatalabs.mdx
+    # - page: Perplexityai
+    #   path: pages/tools/perplexityai.mdx
+    # - page: Piggy
+    #   path: pages/tools/piggy.mdx
+    # - page: Pipedrive
+    #   path: pages/tools/pipedrive.mdx
+    # - page: Placekey
+    #   path: pages/tools/placekey.mdx
+    # - page: Posthog
+    #   path: pages/tools/posthog.mdx
+    # - page: Precoro
+    #   path: pages/tools/precoro.mdx
+    # - page: Printnode
+    #   path: pages/tools/printnode.mdx
+    # - page: Process Street
+    #   path: pages/tools/process_street.mdx
+    # - page: Productboard
+    #   path: pages/tools/productboard.mdx
+    # - page: Qualaroo
+    #   path: pages/tools/qualaroo.mdx
+    # - page: Quickbooks
+    #   path: pages/tools/quickbooks.mdx
+    # - page: Rafflys
+    #   path: pages/tools/rafflys.mdx
+    # - page: Ramp
+    #   path: pages/tools/ramp.mdx
+    # - page: Ravenseotools
+    #   path: pages/tools/ravenseotools.mdx
+    # - page: Recallai
+    #   path: pages/tools/recallai.mdx
+    # - page: Reddit
+    #   path: pages/tools/reddit.mdx
+    # - page: Resend
+    #   path: pages/tools/resend.mdx
+    # - page: Retellai
+    #   path: pages/tools/retellai.mdx
+    # - page: Ring Central
+    #   path: pages/tools/ring_central.mdx
+    # - page: Rippling
+    #   path: pages/tools/rippling.mdx
+    # - page: Rocket Reach
+    #   path: pages/tools/rocket_reach.mdx
+    # - page: Rocketlane
+    #   path: pages/tools/rocketlane.mdx
+    # - page: Sage
+    #   path: pages/tools/sage.mdx
+    # - page: Salesforce
+    #   path: pages/tools/salesforce.mdx
+    # - page: Screenshotone
+    #   path: pages/tools/screenshotone.mdx
+    # - page: Seismic
+    #   path: pages/tools/seismic.mdx
+    # - page: Semanticscholar
+    #   path: pages/tools/semanticscholar.mdx
+    # - page: Semrush
+    #   path: pages/tools/semrush.mdx
+    # - page: Sendgrid
+    #   path: pages/tools/sendgrid.mdx
+    # - page: Sentry
+    #   path: pages/tools/sentry.mdx
+    # - page: Serpapi
+    #   path: pages/tools/serpapi.mdx
+    # - page: Servicem8
+    #   path: pages/tools/servicem8.mdx
+    # - page: Servicenow
+    #   path: pages/tools/servicenow.mdx
+    # - page: Share Point
+    #   path: pages/tools/share_point.mdx
+    # - page: Shopify
+    #   path: pages/tools/shopify.mdx
+    # - page: Shortcut
+    #   path: pages/tools/shortcut.mdx
+    # - page: Simplesat
+    #   path: pages/tools/simplesat.mdx
+    # - page: Slack
+    #   path: pages/tools/slack.mdx
+    # - page: Slackbot
+    #   path: pages/tools/slackbot.mdx
+    # - page: Smartrecruiters
+    #   path: pages/tools/smartrecruiters.mdx
+    # - page: Smugmug
+    #   path: pages/tools/smugmug.mdx
+    # - page: Snowflake
+    #   path: pages/tools/snowflake.mdx
+    # - page: Square
+    #   path: pages/tools/square.mdx
+    # - page: Stack Exchange
+    #   path: pages/tools/stack_exchange.mdx
+    # - page: Stripe
+    #   path: pages/tools/stripe.mdx
+    # - page: Supabase
+    #   path: pages/tools/supabase.mdx
+    # - page: Survey Monkey
+    #   path: pages/tools/survey_monkey.mdx
+    # - page: Tapform
+    #   path: pages/tools/tapform.mdx
+    # - page: Tavily
+    #   path: pages/tools/tavily.mdx
+    # - page: Terminus
+    #   path: pages/tools/terminus.mdx
+    # - page: Text To Pdf
+    #   path: pages/tools/text_to_pdf.mdx
+    # - page: Textrazor
+    #   path: pages/tools/textrazor.mdx
+    # - page: Timecamp
+    #   path: pages/tools/timecamp.mdx
+    # - page: Timekit
+    #   path: pages/tools/timekit.mdx
+    # - page: Timely
+    #   path: pages/tools/timely.mdx
+    # - page: Tinypng
+    #   path: pages/tools/tinypng.mdx
+    # - page: Tinyurl
+    #   path: pages/tools/tinyurl.mdx
+    # - page: Tisane
+    #   path: pages/tools/tisane.mdx
+    # - page: Todoist
+    #   path: pages/tools/todoist.mdx
+    # - page: Toneden
+    #   path: pages/tools/toneden.mdx
+    # - page: Trello
+    #   path: pages/tools/trello.mdx
+    # - page: Twitch
+    #   path: pages/tools/twitch.mdx
+    # - page: Twitter
+    #   path: pages/tools/twitter.mdx
+    # - page: Twitter Media
+    #   path: pages/tools/twitter_media.mdx
+    # - page: Typefully
+    #   path: pages/tools/typefully.mdx
+    # - page: Venly
+    #   path: pages/tools/venly.mdx
+    # - page: Vero
+    #   path: pages/tools/vero.mdx
+    # - page: Visme
+    #   path: pages/tools/visme.mdx
+    # - page: Waboxapp
+    #   path: pages/tools/waboxapp.mdx
+    # - page: Wakatime
+    #   path: pages/tools/wakatime.mdx
+    # - page: Wave Accounting
+    #   path: pages/tools/wave_accounting.mdx
+    # - page: Weathermap
+    #   path: pages/tools/weathermap.mdx
+    # - page: Webex
+    #   path: pages/tools/webex.mdx
+    # - page: Webflow
+    #   path: pages/tools/webflow.mdx
+    # - page: Whatsapp
+    #   path: pages/tools/whatsapp.mdx
+    # - page: Wiz
+    #   path: pages/tools/wiz.mdx
+    # - page: Workiom
+    #   path: pages/tools/workiom.mdx
+    # - page: Wrike
+    #   path: pages/tools/wrike.mdx
+    # - page: Xero
+    #   path: pages/tools/xero.mdx
+    # - page: Yandex
+    #   path: pages/tools/yandex.mdx
+    # - page: Ynab
+    #   path: pages/tools/ynab.mdx
+    # - page: Yousearch
+    #   path: pages/tools/yousearch.mdx
+    # - page: Youtube
+    #   path: pages/tools/youtube.mdx
+    # - page: Zendesk
+    #   path: pages/tools/zendesk.mdx
+    # - page: Zenrows
+    #   path: pages/tools/zenrows.mdx
+    # - page: Zenserp
+    #   path: pages/tools/zenserp.mdx
+    # - page: Zoho
+    #   path: pages/tools/zoho.mdx
+    # - page: Zoho Bigin
+    #   path: pages/tools/zoho_bigin.mdx
+    # - page: Zoho Books
+    #   path: pages/tools/zoho_books.mdx
+    # - page: Zoho Desk
+    #   path: pages/tools/zoho_desk.mdx
+    # - page: Zoho Inventory
+    #   path: pages/tools/zoho_inventory.mdx
+    # - page: Zoho Invoice
+    #   path: pages/tools/zoho_invoice.mdx
+    # - page: Zoho Mail
+    #   path: pages/tools/zoho_mail.mdx
+    # - page: Zoom
+    #   path: pages/tools/zoom.mdx
+    # - page: Zoominfo
+    #   path: pages/tools/zoominfo.mdx
+- tab: sdk-reference
+  layout:
+  - section: Python
+    icon: python
+    contents:
+    - page: Python SDK
+      path: pages/sdk/python/index.mdx
+  - section: TypeScript
+    icon: typescript
+    contents:
+    - section: Core Classes
+      slug: core-classes
+      contents:
+      - page: Composio
+        path: pages/sdk/typescript/composio/classes/Composio.mdx
+      - page: ComposioProvider
+        path: pages/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
+      - page: OpenAIProvider
+        path: pages/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
+      - page: BaseAgenticProvider
+        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
+      - page: BaseNonAgenticProvider
+        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
+    - section: Models
+      slug: models
+      contents:
+      - page: Tools
+        path: pages/sdk/typescript/models/Tools/classes/Tools.mdx
+      - page: Toolkits
+        path: pages/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
+      - page: Triggers
+        path: pages/sdk/typescript/models/Triggers/classes/Triggers.mdx
+      - page: AuthConfigs
+        path: pages/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
+      - page: ConnectedAccounts
+        path: pages/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
+      - page: ConnectionRequest
+        path: pages/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
+      - page: CustomTools
+        path: pages/sdk/typescript/CustomTools/classes/CustomTools.mdx
+      - page: Session
+        path: pages/sdk/typescript/models/Session/classes/Session.mdx
+- tab: api-reference
+  layout:
+  - section: API Reference
+    contents:
+    - api: v3
+      api-name: v3
+      skip-slug: true
+      paginated: false
+      flattened: true
+- tab: changelog

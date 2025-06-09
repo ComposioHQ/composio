@@ -1,0 +1,411 @@
+[**@composio/core**](../../README.mdx)
+
+***
+
+[@composio/core](../../README.mdx) / [ConnectedAccounts](../README.mdx) / ConnectedAccounts
+
+# Class: ConnectedAccounts
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:34](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L34)
+
+ConnectedAccounts class
+
+This class is used to manage connected accounts in the Composio SDK.
+Connected accounts are used to authenticate with third-party services.
+
+## Constructors
+
+### Constructor
+
+> **new ConnectedAccounts**(`client`): `ConnectedAccounts`
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:37](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L37)
+
+#### Parameters
+
+##### client
+
+`Composio`
+
+#### Returns
+
+`ConnectedAccounts`
+
+## Methods
+
+### delete()
+
+> **delete**(`nanoid`): `Promise`\<`ConnectedAccountDeleteResponse`\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:218](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L218)
+
+Deletes a connected account.
+
+This method permanently removes a connected account from the Composio platform.
+This action cannot be undone and will revoke any access tokens associated with the account.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the connected account to delete
+
+#### Returns
+
+`Promise`\<`ConnectedAccountDeleteResponse`\>
+
+The deletion response
+
+#### Throws
+
+If the account doesn't exist or cannot be deleted
+
+#### Example
+
+```typescript
+// Delete a connected account
+await composio.connectedAccounts.delete('conn_abc123');
+```
+
+***
+
+### disable()
+
+> **disable**(`nanoid`): `Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:303](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L303)
+
+Disable a connected account
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+Unique identifier of the connected account
+
+#### Returns
+
+`Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Updated connected account details
+
+#### Example
+
+```typescript
+// Disable a connected account
+const disabledAccount = await composio.connectedAccounts.disable('conn_abc123');
+console.log(disabledAccount.isDisabled); // true
+
+// You can also use updateStatus with a reason
+// const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+//   enabled: false,
+//   reason: 'No longer needed'
+// });
+```
+
+***
+
+### enable()
+
+> **enable**(`nanoid`): `Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:281](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L281)
+
+Enable a connected account
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+Unique identifier of the connected account
+
+#### Returns
+
+`Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Updated connected account details
+
+#### Example
+
+```typescript
+// Enable a previously disabled connected account
+const enabledAccount = await composio.connectedAccounts.enable('conn_abc123');
+console.log(enabledAccount.isDisabled); // false
+```
+
+***
+
+### get()
+
+> **get**(`nanoid`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:197](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L197)
+
+Retrieves a specific connected account by its ID.
+
+This method fetches detailed information about a single connected account
+and transforms the response to the SDK's standardized format.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the connected account
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The connected account details
+
+#### Throws
+
+If the connected account cannot be found or an API error occurs
+
+#### Example
+
+```typescript
+// Get a connected account by ID
+const account = await composio.connectedAccounts.get('conn_abc123');
+console.log(account.status); // e.g., 'ACTIVE'
+console.log(account.toolkit.slug); // e.g., 'github'
+```
+
+***
+
+### initiate()
+
+> **initiate**(`userId`, `authConfigId`, `options?`): `Promise`\<[`ConnectionRequest`](../../ConnectionRequest/classes/ConnectionRequest.mdx)\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:121](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L121)
+
+Compound function to create a new connected account.
+This function creates a new connected account and returns a connection request.
+Users can then wait for the connection to be established using the `waitForConnection` method.
+
+#### Parameters
+
+##### userId
+
+`string`
+
+User ID of the connected account
+
+##### authConfigId
+
+`string`
+
+Auth config ID of the connected account
+
+##### options?
+
+#### Returns
+
+`Promise`\<[`ConnectionRequest`](../../ConnectionRequest/classes/ConnectionRequest.mdx)\>
+
+Connection request object
+
+#### Example
+
+```ts
+const connectionRequest = await composio.createConnectedAccount('user_123', 'auth_config_123', {
+  data: {
+    name: 'My Connected Account',
+  },
+});
+```
+
+#### Link
+
+https://docs.composio.dev/reference/connected-accounts/create-connected-account
+
+***
+
+### list()
+
+> **list**(`query?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:66](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L66)
+
+Lists all connected accounts based on provided filter criteria.
+
+This method retrieves connected accounts from the Composio API with optional filtering.
+
+#### Parameters
+
+##### query?
+
+Optional query parameters for filtering connected accounts
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+A paginated list of connected accounts
+
+#### Throws
+
+If the query fails validation against the expected schema
+
+#### Example
+
+```typescript
+// List all connected accounts
+const allAccounts = await composio.connectedAccounts.list();
+
+// List accounts for a specific user
+const userAccounts = await composio.connectedAccounts.list({
+  userIds: ['user123']
+});
+
+// List accounts for a specific toolkit
+const githubAccounts = await composio.connectedAccounts.list({
+  toolkitSlugs: ['github']
+});
+```
+
+***
+
+### refresh()
+
+> **refresh**(`nanoid`): `Promise`\<`ConnectedAccountRefreshResponse`\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:238](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L238)
+
+Refreshes a connected account's authentication credentials.
+
+This method attempts to refresh OAuth tokens or other credentials associated with
+the connected account. This is useful when a token has expired or is about to expire.
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+The unique identifier of the connected account to refresh
+
+#### Returns
+
+`Promise`\<`ConnectedAccountRefreshResponse`\>
+
+The response containing the refreshed account details
+
+#### Throws
+
+If the account doesn't exist or credentials cannot be refreshed
+
+#### Example
+
+```typescript
+// Refresh a connected account's credentials
+const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123');
+```
+
+***
+
+### updateStatus()
+
+> **updateStatus**(`nanoid`, `params`): `Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:262](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L262)
+
+Update the status of a connected account
+
+#### Parameters
+
+##### nanoid
+
+`string`
+
+Unique identifier of the connected account
+
+##### params
+
+`ConnectedAccountUpdateStatusParams`
+
+Parameters for updating the status
+
+#### Returns
+
+`Promise`\<`ConnectedAccountUpdateStatusResponse`\>
+
+Updated connected account details
+
+#### Example
+
+```typescript
+// Enable a connected account
+const updatedAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+  enabled: true
+});
+
+// Disable a connected account with a reason
+const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
+  enabled: false,
+  reason: 'Token expired'
+});
+```
+
+***
+
+### waitForConnection()
+
+> **waitForConnection**(`connectedAccountId`, `timeout?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/ConnectedAccounts.ts:171](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectedAccounts.ts#L171)
+
+Waits for a connection request to complete and become active.
+
+This method continuously polls the Composio API to check the status of a connection
+until it either becomes active, enters a terminal error state, or times out.
+
+#### Parameters
+
+##### connectedAccountId
+
+`string`
+
+The ID of the connected account to wait for
+
+##### timeout?
+
+`number` = `60000`
+
+Maximum time to wait in milliseconds (default: 60 seconds)
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The finalized connected account data
+
+#### Throws
+
+If the connected account cannot be found
+
+#### Throws
+
+If the connection enters a failed, expired, or deleted state
+
+#### Throws
+
+If the connection does not complete within the timeout period
+
+#### Example
+
+```typescript
+// Wait for a connection to complete with default timeout
+const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc');
+
+// Wait with a custom timeout of 2 minutes
+const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc', 120000);
+```
