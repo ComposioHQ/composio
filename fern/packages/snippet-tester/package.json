@@ -1,0 +1,29 @@
+{
+  "name": "snippet-tester",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "bun test",
+    "start": "bun run src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@pnpm/find-workspace-dir": "^7.0.2",
+    "cohere": "^1.1.1",
+    "cohere-ai": "^7.14.0",
+    "convict": "^6.2.4",
+    "glob": "^11.0.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/convict": "^6.1.6",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.0.0",
+    "bun-types": "latest"
+  }
+}

@@ -1,0 +1,146 @@
+[**@composio/core**](../../README.mdx)
+
+***
+
+[@composio/core](../../README.mdx) / [ConnectionRequest](../README.mdx) / ConnectionRequest
+
+# Class: ConnectionRequest
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:21](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L21)
+
+## Constructors
+
+### Constructor
+
+> **new ConnectionRequest**(`client`, `connectedAccountId`, `status?`, `redirectUrl?`): `ConnectionRequest`
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:27](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L27)
+
+#### Parameters
+
+##### client
+
+`Composio`
+
+##### connectedAccountId
+
+`string`
+
+##### status?
+
+`ConnectedAccountStatus`
+
+##### redirectUrl?
+
+`string`
+
+#### Returns
+
+`ConnectionRequest`
+
+## Properties
+
+### id
+
+> **id**: `string`
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:23](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L23)
+
+***
+
+### redirectUrl?
+
+> `optional` **redirectUrl**: `string`
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:25](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L25)
+
+***
+
+### status?
+
+> `optional` **status**: `ConnectedAccountStatus`
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:24](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L24)
+
+## Methods
+
+### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:131](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L131)
+
+Returns a JSON-serializable representation of the connection request
+Excludes the private client property to avoid cyclic reference issues
+
+#### Returns
+
+`Record`\<`string`, `unknown`\>
+
+***
+
+### toString()
+
+> **toString**(): `string`
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:142](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L142)
+
+Returns a string representation of the connection request
+
+#### Returns
+
+`string`
+
+***
+
+### waitForConnection()
+
+> **waitForConnection**(`timeout?`): `Promise`\<\{ \}\>
+
+Defined in: [packages/core/src/models/ConnectionRequest.ts:66](https://github.com/ComposioHQ/sdk-v3-ts/blob/d452a596cdc5436dd82cd6e55ff43fd070539a9c/packages/core/src/models/ConnectionRequest.ts#L66)
+
+Waits for the connection request to complete and become active.
+
+This method continuously polls the Composio API to check the status of the connection request
+until it either becomes active, enters a terminal error state, or times out.
+
+#### Parameters
+
+##### timeout?
+
+`number` = `60000`
+
+Maximum time to wait in milliseconds before timing out (default: 60 seconds)
+
+#### Returns
+
+`Promise`\<\{ \}\>
+
+The final connected account response when successful
+
+#### Throws
+
+If the connected account cannot be found
+
+#### Throws
+
+If the connection enters a failed, expired, or deleted state
+
+#### Throws
+
+If the connection request does not complete within the timeout period
+
+#### Example
+
+```typescript
+// Wait for connection with default timeout (60 seconds)
+try {
+  const connection = await connectionRequest.waitForConnection();
+  console.log('Connection established:', connection.id);
+} catch (error) {
+  console.error('Connection failed:', error.message);
+}
+
+// Wait for connection with custom timeout (2 minutes)
+const connection = await connectionRequest.waitForConnection(120000);
+```

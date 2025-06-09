@@ -1,0 +1,84 @@
+---
+title: Anthropic Provider
+slug: /providers/anthropic
+image: ""   # image for socials
+keywords: ""
+hide-nav-links: false
+---
+
+
+The Anthropic Provider is the default provider for the Composio SDK. It transforms Composio tools into a format compatible with Anthropic's function calling capabilities through it's Messages API.
+
+## Setup
+Anthropic provider can be installed for both the SDKs.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60  wordWrap
+npm install @composio/anthropic
+```
+
+```python Python maxLines=60  wordWrap
+pip install composio[anthropic]
+```
+</CodeGroup>
+
+You can specify the provider in the constructor. The constructor also takes in an optional `cacheTools` parameter.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap {5}
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+
+const composio = new Composio({
+  provider: new AnthropicProvider({
+    cacheTools: false,  // default
+  }),
+});
+
+const anthropic = new Anthropic();
+```
+
+```python Python maxLines=60  wordWrap
+
+```
+</CodeGroup>
+
+## Usage
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const userId = "user@acme.com";
+const tools = await composio.tools.get(userId, {
+  tools: ["GITHUB_GET_OCTOCAT", "GITHUB_GET_THE_ZEN_OF_GITHUB"]
+})
+
+const msg = await anthropic.messages.create({
+  model: "claude-3-5-sonnet-20240620",
+  messages: [
+    {
+      role: "user",
+      content: "Get me the GitHub Octocat",
+    },
+  ],
+  tools: tools,
+  max_tokens: 1000,
+});
+
+const res = await composio.provider.handleToolCalls(userId, msg);
+
+console.log(JSON.parse(res[0]).details);
+```
+
+```python Python maxLines=60  wordWrap
+
+```
+</CodeGroup>
+
+### Streaming
+
+- [ ] Pending on SDK
+
+## Modifiers
+Modifiers are functions that can be used to intercept and optionally modify the schema, the tool call request and the response from the tool call.
+
+Anthropic provider modifiers are the standard framework modifiers. Read more here: [Framework Modifiers](/docs/modifiers/schema-modifiers).

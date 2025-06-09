@@ -1,0 +1,120 @@
+---
+title: Before Execution Modifiers
+image: ""   # image for socials
+keywords: ""
+subtitle: "Learn how to use before execution modifiers to modify tool arguments before execution."
+hide-nav-links: false
+---
+
+- [ ] highlight motivation for this modifier better by linear create issue and how injecting the project id is useful.
+
+Before execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
+
+## Before Execution Modifiers
+These modifiers are called before the tool is executed by the LLM. This allows you to modify the *arguments* called by the LLM before they are executed by Composio.
+
+**Useful for:**
+- Injecting an argument into the tool execution.
+- Overriding the arguments emitted by the LLM.
+
+<Frame>
+    <img src="../../assets/images/before-execute.png" alt="Before Execution Modifier" />
+</Frame>
+
+<Note>Below we use the `beforeToolExecute` modifier to modify the number of posts returned by the `HACKERNEWS_GET_LATEST_POSTS` tool.</Note>
+
+<Tabs>
+<Tab title="With Chat Completions">
+Since completion providers don't have a function execution step -- Composio will execute the tool call directly.
+
+Hence, the modifier is configured on the `tools.execute` method.
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap {11, 20-28}
+const response = await openai.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages,
+  tools: tools,
+  tool_choice: "auto",
+});
+
+console.log(response.choices[0].message.tool_calls);
+
+if (response.choices[0].message.tool_calls) {
+  const result = await composio.tools.execute(
+    "HACKERNEWS_GET_LATEST_POSTS",
+    {
+      userId: userId,
+      arguments: JSON.parse(
+        response.choices[0].message.tool_calls[0].function.arguments
+      ),
+    },
+    {
+      beforeToolExecute: (toolSlug, _, params) => {
+        if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+          params.arguments.size = 1;
+        }
+        console.log(params);
+        return params;
+      },
+    }
+  );
+  console.log(JSON.stringify(result, null, 2));
+}
+```
+```python Python maxLines=60  wordWrap
+
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="With Agentic Frameworks">
+Agentic providers have a function execution step.
+The modifier is configured on the `tools.get` method which modifies the execution logic within the framework!
+
+<CodeGroup>
+```typescript TypeScript (Mastra) maxLines=60  wordWrap {22-26}
+import { Composio } from "@composio/core";
+import { MastraProvider } from "@composio/mastra";
+import { Agent } from "@mastra/core/agent";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new MastraProvider(),
+});
+
+const userId = "user@acme.com"; // The user's ID.
+
+const agenticTools = await composio.tools.get(
+  userId,
+  {
+    tools: [
+      "HACKERNEWS_GET_LATEST_POSTS",
+      "HACKERNEWS_GET_USER",
+      "LINEAR_CREATE_LINEAR_ISSUE",
+    ],
+  },
+  {
+    beforeToolExecute: (toolSlug, _, params) => {
+      if (toolSlug === "LINEAR_CREATE_LINEAR_ISSUE") {
+        params.arguments.project_id = "1234567890";
+      }
+      return params;
+    },
+  }
+);
+
+const { text } = await generateText({
+  model: openai("gpt-4o-mini"),
+  messages: [
+    { role: "user", content: "Create an issue to `sid` to add RLS" },
+  ],
+  tools: agenticTools,
+  maxSteps: 5,
+});
+```
+```python Python maxLines=60  wordWrap
+
+```
+</CodeGroup>
+</Tab>
+</Tabs> 

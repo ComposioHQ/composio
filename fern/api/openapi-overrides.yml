@@ -1,0 +1,574 @@
+paths:
+  /api/v1/actions/list/enums: 
+    get: 
+      x-fern-ignore: true
+  /api/v1/mcp/servers/validate/{uuid}:
+    get:
+      x-fern-ignore: true
+  /api/v1/client/auth/identify:
+    post:
+      x-fern-sdk-group-name:
+        - auth
+      x-fern-sdk-method-name: _identifyClient
+  /api/v1/client/auth/client_info:
+    get:
+      x-fern-sdk-group-name:
+        - auth
+      x-fern-sdk-method-name: _getUserInfo
+  /api/v1/client/auth/project/add:
+    post:
+      x-fern-sdk-group-name:
+        - auth
+      x-fern-sdk-method-name: _addProject
+  /api/v1/client/auth/project/delete/{projectId}:
+    delete:
+      x-fern-sdk-group-name:
+        - auth
+      x-fern-sdk-method-name: _deleteProject
+  /api/v1/client/auth/projects:
+    get:
+      x-fern-sdk-group-name:
+        - auth
+      x-fern-sdk-method-name: _getProjects
+  /api/v1/api_keys:
+    get:
+      x-fern-sdk-group-name:
+        - apiKeys
+      x-fern-sdk-method-name: _listAPIKeys
+    post:
+      x-fern-sdk-group-name:
+        - apiKeys
+      x-fern-sdk-method-name: _generateAPIKey
+  /api/v1/api_keys/{id}:
+    delete:
+      x-fern-sdk-group-name:
+        - apiKeys
+      x-fern-sdk-method-name: _deleteAPIKey
+  /api/v1/apps:
+    get:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _getApps
+  /api/v1/apps/openapi/spec/list:
+    get:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _getOpenAPISpecs
+  /api/v1/apps/openapi/spec/delete/{id}:
+    delete:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _deleteOpenAPISpecTool
+  /api/v1/apps/openapi/send_email_to_client:
+    post:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _AppController.sendEmailToClient
+  /api/v1/apps/openapi/spec/status/{id}:
+    get:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _getOpenAPISpecStatus
+  /api/v1/apps/{appName}:
+    get:
+      x-fern-sdk-group-name:
+        - apps
+      x-fern-sdk-method-name: _getApp
+  /api/v1/integrations:
+    get:
+      x-fern-sdk-group-name:
+        - integrations
+      x-fern-sdk-method-name: _listAllConnectors
+    post:
+      x-fern-sdk-group-name:
+        - integrations
+      x-fern-sdk-method-name: _createConnector
+  /api/v1/integrations/{integrationId}:
+    get:
+      x-fern-sdk-group-name:
+        - integrations
+      x-fern-sdk-method-name: _getConnectorInfo
+    delete:
+      x-fern-sdk-group-name:
+        - integrations
+      x-fern-sdk-method-name: _deleteConnector
+    patch:
+      x-fern-sdk-group-name:
+        - integrations
+      x-fern-sdk-method-name: _modifyConnector
+  /api/v1/connectedAccounts:
+    get:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _getConnections
+    post:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _initiateConnection
+  /api/v1/connectedAccounts/{connectedAccountId}/data:
+    patch:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _updateConnectionData
+  /api/v1/connectedAccounts/{connectedAccountId}:
+    get:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _getConnection
+    delete:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _deleteConnection
+  /api/v1/connectedAccounts/{connectedAccountId}/info:
+    get:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _getConnectionInfo
+  /api/v1/connectedAccounts/{connectedAccountId}/disable:
+    post:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _disableConnection
+  /api/v1/connectedAccounts/{connectedAccountId}/enable:
+    post:
+      x-fern-sdk-group-name:
+        - connections
+      x-fern-sdk-method-name: _enableConnection
+  /api/v1/triggers:
+    get:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _listTriggers
+  /api/v1/triggers/update_webhook_format:
+    post:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _updateNewWebhook
+  /api/v1/triggers/enable/{connectedAccountId}/{triggerName}:
+    post:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _enableTrigger
+  /api/v1/triggers/active_triggers:
+    get:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _getActiveTriggers
+  /api/v1/triggers/instance/{triggerId}/status:
+    patch:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _switchTriggerInstanceStatus
+  /api/v1/triggers/disable/{triggerInstanceId}:
+    post:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _disableTrigger
+  /api/v1/triggers/instance/{triggerInstanceId}:
+    delete:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _deleteTrigger
+  /api/v1/triggers/set_callback_url:
+    post:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _set_callback_url
+  /api/v1/triggers/callback_url:
+    get:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _getWebhookURL
+  /api/v1/triggers/logs:
+    get:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _getTriggerLogs
+  /api/v1/cli/js-sentry-dns:
+    get:
+      x-fern-sdk-group-name:
+        - admin
+      x-fern-sdk-method-name: _getSentryDNS
+  /api/v1/clear-cache:
+    post:
+      x-fern-sdk-group-name:
+        - admin
+      x-fern-sdk-method-name: _clearCache
+  /api/v1/cli/generate-cli-session:
+    get:
+      x-fern-sdk-group-name:
+        - cli
+      x-fern-sdk-method-name: _generateCLISession
+  /api/v1/cli/get-cli-code:
+    get:
+      x-fern-sdk-group-name:
+        - cli
+      x-fern-sdk-method-name: _getCLICode
+  /api/v1/cli/verify-cli-code:
+    get:
+      x-fern-sdk-group-name:
+        - cli
+      x-fern-sdk-method-name: _verifyCLICode
+  /api/v1/logs/:
+    get:
+      x-fern-sdk-group-name:
+        - logs
+      x-fern-sdk-method-name: _getLogs
+    post:
+      x-fern-sdk-group-name:
+        - logs
+      x-fern-sdk-method-name: _postLogs
+  /api/v2/actions:
+    get:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _listActionsV2
+  /api/v2/actions/list/all:
+    get:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _listActionsMinimalV2
+  /api/v2/actions/{actionId}/execute:
+    post:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _executeActionV2
+  /api/v2/actions/{actionId}/execute/get.inputs:
+    post:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _getActionInputsV2
+  /api/v2/actions/{actionId}:
+    get:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _getActionV2
+  /api/v2/actions/proxy:
+    post:
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _executeActionProxyV2
+  /api/v2/actions/search/advanced:
+    get:
+      x-fern-ignore: true
+      x-fern-sdk-group-name:
+        - actions
+      x-fern-sdk-method-name: _advancedUseCaseSearch
+  /api/v2/triggers/{triggerName}:
+    get:
+      x-fern-sdk-group-name:
+        - triggers
+      x-fern-sdk-method-name: _getTriggerInfoV2
+  /api/v1/analytics/:
+    get:
+      x-fern-sdk-group-name:
+        - analytics
+      x-fern-sdk-method-name: _getAnalytics
+  /api/v1/analytics/entities:
+    get:
+      x-fern-sdk-group-name:
+        - analytics
+      x-fern-sdk-method-name: _getTopEntities
+  /api/v1/event_logs/set/webhook:
+    post:
+      x-fern-sdk-group-name:
+        - eventLogs
+      x-fern-sdk-method-name: _updateWebhook
+components:
+  schemas:
+    MemberInfoResDTO:
+      x-fern-type-name: MemberInfoResDTO
+    MagicLinkResDTO:
+      x-fern-type-name: MagicLinkResDTO
+    MagicLinkReqDTO:
+      x-fern-type-name: MagicLinkReqDTO
+    LogoutResDTO:
+      x-fern-type-name: LogoutResDTO
+    VerifyMagicLinkReqDTO:
+      x-fern-type-name: VerifyMagicLinkReqDTO
+    VerifyMagicLinkDataDTO:
+      x-fern-type-name: VerifyMagicLinkDataDTO
+    VerifyMagicLinkResDTO:
+      x-fern-type-name: VerifyMagicLinkResDTO
+    IdentifyClientReqDTO:
+      x-fern-type-name: IdentifyClientReqDTO
+    IdentifyClientResDTO:
+      x-fern-type-name: IdentifyClientResDTO
+    UserGitUserInfo:
+      x-fern-type-name: UserGitUserInfo
+    TrackClientReqDTO:
+      x-fern-type-name: TrackClientReqDTO
+    TrackClientResDTO:
+      x-fern-type-name: TrackClientResDTO
+    DeleteRowAPIDTO:
+      x-fern-type-name: DeleteRowAPIDTO
+    ClientDTO:
+      x-fern-type-name: ClientDTO
+    ClientInfoResDTO:
+      x-fern-type-name: ClientInfoResDTO
+    ProjectReqDTO:
+      x-fern-type-name: ProjectReqDTO
+    ProjectResDTO:
+      x-fern-type-name: ProjectResDTO
+    ProjectListResDTO:
+      x-fern-type-name: ProjectListResDTO
+    InviteMemberReqDTO:
+      x-fern-type-name: InviteMemberReqDTO
+    MemberResDTO:
+      x-fern-type-name: MemberResDTO
+    UpdateMemberReqDTO:
+      x-fern-type-name: UpdateMemberReqDTO
+    GenerateAPIKeyReqDTO:
+      x-fern-type-name: GenerateAPIKeyReqDTO
+    APIKeyResDTO:
+      x-fern-type-name: APIKeyResDTO
+    DeleteAPIKeyReqDTO:
+      x-fern-type-name: DeleteAPIKeyReqDTO
+    DeleteAPIKeyResponseDTO:
+      x-fern-type-name: DeleteAPIKeyResponseDTO
+    SingleAppInfoResDTO:
+      x-fern-type-name: SingleAppInfoResDTO
+    AddToolsReqDTO:
+      x-fern-type-name: AddToolsReqDTO
+    OpenAPISpecListResDTO:
+      x-fern-type-name: OpenAPISpecListResDTO
+    AddRepoURLResDTO:
+      x-fern-type-name: AddRepoURLResDTO
+    DeleteToolsReqDTO:
+      x-fern-type-name: DeleteToolsReqDTO
+    DeleteToolsResDTO:
+      x-fern-type-name: DeleteToolsResDTO
+    AddToolsRequestDTO:
+      x-fern-type-name: AddToolsRequestDTO
+    AddRepoURLReqDTO:
+      x-fern-type-name: AddRepoURLReqDTO
+    AppQueryDTO:
+      x-fern-type-name: AppQueryDTO
+    AppInfoResponseDto:
+      x-fern-type-name: AppInfoResponseDto
+    AppListResDTO:
+      x-fern-type-name: AppListResDTO
+    ExpectedInputFieldsDTO:
+      x-fern-type-name: ExpectedInputFieldsDTO
+    GetConnectorInfoResDTO:
+      x-fern-type-name: GetConnectorInfoResDTO
+    AuthConfigDTO:
+      x-fern-type-name: AuthConfigDTO
+    CreateConnectorPayloadDTO:
+      x-fern-type-name: CreateConnectorPayloadDTO
+    PatchConnectorReqDTO:
+      x-fern-type-name: PatchConnectorReqDTO
+    PatchConnectorResDTO:
+      x-fern-type-name: PatchConnectorResDTO
+    ConnectorListItemDTO:
+      x-fern-type-name: ConnectorListItemDTO
+    GetConnectorListResDTO:
+      x-fern-type-name: GetConnectorListResDTO
+    PageInfo:
+      x-fern-type-name: PageInfo
+    ConnectionWithAppData:
+      x-fern-type-name: ConnectionWithAppData
+    GetConnectionsResult:
+      x-fern-type-name: GetConnectionsResult
+    ConnectionParams:
+      x-fern-type-name: ConnectionParams
+    ToggleConnectedAccountResponseDTO:
+      x-fern-type-name: ToggleConnectedAccountResponseDTO
+    ConnectionParamsHeaders:
+      x-fern-type-name: ConnectionParamsHeaders
+    ConnectionParamsForAccount:
+      x-fern-type-name: ConnectionParamsForAccount
+    MetaApp:
+      x-fern-type-name: MetaApp
+    Meta:
+      x-fern-type-name: Meta
+    ConnectedAccountResponseDTO:
+      x-fern-type-name: ConnectedAccountResponseDTO
+    GetConnectionsResponseDto:
+      x-fern-type-name: GetConnectionsResponseDto
+    GetConnectionInfoResponseDTO:
+      x-fern-type-name: GetConnectionInfoResponseDTO
+    Parameter:
+      x-fern-type-name: Parameter
+    Data:
+      x-fern-type-name: Data
+    AdditionalInfo:
+      x-fern-type-name: AdditionalInfo
+    GetConnectionsQueryDto:
+      x-fern-type-name: GetConnectionsQueryDto
+    InitiateConnectionPayloadDto:
+      x-fern-type-name: InitiateConnectionPayloadDto
+    UpdateConnectionLabelsPayloadDto:
+      x-fern-type-name: UpdateConnectionLabelsPayloadDto
+    InitiateConnectionResponse:
+      x-fern-type-name: InitiateConnectionResponse
+    ToolsExecuteReqDto:
+      x-fern-type-name: ToolsExecuteReqDto
+    DirectExecuteReqDto:
+      x-fern-type-name: DirectExecuteReqDto
+    ActionExecutionResDto:
+      x-fern-type-name: ActionExecutionResDto
+    CustomAuthDTO:
+      x-fern-type-name: CustomAuthDTO
+    ActionProxyRequestMethodDTO:
+      x-fern-type-name: ActionProxyRequestMethodDTO
+    ActionProxyRequestConfigDTO:
+      x-fern-type-name: ActionProxyRequestConfigDTO
+    SessionInfoDTO:
+      x-fern-type-name: SessionInfoDTO
+    ActionExecutionReqDTO:
+      x-fern-type-name: ActionExecutionReqDTO
+    ActionGetNLAInputsReqDTO:
+      x-fern-type-name: ActionGetNLAInputsReqDTO
+    ProxyExecutionReqDTO:
+      x-fern-type-name: ProxyExecutionReqDTO
+    ActionDetailsMinimal:
+      x-fern-type-name: ActionDetailsMinimal
+    ActionDetails:
+      x-fern-type-name: ActionDetails
+    ActionsListResponseDTO:
+      x-fern-type-name: ActionsListResponseDTO
+    ActionsMinimalListResponseDTO:
+      x-fern-type-name: ActionsMinimalListResponseDTO
+    AdvancedUseCaseSearchBodyDTO:
+      x-fern-type-name: AdvancedUseCaseSearchBodyDTO
+    AdvancedUseCaseSearchQueryDTO:
+      x-fern-type-name: AdvancedUseCaseSearchQueryDTO
+    AdvancedUseCaseSearchTask:
+      x-fern-type-name: AdvancedUseCaseSearchTask
+    AdvancedUseCaseSearchResponse:
+      x-fern-type-name: AdvancedUseCaseSearchResponse
+    ExecuteActionResDTO:
+      x-fern-type-name: ExecuteActionResDTO
+    ActionsQueryDTO:
+      x-fern-type-name: ActionsQueryDTO
+    ActionsControllerV1:
+      x-fern-type-name: ActionsControllerV1
+    OAuth2CallbackQueryDto:
+      x-fern-type-name: OAuth2CallbackQueryDto
+    RedirectUriDTO:
+      x-fern-type-name: RedirectUriDTO
+    ListTriggersQueryDTO:
+      x-fern-type-name: ListTriggersQueryDTO
+    GetActiveTriggersQueryDTO:
+      x-fern-type-name: GetActiveTriggersQueryDTO
+    GetLogsQueryDTO:
+      x-fern-type-name: GetLogsQueryDTO
+    TriggerResDTO:
+      x-fern-type-name: TriggerResDTO
+    SingleTriggerResDTO:
+      x-fern-type-name: SingleTriggerResDTO
+    TriggerConfig:
+      x-fern-type-name: TriggerConfig
+    ActiveTriggerInstance:
+      x-fern-type-name: ActiveTriggerInstance
+    PageInfoDTO:
+      x-fern-type-name: PageInfoDTO
+    ActiveTriggersResDTO:
+      x-fern-type-name: ActiveTriggersResDTO
+    TriggerLogsResDTO:
+      x-fern-type-name: TriggerLogsResDTO
+    TriggerLogItemDTO:
+      x-fern-type-name: TriggerLogItemDTO
+    HandleTriggerParamsDTO:
+      x-fern-type-name: HandleTriggerParamsDTO
+    HandleTriggerBodyDTO:
+      x-fern-type-name: HandleTriggerBodyDTO
+    EnableTriggerParamsDTO:
+      x-fern-type-name: EnableTriggerParamsDTO
+    GetTriggerParamsDTO:
+      x-fern-type-name: GetTriggerParamsDTO
+    EnableTriggerBodyDTO:
+      x-fern-type-name: EnableTriggerBodyDTO
+    SwitchTriggerStatusParamsDTO:
+      x-fern-type-name: SwitchTriggerStatusParamsDTO
+    SwitchTriggerStatusBodyDTO:
+      x-fern-type-name: SwitchTriggerStatusBodyDTO
+    TriggerInstanceParamsDTO:
+      x-fern-type-name: TriggerInstanceParamsDTO
+    SetCallbackUrlBodyDTO:
+      x-fern-type-name: SetCallbackUrlBodyDTO
+    TriggerResponseDTO:
+      x-fern-type-name: TriggerResponseDTO
+    WebhookURLResponseDTO:
+      x-fern-type-name: WebhookURLResponseDTO
+    TriggerMetadataDTO:
+      x-fern-type-name: TriggerMetadataDTO
+    GetTriggerResponseDTO:
+      x-fern-type-name: GetTriggerResponseDTO
+    WehbookNewFormatDTO:
+      x-fern-type-name: WehbookNewFormatDTO
+    GenerateCLISessionReqDTO:
+      x-fern-type-name: GenerateCLISessionReqDTO
+    GenerateCLISessionResDTO:
+      x-fern-type-name: GenerateCLISessionResDTO
+    GetCLISessionResDTO:
+      x-fern-type-name: GetCLISessionResDTO
+    VerifyCLICodeResDTO:
+      x-fern-type-name: VerifyCLICodeResDTO
+    CLIQueryDTO:
+      x-fern-type-name: CLIQueryDTO
+    MetadataReqDTO:
+      x-fern-type-name: MetadataReqDTO
+    TriggersEnabledToggleReqDTO:
+      x-fern-type-name: TriggersEnabledToggleReqDTO
+    TriggersEnabledToggleResDTO:
+      x-fern-type-name: TriggersEnabledToggleResDTO
+    TriggerToggleInfoResponseDTO:
+      x-fern-type-name: TriggerToggleInfoResponseDTO
+    ToggleTriggerStateResponseDTO:
+      x-fern-type-name: ToggleTriggerStateResponseDTO
+    MetadataQueryDTO:
+      x-fern-type-name: MetadataQueryDTO
+    TriggerMetadata:
+      x-fern-type-name: TriggerMetadata
+    ActionMetadata:
+      x-fern-type-name: ActionMetadata
+    TriggerLogData:
+      x-fern-type-name: TriggerLogData
+    ActionLogData:
+      x-fern-type-name: ActionLogData
+    LogsResDTO:
+      x-fern-type-name: LogsResDTO
+    GetLogsDTO:
+      x-fern-type-name: GetLogsDTO
+    IngestDataDTO:
+      x-fern-type-name: IngestDataDTO
+    IngestDataResponseDTO:
+      x-fern-type-name: IngestDataResponseDTO
+    TimePeriodReqDTO:
+      x-fern-type-name: TimePeriodReqDTO
+    ActionByAppDTO:
+      x-fern-type-name: ActionByAppDTO
+    ActionByStatusDTO:
+      x-fern-type-name: ActionByStatusDTO
+    ActionAnalyticsDTO:
+      x-fern-type-name: ActionAnalyticsDTO
+    IntegrationsWithCountsDTO:
+      x-fern-type-name: IntegrationsWithCountsDTO
+    AppNameCountDTO:
+      x-fern-type-name: AppNameCountDTO
+    AnalyticsDataReqDTO:
+      x-fern-type-name: AnalyticsDataReqDTO
+    ClientUniqueUserIdCountDTO:
+      x-fern-type-name: ClientUniqueUserIdCountDTO
+    AnalyticsEntityDataDTO:
+      x-fern-type-name: AnalyticsEntityDataDTO
+    AnalyticsDataResDTO:
+      x-fern-type-name: AnalyticsDataResDTO
+    TopEntitiesResDTO:
+      x-fern-type-name: TopEntitiesResDTO
+    TConnectionCountDTO:
+      x-fern-type-name: TConnectionCountDTO
+    EntityQueryReqDTO:
+      x-fern-type-name: EntityQueryReqDTO
+    WebhookReqDTO:
+      x-fern-type-name: WebhookReqDTO
+    FetchQueryDTO:
+      x-fern-type-name: FetchQueryDTO
+    WebhookSecretResDTO:
+      x-fern-type-name: WebhookSecretResDTO
+    CreateCheckoutSessionReqDto:
+      x-fern-type-name: CreateCheckoutSessionReqDto
+    SDKErrorResDTO:
+      x-fern-type-name: SDKErrorResDTO
