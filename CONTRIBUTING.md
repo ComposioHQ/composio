@@ -69,21 +69,21 @@ To contribute to the documentation:
    ```bash
    cd fern/
    export COMPOSIO_API_KEY=<your_api_key>
-   pnpm tools:generate
+   pnpm run tools:generate
    ```
    Optionally you mayac comment out the tool docs from `docs.yml`.
 
 4. Generate SDK references
    ```bash
    cd fern/
-   pnpm sdkdocs
+   pnpm run sdkdocs
    ```
 
 5. Start the docs server from the project root:
 
    ```bash
    cd fern/
-   pnpm run docs:preview
+   pnpm run dev
    ```
 
 6. View and edit docs at http://localhost:3000
