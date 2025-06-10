@@ -1,12 +1,13 @@
 ---
 title: Fully featured AI chatbot with Composio
 slug: /examples/vercel
-image: ""
-keywords: ""
+image: ''
+keywords: ''
 hide-nav-links: false
 ---
 
 In this example, you will learn how to build a chatbot that:
+
 - Lets users connect their various apps to the chatbot using the Composio SDK.
 - Uses the Vercel provider in the Composio SDK to handle and execute tool calls from the LLM.
 
@@ -14,11 +15,12 @@ This page gives a high-level overview of the Composio SDK and how it is used in 
 
 You can find the demo live [here](https://chat.composio.dev/).
 
-
 ## Prerequisites
+
 Ensure you've followed the README.md in the [composiohq/chat](https://github.com/composiohq/chat) repository to set the project locally.
 
 ## Creating auth configs
+
 For all the apps you want to connect to the chatbot, you need to create their respective auth configs.
 
 Learn how to create auth configs [here](/docs/authenticating-tools#creating-an-auth-config).
@@ -26,7 +28,7 @@ Learn how to create auth configs [here](/docs/authenticating-tools#creating-an-a
 Once done, your auth configs will be available in the [Composio dashboard](https://app.composio.dev/integrations).
 
 <Frame>
-    <img src="../../assets/images/examples/auth-configs.png" alt="Auth configs" />
+  <img src="../../../assets/images/examples/auth-configs.png" alt="Auth configs" />
 </Frame>
 
 ### Save auth config IDs to environment variables
@@ -39,6 +41,7 @@ NEXT_PUBLIC_GITHUB_AUTH_CONFIG_ID=ac_1234567890
 ```
 
 ## Create a Composio client instance
+
 We create a Composio client instance for server-side operations like, API routes, server components, etc.
 
 ```typescript lib/service/composio.ts
@@ -54,12 +57,13 @@ export default composio;
 ```
 
 ## Creating an API for fetching toolkits
+
 The Composio SDK is meant to be used only in server-side code. For client-side functionality, we create API endpoints in the `/app/api/` directory.
 
 In order to list the toolkits and their connection status, we create a Next.js API route to fetch the toolkits using Composio SDK.
 
 <Frame>
-    <img src="../../assets/images/examples/toolkits.png" />
+  <img src="../../../assets/images/examples/toolkits.png" />
 </Frame>
 
 ### 1. Listing connected accounts
@@ -72,16 +76,13 @@ export async function GET() {
 
   // List connected accounts to get connection IDs for each toolkit
   const connectedAccounts = await composio.connectedAccounts.list({
-  userIds: [session.user.id],
-});
+    userIds: [session.user.id],
+  });
 
-const connectedToolkitMap = new Map();
-connectedAccounts.items.forEach((account) => {
-  connectedToolkitMap.set(
-    account.toolkit.slug.toUpperCase(),
-    account.id,
-  );
-});
+  const connectedToolkitMap = new Map();
+  connectedAccounts.items.forEach(account => {
+    connectedToolkitMap.set(account.toolkit.slug.toUpperCase(), account.id);
+  });
 
   // ... continue with toolkit fetching ...
 }
@@ -98,28 +99,29 @@ export async function GET() {
 
   const SUPPORTED_TOOLKITS = ['GMAIL', 'GOOGLECALENDAR', 'GITHUB', 'NOTION'];
 
-// Fetch toolkit data from slugs
-const toolkitPromises = SUPPORTED_TOOLKITS.map(async (slug) => {
-  const toolkit = await composio.toolkits.get(slug);
-  const connectionId = connectedToolkitMap.get(slug.toUpperCase());
+  // Fetch toolkit data from slugs
+  const toolkitPromises = SUPPORTED_TOOLKITS.map(async slug => {
+    const toolkit = await composio.toolkits.get(slug);
+    const connectionId = connectedToolkitMap.get(slug.toUpperCase());
 
-  return {
-    name: toolkit.name,
-    slug: toolkit.slug,
-    description: toolkit.meta?.description,
-    logo: toolkit.meta?.logo,
-    categories: toolkit.meta?.categories,
-    isConnected: !!connectionId,
-    connectionId: connectionId || undefined,
-  };
-});
+    return {
+      name: toolkit.name,
+      slug: toolkit.slug,
+      description: toolkit.meta?.description,
+      logo: toolkit.meta?.logo,
+      categories: toolkit.meta?.categories,
+      isConnected: !!connectionId,
+      connectionId: connectionId || undefined,
+    };
+  });
 
-const toolkits = await Promise.all(toolkitPromises);
-return NextResponse.json({ toolkits });
+  const toolkits = await Promise.all(toolkitPromises);
+  return NextResponse.json({ toolkits });
 }
 ```
 
 ## Managing connections
+
 Users need to connect and disconnect their accounts from the chatbot to enable tool usage. When users click "Connect" on a toolkit, we initiate an OAuth flow, and when they click "Disconnect", we remove their connection.
 
 ### 1. Initiating a connection
@@ -127,9 +129,8 @@ Users need to connect and disconnect their accounts from the chatbot to enable t
 When a user wants to connect their account, we create a connection request that redirects them to the OAuth provider:
 
 <Frame>
-    <img src="../../assets/images/examples/create-connection.png" />
+  <img src="../../../assets/images/examples/create-connection.png" />
 </Frame>
-
 
 ```typescript app/api/connections/initiate/route.ts
 export async function POST(request: Request) {
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
   // Initiate connection with Composio
   const connectionRequest = await composio.connectedAccounts.initiate(
     session.user.id,
-    authConfigId,
+    authConfigId
   );
 
   return NextResponse.json({
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
 After initiating a connection, we need to wait for the OAuth flow to complete. We check the connection status to know when it's ready to use:
 
 <Frame>
-    <img src="../../assets/images/examples/connection-status.png" />
+  <img src="../../../assets/images/examples/connection-status.png" />
 </Frame>
 
 ```typescript app/api/connections/status/route.ts
@@ -165,9 +166,7 @@ export async function GET(request: Request) {
   const connectionId = searchParams.get('connectionId');
 
   // Wait for connection to complete
-  const connection = await composio.connectedAccounts.waitForConnection(
-    connectionId,
-  );
+  const connection = await composio.connectedAccounts.waitForConnection(connectionId);
 
   return NextResponse.json({
     id: connection.id,
@@ -199,6 +198,7 @@ export async function DELETE(request: Request) {
 ```
 
 ## Working with tools
+
 Once users have connected their accounts, we need to track which toolkits are enabled and fetch the corresponding tools for the LLM.
 
 ### 1. Tracking enabled toolkits
@@ -214,7 +214,7 @@ const { ... } = useChat({
       const enabledToolkits = Array.from(
         currentToolbarState.enabledToolkitsWithStatus.entries(),
       ).map(([slug, isConnected]) => ({ slug, isConnected }));
-      
+
       return {
         // ... other fields ...
         enabledToolkits,
@@ -243,12 +243,9 @@ export async function getComposioTools(userId: string, toolkitSlugs: string[]) {
 export async function POST(request: Request) {
   // ... auth and parsing ...
 
-  const toolkitSlugs = enabledToolkits?.map((t) => t.slug) || [];
+  const toolkitSlugs = enabledToolkits?.map(t => t.slug) || [];
 
-  const composioTools = await getComposioTools(
-    session.user.id,
-    toolkitSlugs,
-  );
+  const composioTools = await getComposioTools(session.user.id, toolkitSlugs);
 
   const result = streamText({
     // ... model config ...
@@ -264,7 +261,7 @@ export async function POST(request: Request) {
 By default, tool calls appear as raw JSON in the chat interface. To create a better user experience, we can build custom components that display tool calls with proper formatting and loading states.
 
 <Frame>
-    <img src="../../assets/images/examples/custom-tool-component.png" />
+  <img src="../../../assets/images/examples/custom-tool-component.png" />
 </Frame>
 
 You can find the `ToolCall` component at `components/tool-call.tsx`. Here's how to integrate it into your message rendering:
