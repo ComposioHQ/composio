@@ -1,0 +1,18 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+      "dev": {
+        "with": ["examples:dev"],
+        "outputs": ["dist/"]
+      },
+      "build": {
+        "dependsOn": ["examples:build"],
+        "outputs": ["dist/"]
+      },
+      "test": {
+        "dependsOn": ["^build"],
+        "outputs": ["dist/"]
+      }
+    }
+  }
+  
