@@ -20,7 +20,7 @@ import {
   McpUpdateResponse,
   McpDeleteResponse,
   CustomCreateResponse,
-} from '@composio/client/resources/mcp';
+} from '@composio/client/src/resources/mcp';
 
 /**
  * MCP (Model Control Protocol) class
@@ -79,14 +79,14 @@ export class MCP {
           name,
           toolkits: config.toolkits || [],
           custom_tools: config.tools || [],
-          use_managed_auth: authOptions?.useManagedAuth || false,
-          auth_config_ids: authOptions?.authConfigId || []
+          managed_auth_via_composio: authOptions?.useManagedAuth || false,
+          auth_config_id: [...(authOptions?.authConfigId || [])]
         })
       : await this.client.mcp.create({
           name,
           allowed_tools: config.tools || [],
           managed_auth_via_composio: authOptions?.useManagedAuth || false,
-          auth_config_ids: [authOptions?.authConfigId || '']
+          auth_config_id: [...(authOptions?.authConfigId || [])]
         });
 
     // Add get method to response
