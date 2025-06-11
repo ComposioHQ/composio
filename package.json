@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "turbo build",
+    "build:packages": "turbo build --filter=./packages/**",
     "test": "turbo test --filter=./packages/**",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext .ts,.tsx",
@@ -23,10 +24,10 @@
     "create:example": "bash scripts/create-example.sh",
     "check:peer-deps": "tsx scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx scripts/update-peer-deps.ts",
-    "prepublish": "pnpm run build",
+    "prepublish": "pnpm run build:packages",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:release": "pnpm run build && changeset publish",
+    "changeset:release": "pnpm run build:packages && changeset publish",
     "changeset:pre-enter": "changeset pre enter alpha",
     "changeset:pre-exit": "changeset pre exit alpha"
   },

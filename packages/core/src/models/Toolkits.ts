@@ -58,22 +58,34 @@ export class Toolkits {
         sort_by: parsedQuery.data.sortBy,
       });
 
-      const parsedResult = ToolKitListResponseSchema.safeParse({
-        items: result.items.map(item => {
-          const parsedItem = ToolKitItemSchema.parse({
+      const parsedResult = ToolKitListResponseSchema.safeParse(
+        result.items.map(item => {
+          const parsedItem = ToolKitItemSchema.safeParse({
             name: item.name,
             slug: item.slug,
-            meta: item.meta,
+            meta: {
+              ...item.meta,
+              createdAt: item.meta.created_at,
+              updatedAt: item.meta.updated_at,
+              toolsCount: item.meta.tools_count,
+              triggersCount: item.meta.triggers_count,
+              categories: item.meta.categories,
+              appUrl: item.meta.app_url,
+              logo: item.meta.logo,
+            },
             isLocalToolkit: item.is_local_toolkit,
             authSchemes: item.auth_schemes,
             composioManagedAuthSchemes: item.composio_managed_auth_schemes,
             noAuth: item.no_auth,
           });
-          return parsedItem;
-        }),
-        nextCursor: result.next_cursor,
-        totalPages: result.total_pages,
-      });
+          if (!parsedItem.success) {
+            throw new ValidationError('Failed to parse toolkit response', {
+              cause: parsedItem.error,
+            });
+          }
+          return parsedItem.data;
+        })
+      );
 
       if (!parsedResult.success) {
         throw new ValidationError('Failed to parse toolkit list response', {
@@ -226,7 +238,7 @@ export class Toolkits {
    */
   async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
     const result = await this.client.toolkits.retrieveCategories();
-    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.parse({
+    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.safeParse({
       items: result.items.map(item => {
         const parsedItem = ToolkitCategorySchema.parse({
           id: item.id,
@@ -237,7 +249,12 @@ export class Toolkits {
       nextCursor: result.next_cursor,
       totalPages: result.total_pages,
     });
-    return parsedResult;
+    if (!parsedResult.success) {
+      throw new ValidationError('Failed to parse toolkit categories response', {
+        cause: parsedResult.error,
+      });
+    }
+    return parsedResult.data;
   }
 
   /**

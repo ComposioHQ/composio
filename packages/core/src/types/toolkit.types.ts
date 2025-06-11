@@ -47,11 +47,7 @@ export const ToolKitItemSchema = z.object({
   noAuth: z.boolean().optional(),
 });
 
-export const ToolKitListResponseSchema = z.object({
-  items: z.array(ToolKitItemSchema),
-  nextCursor: z.string().nullable(),
-  totalPages: z.number(),
-});
+export const ToolKitListResponseSchema = z.array(ToolKitItemSchema);
 
 export type ToolKitMeta = z.infer<typeof ToolKitMetaSchema>;
 export type ToolKitItem = z.infer<typeof ToolKitItemSchema>;
