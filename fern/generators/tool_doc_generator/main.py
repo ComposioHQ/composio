@@ -211,7 +211,8 @@ class DocumentContent:
 
             # Description with encoding fixes and sanitization
             action_content.append(
-                sanitize_html(action.description.replace("<<", "(").replace(">>", ")"))
+                # sanitize_html(action.description.replace("<<", "(").replace(">>", ")"))
+                MDX.as_code_block(action.description, "text")
             )
 
             # Process parameters with enhanced sanitization to avoid MDX parsing issues
@@ -300,11 +301,7 @@ class ToolDocGenerator:
 
         # For tracking generated tools
         self.generated_tools = []
-        self.problematic_actions = [
-            "BITBUCKET_SET_INHERITANCE_STATE_FOR_REPO_SETTINGS",
-            "MIXPANEL_QUERY_NUMERIC_SUM",
-            "MIXPANEL_QUERY_NUMERIC_AVERAGE"
-        ]
+        self.problematic_actions = []
 
     def generate_docs(self, output_path: Path, max_workers: int | None = None) -> None:
         """
