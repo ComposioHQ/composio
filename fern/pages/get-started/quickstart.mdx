@@ -67,7 +67,7 @@ composio = Composio()
 
 userId = "your@email.com"
 
-connection, tools = composio.toolkits.authorize(userId, "gmail")
+connection = composio.toolkits.authorize(userId, "gmail")
 
 print(f"🔗 Visit the URL to authorize:\n👉 {connection.redirect_url}")
 
@@ -109,7 +109,7 @@ const composio = new Composio({
 
 const userId = "user@example.com";
 
-const { connection, tools } = await composio.toolkits.authorize(userId, "GITHUB");
+const connection = await composio.toolkits.authorize(userId, "GITHUB");
 
 console.log(
   `🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`
