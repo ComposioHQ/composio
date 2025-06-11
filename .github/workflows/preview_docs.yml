@@ -40,7 +40,7 @@ jobs:
         run: pnpm tools:generate
 
       - name: Generate SDK Reference
-        run: npx typedoc
+        run: pnpm i && pnpm run sdkdocs
 
       - name: Install Fern
         run: npm install -g fern-api
