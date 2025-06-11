@@ -12,6 +12,7 @@
 		"tools:comment": "uv run python scripts/manage-tool-docs.py comment",
 		"tools:uncomment": "uv run python scripts/manage-tool-docs.py uncomment",
 		"sdkdocs": "typedoc",
+		"api:pull": "bash scripts/pull-openapi-spec.sh",
 		"examples:build": "bun run scripts/examples-dev.ts",
 		"examples:dev": "bun run scripts/examples-dev.ts --watch",
 		"check": "pnpm tools:comment && pnpm examples:build && fern check",

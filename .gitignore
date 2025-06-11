@@ -36,8 +36,17 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # turbo
 .turbo
 
-# lerna 
+# lerna
 lerna-debug.log*
 
 # temp files
 temp
+fern/tools
+fern/apis/openapi.yml
+fern/apis/openapi-mcp.json
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+
