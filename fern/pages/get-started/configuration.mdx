@@ -1,0 +1,89 @@
+---
+title: Configuration
+slug: /docs/configuration
+image: ""   # image for socials
+keywords: ""
+hide-nav-links: false
+---
+
+This guide explains how to configure the Composio SDK using the environment variables.
+
+## Environment Variables
+
+The SDK supports several environment variables for configuration:
+
+### Core Configuration
+- `COMPOSIO_API_KEY`: Your Composio API key
+  - Required for authentication
+  - Can be obtained from [Composio Dashboard](https://app.composio.dev)
+  - Can also be set via SDK initialization.
+- `COMPOSIO_BASE_URL`: Custom API base URL
+  - Optional
+  - Default: `https://backend.composio.dev`
+  - Use this to point the SDK to a different API endpoint
+
+<Note>
+The API key and base URL can also be set while initializing the SDK.
+</Note>
+
+### Logging Configuration
+
+- `COMPOSIO_LOG_LEVEL`: Controls the verbosity of SDK logs
+  - Values: `silent`, `error`, `warn`, `info`, `debug`
+  - Default: `info`
+  - Hierarchy (from highest to lowest priority):
+    - `silent`: No logs
+    - `error`: Only critical errors
+    - `warn`: Warnings and errors
+    - `info`: General information, warnings, and errors
+    - `debug`: Detailed debugging information
+
+### Development and Testing
+
+- `NODE_ENV`: Environment mode
+
+  - Values: `development`, `production`, `test`
+  - Affects:
+    - Telemetry collection (disabled in development/test)
+    - Error handling verbosity
+    - Version check notifications
+
+- `DEVELOPMENT`: Development mode flag
+
+  - Set to any value to enable development mode
+  - Enables additional debugging features
+  - Shows more verbose logs
+
+- `CI`: CI environment flag
+  - Set to any value to indicate CI environment
+  - Affects certain behaviors like version checks
+
+### Telemetry
+
+- `COMPOSIO_DISABLE_TELEMETRY`: Disable telemetry collection
+  - Set to `"true"` to disable
+  - Default: `"false"`
+  - Alternative to `allowTracking` initialization option
+
+## SDK Initialization Options
+
+When initializing the SDK, you can provide configuration through the constructor:
+
+```typescript
+const composio = new Composio({
+  apiKey: 'your-api-key', // Override COMPOSIO_API_KEY
+  baseURL: 'custom-url', // Override COMPOSIO_BASE_URL
+  allowTracking: false, // Disable telemetry
+  allowTracing: true, // Enable tracing
+  provider: new CustomProvider(), // Custom provider
+  telemetryTransport: customTransport, // Custom telemetry transport
+});
+```
+
+### Configuration Priority
+
+When multiple configuration sources are present, the SDK follows this priority order:
+
+1. Constructor parameters
+2. Environment variables
+3. Default values
