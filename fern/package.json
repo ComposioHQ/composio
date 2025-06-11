@@ -11,7 +11,7 @@
 		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10",
 		"tools:comment": "uv run python scripts/manage-tool-docs.py comment",
 		"tools:uncomment": "uv run python scripts/manage-tool-docs.py uncomment",
-		"sdkdocs": "pnpm run typedoc",
+		"sdkdocs": "pnpm typedoc",
 		"api:pull": "bash scripts/pull-openapi-spec.sh",
 		"examples:build": "bun run scripts/examples-dev.ts",
 		"examples:dev": "bun run scripts/examples-dev.ts --watch",
