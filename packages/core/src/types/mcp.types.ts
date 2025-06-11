@@ -1,9 +1,45 @@
+import { CustomCreateResponse, McpCreateResponse } from '@composio/client/resources/mcp';
 import { z } from 'zod';
 
+/**
+ * MCP Create Method Input Types
+ */
+export type MCPCreateConfig = {
+  toolkits?: string[];
+  tools?: string[];
+};
 
-export const MCPTypeSchema = z.union([z.literal('custom'), z.string()]);
-export type MCPType = z.infer<typeof MCPTypeSchema>;
+export type MCPAuthOptions = {
+  useManagedAuth?: boolean;
+  authConfigId?: string[];
+};
 
+/**
+ * Client API Parameter Types
+ */
+export type MCPCreateParams = {
+  name: string;
+  toolkit?: string;
+  allowed_tools?: string[];
+  use_managed_auth?: boolean;
+  auth_config_ids?: string[];
+};
+
+export type MCPCustomCreateParams = {
+  name: string;
+  toolkits: string[];
+  custom_tools: string[];
+  use_managed_auth?: boolean;
+  auth_config_ids?: string[];
+};
+
+export type MCPInstanceParams = {
+  serverId: string;
+  userId: string;
+  connectedAccountIds?: string[];
+  use_managed_auth?: boolean;
+  auth_config_ids?: string[];
+};
 /**
  * MCP Server Type (Single App)
  */
@@ -63,5 +99,19 @@ export type MCPServerUpdateParams = z.infer<typeof MCPServerUpdateParamsSchema>;
  */
 export const MCPServerCreateResponseSchema = MCPServerSchema;
 export type MCPServerCreateResponse = z.infer<typeof MCPServerCreateResponseSchema>;
+
+/**
+ * MCP Create Method Response Type
+ * Extends the API response with a get method for retrieving server instances
+ */
+export type MCPCreateMethodResponse = (McpCreateResponse | CustomCreateResponse) & {
+  get: (
+    params: { 
+      userId: string; 
+      connectedAccountIds?: string[]; 
+    },
+    authOptions?: MCPAuthOptions
+  ) => Promise<any>;
+};
 
 

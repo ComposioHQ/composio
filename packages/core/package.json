@@ -27,7 +27,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
   "devDependencies": {
     "@types/semver": "^7.7.0",
     "tsup": "^8.4.0",
@@ -37,7 +36,7 @@
     "@composio/json-schema-to-zod": "workspace:*"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.16",
+    "@composio/client": "",
     "@composio/json-schema-to-zod": "0.1.1",
     "chalk": "^5.4.1",
     "openai": "^4.94.0",
