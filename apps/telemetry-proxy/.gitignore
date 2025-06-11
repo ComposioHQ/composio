@@ -36,3 +36,4 @@ lerna-debug.log*
 # env
 .dev.vars
 .env
+.wrangler
