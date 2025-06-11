@@ -8,7 +8,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
     if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1 }}
+    permissions: write-all
     defaults:
       run:
         working-directory: ./fern
@@ -18,17 +21,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Install local dependencies
         run: pnpm install
-
-      - name: Set up Python
-        run: uv python install
 
       - name: Install Python Dependencies
         run: |
@@ -41,8 +35,14 @@ jobs:
       - name: Generate SDK Reference
         run: pnpm sdkdocs
 
+      - name: Install Fern
+        run: npm install -g fern-api
+
       - name: Pull Latest OpenAPI Specification
         run: pnpm api:pull
+
+      - name: Build examples
+        run: pnpm examples:build
 
       - name: Publish Docs
         env:
