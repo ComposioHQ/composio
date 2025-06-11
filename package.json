@@ -14,7 +14,9 @@
     "test": "turbo test --filter=./packages/**",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext .ts,.tsx",
+    "lint:packages": "eslint packages --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint:fix:packages": "eslint packages --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prepare": "husky",
     "create:provider": "bash scripts/create-provider.sh",
@@ -46,10 +48,10 @@
     "zod": "^3.24.2"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
+    "packages/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
-    "*.{ts,tsx,js,jsx,json,md}": [
+    "packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ]
   }

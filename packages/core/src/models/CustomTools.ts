@@ -33,6 +33,7 @@ import {
   ConnectedAccountRetrieveResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ValidationError } from '../errors';
+import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -219,37 +220,7 @@ export class CustomTools {
       );
     }
 
-    const connectedAccountResponse = await ConnectedAccountRetrieveResponseSchema.safeParse({
-      id: connectedAccount.id,
-      authConfig: {
-        id: connectedAccount.auth_config.id,
-        authScheme: connectedAccount.auth_config.auth_scheme,
-        isComposioManaged: connectedAccount.auth_config.is_composio_managed,
-        isDisabled: connectedAccount.auth_config.is_disabled,
-      },
-      userId: connectedAccount.user_id,
-      data: connectedAccount.data || {},
-      status: connectedAccount.status,
-      statusReason: connectedAccount.status_reason,
-      toolkit: {
-        slug: connectedAccount.toolkit.slug,
-      },
-      testRequestEndpoint: connectedAccount.test_request_endpoint,
-      isDisabled: connectedAccount.is_disabled,
-      createdAt: connectedAccount.created_at,
-      updatedAt: connectedAccount.updated_at,
-    });
-
-    if (!connectedAccountResponse.success) {
-      throw new ValidationError(
-        `Validation error for connected account of ${toolkitSlug} for user ${userId}`,
-        {
-          cause: connectedAccountResponse.error,
-        }
-      );
-    }
-
-    return connectedAccountResponse.data;
+    return transformConnectedAccountResponse(connectedAccount);
   }
 
   /**
