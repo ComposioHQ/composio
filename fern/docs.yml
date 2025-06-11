@@ -248,7 +248,7 @@ navigation:
   - section: Tools
     contents:
     - page: Introduction
-      path: pages/tools/introduction.mdx
+      path: tools/introduction.mdx
     - page: Ably
       path: tools/ably.mdx
     - page: Accelo
