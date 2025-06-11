@@ -408,8 +408,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.16
-        version: 0.1.0-alpha.16
+        specifier: 0.1.0-alpha.17
+        version: 0.1.0-alpha.17
       '@composio/json-schema-to-zod':
         specifier: 0.1.1
         version: 0.1.1
@@ -844,8 +844,8 @@ packages:
   '@cloudflare/workers-types@4.20250515.0':
     resolution: {integrity: sha512-KoHFMH04gOXp3KEI+wrFIU+3ZfoSXnwqZTpybNQjalHoN3pWjtWBb/030cCRAZ639YX+DAHAxNF7AvEYGz1oaA==}
 
-  '@composio/client@0.1.0-alpha.16':
-    resolution: {integrity: sha512-NWHGVzdbPNvrQhFrhUnpEBEuvw2WZDBT3uj3Lw8T3qYa6U4sB35khR/shxLYLq30mmh/G7LHhymSCe8SOas3uA==}
+  '@composio/client@0.1.0-alpha.17':
+    resolution: {integrity: sha512-iNCDSgdwfFVsjbbyZIMknMPy4uO8Xw5+MP2aI+yoQo34VXF17Fi6ZHYirrJPf8RbdoRROZTDJjC/rU18mMzC2Q==}
 
   '@composio/json-schema-to-zod@0.1.1':
     resolution: {integrity: sha512-bSZbYtwKSRGURERoF8R/fR2QpYD397aR7qqp2PezzOtlCPvE95Bzci8slwTiuXvvt6lrgoA7M7jkOipoceo0sw==}
@@ -5447,7 +5447,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250515.0': {}
 
-  '@composio/client@0.1.0-alpha.16': {}
+  '@composio/client@0.1.0-alpha.17': {}
 
   '@composio/json-schema-to-zod@0.1.1':
     dependencies:
