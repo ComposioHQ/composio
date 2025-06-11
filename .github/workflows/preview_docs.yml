@@ -8,6 +8,8 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
     permissions: write-all
     defaults:
       run:
@@ -19,17 +21,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Install local dependencies
         run: pnpm install
-
-      - name: Set up Python
-        run: uv python install
 
       - name: Install Python Dependencies
         run: |
