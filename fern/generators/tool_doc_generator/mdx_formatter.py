@@ -182,7 +182,6 @@ class MDX:
         safe_title = re.sub(r'(?<!\w)<(?!\w)', '&lt;', safe_title)
         safe_title = re.sub(r'(?<!\w)>(?!\w)', '&gt;', safe_title)
         
-        # The content doesn't need further escaping as it's sanitized when added
         return f'<Accordion title="{safe_title}">\n{content}\n</Accordion>\n'
 
     @staticmethod
@@ -210,7 +209,7 @@ class MDX:
         Returns:
             Formatted code block MDX string
         """
-        return f"```{language}\n{content}\n```\n"
+        return f"```{language} wordWrap\n{content}\n```\n"
     
     @staticmethod
     def as_markdown_table(headers: list, rows: list) -> str:
