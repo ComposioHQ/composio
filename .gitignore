@@ -41,3 +41,10 @@ lerna-debug.log*
 
 # temp files
 temp
+fern/tools
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+
