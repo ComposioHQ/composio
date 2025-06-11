@@ -5,4 +5,4 @@ packages:
   - 'packages/wrappers/*'
   - 'examples/*'
   - 'fern'
-  - fern/pages/examples/*
+  - 'fern/pages/examples/*'
