@@ -303,7 +303,8 @@ class ToolDocGenerator:
         self.problematic_actions = [
             "BITBUCKET_SET_INHERITANCE_STATE_FOR_REPO_SETTINGS",
             "MIXPANEL_QUERY_NUMERIC_SUM",
-            "MIXPANEL_QUERY_NUMERIC_AVERAGE"
+            "MIXPANEL_QUERY_NUMERIC_AVERAGE",
+            "CLICKUP_SET_CUSTOM_FIELD_VALUE"
         ]
 
     def generate_docs(self, output_path: Path, max_workers: int | None = None) -> None:
