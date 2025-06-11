@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.16
+
+### Patch Changes
+
+- f943ba4: Export all the types from the core SDK
+- Updated dependencies [f943ba4]
+  - @composio/json-schema-to-zod@0.1.2
+
 ## 0.1.15
 
 ### Patch Changes
