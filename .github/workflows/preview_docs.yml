@@ -48,6 +48,9 @@ jobs:
       - name: Pull Latest OpenAPI Specification
         run: pnpm api:pull
 
+      - name: Build examples
+        run: pnpm examples:build
+
       - name: Generate preview URL
         id: generate-docs
         env:
