@@ -39,7 +39,14 @@ const anthropic = new Anthropic();
 ```
 
 ```python Python maxLines=60  wordWrap
+import anthropic
 
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+# Initialize tools.
+anthropic_client = anthropic.Anthropic()
+composio = Composio(provider=AnthropicProvider())
 ```
 </CodeGroup>
 
@@ -70,7 +77,25 @@ console.log(JSON.parse(res[0]).details);
 ```
 
 ```python Python maxLines=60  wordWrap
+# Define your user ID
+user_id = "default"
 
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
+
+# Get response from the LLM
+response = anthropic_client.messages.create(
+    model="claude-3-opus-20240229",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "Star me composiohq/composio repo in github."},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
+print(result)
 ```
 </CodeGroup>
 

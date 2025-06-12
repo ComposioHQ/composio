@@ -6,13 +6,6 @@ subtitle: 'Learn how to authenticate tools'
 hide-nav-links: false
 ---
 
-{/\* → Default Single Non Programatic Auth Config
-
-→ Connecting an Account (Oauth)
-
-→ Connecting an API Key (token based schemes)
-
-→ Redirecting your users \*/}
 
 Different apps (like Slack, Notion, Shopify) have their own authentication flows that users must complete to grant access to their accounts. Agents need authenticated access to these tools to perform actions on behalf of users.
 
@@ -102,11 +95,25 @@ await connRequest.waitForConnection();
 // In case the `connRequest` object dies, the ID can be used too.
 await composio.connectedAccounts.waitForConnection(connRequest.id);
 
-````
+```
 ```python Python maxLines=60  wordWrap
+from composio import Composio
 
-````
+linear_auth_config_id = "ac_1234"
+user_id = "user@email.com"
+composio = Composio()
 
+# Create a new connected account
+connection_request = composio.connected_accounts.initiate(
+    user_id=user_id,
+    auth_config_id=linear_auth_config_id,
+)
+print(connection_request.redirect_url)
+
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
+print(connected_account)
+```
 </CodeGroup>
 
 ## Connecting to an API Key toolkit
@@ -131,11 +138,23 @@ apiKey: "sk_1234567890", // The field name for the API key/token
 }
 );
 
-````
+```
 ```python Python maxLines=60  wordWrap
+from composio.types import auth_scheme
 
-````
+auth_config_id = "ac_1234"
 
+connection_request = composio.connected_accounts.initiate(
+    user_id=user_id,
+    auth_config_id=auth_config_id,
+    config=auth_scheme.api_key(
+        options={
+            "api_key": "sk_1234567890",
+        },
+    ),
+)
+print(connection_request)
+```
 </CodeGroup>
 
 ### Fetching the field name
