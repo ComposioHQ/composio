@@ -6,8 +6,6 @@ keywords: ''
 hide-nav-links: true
 ---
 
-- [ ] change the callback URL to `/api/v3/toolkits/callback`
-
 Many toolkits support a level of customisation for the auth config, specifically OAuth applications.
 
 This guide will walk you through the process of customising the auth config for toolkits where you can configure the developer app.
@@ -73,7 +71,7 @@ Examples for Google and GitHub:
 When creating your OAuth app, make sure to configure the Authorized Redirect URI to point to the Composio callback URL below:
 
 ```
-https://backend.composio.dev/api/v1/auth-apps/add
+https://backend.composio.dev/api/v3/toolkits/callback
 ```
 
 </Step>
@@ -121,8 +119,6 @@ print(connection_request)
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
 ```
-</CodeGroup>
-
 </CodeGroup>
 
 ### White-labeling the OAuth Consent Screen
