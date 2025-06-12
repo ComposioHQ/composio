@@ -4,7 +4,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseComposioProvider } from './provider/BaseProvider';
+import { BaseComposioProvider, McpProvider } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import { getSDKConfig } from './utils/sdk';
@@ -41,6 +41,16 @@ export type ComposioConfig<
   defaultHeaders?: ComposioRequestHeaders;
 };
 
+export class BaseMcpProvider extends McpProvider {
+  setup(client: ComposioClient): void {
+    this.client = client;
+  }
+
+  get({ userIds, connectedAccountIds }: { userIds: string[], connectedAccountIds: string[] }): Promise<{url: string}[]> {
+    throw new Error('Not implemented');
+  }
+}
+
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
@@ -69,6 +79,8 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
   authConfigs: AuthConfigs;
   // connected accounts
   connectedAccounts: ConnectedAccounts;
+
+  mcp: McpProvider;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -138,6 +150,9 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
+    this.mcp = this.provider.mcp ?? new BaseMcpProvider();
+
+    this.mcp.setup(this.client);
 
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);

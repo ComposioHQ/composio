@@ -90,18 +90,7 @@ export class MCP {
         });
 
     // Add get method to response
-    return {
-      ...response,
-      get: async ({ userIds, connectedAccountIds }: { userIds?: string[]; connectedAccountIds?: string[] }, authOptions?: MCPAuthOptions) => {
-        const options: GenerateURLParams = {
-          mcp_server_id: response.id,
-          user_ids: userIds || [],
-          connected_account_ids: connectedAccountIds || [],
-          managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false,
-        };
-        return await this.client.mcp.generate.url(options);
-      }
-    };
+    return response as MCPCreateMethodResponse;
   }
 
   /**

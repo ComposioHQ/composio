@@ -2,6 +2,116 @@ import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
+import { Composio } from '@composio/client';
+import { McpCreateResponse } from '@composio/client/resources/index';
+import { CustomCreateResponse, GenerateURLParams } from '@composio/client/resources/mcp';
+import { MCPCreateConfig, MCPAuthOptions, MCPCreateMethodResponse } from '../types/mcp.types';
+
+export abstract class McpProvider {
+  client?: Composio;
+
+  setup(client: Composio): void {
+    this.client = client;
+  }
+
+    /**
+   * Create a new MCP server
+   * @param {string} name - Unique name for the MCP server
+   * @param {MCPCreateConfig} config - Server configuration
+   * @param {MCPAuthOptions} [authOptions] - Authentication configuration options
+   * @returns {Promise<MCPCreateMethodResponse>} Created server details with instance getter
+   * 
+   * @example
+   * ```typescript
+   * // Create a server with multiple toolkits
+   * const mcpConfig = await composio.mcp.create("my-mcp-server", {
+   *   toolkits: ["SUPABASE", "GMAIL"]
+   * }, {
+   *   useManagedAuthByComposio: true,
+   *   authConfigIds: ["auth_cfg_123"]
+   * });
+   * 
+   * // Create a server with specific tools
+   * const mcpConfig = await composio.mcp.create("my-tools-server", {
+   *   tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
+   * });
+   * 
+   * // Get MCP server instance for a user
+   * const mcpServer = await mcpConfig.get({
+   *   userId: "user_123",
+   *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
+   *  }, {
+   *   useManagedAuthByComposio: true,
+   *   authConfigIds: ["auth_cfg_123"]
+   * }
+   * });
+   * ```
+   */
+    async create(
+      name: string,
+      config: MCPCreateConfig,
+      authOptions?: MCPAuthOptions
+    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string }>> }> {
+      if(!this.client) {
+        throw new Error('Client not set');
+      }
+      // If there are multiple toolkits, we need to create a custom MCP server
+      const isMultiApp = !!config.toolkits?.length;
+      const response: McpCreateResponse | CustomCreateResponse = isMultiApp 
+        ? await this.client.mcp.custom.create({
+            name,
+            toolkits: config.toolkits || [],
+            custom_tools: config.tools || [],
+            managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+            auth_config_ids: authOptions?.authConfigIds || []
+          })
+        : await this.client.mcp.create({
+            name,
+            allowed_tools: config.tools || [],
+            managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+            auth_config_ids: authOptions?.authConfigIds || []
+          });
+      const _this = this;
+      // Add get method to response
+      return {
+        id: response.id,
+        get: ({ userIds = [], connectedAccountIds = [] }: { userIds?: string[], connectedAccountIds?: string[] }): Promise<Array<{ url: string }>> => {
+          if(!_this.client) {
+            throw new Error('Client not set');
+          }
+          if(connectedAccountIds && userIds) {
+            throw new Error('Cannot generate URL for both userIds and connectedAccountIds at the same time');
+          }
+      
+          if (!connectedAccountIds && !userIds) {
+            throw new Error('Must provide either userIds or connectedAccountIds');
+          }
+      
+          return _this.client.mcp.generate.url({
+            user_ids: userIds, connected_account_ids: connectedAccountIds,
+            mcp_server_id: response.id
+          }).then(data => {
+            if(connectedAccountIds.length > 0) {
+              return data.connected_account_urls.map((a) => {
+                return {
+                  url: a,
+                }
+              });
+            } else if(userIds.length > 0) {
+              return data.user_ids_url.map((a) => {
+                return {
+                  url: a,
+                }
+              })
+            }
+
+            return [];
+          });
+        }
+      };
+    }
+
+}
 
 /**
  * @internal
@@ -15,6 +125,11 @@ abstract class BaseProvider {
    * Used to identify the provider in the telemetry.
    */
   abstract readonly name: string;
+  /**
+   * @public
+   * MCP provider for the framework
+   */
+  abstract readonly mcp?: McpProvider;
   /**
    * @internal
    * Whether the provider is agentic.

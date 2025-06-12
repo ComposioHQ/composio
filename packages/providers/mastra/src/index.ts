@@ -8,6 +8,7 @@
  */
 import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
 import { createTool } from '@mastra/core';
+import { McpProvider } from '@composio/core/src/provider/BaseProvider';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -15,8 +16,14 @@ export interface MastraToolCollection {
   [key: string]: MastraTool;
 }
 
+export class MastraMcpProvider extends McpProvider {
+  readonly name = 'mastra';
+}
+
 export class MastraProvider extends BaseAgenticProvider<MastraToolCollection, MastraTool> {
   readonly name = 'mastra';
+
+  readonly mcp = new MastraMcpProvider();
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
     const mastraTool = createTool({
