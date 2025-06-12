@@ -1,7 +1,7 @@
 ---
 title: Creating custom tools
-image: "https://og.composio.dev/api/og?title=Creating%20custom%20tools"   # image for socials
-keywords: ""
+image: 'https://og.composio.dev/api/og?title=Creating%20custom%20tools' # image for socials
+keywords: ''
 subtitle: "Learn how to extend Composio's toolkits with your own tools"
 hide-nav-links: false
 ---
@@ -38,7 +38,7 @@ const tool = await composio.tools.createCustomTool({
 ```
 ```python Python maxLines=60 wordWrap
 
-```
+````
 </CodeGroup>
 
 ### Toolkit-based Tool
@@ -59,7 +59,7 @@ const tool = await composio.tools.createCustomTool({
     page: z.number().optional().describe('Pagination page number'),
     customHeader: z.string().optional().describe('Custom header'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     // This method makes authenticated requests to relevant API
     // You can use relative paths!
     // Composio will automatically inject the baseURL
@@ -86,12 +86,15 @@ const tool = await composio.tools.createCustomTool({
     return result;
   },
 });
-```
+````
+
 ```python Python maxLines=60 wordWrap
+
 ```
+
 </CodeGroup>
 
-2. Using `authCredentials` - For making direct API calls when needed:
+2. Using `connectionConfig` - For making direct API calls when needed:
 
 <CodeGroup>
 ```typescript TypeScript maxLines=60 wordWrap
@@ -103,11 +106,11 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repo: z.string().describe('Repository name'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
-    // Use authCredentials for direct API calls
+  execute: async (input, connectionConfig, executeToolRequest) => {
+    // Use connectionConfig for direct API calls
     const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
       headers: {
-        Authorization: `Bearer ${authCredentials.access_token}`,
+        Authorization: `Bearer ${connectionConfig.access_token}`,
       },
     });
 
@@ -116,11 +119,14 @@ const tool = await composio.tools.createCustomTool({
       error: null,
       successful: true,
     };
-  },
+
+},
 });
-```
+
+````
 ```python Python maxLines=60 wordWrap
-```
+````
+
 </CodeGroup>
 
 ### Using Custom Headers and Query Parameters
@@ -139,7 +145,7 @@ const tool = await composio.tools.createCustomTool({
     perPage: z.number().optional().describe('Results per page'),
     acceptType: z.string().optional().describe('Custom accept header'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     const result = await executeToolRequest({
       endpoint: '/search/repositories',
       method: 'GET',
@@ -211,7 +217,7 @@ const result = await composio.tools.execute('TOOL_SLUG', {
      ```
    - Remember that `executeToolRequest` can only call tools from the same toolkit
    - Use `executeToolRequest` to leverage Composio's automatic credential handling
-   - Only use `authCredentials` when you need to make direct API calls or interact with different services
+   - Only use `connectionConfig` when you need to make direct API calls or interact with different services
 5. Chain multiple toolkit operations using `executeToolRequest` for better maintainability
 
 ## Limitations

@@ -63,7 +63,7 @@ export class CustomTools {
    *     query: z.string().describe('The search query'),
    *     limit: z.number().optional().describe('Maximum number of results')
    *   }),
-   *   execute: async (input, authCredentials, executeToolRequest) => {
+   *   execute: async (input, connectionConfig, executeToolRequest) => {
    *     // Custom implementation logic
    *     return {
    *       data: { results: ['result1', 'result2'] }
@@ -239,7 +239,7 @@ export class CustomTools {
       throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
     }
 
-    let authCredentials: ConnectionData | null = null;
+    let connectionConfig: ConnectionData | null = null;
     const { toolkitSlug, execute, inputParams } = tool.options;
     // if a toolkit is used, get the connected account, and auth credentials
     let connectedAccountId: string | undefined = body.connectedAccountId;
@@ -265,7 +265,7 @@ export class CustomTools {
           }
         );
       }
-      authCredentials = connectedAccount.state ?? null;
+      connectionConfig = connectedAccount.state ?? null;
       connectedAccountId = connectedAccount.id;
     }
 
@@ -322,6 +322,6 @@ export class CustomTools {
       });
     }
 
-    return execute(parsedInput.data, authCredentials, executeToolRequest);
+    return execute(parsedInput.data, connectionConfig, executeToolRequest);
   }
 }

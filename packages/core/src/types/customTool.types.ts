@@ -13,7 +13,7 @@ type BaseCustomToolOptions<T extends z.ZodType> = {
 type ToolkitBasedExecute<T extends z.ZodType> = {
   execute: (
     input: z.infer<T>,
-    authCredentials: ConnectionData | null,
+    connectionConfig: ConnectionData | null,
     executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>
   ) => Promise<ToolExecuteResponse>;
   toolkitSlug: string;

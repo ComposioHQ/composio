@@ -47,7 +47,7 @@ const tool = await composio.tools.createCustomTool({
     page: z.number().optional().describe('Page number for pagination'),
     customHeader: z.string().optional().describe('Custom header value'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     // executeToolRequest makes authenticated requests to the toolkit's API
     // You can use relative paths - Composio will automatically inject the baseURL
     const result = await executeToolRequest({
@@ -75,7 +75,7 @@ const tool = await composio.tools.createCustomTool({
 });
 ```
 
-2. Using `authCredentials` - For making direct API calls when needed:
+2. Using `connectionConfig` - For making direct API calls when needed:
 
 ```typescript
 const tool = await composio.tools.createCustomTool({
@@ -86,11 +86,11 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repo: z.string().describe('Repository name'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
-    // Use authCredentials for direct API calls
+  execute: async (input, connectionConfig, executeToolRequest) => {
+    // Use connectionConfig for direct API calls
     const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
       headers: {
-        Authorization: `Bearer ${authCredentials.val?.access_token}`,
+        Authorization: `Bearer ${connectionConfig.val?.access_token}`,
       },
     });
 
@@ -118,7 +118,7 @@ const tool = await composio.tools.createCustomTool({
     perPage: z.number().optional().describe('Results per page'),
     acceptType: z.string().optional().describe('Custom accept header'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     const result = await executeToolRequest({
       endpoint: '/search/repositories',
       method: 'GET',
@@ -173,7 +173,7 @@ The custom tools implementation provides full type safety:
 1. Input parameters are validated using Zod schemas
 2. The execute function's parameters are inferred based on whether toolkitSlug is provided:
    - Without toolkitSlug: `(input) => Promise<ToolExecuteResponse>`
-   - With toolkitSlug: `(input, authCredentials, executeToolRequest) => Promise<ToolExecuteResponse>`
+   - With toolkitSlug: `(input, connectionConfig, executeToolRequest) => Promise<ToolExecuteResponse>`
 
 ## Best Practices
 
@@ -192,7 +192,7 @@ The custom tools implementation provides full type safety:
      ```
    - Remember that `executeToolRequest` can only call tools from the same toolkit
    - Use `executeToolRequest` to leverage Composio's automatic credential handling
-   - Only use `authCredentials` when you need to make direct API calls or interact with different services
+   - Only use `connectionConfig` when you need to make direct API calls or interact with different services
 5. Chain multiple toolkit operations using `executeToolRequest` for better maintainability
 
 ## Limitations

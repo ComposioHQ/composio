@@ -1,6 +1,6 @@
 [**@composio/core**](../../../README.mdx)
 
-***
+---
 
 [@composio/core](../../../README.mdx) / [models/Tools](../README.mdx) / Tools
 
@@ -23,7 +23,7 @@ It provides methods to list, get, and execute tools.
 
 ### TProvider
 
-`TProvider` *extends* [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
+`TProvider` _extends_ [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
 
 ## Constructors
 
@@ -64,7 +64,7 @@ while keeping a consistent interface for both built-in and custom tools.
 
 ##### T
 
-`T` *extends* `CustomToolInputParameter`
+`T` _extends_ `CustomToolInputParameter`
 
 #### Parameters
 
@@ -94,14 +94,14 @@ await composio.tools.createCustomTool({
   inputParameters: z.object({
     param1: z.string().describe('First parameter'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     // Custom logic here
     return { data: { result: 'Success!' } };
-  }
+  },
 });
 ```
 
-```typescript
+````typescript
 // creating a custom tool without a toolkit
 await composio.tools.createCustomTool({
   name: 'My Custom Tool',
@@ -188,9 +188,9 @@ const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
     return result;
   }
 });
-```
+````
 
-***
+---
 
 ### get()
 
@@ -222,7 +222,7 @@ This method fetches the tools from the Composio API and wraps them using the pro
 
 ###### T
 
-`T` *extends* [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
+`T` _extends_ [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
 
 ##### Parameters
 
@@ -268,13 +268,13 @@ Optional provider options
 // Get tools from the GitHub toolkit
 const tools = await composio.tools.get('default', {
   toolkits: ['github'],
-  limit: 10
+  limit: 10,
 });
 
 // Get tools with search
 const tools = await composio.tools.get('default', {
   search: 'user',
-  important: true
+  important: true,
 });
 ```
 
@@ -291,7 +291,7 @@ This method fetches the tool from the Composio API and wraps it using the provid
 
 ###### T
 
-`T` *extends* [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
+`T` _extends_ [`BaseComposioProvider`](../../../provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`TToolCollection`, `TTool`\>
 
 ##### Parameters
 
@@ -341,12 +341,12 @@ const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_U
 const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
   modifySchema: (toolSlug, toolkitSlug, schema) => {
     // Customize the tool schema
-    return {...schema, description: 'Custom description'};
-  }
+    return { ...schema, description: 'Custom description' };
+  },
 });
 ```
 
-***
+---
 
 ### getInput()
 
@@ -383,12 +383,12 @@ The input parameters schema for the specified tool
 ```typescript
 // Get input parameters for a specific tool
 const inputParams = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
-  userId: 'default'
+  userId: 'default',
 });
 console.log(inputParams.schema);
 ```
 
-***
+---
 
 ### getRawComposioToolBySlug()
 
@@ -427,7 +427,7 @@ The tool
 const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
 ```
 
-***
+---
 
 ### getRawComposioTools()
 
@@ -475,19 +475,21 @@ const tools = await composio.tools.getRawComposioTools('default');
 // Get tools with filters
 const githubTools = await composio.tools.getRawComposioTools('default', {
   toolkits: ['github'],
-  important: true
+  important: true,
 });
 
 // Get tools with schema transformation
-const tools = await composio.tools.getRawComposioTools('default', {},
+const tools = await composio.tools.getRawComposioTools(
+  'default',
+  {},
   (toolSlug, toolkitSlug, tool) => {
     // Add custom properties to tool schema
-    return {...tool, customProperty: 'value'};
+    return { ...tool, customProperty: 'value' };
   }
 );
 ```
 
-***
+---
 
 ### getToolsEnum()
 
@@ -514,7 +516,7 @@ const toolsEnum = await composio.tools.getToolsEnum();
 console.log(toolsEnum.items);
 ```
 
-***
+---
 
 ### proxyExecute()
 
@@ -548,8 +550,8 @@ const response = await composio.tools.proxyExecute({
   userId: 'default',
   data: {
     endpoint: '/repos/owner/repo/issues',
-    method: 'GET'
-  }
+    method: 'GET',
+  },
 });
 console.log(response.data);
 ```
