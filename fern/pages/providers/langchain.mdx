@@ -1,7 +1,7 @@
 ---
-title: LangGraph Provider
-slug: /providers/langgraph
-image: "https://og.composio.dev/api/og?title=LangGraph%20Provider"   # image for socials
+title: LangChain Provider
+slug: /providers/langchain
+image: "https://og.composio.dev/api/og?title=LangChain%20Provider"   # image for socials
 keywords: ""
 hide-nav-links: false
 ---
@@ -21,7 +21,7 @@ from langchain_openai import ChatOpenAI
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
-openai_client = ChatOpenAI(model="gpt-4-turbo")
+openai_client = ChatOpenAI(model="gpt-4o")
 
 
 def main():

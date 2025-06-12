@@ -232,8 +232,8 @@ navigation:
       path: pages/providers/openai.mdx
     - page: Anthropic Provider
       path: pages/providers/anthropic.mdx
-    - page: LangGraph Provider
-      path: pages/providers/langgraph.mdx
+    - page: LangChain Provider
+      path: pages/providers/langchain.mdx
     - page: CrewAI Provider
       path: pages/providers/crewai.mdx
     - page: Vercel AI SDK Provider
