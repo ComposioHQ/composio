@@ -896,8 +896,6 @@ navigation:
         path: pages/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
       - page: CustomTools
         path: pages/sdk/typescript/CustomTools/classes/CustomTools.mdx
-      - page: Session
-        path: pages/sdk/typescript/models/Session/classes/Session.mdx
 - tab: api-reference
   layout:
   - section: API Reference
