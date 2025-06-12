@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.17
+
+### Patch Changes
+
+- df31cc2: Fix json schema parsing
+- Updated dependencies [df31cc2]
+  - @composio/json-schema-to-zod@0.1.5
+
 ## 0.1.16
 
 ### Patch Changes

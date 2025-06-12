@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.5
+
+### Patch Changes
+
+- df31cc2: Fix json schema parsing
+
 ## 0.1.2
 
 ### Patch Changes
