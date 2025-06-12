@@ -30,7 +30,7 @@ jobs:
           uv run composio apps generate-types
 
       - name: Generate Tool Documentation
-        run: pnpm tools:generate
+        run: pnpm tools:generate && pnpm tools:uncomment
 
       - name: Generate SDK Reference
         run: pnpm sdkdocs

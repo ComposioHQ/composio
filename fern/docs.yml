@@ -133,9 +133,9 @@ navigation:
     - page: Quickstart
       path: pages/get-started/quickstart.mdx
       slug: quickstart
-    - page: Configuration
-      path: pages/get-started/configuration.mdx
-      slug: configuration
+    - page: IDE and Agent Setup
+      path: pages/get-started/dev-setup.mdx
+      slug: dev-setup
     - page: Providers
       path: pages/get-started/providers.mdx
       slug: providers
