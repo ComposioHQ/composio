@@ -15,12 +15,34 @@ import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
 import { BaseMcpProvider } from '../composio';
+import { MCPAuthOptions, MCPCreateConfig } from '../types/mcp.types';
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 
 export class OpenAIMcpProvider extends BaseMcpProvider {
   readonly name = 'openai';
+
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<{ id: string; get: (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => Promise<Array<{ url: string; name: string; } | { type: string; server_label: string; server_url: string; require_approval: string; }>>; }> {
+    const parentOutput = await super.create(name, config, authOptions);
+    return {
+      ...parentOutput,
+      get: async (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => {
+        const mcpServers = await parentOutput.get(params) as Array<{ url: string; name: string }>;
+
+        const tools = mcpServers.map(server => ({
+          type: "mcp",
+          server_label: server.name,
+          server_url: server.url,
+          // @TODO(plxity): Check this, if we need to add custom logic for require_approval
+          require_approval: "never"
+        }));
+
+        return tools;
+      }
+    }
+  }
 }
 
 export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {

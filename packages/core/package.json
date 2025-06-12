@@ -28,16 +28,17 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@composio/json-schema-to-zod": "workspace:*",
     "@types/semver": "^7.7.0",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.4",
-    "@composio/json-schema-to-zod": "workspace:*"
+    "vitest": "^3.1.4"
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.21",
     "@composio/json-schema-to-zod": "0.1.1",
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "chalk": "^5.4.1",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",

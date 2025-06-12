@@ -12,12 +12,38 @@
  */
 import { BaseAgenticProvider, BaseMcpProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
-import { jsonSchema, tool } from 'ai';
+import { jsonSchema, tool, experimental_createMCPClient } from 'ai';
+import { MCPCreateConfig, MCPAuthOptions } from 'packages/core/src/types/mcp.types';
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
 
 type VercelToolCollection = Record<string, VercelTool>;
 
 export class VercelMcpProvider extends BaseMcpProvider {
   readonly name = 'vercel';
+
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<{ id: string; get: (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => Promise<Array<{ url: string; } | unknown>>; }> {
+    const parentOutput = await super.create(name, config, authOptions);
+    return {
+      ...parentOutput,
+      get: async (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => {
+        const mcpServers = await parentOutput.get(params) as Array<{ url: string }>;
+
+        
+        const mcpClients = await Promise.all(mcpServers.map(async server => {
+          const transport = new StreamableHTTPClientTransport(new URL(server.url));
+
+          const client = await experimental_createMCPClient({
+            transport,
+            name: 'vercel-mcp-client',
+          });
+
+          return client.tools();
+        }))
+        
+        return mcpClients.flat();
+      }
+    }
+  }
 }
 
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {

@@ -38,5 +38,8 @@
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   },
-  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
+  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
 }

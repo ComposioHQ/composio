@@ -51,7 +51,7 @@ export abstract class McpProvider {
       name: string,
       config: MCPCreateConfig,
       authOptions?: MCPAuthOptions
-    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string }>> }> {
+    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string; name: string } | unknown>> }> {
       if(!this.client) {
         throw new Error('Client not set');
       }
@@ -95,12 +95,14 @@ export abstract class McpProvider {
               return data.connected_account_urls.map((a) => {
                 return {
                   url: a,
+                  name: response.name,
                 }
               });
             } else if(userIds.length > 0) {
               return data.user_ids_url.map((a) => {
                 return {
                   url: a,
+                  name: response.name,
                 }
               })
             }
