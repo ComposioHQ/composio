@@ -39,6 +39,7 @@
   "dependencies": {
     "@composio/client": "0.1.0-alpha.17",
     "@composio/json-schema-to-zod": "0.1.4",
+    "zod-to-json-schema": "^3.24.5",
     "chalk": "^5.4.1",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
