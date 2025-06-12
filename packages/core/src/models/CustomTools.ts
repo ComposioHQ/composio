@@ -28,12 +28,10 @@ import {
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { ComposioError } from '../errors/ComposioError';
 import { telemetry } from '../telemetry/Telemetry';
-import {
-  ConnectedAccountRetrieveResponse,
-  ConnectedAccountRetrieveResponseSchema,
-} from '../types/connectedAccounts.types';
+import { ConnectedAccountRetrieveResponse } from '../types/connectedAccounts.types';
 import { ValidationError } from '../errors';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
+import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -241,7 +239,7 @@ export class CustomTools {
       throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
     }
 
-    let authCredentials: Record<string, unknown> = {};
+    let authCredentials: ConnectionData | null = null;
     const { toolkitSlug, execute, inputParams } = tool.options;
     // if a toolkit is used, get the connected account, and auth credentials
     let connectedAccountId: string | undefined = body.connectedAccountId;
@@ -267,7 +265,7 @@ export class CustomTools {
           }
         );
       }
-      authCredentials = connectedAccount.data as Record<string, unknown>;
+      authCredentials = connectedAccount.state ?? null;
       connectedAccountId = connectedAccount.id;
     }
 

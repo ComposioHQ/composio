@@ -90,7 +90,7 @@ const tool = await composio.tools.createCustomTool({
     // Use authCredentials for direct API calls
     const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
       headers: {
-        Authorization: `Bearer ${authCredentials.access_token}`,
+        Authorization: `Bearer ${authCredentials.val?.access_token}`,
       },
     });
 

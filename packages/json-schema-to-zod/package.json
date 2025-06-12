@@ -35,6 +35,7 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
+    "@types/json-schema": "^7.0.15",
     "zod": "^3.24.2"
   }
 }

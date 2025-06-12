@@ -85,7 +85,7 @@ const tool = await composio.tools.createCustomTool({
       {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${authCredentials?.access_token}`,
+          Authorization: `Bearer ${authCredentials.val?.access_token}`,
         },
       }
     );
