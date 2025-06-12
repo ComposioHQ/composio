@@ -373,6 +373,73 @@ describe('jsonSchemaToZod', () => {
       });
     });
 
+    it('should handle properties without type field', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          withType: {
+            type: 'string',
+            description: 'Property with type',
+          },
+          withoutType: {
+            description: 'Property without type',
+            default: 'default value',
+          },
+          withAnyOf: {
+            anyOf: [{ type: 'string' }, { type: 'number' }],
+            description: 'Property with anyOf but no direct type',
+          },
+          withEnum: {
+            enum: ['one', 'two', 'three'],
+            description: 'Property with enum but no type',
+          },
+        },
+      };
+
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Test property with type
+      expect(zodSchema.parse({ withType: 'test' })).toEqual({
+        withType: 'test',
+        withoutType: 'default value', // Default value is included
+      });
+      expect(() => zodSchema.parse({ withType: 123 })).toThrow();
+
+      // Test property without type (should accept any value)
+      expect(zodSchema.parse({ withoutType: 'string value' })).toEqual({
+        withoutType: 'string value', // Override default
+      });
+      expect(zodSchema.parse({ withoutType: 123 })).toEqual({
+        withoutType: 123, // Override default
+      });
+      expect(zodSchema.parse({ withoutType: { nested: true } })).toEqual({
+        withoutType: { nested: true }, // Override default
+      });
+
+      // Test property with anyOf but no direct type
+      expect(zodSchema.parse({ withAnyOf: 'string value' })).toEqual({
+        withAnyOf: 'string value',
+        withoutType: 'default value', // Default value is included
+      });
+      expect(zodSchema.parse({ withAnyOf: 123 })).toEqual({
+        withAnyOf: 123,
+        withoutType: 'default value', // Default value is included
+      });
+      expect(() => zodSchema.parse({ withAnyOf: true })).toThrow();
+
+      // Test property with enum but no type
+      expect(zodSchema.parse({ withEnum: 'one' })).toEqual({
+        withEnum: 'one',
+        withoutType: 'default value', // Default value is included
+      });
+      expect(() => zodSchema.parse({ withEnum: 'invalid' })).toThrow();
+
+      // Test that default value is included when property is missing
+      expect(zodSchema.parse({})).toEqual({
+        withoutType: 'default value',
+      });
+    });
+
     it('should handle default values', () => {
       const schema: JsonSchema = {
         type: 'object',

@@ -50,3 +50,6 @@ __pycache__/
 *.pyo
 
 
+# wrangler
+.wrangler
+.dev.vars

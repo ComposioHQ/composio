@@ -32,9 +32,9 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repository: z.string().describe('The repository to star'),
   }),
-  execute: async (input, authCredentials) => {
+  execute: async (input, connectionConfig) => {
     console.log('🚀 ~ execute: ~ params:', input);
-    console.log('🚀 ~ execute: ~ authCredentials:', authCredentials);
+    console.log('🚀 ~ execute: ~ connectionConfig:', connectionConfig);
     /**
      * The auth credentials are the auth credentials for the connected account.
      * You can use them to make requests to the API.
@@ -44,7 +44,7 @@ const tool = await composio.tools.createCustomTool({
       {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${authCredentials?.access_token}`,
+          Authorization: `Bearer ${connectionConfig?.val?.access_token}`,
         },
       }
     );

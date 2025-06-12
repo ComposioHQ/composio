@@ -32,9 +32,9 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repository: z.string().describe('The repository to star'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     console.log('🚀 ~ execute: ~ params:', input);
-    console.log('🚀 ~ execute: ~ authCredentials:', authCredentials);
+    console.log('🚀 ~ execute: ~ connectionConfig:', connectionConfig);
 
     const result = await executeToolRequest({
       endpoint: `/user/starred/composiohq/${input.repository}`,

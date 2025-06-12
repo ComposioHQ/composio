@@ -28,6 +28,7 @@ const JSONSchemaType = z.enum([
 const JSONSchemaProperty: z.ZodType<unknown> = z.object({
   type: JSONSchemaType.optional(),
   description: z.string().optional(),
+  anyOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
   properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
@@ -38,6 +39,7 @@ const JSONSchemaProperty: z.ZodType<unknown> = z.object({
 // Schema for parameters (input/output)
 const ParametersSchema = z.object({
   type: z.literal('object'),
+  anyOf: z.array(JSONSchemaProperty).optional(),
   properties: z.record(z.string(), JSONSchemaProperty),
   required: z.array(z.string()).optional(),
   title: z.string().optional(),

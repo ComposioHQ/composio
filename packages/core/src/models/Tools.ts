@@ -771,7 +771,7 @@ export class Tools<
    *   inputParameters: z.object({
    *     param1: z.string().describe('First parameter'),
    *   }),
-   *   execute: async (input, authCredentials, executeToolRequest) => {
+   *   execute: async (input, connectionConfig, executeToolRequest) => {
    *     // Custom logic here
    *     return { data: { result: 'Success!' } };
    *   }

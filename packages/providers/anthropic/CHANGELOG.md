@@ -1,5 +1,21 @@
 # @composio/anthropic
 
+## 0.1.18
+
+### Patch Changes
+
+- 37a1f01: Feat better connected account creation flow
+- Updated dependencies [37a1f01]
+  - @composio/core@0.1.18
+
+## 0.1.17
+
+### Patch Changes
+
+- df31cc2: Fix json schema parsing
+- Updated dependencies [df31cc2]
+  - @composio/core@0.1.17
+
 ## 0.1.16
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 [**@composio/core**](../../README.mdx)
 
-***
+---
 
 [@composio/core](../../README.mdx) / [CustomTools](../README.mdx) / CustomTools
 
@@ -41,7 +41,7 @@ This is just an in memory registry and is not persisted.
 
 ##### T
 
-`T` *extends* `CustomToolInputParameter`
+`T` _extends_ `CustomToolInputParameter`
 
 #### Parameters
 
@@ -67,18 +67,18 @@ const customTool = await composio.customTools.createTool({
   slug: 'MY_CUSTOM_TOOL',
   inputParams: z.object({
     query: z.string().describe('The search query'),
-    limit: z.number().optional().describe('Maximum number of results')
+    limit: z.number().optional().describe('Maximum number of results'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     // Custom implementation logic
     return {
-      data: { results: ['result1', 'result2'] }
+      data: { results: ['result1', 'result2'] },
     };
-  }
+  },
 });
 ```
 
-***
+---
 
 ### executeCustomTool()
 
@@ -110,7 +110,7 @@ If a toolkit is used, the connected account id is used to execute the tool.
 If a connected account id is provided, it is used to execute the tool.
 If a connected account id is not provided, the first connected account for the toolkit is used.
 
-***
+---
 
 ### getCustomToolBySlug()
 
@@ -146,7 +146,7 @@ if (myTool) {
 }
 ```
 
-***
+---
 
 ### getCustomTools()
 
@@ -178,6 +178,6 @@ const allTools = await composio.customTools.getCustomTools({});
 
 // Get specific custom tools by slug
 const specificTools = await composio.customTools.getCustomTools({
-  toolSlugs: ['MY_CUSTOM_TOOL', 'ANOTHER_CUSTOM_TOOL']
+  toolSlugs: ['MY_CUSTOM_TOOL', 'ANOTHER_CUSTOM_TOOL'],
 });
 ```

@@ -42,7 +42,7 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     owner: z.string().describe('Repository owner'),
   }),
-  execute: async (input, authCredentials, executeToolRequest) => {
+  execute: async (input, connectionConfig, executeToolRequest) => {
     // executeToolRequest can only call tools from the 'github' toolkit
     // Uses the same connected account credentials automatically
     const listResult = await executeToolRequest({
@@ -78,14 +78,14 @@ const tool = await composio.tools.createCustomTool({
   inputParams: z.object({
     repository: z.string().describe('The repository to star'),
   }),
-  execute: async (input, authCredentials) => {
-    // Use authCredentials for direct API calls or when interacting with different services
+  execute: async (input, connectionConfig) => {
+    // Use connectionConfig for direct API calls or when interacting with different services
     const result = await fetch(
       `https://api.github.com/user/starred/composiohq/${input.repository}`,
       {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${authCredentials?.access_token}`,
+          Authorization: `Bearer ${connectionConfig.val?.access_token}`,
         },
       }
     );
@@ -127,7 +127,7 @@ const tool = await composio.tools.createCustomTool({
 1. **Standalone vs Toolkit-based Tools**
 
    - Standalone tools only receive input parameters
-   - Toolkit-based tools have access to both `executeToolRequest` and `authCredentials`
+   - Toolkit-based tools have access to both `executeToolRequest` and `connectionConfig`
 
 2. **Authentication Methods**
 
@@ -136,7 +136,7 @@ const tool = await composio.tools.createCustomTool({
      - Uses the connected account credentials automatically
      - No need to manage auth tokens
      - Better maintainability and security
-   - `authCredentials`: For direct API calls
+   - `connectionConfig`: For direct API calls
      - Use when you need to make direct API calls
      - Use when you need to interact with different services
      - Requires manual token management

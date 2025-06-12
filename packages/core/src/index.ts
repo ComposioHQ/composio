@@ -6,6 +6,7 @@ export type { BaseComposioProvider } from './provider/BaseProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
 export { BaseTelemetryTransport, ConsoleTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToZodSchema } from './utils/jsonSchema';
+export { AuthScheme } from './models/AuthScheme';
 export * from './types/provider.types';
 export * from './types/customTool.types';
 export * from './types/tool.types';
