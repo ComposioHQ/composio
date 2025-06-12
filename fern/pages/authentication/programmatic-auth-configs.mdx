@@ -29,7 +29,18 @@ console.log(authConfig);
 ```
 
 ```python Python maxLines=60  wordWrap
+from composio import Composio
 
+composio = Composio()
+
+# Use composio managed auth
+auth_config = composio.auth_configs.create(
+    toolkit="github",
+    options={
+        "type": "use_composio_managed_auth",
+    },
+)
+print(auth_config)
 ```
 </CodeGroup>
 
@@ -63,7 +74,21 @@ const authConfig = await composio.authConfigs.create("NOTION", {
 console.log(authConfig);
 ```
 ```python Python maxLines=60  wordWrap
-
+# Use custom auth
+auth_config = composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "name": "Notion Auth",
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "credentials": {
+            "client_id": "1234567890",
+            "client_secret": "1234567890",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
+        },
+    },
+)
+print(auth_config)
 ```
 </CodeGroup>
 
@@ -86,8 +111,8 @@ const authFields = toolkits.authConfigDetails?.flatMap(
 
 console.log("Required auth config fields:", authFields);
 ```
+{/* TODO: implement method which returns required fields for a toolkit with given auth scheme */}
 ```python Python maxLines=60  wordWrap
-
 ```
 </CodeGroup>
 
@@ -131,8 +156,8 @@ const authConfig = await composio.authConfigs.create("NOTION", {
   ),
 });
 ```
+ {/* TODO: add once the above todo is addressed */}
 ```python Python maxLines=60  wordWrap
-
 ```
 </CodeGroup>
 </Accordion>

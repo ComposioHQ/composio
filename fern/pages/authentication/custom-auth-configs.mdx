@@ -106,6 +106,16 @@ const connection = await composio.connectedAccounts.waitForConnection(
 console.log(connection);
 ```
 ```python Python maxLines=60
+# Create a new connected account
+connection_request = composio.connected_accounts.initiate(
+    user_id="user_id",
+    auth_config_id="ac_1234",
+)
+print(connection_request)
+
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
+print(connected_account)
 ```
 </CodeGroup>
 
@@ -156,7 +166,32 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 ```
 
 ```python FastAPI (app.py)
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
+from composio import Composio
+
+# Create a FastAPI app
+app = FastAPI()
+
+# Create a Composio client
+composio = Composio()
+
+
+@app.get("/authorize/{toolkit}")
+def authorize_app(toolkit: str):
+    # retrieve the user id from your app
+    user_id = ""
+
+    # retrieve the auth config id from your app
+    auth_config_id = ""
+
+    # initiate the connection request
+    connection_request = composio.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config_id,
+    )
+    return RedirectResponse(url=connection_request.redirect_url)
 ```
 </CodeGroup>
 </Step>

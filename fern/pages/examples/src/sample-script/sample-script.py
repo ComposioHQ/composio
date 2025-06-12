@@ -1,3 +1,4 @@
+
 from composio_core import Composio
 from openai import OpenAI
 
@@ -16,7 +17,6 @@ userId = "your@email.com"
 
 # Authorize and get tools for Gmail
 connection, tools = composio.toolkits.authorize(userId, "gmail")
-
 print(f"🔗 Visit the URL to authorize:\n👉 {connection.redirect_url}")
 
 # Wait for the user to complete authorization
