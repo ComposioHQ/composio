@@ -49,7 +49,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
         """Open a file."""
         try:
             file = self.filemanagers.get(request.file_manager_id).open(
-                request.file_path
+                request.file_path, window=500
             )
             if request.line_number > 0:
                 file.goto(request.line_number)
@@ -59,7 +59,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
                 raise ExecutionFailed("File is empty")
 
             return OpenFileResponse(
-                message="File opened successfully. 100 lines after the cursor displayed.",
+                message="File opened successfully. 500 lines after the cursor displayed.",
                 lines=content,
             )
         except FileNotFoundError as e:
