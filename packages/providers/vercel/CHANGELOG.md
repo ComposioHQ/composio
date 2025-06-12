@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.1.18
+
+### Patch Changes
+
+- 37a1f01: Feat better connected account creation flow
+- Updated dependencies [37a1f01]
+  - @composio/core@0.1.18
+
 ## 0.1.17
 
 ### Patch Changes

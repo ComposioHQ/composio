@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.6
+
+### Patch Changes
+
+- 37a1f01: Feat better connected account creation flow
+
 ## 0.1.5
 
 ### Patch Changes
