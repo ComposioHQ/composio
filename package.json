@@ -50,5 +50,9 @@
     "*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@composio/core": "link:packages/core",
+    "@composio/mastra": "link:packages/providers/mastra"
   }
 }

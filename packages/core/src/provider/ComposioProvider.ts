@@ -1,5 +1,5 @@
 import { Tool } from '../types/tool.types';
-import { BaseNonAgenticProvider } from './BaseProvider';
+import { BaseMcpProvider, BaseNonAgenticProvider } from './BaseProvider';
 
 /**
  * This is a default provider implementation for Composio.
@@ -13,6 +13,8 @@ interface CustomTool {
 }
 export class ComposioProvider extends BaseNonAgenticProvider<Array<CustomTool>, CustomTool> {
   readonly name = 'ComposioProvider';
+
+  readonly mcp = new BaseMcpProvider();
 
   wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;

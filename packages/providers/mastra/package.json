@@ -14,6 +14,10 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs"
+    },
+    "./src/provider/BaseProvider": {
+      "import": "./src/provider/BaseProvider.js",
+      "types": "./src/provider/BaseProvider.d.ts"
     }
   },
   "files": [

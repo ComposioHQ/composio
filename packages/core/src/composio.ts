@@ -4,7 +4,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseComposioProvider, McpProvider } from './provider/BaseProvider';
+import { BaseComposioProvider, BaseMcpProvider, McpProvider } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import { getSDKConfig } from './utils/sdk';
@@ -41,12 +41,6 @@ export type ComposioConfig<
    */
   defaultHeaders?: ComposioRequestHeaders;
 };
-
-export class BaseMcpProvider extends McpProvider {
-  setup(client: ComposioClient): void {
-    this.client = client;
-  }
-}
 
 /**
  * This is the core class for Composio.

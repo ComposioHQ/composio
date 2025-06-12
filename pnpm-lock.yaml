@@ -4,9 +4,20 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@composio/mastra': link:packages/providers/mastra
+  '@composio/core': link:packages/core
+
 importers:
 
   .:
+    dependencies:
+      '@composio/core':
+        specifier: link:packages/core
+        version: link:packages/core
+      '@composio/mastra':
+        specifier: link:packages/providers/mastra
+        version: link:packages/providers/mastra
     devDependencies:
       '@changesets/cli':
         specifier: ^2.29.4
@@ -60,7 +71,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/providers/anthropic
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.4.1
@@ -76,7 +87,7 @@ importers:
   examples/connected-accounts:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       openai:
         specifier: ^4.94.0
@@ -92,7 +103,7 @@ importers:
   examples/custom-tools:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.4.1
@@ -111,7 +122,7 @@ importers:
   examples/error-handling-demo:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.5.0
@@ -127,7 +138,7 @@ importers:
   examples/google:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/google':
         specifier: workspace:*
@@ -149,7 +160,7 @@ importers:
   examples/langchain:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/langchain':
         specifier: workspace:*
@@ -183,14 +194,17 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/mastra':
-        specifier: workspace:^
+        specifier: link:../../packages/providers/mastra
         version: link:../../packages/providers/mastra
       '@mastra/core':
-        specifier: ^0.10.0
-        version: 0.10.0(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.10.5
+        version: 0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)
+      '@mastra/mcp':
+        specifier: ^0.10.3
+        version: 0.10.3(@mastra/core@0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4))(zod@3.24.4)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
@@ -208,7 +222,7 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/vercel':
         specifier: workspace:*
@@ -227,7 +241,7 @@ importers:
   examples/openai:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.4.1
@@ -249,7 +263,7 @@ importers:
   examples/session-management:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.4.1
@@ -268,7 +282,7 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/vercel':
         specifier: workspace:*
@@ -290,7 +304,7 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/vercel':
         specifier: workspace:*
@@ -309,7 +323,7 @@ importers:
   examples/triggers:
     dependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       dotenv:
         specifier: ^16.4.1
@@ -328,7 +342,7 @@ importers:
         specifier: ^1.3.16
         version: 1.3.22(zod@3.24.4)
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../packages/core
         version: link:../../packages/core
       '@composio/vercel':
         specifier: workspace:*
@@ -417,10 +431,10 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.52.0
         version: 0.52.0
-    devDependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../core
         version: link:../../core
+    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -436,10 +450,10 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20250416.0
         version: 4.20250515.0
-    devDependencies:
       '@composio/core':
-        specifier: workspace:*
+        specifier: link:../../core
         version: link:../../core
+    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -452,13 +466,13 @@ importers:
 
   packages/providers/google:
     dependencies:
+      '@composio/core':
+        specifier: link:../../core
+        version: link:../../core
       '@google/genai':
         specifier: ^1.1.0
         version: 1.1.0(@modelcontextprotocol/sdk@1.12.1)(encoding@0.1.13)
     devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -468,13 +482,13 @@ importers:
 
   packages/providers/langchain:
     dependencies:
+      '@composio/core':
+        specifier: link:../../core
+        version: link:../../core
       '@langchain/core':
         specifier: ^0.3.44
         version: 0.3.56(openai@4.98.0(encoding@0.1.13)(ws@8.18.2)(zod@3.24.4))
     devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -487,13 +501,13 @@ importers:
 
   packages/providers/mastra:
     dependencies:
+      '@composio/core':
+        specifier: link:../../core
+        version: link:../../core
       '@mastra/core':
         specifier: ^0.10.0
-        version: 0.10.0(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)
+        version: 0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)
     devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -506,13 +520,13 @@ importers:
 
   packages/providers/openai:
     dependencies:
+      '@composio/core':
+        specifier: link:../../core
+        version: link:../../core
       openai:
         specifier: ^4.3.8
         version: 4.98.0(encoding@0.1.13)(ws@8.18.2)(zod@3.24.4)
     devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -525,6 +539,9 @@ importers:
 
   packages/providers/vercel:
     dependencies:
+      '@composio/core':
+        specifier: link:../../core
+        version: link:../../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.12.1
         version: 1.12.1
@@ -532,9 +549,6 @@ importers:
         specifier: ^4.3.8
         version: 4.3.15(react@19.1.0)(zod@3.24.4)
     devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@1.21.7)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
@@ -1238,10 +1252,22 @@ packages:
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
 
-  '@mastra/core@0.10.0':
-    resolution: {integrity: sha512-vu5Y21qUz0yzejLnQIH6ZwpEi6Nk0UypwpY9bYwHcyxtdUGkpexnJvZLSfmEiKAiLcMGSxyPTUh120JMweX/CA==}
+  '@mastra/core@0.10.5':
+    resolution: {integrity: sha512-Cm3ghshlrSS/zrPojz5aQziXxIEjXsXJbO+UI0WFe0hYEvyDa5Pue7wxxSkIehi55b19fwRHcfTOsv17/aotOA==}
     engines: {node: '>=20'}
     peerDependencies:
+      zod: ^3.0.0
+
+  '@mastra/mcp@0.10.3':
+    resolution: {integrity: sha512-kFRypsAU3s84CQOEkU4ZFUxOJBxbFztgo+tliBfVlUp98XRYKXifol5aM8eVgKtC59LQq/Q15QjIwNaiNpb/ZQ==}
+    peerDependencies:
+      '@mastra/core': ^0.10.2-alpha.0
+      zod: ^3.0.0
+
+  '@mastra/schema-compat@0.10.2':
+    resolution: {integrity: sha512-QCPnD0Jd7NJgfVdvNkLPJhqSjyNcA+eaa16N+3kwa+wTBMb6eziWZC1aQNQ6o4T1JVPoo5unVVtL1pqiIgV+tA==}
+    peerDependencies:
+      ai: ^4.0.0
       zod: ^3.0.0
 
   '@modelcontextprotocol/sdk@1.12.1':
@@ -2604,6 +2630,9 @@ packages:
   date-fns@3.6.0:
     resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
 
+  date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
 
@@ -2817,6 +2846,10 @@ packages:
   execa@8.0.1:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
     engines: {node: '>=16.17'}
+
+  exit-hook@4.0.0:
+    resolution: {integrity: sha512-Fqs7ChZm72y40wKjOFXBKg7nJZvQJmewP5/7LtePDdnah/+FH9Hp5sgMujSCMPXlxOAW2//1jrW9pnsY7o20vQ==}
+    engines: {node: '>=18'}
 
   expect-type@1.2.1:
     resolution: {integrity: sha512-/kP8CAwxzLVEeFrMm4kMmy4CCDlpipyA7MYLVrdJIkV0fYF0UaigQHRsxHiuY/GEea+bh4KSv3TIlgr+2UL6bw==}
@@ -5387,8 +5420,12 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@mastra/core@0.10.0(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)':
+  '@mastra/core@0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)':
     dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.24.4)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.24.4)
+      '@mastra/schema-compat': 0.10.2(ai@4.3.15(react@19.1.0)(zod@3.24.4))(zod@3.24.4)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/auto-instrumentations-node': 0.59.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@opentelemetry/core': 2.0.1(@opentelemetry/api@1.9.0)
@@ -5417,8 +5454,6 @@ snapshots:
       sift: 17.1.3
       xstate: 5.19.3
       zod: 3.24.4
-      zod-from-json-schema: 0.0.5
-      zod-to-json-schema: 3.24.5(zod@3.24.4)
     transitivePeerDependencies:
       - '@hono/arktype-validator'
       - '@hono/effect-validator'
@@ -5436,6 +5471,28 @@ snapshots:
       - supports-color
       - valibot
       - zod-openapi
+
+  '@mastra/mcp@0.10.3(@mastra/core@0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4))(zod@3.24.4)':
+    dependencies:
+      '@mastra/core': 0.10.5(encoding@0.1.13)(openapi-types@12.1.3)(react@19.1.0)(zod@3.24.4)
+      '@modelcontextprotocol/sdk': 1.12.1
+      date-fns: 4.1.0
+      exit-hook: 4.0.0
+      fast-deep-equal: 3.1.3
+      hono: 4.7.10
+      uuid: 11.1.0
+      zod: 3.24.4
+      zod-from-json-schema: 0.0.5
+    transitivePeerDependencies:
+      - supports-color
+
+  '@mastra/schema-compat@0.10.2(ai@4.3.15(react@19.1.0)(zod@3.24.4))(zod@3.24.4)':
+    dependencies:
+      ai: 4.3.15(react@19.1.0)(zod@3.24.4)
+      json-schema: 0.4.0
+      zod: 3.24.4
+      zod-from-json-schema: 0.0.5
+      zod-to-json-schema: 3.24.5(zod@3.24.4)
 
   '@modelcontextprotocol/sdk@1.12.1':
     dependencies:
@@ -6643,11 +6700,11 @@ snapshots:
 
   '@types/bunyan@1.8.11':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/diff-match-patch@1.0.36': {}
 
@@ -6657,11 +6714,11 @@ snapshots:
 
   '@types/memcached@2.2.10':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/mysql@2.15.26':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/node-fetch@2.6.12':
     dependencies:
@@ -6684,7 +6741,7 @@ snapshots:
 
   '@types/oracledb@6.5.2':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/pg-pool@2.0.6':
     dependencies:
@@ -6692,7 +6749,7 @@ snapshots:
 
   '@types/pg@8.6.1':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
       pg-protocol: 1.10.0
       pg-types: 2.2.0
 
@@ -6704,7 +6761,7 @@ snapshots:
 
   '@types/tedious@4.0.14':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.18
 
   '@types/uuid@10.0.0': {}
 
@@ -7104,6 +7161,8 @@ snapshots:
 
   date-fns@3.6.0: {}
 
+  date-fns@4.1.0: {}
+
   dateformat@4.6.3: {}
 
   debug@4.4.1:
@@ -7355,6 +7414,8 @@ snapshots:
       onetime: 6.0.0
       signal-exit: 4.1.0
       strip-final-newline: 3.0.0
+
+  exit-hook@4.0.0: {}
 
   expect-type@1.2.1: {}
 

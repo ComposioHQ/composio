@@ -2,15 +2,14 @@ import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
-import { Composio } from '@composio/client';
 import { McpCreateResponse } from '@composio/client/resources/index';
 import { CustomCreateResponse, GenerateURLParams } from '@composio/client/resources/mcp';
 import { MCPCreateConfig, MCPAuthOptions, MCPCreateMethodResponse } from '../types/mcp.types';
 
 export abstract class McpProvider {
-  client?: Composio;
+  client?: any;
 
-  setup(client: Composio): void {
+  setup(client: any): void {
     this.client = client;
   }
 
@@ -51,7 +50,7 @@ export abstract class McpProvider {
       name: string,
       config: MCPCreateConfig,
       authOptions?: MCPAuthOptions
-    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string; name: string } | unknown>> }> {
+    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string; name: string }>| unknown | any> }> {
       if(!this.client) {
         throw new Error('Client not set');
       }
@@ -79,27 +78,27 @@ export abstract class McpProvider {
           if(!_this.client) {
             throw new Error('Client not set');
           }
-          if(connectedAccountIds && userIds) {
+          if(connectedAccountIds.length && userIds.length) {
             throw new Error('Cannot generate URL for both userIds and connectedAccountIds at the same time');
           }
       
-          if (!connectedAccountIds && !userIds) {
+          if (!connectedAccountIds.length && !userIds.length) {
             throw new Error('Must provide either userIds or connectedAccountIds');
           }
       
           return _this.client.mcp.generate.url({
             user_ids: userIds, connected_account_ids: connectedAccountIds,
             mcp_server_id: response.id
-          }).then(data => {
+          }).then((data: any) => {
             if(connectedAccountIds.length > 0) {
-              return data.connected_account_urls.map((a) => {
+              return data.connected_account_urls.map((a: any) => {
                 return {
                   url: a,
                   name: response.name,
                 }
               });
             } else if(userIds.length > 0) {
-              return data.user_ids_url.map((a) => {
+              return data.user_ids_url.map((a: any) => {
                 return {
                   url: a,
                   name: response.name,
@@ -113,6 +112,13 @@ export abstract class McpProvider {
       };
     }
 
+}
+
+
+export class BaseMcpProvider extends McpProvider {
+  setup(client: any): void {
+    this.client = client;
+  }
 }
 
 /**
@@ -204,6 +210,8 @@ export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends Bas
  */
 export abstract class BaseAgenticProvider<TToolCollection, TTool> extends BaseProvider {
   override readonly _isAgentic = true;
+
+  readonly mcp = new BaseMcpProvider();
 
   /**
    * Wrap a tool in the provider specific format.
