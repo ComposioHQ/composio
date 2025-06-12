@@ -6,10 +6,9 @@ subtitle: "Learn how to execute Composio's tools with different providers and fr
 hide-nav-links: false
 ---
 
-## Calling Tools
 Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tools for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
 
-### Using Chat Completions
+## Using Chat Completions
 For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
 This approach works consistently across all supported non-agent providers.
 
@@ -55,7 +54,7 @@ console.log(result);
 </CodeGroup>
 
 
-### Using Agentic Frameworks
+## Using Agentic Frameworks
 Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
 
 
@@ -118,7 +117,7 @@ if response.choices[0].message.tool_calls:
 ```
 </CodeGroup>
 
-### Tools are scoped to a user
+## Tools are scoped to a user
 Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
 
 The authentication state is checked and used while fetching and executing a tool.
@@ -126,7 +125,7 @@ The authentication state is checked and used while fetching and executing a tool
 You need to authorize the user to execute tools.
 For more information on authentication, see [Authenticating Tools](./authenticating-tools). 
 
-### For Humans (deterministic tool calling)
+## For Humans (deterministic tool calling)
 In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
 
 <CodeGroup>
@@ -156,3 +155,26 @@ result = composio.tools.execute(
 print(result)
 ```
 </CodeGroup> 
+
+### Proxy Execute -- Manually calling toolkit APIs
+You can also proxy requests to an API of any supported toolkit. This is useful when you want to manually call an API of a toolkit and inject the authentication state from Composio.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+// Send a custom request to a toolkit
+const { data } = await composio.tools.proxyExecute({
+  toolkitSlug: 'github',
+  userId: 'user@example.com',
+  data: {
+    endpoint: '/repos/owner/repo/issues',
+    method: 'GET'
+  }
+});
+console.log(data);
+```
+```python Python maxLines=60 wordWrap
+
+```
+</CodeGroup>
+
+If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).
