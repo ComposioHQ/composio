@@ -46,7 +46,7 @@ export const DefaultCreateConnectedAccountParamsSchema = z.object({
 
 export const CreateConnectedAccountOptionsSchema = z.object({
   callbackUrl: z.string().optional(),
-  state: ConnectionDataSchema.optional(),
+  config: ConnectionDataSchema.optional(),
 });
 export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;
 export type CreateConnectedAccountParams = z.infer<typeof CreateConnectedAccountParamsSchema>;
@@ -65,24 +65,22 @@ export const CreateConnectedAccountResponseSchema = z.object({
 export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccountResponseSchema>;
 
 export const ConnectedAccountAuthSchemes = {
-  OAUTH2: 'OAUTH2',
   OAUTH1: 'OAUTH1',
-  OAUTH1A: 'OAUTH1A',
+  OAUTH2: 'OAUTH2',
+  COMPOSIO_LINK: 'COMPOSIO_LINK',
   API_KEY: 'API_KEY',
   BASIC: 'BASIC',
-  BILLCOM_AUTH: 'BILLCOM_AUTH',
   BEARER_TOKEN: 'BEARER_TOKEN',
   GOOGLE_SERVICE_ACCOUNT: 'GOOGLE_SERVICE_ACCOUNT',
   NO_AUTH: 'NO_AUTH',
-  BASIC_WITH_JWT: 'BASIC_WITH_JWT',
-  COMPOSIO_LINK: 'COMPOSIO_LINK',
   CALCOM_AUTH: 'CALCOM_AUTH',
   SNOWFLAKE: 'SNOWFLAKE',
+  BILLCOM_AUTH: 'BILLCOM_AUTH',
+  BASIC_WITH_JWT: 'BASIC_WITH_JWT',
 } as const;
 export const ConnectedAccountAuthSchemesSchema = z.enum([
   ConnectedAccountAuthSchemes.OAUTH2,
   ConnectedAccountAuthSchemes.OAUTH1,
-  ConnectedAccountAuthSchemes.OAUTH1A,
   ConnectedAccountAuthSchemes.API_KEY,
   ConnectedAccountAuthSchemes.BASIC,
   ConnectedAccountAuthSchemes.BILLCOM_AUTH,

@@ -1,4 +1,4 @@
-import { AuthConfigTypes, AuthSchemeTypes, Composio } from '@composio/core';
+import { AuthConfigTypes, Composio } from '@composio/core';
 
 // Initialize Composio
 // OpenAI Provider is automatically installed and initialized

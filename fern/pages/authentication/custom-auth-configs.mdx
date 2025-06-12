@@ -1,8 +1,8 @@
 ---
 title: Custom Auth Configs
-image: "https://og.composio.dev/api/og?title=Custom%20Auth%20Configs"   # image for socials
-subtitle: "Guide to using customising auth configs for a toolkit "
-keywords: ""
+image: 'https://og.composio.dev/api/og?title=Custom%20Auth%20Configs' # image for socials
+subtitle: 'Guide to using customising auth configs for a toolkit '
+keywords: ''
 hide-nav-links: true
 ---
 
@@ -13,6 +13,7 @@ Many toolkits support a level of customisation for the auth config, specifically
 This guide will walk you through the process of customising the auth config for toolkits where you can configure the developer app.
 
 ## Creating a custom auth config
+
 Some apps, like PostHog, Hubspot, Linear, etc. allow customizing the auth config for your usage.
 
 You'll need to customize the auth config in cases where you want to add in a different field than the default. This could be the subdomain, base URL, client ID, client secret, etc.
@@ -28,6 +29,7 @@ You may change the subdomain for the PostHog toolkit to match your own instance.
 For Hubspot you may customize everything here. For each auth scheme there is a different set of fields.
 
 If you choose to use your own developer app for OAuth2 scheme, you will have to provide the client ID and client secret.
+
 <Frame background="subtle" title="Hubspot Auth Config Settings">
 <img src="../../assets/images/custom-auth-hubspot.png" />
 </Frame>
@@ -40,6 +42,7 @@ Toolkits that support OAuth2 allow using your own developer app. This is the rec
 We recommend using your own developer app for OAuth2 scheme as it is suited more for production usage with many users and more granular control over scopes.
 
 However getting OAuth approvals takes time so Composio provides a default developer app!
+
 </Tip>
 
 ## OAuth2 Auth Configs
@@ -48,20 +51,21 @@ However getting OAuth approvals takes time so Composio provides a default develo
 <Step title="Generate the OAuth Client ID and Client Secret">
 To set up a custom OAuth config, you'll need the OAuth Client ID and Client Secret.
 
-You can generate the client ID and client secret from your provider's OAuth configuration page. 
+You can generate the client ID and client secret from your provider's OAuth configuration page.
 
 Examples for Google and GitHub:
+
 <Tabs>
-<Tab title="Google">
-<Frame background="subtle" caption="Google OAuth Configuration">
-<img src="../../assets/images/google-oauth-config.png" />
-</Frame>
-</Tab>
-<Tab title="GitHub">
-<Frame background="subtle" caption="GitHub OAuth Configuration" >
-<img src="../../assets/images/github-oauth-config.png" />
-</Frame>
-</Tab>
+  <Tab title="Google">
+    <Frame background="subtle" caption="Google OAuth Configuration">
+      <img src="../../assets/images/google-oauth-config.png" />
+    </Frame>
+  </Tab>
+  <Tab title="GitHub">
+    <Frame background="subtle" caption="GitHub OAuth Configuration">
+      <img src="../../assets/images/github-oauth-config.png" />
+    </Frame>
+  </Tab>
 </Tabs>
 
 </Step>
@@ -71,6 +75,7 @@ When creating your OAuth app, make sure to configure the Authorized Redirect URI
 ```
 https://backend.composio.dev/api/v1/auth-apps/add
 ```
+
 </Step>
 <Step title="Create the auth config">
 Once you have the OAuth credentials, you can add them to the auth config in the dashboard.
@@ -81,12 +86,10 @@ Once you have the OAuth credentials, you can add them to the auth config in the 
 4. Click **"Create Integration"** once done!
 
 <Frame background="subtle" title="Auth Config Settings">
-<img src="../../assets/images/integration-step-3-0.png" />
+  <img src="../../assets/images/integration-step-3-0.png" />
 </Frame>
 
 As usual, copy and use the auth config ID starting with `ac_` in your application code via a secret manager.
-
-
 
 </Step>
 </Steps>
@@ -100,20 +103,23 @@ const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
 console.log(connReq.redirectUrl);
 
 const connection = await composio.connectedAccounts.waitForConnection(
-  connReq.id
+connReq.id
 );
 
 console.log(connection);
-```
+
+````
 ```python Python maxLines=60
-```
+````
+
 </CodeGroup>
 
-
 ### White-labeling the OAuth Consent Screen
+
 By default the users will see an OAuth screen like the one below:
+
 <Frame background="subtle" caption="Composio's Domain in OAuth Consent Screen">
-<img src="../../assets/images/oauth-branding.png" />
+  <img src="../../assets/images/oauth-branding.png" />
 </Frame>
 
 The OAuth redirect URL is surfaced in the some OAuth providers' consent screens. This may cause confusion for some users as that URL is not of the same domain as the application.
@@ -133,6 +139,7 @@ https://yourdomain.com/api/composio-redirect
 Create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v1/auth-apps/add`
 
 **Example: API Route for OAuth Redirect**
+
 <CodeGroup>
 ```typescript Next.js (pages/api/composio-redirect.ts)
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -158,6 +165,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 ```python FastAPI (app.py)
 
 ```
+
 </CodeGroup>
 </Step>
 <Step title="Create the auth config">
@@ -169,7 +177,6 @@ Specify the your custom redirect URI in the auth config settings!
 </Step>
 </Steps>
 
-
 With this setup, you can use `https://yourdomain.com/api/composio-redirect` as your OAuth redirect URI, which will create a better user experience by keeping users on your domain during the OAuth flow.
 
 <Accordion title="How does this work?">
@@ -180,23 +187,24 @@ The custom OAuth config allows you to use your own domain in the OAuth consent s
 flowchart TD
     A[Your App initiates OAuth] --> B[User redirected to OAuth Provider]
     B --> C{Redirect URI Configuration}
-    
+
     C -->|Direct Setup| D[Provider redirects to<br/>backend.composio.dev]
     C -->|Custom Domain| E[Provider redirects to<br/>yourdomain.com/api/composio-redirect]
-    
+
     E --> F[Your endpoint forwards to<br/>backend.composio.dev]
-    
+
     D --> G[Composio exchanges code for token]
     F --> G
-    
+
     G --> H[Connection established]
-    
+
     style E fill:#e1f5fe
     style F fill:#e1f5fe
     style C fill:#fff3e0
 ```
 
 **Key Benefits:**
+
 - **Custom Domain**: Users see your domain in OAuth consent screens, not Composio's
 - **Same Security**: Your domain just forwards the OAuth callback - no token handling
 - **Better UX**: Maintains brand consistency throughout the auth flow

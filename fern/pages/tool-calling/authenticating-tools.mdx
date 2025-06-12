@@ -1,24 +1,24 @@
 ---
 title: Authenticating Tools
-image: "https://og.composio.dev/api/og?title=Authenticating%20Tools"   # image for socials
-keywords: ""
-subtitle: "Learn how to authenticate tools"
+image: 'https://og.composio.dev/api/og?title=Authenticating%20Tools' # image for socials
+keywords: ''
+subtitle: 'Learn how to authenticate tools'
 hide-nav-links: false
 ---
 
-{/* → Default Single Non Programatic Auth Config
+{/\* → Default Single Non Programatic Auth Config
 
 → Connecting an Account (Oauth)
 
 → Connecting an API Key (token based schemes)
 
-→ Redirecting your users */}
+→ Redirecting your users \*/}
 
 Different apps (like Slack, Notion, Shopify) have their own authentication flows that users must complete to grant access to their accounts. Agents need authenticated access to these tools to perform actions on behalf of users.
 
-
 ## Creating an auth config
-Each toolkit comes with it's own *auth config*.
+
+Each toolkit comes with it's own _auth config_.
 This configuration is used to authenticate the users to the tools.
 
 The first step is to create an auth config for any toolkit that you want to use.
@@ -27,8 +27,8 @@ The first step is to create an auth config for any toolkit that you want to use.
 The appropriate developer credentials and app level configurations like scopes, API endpoints, etc. are scoped to an auth config.
 
 Once created, it's reusable across multiple users.
-</Note>
 
+</Note>
 
 <Tabs>
   <Tab title="Dashboard">
@@ -63,6 +63,7 @@ Once created, it's reusable across multiple users.
         Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. You'll need this ID in your application code.
       </Step>
     </Steps>
+
   </Tab>
   <Tab title="CLI">
     - [ ] kirimase style auth config builder creator
@@ -73,11 +74,14 @@ Once created, it's reusable across multiple users.
 </Tabs>
 
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
-In case of dealing with multiple toolkits across different projects, you can create auth configs programmatically.
+  In case of dealing with multiple toolkits across different projects, you can create auth configs
+  programmatically.
 </Card>
 
 ## Connecting to an OAuth toolkit
+
 Here's how to authenticate a toolkit for a given user using the OAuth flow.
+
 <CodeGroup>
 ```typescript TypeScript maxLines=60  {3, 8-11}
 import { Composio } from "@composio/core";
@@ -88,8 +92,8 @@ const composio = new Composio();
 const userId = "your@email.com";
 
 const connRequest = await composio.connectedAccounts.initiate(
-  userId,
-  linearAuthConfigId
+userId,
+linearAuthConfigId
 );
 
 console.log(connRequest.redirectUrl);
@@ -98,16 +102,19 @@ await connRequest.waitForConnection();
 // In case the `connRequest` object dies, the ID can be used too.
 await composio.connectedAccounts.waitForConnection(connRequest.id);
 
-```
+````
 ```python Python maxLines=60  wordWrap
 
-```
+````
+
 </CodeGroup>
 
 ## Connecting to an API Key toolkit
+
 For API key based toolkits, you can either request the user to provide the API key or provide your own!
 
 ### Creating the connection
+
 If you know the required authentication fields for your toolkit (like `apiKey` for most API-based services), you can directly create the connection:
 
 <CodeGroup>
@@ -115,24 +122,28 @@ If you know the required authentication fields for your toolkit (like `apiKey` f
 const authConfigId = "ac_1234"; // For example, auth config id of Serp API
 
 const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    data: {
-      apiKey: "sk_1234567890",     // The field name for the API key/token
-    },
-  }
+userId,
+authConfigId,
+{
+data: {
+apiKey: "sk_1234567890", // The field name for the API key/token
+},
+}
 );
-```
+
+````
 ```python Python maxLines=60  wordWrap
 
-```
+````
+
 </CodeGroup>
 
 ### Fetching the field name
+
 For more complex cases where you want to dynamically discover the exact field names and handle different auth schemes programmatically, you can fetch the auth field details first.
 
 Here's how to fetch the auth field names for a toolkit:
+
 <CodeGroup>
 ```typescript TypeScript maxLines=60 {9-12}
 import { Composio } from "@composio/core";
@@ -142,16 +153,17 @@ const composio = new Composio();
 const userId = "your@email.com";
 const toolkits = await composio.toolkits.get("SERPAPI");
 
-
 const fieldNames = toolkits.authConfigDetails?.map(
-  detail => detail.fields.connectedAccountInitiation
+detail => detail.fields.connectedAccountInitiation
 );
 console.log(fieldNames); // e.g. ["apiKey"]
-```
+
+````
 
 ```python Python maxLines=60  wordWrap
 
-```
+````
+
 </CodeGroup>
 
 It might be useful to read all the optional and required auth config fields for a toolkit and optionally prompt the user for the values.
@@ -164,7 +176,7 @@ import { Composio } from "@composio/core";
 import * as readline from 'readline';
 
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
+apiKey: process.env.COMPOSIO_API_KEY,
 });
 
 const userId = "your@email.com";
@@ -177,71 +189,74 @@ const toolkits = await composio.toolkits.get("SERPAPI");
 
 // Extract field names from authConfigDetails
 const authFields = toolkits.authConfigDetails?.flatMap(
-  detail => [
-    ...detail.fields.connectedAccountInitiation.required.map(field => field.name),
-    ...detail.fields.connectedAccountInitiation.optional.map(field => field.name)
-  ]
+detail => [
+...detail.fields.connectedAccountInitiation.required.map(field => field.name),
+...detail.fields.connectedAccountInitiation.optional.map(field => field.name)
+]
 ) || [];
 
 console.log("Required authentication fields:", authFields);
 
 // Function to prompt user for input
 async function promptUser(fieldName: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  
-  return new Promise((resolve) => {
-    rl.question(`Please enter value for ${fieldName}: `, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
+const rl = readline.createInterface({
+input: process.stdin,
+output: process.stdout
+});
+
+return new Promise((resolve) => {
+rl.question(`Please enter value for ${fieldName}: `, (answer) => {
+rl.close();
+resolve(answer);
+});
+});
 }
 
 // Collect authentication data
 const authData: Record<string, string> = {};
 
 if (REQUEST_USER_INPUT) {
-  // Request user input for each required field
-  for (const fieldName of authFields) {
-    authData[fieldName] = await promptUser(fieldName);
-  }
+// Request user input for each required field
+for (const fieldName of authFields) {
+authData[fieldName] = await promptUser(fieldName);
+}
 } else {
-  // Read values from environment variables
-  console.log("Reading values from environment variables...");
-  for (const fieldName of authFields) {
-    const envValue = process.env[fieldName.toUpperCase()];
-    if (envValue) {
-      authData[fieldName] = envValue;
-      console.log(`Found ${fieldName} in environment variables`);
-    } else {
-      console.warn(`Warning: Environment variable ${fieldName.toUpperCase()} not found`);
-      authData[fieldName] = ""; // Set empty string as fallback
-    }
-  }
+// Read values from environment variables
+console.log("Reading values from environment variables...");
+for (const fieldName of authFields) {
+const envValue = process.env[fieldName.toUpperCase()];
+if (envValue) {
+authData[fieldName] = envValue;
+console.log(`Found ${fieldName} in environment variables`);
+} else {
+console.warn(`Warning: Environment variable ${fieldName.toUpperCase()} not found`);
+authData[fieldName] = ""; // Set empty string as fallback
+}
+}
 }
 
 console.log("Using authentication data:", authData);
 
 const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    data: authData,
-  }
+userId,
+authConfigId,
+{
+data: authData,
+}
 );
 
 console.log("Connection request ID:", connectionRequest.id);
-```
+
+````
 ```python Python maxLines=60  wordWrap
 
-```
+````
+
 </CodeGroup>
 </Accordion>
 
 ## Redirecting users
+
 To control where the users are redirected after they have authenticated, you can use the `redirectUrl` parameter in the `initiate` method.
 In this case, the user will be redirected to `https://www.yourapp.com/callback` after they have authenticated.
 
