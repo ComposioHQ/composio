@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_langchain>=0.5.0,<0.8.0",
-        "langgraph<0.3.0",
+        "langgraph",
     ],
     include_package_data=True,
 )
