@@ -9,6 +9,7 @@ from langgraph.graph import END, StateGraph
 
 from composio_langgraph import Action, ComposioToolSet
 
+
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
@@ -68,7 +69,7 @@ workflow.add_node("agent", function_1)
 workflow.add_node("tool", function_2)
 workflow.add_conditional_edges(
     "agent",
-    where_to_go,  
+    where_to_go,
     {
         # If return is "continue" then we call the tool node.
         "continue": "tool",
