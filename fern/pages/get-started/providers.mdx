@@ -38,7 +38,10 @@ const composio = new Composio({
 
 ```
 ```python Python
+from composio import Composio
+from composio_openai import OpenAIProvider
 
+composio = Composio(provider=OpenAIProvider())
 ```
 </CodeGroup>
 </Tab>
@@ -57,7 +60,10 @@ const composio = new Composio({
 const anthropic = new Anthropic();
 ```
 ```python Python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
 
+composio = Composio(provider=AnthropicProvider())
 ```
 </CodeGroup>
 </Tab>
@@ -91,6 +97,10 @@ const composio = new Composio({
 </Tab>
 <Tab title="OpenAI Agents">
 ```python Python
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(provider=OpenAIAgentsProvider())
 ```
 </Tab>
 </Tabs>

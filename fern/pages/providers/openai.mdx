@@ -36,6 +36,13 @@ const openai = new OpenAI();
 ```
 
 ```python
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+# Initialize tools.
+openai_client = OpenAI()
+composio = Composio(provider=OpenAIProvider())
 ```
 </CodeGroup>
 
@@ -72,7 +79,24 @@ const result = await composio.provider.handleToolCall(userId, completion);
 console.log(result);
 ```
 ```python
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4-turbo-preview",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls.
+# import ipdb; ipdb.set_trace()
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
 ```
 
 </CodeGroup>
