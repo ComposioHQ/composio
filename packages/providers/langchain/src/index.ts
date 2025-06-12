@@ -11,6 +11,11 @@
  */
 import { BaseAgenticProvider, jsonSchemaToZodSchema, Tool, ExecuteToolFn } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
+import { BaseMcpProvider } from '@composio/core';
+
+export class LangchainMcpProvider extends BaseMcpProvider {
+  readonly name = 'langchain';
+}
 
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainProvider extends BaseAgenticProvider<
@@ -18,6 +23,8 @@ export class LangchainProvider extends BaseAgenticProvider<
   DynamicStructuredTool
 > {
   readonly name = 'langchain';
+
+  readonly mcp = new LangchainMcpProvider();
 
   /**
    * Creates a new instance of the LangchainProvider.

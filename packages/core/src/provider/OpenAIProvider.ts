@@ -14,11 +14,19 @@ import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
+import { BaseMcpProvider } from '../composio';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
+
+export class OpenAIMcpProvider extends BaseMcpProvider {
+  readonly name = 'openai';
+}
+
 export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
   readonly name = 'openai';
+
+  readonly mcp = new OpenAIMcpProvider();
   
   /**
    * Creates a new instance of the OpenAIProvider.

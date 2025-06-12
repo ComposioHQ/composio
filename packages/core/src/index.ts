@@ -1,5 +1,5 @@
 // Core exports
-export { Composio } from './composio';
+export { Composio, BaseMcpProvider } from './composio';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';

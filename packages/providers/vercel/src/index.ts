@@ -10,13 +10,20 @@
  * @packageDocumentation
  * @module providers/vercel
  */
-import { BaseAgenticProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
+import { BaseAgenticProvider, BaseMcpProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
 
 type VercelToolCollection = Record<string, VercelTool>;
+
+export class VercelMcpProvider extends BaseMcpProvider {
+  readonly name = 'vercel';
+}
+
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
   readonly name = 'vercel';
+
+  readonly mcp = new VercelMcpProvider();
 
   /**
    * Creates a new instance of the VercelProvider.

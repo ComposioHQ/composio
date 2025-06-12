@@ -16,15 +16,22 @@ import {
   BaseNonAgenticProvider,
   ToolExecuteParams,
   ExecuteToolFnOptions,
+  BaseMcpProvider,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
+
+export class CloudflareMcpProvider extends BaseMcpProvider {
+  readonly name = 'cloudflare';
+}
 
 export class CloudflareProvider extends BaseNonAgenticProvider<
   AiToolCollection,
   AiTextGenerationToolInput
 > {
   readonly name = 'cloudflare';
+
+  readonly mcp = new CloudflareMcpProvider();
 
   /**
    * Creates a new instance of the CloudflareProvider.

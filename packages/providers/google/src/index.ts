@@ -13,6 +13,7 @@ import {
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
+  BaseMcpProvider,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -36,12 +37,18 @@ export interface GoogleGenAIFunctionCall {
  */
 export type GoogleGenAIToolCollection = GoogleTool[];
 
+export class GoogleMcpProvider extends BaseMcpProvider {
+  readonly name = 'google';
+}
+
 /**
  * Google GenAI Provider for Composio SDK
  * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
 export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
   readonly name = 'google';
+
+  readonly mcp = new GoogleMcpProvider();
 
   /**
    * Creates a new instance of the GoogleProvider.

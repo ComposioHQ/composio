@@ -14,6 +14,7 @@ import {
   ExecuteToolFnOptions,
   ToolExecuteParams,
   logger,
+  BaseMcpProvider,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -41,6 +42,9 @@ export type AnthropicContentBlock = {
   [key: string]: unknown;
 };
 
+export class AnthropicMcpProvider extends BaseMcpProvider {
+  readonly name = 'anthropic';
+}
 /**
  * Anthropic Provider implementation for Composio
  */
@@ -51,6 +55,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
 
+  readonly mcp = new AnthropicMcpProvider();
   /**
    * Creates a new instance of the AnthropicProvider.
    *

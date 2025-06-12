@@ -16,6 +16,7 @@ import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { LogLevel } from '@composio/client/client';
+import { MCPCreateConfig, MCPAuthOptions } from './types/mcp.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
@@ -44,10 +45,6 @@ export type ComposioConfig<
 export class BaseMcpProvider extends McpProvider {
   setup(client: ComposioClient): void {
     this.client = client;
-  }
-
-  get({ userIds, connectedAccountIds }: { userIds: string[], connectedAccountIds: string[] }): Promise<{url: string}[]> {
-    throw new Error('Not implemented');
   }
 }
 
