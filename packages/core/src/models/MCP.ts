@@ -2,7 +2,7 @@
  * @fileoverview MCP class for Composio SDK, used to manage MCP servers.
  *
  * @author Apoorv Taneja <apoorv@composio.dev>
- * @date 2025-06-11
+ * @date 2025-06-12
  * @module MCP
  */
 import ComposioClient from '@composio/client';
@@ -12,7 +12,6 @@ import {
   MCPCreateMethodResponse,
   MCPCreateConfig,
   MCPAuthOptions,
-  MCPInstanceParams
 } from '../types/mcp.types';
 import {
   McpCreateResponse,
@@ -20,7 +19,8 @@ import {
   McpUpdateResponse,
   McpDeleteResponse,
   CustomCreateResponse,
-} from '@composio/client/src/resources/mcp';
+  GenerateURLParams
+} from '@composio/client/resources/mcp';
 
 /**
  * MCP (Model Control Protocol) class
@@ -47,8 +47,8 @@ export class MCP {
    * const mcpConfig = await composio.mcp.create("my-mcp-server", {
    *   toolkits: ["SUPABASE", "GMAIL"]
    * }, {
-   *   managedAuthInMCP: true,
-   *   authConfigId: ["auth_cfg_123"]
+   *   useManagedAuthByComposio: true,
+   *   authConfigIds: ["auth_cfg_123"]
    * });
    * 
    * // Create a server with specific tools
@@ -57,14 +57,14 @@ export class MCP {
    * });
    * 
    * // Get MCP server instance for a user
-   * const mcpServer = await mcpConfig.get(
-   *   "user_123",
-   *   ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
-   *   {
-   *     managedAuthInMCP: true,
-   *     authConfigId: ["auth_cfg_123"]
-   *   }
-   * );
+   * const mcpServer = await mcpConfig.get({
+   *   userId: "user_123",
+   *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
+   *  }, {
+   *   useManagedAuthByComposio: true,
+   *   authConfigIds: ["auth_cfg_123"]
+   * }
+   * });
    * ```
    */
   async create(
@@ -79,29 +79,27 @@ export class MCP {
           name,
           toolkits: config.toolkits || [],
           custom_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuth || false,
-          auth_config_id: [...(authOptions?.authConfigId || [])]
+          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+          auth_config_ids: authOptions?.authConfigIds || []
         })
       : await this.client.mcp.create({
           name,
           allowed_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuth || false,
-          auth_config_id: [...(authOptions?.authConfigId || [])]
+          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+          auth_config_ids: authOptions?.authConfigIds || []
         });
 
     // Add get method to response
     return {
       ...response,
-      get: async ({ userId, connectedAccountIds }: { userId: string; connectedAccountIds?: string[] }, authOptions?: MCPAuthOptions) => {
-        const options: MCPInstanceParams = {
-          serverId: response.id,
-          userId,
-          connectedAccountIds,
-          use_managed_auth: authOptions?.useManagedAuth || false,
-          auth_config_ids: authOptions?.authConfigId || []
+      get: async ({ userIds, connectedAccountIds }: { userIds?: string[]; connectedAccountIds?: string[] }, authOptions?: MCPAuthOptions) => {
+        const options: GenerateURLParams = {
+          mcp_server_id: response.id,
+          user_ids: userIds || [],
+          connected_account_ids: connectedAccountIds || [],
+          managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false,
         };
-        // add the api endpoint to generate the links
-        // return this.client.mcp.getInstance(options);
+        return await this.client.mcp.generate.url(options);
       }
     };
   }
@@ -128,7 +126,7 @@ export class MCP {
    * // List Gmail and Supabase servers
    * const filteredServers = await composio.mcp.list({
    *   toolkits: ['GMAIL', 'SUPABASE'],
-   *   authConfigs: ['auth_123', 'auth_456']
+   *   authConfigIds: ['auth_123', 'auth_456']
    * });
    * ```
    */
@@ -139,17 +137,13 @@ export class MCP {
     authConfigs?: string[];
     name?: string;
   }): Promise<McpListResponse> {
-    // Validate that at least one filter is provided
-    if (!options.toolkits?.length && !options.authConfigs?.length && !options.name) {
-      throw new Error('At least one filter (toolkits, authConfigs, or name) must be provided');
-    }
 
     return this.client.mcp.list({
-      page: options.page,
-      limit: options.limit,
-      toolkits: options.toolkits,
-      auth_configs: options.authConfigs,
-      name: options.name,
+      page_no: options.page || 1,
+      limit: options.limit || 10,
+      toolkits: options?.toolkits || [],
+      auth_config_ids: options?.authConfigs || [],
+      name: options?.name,
     });
   }
 
@@ -196,11 +190,10 @@ export class MCP {
    *   "my-updated-server",
    *   {
    *     toolkits: ["SUPABASE", "GMAIL"],
-   *     // OR tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
+   *     tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
    *   },
    *   {
-   *     managedAuthInMCP: true,
-   *     authConfigId: ["auth_cfg_123"]
+   *     useManagedAuthByComposio: true,
    *   }
    * );
    * ```
@@ -214,9 +207,8 @@ export class MCP {
     return this.client.mcp.update(id, {
       name,
       toolkits: config.toolkits,
-      tools: config.tools,
-      use_managed_auth: authOptions?.useManagedAuth,
-      auth_config_ids: authOptions?.authConfigId,
+      allowed_tools: config.tools,
+      managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
     });
   }
 }

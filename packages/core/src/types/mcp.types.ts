@@ -1,4 +1,4 @@
-import { CustomCreateResponse, McpCreateResponse } from '@composio/client/resources/mcp';
+import { CustomCreateResponse, McpCreateResponse, GenerateURLResponse } from '@composio/client/resources/mcp';
 import { z } from 'zod';
 
 /**
@@ -10,35 +10,15 @@ export type MCPCreateConfig = {
 };
 
 export type MCPAuthOptions = {
-  useManagedAuth?: boolean;
-  authConfigId?: string[];
-};
-
-/**
- * Client API Parameter Types
- */
-export type MCPCreateParams = {
-  name: string;
-  toolkit?: string;
-  allowed_tools?: string[];
-  use_managed_auth?: boolean;
-  auth_config_ids?: string[];
-};
-
-export type MCPCustomCreateParams = {
-  name: string;
-  toolkits: string[];
-  custom_tools: string[];
-  use_managed_auth?: boolean;
-  auth_config_ids?: string[];
+  useManagedAuthByComposio?: boolean;
+  authConfigIds?: string[];
 };
 
 export type MCPInstanceParams = {
   serverId: string;
-  userId: string;
+  userIds?: string[];
   connectedAccountIds?: string[];
   use_managed_auth?: boolean;
-  auth_config_ids?: string[];
 };
 /**
  * MCP Server Type (Single App)
@@ -107,11 +87,11 @@ export type MCPServerCreateResponse = z.infer<typeof MCPServerCreateResponseSche
 export type MCPCreateMethodResponse = (McpCreateResponse | CustomCreateResponse) & {
   get: (
     params: { 
-      userId: string; 
+      userIds?: string[]; 
       connectedAccountIds?: string[]; 
     },
     authOptions?: MCPAuthOptions
-  ) => Promise<any>;
+  ) => Promise<GenerateURLResponse>;
 };
 
 

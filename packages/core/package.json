@@ -36,7 +36,7 @@
     "@composio/json-schema-to-zod": "workspace:*"
   },
   "dependencies": {
-    "@composio/client": "",
+    "@composio/client": "0.1.0-alpha.21",
     "@composio/json-schema-to-zod": "0.1.1",
     "chalk": "^5.4.1",
     "openai": "^4.94.0",

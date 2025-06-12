@@ -350,8 +350,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: github:stainless-sdks/composio-sdk-typescript
-        version: git+https://git@github.com:stainless-sdks/composio-sdk-typescript.git#88f56c27f3277c9623c5ce76641adb60ea8a8e19
+        specifier: 0.1.0-alpha.21
+        version: 0.1.0-alpha.21
       '@composio/json-schema-to-zod':
         specifier: 0.1.1
         version: 0.1.1
@@ -782,9 +782,8 @@ packages:
   '@cloudflare/workers-types@4.20250515.0':
     resolution: {integrity: sha512-KoHFMH04gOXp3KEI+wrFIU+3ZfoSXnwqZTpybNQjalHoN3pWjtWBb/030cCRAZ639YX+DAHAxNF7AvEYGz1oaA==}
 
-  '@composio/client@git+https://git@github.com:stainless-sdks/composio-sdk-typescript.git#88f56c27f3277c9623c5ce76641adb60ea8a8e19':
-    resolution: {commit: 88f56c27f3277c9623c5ce76641adb60ea8a8e19, repo: git@github.com:stainless-sdks/composio-sdk-typescript.git, type: git}
-    version: 0.1.0-alpha.17
+  '@composio/client@0.1.0-alpha.21':
+    resolution: {integrity: sha512-XNIQOcgxEyEFJU9rlLt+PsxR1sM7wj/YI2uWnJqMzC1ocRdqyoQdQpmnRxwyzkNP6+0eX6ICsjE3B9rRT2hpqQ==}
 
   '@composio/json-schema-to-zod@0.1.1':
     resolution: {integrity: sha512-bSZbYtwKSRGURERoF8R/fR2QpYD397aR7qqp2PezzOtlCPvE95Bzci8slwTiuXvvt6lrgoA7M7jkOipoceo0sw==}
@@ -5043,7 +5042,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250515.0': {}
 
-  '@composio/client@git+https://git@github.com:stainless-sdks/composio-sdk-typescript.git#88f56c27f3277c9623c5ce76641adb60ea8a8e19': {}
+  '@composio/client@0.1.0-alpha.21': {}
 
   '@composio/json-schema-to-zod@0.1.1':
     dependencies:
