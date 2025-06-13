@@ -52,7 +52,15 @@ const createResponse = await composio.triggers.create("GITHUB_STAR_ADDED_EVENT",
 });
 ```
 ```python Python
-
+instance = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    connected_account_id="ca_abc1234",
+    trigger_config={
+        "repo": "composio",
+        "owner": "composiohq",
+    },
+)
+print(instance)
 ```
 </CodeGroup>
 
@@ -75,7 +83,25 @@ const createResponse = await composio.triggers.create("GITHUB_STAR_ADDED_EVENT",
 });
 ```
 ```python Python
+# Fetch connected account for user
+user_id = "user@acme.com"
+connected_accounts = composio.connected_accounts.list(user_ids=[user_id], limit=1).items
+if len(connected_accounts) == 0:
+    raise ValueError("No connected account found")
 
+# Get the first connected account
+connected_account = connected_accounts[0]
+
+# Create a trigger instance
+instance = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    connected_account_id=connected_account.id,
+    trigger_config={
+        "repo": "composio",
+        "owner": "composiohq",
+    },
+)
+print(instance)
 ```
 </CodeGroup>
 
@@ -100,7 +126,13 @@ await composio.triggers.subscribe(
 )
 ```
 ```python Python
+# Subscribe to a trigger
+subscription = composio.triggers.subscribe()
 
+# Define a handler
+@subscription.handle(toolkit="GITHUB", user_id=user_id)
+def handle_github_event(data):
+    print(data)
 ```
 </CodeGroup>
 
@@ -114,7 +146,9 @@ const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
 console.log(triggerType.payload);
 ```
 ```python Python
-
+# Get a trigger by id
+trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+print(trigger.payload)
 ```
 </CodeGroup>
 
@@ -131,18 +165,12 @@ The dashboard will show you the trigger configuration to fill in.
 ```typescript TypeScript
 const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
 
-console.log(triggerType.config.properties);
-
-await composio.triggers.create("GITHUB_STAR_ADDED_EVENT", {
-  connectedAccountId: "ca_1DirCHFzH7v4",
-  triggerConfig: {
-    owner: "composiohq",
-    repo: "composio",
-  },
-});
+console.log(triggerType.config);
 ```
 ```python Python
-
+# Get a trigger by id
+trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+print(trigger.config)
 ```
 </CodeGroup>
 
@@ -158,6 +186,14 @@ await composio.triggers.create("GITHUB_PULL_REQUEST_EVENT", {
 });
 ```
 ```python Python
+instance = composio.triggers.create(
+    slug="GITHUB_PULL_REQUEST_EVENT",
+    connected_account_id="ca_abc1234",
+    trigger_config={
+        "repo": "composio",
+        "owner": "composiohq",
+    },
+)
 ```
 </CodeGroup>
 
@@ -170,7 +206,9 @@ In cases where the trigger isn't required for the system, it can be disabled.
 await composio.triggers.disable("ti_So9EQf8XnAcy");
 ```
 ```python Python
-
+# Disable a trigger instance
+disabled_instance = composio.triggers.disable(trigger_id="ti_So9EQf8XnAcy")
+print(disabled_instance)
 ```
 </CodeGroup>
 
@@ -181,7 +219,8 @@ If needed, the trigger can be enabled again.
 await composio.triggers.enable("ti_So9EQf8XnAcy");
 ```
 ```python Python
-
+# Enable a trigger instance
+enabled_instance = composio.triggers.enable(trigger_id="ti_So9EQf8XnAcy")
+print(enabled_instance)
 ```
 </CodeGroup>
-
