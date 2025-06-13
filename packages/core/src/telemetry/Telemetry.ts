@@ -43,7 +43,8 @@ export class TelemetryTransport {
   private readonly telemetryServiceName = 'sdk';
   private readonly telemetryLanguage = 'typescript';
 
-  private batchProcessor = new BatchProcessor(100, 10, async (data: TelemetryMetricPayloadBody) => {
+  private batchProcessor = new BatchProcessor(200, 10, async (data: TelemetryMetricPayloadBody) => {
+    logger.debug('Sending batch of telemetry metrics', data);
     await TelemetryService.sendMetric(data as TelemetryPayload[]);
   });
 
@@ -214,6 +215,7 @@ export class TelemetryTransport {
    */
   async sendMetric(payload: TelemetryMetricPayloadBody) {
     if (!this.shouldSendTelemetry()) {
+      logger.debug('Telemetry is disabled, skipping metric telemetry', payload);
       return;
     }
     try {
@@ -226,6 +228,7 @@ export class TelemetryTransport {
   // @TODO: check if this will send the error telemetry to the server
   async sendErrorTelemetry(payload: TelemetryPayload) {
     if (!this.shouldSendTelemetry()) {
+      logger.debug('Telemetry is disabled, skipping metric telemetry', payload);
       return;
     }
     try {

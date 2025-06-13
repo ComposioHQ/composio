@@ -7,6 +7,7 @@ import type {
   TelemetryMetricPayloadBody,
   TelemetryMetricMetadata,
 } from '../../src/services/telemetry/TelemetryService.types';
+import { TelemetryMetadata } from '../../src/types/telemetry.types';
 
 // Helper to create a mock telemetry payload
 const createPayload = (overrides: Partial<TelemetryPayload> = {}): TelemetryPayload => ({
@@ -70,7 +71,7 @@ describe('TelemetryTransport', () => {
   let transport: TelemetryTransport;
   let sendMetricSpy: any;
   let sendErrorLogSpy: any;
-  const metadata: TelemetryMetricMetadata = {
+  const metadata: TelemetryMetadata = {
     apiKey: 'test-key',
     baseUrl: 'http://localhost',
     version: '1.0.0',
