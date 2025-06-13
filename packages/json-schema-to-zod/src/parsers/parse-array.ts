@@ -4,6 +4,7 @@ import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 import { its } from '../utils/its';
+import { JSONSchema4TypeName, JSONSchema7TypeName } from 'json-schema';
 
 type MetadataFields =
   | keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'>
@@ -30,7 +31,7 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
 
     // Create new schema with combined types
     const newSchema: JsonSchemaObject = {
-      type: Array.from(types),
+      type: Array.from(types) as JSONSchema7TypeName[],
       ...(items && { items }),
     };
 
