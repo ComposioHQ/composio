@@ -14,7 +14,7 @@ import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
-import { MCPAuthOptions, MCPCreateConfig } from '../types/mcp.types';
+import { MCPAuthOptions } from '../types/mcp.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;

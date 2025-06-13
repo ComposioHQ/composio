@@ -4,14 +4,19 @@ import { z } from 'zod';
 /**
  * MCP Create Method Input Types
  */
-export type MCPCreateConfig = {
-  toolkits?: string[];
-  tools?: string[];
+export type MCPToolkitConfig = {
+  toolkit: string;
+  authConfigId: string;
+  allowedTools: string[];
 };
 
 export type MCPAuthOptions = {
   useManagedAuthByComposio?: boolean;
-  authConfigIds?: string[];
+};
+
+export type MCPGetServerParams = {
+  user_id?: string;
+  connected_account_ids?: Record<string, string>;
 };
 
 export type MCPInstanceParams = {
@@ -89,16 +94,11 @@ export type MCPServerCreateResponse = z.infer<typeof MCPServerCreateResponseSche
 
 /**
  * MCP Create Method Response Type
- * Extends the API response with a get method for retrieving server instances
+ * Extends the API response with a getServer method for retrieving server instances
  */
-export type MCPCreateMethodResponse = (McpCreateResponse | CustomCreateResponse) & {
-  get: (
-    params: { 
-      userIds?: string[]; 
-      connectedAccountIds?: string[]; 
-    },
-    authOptions?: MCPAuthOptions
-  ) => Promise<GenerateURLResponse>;
+export type MCPCreateMethodResponse<T = GenerateURLResponse> = (McpCreateResponse | CustomCreateResponse) & {
+  toolkits: string[];
+  getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
 

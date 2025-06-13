@@ -22,29 +22,30 @@ type VercelToolCollection = Record<string, VercelTool>;
 export class VercelMcpProvider extends BaseMcpProvider {
   readonly name = 'vercel';
 
-  // async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<McpServerCreateResponse>{
-  //   const parentOutput = await super.create(name, config, authOptions);
-  //   return {
-  //     ...parentOutput,
-  //     get: async (params) => {
-  //       const mcpServers = await parentOutput.get(params);
 
-  //       const finalMCPServers = Array.isArray(mcpServers) ? mcpServers : [mcpServers];
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<McpServerCreateResponse>{
+    const parentOutput = await super.create(name, config, authOptions);
+    return {
+      ...parentOutput,
+      get: async (params) => {
+        const mcpServers = await parentOutput.get(params);
 
-  //       const mcpClients = await Promise.all(finalMCPServers.map(async server => {
-  //         const transport = new StreamableHTTPClientTransport(new URL(server.url.toString()));
-  //         const client = await experimental_createMCPClient({
-  //           transport,
-  //           name: server.name
-  //         });
+        const finalMCPServers = Array.isArray(mcpServers) ? mcpServers : [mcpServers];
 
-  //         return client.tools();
-  //       }))
+        const mcpClients = await Promise.all(finalMCPServers.map(async server => {
+          const transport = new StreamableHTTPClientTransport(new URL(server.url.toString()));
+          const client = await experimental_createMCPClient({
+            transport,
+            name: server.name
+          });
+
+          return client.tools();
+        }))
         
-  //       return mcpClients.flat();
-  //     }
-  //   }
-  // }
+        return mcpClients.flat();
+      }
+    } 
+  }
 }
 
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {

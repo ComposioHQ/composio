@@ -16,7 +16,6 @@ import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { LogLevel } from '@composio/client/client';
-import { MCPCreateConfig, MCPAuthOptions } from './types/mcp.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,

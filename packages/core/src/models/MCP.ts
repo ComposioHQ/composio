@@ -10,8 +10,9 @@ import { telemetry } from '../telemetry/Telemetry';
 import {
   MCPGenerateURLParams,
   MCPCreateMethodResponse,
-  MCPCreateConfig,
+  MCPToolkitConfig,
   MCPAuthOptions,
+  MCPGetServerParams
 } from '../types/mcp.types';
 import {
   McpCreateResponse,
@@ -37,65 +38,85 @@ export class MCP {
   /**
    * Create a new MCP server
    * @param {string} name - Unique name for the MCP server
-   * @param {MCPCreateConfig} config - Server configuration
+   * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Authentication configuration options
    * @returns {Promise<MCPCreateMethodResponse>} Created server details with instance getter
    * 
    * @example
    * ```typescript
-   * // Create a server with multiple toolkits
-   * const mcpConfig = await composio.mcp.create("my-mcp-server", {
-   *   toolkits: ["SUPABASE", "GMAIL"]
-   * }, {
-   *   useManagedAuthByComposio: true,
-   *   authConfigIds: ["auth_cfg_123"]
-   * });
+   * const cfg = await composio.mcp.create(
+   *   "personal-mcp-server",
+   *   [
+   *     {
+   *       toolkit: "GMAIL",
+   *       authConfigId: "ac_sdhkjfhjksdk",
+   *       allowedTools: ["GMAIL_FETCH_EMAILS"],
+   *     },
+   *   ],
+   *   { useManagedAuthByComposio: true },
+   * );
    * 
-   * // Create a server with specific tools
-   * const mcpConfig = await composio.mcp.create("my-tools-server", {
-   *   tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
+   * // Get server instance
+   * const server = await cfg.getServer({
+   *   connected_account_ids: {
+   *     "gmail": "acc_123",
+   *     "supabase": "acc_456"
+   *   }
    * });
-   * 
-   * // Get MCP server instance for a user
-   * const mcpServer = await mcpConfig.get({
-   *   userIds: ["user_123"],
-   *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
-   *  }, {
-   *   useManagedAuthByComposio: true,
-   * }
+   * // OR
+   * const server = await cfg.getServer({
+   *   user_id: "user_123"
    * });
    * ```
    */
   async create(
     name: string,
-    config: MCPCreateConfig,
+    toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
   ): Promise<MCPCreateMethodResponse> {
-    // If there are multiple toolkits, we need to create a custom MCP server
-    const isMultiApp = !!config.toolkits?.length;
-    const mcpServerCreatedResponse: McpCreateResponse | CustomCreateResponse = isMultiApp 
-      ? await this.client.mcp.custom.create({
-          name,
-          toolkits: config.toolkits || [],
-          custom_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-          auth_config_ids: authOptions?.authConfigIds || []
-        })
-      : await this.client.mcp.create({
-          name,
-          allowed_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-          auth_config_ids: authOptions?.authConfigIds || []
-        });
+    // Check for unique toolkits
+    const toolkits = toolkitConfigs.map(config => config.toolkit);
+    const uniqueToolkits = new Set(toolkits);
+    if (uniqueToolkits.size !== toolkits.length) {
+      throw new Error('Duplicate toolkits are not allowed. Each toolkit must be unique.');
+    }
 
-    // Add get method to response
+    // Create a custom MCP server with the toolkit configurations
+    const mcpServerCreatedResponse: CustomCreateResponse = await this.client.mcp.custom.create({
+      name,
+      toolkits: toolkits,
+      custom_tools: toolkitConfigs.flatMap(config => config.allowedTools),
+      managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+      auth_config_ids: toolkitConfigs.map(config => config.authConfigId)
+    });
+
+    // Add getServer method to response
     return {
       ...mcpServerCreatedResponse,
-      get: async (params: MCPGenerateURLParams): Promise<GenerateURLResponse> => {  
+      toolkits,
+      getServer: async (params: MCPGetServerParams): Promise<GenerateURLResponse> => {
+        // Validate that only one of user_id or connected_account_ids is provided
+        if (params.user_id && params.connected_account_ids) {
+          throw new Error('Cannot specify both user_id and connected_account_ids. Please provide only one.');
+        }
+
+        if (!params.user_id && !params.connected_account_ids) {
+          throw new Error('Must provide either user_id or connected_account_ids.');
+        }
+
+        // If connected_account_ids is provided, verify toolkit names
+        if (params.connected_account_ids) {
+          const providedToolkits = Object.keys(params.connected_account_ids);
+          const invalidToolkits = providedToolkits.filter(toolkit => !toolkits.includes(toolkit));
+          if (invalidToolkits.length > 0) {
+            throw new Error(`Invalid toolkits provided: ${invalidToolkits.join(', ')}. Available toolkits are: ${toolkits.join(', ')}`);
+          }
+        }
+
         const generateURLParams = {
           mcp_server_id: mcpServerCreatedResponse.id,
-          user_ids: params.userIds || [],
-          connected_account_ids: params.connectedAccountIds || [],
+          user_ids: params.user_id ? [params.user_id] : [],
+          connected_account_ids: params.connected_account_ids ? Object.values(params.connected_account_ids) : [],
           managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false
         }
         return this.client.mcp.generate.url(generateURLParams);
@@ -178,7 +199,7 @@ export class MCP {
    * Update an MCP server configuration
    * @param {string} id - Server UUID
    * @param {string} name - New unique name for the server
-   * @param {MCPCreateConfig} config - Updated server configuration
+   * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Updated authentication options
    * @returns {Promise<McpUpdateResponse>} Updated server details
    * 
@@ -187,10 +208,13 @@ export class MCP {
    * const updatedServer = await composio.mcp.update(
    *   "server-uuid",
    *   "my-updated-server",
-   *   {
-   *     toolkits: ["SUPABASE", "GMAIL"],
-   *     tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
-   *   },
+   *   [
+   *     {
+   *       toolkit: "GMAIL",
+   *       authConfigId: "ac_sdhkjfhjksdk",
+   *       allowedTools: ["GMAIL_FETCH_EMAILS"],
+   *     },
+   *   ],
    *   {
    *     useManagedAuthByComposio: true,
    *   }
@@ -200,13 +224,20 @@ export class MCP {
   async update(
     id: string,
     name: string,
-    config: MCPCreateConfig,
+    toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
   ): Promise<McpUpdateResponse> {
+    // Check for unique toolkits
+    const toolkits = toolkitConfigs.map(config => config.toolkit);
+    const uniqueToolkits = new Set(toolkits);
+    if (uniqueToolkits.size !== toolkits.length) {
+      throw new Error('Duplicate toolkits are not allowed. Each toolkit must be unique.');
+    }
+
     return this.client.mcp.update(id, {
       name,
-      toolkits: config.toolkits,
-      allowed_tools: config.tools,
+      toolkits: toolkits,
+      allowed_tools: toolkitConfigs.flatMap(config => config.allowedTools),
       managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
     });
   }

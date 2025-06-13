@@ -12,28 +12,58 @@ import { MastraProvider } from '@composio/mastra';
 import { Composio } from '@composio/core';
 import 'dotenv/config';
 import { MCPClient } from '@mastra/mcp';
- 
+import type { MastraMCPServerDefinition } from '@mastra/mcp';
+import type { BaseComposioProvider } from '@composio/core/src/provider/BaseProvider';
 
 /**
  * Initialize Composio
  */
 const composio = new Composio({
   apiKey: "e0tfgmol8f6iw0v0ttq0e",
-  provider: new MastraProvider()
+  provider: new MastraProvider(),
 });
 
-const mcpConfig = await composio.mcp.create("random-name-" + Date.now(), {
-  toolkits: ["gmail"],
+// Create an MCP server with Gmail toolkit
+const mcpConfig = await composio.mcp.create(
+  "random-name-" + Date.now(),
+  [
+    {
+      toolkit: "gmail",
+      authConfigId: "ac_default",
+      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+    }
+  ],
+  { useManagedAuthByComposio: true }
+);
+
+// Get server instance for a user
+const userResponse = await mcpConfig.getServer({
+  user_id: "soham"
 });
 
-const mcpServers = await mcpConfig.get({
-  userIds: ["soham","apoorv"],
+console.log("Server instances for user:", userResponse);
+
+// Or get server instances with connected accounts
+const accountResponse = await mcpConfig.getServer({
+  connected_account_ids: {
+    "gmail": "acc_123"
+  }
 });
 
-console.log(mcpServers);
+console.log("Server instances for connected accounts:", accountResponse);
 
+// Initialize MCPClient with the server URLs
 const mastra = new MCPClient({
-  servers: mcpServers
+  servers: {
+    // For user-based servers
+    "random-name-soham": {
+      url: (userResponse as unknown as Record<string, { url: URL }>)["random-name-soham"].url
+    },
+    // For account-based servers
+    "random-name-acc_123": {
+      url: (accountResponse as unknown as Record<string, { url: URL }>)["random-name-acc_123"].url
+    }
+  } satisfies Record<string, MastraMCPServerDefinition>
 });
 
 // console.log(await mastra.getTools());

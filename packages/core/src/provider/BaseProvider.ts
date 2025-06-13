@@ -10,19 +10,15 @@ import {
   McpUpdateResponse,
   McpDeleteResponse,
 } from '@composio/client/resources/mcp';
-import { MCPCreateConfig, MCPAuthOptions, MCPGenerateURLParams } from '../types/mcp.types';
+import { MCPToolkitConfig, MCPAuthOptions, MCPGenerateURLParams, MCPGetServerParams } from '../types/mcp.types';
 
-type McpServerUrlInfo = {
+export type McpServerUrlInfo = {
   url: URL;
-  name: string
+  name: string;
+  toolkit?: string;
 };
 
-type McpServerGetParams = {
-  userIds?: string[];
-  connectedAccountIds?: string[];
-};
-
-type McpServerGetResponse =  McpServerUrlInfo | McpServerUrlInfo[]
+export type McpServerGetResponse = McpServerUrlInfo | McpServerUrlInfo[];
 
 export type McpUrlResponse = {
   connected_account_urls?: string[];
@@ -30,11 +26,9 @@ export type McpUrlResponse = {
   mcp_url: string;
 };
 
-export type McpServerCreateResponse<T = McpServerGetResponse> = {
-  id: string;
-  name: string;
-  url: URL;
-  get: (params: McpServerGetParams) => Promise<T>;
+export type McpServerCreateResponse<T = McpServerGetResponse> = (McpCreateResponse | CustomCreateResponse) & {
+  toolkits: string[];
+  getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
 export abstract class McpProvider<T = McpServerGetResponse> {
@@ -47,92 +41,93 @@ export abstract class McpProvider<T = McpServerGetResponse> {
   /**
    * Create a new MCP server
    * @param {string} name - Unique name for the MCP server
-   * @param {MCPCreateConfig} config - Server configuration
+   * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Authentication configuration options
-   * @returns {Promise<MCPCreateMethodResponse>} Created server details with instance getter
+   * @returns {Promise<McpServerCreateResponse<T>>} Created server details with instance getter
    *
    * @example
    * ```typescript
-   * // Create a server with multiple toolkits
-   * const mcpConfig = await composio.mcp.create("my-mcp-server", {
-   *   toolkits: ["SUPABASE", "GMAIL"]
-   * }, {
-   *   useManagedAuthByComposio: true,
-   *   authConfigIds: ["auth_cfg_123"]
-   * });
-   *
-   * // Create a server with specific tools
-   * const mcpConfig = await composio.mcp.create("my-tools-server", {
-   *   tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
-   * });
-   *
-   * // Get MCP server instance for a user
-   * const mcpServer = await mcpConfig.get({
-   *   userIds: ["user_123"],
-   *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
-   *  }, {
-   *   useManagedAuthByComposio: true,
-   * }
-   * });
+   * const cfg = await composio.mcp.create(
+   *   "personal-mcp-server",
+   *   [
+   *     {
+   *       toolkit: "GMAIL",
+   *       authConfigId: "ac_sdhkjfhjksdk",
+   *       allowedTools: ["GMAIL_FETCH_EMAILS"],
+   *     },
+   *   ],
+   *   { useManagedAuthByComposio: true },
+   * );
    * ```
    */
   async create(
     name: string,
-    config: MCPCreateConfig,
+    toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
   ): Promise<McpServerCreateResponse<T>> {
     if (!this.client) {
       throw new Error('Client not set');
     }
-    // If there are multiple toolkits, we need to create a custom MCP server
-    const isMultiApp = !!config.toolkits?.length;
-    const mcpServerCreatedResponse: McpCreateResponse | CustomCreateResponse = isMultiApp
-      ? await this.client.mcp.custom.create({
-          name,
-          toolkits: config.toolkits || [],
-          custom_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-          auth_config_ids: authOptions?.authConfigIds || [],
-        })
-      : await this.client.mcp.create({
-          name,
-          allowed_tools: config.tools || [],
-          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-          auth_config_ids: authOptions?.authConfigIds || [],
-        });
 
-    // Add get method to response
+    // Check for unique toolkits
+    const toolkits = toolkitConfigs.map(config => config.toolkit);
+    const uniqueToolkits = new Set(toolkits);
+    if (uniqueToolkits.size !== toolkits.length) {
+      throw new Error('Duplicate toolkits are not allowed. Each toolkit must be unique.');
+    }
+
+    // Create a custom MCP server with the toolkit configurations
+    const mcpServerCreatedResponse: CustomCreateResponse = await this.client.mcp.custom.create({
+      name,
+      toolkits: toolkits,
+      custom_tools: toolkitConfigs.flatMap(config => config.allowedTools),
+      managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+      auth_config_ids: toolkitConfigs.map(config => config.authConfigId)
+    });
+
+    // Add getServer method to response
     return {
-      id: mcpServerCreatedResponse.id,
-      url: new URL(mcpServerCreatedResponse.mcp_url),
-      name: mcpServerCreatedResponse.name,
-      get: async (params: MCPGenerateURLParams): Promise<T> => {
-        const { userIds = [], connectedAccountIds = [], useManagedAuthByComposio = false } = params;
-
+      ...mcpServerCreatedResponse,
+      toolkits,
+      getServer: async (params: MCPGetServerParams): Promise<T> => {
         if (!this.client) {
           throw new Error('Client not set');
         }
 
-        if (connectedAccountIds?.length && userIds?.length) {
-          throw new Error(
-            'Cannot generate URL for both userIds and connectedAccountIds at the same time, Please provide either userIds or connectedAccountIds'
-          );
+        // Validate that only one of user_id or connected_account_ids is provided
+        if (params.user_id && params.connected_account_ids) {
+          throw new Error('Cannot specify both user_id and connected_account_ids. Please provide only one.');
         }
 
-        if (!connectedAccountIds?.length && !userIds?.length) {
-          throw new Error('Must provide either userIds or connectedAccountIds');
+        if (!params.user_id && !params.connected_account_ids) {
+          throw new Error('Must provide either user_id or connected_account_ids.');
+        }
+
+        // If connected_account_ids is provided, verify toolkit names
+        if (params.connected_account_ids) {
+          const providedToolkits = Object.keys(params.connected_account_ids);
+          const invalidToolkits = providedToolkits.filter(toolkit => !toolkits.includes(toolkit));
+          if (invalidToolkits.length > 0) {
+            throw new Error(`Invalid toolkits provided: ${invalidToolkits.join(', ')}. Available toolkits are: ${toolkits.join(', ')}`);
+          }
         }
 
         const data = await this.client.mcp.generate.url({
-          user_ids: userIds,
-          connected_account_ids: connectedAccountIds,
+          user_ids: params.user_id ? [params.user_id] : [],
+          connected_account_ids: params.connected_account_ids ? Object.values(params.connected_account_ids) : [],
           mcp_server_id: mcpServerCreatedResponse.id,
-          managed_auth_by_composio: useManagedAuthByComposio || false,
+          managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false,
         });
 
         // Let derived classes handle the response transformation
-        return this.transformGetResponse(data, mcpServerCreatedResponse.name, connectedAccountIds, userIds);
-      },
+        return this.transformGetResponse(
+          data, 
+          mcpServerCreatedResponse.name,
+          params.connected_account_ids ? Object.values(params.connected_account_ids) : undefined,
+          params.user_id ? [params.user_id] : undefined,
+          params.connected_account_ids ? Object.keys(params.connected_account_ids) : undefined
+        );
+      }
     };
   }
 
@@ -140,7 +135,8 @@ export abstract class McpProvider<T = McpServerGetResponse> {
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],
-    userIds?: string[]
+    userIds?: string[],
+    toolkits?: string[]
   ): T;
 
   /**
@@ -201,23 +197,31 @@ export abstract class McpProvider<T = McpServerGetResponse> {
    * Update an MCP server configuration
    * @param {string} id - Server UUID
    * @param {string} name - New unique name for the server
-   * @param {MCPCreateConfig} config - Updated server configuration
+   * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Updated authentication options
    * @returns {Promise<McpUpdateResponse>} Updated server details
    */
   async update(
     id: string,
     name: string,
-    config: MCPCreateConfig,
+    toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
   ): Promise<McpUpdateResponse> {
     if (!this.client) {
       throw new Error('Client not set');
     }
+
+    // Check for unique toolkits
+    const toolkits = toolkitConfigs.map(config => config.toolkit);
+    const uniqueToolkits = new Set(toolkits);
+    if (uniqueToolkits.size !== toolkits.length) {
+      throw new Error('Duplicate toolkits are not allowed. Each toolkit must be unique.');
+    }
+
     return this.client.mcp.update(id, {
       name,
-      toolkits: config.toolkits,
-      allowed_tools: config.tools,
+      toolkits: toolkits,
+      allowed_tools: toolkitConfigs.flatMap(config => config.allowedTools),
       managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
     });
   }
@@ -232,17 +236,20 @@ export class BaseMcpProvider extends McpProvider<McpServerGetResponse> {
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],
-    userIds?: string[]
+    userIds?: string[],
+    toolkits?: string[]
   ): McpServerGetResponse {
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
       }));
     } else if (userIds?.length && data.user_ids_url) {
       return data.user_ids_url.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
       }));
     }
     return {
