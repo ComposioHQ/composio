@@ -6,22 +6,18 @@ declare global {
 }
 
 import { ComposioError as ComposioClientError } from '@composio/client';
-import {
-  TELEMETRY_EVENTS,
-  // TelemetryErrorPayload,
-  TelemetryErrorPayloadParams,
-  TelemetryMetadata,
-  TelemetryPayload,
-  TelemetryPayloadParams,
-} from '../types/telemetry.types';
-import { TELEMETRY_URL } from '../utils/constants';
+import { TELEMETRY_EVENTS, TelemetryMetadata } from '../types/telemetry.types';
 import { getEnvVariable } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
-import { BaseTelemetryTransport } from './TelemetryTransport';
-import { BrowserTelemetryTransport } from './transports/BrowserTransport';
-import { ProcessTelemetryTransport } from './transports/ProcessTransport';
 import { ComposioError } from '../errors/ComposioError';
 import { getRandomUUID } from '../utils/uuid';
+import {
+  TelemetryMetricPayloadBody,
+  TelemetryMetricSource,
+  TelemetryPayload,
+} from '../services/telemetry/TelemetryService.types';
+import { TelemetryService } from '../services/telemetry/TelemetryService';
+import logger from '../utils/logger';
 /**
  * The Telemetry class is used to log the telemetry for any given instance which extends InstrumentedInstance.
  *
@@ -39,35 +35,40 @@ import { getRandomUUID } from '../utils/uuid';
  * telemetry.instrument(composio.triggers);
  *
  */
-export class TelemetryService {
+export class TelemetryTransport {
   private telemetryMetadata!: TelemetryMetadata;
-  private transport!: BaseTelemetryTransport;
   private isTelemetryDisabled: boolean = true;
+  private telemetrySource!: TelemetryMetricSource;
+  private readonly telemetrySourceName = 'typescript-sdk';
+  private readonly telemetryServiceName = 'sdk';
+  private readonly telemetryLanguage = 'typescript';
 
-  private batchProcessor = new BatchProcessor(100, 10, async data => {
-    await this.sendTelemetry(data as TelemetryPayload[]);
+  private batchProcessor = new BatchProcessor(100, 10, async (data: TelemetryMetricPayloadBody) => {
+    await TelemetryService.sendMetric(data as TelemetryPayload[]);
   });
 
-  setup(metadata: TelemetryMetadata, transport?: BaseTelemetryTransport) {
+  setup(metadata: TelemetryMetadata) {
     this.telemetryMetadata = metadata;
     this.isTelemetryDisabled = false;
-
-    const isBrowser = typeof window !== 'undefined';
-    if (transport) {
-      this.transport = transport;
-    } else if (isBrowser) {
-      this.transport = new BrowserTelemetryTransport();
-      this.telemetryMetadata.transport = 'browser';
-    } else {
-      this.transport = new ProcessTelemetryTransport();
-      this.telemetryMetadata.transport = 'process';
-    }
-
+    this.telemetrySource = {
+      name: this.telemetrySourceName,
+      service: this.telemetryServiceName,
+      language: this.telemetryLanguage,
+      version: this.telemetryMetadata?.version,
+      platform: this.telemetryMetadata?.isBrowser ? 'browser' : 'node',
+    };
     // send telemetry event for SDK initialization
-    this.sendTelemetry([
+    this.sendMetric([
       {
-        eventName: TELEMETRY_EVENTS.SDK_INITIALIZED,
-        data: {},
+        functionName: TELEMETRY_EVENTS.SDK_INITIALIZED,
+        durationMs: 0,
+        timestamp: Date.now() / 1000,
+        props: {},
+        source: this.telemetrySource,
+        metadata: {
+          provider: this.telemetryMetadata?.provider ?? 'openai',
+        },
+        error: undefined,
       },
     ]);
   }
@@ -101,13 +102,20 @@ export class TelemetryService {
       ) => Promise<unknown>;
 
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
-        const telemetryPayload: TelemetryPayloadParams = {
-          eventName: TELEMETRY_EVENTS.SDK_METHOD_INVOKED,
-          data: {
+        const telemetryPayload: TelemetryPayload = {
+          functionName: `${instrumentedClassName}.${name}`,
+          durationMs: 0,
+          timestamp: Date.now() / 1000,
+          props: {
             fileName: instrumentedClassName,
             method: name,
             params: args,
           },
+          metadata: {
+            provider: this.telemetryMetadata?.provider ?? 'openai',
+          },
+          error: undefined,
+          source: this.telemetrySource,
         };
 
         this.batchProcessor.pushItem(telemetryPayload);
@@ -118,7 +126,7 @@ export class TelemetryService {
           if (error instanceof Error) {
             if (!error.errorId) {
               error.errorId = getRandomUUID();
-              this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+              await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
             }
           }
           throw error;
@@ -134,14 +142,12 @@ export class TelemetryService {
    * @returns true if the telemetry should be sent, false otherwise
    */
   private shouldSendTelemetry() {
-    const devEnvironments = ['test', 'development', 'CI'];
+    const telemetryDisabledEnvironments = ['test', 'ci'];
     const nodeEnv = (getEnvVariable('NODE_ENV', 'development') || '').toLowerCase();
-    const isDevEnvironment = devEnvironments.includes(nodeEnv);
+    const isDisabledEnvironment = telemetryDisabledEnvironments.includes(nodeEnv);
     const isTelemetryDisabledByEnv = getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
 
-    return (
-      this.transport && !this.isTelemetryDisabled && !isTelemetryDisabledByEnv && !isDevEnvironment
-    );
+    return !this.isTelemetryDisabled && !isTelemetryDisabledByEnv && !isDisabledEnvironment;
   }
 
   /**
@@ -153,45 +159,52 @@ export class TelemetryService {
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
    */
-  private prepareAndSendErrorTelemetry(
+  private async prepareAndSendErrorTelemetry(
     error: unknown,
     instrumentedClassName: string,
     name: string,
     args: unknown[]
   ) {
+    const telemetryPayload: TelemetryPayload = {
+      functionName: `${instrumentedClassName}.${name}`,
+      durationMs: 0,
+      timestamp: Date.now() / 1000,
+      props: {
+        fileName: instrumentedClassName,
+        method: name,
+        params: args,
+      },
+      metadata: {
+        provider: this.telemetryMetadata?.provider ?? 'openai',
+      },
+      source: this.telemetrySource,
+    };
     // client error, this is likely handled by the API itseld
     if (error instanceof ComposioClientError) {
-      const telemetryPayload: TelemetryErrorPayloadParams = {
-        error_id: error.errorId || '',
-        error_message: error.message,
-        original_error: error.cause || error,
-        current_stack: error.stack ? error.stack.split('\n') : [],
-        description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
+      telemetryPayload.error = {
+        errorId: error.errorId,
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
       };
-      this.sendErrorTelemetry(telemetryPayload);
     } else if (error instanceof ComposioError) {
-      // Composio SDK Errors
-      const telemetryPayload: TelemetryErrorPayloadParams = {
-        error_id: error.errorId || '',
-        error_message: error.message,
-        original_error: error.cause || error,
-        current_stack: error.stack ? error.stack.split('\n') : [],
-        error_code: error.code,
-        possible_fix: error.possibleFixes?.join('\n'),
-        description: `Original Call : ${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
+      telemetryPayload.error = {
+        errorId: error.errorId,
+        name: error.name,
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
       };
-      this.sendErrorTelemetry(telemetryPayload);
     } else if (error instanceof Error) {
-      // Unhandled errors
-      const telemetryPayload: TelemetryErrorPayloadParams = {
-        error_id: error.errorId || '',
-        error_message: error instanceof Error ? error.name : 'Unknown error',
-        original_error: error,
-        current_stack: error.stack ? error.stack.split('\n') : [],
-        description: `Original Call : ${this.telemetryMetadata?.source}:${instrumentedClassName}.${name}(${JSON.stringify(args)})`,
+      telemetryPayload.error = {
+        errorId: error.errorId,
+        name: error.name ?? 'Unknown error',
+        message: error.message,
+        stack: error.stack,
       };
-      this.sendErrorTelemetry(telemetryPayload);
     }
+
+    await this.sendErrorTelemetry(telemetryPayload);
   }
 
   /**
@@ -199,45 +212,29 @@ export class TelemetryService {
    * @param payload - the telemetry payload to send
    * @returns
    */
-  async sendTelemetry(payload: TelemetryPayloadParams[]) {
+  async sendMetric(payload: TelemetryMetricPayloadBody) {
     if (!this.shouldSendTelemetry()) {
       return;
     }
-
-    const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
-
-    const reqPayload = {
-      data: payload.map(p => ({
-        ...p,
-        sdk_meta: this.telemetryMetadata,
-      })),
-      url,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    };
-
-    this.transport.send(reqPayload);
+    try {
+      logger.debug('SDK Metric', payload);
+      await TelemetryService.sendMetric(payload);
+    } catch (error) {
+      logger.error('Error sending metric telemetry', error);
+    }
   }
   // @TODO: check if this will send the error telemetry to the server
-  async sendErrorTelemetry(payload: TelemetryErrorPayloadParams) {
+  async sendErrorTelemetry(payload: TelemetryPayload) {
     if (!this.shouldSendTelemetry()) {
       return;
     }
-
-    const url = `${TELEMETRY_URL}/api/sdk_metrics/error`;
-
-    const reqPayload = {
-      data: {
-        ...payload,
-        sdk_meta: this.telemetryMetadata,
-      },
-      url,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    };
-
-    this.transport.send(reqPayload);
+    try {
+      logger.debug('SDK Error Telemetry', payload);
+      await TelemetryService.sendErrorLog(payload);
+    } catch (error) {
+      logger.error('Error sending error telemetry', error);
+    }
   }
 }
 
-export const telemetry = new TelemetryService();
+export const telemetry = new TelemetryTransport();
