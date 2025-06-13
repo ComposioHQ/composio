@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AuthSchemeEnum } from './authConfigs.types';
 
 /**
  * Toolkit list params
@@ -112,3 +113,14 @@ export type ToolkitCategory = z.infer<typeof ToolkitCategorySchema>;
 export type ToolkitRetrieveCategoriesResponse = z.infer<
   typeof ToolkitRetrieveCategoriesResponseSchema
 >;
+
+export const ToolkitAuthFieldsResponseSchema = z.object({
+  authScheme: AuthSchemeEnum,
+  fields: z.array(
+    ToolkitAuthFieldSchema.extend({
+      required: z.boolean().optional(),
+    })
+  ),
+});
+
+export type ToolkitAuthFieldsResponse = z.infer<typeof ToolkitAuthFieldsResponseSchema>;

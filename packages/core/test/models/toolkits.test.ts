@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Toolkits } from '../../src/models/toolkits';
 import ComposioClient from '@composio/client';
-import { ValidationError } from '../../src/errors/ValidationErrors';
-import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../../src/errors';
 import { telemetry } from '../../src/telemetry/Telemetry';
-import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
+import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -444,6 +442,210 @@ describe('Toolkits', () => {
       expect(mockClient.authConfigs.list).not.toHaveBeenCalled();
       expect(mockClient.authConfigs.create).not.toHaveBeenCalled();
       expect(mockClient.connectedAccounts.initiate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAuthConfigCreationFields', () => {
+    const toolkitSlug = 'test-toolkit';
+    const mockToolkit = {
+      authConfigDetails: [
+        {
+          name: 'oauth2',
+          mode: 'OAUTH2',
+          fields: {
+            authConfigCreation: {
+              required: [{ name: 'client_id' }, { name: 'client_secret' }],
+              optional: [{ name: 'redirect_uri' }],
+            },
+            connectedAccountInitiation: {
+              required: [{ name: 'code' }],
+              optional: [{ name: 'state' }],
+            },
+          },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+    });
+
+    it('returns all fields when requiredOnly is false', async () => {
+      const result = await toolkits.getAuthConfigCreationFields(toolkitSlug, {
+        requiredOnly: false,
+      });
+      expect(result).toEqual({
+        authScheme: 'OAUTH2',
+        fields: [
+          { name: 'client_id', required: true },
+          { name: 'client_secret', required: true },
+          { name: 'redirect_uri', required: false },
+        ],
+      });
+    });
+
+    it('returns only required fields when requiredOnly is true', async () => {
+      const result = await toolkits.getAuthConfigCreationFields(toolkitSlug, {
+        requiredOnly: true,
+      });
+      expect(result).toEqual({
+        authScheme: 'OAUTH2',
+        fields: [
+          { name: 'client_id', required: true },
+          { name: 'client_secret', required: true },
+        ],
+      });
+    });
+
+    it('selects the correct auth config by authScheme', async () => {
+      const multiToolkit = {
+        authConfigDetails: [
+          {
+            name: 'oauth2',
+            mode: 'OAUTH2',
+            fields: {
+              authConfigCreation: {
+                required: [{ name: 'client_id' }],
+                optional: [],
+              },
+              connectedAccountInitiation: {
+                required: [],
+                optional: [],
+              },
+            },
+          },
+          {
+            name: 'api_key',
+            mode: 'API_KEY',
+            fields: {
+              authConfigCreation: {
+                required: [{ name: 'api_key' }],
+                optional: [],
+              },
+              connectedAccountInitiation: {
+                required: [],
+                optional: [],
+              },
+            },
+          },
+        ],
+      };
+      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      const result = await toolkits.getAuthConfigCreationFields(toolkitSlug, {
+        authScheme: AuthSchemeTypes.API_KEY,
+        requiredOnly: true,
+      });
+      expect(result).toEqual({
+        authScheme: 'API_KEY',
+        fields: [{ name: 'api_key', required: true }],
+      });
+    });
+
+    it('throws if no authConfigDetails', async () => {
+      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      await expect(
+        toolkits.getAuthConfigCreationFields(toolkitSlug, { requiredOnly: true })
+      ).rejects.toThrow(ComposioAuthConfigNotFoundError);
+    });
+  });
+
+  describe('getConnectedAccountInitiationFields', () => {
+    const toolkitSlug = 'test-toolkit';
+    const mockToolkit = {
+      authConfigDetails: [
+        {
+          name: 'oauth2',
+          mode: 'OAUTH2',
+          fields: {
+            authConfigCreation: {
+              required: [],
+              optional: [],
+            },
+            connectedAccountInitiation: {
+              required: [{ name: 'code' }],
+              optional: [{ name: 'state' }],
+            },
+          },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      vi.spyOn(Toolkits.prototype as any, 'getToolkitBySlug').mockResolvedValue(mockToolkit as any);
+    });
+
+    it('returns all fields when requiredOnly is false', async () => {
+      const result = await toolkits.getConnectedAccountInitiationFields(toolkitSlug, {
+        requiredOnly: false,
+      });
+      expect(result).toEqual({
+        authScheme: 'OAUTH2',
+        fields: [
+          { name: 'code', required: true },
+          { name: 'state', required: false },
+        ],
+      });
+    });
+
+    it('returns only required fields when requiredOnly is true', async () => {
+      const result = await toolkits.getConnectedAccountInitiationFields(toolkitSlug, {
+        requiredOnly: true,
+      });
+      expect(result).toEqual({
+        authScheme: 'OAUTH2',
+        fields: [{ name: 'code', required: true }],
+      });
+    });
+
+    it('selects the correct auth config by authScheme', async () => {
+      const multiToolkit = {
+        authConfigDetails: [
+          {
+            name: 'oauth2',
+            mode: 'OAUTH2',
+            fields: {
+              authConfigCreation: {
+                required: [],
+                optional: [],
+              },
+              connectedAccountInitiation: {
+                required: [{ name: 'code' }],
+                optional: [],
+              },
+            },
+          },
+          {
+            name: 'api_key',
+            mode: 'API_KEY',
+            fields: {
+              authConfigCreation: {
+                required: [],
+                optional: [],
+              },
+              connectedAccountInitiation: {
+                required: [{ name: 'api_key_code' }],
+                optional: [],
+              },
+            },
+          },
+        ],
+      };
+      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce(multiToolkit);
+      const result = await toolkits.getConnectedAccountInitiationFields(toolkitSlug, {
+        authScheme: AuthSchemeTypes.API_KEY,
+        requiredOnly: true,
+      });
+      expect(result).toEqual({
+        authScheme: 'API_KEY',
+        fields: [{ name: 'api_key_code', required: true }],
+      });
+    });
+
+    it('throws if no authConfigDetails', async () => {
+      (Toolkits.prototype as any).getToolkitBySlug = vi.fn().mockResolvedValueOnce({});
+      await expect(
+        toolkits.getConnectedAccountInitiationFields(toolkitSlug, { requiredOnly: true })
+      ).rejects.toThrow(ComposioAuthConfigNotFoundError);
     });
   });
 });
