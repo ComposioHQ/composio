@@ -145,10 +145,18 @@ class _Request(t.Generic[ModelType]):
                     ] += f" Note: choose value only from following options - {prop['enum']}"
 
             if "anyOf" in prop:
-                typedef, *_ = [
+                # Find the non-null type definition
+                non_null_types = [
                     td for td in prop["anyOf"] if td.get("type", "null") != "null"
                 ]
-                prop["type"] = typedef["type"]
+                if non_null_types:
+                    typedef = non_null_types[0]
+                    # Remove anyOf and copy all properties from the non-null type
+                    prop.pop("anyOf")
+                    # Update the property with all attributes from the non-null type
+                    prop.update(typedef)
+                    # Add nullable flag to indicate this field can be null
+                    prop["nullable"] = True
 
         request["properties"] = properties
         return request
