@@ -173,25 +173,26 @@ class TestToolBuilder:
 
     def test_request_schema_anyof_to_nullable_transformation(self) -> None:
         """Test that anyOf structures with null are converted to nullable properties."""
-        
+
         class Request(BaseModel):
             # Required field (should not be affected)
             required_field: str = Field(..., description="A required field")
-            
+
             # Optional string (should become nullable)
-            optional_string: Optional[str] = Field(None, description="An optional string")
-            
+            optional_string: Optional[str] = Field(
+                None, description="An optional string"
+            )
+
             # Optional array (the main case we're fixing)
             optional_array: Optional[List[str]] = Field(
-                None, 
+                None,
                 description="An optional array of strings",
-                examples=[["item1", "item2"], []]
+                examples=[["item1", "item2"], []],
             )
-            
+
             # Optional nested object
             optional_dict: Optional[Dict[str, str]] = Field(
-                None,
-                description="An optional dictionary"
+                None, description="An optional dictionary"
             )
 
         class Response(BaseModel):
