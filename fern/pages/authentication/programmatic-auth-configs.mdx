@@ -111,8 +111,12 @@ const authFields = toolkits.authConfigDetails?.flatMap(
 
 console.log("Required auth config fields:", authFields);
 ```
-{/* TODO: implement method which returns required fields for a toolkit with given auth scheme */}
 ```python Python maxLines=60  wordWrap
+required_fields = composio.auth_configs.get_required_fields(
+    toolkit="NOTION",
+    auth_scheme="OAUTH2",
+)
+print(required_fields)
 ```
 </CodeGroup>
 
@@ -156,8 +160,33 @@ const authConfig = await composio.authConfigs.create("NOTION", {
   ),
 });
 ```
- {/* TODO: add once the above todo is addressed */}
 ```python Python maxLines=60  wordWrap
+import os
+
+from composio import Composio
+
+composio = Composio()
+
+# Get required fields
+required_fields = [
+    field.name for field in composio.auth_configs.get_required_fields(
+        toolkit="NOTION",
+        auth_scheme="OAUTH2",
+    )
+]
+
+# Read required fields as environment variables
+auth_config = composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "name": "Notion Auth",
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "credentials": {
+            field: os.getenv(f"NOTION_{field.upper()}") for field in required_fields
+        },
+    },
+)
 ```
 </CodeGroup>
 </Accordion>

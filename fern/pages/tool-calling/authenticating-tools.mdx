@@ -177,10 +177,14 @@ detail => detail.fields.connectedAccountInitiation
 );
 console.log(fieldNames); // e.g. ["apiKey"]
 
-````
+```
 
 ```python Python maxLines=60  wordWrap
-
+required_fields = composio.connected_accounts.get_required_fields(
+    toolkit="NOTION",
+    auth_scheme="API_KEY",
+)
+print(required_fields)
 ````
 
 </CodeGroup>
@@ -266,9 +270,33 @@ data: authData,
 
 console.log("Connection request ID:", connectionRequest.id);
 
-````
+```
 ```python Python maxLines=60  wordWrap
+import os
+from composio import Composio
 
+composio = Composio()
+
+# Get required fields
+required_fields = [
+    field.name for field in composio.connected_accounts.get_required_fields(
+        toolkit="NOTION",
+        auth_scheme="API_KEY",
+    )
+]
+print("required_fields: ", required_fields)
+
+# Create a new connected account (API Key)
+connection_request = composio.connected_accounts.initiate(
+    user_id="1234567890",
+    auth_config_id="1234567890",
+    config=auth_scheme.api_key(
+        options={
+            field: os.getenv(f"NOTION_{field.upper()}") for field in required_fields
+        },
+    ),
+)
+print(connection_request)
 ````
 
 </CodeGroup>

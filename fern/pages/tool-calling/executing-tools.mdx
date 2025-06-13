@@ -49,7 +49,32 @@ console.log(result);
 ```
 
 ```python Python (Google) maxLines=60
+import anthropic
 
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+
+# Initialize tools.
+anthropic_client = anthropic.Anthropic()
+composio = Composio(provider=AnthropicProvider())
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
+
+# Get response from the LLM
+response = anthropic_client.messages.create(
+    model="claude-3-opus-20240229",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "gimme me some zen"},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(user_id="default", response=response)
+print(result)
 ```
 </CodeGroup>
 
@@ -191,7 +216,18 @@ const { data } = await composio.tools.proxyExecute({
 console.log(data);
 ```
 ```python Python maxLines=60 wordWrap
-
+response = composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ac_1234",  # use connected account for github
+    parameters=[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "type": "header",
+        },
+    ],
+)
 ```
 </CodeGroup>
 
