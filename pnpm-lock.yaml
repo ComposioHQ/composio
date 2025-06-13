@@ -146,6 +146,25 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/json-schema-to-zod:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.5.0
+      zod-to-json-schema:
+        specifier: ^3.24.5
+        version: 3.24.5(zod@3.25.62)
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.16
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/langchain:
     dependencies:
       '@composio/core':
