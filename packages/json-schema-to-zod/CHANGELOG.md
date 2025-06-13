@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.7
+
+### Patch Changes
+
+- c8e89d5: Fix telemetry transport
+
 ## 0.1.6
 
 ### Patch Changes

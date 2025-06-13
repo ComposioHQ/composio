@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.19
+
+### Patch Changes
+
+- c8e89d5: Fix telemetry transport
+- Updated dependencies [c8e89d5]
+  - @composio/json-schema-to-zod@0.1.7
+
 ## 0.1.18
 
 ### Patch Changes
