@@ -11,10 +11,11 @@ import {
   McpDeleteResponse,
 } from '@composio/client/resources/mcp';
 import { MCPCreateConfig, MCPAuthOptions, MCPGenerateURLParams } from '../types/mcp.types';
+import { MastraCreateResponse } from '@composio/mastra';
 
 type McpServerUrlInfo = {
   url: URL;
-  name: string;
+  name: string
 };
 
 type McpServerGetParams = {
@@ -22,12 +23,15 @@ type McpServerGetParams = {
   connectedAccountIds?: string[];
 };
 
-type McpServerGetResponse = Array<McpServerUrlInfo>;
+type McpServerGetResponse =  McpServerUrlInfo | McpServerUrlInfo[]
+
 
 type McpServerCreateResponse = {
   id: string;
-  get: (params: McpServerGetParams) => Promise<McpServerGetResponse | unknown>;
-};
+  name: string;
+  url: URL;
+  get: (params: McpServerGetParams) => Promise<McpServerGetResponse>;
+} | MastraCreateResponse;
 
 export abstract class McpProvider {
   client?: ComposioClient;
@@ -96,6 +100,8 @@ export abstract class McpProvider {
     // Add get method to response
     return {
       id: mcpServerCreatedResponse.id,
+      url: new URL(mcpServerCreatedResponse.mcp_url),
+      name: mcpServerCreatedResponse.name,
       get: async (params: MCPGenerateURLParams): Promise<McpServerGetResponse> => {
         const { userIds = [], connectedAccountIds = [], useManagedAuthByComposio = false } = params;
 
@@ -121,21 +127,24 @@ export abstract class McpProvider {
         });
 
         if (connectedAccountIds?.length > 0) {
-          return data.connected_account_urls.map((url: string) => {
+          return data.connected_account_urls.map((url: string, index: number) => {
             return {
               url: new URL(url),
-              name: mcpServerCreatedResponse.name,
+              name: `${mcpServerCreatedResponse.name}-${connectedAccountIds[index]}`,
             };
           });
         } else if (userIds?.length > 0) {
-          return data.user_ids_url.map((url: string) => {
+          return data.user_ids_url.map((url: string, index: number) => {
             return {
               url: new URL(url),
-              name: mcpServerCreatedResponse.name,
+              name: `${mcpServerCreatedResponse.name}-${userIds[index]}`,
             };
           });
         }
-        return [];
+        return {
+          url: new URL(data.mcp_url),
+          name: mcpServerCreatedResponse.name,
+        };
       },
     };
   }
@@ -164,8 +173,8 @@ export abstract class McpProvider {
     return this.client.mcp.list({
       page_no: options.page || 1,
       limit: options.limit || 10,
-      toolkits: options?.toolkits || [],
-      auth_config_ids: options?.authConfigs || [],
+      toolkits: options?.toolkits?.join(',') || '',
+      auth_config_ids: options?.authConfigs?.join(',') || '',
       name: options?.name,
     });
   }

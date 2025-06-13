@@ -40,7 +40,7 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.21",
+    "@composio/client": "0.1.0-alpha.22",
     "@composio/json-schema-to-zod": "0.1.1",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "chalk": "^5.4.1",

@@ -28,6 +28,8 @@ export interface MastraUrlMap {
 
 export interface MastraCreateResponse {
   id: string;
+  name: string;
+  url: URL;
   get: (params: MastraGetParams) => Promise<MastraUrlMap>;
 }
 
@@ -39,14 +41,20 @@ export class MastraMcpProvider extends BaseMcpProvider {
     return {
       ...parentOutput,
       get: async (params: MastraGetParams): Promise<MastraUrlMap> => {
-        const mcpServers = await parentOutput.get(params) as Array<{ url: string; name: string }>;
-
-        return mcpServers.reduce((prev: MastraUrlMap, curr) => {
+        const mcpServers = await parentOutput.get(params);
+        if (Array.isArray(mcpServers)) {
+        return mcpServers.reduce((prev, curr) => {
           prev[curr.name] = {
             url: new URL(curr.url),
           };
-          return prev;
-        }, {} as MastraUrlMap);
+            return prev;
+          }, {} as MastraUrlMap);
+        }
+        return {
+          [parentOutput.name]: {
+            url: parentOutput.url,
+          },
+        };
       }
     }
   }

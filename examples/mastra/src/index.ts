@@ -18,25 +18,25 @@ import { MCPClient } from '@mastra/mcp';
  * Initialize Composio
  */
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
+  apiKey: "e0tfgmol8f6iw0v0ttq0e",
   provider: new MastraProvider()
 });
 
 const mcpConfig = await composio.mcp.create("random-name-" + Date.now(), {
   toolkits: ["gmail"],
-  tools: [],
 });
 
 const mcpServers = await mcpConfig.get({
-  userIds: ["soham"],
+  userIds: ["soham","apoorv"],
 });
 
 console.log(mcpServers);
+
 const mastra = new MCPClient({
   servers: mcpServers
 });
 
-console.log(await mastra.getTools());
+// console.log(await mastra.getTools());
 
 // /**
 //  * Get the tools from Composio

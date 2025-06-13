@@ -140,8 +140,8 @@ export class MCP {
     return this.client.mcp.list({
       page_no: options.page || 1,
       limit: options.limit || 10,
-      toolkits: options?.toolkits || [],
-      auth_config_ids: options?.authConfigs || [],
+      toolkits: options?.toolkits?.join(',') || '',
+      auth_config_ids: options?.authConfigs?.join(',') || '',
       name: options?.name,
     });
   }
