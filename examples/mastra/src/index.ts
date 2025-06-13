@@ -11,7 +11,6 @@
 import { MastraProvider } from '@composio/mastra';
 import { Composio } from '@composio/core';
 import 'dotenv/config';
-import { Mastra } from "@mastra/core";
 import { MCPClient } from '@mastra/mcp';
  
 

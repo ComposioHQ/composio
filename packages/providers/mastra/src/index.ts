@@ -17,23 +17,36 @@ export interface MastraToolCollection {
   [key: string]: MastraTool;
 }
 
+export interface MastraGetParams {
+  userIds?: string[];
+  connectedAccountIds?: string[];
+}
+
+export interface MastraUrlMap {
+  [name: string]: { url: URL; }
+}
+
+export interface MastraCreateResponse {
+  id: string;
+  get: (params: MastraGetParams) => Promise<MastraUrlMap>;
+}
+
 export class MastraMcpProvider extends BaseMcpProvider {
   readonly name = 'mastra';
 
-  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<{ id: string; get: (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => Promise<{ [name: string]: { url: URL; } }>; }> {
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<MastraCreateResponse> {
     const parentOutput = await super.create(name, config, authOptions);
     return {
       ...parentOutput,
-      get: async (params: { userIds?: string[]; connectedAccountIds?: string[]; }): Promise<{ [name: string]: { url: URL; } }> => {
+      get: async (params: MastraGetParams): Promise<MastraUrlMap> => {
         const mcpServers = await parentOutput.get(params) as Array<{ url: string; name: string }>;
 
-
-        return mcpServers.reduce((prev: Record<string, { url: URL; }>, curr) => {
+        return mcpServers.reduce((prev: MastraUrlMap, curr) => {
           prev[curr.name] = {
             url: new URL(curr.url),
           };
           return prev;
-        }, {} as { [name: string]: { url: URL; } });
+        }, {} as MastraUrlMap);
       }
     }
   }
