@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { nullable, z } from 'zod';
 
 /**
  * Toolkit is the collection of tools,
@@ -26,7 +26,7 @@ const JSONSchemaType = z.enum([
 
 // JSON Schema property definition
 const JSONSchemaProperty: z.ZodType<unknown> = z.object({
-  type: JSONSchemaType.optional(),
+  type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
   anyOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
   oneOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
@@ -34,9 +34,10 @@ const JSONSchemaProperty: z.ZodType<unknown> = z.object({
   not: z.lazy(() => JSONSchemaProperty).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
+  nullable: z.boolean().optional(),
   properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
   required: z.array(z.string()).optional(),
-  items: z.lazy(() => JSONSchemaProperty).optional(),
+  items: z.lazy(() => z.union([JSONSchemaProperty, z.array(JSONSchemaProperty)])).optional(),
 });
 
 // Schema for parameters (input/output)
@@ -49,6 +50,8 @@ const ParametersSchema = z.object({
   properties: z.record(z.string(), JSONSchemaProperty),
   required: z.array(z.string()).optional(),
   title: z.string().optional(),
+  default: z.any().optional(),
+  nullable: z.boolean().optional(),
   description: z.string().optional(),
   additionalProperties: z.boolean().default(false).optional(),
 });
