@@ -11,7 +11,6 @@ import {
   McpDeleteResponse,
 } from '@composio/client/resources/mcp';
 import { MCPCreateConfig, MCPAuthOptions, MCPGenerateURLParams } from '../types/mcp.types';
-import { MastraCreateResponse } from '@composio/mastra';
 
 type McpServerUrlInfo = {
   url: URL;
@@ -25,15 +24,20 @@ type McpServerGetParams = {
 
 type McpServerGetResponse =  McpServerUrlInfo | McpServerUrlInfo[]
 
+export type McpUrlResponse = {
+  connected_account_urls?: string[];
+  user_ids_url?: string[];
+  mcp_url: string;
+};
 
-type McpServerCreateResponse = {
+export type McpServerCreateResponse<T = McpServerGetResponse> = {
   id: string;
   name: string;
   url: URL;
-  get: (params: McpServerGetParams) => Promise<McpServerGetResponse>;
-} | MastraCreateResponse;
+  get: (params: McpServerGetParams) => Promise<T>;
+};
 
-export abstract class McpProvider {
+export abstract class McpProvider<T = McpServerGetResponse> {
   client?: ComposioClient;
 
   setup(client: ComposioClient): void {
@@ -76,7 +80,7 @@ export abstract class McpProvider {
     name: string,
     config: MCPCreateConfig,
     authOptions?: MCPAuthOptions
-  ): Promise<McpServerCreateResponse> {
+  ): Promise<McpServerCreateResponse<T>> {
     if (!this.client) {
       throw new Error('Client not set');
     }
@@ -102,7 +106,7 @@ export abstract class McpProvider {
       id: mcpServerCreatedResponse.id,
       url: new URL(mcpServerCreatedResponse.mcp_url),
       name: mcpServerCreatedResponse.name,
-      get: async (params: MCPGenerateURLParams): Promise<McpServerGetResponse> => {
+      get: async (params: MCPGenerateURLParams): Promise<T> => {
         const { userIds = [], connectedAccountIds = [], useManagedAuthByComposio = false } = params;
 
         if (!this.client) {
@@ -126,28 +130,18 @@ export abstract class McpProvider {
           managed_auth_by_composio: useManagedAuthByComposio || false,
         });
 
-        if (connectedAccountIds?.length > 0) {
-          return data.connected_account_urls.map((url: string, index: number) => {
-            return {
-              url: new URL(url),
-              name: `${mcpServerCreatedResponse.name}-${connectedAccountIds[index]}`,
-            };
-          });
-        } else if (userIds?.length > 0) {
-          return data.user_ids_url.map((url: string, index: number) => {
-            return {
-              url: new URL(url),
-              name: `${mcpServerCreatedResponse.name}-${userIds[index]}`,
-            };
-          });
-        }
-        return {
-          url: new URL(data.mcp_url),
-          name: mcpServerCreatedResponse.name,
-        };
+        // Let derived classes handle the response transformation
+        return this.transformGetResponse(data, mcpServerCreatedResponse.name, connectedAccountIds, userIds);
       },
     };
   }
+
+  protected abstract transformGetResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[]
+  ): T;
 
   /**
    * List MCP server configurations with filtering options
@@ -229,9 +223,32 @@ export abstract class McpProvider {
   }
 }
 
-export class BaseMcpProvider extends McpProvider {
+export class BaseMcpProvider extends McpProvider<McpServerGetResponse> {
   setup(client: ComposioClient): void {
     this.client = client;
+  }
+
+  protected transformGetResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[]
+  ): McpServerGetResponse {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+      }));
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+      }));
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    };
   }
 }
 
@@ -240,7 +257,7 @@ export class BaseMcpProvider extends McpProvider {
  * Base class for all toolsets.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
-abstract class BaseProvider {
+abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
   /**
    * @public
    * The name of the provider.
@@ -251,7 +268,7 @@ abstract class BaseProvider {
    * @public
    * MCP provider for the framework
    */
-  abstract readonly mcp?: McpProvider;
+  abstract readonly mcp?: McpProvider<TMcpResponse>;
   /**
    * @internal
    * Whether the provider is agentic.
@@ -300,7 +317,7 @@ abstract class BaseProvider {
  * Base class for all non-agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends BaseProvider {
+export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends BaseProvider<McpServerGetResponse> {
   override readonly _isAgentic = false;
 
   /**
@@ -322,10 +339,10 @@ export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends Bas
  * Base class for all agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseAgenticProvider<TToolCollection, TTool> extends BaseProvider {
+export abstract class BaseAgenticProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = true;
 
-  readonly mcp = new BaseMcpProvider();
+  abstract readonly mcp: McpProvider<TMcpResponse>;
 
   /**
    * Wrap a tool in the provider specific format.
@@ -346,6 +363,6 @@ export abstract class BaseAgenticProvider<TToolCollection, TTool> extends BasePr
  * Base type for all toolsets.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool> =
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> =
   | BaseNonAgenticProvider<TToolCollection, TTool>
-  | BaseAgenticProvider<TToolCollection, TTool>;
+  | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;

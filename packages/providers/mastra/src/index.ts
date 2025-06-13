@@ -8,8 +8,9 @@
  */
 import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
 import { createTool } from '@mastra/core';
-import { BaseMcpProvider } from '@composio/core/src/provider/BaseProvider';
+import { McpProvider } from '@composio/core/src/provider/BaseProvider';
 import { MCPCreateConfig, MCPAuthOptions } from '@composio/core/src/types/mcp.types';
+import type { McpServerCreateResponse, McpUrlResponse } from '@composio/core/src/provider/BaseProvider';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -26,41 +27,43 @@ export interface MastraUrlMap {
   [name: string]: { url: URL; }
 }
 
-export interface MastraCreateResponse {
-  id: string;
-  name: string;
-  url: URL;
-  get: (params: MastraGetParams) => Promise<MastraUrlMap>;
-}
-
-export class MastraMcpProvider extends BaseMcpProvider {
+export class MastraMcpProvider extends McpProvider<MastraUrlMap> {
   readonly name = 'mastra';
 
-  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<MastraCreateResponse> {
-    const parentOutput = await super.create(name, config, authOptions);
-    return {
-      ...parentOutput,
-      get: async (params: MastraGetParams): Promise<MastraUrlMap> => {
-        const mcpServers = await parentOutput.get(params);
-        if (Array.isArray(mcpServers)) {
-        return mcpServers.reduce((prev, curr) => {
-          prev[curr.name] = {
-            url: new URL(curr.url),
-          };
-            return prev;
-          }, {} as MastraUrlMap);
-        }
-        return {
-          [parentOutput.name]: {
-            url: parentOutput.url,
-          },
+  protected transformGetResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[]
+  ): MastraUrlMap {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.reduce((prev: MastraUrlMap, url: string, index: number) => {
+        prev[`${serverName}-${connectedAccountIds[index]}`] = {
+          url: new URL(url),
         };
-      }
+        return prev;
+      }, {});
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
+        prev[`${serverName}-${userIds[index]}`] = {
+          url: new URL(url),
+        };
+        return prev;
+      }, {});
     }
+    return {
+      [serverName]: {
+        url: new URL(data.mcp_url),
+      },
+    };
+  }
+
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<McpServerCreateResponse<MastraUrlMap>> {
+    return super.create(name, config, authOptions);
   }
 }
 
-export class MastraProvider extends BaseAgenticProvider<MastraToolCollection, MastraTool> {
+export class MastraProvider extends BaseAgenticProvider<MastraToolCollection, MastraTool, MastraUrlMap> {
   readonly name = 'mastra';
 
   readonly mcp = new MastraMcpProvider();
