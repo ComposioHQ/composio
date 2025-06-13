@@ -146,6 +146,25 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  examples/json-schema-to-zod:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.5.0
+      zod-to-json-schema:
+        specifier: ^3.24.5
+        version: 3.24.5(zod@3.25.62)
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.16
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   examples/langchain:
     dependencies:
       '@composio/core':
@@ -408,8 +427,8 @@ importers:
   packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.17
-        version: 0.1.0-alpha.17
+        specifier: 0.1.0-alpha.22
+        version: 0.1.0-alpha.22
       '@composio/json-schema-to-zod':
         specifier: 0.1.6
         version: 0.1.6
@@ -854,8 +873,8 @@ packages:
   '@cloudflare/workers-types@4.20250612.0':
     resolution: {integrity: sha512-3VsbEh0nqOWWH+jsJ2W41Ty6qlN1jQ+4R3lBA3gPor0U6LB3e4OA04jg7wyCyJmikBN6KsBcPRp3kj0es/9q2w==}
 
-  '@composio/client@0.1.0-alpha.17':
-    resolution: {integrity: sha512-iNCDSgdwfFVsjbbyZIMknMPy4uO8Xw5+MP2aI+yoQo34VXF17Fi6ZHYirrJPf8RbdoRROZTDJjC/rU18mMzC2Q==}
+  '@composio/client@0.1.0-alpha.22':
+    resolution: {integrity: sha512-b9KCO5gy0EsCG+nXikOdm17PiZZ85rw3vwu9aNRIse9rEj2FA1SScpP+P9GN4G0lQHl+QPyDuVvGa6U9AATFeg==}
 
   '@composio/json-schema-to-zod@0.1.6':
     resolution: {integrity: sha512-Eso0rvvdCAxgcjejXXdyJsG4jB3ScUaxkrMaytG4B9Y6uwKJ/uxFrzWqRcwMl5wwQ7nd1vtpJUW/nzr8iRcQMg==}
@@ -5248,7 +5267,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250612.0': {}
 
-  '@composio/client@0.1.0-alpha.17': {}
+  '@composio/client@0.1.0-alpha.22': {}
 
   '@composio/json-schema-to-zod@0.1.6':
     dependencies:
@@ -7028,7 +7047,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.3(@types/node@22.15.31)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
+      vitest: 3.2.3(@types/node@24.0.1)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/utils@3.2.3':
     dependencies:

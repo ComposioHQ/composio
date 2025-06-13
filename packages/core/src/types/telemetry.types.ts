@@ -17,6 +17,7 @@ export type TelemetryMetadata = {
   frameworkRuntime: string;
   isAgentic: boolean;
   source: string;
+  provider?: string;
   transport?: string;
   sdkType?: string;
   sessionId?: string;

@@ -6,7 +6,6 @@ import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { BaseComposioProvider } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
-import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -25,7 +24,6 @@ export type ComposioConfig<
   allowTracking?: boolean;
   allowTracing?: boolean;
   provider?: TProvider;
-  telemetryTransport?: BaseTelemetryTransport;
   /**
    * Request options to be passed to the Composio API client.
    * This is useful for passing in a custom fetch implementation.
@@ -82,7 +80,6 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
    * @param {boolean} [config.allowTracking=true] - Whether to allow anonymous usage analytics
    * @param {boolean} [config.allowTracing=true] - Whether to allow request tracing for debugging
    * @param {TProvider} [config.provider] - The provider to use for this Composio instance (defaults to OpenAIProvider)
-   * @param {BaseTelemetryTransport} [config.telemetryTransport] - Custom telemetry transport implementation
    *
    * @example
    * ```typescript
@@ -150,22 +147,20 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      * Initialize the client telemetry.
      */
     if (this.config.allowTracking) {
-      telemetry.setup(
-        {
-          apiKey: apiKeyParsed ?? '',
-          baseUrl: baseURLParsed ?? '',
-          frameworkRuntime: this.provider?.name ?? 'unknown',
-          isAgentic: this.provider?._isAgentic || false,
-          source: 'javascript',
-          version: version,
-          sdkType: 'Typescript-V3',
-          isBrowser: typeof window !== 'undefined',
-          // @TODO: Users might want to pass their own session id
-          // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
-          sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
-        },
-        config?.telemetryTransport
-      );
+      telemetry.setup({
+        apiKey: apiKeyParsed ?? '',
+        baseUrl: baseURLParsed ?? '',
+        frameworkRuntime: this.provider?.name ?? 'unknown',
+        isAgentic: this.provider?._isAgentic || false,
+        source: 'composio-sdk-typescript',
+        version: version,
+        sdkType: 'Typescript-V3',
+        isBrowser: typeof window !== 'undefined',
+        provider: this.provider?.name ?? 'openai',
+        // @TODO: Users might want to pass their own session id
+        // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
+        sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
+      });
     }
     telemetry.instrument(this);
     // instrument the provider since we are not using the provider class directly

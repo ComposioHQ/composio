@@ -37,15 +37,15 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.17",
+    "@composio/client": "0.1.0-alpha.22",
     "@composio/json-schema-to-zod": "0.1.6",
-    "zod-to-json-schema": "^3.24.5",
     "chalk": "^5.4.1",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "uuid": "^11.1.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.5"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }
