@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.20
+
+### Patch Changes
+
+- 1ab34ef: Fix json schema support in tools
+- Updated dependencies [1ab34ef]
+  - @composio/core@0.1.20
+
 ## 0.1.19
 
 ### Patch Changes

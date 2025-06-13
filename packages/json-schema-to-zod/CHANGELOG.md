@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.8
+
+### Patch Changes
+
+- 1ab34ef: Fix json schema support in tools
+
 ## 0.1.7
 
 ### Patch Changes
