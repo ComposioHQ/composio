@@ -7,7 +7,7 @@ dotenv.load_dotenv()
 # Initialize the ComposioToolSet
 toolset = ComposioToolSet()
 
-# Get the RAG tool from the Composio ToolSet
+# Get the SERPAPI tool from the Composio ToolSet
 tools = toolset.get_tools(apps=[App.SERPAPI])
 
 llm = LLM(
