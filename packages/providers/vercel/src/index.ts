@@ -15,6 +15,7 @@ import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool, experimental_createMCPClient } from 'ai';
 import { MCPCreateConfig, MCPAuthOptions, MCPGenerateURLParams } from 'packages/core/src/types/mcp.types';
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
+import { GenerateURLResponse } from '@composio/client/resources/mcp';
 
 type VercelToolCollection = Record<string, VercelTool>;
 
@@ -26,28 +27,28 @@ type MCPCreateResponse = {
 export class VercelMcpProvider extends BaseMcpProvider {
   readonly name = 'vercel';
 
-  // async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<MCPCreateResponse> {
-  //   const parentOutput = await super.create(name, config, authOptions);
-  //   return {
-  //     ...parentOutput,
-  //     get: async (params: MCPGenerateURLParams) => {
-  //       const mcpServers = await parentOutput.get(params);
+  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<MCPCreateResponse> {
+    const parentOutput = await super.create(name, config, authOptions);
+    return {
+      ...parentOutput,
+      get: async (params: MCPGenerateURLParams) => {
+        const mcpServers = await parentOutput.get(params);
 
-  //       const mcpClients = await Promise.all(mcpServers.map(async server => {
-  //         const transport = new StreamableHTTPClientTransport(new URL(server.url));
+        const mcpClients = await Promise.all(mcpServers.map(async server => {
+          const transport = new StreamableHTTPClientTransport(new URL(server.url));
 
-  //         const client = await experimental_createMCPClient({
-  //           transport,
-  //           name: 'vercel-mcp-client',
-  //         });
+          const client = await experimental_createMCPClient({
+            transport,
+            name: 'vercel-mcp-client',
+          });
 
-  //         return client.tools();
-  //       }))
+          return client.tools();
+        }))
         
-  //       return mcpClients.flat();
-  //     }
-  //   }
-  // }
+        return mcpClients.flat();
+      }
+    }
+  }
 }
 
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
