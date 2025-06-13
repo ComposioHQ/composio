@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Toolkits } from '../../src/models/toolkits';
+import { Toolkits } from '../../src/models/Toolkits';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
