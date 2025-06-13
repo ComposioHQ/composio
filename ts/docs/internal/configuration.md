@@ -69,7 +69,7 @@ const composio = new Composio({
   allowTracking: false, // Disable telemetry
   allowTracing: true, // Enable tracing
   provider: new CustomProvider(), // Custom provider
-  telemetryTransport: customTransport, // Custom telemetry transport
+  host: 'mcp', // host where the sdk is being used
 });
 ```
 
