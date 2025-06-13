@@ -15,10 +15,13 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
       toolSchema = {
         ...toolSchema,
         inputParameters: {
-          ...toolSchema.inputParameters,
-          userId: {
-            type: 'string',
-            description: 'The user ID to get the user for',
+          type: 'object',
+          properties: {
+            ...toolSchema.inputParameters?.properties,
+            userId: {
+              type: 'string',
+              description: 'The user ID to get the user for',
+            },
           },
         },
       };
