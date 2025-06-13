@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.9
+
+### Patch Changes
+
+- Add host name support in SDK
+
 ## 0.1.8
 
 ### Patch Changes

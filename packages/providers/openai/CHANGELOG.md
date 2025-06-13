@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.21
+
+### Patch Changes
+
+- Add host name support in SDK
+- Updated dependencies
+  - @composio/core@0.1.21
+
 ## 0.1.20
 
 ### Patch Changes
