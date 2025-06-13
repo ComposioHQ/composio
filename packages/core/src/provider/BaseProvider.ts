@@ -4,8 +4,30 @@ import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import { McpCreateResponse } from '@composio/client/resources/index';
 import ComposioClient from '@composio/client';
-import { CustomCreateResponse, GenerateURLParams, GenerateURLResponse } from '@composio/client/resources/mcp';
-import { MCPCreateConfig, MCPAuthOptions, MCPCreateMethodResponse } from '../types/mcp.types';
+import {
+  CustomCreateResponse,
+  McpListResponse,
+  McpUpdateResponse,
+  McpDeleteResponse,
+} from '@composio/client/resources/mcp';
+import { MCPCreateConfig, MCPAuthOptions, MCPGenerateURLParams } from '../types/mcp.types';
+
+type McpServerUrlInfo = {
+  url: URL;
+  name: string;
+};
+
+type McpServerGetParams = {
+  userIds?: string[];
+  connectedAccountIds?: string[];
+};
+
+type McpServerGetResponse = Array<McpServerUrlInfo>;
+
+type McpServerCreateResponse = {
+  id: string;
+  get: (params: McpServerGetParams) => Promise<McpServerGetResponse | unknown>;
+};
 
 export abstract class McpProvider {
   client?: ComposioClient;
@@ -14,13 +36,13 @@ export abstract class McpProvider {
     this.client = client;
   }
 
-    /**
+  /**
    * Create a new MCP server
    * @param {string} name - Unique name for the MCP server
    * @param {MCPCreateConfig} config - Server configuration
    * @param {MCPAuthOptions} [authOptions] - Authentication configuration options
    * @returns {Promise<MCPCreateMethodResponse>} Created server details with instance getter
-   * 
+   *
    * @example
    * ```typescript
    * // Create a server with multiple toolkits
@@ -30,90 +52,173 @@ export abstract class McpProvider {
    *   useManagedAuthByComposio: true,
    *   authConfigIds: ["auth_cfg_123"]
    * });
-   * 
+   *
    * // Create a server with specific tools
    * const mcpConfig = await composio.mcp.create("my-tools-server", {
    *   tools: ["GMAIL_FETCH_EMAIL", "SUPABASE_QUERY"]
    * });
-   * 
+   *
    * // Get MCP server instance for a user
    * const mcpServer = await mcpConfig.get({
-   *   userId: "user_123",
+   *   userIds: ["user_123"],
    *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
    *  }, {
    *   useManagedAuthByComposio: true,
-   *   authConfigIds: ["auth_cfg_123"]
    * }
    * });
    * ```
    */
-    async create(
-      name: string,
-      config: MCPCreateConfig,
-      authOptions?: MCPAuthOptions
-    ): Promise<{ id: string; get: (params: { userIds?: string[], connectedAccountIds?: string[] }) => Promise<Array<{ url: string; name: string }>| unknown > }> {
-      if(!this.client) {
-        throw new Error('Client not set');
-      }
-      // If there are multiple toolkits, we need to create a custom MCP server
-      const isMultiApp = !!config.toolkits?.length;
-      const response: McpCreateResponse | CustomCreateResponse = isMultiApp 
-        ? await this.client.mcp.custom.create({
-            name,
-            toolkits: config.toolkits || [],
-            custom_tools: config.tools || [],
-            managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-            auth_config_ids: authOptions?.authConfigIds || []
-          })
-        : await this.client.mcp.create({
-            name,
-            allowed_tools: config.tools || [],
-            managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
-            auth_config_ids: authOptions?.authConfigIds || []
-          });
-      // Add get method to response
-      return {
-        id: response.id,
-        get: ({ userIds = [], connectedAccountIds = [] }: { userIds?: string[], connectedAccountIds?: string[] }): Promise<Array<{ url: string }>> => {
-          if(!this.client) {
-            throw new Error('Client not set');
-          }
-          if(connectedAccountIds.length && userIds.length) {
-            throw new Error('Cannot generate URL for both userIds and connectedAccountIds at the same time');
-          }
-      
-          if (!connectedAccountIds.length && !userIds.length) {
-            throw new Error('Must provide either userIds or connectedAccountIds');
-          }
-      
-          return this.client.mcp.generate.url({
-            user_ids: userIds, connected_account_ids: connectedAccountIds,
-            mcp_server_id: response.id
-          }).then((data: GenerateURLResponse) => {
-            if(connectedAccountIds.length > 0) {
-              return data.connected_account_urls.map((a: string) => {
-                return {
-                  url: a,
-                  name: response.name,
-                }
-              });
-            } else if(userIds.length > 0) {
-              return data.user_ids_url.map((a: string) => {
-                return {
-                  url: a,
-                  name: response.name,
-                }
-              })
-            }
+  async create(
+    name: string,
+    config: MCPCreateConfig,
+    authOptions?: MCPAuthOptions
+  ): Promise<McpServerCreateResponse> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+    // If there are multiple toolkits, we need to create a custom MCP server
+    const isMultiApp = !!config.toolkits?.length;
+    const mcpServerCreatedResponse: McpCreateResponse | CustomCreateResponse = isMultiApp
+      ? await this.client.mcp.custom.create({
+          name,
+          toolkits: config.toolkits || [],
+          custom_tools: config.tools || [],
+          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+          auth_config_ids: authOptions?.authConfigIds || [],
+        })
+      : await this.client.mcp.create({
+          name,
+          allowed_tools: config.tools || [],
+          managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+          auth_config_ids: authOptions?.authConfigIds || [],
+        });
 
-            return [];
+    // Add get method to response
+    return {
+      id: mcpServerCreatedResponse.id,
+      get: async (params: MCPGenerateURLParams): Promise<McpServerGetResponse> => {
+        const { userIds = [], connectedAccountIds = [], useManagedAuthByComposio = false } = params;
+
+        if (!this.client) {
+          throw new Error('Client not set');
+        }
+
+        if (connectedAccountIds?.length && userIds?.length) {
+          throw new Error(
+            'Cannot generate URL for both userIds and connectedAccountIds at the same time, Please provide either userIds or connectedAccountIds'
+          );
+        }
+
+        if (!connectedAccountIds?.length && !userIds?.length) {
+          throw new Error('Must provide either userIds or connectedAccountIds');
+        }
+
+        const data = await this.client.mcp.generate.url({
+          user_ids: userIds,
+          connected_account_ids: connectedAccountIds,
+          mcp_server_id: mcpServerCreatedResponse.id,
+          managed_auth_by_composio: useManagedAuthByComposio || false,
+        });
+
+        if (connectedAccountIds?.length > 0) {
+          return data.connected_account_urls.map((url: string) => {
+            return {
+              url: new URL(url),
+              name: mcpServerCreatedResponse.name,
+            };
+          });
+        } else if (userIds?.length > 0) {
+          return data.user_ids_url.map((url: string) => {
+            return {
+              url: new URL(url),
+              name: mcpServerCreatedResponse.name,
+            };
           });
         }
-      };
+        return [];
+      },
+    };
+  }
+
+  /**
+   * List MCP server configurations with filtering options
+   * @param {Object} options - Filtering and pagination options
+   * @param {number} [options.page] - Page number for pagination
+   * @param {number} [options.limit] - Number of items per page
+   * @param {string[]} [options.toolkits] - Filter servers by toolkit names
+   * @param {string[]} [options.authConfigs] - Filter servers by auth config IDs
+   * @param {string} [options.name] - Filter servers by name
+   * @returns {Promise<McpListResponse>} List of MCP servers matching the filters
+   */
+  async list(options: {
+    page?: number;
+    limit?: number;
+    toolkits?: string[];
+    authConfigs?: string[];
+    name?: string;
+  }): Promise<McpListResponse> {
+    if (!this.client) {
+      throw new Error('Client not set');
     }
 
-}
+    return this.client.mcp.list({
+      page_no: options.page || 1,
+      limit: options.limit || 10,
+      toolkits: options?.toolkits || [],
+      auth_config_ids: options?.authConfigs || [],
+      name: options?.name,
+    });
+  }
 
+  /**
+   * Get details of a specific MCP server
+   * @param {string} id - Server UUID
+   * @returns {Promise<McpCreateResponse>} Server details
+   */
+  async get(id: string): Promise<McpCreateResponse> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+    return this.client.mcp.retrieve(id);
+  }
+
+  /**
+   * Delete an MCP server
+   * @param {string} id - Server UUID
+   * @returns {Promise<McpDeleteResponse>} Deletion response
+   */
+  async delete(id: string): Promise<McpDeleteResponse> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+    return this.client.mcp.delete(id);
+  }
+
+  /**
+   * Update an MCP server configuration
+   * @param {string} id - Server UUID
+   * @param {string} name - New unique name for the server
+   * @param {MCPCreateConfig} config - Updated server configuration
+   * @param {MCPAuthOptions} [authOptions] - Updated authentication options
+   * @returns {Promise<McpUpdateResponse>} Updated server details
+   */
+  async update(
+    id: string,
+    name: string,
+    config: MCPCreateConfig,
+    authOptions?: MCPAuthOptions
+  ): Promise<McpUpdateResponse> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+    return this.client.mcp.update(id, {
+      name,
+      toolkits: config.toolkits,
+      allowed_tools: config.tools,
+      managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+    });
+  }
+}
 
 export class BaseMcpProvider extends McpProvider {
   setup(client: ComposioClient): void {

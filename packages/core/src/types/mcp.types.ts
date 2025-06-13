@@ -18,8 +18,15 @@ export type MCPInstanceParams = {
   serverId: string;
   userIds?: string[];
   connectedAccountIds?: string[];
-  use_managed_auth?: boolean;
+  useManagedAuthByComposio?: boolean;
 };
+
+export const MCPGenerateURLParamsSchema = z.object({
+  userIds: z.array(z.string()).optional(),
+  connectedAccountIds: z.array(z.string()).optional(),
+  useManagedAuthByComposio: z.boolean().optional(),
+});
+export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 /**
  * MCP Server Type (Single App)
  */

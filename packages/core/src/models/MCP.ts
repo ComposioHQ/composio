@@ -8,7 +8,7 @@
 import ComposioClient from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
 import {
-
+  MCPGenerateURLParams,
   MCPCreateMethodResponse,
   MCPCreateConfig,
   MCPAuthOptions,
@@ -19,7 +19,7 @@ import {
   McpUpdateResponse,
   McpDeleteResponse,
   CustomCreateResponse,
-  GenerateURLParams
+  GenerateURLResponse
 } from '@composio/client/resources/mcp';
 
 /**
@@ -58,11 +58,10 @@ export class MCP {
    * 
    * // Get MCP server instance for a user
    * const mcpServer = await mcpConfig.get({
-   *   userId: "user_123",
+   *   userIds: ["user_123"],
    *   connectedAccountIds: ["conn_acc_1", "conn_acc_2"], // Optional connected account IDs
    *  }, {
    *   useManagedAuthByComposio: true,
-   *   authConfigIds: ["auth_cfg_123"]
    * }
    * });
    * ```
@@ -74,7 +73,7 @@ export class MCP {
   ): Promise<MCPCreateMethodResponse> {
     // If there are multiple toolkits, we need to create a custom MCP server
     const isMultiApp = !!config.toolkits?.length;
-    const response: McpCreateResponse | CustomCreateResponse = isMultiApp 
+    const mcpServerCreatedResponse: McpCreateResponse | CustomCreateResponse = isMultiApp 
       ? await this.client.mcp.custom.create({
           name,
           toolkits: config.toolkits || [],
@@ -90,7 +89,18 @@ export class MCP {
         });
 
     // Add get method to response
-    return response as MCPCreateMethodResponse;
+    return {
+      ...mcpServerCreatedResponse,
+      get: async (params: MCPGenerateURLParams): Promise<GenerateURLResponse> => {  
+        const generateURLParams = {
+          mcp_server_id: mcpServerCreatedResponse.id,
+          user_ids: params.userIds || [],
+          connected_account_ids: params.connectedAccountIds || [],
+          managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false
+        }
+        return this.client.mcp.generate.url(generateURLParams);
+      }
+    } as MCPCreateMethodResponse;
   }
 
   /**
