@@ -353,6 +353,9 @@ class Action(
     response: _Response[ActionResponse]
     """Response helper."""
 
+    scopes: t.Optional[t.List[str]] = None
+    """Scopes required for the action."""
+
     file: str
     """Path to the file containing the action"""
 
