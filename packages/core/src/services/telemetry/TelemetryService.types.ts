@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 export const TelemetryMetricSourceSchema = z.object({
-  name: z.string().describe('The name of the source').optional(),
+  host: z
+    .string()
+    .describe('The host of the service running the SDK, eg: mcp, apollo, etc')
+    .optional(),
   service: z
     .enum(['sdk', 'apollo', 'hermes', 'thermos'])
     .describe('The service of the source')

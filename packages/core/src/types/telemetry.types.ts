@@ -11,15 +11,36 @@ export type TelemetryEvent = (typeof TELEMETRY_EVENTS)[keyof typeof TELEMETRY_EV
  * Metadata for the telemetry.
  */
 export type TelemetryMetadata = {
+  /**
+   * The API key of the SDK.
+   * @example 'sk-1234567890'
+   */
   apiKey: string;
+  /**
+   * The base URL of the SDK.
+   * @example 'https://api.composio.dev'
+   */
   baseUrl: string;
+  /**
+   * The version of the SDK.
+   * @example '1.0.0'
+   */
   version: string;
-  frameworkRuntime: string;
+  /**
+   * The host service name of the SDK where the SDK is running.
+   * @example 'mcp', 'apollo' etc
+   */
+  host?: string;
+  /**
+   * Whether the SDK is agentic.
+   * @example true, false
+   */
   isAgentic: boolean;
-  source: string;
+  /**
+   * The provider of the SDK.
+   * @example 'openai', 'anthropic', 'google', 'azure', 'composio'
+   */
   provider?: string;
-  transport?: string;
-  sdkType?: string;
   sessionId?: string;
   isBrowser?: boolean;
 };

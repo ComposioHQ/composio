@@ -52,7 +52,7 @@ export class TelemetryTransport {
     this.telemetryMetadata = metadata;
     this.isTelemetryDisabled = false;
     this.telemetrySource = {
-      name: this.telemetrySourceName,
+      host: this.telemetryMetadata?.host ?? this.telemetrySourceName,
       service: this.telemetryServiceName,
       language: this.telemetryLanguage,
       version: this.telemetryMetadata?.version,

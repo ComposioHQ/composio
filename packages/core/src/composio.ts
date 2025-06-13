@@ -19,11 +19,39 @@ import { LogLevel } from '@composio/client/client';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
 > = {
+  /**
+   * The API key for the Composio API.
+   * @example 'sk-1234567890'
+   */
   apiKey?: string | null;
+  /**
+   * The base URL of the Composio API.
+   * @example 'https://backend.composio.dev'
+   */
   baseURL?: string | null;
+  /**
+   * Whether to allow tracking for the Composio instance.
+   * @example true, false
+   * @default true
+   */
   allowTracking?: boolean;
+  /**
+   * Whether to allow tracing for the Composio instance.
+   * @example true, false
+   * @default true
+   */
   allowTracing?: boolean;
+  /**
+   * The tool provider to use for this Composio instance.
+   * @example new OpenAIProvider()
+   */
   provider?: TProvider;
+  /**
+   * The host service name of the SDK where the SDK is running.
+   * This is used to identify the host for telemetry. Ignore it if you are not using telemetry.
+   * @example 'mcp', 'apollo', ' etc
+   */
+  host?: string;
   /**
    * Request options to be passed to the Composio API client.
    * This is useful for passing in a custom fetch implementation.
@@ -150,13 +178,11 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       telemetry.setup({
         apiKey: apiKeyParsed ?? '',
         baseUrl: baseURLParsed ?? '',
-        frameworkRuntime: this.provider?.name ?? 'unknown',
         isAgentic: this.provider?._isAgentic || false,
-        source: 'composio-sdk-typescript',
         version: version,
-        sdkType: 'Typescript-V3',
         isBrowser: typeof window !== 'undefined',
         provider: this.provider?.name ?? 'openai',
+        host: this.config.host,
         // @TODO: Users might want to pass their own session id
         // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
         sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
