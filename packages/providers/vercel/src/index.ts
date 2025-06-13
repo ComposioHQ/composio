@@ -10,45 +10,117 @@
  * @packageDocumentation
  * @module providers/vercel
  */
-import { BaseAgenticProvider, BaseMcpProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
+import { BaseAgenticProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
-import { jsonSchema, tool, experimental_createMCPClient } from 'ai';
-import { MCPCreateConfig, MCPAuthOptions } from '@composio/core/src/types/mcp.types';
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
-import { McpServerCreateResponse } from '@composio/core/src/provider/BaseProvider';
+import { jsonSchema, tool } from 'ai';
+import { MCPToolkitConfig, MCPAuthOptions, MCPGetServerParams } from '@composio/core/src/types/mcp.types';
+import { McpServerCreateResponse, McpUrlResponse, McpProvider } from '@composio/core/src/provider/BaseProvider';
 
 type VercelToolCollection = Record<string, VercelTool>;
 
-export class VercelMcpProvider extends BaseMcpProvider {
+interface VercelMCPResponse {
+  transport: "sse";
+  url: URL;
+}
+
+export class VercelMcpProvider extends McpProvider<VercelMCPResponse[]> {
   readonly name = 'vercel';
 
+  protected transformGetResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+  ): VercelMCPResponse[] {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string) => ({
+        transport: "sse",
+        url: new URL(url)
+      }));
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string) => ({
+        transport: "sse",
+        url: new URL(url)
+      }));
+    }
+    return [{
+      transport: "sse",
+      url: new URL(data.mcp_url)
+    }];
+  }
 
-  async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<McpServerCreateResponse>{
-    const parentOutput = await super.create(name, config, authOptions);
+  async create(
+    name: string,
+    toolkitConfigs: MCPToolkitConfig[],
+    authOptions?: MCPAuthOptions
+  ): Promise<McpServerCreateResponse<VercelMCPResponse[]>> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+
+    // Check for unique toolkits
+    const toolkits = toolkitConfigs.map(config => config.toolkit);
+    const uniqueToolkits = new Set(toolkits);
+    if (uniqueToolkits.size !== toolkits.length) {
+      throw new Error('Duplicate toolkits are not allowed. Each toolkit must be unique.');
+    }
+
+    // Create a custom MCP server with the toolkit configurations
+    const mcpServerCreatedResponse = await this.client.mcp.custom.create({
+      name,
+      toolkits: toolkits,
+      custom_tools: toolkitConfigs.flatMap(config => config.allowedTools),
+      managed_auth_via_composio: authOptions?.useManagedAuthByComposio || false,
+      auth_config_ids: toolkitConfigs.map(config => config.authConfigId)
+    });
+
+    // Add getServer method to response
     return {
-      ...parentOutput,
-      get: async (params) => {
-        const mcpServers = await parentOutput.get(params);
+      ...mcpServerCreatedResponse,
+      toolkits,
+      getServer: async (params: MCPGetServerParams): Promise<VercelMCPResponse[]> => {
+        if (!this.client) {
+          throw new Error('Client not set');
+        }
 
-        const finalMCPServers = Array.isArray(mcpServers) ? mcpServers : [mcpServers];
+        // Validate that only one of user_id or connected_account_ids is provided
+        if (params.user_id && params.connected_account_ids) {
+          throw new Error('Cannot specify both user_id and connected_account_ids. Please provide only one.');
+        }
 
-        const mcpClients = await Promise.all(finalMCPServers.map(async server => {
-          const transport = new StreamableHTTPClientTransport(new URL(server.url.toString()));
-          const client = await experimental_createMCPClient({
-            transport,
-            name: server.name
-          });
+        if (!params.user_id && !params.connected_account_ids) {
+          throw new Error('Must provide either user_id or connected_account_ids.');
+        }
 
-          return client.tools();
-        }))
-        
-        return mcpClients.flat();
+        // If connected_account_ids is provided, verify toolkit names
+        if (params.connected_account_ids) {
+          const providedToolkits = Object.keys(params.connected_account_ids);
+          const invalidToolkits = providedToolkits.filter(toolkit => !toolkits.includes(toolkit));
+          if (invalidToolkits.length > 0) {
+            throw new Error(`Invalid toolkits provided: ${invalidToolkits.join(', ')}. Available toolkits are: ${toolkits.join(', ')}`);
+          }
+        }
+
+        const data = await this.client.mcp.generate.url({
+          user_ids: params.user_id ? [params.user_id] : [],
+          connected_account_ids: params.connected_account_ids ? Object.values(params.connected_account_ids) : [],
+          mcp_server_id: mcpServerCreatedResponse.id,
+          managed_auth_by_composio: authOptions?.useManagedAuthByComposio || false,
+        });
+
+        // Transform the response
+        return this.transformGetResponse(
+          data,
+          mcpServerCreatedResponse.name,
+          params.connected_account_ids ? Object.values(params.connected_account_ids) : undefined,
+          params.user_id ? [params.user_id] : undefined,
+        );
       }
-    } 
+    };
   }
 }
 
-export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
+export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool, VercelMCPResponse[]> {
   readonly name = 'vercel';
 
   readonly mcp = new VercelMcpProvider();
