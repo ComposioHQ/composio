@@ -12,16 +12,13 @@ jobs:
       image: ghcr.io/composiohq/dev-base:latest
     if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1 }}
     permissions: write-all
-    defaults:
-      run:
-        working-directory: ./fern
     env:
       COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install local dependencies
+      - name: Install dependencies
         run: pnpm install
 
       - name: Install Python Dependencies
@@ -29,19 +26,14 @@ jobs:
           uv sync
           uv run composio apps generate-types
 
-      - name: Generate Tool Documentation
-        run: pnpm tools:generate && pnpm tools:uncomment
-
-      - name: Generate SDK Reference
-        run: pnpm sdkdocs
-
       - name: Install Fern
         run: npm install -g fern-api
 
-      - name: Pull Latest OpenAPI Specification
-        run: pnpm api:pull
+      - name: Build documentation with Turbo
+        run: turbo run build --filter=fern
 
       - name: Build examples
+        working-directory: ./fern
         run: pnpm examples:build
 
       - name: Publish Docs
@@ -49,4 +41,4 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: fern generate --docs
+        run: turbo run publish --filter=fern
