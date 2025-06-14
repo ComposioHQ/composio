@@ -1,4 +1,4 @@
-export const env = "staging";
+export const env = "prod";
 const CURRENT_FILE_DIR = __dirname;
 
 export type BACKEND_CONFIG = {
