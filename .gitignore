@@ -39,11 +39,13 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # lerna
 lerna-debug.log*
 
-# temp files
-temp
+# fern
 fern/tools
 fern/apis/openapi.yml
 fern/apis/openapi-mcp.json
+fern/pages/
+fern/docs/sdk/
+
 # Python cache files
 __pycache__/
 *.py[cod]

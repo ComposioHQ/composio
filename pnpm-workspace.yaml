@@ -6,3 +6,4 @@ packages:
   - 'examples/*'
   - 'fern'
   - 'fern/pages/examples/*'
+  - 'fern/snippets/*'

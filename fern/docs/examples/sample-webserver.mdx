@@ -1,0 +1,132 @@
+---
+title: A basic web server
+image: "https://og.composio.dev/api/og?title=A%20basic%20web%20server"   # image for socials
+description: "A simple example of a web server that uses the Composio SDK to call tools."
+keywords: "web server, composio, sdk, tool calling"
+subtitle: ""
+hide-nav-links: true
+---
+
+This tutorial shows you a minimal example of a web server that can use composio
+
+
+### Install dependencies
+
+using `bun` for this example, it is super convenient for rapid prototyping.
+
+```bash
+bun install @composio/core@next openai hono
+```
+
+Please set the following environment variables:
+
+```bash
+# .env
+COMPOSIO_API_KEY=your_api_key
+OPENAI_API_KEY=your_api_key
+```
+
+The full source code is available [here](https://github.com/ComposioHQ/composio/blob/next/fern/pages/examples/src/sample-webserver/index.ts).
+
+In this tutorial, we will create an auth config, initiate a connection, and send an email.
+
+### Setup
+
+Basic scaffolding for the server.
+
+<SnippetCode
+  src="fern/snippets/typescript/sample-webserver/index.ts"
+  startLine={1}
+  endLine={10}
+  title="Setup"
+  highlightStart={9}
+  highlightEnd={9}
+/>
+
+
+### Auth Configs
+
+These are configurations for tools that control how they are authorized, the scopes and permissions they have. You can learn more about them [here](/authenticating-tools).
+
+For this example, we will create a basic GMAIL auth config.
+
+You are recommend to store these config ids, so that you can reuse them later.
+
+<SnippetCode
+  src="fern/snippets/typescript/sample-webserver/index.ts"
+  startLine={12}
+  endLine={16}
+  title="Auth Configs"
+/>
+
+
+### Initiating a connection
+
+Connections are your users authorizing your tools.
+
+Here we start the connection process, once your user uses the `redirectUrl` from the response, 
+they will be redirected to the auth flow. 
+Once they have authorized the connection, you can use the `id` to get and execute the tools as the user.
+
+<SnippetCode
+  src="fern/snippets/typescript/sample-webserver/index.ts"
+  startLine={16}
+  endLine={27}
+  title="Initiating a connection"
+  highlightStart={19}
+  highlightEnd={19}
+/>
+
+You can test your server by running `bun run index.ts` and then running the following command:
+
+```bash
+curl -X POST http://localhost:3000/create-connection \
+-H "Content-Type: application/json" \
+-d '{"userId": "123"}'
+```
+
+### Sending an email
+
+Now let's send that email.
+
+<SnippetCode
+  src="fern/snippets/typescript/sample-webserver/index.ts"
+  startLine={29}
+  endLine={59}
+  title="Sending an email"
+  highlightStart={56}
+  highlightEnd={56}
+/>
+
+Using the `id` from the connection, we can now send an email.
+
+```bash
+curl -X POST http://localhost:3000/send-email \
+-H "Content-Type: application/json" \
+-d '{"userId": "123", "feedback": "These docs are great!"}'
+```
+
+
+### Full Code
+
+You can see the full code [here](https://github.com/ComposioHQ/composio/blob/next/fern/snippets/typescript/sample-webserver/index.ts).
+
+
+### What just happened?
+
+Well first - we created an instance of our `gmail` tool with our default auth config, then our user authorized that tool with their account and some permissions.
+
+Then we used that `gmail` tool by giving it to OpenAI's `gpt-4o`. The model composed the email and sent it correctly formatted to the composio team.
+
+### What's next?
+
+This is a fairly basic example, but you can do a lot more with our sdk.
+
+Recommended further reading:
+
+- [Authenticating tools](/authenticating-tools) - understand how to control tool authorization
+- [Executing Tools](/executing-tools) - understand how tool execution works
+- [Providers](/providers) - want to use something other than OpenAI? we probably support it
+- [Tools](/tools) - understand what tools we have
+
+
