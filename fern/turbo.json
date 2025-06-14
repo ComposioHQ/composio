@@ -83,7 +83,7 @@
     "publish": {
       "dependsOn": ["tools:uncomment", "snippets:build"],
       "cache": false,
-      "env": ["FERN_TOKEN"]
+      "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
     },
     
     "clean": {
