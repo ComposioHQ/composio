@@ -22,6 +22,7 @@ jobs:
         run: pnpm install
 
       - name: Install Python Dependencies
+        working-directory: ./fern
         run: |
           uv sync
           uv run composio apps generate-types
@@ -30,15 +31,13 @@ jobs:
         run: npm install -g fern-api
 
       - name: Build documentation with Turbo
-        run: turbo run build --filter=fern
-
-      - name: Build examples
         working-directory: ./fern
-        run: pnpm examples:build
+        run: turbo run build
 
       - name: Publish Docs
+        working-directory: ./fern
         env:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: turbo run publish --filter=fern
+        run: turbo run publish
