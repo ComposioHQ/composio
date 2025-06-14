@@ -201,7 +201,7 @@ navigation:
     - page: Sample Script
       path: pages/sample-script.mdx
       slug: examples/sample-script
-    - page: Sample Webserver
+    - page: Basic Hono Server
       path: pages/sample-webserver.mdx
       slug: examples/sample-webserver
   - section: Full Stack Applications
@@ -210,14 +210,14 @@ navigation:
     contents:
     - page: Full Stack Chat App
       path: pages/vercel-composio.mdx
-      slug: full-stack-chat-app
+      slug: examples/chat-app
   - section: Productivity & Automation
     icon: zap
     skip-slug: true
     contents:
-    - page: Gmail Filterer
+    - page: Gmail Reaper
       path: pages/gmail-filterer.mdx
-      slug: gmail-filterer
+      slug: examples/gmail-reaper
 - tab: providers
   layout:
   - section: Providers

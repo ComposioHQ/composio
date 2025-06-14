@@ -6,7 +6,17 @@ keywords: ""
 hide-nav-links: false
 ---
 
-## OpenAI Agents Provider 
+## OpenAI Agents Provider
+
+The OpenAI Agents Provider is a provider that formats the Composio tools into an object compatible with OpenAI's Agents API.
+
+OpenAI Agents SDK is different from the OpenAI SDK. It's to help build agentic AI apps in a lightweight, easy-to-use package with very few abstractions.
+
+## Setup
+
+```bash
+pip install composio[openai-agents] openai-agents
+```
 
 ### Usage
 ```python Python maxLines=60 wordWrap
@@ -29,7 +39,7 @@ tools = composio.tools.get(
 # Create an agent with the tools
 agent = Agent(
     name="GitHub Agent",
-    instructions="You are a helpful assistant that helps users with GitHub tasks.",
+    instructions="You are a helpful assistant.",
     tools=tools,
 )
 
@@ -38,8 +48,7 @@ async def main():
     result = await Runner.run(
         starting_agent=agent,
         input=(
-            "Star the repository composiohq/composio on GitHub. If done "
-            "successfully, respond with 'Action executed successfully'"
+            "Star the repository composiohq/composio on GitHub"
         ),
     )
     print(result.final_output)
