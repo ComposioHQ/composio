@@ -32,7 +32,7 @@ jobs:
 
       - name: Build documentation with Turbo
         working-directory: ./fern
-        run: turbo run build
+        run: pnpm turbo run build
 
       - name: Publish Docs
         working-directory: ./fern
@@ -40,4 +40,4 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: turbo run publish
+        run: pnpm turbo run publish
