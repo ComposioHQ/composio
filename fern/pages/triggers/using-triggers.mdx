@@ -108,9 +108,9 @@ print(instance)
 ## Subscribing to triggers
 You can subscribe to triggers to receive payloads from the trigger.
 
-You subscribe to multiple trigger events by configuring the filter.
+You subscribe to multiple trigger events by configuring the filters.
 
-- [ ] check and test the filters properly. ie, do they work individually or as union?
+When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -122,15 +122,24 @@ await composio.triggers.subscribe(
     triggerId: 'ti_So9EQf8XnAcy',
     // userId: 'user@acme.com',
     // toolkits: ['github', 'slack'],
+    // triggerSlug: ["GITHUB_STAR_ADDED_EVENT"]
+    // authConfigId: "ac_1234567890"
   }
 )
 ```
 ```python Python
+user_id = uuid.uuid4()
 # Subscribe to a trigger
 subscription = composio.triggers.subscribe()
-
 # Define a handler
-@subscription.handle(toolkit="GITHUB", user_id=user_id)
+@subscription.handle(
+  toolkit="GITHUB",
+  user_id=user_id,
+  # trigger_slug="GITHUB_STAR_ADDED_EVENT"
+  # auth_config_id="ac_1234567890",
+  # trigger_id="ti_So9EQf8XnAcy",
+
+)
 def handle_github_event(data):
     print(data)
 ```
@@ -141,7 +150,7 @@ When subscribing to triggers, it is helpful to know the payload type recieved fr
 
 <CodeGroup>
 ```typescript TypeScript
-const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
+const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
 
 console.log(triggerType.payload);
 ```
@@ -203,11 +212,11 @@ In cases where the trigger isn't required for the system, it can be disabled.
 
 <CodeGroup>
 ```typescript TypeScript
-await composio.triggers.disable("ti_So9EQf8XnAcy");
+await composio.triggers.disable("ti_abcd123");
 ```
 ```python Python
 # Disable a trigger instance
-disabled_instance = composio.triggers.disable(trigger_id="ti_So9EQf8XnAcy")
+disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
 print(disabled_instance)
 ```
 </CodeGroup>
@@ -216,11 +225,11 @@ If needed, the trigger can be enabled again.
 
 <CodeGroup>
 ```typescript TypeScript
-await composio.triggers.enable("ti_So9EQf8XnAcy");
+await composio.triggers.enable("ti_abcd123);
 ```
 ```python Python
 # Enable a trigger instance
-enabled_instance = composio.triggers.enable(trigger_id="ti_So9EQf8XnAcy")
+enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
 print(enabled_instance)
 ```
 </CodeGroup>

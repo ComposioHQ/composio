@@ -368,6 +368,9 @@ importers:
 
   fern:
     dependencies:
+      '@composio/core':
+        specifier: ^0.1.21
+        version: 0.1.21(ws@8.18.2)
       fern-api:
         specifier: ^0.51.39
         version: 0.51.39
@@ -430,8 +433,8 @@ importers:
         specifier: 0.1.0-alpha.22
         version: 0.1.0-alpha.22
       '@composio/json-schema-to-zod':
-        specifier: 0.1.6
-        version: 0.1.6
+        specifier: 0.1.9
+        version: 0.1.9
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -876,8 +879,11 @@ packages:
   '@composio/client@0.1.0-alpha.22':
     resolution: {integrity: sha512-b9KCO5gy0EsCG+nXikOdm17PiZZ85rw3vwu9aNRIse9rEj2FA1SScpP+P9GN4G0lQHl+QPyDuVvGa6U9AATFeg==}
 
-  '@composio/json-schema-to-zod@0.1.6':
-    resolution: {integrity: sha512-Eso0rvvdCAxgcjejXXdyJsG4jB3ScUaxkrMaytG4B9Y6uwKJ/uxFrzWqRcwMl5wwQ7nd1vtpJUW/nzr8iRcQMg==}
+  '@composio/core@0.1.21':
+    resolution: {integrity: sha512-OySTo4SVQp3cUhufkysJpm+qFQE3qTKNd62v5lZ1hj115nFHdoB0jO8mjMRjBCkP3xEKD6OM2QQXOn34SRwaWA==}
+
+  '@composio/json-schema-to-zod@0.1.9':
+    resolution: {integrity: sha512-uDOAPPkaMWM2DJLCFCW6/rxTgair6EmQ4Ojo6RDayzIl2BRUro0wGkpof4Za8sJPrmdTfSqteRMDy46xPnOYhw==}
 
   '@esbuild/aix-ppc64@0.25.5':
     resolution: {integrity: sha512-9o3TMmpmftaCMepOdA5k/yDw8SfInyzWWTjYTFCX3kPSDJMROQTb8jg+h9Cnwnmm1vOzvxN7gIfB5V2ewpjtGA==}
@@ -5269,7 +5275,22 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.22': {}
 
-  '@composio/json-schema-to-zod@0.1.6':
+  '@composio/core@0.1.21(ws@8.18.2)':
+    dependencies:
+      '@composio/client': 0.1.0-alpha.22
+      '@composio/json-schema-to-zod': 0.1.9
+      chalk: 5.4.1
+      openai: 4.104.0(ws@8.18.2)(zod@3.25.62)
+      pusher-js: 8.4.0
+      semver: 7.7.2
+      uuid: 11.1.0
+      zod: 3.25.62
+      zod-to-json-schema: 3.24.5(zod@3.25.62)
+    transitivePeerDependencies:
+      - encoding
+      - ws
+
+  '@composio/json-schema-to-zod@0.1.9':
     dependencies:
       '@types/json-schema': 7.0.15
       zod: 3.25.62
@@ -7047,7 +7068,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.3(@types/node@24.0.1)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
+      vitest: 3.2.3(@types/node@20.19.0)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/utils@3.2.3':
     dependencies:
