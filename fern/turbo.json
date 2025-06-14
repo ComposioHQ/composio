@@ -75,13 +75,13 @@
     },
     
     "preview": {
-      "dependsOn": ["tools:uncomment", "snippets:build"],
+      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
       "cache": false,
       "env": ["FERN_TOKEN"]
     },
     
     "publish": {
-      "dependsOn": ["tools:uncomment", "snippets:build"],
+      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
       "cache": false,
       "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
     },
