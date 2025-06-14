@@ -21,9 +21,8 @@
 		"links": "fern docs broken-links",
 		"build": "echo 'Build orchestrated by Turbo'",
 		"preview": "fern generate --docs --preview --log-level debug",
-		"publish": "echo 'use only in emergencies, recommend making a PR' && fern generate --docs",
-		"generate": "pnpm tools:generate && pnpm sdkdocs",
-		"prepublish": "exit 1"
+		"publish": "fern generate --docs",
+		"generate": "pnpm tools:generate && pnpm sdkdocs"
 	},
 	"dependencies": {
 		"@composio/core": "^0.1.21",
