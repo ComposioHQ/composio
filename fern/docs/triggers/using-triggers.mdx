@@ -70,19 +70,19 @@ You need to fetch the connection ID for the user to create a trigger.
 ```typescript TypeScript
 const userId = "user@acme.com";
 
-const connections = await composio.connectedAccounts.list({userIds: [userId]});
-
-console.log(connections.items[0].id);
+const { items: connections } = await composio.connectedAccounts.list({ userIds: [userId] });
+const [{ id: connectedAccountId }] = connections;
+console.log(connectedAccountId);
 
 const createResponse = await composio.triggers.create("GITHUB_STAR_ADDED_EVENT", {
-connectedAccountId: connections.items[0].id,
-triggerConfig: {
-owner: "composiohq",
-repo: "composio",
-},
+  connectedAccountId,
+  triggerConfig: {
+    owner: "composiohq",
+    repo: "composio",
+  },
 });
 
-````
+```
 ```python Python
 # Fetch connected account for user
 user_id = "user@acme.com"
@@ -103,20 +103,62 @@ instance = composio.triggers.create(
     },
 )
 print(instance)
-````
+```
 
 </CodeGroup>
 
-## Subscribing to triggers
 
-You can subscribe to triggers to receive payloads from the trigger.
+## Subscribing to triggers through Webhooks
+To receive trigger events via webhooks, you need to configure a publicly accessible URL where Composio can send the event payloads. This URL should point to an endpoint in your application that can process incoming webhook requests.
+
+<Frame caption="Webhook setup" background="subtle">
+  <img src="../assets/images/setup-webhook.png" alt="Webhook setup" />
+</Frame>
+
+<CodeGroup>
+
+<SnippetCode
+  src="fern/snippets/typescript/trigger-webhook.ts"
+  title="app/api/webhook/route.ts"
+/>
+
+<SnippetCode
+  src="fern/snippets/python/trigger-webhook.py"
+  title="app/api/webhook/route.py"
+/>
+
+</CodeGroup>
+
+### Trigger payload types
+When subscribing to triggers, it is helpful to know the payload type recieved from the trigger. You can inspect the payload type by fetching the trigger type.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
+
+console.log(triggerType.payload);
+```
+
+```python Python maxLines=60 wordWrap
+# Get a trigger by id
+trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+print(trigger.payload)
+```
+
+</CodeGroup>
+
+## Subscribing to triggers through the SDK
+
+During development you may not have a proper webhook setup -- you can subscribe to triggers directly through the SDK. 
+
+This uses websockets to subscribe to the trigger.
 
 You subscribe to multiple trigger events by configuring the filters.
 
 When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
 
 <CodeGroup>
-```typescript TypeScript
+```typescript TypeScript maxLines=60 wordWrap
 await composio.triggers.subscribe(
   triggerData => {
     console.log('Received trigger:', triggerData);
@@ -130,7 +172,7 @@ await composio.triggers.subscribe(
   }
 )
 ```
-```python Python
+```python Python maxLines=60 wordWrap
 user_id = uuid.uuid4()
 # Subscribe to a trigger
 subscription = composio.triggers.subscribe()
@@ -146,25 +188,7 @@ subscription = composio.triggers.subscribe()
 def handle_github_event(data):
 print(data)
 
-````
-</CodeGroup>
-
-### Trigger payload types
-When subscribing to triggers, it is helpful to know the payload type recieved from the trigger. You can inspect the payload type by fetching the trigger type.
-
-<CodeGroup>
-```typescript TypeScript
-const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
-
-console.log(triggerType.payload);
-````
-
-```python Python
-# Get a trigger by id
-trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
-print(trigger.payload)
 ```
-
 </CodeGroup>
 
 ## Specifying trigger configuration
@@ -183,22 +207,22 @@ The dashboard will show you the trigger configuration to fill in.
 </Frame>
 
 <CodeGroup>
-```typescript TypeScript
+```typescript TypeScript maxLines=60 wordWrap
 const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
 
 console.log(triggerType.config);
 
-````
-```python Python
+```
+```python Python maxLines=60 wordWrap
 # Get a trigger by id
 trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
 print(trigger.config)
-````
+```
 
 </CodeGroup>
 
 <CodeGroup>
-```typescript TypeScript
+```typescript TypeScript maxLines=60 wordWrap
 await composio.triggers.create("GITHUB_PULL_REQUEST_EVENT", {
   connectedAccountId: "ca_k_py8Qbd17_d",
   triggerConfig: {  // Properties expected for trigger config
@@ -207,7 +231,7 @@ await composio.triggers.create("GITHUB_PULL_REQUEST_EVENT", {
   },
 });
 ```
-```python Python
+```python Python maxLines=60 wordWrap
 instance = composio.triggers.create(
     slug="GITHUB_PULL_REQUEST_EVENT",
     connected_account_id="ca_abc1234",
@@ -224,15 +248,34 @@ instance = composio.triggers.create(
 In cases where the trigger isn't required for the system, it can be disabled.
 
 <CodeGroup>
-  ```typescript TypeScript await composio.triggers.disable("ti_abcd123"); ``` ```python Python #
-  Disable a trigger instance disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
-  print(disabled_instance) ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.disable("ti_abcd123");
+  ```
+  ```python Python maxLines=60 wordWrap
+  # Disable a trigger instance 
+  disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+  print(disabled_instance) 
+  ```
 </CodeGroup>
 
 If needed, the trigger can be enabled again.
 
 <CodeGroup>
-  ```typescript TypeScript await composio.triggers.enable("ti_abcd123); ``` ```python Python #
-  Enable a trigger instance enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
-  print(enabled_instance) ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.enable("ti_abcd123");
+  ```
+  ```python Python maxLines=60 wordWrap
+  # Enable a trigger instance
+  enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+  print(enabled_instance)
+  ```
 </CodeGroup>
+
+## Troubleshooting
+If you encounter issues with triggers or webhook listeners, you can use the Composio dashboard to inspect detailed trigger logs. The dashboard allows you to review event payloads, identify errors, and manually resend events for testing purposes.
+
+Access the trigger logs [here](https://app.composio.dev/trigger_logs).
+
+<Frame caption="Trigger logs" background="subtle">
+  <img src="../assets/images/trigger-debug.png" alt="Trigger logs" />
+</Frame>
