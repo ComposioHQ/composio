@@ -507,6 +507,8 @@ navigation:
       # path: tools/googlephotos.mdx
     # - page: Googlesheets
       # path: tools/googlesheets.mdx
+    # - page: Googleslides
+      # path: tools/googleslides.mdx
     # - page: Googlesuper
       # path: tools/googlesuper.mdx
     # - page: Googletasks
@@ -853,11 +855,6 @@ navigation:
       # path: tools/zoominfo.mdx
 - tab: sdk-reference
   layout:
-  - section: Python
-    icon: python
-    contents:
-    - page: Python SDK
-      path: pages/sdk/python/index.mdx
   - section: TypeScript
     icon: typescript
     contents:
