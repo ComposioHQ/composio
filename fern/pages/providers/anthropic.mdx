@@ -7,7 +7,7 @@ hide-nav-links: false
 ---
 
 
-The Anthropic Provider is the default provider for the Composio SDK. It transforms Composio tools into a format compatible with Anthropic's function calling capabilities through it's Messages API.
+The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through it's Messages API.
 
 ## Setup
 Anthropic provider can be installed for both the SDKs.
@@ -85,7 +85,7 @@ tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
 
 # Get response from the LLM
 response = anthropic_client.messages.create(
-    model="claude-3-opus-20240229",
+    model="claude-3-5-sonnet-20240620",
     max_tokens=1024,
     tools=tools,
     messages=[

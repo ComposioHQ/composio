@@ -24,6 +24,7 @@
 		"prepublish": "exit 1"
 	},
 	"dependencies": {
+		"@composio/core": "^0.1.21",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
