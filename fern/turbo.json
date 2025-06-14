@@ -41,7 +41,8 @@
     "tools:generate": {
       "outputs": ["tools/**"],
       "inputs": ["generators/tool_doc_generator/**/*.py"],
-      "cache": true
+      "cache": true,
+      "env": ["COMPOSIO_API_KEY"]
     },
     
     "tools:comment": {
