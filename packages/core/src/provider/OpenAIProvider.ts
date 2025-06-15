@@ -9,17 +9,16 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseMcpProvider, BaseNonAgenticProvider } from './BaseProvider';
+import { BaseNonAgenticProvider, BaseMcpProvider, McpServerGetResponse } from './BaseProvider';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
-import { MCPAuthOptions } from '../types/mcp.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 
-export class OpenAIMcpProvider extends BaseMcpProvider {
+export class OpenAIMcpProvider extends BaseMcpProvider<McpServerGetResponse> {
   readonly name = 'openai';
 
   // async create(name: string, config: MCPCreateConfig, authOptions?: MCPAuthOptions): Promise<{ id: string; get: (params: { userIds?: string[]; connectedAccountIds?: string[]; }) => Promise<Array<{ url: string; name: string; } | { type: string; server_label: string; server_url: string; require_approval: string; }>>; }> {
@@ -43,7 +42,7 @@ export class OpenAIMcpProvider extends BaseMcpProvider {
   // }
 }
 
-export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
+export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool, McpServerGetResponse> {
   readonly name = 'openai';
 
   readonly mcp = new OpenAIMcpProvider();

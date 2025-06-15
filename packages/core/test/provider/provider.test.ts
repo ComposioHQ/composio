@@ -5,7 +5,7 @@ import { ExecuteToolFn } from '../../src/types/provider.types';
 import { ComposioGlobalExecuteToolFnNotSetError } from '../../src/errors/ToolErrors';
 
 // Mock implementations of the abstract classes for testing
-class MockNonAgenticProvider extends BaseNonAgenticProvider<string[], string> {
+class MockNonAgenticProvider extends BaseNonAgenticProvider<string[], string, unknown> {
   readonly name = 'MockNonAgenticProvider';
 
   wrapTool = vi.fn((tool: Tool): string => {

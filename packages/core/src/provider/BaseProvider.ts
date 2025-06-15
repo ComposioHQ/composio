@@ -26,12 +26,12 @@ export type McpUrlResponse = {
   mcp_url: string;
 };
 
-export type McpServerCreateResponse<T = McpServerGetResponse> = (McpCreateResponse | CustomCreateResponse) & {
+export type McpServerCreateResponse<T> = (McpCreateResponse | CustomCreateResponse) & {
   toolkits: string[];
   getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
-export abstract class McpProvider<T = McpServerGetResponse> {
+export abstract class McpProvider<T> {
   client?: ComposioClient;
 
   setup(client: ComposioClient): void {
@@ -227,7 +227,7 @@ export abstract class McpProvider<T = McpServerGetResponse> {
   }
 }
 
-export class BaseMcpProvider extends McpProvider<McpServerGetResponse> {
+export class BaseMcpProvider<T> extends McpProvider<T> {
   setup(client: ComposioClient): void {
     this.client = client;
   }
@@ -238,24 +238,24 @@ export class BaseMcpProvider extends McpProvider<McpServerGetResponse> {
     connectedAccountIds?: string[],
     userIds?: string[],
     toolkits?: string[]
-  ): McpServerGetResponse {
+  ): T {
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${connectedAccountIds[index]}`,
         toolkit: toolkits?.[index],
-      }));
+      })) as T;
     } else if (userIds?.length && data.user_ids_url) {
       return data.user_ids_url.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${userIds[index]}`,
         toolkit: toolkits?.[index],
-      }));
+      })) as T;
     }
     return {
       url: new URL(data.mcp_url),
       name: serverName,
-    };
+    } as T;
   }
 }
 
@@ -264,7 +264,7 @@ export class BaseMcpProvider extends McpProvider<McpServerGetResponse> {
  * Base class for all toolsets.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
-abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
+abstract class BaseProvider<TMcpResponse = unknown> {
   /**
    * @public
    * The name of the provider.
@@ -324,7 +324,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
  * Base class for all non-agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends BaseProvider<McpServerGetResponse> {
+export abstract class BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse = unknown> extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = false;
 
   /**
@@ -346,7 +346,7 @@ export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends Bas
  * Base class for all agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseAgenticProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> extends BaseProvider<TMcpResponse> {
+export abstract class BaseAgenticProvider<TToolCollection, TTool, TMcpResponse = unknown> extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = true;
 
   abstract readonly mcp: McpProvider<TMcpResponse>;
@@ -370,6 +370,6 @@ export abstract class BaseAgenticProvider<TToolCollection, TTool, TMcpResponse =
  * Base type for all toolsets.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> =
-  | BaseNonAgenticProvider<TToolCollection, TTool>
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = unknown> =
+  | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse>
   | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;

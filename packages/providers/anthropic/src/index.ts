@@ -42,7 +42,7 @@ export type AnthropicContentBlock = {
   [key: string]: unknown;
 };
 
-export class AnthropicMcpProvider extends BaseMcpProvider {
+export class AnthropicMcpProvider extends BaseMcpProvider<unknown> {
   readonly name = 'anthropic';
 }
 /**
@@ -50,7 +50,8 @@ export class AnthropicMcpProvider extends BaseMcpProvider {
  */
 export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicToolCollection,
-  AnthropicTool
+  AnthropicTool,
+  unknown
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;

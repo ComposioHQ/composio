@@ -48,7 +48,7 @@ import { removeNonRequiredProperties } from '../utils/jsonSchema';
 export class Tools<
   TToolCollection,
   TTool,
-  TProvider extends BaseComposioProvider<TToolCollection, TTool>,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   private client: ComposioClient;
   private readonly customTools: CustomTools;

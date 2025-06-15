@@ -4,7 +4,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseComposioProvider, BaseMcpProvider, McpProvider } from './provider/BaseProvider';
+import { BaseComposioProvider, BaseMcpProvider, McpProvider, McpServerGetResponse } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
 import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import { getSDKConfig } from './utils/sdk';
@@ -18,7 +18,7 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { LogLevel } from '@composio/client/client';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   apiKey?: string | null;
   baseURL?: string | null;
@@ -45,7 +45,7 @@ export type ComposioConfig<
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider> {
+export class Composio<TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -70,7 +70,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: McpProvider;
+  mcp: McpProvider<unknown>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -140,7 +140,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
-    this.mcp = this.provider.mcp ?? new BaseMcpProvider();
+    this.mcp = (this.provider.mcp ?? new BaseMcpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
 
     this.mcp.setup(this.client);
 

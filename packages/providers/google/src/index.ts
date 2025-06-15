@@ -9,10 +9,11 @@
  */
 import {
   BaseNonAgenticProvider,
-  Tool,
+  Tool as ComposioTool,
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
+  logger,
   BaseMcpProvider,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
@@ -37,7 +38,7 @@ export interface GoogleGenAIFunctionCall {
  */
 export type GoogleGenAIToolCollection = GoogleTool[];
 
-export class GoogleMcpProvider extends BaseMcpProvider {
+export class GoogleMcpProvider extends BaseMcpProvider<unknown> {
   readonly name = 'google';
 }
 
@@ -45,7 +46,7 @@ export class GoogleMcpProvider extends BaseMcpProvider {
  * Google GenAI Provider for Composio SDK
  * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
-export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
+export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool, unknown> {
   readonly name = 'google';
 
   readonly mcp = new GoogleMcpProvider();
@@ -110,7 +111,7 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
    * });
    * ```
    */
-  wrapTool(tool: Tool): GoogleTool {
+  wrapTool(tool: ComposioTool): GoogleTool {
     return {
       name: tool.slug,
       description: tool.description || '',
@@ -172,7 +173,7 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
    * });
    * ```
    */
-  wrapTools(tools: Tool[]): GoogleGenAIToolCollection {
+  wrapTools(tools: ComposioTool[]): GoogleGenAIToolCollection {
     return tools.map(tool => this.wrapTool(tool));
   }
 

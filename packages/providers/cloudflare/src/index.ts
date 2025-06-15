@@ -21,13 +21,14 @@ import {
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
-export class CloudflareMcpProvider extends BaseMcpProvider {
+export class CloudflareMcpProvider extends BaseMcpProvider<unknown> {
   readonly name = 'cloudflare';
 }
 
 export class CloudflareProvider extends BaseNonAgenticProvider<
   AiToolCollection,
-  AiTextGenerationToolInput
+  AiTextGenerationToolInput,
+  unknown
 > {
   readonly name = 'cloudflare';
 

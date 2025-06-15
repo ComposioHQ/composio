@@ -2,7 +2,7 @@
 export { Composio } from './composio';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProvider';
-export type { BaseComposioProvider } from './provider/BaseProvider';
+export type { BaseComposioProvider, McpServerGetResponse } from './provider/BaseProvider';
 export { BaseMcpProvider } from './provider/BaseProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
 export { BaseTelemetryTransport, ConsoleTelemetryTransport } from './telemetry/TelemetryTransport';
