@@ -13,7 +13,7 @@ import { BaseAgenticProvider, jsonSchemaToZodSchema, Tool, ExecuteToolFn } from 
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { BaseMcpProvider } from '@composio/core';
 
-export class LangchainMcpProvider extends BaseMcpProvider {
+export class LangchainMcpProvider extends BaseMcpProvider<unknown> {
   readonly name = 'langchain';
 }
 

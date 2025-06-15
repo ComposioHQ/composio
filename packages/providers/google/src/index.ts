@@ -13,7 +13,6 @@ import {
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  logger,
   BaseMcpProvider,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
