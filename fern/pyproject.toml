@@ -5,15 +5,17 @@ description = "Documentation generators for Composio"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "composio-openai>=0.7.11",
     "python-dotenv>=1.1.0",
     "inflection>=0.5.1",
     "click>=8.1.7",
     "ruamel-yaml>=0.18.10",
     "typing-extensions>=4.13.0",
-    "composio-core>=0.7.11",
     "composio-client==0.1.0a11",
     "openai>=1.79.0",
+    "composio-anthropic",
+    "composio",
+    "composio-core>=0.7.18",
+    "composio-openai>=0.7.18",
 ]
 
 [tool.ruff]
@@ -26,7 +28,11 @@ target-version = ["py312"]
 
 [tool.uv.sources]
 composio-langchain = { git = "ssh://git@github.com/composiohq/py-sdk-v3", subdirectory = "providers/langchain" }
+composio-anthropic = { git = "ssh://git@github.com/composiohq/py-sdk-v3", subdirectory = "providers/anthropic" }
 composio = { git = "ssh://git@github.com/composiohq/py-sdk-v3" }
+
+[tool.uv.workspace]
+members = ["snippets/migration"]
 
 [dependency-groups]
 dev = [

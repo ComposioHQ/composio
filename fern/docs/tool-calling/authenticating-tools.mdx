@@ -78,23 +78,24 @@ Here's how to authenticate a toolkit for a given user using the OAuth flow.
 ```typescript TypeScript maxLines=60  {3, 8-11}
 import { Composio } from "@composio/core";
 
-const linearAuthConfigId = "ac_1234";
 const composio = new Composio();
-
+const linearAuthConfigId = "ac_1234";
 const userId = "your@email.com";
 
-const connRequest = await composio.connectedAccounts.initiate(
-userId,
-linearAuthConfigId
-);
+// Initiate the OAuth connection request
+const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
 
-console.log(connRequest.redirectUrl);
+// Destructure redirectUrl for easier access
+const { redirectUrl, id } = connRequest;
+console.log(redirectUrl);
 
+// Wait for the connection to be established
 await connRequest.waitForConnection();
-// In case the `connRequest` object dies, the ID can be used too.
-await composio.connectedAccounts.waitForConnection(connRequest.id);
 
-````
+// If you only have the connection request ID, you can also wait using:
+await composio.connectedAccounts.waitForConnection(id);
+
+```
 ```python Python maxLines=60  wordWrap
 from composio import Composio
 
@@ -112,7 +113,7 @@ print(connection_request.redirect_url)
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
-````
+```
 
 </CodeGroup>
 
@@ -129,16 +130,16 @@ If you know the required authentication fields for your toolkit (like `apiKey` f
 const authConfigId = "ac_1234"; // For example, auth config id of Serp API
 
 const connectionRequest = await composio.connectedAccounts.initiate(
-userId,
-authConfigId,
-{
-data: {
-apiKey: "sk_1234567890", // The field name for the API key/token
-},
-}
+  userId,
+  authConfigId,
+  {
+    data: {
+      apiKey: "sk_1234567890", // The field name for the API key/token
+    },
+  }
 );
 
-````
+```
 ```python Python maxLines=60  wordWrap
 from composio.types import auth_scheme
 
@@ -154,7 +155,7 @@ connection_request = composio.connected_accounts.initiate(
     ),
 )
 print(connection_request)
-````
+```
 
 </CodeGroup>
 
@@ -173,12 +174,21 @@ const composio = new Composio();
 const userId = "your@email.com";
 const toolkits = await composio.toolkits.get("SERPAPI");
 
-const fieldNames = toolkits.authConfigDetails?.map(
-detail => detail.fields.connectedAccountInitiation
-);
+// Destructure for easier access to authConfigDetails
+const { authConfigDetails = [] } = toolkits;
+
+// Extract required and optional field names using destructuring
+const fieldNames = authConfigDetails.flatMap(({ fields }) => {
+  const { connectedAccountInitiation } = fields;
+  return [
+    ...(connectedAccountInitiation.required?.map(({ name }) => name) || []),
+    ...(connectedAccountInitiation.optional?.map(({ name }) => name) || [])
+  ];
+});
+
 console.log(fieldNames); // e.g. ["apiKey"]
 
-````
+```
 
 ```python Python maxLines=60  wordWrap
 required_fields = composio.connected_accounts.get_required_fields(
@@ -186,7 +196,7 @@ required_fields = composio.connected_accounts.get_required_fields(
     auth_scheme="API_KEY",
 )
 print(required_fields)
-````
+```
 
 </CodeGroup>
 
@@ -197,10 +207,10 @@ Below is a sample script that request the user or uses environment variables to 
 <CodeGroup>
 ```typescript TypeScript maxLines=60
 import { Composio } from "@composio/core";
-import * as readline from 'readline';
+import * as readline from "readline";
 
 const composio = new Composio({
-apiKey: process.env.COMPOSIO_API_KEY,
+  apiKey: process.env.COMPOSIO_API_KEY,
 });
 
 const userId = "your@email.com";
@@ -211,67 +221,73 @@ const REQUEST_USER_INPUT = true; // Set to false to use environment variables
 
 const toolkits = await composio.toolkits.get("SERPAPI");
 
-// Extract field names from authConfigDetails
-const authFields = toolkits.authConfigDetails?.flatMap(
-detail => [
-...detail.fields.connectedAccountInitiation.required.map(field => field.name),
-...detail.fields.connectedAccountInitiation.optional.map(field => field.name)
-]
-) || [];
+// Destructure for easier access to authConfigDetails
+const { authConfigDetails = [] } = toolkits;
+
+// Extract required and optional field names using destructuring
+const authFields = authConfigDetails.flatMap(({ fields }) => {
+  const { connectedAccountInitiation } = fields;
+  return [
+    ...(connectedAccountInitiation.required?.map(({ name }) => name) || []),
+    ...(connectedAccountInitiation.optional?.map(({ name }) => name) || []),
+  ];
+});
 
 console.log("Required authentication fields:", authFields);
 
 // Function to prompt user for input
 async function promptUser(fieldName: string): Promise<string> {
-const rl = readline.createInterface({
-input: process.stdin,
-output: process.stdout
-});
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-return new Promise((resolve) => {
-rl.question(`Please enter value for ${fieldName}: `, (answer) => {
-rl.close();
-resolve(answer);
-});
-});
+  return new Promise((resolve) => {
+    rl.question(`Please enter value for ${fieldName}: `, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
 }
 
 // Collect authentication data
 const authData: Record<string, string> = {};
 
 if (REQUEST_USER_INPUT) {
-// Request user input for each required field
-for (const fieldName of authFields) {
-authData[fieldName] = await promptUser(fieldName);
-}
+  // Request user input for each required field
+  for (const fieldName of authFields) {
+    authData[fieldName] = await promptUser(fieldName);
+  }
 } else {
-// Read values from environment variables
-console.log("Reading values from environment variables...");
-for (const fieldName of authFields) {
-const envValue = process.env[fieldName.toUpperCase()];
-if (envValue) {
-authData[fieldName] = envValue;
-console.log(`Found ${fieldName} in environment variables`);
-} else {
-console.warn(`Warning: Environment variable ${fieldName.toUpperCase()} not found`);
-authData[fieldName] = ""; // Set empty string as fallback
-}
-}
+  // Read values from environment variables
+  console.log("Reading values from environment variables...");
+  for (const fieldName of authFields) {
+    const envValue = process.env[fieldName.toUpperCase()];
+    if (envValue) {
+      authData[fieldName] = envValue;
+      console.log(`Found ${fieldName} in environment variables`);
+    } else {
+      console.warn(
+        `Warning: Environment variable ${fieldName.toUpperCase()} not found`
+      );
+      authData[fieldName] = ""; // Set empty string as fallback
+    }
+  }
 }
 
 console.log("Using authentication data:", authData);
 
 const connectionRequest = await composio.connectedAccounts.initiate(
-userId,
-authConfigId,
-{
-data: authData,
-}
+  userId,
+  authConfigId,
+  {
+    data: authData,
+  }
 );
 
 console.log("Connection request ID:", connectionRequest.id);
 
-````
+```
 ```python Python maxLines=60  wordWrap
 import os
 from composio import Composio
@@ -298,7 +314,7 @@ connection_request = composio.connected_accounts.initiate(
     ),
 )
 print(connection_request)
-````
+```
 
 </CodeGroup>
 </Accordion>

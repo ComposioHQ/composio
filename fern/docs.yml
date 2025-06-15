@@ -189,6 +189,13 @@ navigation:
     - page: Introduction
       path: pages/introduction.mdx
       slug: mcp-introduction
+  - section: Resources
+    icon: book
+    skip-slug: true
+    contents:
+    - page: Migration Guide
+      path: pages/migration-guide.mdx
+      slug: migration
 - tab: examples
   layout:
   - section: Getting Started
