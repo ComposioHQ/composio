@@ -38,14 +38,14 @@ export class MastraMcpProvider extends McpProvider<MastraUrlMap> {
   ): MastraUrlMap {
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.reduce((prev: MastraUrlMap, url: string, index: number) => {
-        prev[`${serverName}-${connectedAccountIds[index]}`] = {
+        prev[`${serverName}-${index}`] = {
           url: new URL(url),
         };
         return prev;
       }, {});
     } else if (userIds?.length && data.user_ids_url) {
       return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
-        prev[`${serverName}-${userIds[index]}`] = {
+        prev[`${serverName}-${index}`] = {
           url: new URL(url),
         };
         return prev;
