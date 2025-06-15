@@ -1,4 +1,7 @@
-import { JSONRPCRequest } from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/types';
+import { JSONRPCRequest } from 'composiohq-modelcontextprotocol-typescript-sdk/types';
+import { SSEClientTransport } from 'composiohq-modelcontextprotocol-typescript-sdk/client/sse';
+import { StreamableHTTPClientTransport } from 'composiohq-modelcontextprotocol-typescript-sdk/client/streamableHttp';
+import { Client } from 'composiohq-modelcontextprotocol-typescript-sdk/client/index';
 import { z } from 'zod';
 
 export async function getSSEClient(
@@ -6,14 +9,17 @@ export async function getSSEClient(
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   logStderr: (...args: any[]) => void
 ) {
-  const {
-    SSEClientTransport,
-  } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/sse.js');
+  // const {
+  //   SSEClientTransport,
+  // } = require('composiohq-modelcontextprotocol-typescript-sdk/client/sse');
+  // const {
+  //   JSONRPCRequest,
+  // } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/types.js');
   // Lazy import Client and StdioServerTransport to avoid ESM issues
-  const {
-    Client,
-  } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/index.js');
-  let sseTransport = new SSEClientTransport(new URL(sseUrl));
+  // const {
+  //   Client,
+  // } = require('composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/client/index.js');
+  let sseTransport = new StreamableHTTPClientTransport(new URL(sseUrl));
 
   const sseClient = new Client(
     { name: 'mcp-transport', version: '1.0.0' },
@@ -45,14 +51,14 @@ export async function getSSEClient(
           } catch (error) {
             // Ignore close errors
           }
-          sseTransport = new SSEClientTransport(new URL(sseUrl));
+          sseTransport = new StreamableHTTPClientTransport(new URL(sseUrl));
 
           sseTransport.onerror = async (err: Error) => {
-            logStderr('SSE error:', err);
+            logStderr('MCP Server error:', err);
           };
 
           sseTransport.onclose = async () => {
-            logStderr('SSE connection closed');
+            logStderr('MCP Server connection closed');
             try {
               await connect();
             } catch (error) {
@@ -65,7 +71,7 @@ export async function getSSEClient(
           return; // Success - exit the retry loop
         } catch (error) {
           retryCount++;
-          logStderr(`SSE connection error (attempt ${retryCount}/${maxRetries}):`, error);
+          logStderr(`MCP Server connection error (attempt ${retryCount}/${maxRetries}):`, error);
 
           if (retryCount === maxRetries) {
             throw error;
