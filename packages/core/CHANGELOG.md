@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.22
+
+### Patch Changes
+
+- Adds support for connected accounts allowMultiple flag, and other improvements
+
 ## 0.1.21
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @composio/anthropic
 
+## 0.1.22
+
+### Patch Changes
+
+- Adds support for connected accounts allowMultiple flag, and other improvements
+- Updated dependencies
+  - @composio/core@0.1.22
+
 ## 0.1.21
 
 ### Patch Changes
