@@ -11,6 +11,7 @@ from composio.tools.env.factory import (
     HostWorkspace,
     WorkspaceFactory,
     WorkspaceType,
+    DaytonaWorkspace,
 )
 
 from tests.conftest import E2E
@@ -76,3 +77,8 @@ class TestFlyIO(BaseFactoryTest):
     # If this test is failing make sure `Dockerfile.dev` is up to date and run `make publish-dev`
     type = FlyIOWorkspace
     config = WorkspaceType.FlyIO(image="composio/composio:dev")
+
+
+class TestDaytona(BaseFactoryTest):
+    type = DaytonaWorkspace
+    config = WorkspaceType.Daytona(image="composio/composio:dev")

@@ -26,6 +26,10 @@ Composio ships with a pre-defined set of local tools that run only on a machine.
   Deploy and manage workspaces for tool execution to Fly.io for global distribution and scale.
 </Card>
 
+<Card title="Daytona Workspace" icon="rocket" href="#daytona">
+  Isolate tool execution in lightning-fast, secure Daytona Sandboxes.
+</Card>
+
 ## Host
 By default, all local tools run directly on your host machine.
 
@@ -156,6 +160,47 @@ response = client.chat.completions.create(
     max_tokens=1024,
     tools=tools,
     messages=[{"role": "user", "content": "List files in Fly.io instance"}],
+)
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+## Daytona
+- Secure sandboxed environments
+- Lightning-fast execution
+- Optimized for LLMs, Agents, and Evals
+- Elastic infrastructure
+
+To use Daytona workspaces, install the Daytona workspace extension:
+```bash
+pip install composio-core[daytona]
+```
+
+```python focus {6-18}
+from composio_openai import ComposioToolSet, App, Action, WorkspaceType
+from openai import OpenAI
+
+client = OpenAI()
+
+toolset = ComposioToolSet(workspace_config=WorkspaceType.Daytona(
+    api_key="your_daytona_api_key",  # Required: Daytona API Key (or set the DAYTONA_API_KEY environment variable)
+    language="typescript",  # Optional: Programming language for the sandbox (default: "python")
+    image="your-custom-image:tag", # Optional: Custom Docker image to use for the sandbox
+    env_vars={"KEY": "VALUE"},  # Optional: Environment variables to set in the sandbox
+    labels={"KEY": "VALUE"}, # Optional: Custom labels for the sandbox
+    public=True, # Optional: Whether the sandbox should be public (default: False)
+    target="eu", # Optional: Target location for the sandbox (default: "us")
+    resources={"cpu": 2, "memory": 4}, # Optional: Resource configuration for the sandbox
+    auto_stop_interval=5, # Optional: Interval in minutes after which the sandbox will automatically stop if no event occurs during that time, 0 means no auto-stop (default: 15 minutes)
+    auto_archive_interval=60, # Optional: Interval in minutes after which a continuously stopped sandbox will automatically archive, 0 means the maximum interval will be used (default: 7 days)
+))
+tools = toolset.get_tools(["FILETOOL_LIST_FILES"])
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": "List files in Daytona sandbox"}],
 )
 result = toolset.handle_tool_calls(response)
 print(result)
