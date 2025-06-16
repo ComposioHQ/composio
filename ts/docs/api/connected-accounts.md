@@ -391,3 +391,41 @@ Each helper function returns a properly typed `ConnectionData` object that ensur
 
 - `INITIALIZING` for OAuth2, OAuth1, and ComposioLink schemes
 - `ACTIVE` for all other schemes
+
+## Multiple Connected Accounts
+
+By default, Composio prevents users from having multiple connected accounts for the same auth configuration. This is to prevent potential conflicts and ensure consistent behavior. However, you can override this behavior if your use case requires multiple connections.
+
+### Default Behavior
+
+When attempting to create a new connected account, if the user already has an active connection for that auth configuration, Composio will throw a `ComposioMultipleConnectedAccountsError`.
+
+```typescript
+// This will throw if the user already has a connection
+try {
+  await composio.connectedAccounts.initiate('user_123', 'auth_config_123');
+} catch (error) {
+  if (error instanceof ComposioMultipleConnectedAccountsError) {
+    console.log('User already has a connected account for this auth config');
+  }
+}
+```
+
+### Allowing Multiple Connections
+
+If your application needs to support multiple connections for the same auth configuration (e.g., connecting to multiple GitHub accounts), you can enable this by passing the `allowMultiple` option:
+
+```typescript
+// This will allow creating multiple connections
+const connection = await composio.connectedAccounts.initiate('user_123', 'auth_config_123', {
+  allowMultiple: true,
+});
+```
+
+When `allowMultiple` is enabled:
+
+- Multiple active connections are allowed for the same user and auth configuration
+- A warning will be logged to help track this behavior
+- You'll need to manage these multiple connections appropriately in your application logic
+
+> **Note:** Be cautious when enabling multiple connections as it may require additional handling in your application to manage which connection to use for specific operations.
