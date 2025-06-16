@@ -1,24 +1,22 @@
-# @composio/vercel
+# @composio/openai-agents
 
-The Vercel AI SDK provider for Composio SDK, providing seamless integration with Vercel's AI SDK and tools.
+The OpenAI Agents API provider for Composio SDK, providing seamless integration with OpenAI's Agents API and tools.
 
 ## Features
 
-- **Vercel AI SDK Integration**: Seamless integration with Vercel's AI SDK
-- **Streaming Support**: First-class support for streaming responses
-- **Model Agnostic**: Works with any model supported by Vercel AI SDK (OpenAI, Anthropic, etc.)
-- **UI Components**: Integration with Vercel's React components for chat interfaces
-- **Tool Execution**: Execute tools with proper parameter handling and streaming
+- **OpenAI Agents Integration**: Seamless integration with OpenAI's Agents SDK
+- **Tool Integration**: Easy integration of Composio tools with OpenAI Agents
 - **Type Safety**: Full TypeScript support with proper type definitions
+- **Strict Mode**: Support for strict mode tool parameter validation
 
 ## Installation
 
 ```bash
-npm install @composio/vercel ai
+npm install @composio/openai-agents @openai/agents
 # or
-yarn add @composio/vercel ai
+yarn add @composio/openai-agents @openai/agents
 # or
-pnpm add @composio/vercel ai
+pnpm add @composio/openai-agents @openai/agents
 ```
 
 ## Environment Variables
@@ -26,213 +24,55 @@ pnpm add @composio/vercel ai
 Required environment variables:
 
 - `COMPOSIO_API_KEY`: Your Composio API key
+- `OPENAI_API_KEY`: Your OpenAI API key
 
-Optional environment variables (based on model choice):
-
-- `OPENAI_API_KEY`: Your OpenAI API key (if using OpenAI)
-- `ANTHROPIC_API_KEY`: Your Anthropic API key (if using Anthropic)
-- `GEMINI_API_KEY`: Your Google AI API key (if using Gemini)
-
-## Quick Start
+## Example
 
 ```typescript
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
 import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-
-// Initialize Composio with Vercel provider
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-  provider: new VercelProvider(),
-});
-
-// Get available tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail', 'googlecalendar'],
-  limit: 10,
-});
-
-// Get a specific tool
-const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
-```
-
-## Examples
-
-Check out our complete example implementations:
-
-- [Basic Vercel Integration](../../examples/vercel/src/index.ts)
-
-### Basic Chat Completion with Streaming
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { useChat } from 'ai/react';
-
-// Initialize Composio with Vercel provider
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider()
-});
-
-// In your React component
-function ChatComponent() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
-    api: '/api/chat',
-  });
-
-  return (
-    <div>
-      {messages.map(m => (
-        <div key={m.id}>
-          {m.role === 'user' ? 'User: ' : 'AI: '}
-          {m.content}
-        </div>
-      ))}
-
-      <form onSubmit={handleSubmit}>
-        <input
-          value={input}
-          onChange={handleInputChange}
-          placeholder="Say something..."
-        />
-        <button type="submit">Send</button>
-      </form>
-    </div>
-  );
-}
-
-// In your API route (e.g. app/api/chat/route.ts)
-import { streamText } from 'ai';
-import { openai } from '@ai-sdk/openai';
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const tools = await composio.tools.get('user123', {
-    toolkits: ['gmail'],
-  });
-
-  const result = streamText({
-    model: openai('gpt-4'),
-    messages,
-    tools,
-  });
-
-  return result.toDataStreamResponse();
-}
-```
-
-### Tool Execution with Streaming
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { streamText } from 'ai';
+import { Agent, run } from '@openai/agents';
 
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
+  provider: new OpenAIAgentsProvider(),
 });
 
-// Example API route that handles tool execution
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const tools = await composio.tools.get('user123', {
-    toolkits: ['gmail', 'googlecalendar'],
-  });
+// Fetch tools from Composio
+const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
+  beforeExecute: async (toolSlug, toolkitSlug, params) => {
+    console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
+    return params;
+  },
+  afterExecute: async (toolSlug, toolkitSlug, result) => {
+    console.log(`✅ Tool ${toolSlug} executed`);
+    return result;
+  },
+});
 
-  const stream = streamText({
-    model: openai('gpt-4'),
-    messages,
-    tools,
-    callbacks: {
-      onToolCall: async tool => {
-        // Execute the tool and return result
-        return await composio.provider.executeToolCall(tool);
-      },
-    },
-  });
+// Create an agent with the tools
+const agent = new Agent({
+  name: 'Hackernews assistant',
+  tools: tools,
+});
 
-  return stream.toDataStreamResponse();
-}
+// Run the agent with a query
+const result = await run(agent, 'Tell me about the user `pg` in hackernews');
 ```
 
 ## Provider Configuration
 
-The Vercel provider can be configured with various options:
+The OpenAI Agents provider can be configured with various options:
 
 ```typescript
-const provider = new VercelProvider({
-  // Default model configuration
-  model: openai('gpt-4'),
-  // Custom execution modifiers
-  modifiers: {
-    beforeExecute: params => {
-      // Transform parameters before execution
-      return params;
-    },
-    afterExecute: response => {
-      // Transform response after execution
-      return response;
-    },
-  },
+const provider = new OpenAIAgentsProvider({
+  strict: true, // Enable strict mode for tool parameters
 });
 ```
 
-### Strict Mode
+## Documentation
 
-When using tools with Vercel AI SDK, you might need to ensure that all tool parameters are marked as required. This is because Vercel AI SDK's function calling implementation requires all fields to be marked as required. You can enable strict mode when fetching tools to automatically remove all non-required properties from both input and output parameters:
+For more information about OpenAI Agents and how to use them, see:
 
-```typescript
-// Get tools with strict mode enabled
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail', 'googlecalendar'],
-  strict: true, // This will remove all non-required properties from tool parameters
-});
-
-// Use these tools with Vercel AI SDK
-const stream = streamText({
-  model: openai('gpt-4'),
-  messages,
-  tools, // These tools will only have required parameters
-});
-```
-
-For more information about strict mode in function calling, see [OpenAI's documentation](https://platform.openai.com/docs/guides/function-calling#strict-mode).
-
-## API Reference
-
-### VercelProvider Class
-
-The `VercelProvider` class extends `BaseComposioProvider` and provides Vercel AI SDK-specific functionality.
-
-#### Methods
-
-##### `executeToolCall(tool: ToolCall): Promise<string>`
-
-Executes a tool call and returns the result.
-
-```typescript
-const result = await provider.executeToolCall(toolCall);
-```
-
-##### `handleToolCalls(stream: AIStream): AsyncGenerator<AIStreamEvent>`
-
-Handles tool calls from a stream and yields events.
-
-```typescript
-for await (const event of provider.handleToolCalls(stream)) {
-  // Handle events
-}
-```
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
-
-## License
-
-ISC License
-
-## Support
-
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
+- [OpenAI Strict Mode](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)
+- [OpenAI Agents SDK Documentation](https://openai.github.io/openai-agents-js/)
+- [OpenAI Agents SDK GitHub](https://github.com/openai/openai-agents-js)
