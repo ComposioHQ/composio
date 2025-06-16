@@ -1,0 +1,234 @@
+---
+title: Executing Tools
+image: "https://og.composio.dev/api/og?title=Executing%20Tools"   # image for socials
+keywords: ""
+subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
+hide-nav-links: false
+---
+
+Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tools for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+
+## Using Chat Completions
+For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
+This approach works consistently across all supported non-agent providers.
+
+To learn how to setup these providers, see [Providers](/providers).
+
+<CodeGroup>
+```typescript TypeScript (Anthropic) maxLines=60
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+
+const userId = "user@acme.com"; // User's UUID
+
+const anthropic = new Anthropic();
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new AnthropicProvider(),
+});
+
+const tools = await composio.tools.get(userId, {
+  tools: ["GITHUB_GET_THE_ZEN_OF_GITHUB"],
+});
+
+const msg = await anthropic.messages.create({
+  model: "claude-3-7-sonnet-latest",
+  tools: tools,
+  messages: [
+    {
+      role: "user",
+      content: "gimme me some zen!!",
+    },
+  ],
+  max_tokens: 1024,
+});
+
+
+const result = await composio.provider.handleToolCalls(userId, msg);
+console.log(result);
+```
+
+```python Python (Google) maxLines=60
+import anthropic
+
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+
+# Initialize tools.
+anthropic_client = anthropic.Anthropic()
+composio = Composio(provider=AnthropicProvider())
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
+
+# Get response from the LLM
+response = anthropic_client.messages.create(
+    model="claude-3-opus-20240229",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "gimme me some zen"},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(user_id="default", response=response)
+print(result)
+```
+</CodeGroup>
+
+
+## Using Agentic Frameworks
+Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
+
+
+<Tip icon="info">
+Here, the tool execution is handled by the agentic framework. Composio makes sure the tools are formatted into the correct objects for the agentic framework to execute.
+</Tip>
+
+<CodeGroup>
+```typescript TypeScript (Vercel) maxLines=60 wordWrap
+import { Composio } from "@composio/core";
+import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { VercelProvider } from "@composio/vercel";
+
+const userId = "0000";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+const tools = await composio.tools.get(userId, {
+    toolkits: ["LINEAR"],
+    limit: 15,
+});
+
+const { text } = await generateText({
+  model: anthropic("claude-3-7-sonnet-20250219"),
+  messages: [
+    {
+      role: "user",
+      content:
+        "Fetch all my projects",
+    },
+  ],
+  tools,
+  maxSteps: 5,
+});
+
+console.log(text);
+```
+
+```python Python (OpenAI Agents SDK)maxLines=60 wordWrap
+import asyncio
+from agents import Agent, Runner
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+user_id = "0000"
+
+# Initialize Composio toolset
+composio = Composio(provider=OpenAIAgentsProvider())
+
+# Get all the tools
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+)
+
+# Create an agent with the tools
+agent = Agent(
+    name="GitHub Agent",
+    instructions="You are a helpful assistant.",
+    tools=tools,
+)
+
+# Run the agent
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input=(
+            "Star the repository composiohq/composio on GitHub."
+        ),
+    )
+    print(result.final_output)
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+## Tools are scoped to a user
+Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
+
+The authentication state is checked and used while fetching and executing a tool.
+
+You need to authorize the user to execute tools.
+For more information on authentication, see [Authenticating Tools](./authenticating-tools). 
+
+## For Humans (deterministic tool calling)
+In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const userId = "user@example.com";
+const composio = new Composio();
+
+const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
+  userId,
+  arguments: {
+    username: "pg",
+  },
+});
+console.log(result);
+```
+
+```python Python maxLines=60 wordWrap
+
+user_id = "user@example.com"
+composio = Composio()
+
+result = composio.tools.execute(
+    "HACKERNEWS_GET_USER",
+    user_id=user_id,
+    arguments={"username": "pg"}
+)
+print(result)
+```
+</CodeGroup> 
+
+### Proxy Execute -- Manually calling toolkit APIs
+You can also proxy requests to an API of any supported toolkit. This is useful when you want to manually call an API of a toolkit and inject the authentication state from Composio.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+// Send a custom request to a toolkit
+const { data } = await composio.tools.proxyExecute({
+  toolkitSlug: 'github',
+  userId: 'user@example.com',
+  data: {
+    endpoint: '/repos/owner/repo/issues',
+    method: 'GET'
+  }
+});
+console.log(data);
+```
+```python Python maxLines=60 wordWrap
+response = composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ac_1234",  # use connected account for github
+    parameters=[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "type": "header",
+        },
+    ],
+)
+```
+</CodeGroup>
+
+If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).

@@ -27,23 +27,23 @@ typography:
     name: Roobert
     paths:
     - path: assets/Roobert-Medium.woff2
-      weight: "500"
+      weight: '500'
     - path: assets/Roobert-Regular.woff2
-      weight: "400"
+      weight: '400'
   headingsFont:
     name: Roobert
     paths:
-      # - path: assets/FlechTestSRegular.woff2
-      #   weight: "400"
+    # - path: assets/FlechTestSRegular.woff2
+    #   weight: "400"
     - path: assets/Roobert-Medium.woff2
-      weight: "500"
+      weight: '500'
     - path: assets/Roobert-Regular.woff2
-      weight: "400"
+      weight: '400'
   codeFont:
     name: IBM Plex Mono
     paths:
     - path: assets/IBMPlexMono-Light.ttf
-      weight: "400"
+      weight: '400'
     # - path: assets/IBMPlexMono-Medium.woff2
     #   weight: "500 525"
 navbar-links:
@@ -61,11 +61,11 @@ layout:
   sidebar-width: 298px
 colors:
   accent-primary:
-    light: "#4762DA"
-    dark: "#9EB6FF"
+    light: '#4762DA'
+    dark: '#9EB6FF'
   background:
-    light: "#F7F4F0"
-    dark: "#0A0C12"
+    light: '#F7F4F0'
+    dark: '#0A0C12'
   # sidebar-background:
   #   light: "#FAFAFA"
   #   dark: "#1C1C1C"
@@ -78,11 +78,6 @@ colors:
   # border:
   #   light: "#E0E0E0"
   #   dark: "#292929"
-experimental:
-  mdx-components:
-  - ./components
-  - ./icons
-  disable-stream-toggle: true
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
@@ -92,10 +87,9 @@ tabs:
     display-name: Guides
     icon: book
     slug: docs
-  # sdk-reference:
-  #   display-name: SDK Reference
-  #   href: https://deepwiki.com/ComposioHQ/composio
-  #   icon: code
+  sdk-reference:
+    display-name: SDK Reference
+    icon: code
   api-reference:
     display-name: API Reference
     icon: server
@@ -129,137 +123,140 @@ navigation:
     skip-slug: true
     contents:
     - page: Welcome
-      path: pages/get-started/welcome.mdx
+      path: pages/welcome.mdx
       slug: welcome
     - page: Quickstart
-      path: pages/get-started/quickstart.mdx
+      path: pages/quickstart.mdx
       slug: quickstart
+    - page: IDE and Agent Setup
+      path: pages/dev-setup.mdx
+      slug: dev-setup
     - page: Providers
-      path: pages/get-started/providers.mdx
+      path: pages/providers.mdx
       slug: providers
   - section: Tools
     icon: tools
     skip-slug: true
     contents:
     - page: Executing Tools
-      path: pages/tool-calling/executing-tools.mdx
+      path: pages/executing-tools.mdx
       slug: executing-tools
     - page: Authenticating Tools
-      path: pages/tool-calling/authenticating-tools.mdx
+      path: pages/authenticating-tools.mdx
       slug: authenticating-tools
     - page: Fetch and Filter Tools
-      path: pages/tool-calling/fetching-tools.mdx
+      path: pages/fetching-tools.mdx
       slug: fetching-tools
     - section: Modifiers
       slug: modifiers
       contents:
       - page: Schema Modifiers
-        path: pages/tool-calling/schema-modifiers.mdx
+        path: pages/schema-modifiers.mdx
         slug: schema-modifiers
       - page: Before Tool Execution
-        path: pages/tool-calling/before-execution-modifiers.mdx
+        path: pages/before-execution-modifiers.mdx
         slug: before-execution
       - page: After Tool Execution
-        path: pages/tool-calling/after-execution-modifiers.mdx
+        path: pages/after-execution-modifiers.mdx
         slug: after-execution
-    - page: Extending Toolkits with your own tools
-      path: pages/tool-calling/extending-toolkits.mdx
-      slug: extending-toolkits
+    - page: Custom tools
+      path: pages/custom-tools.mdx
+      slug: custom-tools
   - section: Authentication
     icon: lock
     skip-slug: true
     contents:
     - page: Custom Auth Configs
-      path: pages/authentication/custom-auth-configs.mdx
+      path: pages/custom-auth-configs.mdx
       slug: custom-auth-configs
     - page: Programmatic Auth Configs
-      path: pages/authentication/programmatic-auth-configs.mdx
+      path: pages/programmatic-auth-configs.mdx
       slug: programmatic-auth-configs
     - page: Custom Auth Parameters
-      path: pages/authentication/custom-auth-params.mdx
+      path: pages/custom-auth-params.mdx
       slug: custom-auth-params
   - section: Triggers
     icon: bolt
     skip-slug: true
     contents:
     - page: Using Triggers
-      path: pages/triggers/using-triggers.mdx
+      path: pages/using-triggers.mdx
       slug: using-triggers
   - section: MCP
     icon: server
     skip-slug: true
     contents:
     - page: Introduction
-      path: pages/mcp/introduction.mdx
+      path: pages/introduction.mdx
       slug: mcp-introduction
 - tab: examples
   layout:
-    - section: Getting Started
-      icon: rocket
-      skip-slug: true
-      contents:
-        - page: Hello World
-          path: pages/examples/dist/hello-world.mdx
-          slug: examples/hello-world
-        - page: Sample Script
-          path: pages/examples/dist/sample-script/sample-script.mdx
-          slug: examples/sample-script
-        - page: Sample Webserver
-          path: pages/examples/dist/sample-webserver/sample-webserver.mdx
-          slug: examples/sample-webserver
-    - section: Full Stack Applications
-      icon: globe
-      skip-slug: true
-      contents:
-        - page: Full Stack Chat App
-          path: pages/examples/dist/vercel-composio.mdx
-          slug: full-stack-chat-app
-    - section: Productivity & Automation
-      icon: zap
-      skip-slug: true
-      contents:
-        - page: Gmail Filterer
-          path: pages/examples/dist/gmail-filterer.mdx
-          slug: gmail-filterer
+  - section: Getting Started
+    icon: rocket
+    skip-slug: true
+    contents:
+    - page: Hello World
+      path: pages/hello-world.mdx
+      slug: examples/hello-world
+    - page: Sample Script
+      path: pages/sample-script.mdx
+      slug: examples/sample-script
+    - page: Basic Hono Server
+      path: pages/sample-webserver.mdx
+      slug: examples/sample-webserver
+  - section: Full Stack Applications
+    icon: globe
+    skip-slug: true
+    contents:
+    - page: Full Stack Chat App
+      path: pages/vercel-composio.mdx
+      slug: examples/chat-app
+  - section: Productivity & Automation
+    icon: zap
+    skip-slug: true
+    contents:
+    - page: Gmail Reaper
+      path: pages/gmail-filterer.mdx
+      slug: examples/gmail-reaper
 - tab: providers
   layout:
   - section: Providers
     icon: code
     contents:
     - page: OpenAI Provider
-      path: pages/providers/openai.mdx
+      path: pages/openai.mdx
     - page: Anthropic Provider
-      path: pages/providers/anthropic.mdx
-    - page: LangGraph Provider
-      path: pages/providers/langgraph.mdx
+      path: pages/anthropic.mdx
+    - page: LangChain Provider
+      path: pages/langchain.mdx
     - page: CrewAI Provider
-      path: pages/providers/crewai.mdx
+      path: pages/crewai.mdx
     - page: Vercel AI SDK Provider
-      path: pages/providers/vercel.mdx
+      path: pages/vercel.mdx
     - page: Google ADK Provider
-      path: pages/providers/google-adk.mdx
+      path: pages/google-adk.mdx
     - page: OpenAI Agents Provider
-      path: pages/providers/openai-agents.mdx
+      path: pages/openai-agents.mdx
     - page: Mastra Provider
-      path: pages/providers/mastra.mdx
+      path: pages/mastra.mdx
     - page: Custom Provider
-      path: pages/providers/custom.mdx
-# - tab: tools
-#   layout:
-#   - section: Tools
-#     contents:
-#     - page: Introduction
-#       path: pages/tools/introduction.mdx
-#     - page: Ably
-#       path: tools/ably.mdx
-#     - page: Accelo
-#       path: tools/accelo.mdx
-#     - page: Acculynx
-#       path: tools/acculynx.mdx
-#     - page: Active Campaign
-#       path: tools/active_campaign.mdx
-#     - page: Adobe
-#       path: tools/adobe.mdx
+      path: pages/custom.mdx
+- tab: tools
+  layout:
+  - section: Tools
+    contents:
+    - page: Introduction
+      path: tools/introduction.mdx
+    - page: Ably
+      path: tools/ably.mdx
+    - page: Accelo
+      path: tools/accelo.mdx
+    - page: Acculynx
+      path: tools/acculynx.mdx
+    - page: Active Campaign
+      path: tools/active_campaign.mdx
+    - page: Adobe
+      path: tools/adobe.mdx
     # - page: Aero Workflow
       # path: tools/aero_workflow.mdx
     # - page: Affinity
@@ -390,6 +387,8 @@ navigation:
       # path: tools/composio.mdx
     # - page: Composio Search
       # path: tools/composio_search.mdx
+    # - page: Confluence
+      # path: tools/confluence.mdx
     # - page: Contentful
       # path: tools/contentful.mdx
     # - page: Crustdata
@@ -508,6 +507,8 @@ navigation:
       # path: tools/googlephotos.mdx
     # - page: Googlesheets
       # path: tools/googlesheets.mdx
+    # - page: Googleslides
+      # path: tools/googleslides.mdx
     # - page: Googlesuper
       # path: tools/googlesuper.mdx
     # - page: Googletasks
@@ -852,55 +853,48 @@ navigation:
       # path: tools/zoom.mdx
     # - page: Zoominfo
       # path: tools/zoominfo.mdx
-# - tab: sdk-reference
-#   layout:
-#   - section: Python
-#     icon: python
-#     contents:
-#     - page: Python SDK
-#       path: pages/sdk/python/index.mdx
-#   - section: TypeScript
-#     icon: typescript
-#     contents:
-#     - section: Core Classes
-#       slug: core-classes
-#       contents:
-#       - page: Composio
-#         path: pages/sdk/typescript/composio/classes/Composio.mdx
-#       - page: ComposioProvider
-#         path: pages/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
-#       - page: OpenAIProvider
-#         path: pages/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
-#       - page: BaseAgenticProvider
-#         path: pages/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
-#       - page: BaseNonAgenticProvider
-#         path: pages/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
-#     - section: Models
-#       slug: models
-#       contents:
-#       - page: Tools
-#         path: pages/sdk/typescript/models/Tools/classes/Tools.mdx
-#       - page: Toolkits
-#         path: pages/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
-#       - page: Triggers
-#         path: pages/sdk/typescript/models/Triggers/classes/Triggers.mdx
-#       - page: AuthConfigs
-#         path: pages/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
-#       - page: ConnectedAccounts
-#         path: pages/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
-#       - page: ConnectionRequest
-#         path: pages/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
-#       - page: CustomTools
-#         path: pages/sdk/typescript/CustomTools/classes/CustomTools.mdx
-#       - page: Session
-#         path: pages/sdk/typescript/models/Session/classes/Session.mdx
-# - tab: api-reference
-#   layout:
-#   - section: API Reference
-#     contents:
-#     - api: v3
-#       api-name: v3
-#       skip-slug: true
-#       paginated: false
-#       flattened: true
+- tab: sdk-reference
+  layout:
+  - section: TypeScript
+    icon: typescript
+    contents:
+    - section: Core Classes
+      slug: core-classes
+      contents:
+      - page: Composio
+        path: pages/sdk/typescript/composio/classes/Composio.mdx
+      - page: ComposioProvider
+        path: pages/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
+      - page: OpenAIProvider
+        path: pages/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
+      - page: BaseAgenticProvider
+        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
+      - page: BaseNonAgenticProvider
+        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
+    - section: Models
+      slug: models
+      contents:
+      - page: Tools
+        path: pages/sdk/typescript/models/Tools/classes/Tools.mdx
+      - page: Toolkits
+        path: pages/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
+      - page: Triggers
+        path: pages/sdk/typescript/models/Triggers/classes/Triggers.mdx
+      - page: AuthConfigs
+        path: pages/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
+      - page: ConnectedAccounts
+        path: pages/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
+      - page: ConnectionRequest
+        path: pages/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
+      - page: CustomTools
+        path: pages/sdk/typescript/CustomTools/classes/CustomTools.mdx
+- tab: api-reference
+  layout:
+  - section: API Reference
+    contents:
+    - api: v3
+      api-name: v3
+      skip-slug: true
+      paginated: false
+      flattened: true
 - tab: changelog

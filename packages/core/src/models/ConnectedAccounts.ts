@@ -104,17 +104,50 @@ export class ConnectedAccounts {
    * Compound function to create a new connected account.
    * This function creates a new connected account and returns a connection request.
    * Users can then wait for the connection to be established using the `waitForConnection` method.
+   *
    * @param {string} userId - User ID of the connected account
    * @param {string} authConfigId - Auth config ID of the connected account
-   * @param {CreateConnectedAccountOptions} data - Data for creating a new connected account
+   * @param {CreateConnectedAccountOptions} options - Options for creating a new connected account
    * @returns {Promise<ConnectionRequest>} Connection request object
    *
    * @example
-   * const connectionRequest = await composio.createConnectedAccount('user_123', 'auth_config_123', {
-   *   data: {
-   *     name: 'My Connected Account',
-   *   },
-   * });
+   * ```typescript
+   * // For OAuth2 authentication
+   * const connectionRequest = await composio.connectedAccounts.initiate(
+   *   'user_123',
+   *   'auth_config_123',
+   *   {
+   *     callbackUrl: 'https://your-app.com/callback',
+   *     config: AuthScheme.OAuth2({
+   *       access_token: 'your_access_token',
+   *       token_type: 'Bearer'
+   *     })
+   *   }
+   * );
+   *
+   * // For API Key authentication
+   * const connectionRequest = await composio.connectedAccounts.initiate(
+   *   'user_123',
+   *   'auth_config_123',
+   *   {
+   *     config: AuthScheme.ApiKey({
+   *       api_key: 'your_api_key'
+   *     })
+   *   }
+   * );
+   *
+   * // For Basic authentication
+   * const connectionRequest = await composio.connectedAccounts.initiate(
+   *   'user_123',
+   *   'auth_config_123',
+   *   {
+   *     config: AuthScheme.Basic({
+   *       username: 'your_username',
+   *       password: 'your_password'
+   *     })
+   *   }
+   * );
+   * ```
    *
    * @link https://docs.composio.dev/reference/connected-accounts/create-connected-account
    */
@@ -128,7 +161,7 @@ export class ConnectedAccounts {
         id: authConfigId,
       },
       connection: {
-        state: options?.state,
+        state: options?.config,
         callback_url: options?.callbackUrl,
         user_id: userId,
       },

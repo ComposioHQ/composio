@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { nullable, z } from 'zod';
 
 /**
  * Toolkit is the collection of tools,
@@ -26,21 +26,69 @@ const JSONSchemaType = z.enum([
 
 // JSON Schema property definition
 const JSONSchemaProperty: z.ZodType<unknown> = z.object({
-  type: JSONSchemaType.optional(),
+  type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
+  anyOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
+  oneOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
+  allOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
+  not: z.lazy(() => JSONSchemaProperty).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
+  nullable: z.boolean().optional(),
   properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
   required: z.array(z.string()).optional(),
-  items: z.lazy(() => JSONSchemaProperty).optional(),
+  items: z.lazy(() => z.union([JSONSchemaProperty, z.array(JSONSchemaProperty)])).optional(),
+  enum: z.array(z.any()).optional(),
+  const: z.any().optional(),
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+  exclusiveMinimum: z.number().optional(),
+  exclusiveMaximum: z.number().optional(),
+  multipleOf: z.number().optional(),
+  minLength: z.number().optional(),
+  maxLength: z.number().optional(),
+  pattern: z.string().optional(),
+  format: z.string().optional(),
+  minItems: z.number().optional(),
+  maxItems: z.number().optional(),
+  uniqueItems: z.boolean().optional(),
+  minProperties: z.number().optional(),
+  maxProperties: z.number().optional(),
+  patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
+  additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaProperty)]).optional(),
+  examples: z.array(z.any()).optional(),
+  readOnly: z.boolean().optional(),
+  writeOnly: z.boolean().optional(),
+  if: z.lazy(() => JSONSchemaProperty).optional(),
+  then: z.lazy(() => JSONSchemaProperty).optional(),
+  else: z.lazy(() => JSONSchemaProperty).optional(),
+  $ref: z.string().optional(),
+  definitions: z
+    .record(
+      z.string(),
+      z.lazy(() => JSONSchemaProperty)
+    )
+    .optional(),
+  $defs: z
+    .record(
+      z.string(),
+      z.lazy(() => JSONSchemaProperty)
+    )
+    .optional(),
 });
 
 // Schema for parameters (input/output)
 const ParametersSchema = z.object({
   type: z.literal('object'),
+  anyOf: z.array(JSONSchemaProperty).optional(),
+  oneOf: z.array(JSONSchemaProperty).optional(),
+  allOf: z.array(JSONSchemaProperty).optional(),
+  not: JSONSchemaProperty.optional(),
   properties: z.record(z.string(), JSONSchemaProperty),
   required: z.array(z.string()).optional(),
   title: z.string().optional(),
+  default: z.any().optional(),
+  nullable: z.boolean().optional(),
   description: z.string().optional(),
   additionalProperties: z.boolean().default(false).optional(),
 });

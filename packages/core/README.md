@@ -56,7 +56,7 @@ interface ComposioConfig {
   allowTracking?: boolean; // Enable/disable telemetry (default: true)
   allowTracing?: boolean; // Enable/disable tracing (default: true)
   provider?: TProvider; // Custom provider (default: OpenAIProvider)
-  telemetryTransport?: BaseTelemetryTransport; // Custom telemetry transport
+  host?: string; // Name of the host service which is using the SDK, this is for telemetry.
 }
 ```
 

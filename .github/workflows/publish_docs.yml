@@ -1,0 +1,43 @@
+name: Publish Docs
+
+on:
+  push:
+    branches:
+      - next
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
+    if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1 }}
+    permissions: write-all
+    env:
+      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Python Dependencies
+        working-directory: ./fern
+        run: |
+          uv sync
+          uv run composio apps generate-types
+
+      - name: Install Fern
+        run: npm install -g fern-api
+
+      - name: Build documentation with Turbo
+        working-directory: ./fern
+        run: pnpm turbo run build
+
+      - name: Publish Docs
+        working-directory: ./fern
+        env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm turbo run publish

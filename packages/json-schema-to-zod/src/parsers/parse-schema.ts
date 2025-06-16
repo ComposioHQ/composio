@@ -85,7 +85,7 @@ export const parseSchema = (
   jsonSchema: JsonSchema,
   refs: Refs = { seen: new Map(), path: [] },
   blockMeta?: boolean
-): z.ZodTypeAny => {
+): z.ZodType => {
   if (typeof jsonSchema !== 'object') return jsonSchema ? z.any() : z.never();
 
   if (refs.parserOverride) {

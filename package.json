@@ -6,24 +6,28 @@
   "workspaces": [
     "packages/core",
     "packages/json-schema-to-zod",
-    "packages/providers/*"
+    "packages/providers/*",
+    "fern"
   ],
   "scripts": {
     "build": "turbo build",
+    "build:packages": "turbo build --filter=./packages/**",
     "test": "turbo test --filter=./packages/**",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext .ts,.tsx",
+    "lint:packages": "eslint packages --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint:fix:packages": "eslint packages --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prepare": "husky",
     "create:provider": "bash scripts/create-provider.sh",
     "create:example": "bash scripts/create-example.sh",
     "check:peer-deps": "tsx scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx scripts/update-peer-deps.ts",
-    "prepublish": "pnpm run build",
+    "prepublish": "pnpm run build:packages",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:release": "pnpm run build && changeset publish",
+    "changeset:release": "pnpm run build:packages && changeset publish",
     "changeset:pre-enter": "changeset pre enter alpha",
     "changeset:pre-exit": "changeset pre exit alpha"
   },
@@ -44,10 +48,10 @@
     "zod": "^3.24.2"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
+    "packages/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
-    "*.{ts,tsx,js,jsx,json,md}": [
+    "packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ]
   },

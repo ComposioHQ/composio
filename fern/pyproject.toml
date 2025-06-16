@@ -23,3 +23,14 @@ target-version = "py312"
 [tool.black]
 line-length = 100
 target-version = ["py312"]
+
+[tool.uv.sources]
+composio-langchain = { git = "ssh://git@github.com/composiohq/py-sdk-v3", subdirectory = "providers/langchain" }
+composio = { git = "ssh://git@github.com/composiohq/py-sdk-v3" }
+
+[dependency-groups]
+dev = [
+    "composio",
+    "composio-langchain",
+    "langchain>=0.3.25",
+]

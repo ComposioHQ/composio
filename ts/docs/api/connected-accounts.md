@@ -36,25 +36,44 @@ const githubAccounts = await composio.connectedAccounts.list({
 Creates a new connected account and returns a connection request. Users can then wait for the connection to be established using the `waitForConnection` method.
 
 ```typescript
-const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'auth_config_123', {
-  data: {
-    name: 'My GitHub Account',
-  },
+// For OAuth based auth configs (no additional parameters needed)
+const oauthConnection = await composio.connectedAccounts.initiate('user_123', 'auth_config_123', {
   callbackUrl: 'https://myapp.com/auth/callback',
 });
 
-// The redirectUrl is where the user should be redirected to authenticate
-console.log(connectionRequest.redirectUrl);
+// For API Key based auth configs (requires additional parameters)
+const apiKeyConnection = await composio.connectedAccounts.initiate('user_123', 'auth_config_456', {
+  config: AuthScheme.ApiKey({
+    api_key: 'your_api_key_here',
+  }),
+});
 
-// wait for the user to connected the acocunt
-const connectedAccount = await connectionRequest.waitForConnection();
+// For Basic Auth based auth configs (requires username/password)
+const basicAuthConnection = await composio.connectedAccounts.initiate(
+  'user_123',
+  'auth_config_789',
+  {
+    config: AuthScheme.Basic({
+      username: 'your_username',
+      password: 'your_password',
+    }),
+  }
+);
+
+// The redirectUrl is where the user should be redirected to authenticate (for OAuth flows)
+console.log(oauthConnection.redirectUrl);
+
+// wait for the user to connect the account
+const connectedAccount = await oauthConnection.waitForConnection();
 ```
 
 **Parameters:**
 
 - `userId` (string): User ID of the connected account
 - `authConfigId` (string): Auth config ID of the connected account
-- `options` (CreateConnectedAccountOptions): Data for creating a new connected account
+- `options` (CreateConnectedAccountOptions): Options for creating a new connected account
+  - `config`: Connection configuration using AuthScheme helpers
+  - `callbackUrl`: URL to redirect after OAuth authentication
 
 **Returns:** Promise<ConnectionRequest> - Connection request object
 
@@ -244,7 +263,7 @@ interface ConnectedAccountRetrieveResponse {
 
 ```typescript
 interface CreateConnectedAccountOptions {
-  data?: Record<string, unknown>; // Additional data for the connection
+  config?: ConnectionData; // Connection configuration using AuthScheme helpers
   callbackUrl?: string; // URL to redirect after authentication
 }
 ```
@@ -256,3 +275,119 @@ interface ConnectedAccountUpdateStatusParams {
   enabled: boolean; // Whether the account should be enabled
 }
 ```
+
+### Available Authentication Types
+
+The SDK provides helper functions through the `AuthScheme` class for creating properly typed connection configurations. Here's a list of all available authentication schemes and their helper functions:
+
+1. **OAuth2** - No additional parameters needed
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId);
+   ```
+
+2. **OAuth1** - No additional parameters needed
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId);
+   ```
+
+3. **API Key** - Requires API key parameter
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.ApiKey({
+       api_key: 'your_api_key',
+     }),
+   });
+   ```
+
+4. **Basic Auth** - Requires username and password
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.Basic({
+       username: 'your_username',
+       password: 'your_password',
+     }),
+   });
+   ```
+
+5. **Bearer Token** - Requires token
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.BearerToken({
+       token: 'your_bearer_token',
+     }),
+   });
+   ```
+
+6. **Google Service Account** - Requires credentials JSON
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.GoogleServiceAccount({
+       credentials_json: 'your_credentials_json',
+     }),
+   });
+   ```
+
+7. **Basic with JWT** - Requires username, password, and JWT
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.BasicWithJwt({
+       username: 'your_username',
+       password: 'your_password',
+       jwt: 'your_jwt_token',
+     }),
+   });
+   ```
+
+8. **Bill.com Auth** - Requires session ID and dev key
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.BillcomAuth({
+       sessionId: 'your_session_id',
+       devKey: 'your_dev_key',
+     }),
+   });
+   ```
+
+9. **Composio Link** - No additional parameters needed
+
+   ```typescript
+   await composio.connectedAccounts.initiate(userId, authConfigId, {
+     config: AuthScheme.ComposioLink(),
+   });
+   ```
+
+10. **Cal.com Auth** - No additional parameters needed
+
+    ```typescript
+    await composio.connectedAccounts.initiate(userId, authConfigId, {
+      config: AuthScheme.CalcomAuth(),
+    });
+    ```
+
+11. **Snowflake** - No additional parameters needed
+
+    ```typescript
+    await composio.connectedAccounts.initiate(userId, authConfigId, {
+      config: AuthScheme.Snowflake(),
+    });
+    ```
+
+12. **No Auth** - No additional parameters needed
+    ```typescript
+    await composio.connectedAccounts.initiate(userId, authConfigId, {
+      config: AuthScheme.NoAuth(),
+    });
+    ```
+
+Each helper function returns a properly typed `ConnectionData` object that ensures type safety and validation through Zod schemas. The connection status will be set to:
+
+- `INITIALIZING` for OAuth2, OAuth1, and ComposioLink schemes
+- `ACTIVE` for all other schemes

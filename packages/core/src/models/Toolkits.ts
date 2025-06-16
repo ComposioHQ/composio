@@ -10,6 +10,8 @@ import {
   ToolkitRetrieveCategoriesResponse,
   ToolkitRetrieveCategoriesResponseSchema,
   ToolkitCategorySchema,
+  ToolkitAuthField,
+  ToolkitAuthFieldsResponse,
 } from '../types/toolkit.types';
 import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../errors';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -18,6 +20,8 @@ import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
 import { ConnectedAccounts } from './ConnectedAccounts';
 import { ConnectionRequest } from './ConnectionRequest';
 import { telemetry } from '../telemetry/Telemetry';
+import { AuthSchemeEnum, AuthSchemeType } from '../types/authConfigs.types';
+import logger from '../utils/logger';
 /**
  * Toolkits class
  *
@@ -58,22 +62,34 @@ export class Toolkits {
         sort_by: parsedQuery.data.sortBy,
       });
 
-      const parsedResult = ToolKitListResponseSchema.safeParse({
-        items: result.items.map(item => {
-          const parsedItem = ToolKitItemSchema.parse({
+      const parsedResult = ToolKitListResponseSchema.safeParse(
+        result.items.map(item => {
+          const parsedItem = ToolKitItemSchema.safeParse({
             name: item.name,
             slug: item.slug,
-            meta: item.meta,
+            meta: {
+              ...item.meta,
+              createdAt: item.meta.created_at,
+              updatedAt: item.meta.updated_at,
+              toolsCount: item.meta.tools_count,
+              triggersCount: item.meta.triggers_count,
+              categories: item.meta.categories,
+              appUrl: item.meta.app_url,
+              logo: item.meta.logo,
+            },
             isLocalToolkit: item.is_local_toolkit,
             authSchemes: item.auth_schemes,
             composioManagedAuthSchemes: item.composio_managed_auth_schemes,
             noAuth: item.no_auth,
           });
-          return parsedItem;
-        }),
-        nextCursor: result.next_cursor,
-        totalPages: result.total_pages,
-      });
+          if (!parsedItem.success) {
+            throw new ValidationError('Failed to parse toolkit response', {
+              cause: parsedItem.error,
+            });
+          }
+          return parsedItem.data;
+        })
+      );
 
       if (!parsedResult.success) {
         throw new ValidationError('Failed to parse toolkit list response', {
@@ -101,7 +117,7 @@ export class Toolkits {
    *
    * @private
    */
-  private async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+  protected async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
     try {
       const result = await this.client.toolkits.retrieve(slug);
       const parsedResult = ToolkitRetrieveResponseSchema.safeParse({
@@ -209,6 +225,114 @@ export class Toolkits {
     return this.getToolkits(arg);
   }
 
+  private async getAuthConfigFields(
+    toolkitSlug: string,
+    authScheme: AuthSchemeType | null,
+    authConfigType: 'authConfigCreation' | 'connectedAccountInitiation',
+    requiredOnly: boolean
+  ): Promise<ToolkitAuthFieldsResponse> {
+    const toolkit = await this.getToolkitBySlug(toolkitSlug);
+    if (!toolkit.authConfigDetails) {
+      throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
+        meta: {
+          toolkitSlug,
+        },
+      });
+    }
+
+    // if multiple auth configs are found, warn the user and select the first one
+    if (toolkit.authConfigDetails.length > 1 && !authScheme) {
+      logger.warn(
+        `Multiple auth configs found for ${toolkitSlug}, please specify the auth scheme to get details of specific auth scheme. Selecting the first scheme by default.`,
+        {
+          meta: {
+            toolkitSlug,
+          },
+        }
+      );
+    }
+
+    // if authScheme is provided, find the auth config for the given auth scheme
+    // otherwise, use the first auth config
+    const authConfig = authScheme
+      ? toolkit.authConfigDetails.find(authConfig => authConfig.mode === authScheme)
+      : toolkit.authConfigDetails[0];
+
+    if (!authConfig) {
+      throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
+        meta: {
+          toolkitSlug,
+          authScheme,
+        },
+      });
+    }
+
+    const requiredFields = authConfig.fields[authConfigType].required.map(field => ({
+      ...field,
+      required: true,
+    }));
+    if (requiredOnly) {
+      return {
+        authScheme: AuthSchemeEnum.parse(authConfig.mode),
+        fields: requiredFields,
+      };
+    }
+
+    const optionalFields = authConfig.fields[authConfigType].optional.map(field => ({
+      ...field,
+      required: false,
+    }));
+
+    return {
+      authScheme: AuthSchemeEnum.parse(authConfig.mode),
+      fields: [...requiredFields, ...optionalFields],
+    };
+  }
+
+  /**
+   * Retrieves the fields required for creating an auth config for a toolkit.
+   * @param toolkitSlug - The slug of the toolkit to retrieve the fields for
+   * @param authScheme - The auth scheme to retrieve the fields for
+   * @param requiredOnly - Whether to only return the required fields
+   * @returns {Promise<ToolkitAuthFieldsResponse>} The fields required for creating an auth config
+   */
+  async getAuthConfigCreationFields(
+    toolkitSlug: string,
+    {
+      authScheme,
+      requiredOnly = false,
+    }: { authScheme?: AuthSchemeType; requiredOnly?: boolean } = {}
+  ): Promise<ToolkitAuthFieldsResponse> {
+    return this.getAuthConfigFields(
+      toolkitSlug,
+      authScheme ?? null,
+      'authConfigCreation',
+      requiredOnly
+    );
+  }
+
+  /**
+   * Retrieves the fields required for initiating a connected account for a toolkit.
+   * @param toolkitSlug - The slug of the toolkit to retrieve the fields for
+   * @param authScheme - The auth scheme to retrieve the fields for
+   * @param requiredOnly - Whether to only return the required fields
+   * @returns {Promise<ToolkitAuthFieldsResponse>} The fields required for initiating a connected account
+   */
+  async getConnectedAccountInitiationFields(
+    toolkitSlug: string,
+    {
+      authScheme,
+      requiredOnly = false,
+    }: { authScheme?: AuthSchemeType; requiredOnly?: boolean } = {}
+  ): Promise<ToolkitAuthFieldsResponse> {
+    return this.getAuthConfigFields(
+      toolkitSlug,
+      authScheme ?? null,
+      'connectedAccountInitiation',
+      requiredOnly
+    );
+  }
+
   /**
    * Retrieves all toolkit categories available in the Composio SDK.
    *
@@ -226,7 +350,7 @@ export class Toolkits {
    */
   async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
     const result = await this.client.toolkits.retrieveCategories();
-    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.parse({
+    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.safeParse({
       items: result.items.map(item => {
         const parsedItem = ToolkitCategorySchema.parse({
           id: item.id,
@@ -237,7 +361,12 @@ export class Toolkits {
       nextCursor: result.next_cursor,
       totalPages: result.total_pages,
     });
-    return parsedResult;
+    if (!parsedResult.success) {
+      throw new ValidationError('Failed to parse toolkit categories response', {
+        cause: parsedResult.error,
+      });
+    }
+    return parsedResult.data;
   }
 
   /**

@@ -1,5 +1,53 @@
 # @composio/mastra
 
+## 0.1.21
+
+### Patch Changes
+
+- Add host name support in SDK
+- Updated dependencies
+  - @composio/core@0.1.21
+
+## 0.1.20
+
+### Patch Changes
+
+- 1ab34ef: Fix json schema support in tools
+- Updated dependencies [1ab34ef]
+  - @composio/core@0.1.20
+
+## 0.1.19
+
+### Patch Changes
+
+- c8e89d5: Fix telemetry transport
+- Updated dependencies [c8e89d5]
+  - @composio/core@0.1.19
+
+## 0.1.18
+
+### Patch Changes
+
+- 37a1f01: Feat better connected account creation flow
+- Updated dependencies [37a1f01]
+  - @composio/core@0.1.18
+
+## 0.1.17
+
+### Patch Changes
+
+- df31cc2: Fix json schema parsing
+- Updated dependencies [df31cc2]
+  - @composio/core@0.1.17
+
+## 0.1.16
+
+### Patch Changes
+
+- f943ba4: Export all the types from the core SDK
+- Updated dependencies [f943ba4]
+  - @composio/core@0.1.16
+
 ## 0.1.15
 
 ### Patch Changes

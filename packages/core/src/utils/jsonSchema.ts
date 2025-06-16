@@ -68,7 +68,7 @@ export function jsonSchemaToZodSchema(
   { strict }: { strict?: boolean } = {
     strict: false,
   }
-): z.ZodObject<Record<string, z.ZodTypeAny>> {
+): z.ZodTypeAny {
   try {
     let schema = jsonSchema;
     // Remove all non-required properties from the schema if strict is true
@@ -82,7 +82,8 @@ export function jsonSchemaToZodSchema(
       );
     }
     // Convert the JSON schema properties to Zod schema
-    return jsonSchemaToZod(schema);
+    const zodSchema = jsonSchemaToZod(schema) as z.ZodTypeAny;
+    return zodSchema;
   } catch (error) {
     throw new JsonSchemaToZodError('Failed to convert JSON Schema to Zod Schema', {
       cause: error,

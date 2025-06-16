@@ -105,7 +105,7 @@ describe('CustomTools', () => {
 
       expect(toolOptions.execute).toHaveBeenCalledWith(
         executeParams.arguments,
-        {},
+        null,
         expect.any(Function)
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
@@ -146,8 +146,14 @@ describe('CustomTools', () => {
           is_disabled: false,
         },
         user_id: 'test-user',
-        data: {
-          apiKey: 'test-key',
+        data: {},
+        state: {
+          authScheme: 'OAUTH2',
+          val: {
+            status: 'ACTIVE',
+            access_token: 'test-token',
+            token_type: 'Bearer',
+          },
         },
         status: 'ACTIVE',
         status_reason: null,
@@ -175,7 +181,7 @@ describe('CustomTools', () => {
 
         expect(toolkitTool.execute).toHaveBeenCalledWith(
           executeParams.arguments,
-          mockConnectedAccount.data,
+          mockConnectedAccount.state,
           expect.any(Function)
         );
       });
@@ -199,7 +205,7 @@ describe('CustomTools', () => {
 
         expect(toolkitTool.execute).toHaveBeenCalledWith(
           executeParams.arguments,
-          specificConnectedAccount.data,
+          specificConnectedAccount.state,
           expect.any(Function)
         );
       });

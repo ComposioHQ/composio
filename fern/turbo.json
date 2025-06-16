@@ -1,18 +1,99 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "tasks": {
-      "dev": {
-        "with": ["examples:dev"],
-        "outputs": ["dist/"]
-      },
-      "build": {
-        "dependsOn": ["examples:build"],
-        "outputs": ["dist/"]
-      },
-      "test": {
-        "dependsOn": ["^build"],
-        "outputs": ["dist/"]
-      }
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "tools:uncomment", "sdkdocs"],
+      "outputs": ["pages/*.mdx", "tools/*.mdx", "pages/sdk/**"],
+      "cache": true
+    },
+    
+    "dev": {
+      "dependsOn": ["tools:comment", "snippets:build"],
+      "persistent": true,
+      "cache": false
+    },
+    
+    "api:pull": {
+      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json"],
+      "cache": true
+    },
+    
+    "add-og": {
+      "dependsOn": ["^build"],
+      "outputs": ["pages/**/*.mdx"],
+      "inputs": ["scripts/add_og_imgs.py", "pages/**/*.mdx"],
+      "cache": true
+    },
+    
+    "snippets:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["pages/**"],
+      "inputs": ["scripts/build-snippets.ts", "snippets/**"],
+      "cache": true
+    },
+    
+    "snippets:dev": {
+      "persistent": true,
+      "cache": false
+    },
+    
+    "tools:generate": {
+      "outputs": ["tools/**"],
+      "inputs": ["generators/tool_doc_generator/**/*.py"],
+      "cache": true,
+      "env": ["COMPOSIO_API_KEY"]
+    },
+    
+    "tools:comment": {
+      "outputs": ["docs.yml"],
+      "inputs": ["scripts/manage-tool-docs.py", "docs.yml"],
+      "cache": true
+    },
+    
+    "tools:uncomment": {
+      "outputs": ["docs.yml"],
+      "inputs": ["scripts/manage-tool-docs.py", "docs.yml"],
+      "cache": true
+    },
+    
+    "sdkdocs": {
+      "dependsOn": ["^build"],
+      "outputs": ["docs/sdk/**"],
+      "inputs": ["../packages/core/**/*.ts", "../packages/providers/**/*.ts", "typedoc.json"],
+      "cache": true
+    },
+    
+    "check": {
+      "dependsOn": ["tools:comment", "snippets:build"],
+      "cache": false
+    },
+    
+    "links": {
+      "dependsOn": ["tools:uncomment", "snippets:build"],
+      "cache": false
+    },
+    
+    "preview": {
+      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
+      "cache": false,
+      "env": ["FERN_TOKEN"]
+    },
+    
+    "publish": {
+      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
+      "cache": false,
+      "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
+    },
+    
+    "clean": {
+      "cache": false
+    },
+    
+    "compile": {
+      "outputs": ["dist/output.css"],
+      "inputs": ["assets/input.css", "tailwind.config.js"],
+      "cache": true
     }
   }
-  
+}

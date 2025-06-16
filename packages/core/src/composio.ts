@@ -4,9 +4,13 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { BaseComposioProvider, BaseMcpProvider, McpProvider, McpServerGetResponse } from './provider/BaseProvider';
+import {
+  BaseComposioProvider,
+  BaseMcpProvider,
+  McpProvider,
+  McpServerGetResponse,
+} from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
-import { BaseTelemetryTransport } from './telemetry/TelemetryTransport';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
 import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
@@ -20,12 +24,39 @@ import { LogLevel } from '@composio/client/client';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
+  /**
+   * The API key for the Composio API.
+   * @example 'sk-1234567890'
+   */
   apiKey?: string | null;
+  /**
+   * The base URL of the Composio API.
+   * @example 'https://backend.composio.dev'
+   */
   baseURL?: string | null;
+  /**
+   * Whether to allow tracking for the Composio instance.
+   * @example true, false
+   * @default true
+   */
   allowTracking?: boolean;
+  /**
+   * Whether to allow tracing for the Composio instance.
+   * @example true, false
+   * @default true
+   */
   allowTracing?: boolean;
+  /**
+   * The tool provider to use for this Composio instance.
+   * @example new OpenAIProvider()
+   */
   provider?: TProvider;
-  telemetryTransport?: BaseTelemetryTransport;
+  /**
+   * The host service name of the SDK where the SDK is running.
+   * This is used to identify the host for telemetry. Ignore it if you are not using telemetry.
+   * @example 'mcp', 'apollo', ' etc
+   */
+  host?: string;
   /**
    * Request options to be passed to the Composio API client.
    * This is useful for passing in a custom fetch implementation.
@@ -45,7 +76,9 @@ export type ComposioConfig<
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider> {
+export class Composio<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -84,7 +117,6 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {boolean} [config.allowTracking=true] - Whether to allow anonymous usage analytics
    * @param {boolean} [config.allowTracing=true] - Whether to allow request tracing for debugging
    * @param {TProvider} [config.provider] - The provider to use for this Composio instance (defaults to OpenAIProvider)
-   * @param {BaseTelemetryTransport} [config.telemetryTransport] - Custom telemetry transport implementation
    *
    * @example
    * ```typescript
@@ -140,7 +172,8 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown, u
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
-    this.mcp = (this.provider.mcp ?? new BaseMcpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
+    this.mcp = (this.provider.mcp ??
+      new BaseMcpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
 
     this.mcp.setup(this.client);
 
@@ -155,22 +188,18 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown, u
      * Initialize the client telemetry.
      */
     if (this.config.allowTracking) {
-      telemetry.setup(
-        {
-          apiKey: apiKeyParsed ?? '',
-          baseUrl: baseURLParsed ?? '',
-          frameworkRuntime: this.provider?.name ?? 'unknown',
-          isAgentic: this.provider?._isAgentic || false,
-          source: 'javascript',
-          version: version,
-          sdkType: 'Typescript-V3',
-          isBrowser: typeof window !== 'undefined',
-          // @TODO: Users might want to pass their own session id
-          // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
-          sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
-        },
-        config?.telemetryTransport
-      );
+      telemetry.setup({
+        apiKey: apiKeyParsed ?? '',
+        baseUrl: baseURLParsed ?? '',
+        isAgentic: this.provider?._isAgentic || false,
+        version: version,
+        isBrowser: typeof window !== 'undefined',
+        provider: this.provider?.name ?? 'openai',
+        host: this.config.host,
+        // @TODO: Users might want to pass their own session id
+        // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
+        sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
+      });
     }
     telemetry.instrument(this);
     // instrument the provider since we are not using the provider class directly

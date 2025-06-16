@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Tool, ToolProxyParams } from './tool.types';
 import { ToolExecuteResponse } from '@composio/client/resources/tools';
+import { ConnectionData } from './connectedAccountAuthStates.types';
 
 type BaseCustomToolOptions<T extends z.ZodType> = {
   name: string;
@@ -12,7 +13,7 @@ type BaseCustomToolOptions<T extends z.ZodType> = {
 type ToolkitBasedExecute<T extends z.ZodType> = {
   execute: (
     input: z.infer<T>,
-    authCredentials: Record<string, unknown>,
+    connectionConfig: ConnectionData | null,
     executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>
   ) => Promise<ToolExecuteResponse>;
   toolkitSlug: string;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AuthSchemeEnum } from './authConfigs.types';
 
 /**
  * Toolkit list params
@@ -47,11 +48,7 @@ export const ToolKitItemSchema = z.object({
   noAuth: z.boolean().optional(),
 });
 
-export const ToolKitListResponseSchema = z.object({
-  items: z.array(ToolKitItemSchema),
-  nextCursor: z.string().nullable(),
-  totalPages: z.number(),
-});
+export const ToolKitListResponseSchema = z.array(ToolKitItemSchema);
 
 export type ToolKitMeta = z.infer<typeof ToolKitMetaSchema>;
 export type ToolKitItem = z.infer<typeof ToolKitItemSchema>;
@@ -116,3 +113,14 @@ export type ToolkitCategory = z.infer<typeof ToolkitCategorySchema>;
 export type ToolkitRetrieveCategoriesResponse = z.infer<
   typeof ToolkitRetrieveCategoriesResponseSchema
 >;
+
+export const ToolkitAuthFieldsResponseSchema = z.object({
+  authScheme: AuthSchemeEnum,
+  fields: z.array(
+    ToolkitAuthFieldSchema.extend({
+      required: z.boolean().optional(),
+    })
+  ),
+});
+
+export type ToolkitAuthFieldsResponse = z.infer<typeof ToolkitAuthFieldsResponseSchema>;

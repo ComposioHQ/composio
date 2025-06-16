@@ -1,11 +1,9 @@
 packages:
-  - packages/core
-  - packages/json-schema-to-zod
-  - packages/providers/*
-  - packages/wrappers/*
-  - examples/*
-  - fern/*
-  - fern/pages/examples/*
-overrides:
-  '@composio/mastra': link:packages/providers/mastra
-  '@composio/core': link:packages/core
+  - 'packages/core'
+  - 'packages/json-schema-to-zod'
+  - 'packages/providers/*'
+  - 'packages/wrappers/*'
+  - 'examples/*'
+  - 'fern'
+  - 'fern/pages/examples/*'
+  - 'fern/snippets/*'

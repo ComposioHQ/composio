@@ -5,24 +5,17 @@ export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProv
 export type { BaseComposioProvider, McpServerGetResponse } from './provider/BaseProvider';
 export { BaseMcpProvider } from './provider/BaseProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
-export { BaseTelemetryTransport, ConsoleTelemetryTransport } from './telemetry/TelemetryTransport';
 export { jsonSchemaToZodSchema } from './utils/jsonSchema';
-export { ToolListParamsSchema } from './types/tool.types';
-export type { Tool, ToolListParams, ToolExecuteParams } from './types/tool.types';
-export type { Provider, ExecuteToolFn, ExecuteToolFnOptions } from './types/provider.types';
-export type { ExecuteMetadata } from './types/customTool.types';
-export { AuthConfigTypes, AuthSchemeTypes } from './types/authConfigs.types';
-export type { AuthConfigType, AuthSchemeType } from './types/authConfigs.types';
+export { AuthScheme } from './models/AuthScheme';
+export * from './types/provider.types';
+export * from './types/customTool.types';
+export * from './types/tool.types';
+export * from './types/authConfigs.types';
+export * from './types/modifiers.types';
+export * from './types/connectedAccountAuthStates.types';
+export * from './types/toolkit.types';
+export * from './types/triggers.types';
+
 export { default as logger } from './utils/logger';
 // Error handling exports
 export * from './errors';
-
-// Type exports
-export type {
-  ExecuteToolModifiers,
-  AgenticToolOptions,
-  ToolOptions,
-  TransformToolSchemaModifier,
-  beforeExecuteModifier,
-  afterExecuteModifier,
-} from './types/modifiers.types';

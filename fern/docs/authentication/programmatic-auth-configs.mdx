@@ -1,0 +1,192 @@
+---
+title: Programmatic Auth Configs
+image: "https://og.composio.dev/api/og?title=Programmatic%20Auth%20Configs"   # image for socials
+subtitle: "Guide to creating auth configs programmatically"
+keywords: ""
+hide-nav-links: true
+---
+
+Auth configs are created once and reused many times. However when dealing with many toolkits, you may want to create auth configs programmatically.
+
+- When creating and destroying auth configs multiple times in your app's lifecycle.
+- When creating auth configs for your users' users.
+
+## Using Composio Default Auth
+For certain apps, you can optionally use Composio's managed auth. This means you don't have to provide your own OAuth credentials, Bearer tokens, API keys, etc.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60  wordWrap {7}
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+
+const authConfig = await composio.authConfigs.create("LINEAR", {
+  name: "Linear",
+  type: "use_composio_managed_auth",
+});
+
+console.log(authConfig);
+```
+
+```python Python maxLines=60  wordWrap
+from composio import Composio
+
+composio = Composio()
+
+# Use composio managed auth
+auth_config = composio.auth_configs.create(
+    toolkit="github",
+    options={
+        "type": "use_composio_managed_auth",
+    },
+)
+print(auth_config)
+```
+</CodeGroup>
+
+
+The `auth_config_id` should be stored securely in your database for future use to be created and destroyed multiple times.
+
+You can also provide your own authentication details. The required `credentials` and `authScheme` depend on the auth type.
+
+## Using Custom Auth
+### Create the auth config
+
+If you know the required authentication fields for your toolkit, you can directly create the auth config. OAuth2 is the most common auth type for apps. When using your own OAuth developer app, you must ensure to set the **authorized redirect URI** in the OAuth configuration to `https://backend.composio.dev/api/v3/toolkits/callback`.
+
+This is the URI that captures the OAuth code that is returned to the app.
+
+In this case, we're using our own OAuth2 client ID and secret to create the auth config for Notion:
+
+<CodeGroup>
+```typescript TypeScript maxLines=60  wordWrap
+const authConfig = await composio.authConfigs.create("NOTION", {
+    name: "Notion",
+    type: "use_custom_auth",
+    credentials: {
+        client_id: "1234567890",
+        client_secret: "1234567890",
+        oauth_redirect_uri: "https://backend.composio.dev/api/v3/toolkits/callback",
+    },
+    authScheme: "OAUTH2",
+});
+
+console.log(authConfig);
+```
+```python Python maxLines=60  wordWrap
+# Use custom auth
+auth_config = composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "name": "Notion Auth",
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "credentials": {
+            "client_id": "1234567890",
+            "client_secret": "1234567890",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/callback",
+        },
+    },
+)
+print(auth_config)
+```
+</CodeGroup>
+
+### Fetching the fields
+For more complex cases where you need to dynamically discover the exact field names and handle different auth schemes programmatically, you can inspect the auth config details first.
+
+**Inspect the auth config details**
+
+<CodeGroup>
+```typescript TypeScript maxLines=60
+const toolkits = await composio.toolkits.get("NOTION");
+
+// Extract field names from authConfigDetails
+const authFields = toolkits.authConfigDetails?.flatMap(
+  detail => [
+    ...detail.fields.authConfigCreation.required.map(field => field.name),
+    ...detail.fields.authConfigCreation.optional.map(field => field.name)
+  ]
+) || [];
+
+console.log("Required auth config fields:", authFields);
+```
+```python Python maxLines=60  wordWrap
+required_fields = composio.auth_configs.get_required_fields(
+    toolkit="NOTION",
+    auth_scheme="OAUTH2",
+)
+print(required_fields)
+```
+</CodeGroup>
+
+
+<Accordion title="Putting it all together">
+In this example, assuming you have the following environment variables set:
+
+```bash
+NOTION_CLIENT_ID=your_client_id
+NOTION_CLIENT_SECRET=your_client_secret
+```
+This makes it easy to create the auth config programmatically by reading required fields from the environment variables.
+
+<CodeGroup>
+```typescript TypeScript maxLines=60  wordWrap
+import { Composio } from "@composio/core";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const toolkits = await composio.toolkits.get("NOTION");
+
+// Extract field names from authConfigDetails
+const requiredAuthFields =
+  toolkits.authConfigDetails?.flatMap((detail) =>
+    detail.fields.authConfigCreation.required.map((field) => field.name)
+  ) || [];
+
+console.log("Required auth config fields:", requiredAuthFields);
+
+const authConfig = await composio.authConfigs.create("NOTION", {
+  name: "Notion",
+  type: "use_custom_auth",
+  authScheme: "OAUTH2", // Replace with the correct scheme for your toolkit if different
+  credentials: Object.fromEntries(
+    requiredAuthFields.map((fieldName) => [
+      fieldName,
+      process.env[`NOTION_${fieldName.toUpperCase()}`] || "",
+    ])
+  ),
+});
+```
+```python Python maxLines=60  wordWrap
+import os
+
+from composio import Composio
+
+composio = Composio()
+
+# Get required fields
+required_fields = [
+    field.name for field in composio.auth_configs.get_required_fields(
+        toolkit="NOTION",
+        auth_scheme="OAUTH2",
+    )
+]
+
+# Read required fields as environment variables
+auth_config = composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "name": "Notion Auth",
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "credentials": {
+            field: os.getenv(f"NOTION_{field.upper()}") for field in required_fields
+        },
+    },
+)
+```
+</CodeGroup>
+</Accordion>
