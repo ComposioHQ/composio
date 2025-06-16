@@ -70,7 +70,35 @@ if (tool_calls) {
 
 ```
 ```python Python maxLines=60  wordWrap
+from composio import Composio, before_execute
+from composio.types import ToolExecuteParams
 
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=messages,
+)
+print(response)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(
+  response=response,
+  user_id="default",
+  modifiers=[
+      before_execute_modifier, 
+  ]
+)
+print(result)
 ```
 
 </CodeGroup>
@@ -123,7 +151,32 @@ const { text } = await generateText({
 
 ```
 ```python Python maxLines=60  wordWrap
+from composio import Composio, before_execute
+from composio.types import ToolExecuteParams
+from composio_crewai import CrewAIProvider
 
+composio = Composio(provider=CrewAIProvider())
+
+@before_execute(tools=["LINEAR_CREATE_LINEAR_ISSUE"])
+def modify_linear_project_id(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["project_id"] = "1234567890"
+    return params
+
+tools = composio.tools.get(
+    user_id="default",
+    tools=[
+        "HACKERNEWS_GET_LATEST_POSTS",
+        "HACKERNEWS_GET_USER",
+        "LINEAR_CREATE_LINEAR_ISSUE",
+    ],
+    modifiers=[
+        after_execute_modifier,
+    ]
+)
 ```
 
 </CodeGroup>
