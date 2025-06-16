@@ -2,8 +2,9 @@ name: Test Typescript SDK
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
   pull_request:
+    branches: [main, next]
 
 jobs:
   test:

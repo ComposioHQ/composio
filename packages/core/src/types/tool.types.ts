@@ -137,12 +137,6 @@ export const ToolListFilterByToolkitsSchema = z.object({
   cursor: z.string().optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
-  strict: z
-    .boolean()
-    .optional()
-    .describe(
-      'If true, all the non-required fields will be removed from the input/output params of the tool'
-    ),
 });
 export type ToolListFilterByToolkits = z.infer<typeof ToolListFilterByToolkitsSchema>;
 
@@ -151,12 +145,6 @@ export const ToolListFilterBySearchSchema = z.object({
   toolkits: z.array(z.string()).optional(),
   cursor: z.string().optional(),
   limit: z.number().optional(),
-  strict: z
-    .boolean()
-    .optional()
-    .describe(
-      'If true, all the non-required fields will be removed from the input/output params of the tool'
-    ),
 });
 export type ToolListFilterBySearch = z.infer<typeof ToolListFilterBySearchSchema>;
 
@@ -167,7 +155,6 @@ type ToolsOnlyParams = {
   cursor?: never;
   limit?: never;
   search?: never;
-  strict?: boolean;
 };
 
 type ToolkitsOnlyParams = {
@@ -177,7 +164,6 @@ type ToolkitsOnlyParams = {
   cursor?: string;
   limit?: number;
   search?: never;
-  strict?: boolean;
 };
 
 type ToolkitSearchOnlyParams = {
@@ -187,7 +173,6 @@ type ToolkitSearchOnlyParams = {
   cursor?: string;
   limit?: number;
   search?: string;
-  strict?: boolean;
 };
 /**
  * ToolListParams is the parameters for the list of tools.

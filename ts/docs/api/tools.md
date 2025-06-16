@@ -196,7 +196,6 @@ type ToolkitsOnlyParams = {
   cursor?: string; // Pagination cursor
   limit?: number; // Limit the number of results
   search?: never; // Cannot be used with important flag,
-  strict?: boolean; // Remove non-required properties from input/output parameters
 };
 
 type ToolkitSearchOnlyParams = {
@@ -206,7 +205,6 @@ type ToolkitSearchOnlyParams = {
   cursor?: string; // Pagination cursor
   limit?: number; // Limit the number of results
   search: string; // Search term
-  strict?: boolean; // Remove non-required properties from input/output parameters
 };
 
 type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
@@ -218,22 +216,12 @@ Note: The parameters are organized into three mutually exclusive combinations:
 2. Using `toolkits` with optional `important` flag to fetch tools from specific toolkits
 3. Using `search` with optional `toolkits` to search for tools by name/description
 
-The `strict` parameter is a special flag that can be used with any of the above combinations. When set to `true`, it removes all non-required properties from both input and output parameters of the tools. This is particularly useful when working with providers that have strict parameter requirements, such as VercelAISDK, OpenAI, [where all fields must be marked as required.](https://platform.openai.com/docs/guides/function-calling#strict-mode)
-
 Examples:
 
 ```typescript
 // Get specific tools by slug
 const specificTools = await composio.tools.get('default', {
   tools: ['GITHUB_GET_REPO', 'GITHUB_LIST_ISSUES'],
-});
-
-// Get all tools from specific toolkits with strict mode enabled
-const toolkitTools = await composio.tools.get('default', {
-  toolkits: ['github', 'gitlab'],
-  important: true,
-  limit: 10,
-  strict: true, // This will remove all non-required properties from tool parameters
 });
 
 // Search for tools across all or specific toolkits

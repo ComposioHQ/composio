@@ -83,6 +83,7 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   authScheme: AuthSchemeEnum.optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   expectedInputFields: z.array(z.unknown()).optional(),
+  restrictToFollowingTools: z.array(z.string()).optional(),
   isComposioManaged: z.boolean().optional(),
   createdBy: z.string().optional(),
   createdAt: z.string().optional(),
