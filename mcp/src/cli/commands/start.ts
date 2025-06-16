@@ -1,14 +1,10 @@
 import type { CommandModule } from 'yargs';
 
 import { z } from 'zod';
-// Use dynamic import for SSEClientTransport to avoid ESM issues
-import {
-  JSONRPCMessage,
-  JSONRPCRequest,
-} from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/types.js';
+import { JSONRPCMessage, JSONRPCRequest } from 'composiohq-modelcontextprotocol-typescript-sdk/types';
 import { getSSEClient } from '../../utils/sseTransport';
-import { StdioServerTransport } from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/server/stdio.js';
-import { Server } from 'composiohq-modelcontextprotocol-typescript-sdk/dist/cjs/server/index.js';
+import { StdioServerTransport } from 'composiohq-modelcontextprotocol-typescript-sdk/server/stdio';
+import { Server } from 'composiohq-modelcontextprotocol-typescript-sdk/server/index';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const log = (...args: any[]) => console.error('[composio-transport]', ...args);
@@ -24,10 +20,10 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   logStderr('Starting...');
   logStderr('MCP Transport utility');
   logStderr(`  - sse: ${sseUrl}`);
-  logStderr('Connecting to SSE...');
+  logStderr('Connecting to MCP Server...');
   const { sseClient, originalRequest, sseTransport } = await getSSEClient(sseUrl, logStderr);
 
-  logStderr('SSE connected');
+  logStderr('MCP Server connected');
   logStderr('getServerCapabilities ' + JSON.stringify(sseClient.getServerCapabilities()));
   const stdioServer = new Server(
     sseClient.getServerVersion()
@@ -51,7 +47,7 @@ async function sseToStdio(sseUrl: string): Promise<void> {
 
   stdioServer.transport!.onmessage = async (message: JSONRPCMessage) => {
     if ('method' in message && 'id' in message) {
-      logStderr('Stdio → SSE:', message);
+      logStderr('Stdio → MCP Server:', message);
       const req = message as JSONRPCRequest;
       let result;
       try {
@@ -88,7 +84,7 @@ async function sseToStdio(sseUrl: string): Promise<void> {
       logStderr('Response:', response);
       process.stdout.write(JSON.stringify(response) + '\n');
     } else {
-      logStderr('SSE → Stdio:', message);
+      logStderr('MCP Server → Stdio:', message);
       process.stdout.write(JSON.stringify(message) + '\n');
     }
   };

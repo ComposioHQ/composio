@@ -1,31 +1,31 @@
 {
-    "name": "@composio/mcp",
-    "version": "1.0.4",
-    "description": "MCP CLI tool",
-    "main": "index.js",
-    "bin": {
-      "mcp": "./index"
-    },
-    "exports": {
-      "./*": "./*"
-    },
-    "scripts": {
-      "build": "webpack --config webpack.config.js",
-      "build:dev": "webpack --config webpack.config.js --mode development",
-      "build:watch": "webpack --config webpack.config.js --watch",
-      "test": "echo \"Error: no test specified\" && exit 1",
-      "lint": "eslint . --ext .ts",
-      "lint:fix": "eslint . --ext .ts --fix",
-      "format": "prettier --write \"src/**/*.ts\"",
-      "format:check": "prettier --check \"src/**/*.ts\""
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "packageManager": "pnpm@10.6.1",
-    "dependencies": {
-    },
-    "devDependencies": {
-    }
+  "name": "@composio/mcp",
+  "version": "1.0.7",
+  "description": "MCP CLI tool",
+  "main": "index.js",
+  "bin": {
+    "mcp": "./index"
+  },
+  "exports": {
+    "./*": "./*"
+  },
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "build:dev": "webpack --config webpack.config.js --mode development",
+    "build:watch": "webpack --config webpack.config.js --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.6.1",
+  "dependencies": {
+  },
+  "devDependencies": {
   }
-  
+}
+
