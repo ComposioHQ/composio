@@ -25,6 +25,8 @@ import { ConnectionRequest } from './ConnectionRequest';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
+import { ComposioMultipleConnectedAccountsError } from '../errors';
+import logger from '../utils/logger';
 /**
  * ConnectedAccounts class
  *
@@ -156,6 +158,21 @@ export class ConnectedAccounts {
     authConfigId: string,
     options?: CreateConnectedAccountOptions
   ): Promise<ConnectionRequest> {
+    // Check if there are multiple connected accounts for the authConfig of the user
+    const connectedAccount = await this.list({
+      userIds: [userId],
+      authConfigIds: [authConfigId],
+    });
+    if (connectedAccount.items.length > 0 && !options?.allowMultiple) {
+      throw new ComposioMultipleConnectedAccountsError(
+        `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}`
+      );
+    } else if (connectedAccount.items.length > 0) {
+      logger.warn(
+        `[Warn:AllowMultiple] Multiple connected accounts found for user ${userId} in auth config ${authConfigId}`
+      );
+    }
+
     const response = await this.client.connectedAccounts.create({
       auth_config: {
         id: authConfigId,

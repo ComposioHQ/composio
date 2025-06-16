@@ -411,6 +411,9 @@ export class Toolkits {
 
     // create the auth config
     const composioConnectedAccount = new ConnectedAccounts(this.client);
-    return await composioConnectedAccount.initiate(userId, authConfigIdToUse);
+    return await composioConnectedAccount.initiate(userId, authConfigIdToUse, {
+      // in this magic function we allow multiple connected accounts per user for an auth config
+      allowMultiple: true,
+    });
   }
 }

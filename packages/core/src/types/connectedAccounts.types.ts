@@ -45,15 +45,12 @@ export const DefaultCreateConnectedAccountParamsSchema = z.object({
 });
 
 export const CreateConnectedAccountOptionsSchema = z.object({
+  allowMultiple: z.boolean().optional(),
   callbackUrl: z.string().optional(),
   config: ConnectionDataSchema.optional(),
 });
 export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;
 export type CreateConnectedAccountParams = z.infer<typeof CreateConnectedAccountParamsSchema>;
-export type CreateConnectedAccountOptionsSchema = z.infer<
-  typeof CreateConnectedAccountOptionsSchema
->;
-
 /**
  * Connected Account create response
  */
