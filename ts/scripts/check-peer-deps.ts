@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import semver from 'semver';
+import semver from '.pnpm/semver@7.7.2/node_modules/semver';
 
 const corePkgPackageJson = path.resolve(__dirname, '../packages/core/package.json');
 const providersDir = path.resolve(__dirname, '../packages/providers');

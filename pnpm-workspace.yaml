@@ -1,9 +1,9 @@
 packages:
-  - 'packages/core'
-  - 'packages/json-schema-to-zod'
-  - 'packages/providers/*'
-  - 'packages/wrappers/*'
-  - 'examples/*'
-  - 'fern'
-  - 'fern/pages/examples/*'
-  - 'fern/snippets/*'
+  - "ts/packages/core"
+  - "ts/packages/json-schema-to-zod"
+  - "ts/packages/providers/*"
+  - "ts/packages/wrappers/*"
+  - "ts/examples/*"
+  - "fern"
+  - "fern/pages/examples/*"
+  - "fern/snippets/*"

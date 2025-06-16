@@ -5,15 +5,15 @@ import tseslint from 'typescript-eslint';
 export default [
   {
     ignores: [
-      'packages/**/dist/**',
-      'packages/**/node_modules/**',
+      'ts/packages/**/dist/**',
+      'ts/packages/**/node_modules/**',
       'node_modules/**',
       'examples/',
       'scripts/**',
       '**/test/**',
     ],
   },
-  { files: ['packages/**/*.ts'] },
+  { files: ['ts/packages/**/*.ts'] },
   { languageOptions: { globals: globals.browser } },
   ...tseslint.configs.recommended,
   {
