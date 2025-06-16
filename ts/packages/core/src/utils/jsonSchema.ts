@@ -1,4 +1,4 @@
-import { z, ZodObject, ZodTypeAny } from 'zod';
+import { z } from 'zod';
 import { JsonSchemaToZodError } from '../errors';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 

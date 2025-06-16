@@ -9,7 +9,6 @@ import { BaseNonAgenticProvider, removeNonRequiredProperties } from '@composio/c
 import { Tool, ToolExecuteParams } from '@composio/core';
 import { ExecuteToolModifiers } from '@composio/core';
 import { ExecuteToolFnOptions } from '@composio/core';
-import { Stream } from 'openai/streaming';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;

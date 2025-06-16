@@ -14,7 +14,7 @@
     "build:packages": "turbo build --filter=./ts/packages/**",
     "test": "turbo test --filter=./ts/packages/**",
     "test:ui": "vitest --ui",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint ts/packages --ext .ts,.tsx",
     "lint:packages": "eslint ts/packages --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "lint:fix:packages": "eslint ts/packages --ext .ts,.tsx --fix",

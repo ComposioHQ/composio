@@ -10,7 +10,6 @@ import {
   ToolkitRetrieveCategoriesResponse,
   ToolkitRetrieveCategoriesResponseSchema,
   ToolkitCategorySchema,
-  ToolkitAuthField,
   ToolkitAuthFieldsResponse,
 } from '../types/toolkit.types';
 import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../errors';
