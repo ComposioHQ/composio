@@ -49,10 +49,10 @@
     "zod": "^3.24.2"
   },
   "lint-staged": {
-    "packages/**/*.{ts,tsx}": [
+    "ts/packages/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
-    "packages/**/*.{ts,tsx,js,jsx,json,md}": [
+    "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ]
   }
