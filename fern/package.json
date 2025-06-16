@@ -17,7 +17,7 @@
 		"snippets:dev": "bun run scripts/build-snippets.ts --watch",
 		"add-og": "uv run scripts/add_og_imgs.py",
 		"check": "fern check",
-		"dev": "fern docs dev",
+		"dev": "bun run scripts/build-snippets.ts --watch & fern docs dev",
 		"links": "fern docs broken-links",
 		"build": "echo 'Build orchestrated by Turbo'",
 		"preview": "fern generate --docs --preview --log-level debug",
@@ -25,7 +25,9 @@
 		"generate": "pnpm tools:generate && pnpm sdkdocs"
 	},
 	"dependencies": {
+		"@composio/anthropic": "^0.1.21",
 		"@composio/core": "^0.1.21",
+		"@composio/vercel": "^0.1.21",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
@@ -36,6 +38,7 @@
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
 		"@types/yaml": "^1.9.7",
+		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
 		"next": "^15.3.3",
 		"only-allow": "^1.2.1",

@@ -30,30 +30,30 @@ or execution. - Adding default values to tool arguments.
 const userId = "your@email.com";
 
 const tools = await composio.tools.get(
-userId,
-{
-tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
-},
-{
-modifyToolSchema: (toolSlug, \_, toolSchema) => {
-if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
-const { inputParameters } = toolSchema;
-if (inputParameters?.properties) {
-delete inputParameters.properties["page"];
-}
-inputParameters.required = ["size"];
-}
-return toolSchema;
-},
-}
+  userId,
+  {
+    tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+  },
+  {
+    modifyToolSchema: (toolSlug, _, toolSchema) => {
+      if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+        const { inputParameters } = toolSchema;
+        if (inputParameters?.properties) {
+          delete inputParameters.properties["page"];
+        }
+        inputParameters.required = ["size"];
+      }
+      return toolSchema;
+    },
+  }
 );
 
 console.log(JSON.stringify(tools, null, 2));
 
-````
+```
 ```python Python maxLines=60  wordWrap
 
-````
+```
 
 </CodeGroup>
 
