@@ -94,6 +94,7 @@ export type TriggerInstanceManageDeleteResponse = z.infer<
 
 export const IncomingTriggerPayloadSchema = z.object({
   id: z.string().describe('The ID of the trigger'),
+  uuid: z.string().describe('The UUID of the trigger'),
   triggerSlug: z.string().describe('The slug of the trigger that triggered the event'),
   toolkitSlug: z.string().describe('The slug of the toolkit that triggered the event'),
   userId: z.string().describe('The ID of the user that triggered the event'),
@@ -101,6 +102,7 @@ export const IncomingTriggerPayloadSchema = z.object({
   originalPayload: z.record(z.unknown()).describe('The original payload of the trigger').optional(),
   metadata: z.object({
     id: z.string(),
+    uuid: z.string(),
     toolkitSlug: z.string(),
     triggerSlug: z.string(),
     triggerData: z.string().optional(),
@@ -125,6 +127,7 @@ export type TriggerData = {
   originalPayload: Record<string, unknown>;
   metadata: {
     id: string;
+    nanoId: string;
     triggerName: string;
     triggerData: string;
     triggerConfig: Record<string, unknown>;

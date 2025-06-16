@@ -42,7 +42,7 @@ async function main() {
     );
 
     composio.triggers.subscribe(data => {
-      console.log('🔔 Trigger received:', data);
+      console.log('🔔 Trigger received:', JSON.stringify(data, null, 2));
     });
   } catch (error) {
     console.error('❌ Error running example:', error);

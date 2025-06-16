@@ -264,6 +264,84 @@ export class Triggers {
   }
 
   /**
+   * Applies compound filters to the trigger data
+   * @param data data to apply filters to
+   * @returns True if the trigger data matches the filters, false otherwise
+   */
+  private shouldSendTriggerAfterFilters(
+    filters: TriggerSubscribeParams,
+    data: IncomingTriggerPayload
+  ): boolean {
+    // Check if toolkits filter is provided and matches
+    if (
+      filters.toolkits?.length &&
+      !filters.toolkits
+        .map(toolkit => toolkit.toLowerCase())
+        .includes(data.toolkitSlug.toLowerCase())
+    ) {
+      logger.debug(
+        'Trigger does not match toolkits filter',
+        JSON.stringify(filters.toolkits, null, 2)
+      );
+      return false;
+    }
+
+    // Check if triggerId filter matches
+    if (filters.triggerId && filters.triggerId !== data.id) {
+      logger.debug(
+        'Trigger does not match triggerId filter',
+        JSON.stringify(filters.triggerId, null, 2)
+      );
+      return false;
+    }
+
+    // Check if connectedAccountId filter matches
+    if (
+      filters.connectedAccountId &&
+      filters.connectedAccountId !== data.metadata.connectedAccount.id
+    ) {
+      logger.debug(
+        'Trigger does not match connectedAccountId filter',
+        JSON.stringify(filters.connectedAccountId, null, 2)
+      );
+      return false;
+    }
+
+    // Check if triggerName filter matches
+    if (
+      filters.triggerSlug?.length &&
+      !filters.triggerSlug
+        .map(triggerSlug => triggerSlug.toLowerCase())
+        .includes(data.triggerSlug.toLowerCase())
+    ) {
+      logger.debug(
+        'Trigger does not match triggerSlug filter',
+        JSON.stringify(filters.triggerSlug, null, 2)
+      );
+      return false;
+    }
+
+    // Check if triggerData filter matches
+    if (filters.triggerData && filters.triggerData !== data.metadata.triggerData) {
+      logger.debug(
+        'Trigger does not match triggerData filter',
+        JSON.stringify(filters.triggerData, null, 2)
+      );
+      return false;
+    }
+
+    // Check if userId (clientUniqueUserId) filter matches
+    if (filters.userId && filters.userId !== data.metadata.connectedAccount.userId) {
+      logger.debug('Trigger does not match userId filter', JSON.stringify(filters.userId, null, 2));
+      return false;
+    }
+
+    logger.debug('Trigger matches all filters', JSON.stringify(filters, null, 2));
+    // If all filters pass or no filters were provided, return true
+    return true;
+  }
+
+  /**
    * Subscribe to all the triggers
    *
    * @param fn - The function to call when a trigger is received
@@ -291,90 +369,6 @@ export class Triggers {
       });
     }
 
-    /**
-     * Applies compound filters to the trigger data
-     * @param data data to apply filters to
-     * @returns True if the trigger data matches the filters, false otherwise
-     */
-    const shouldSendTriggerAfterFilters = (data: IncomingTriggerPayload): boolean => {
-      // Check if toolkits filter is provided and matches
-      if (
-        parsedFilters.data.toolkits?.length &&
-        !parsedFilters.data.toolkits
-          .map(toolkit => toolkit.toLowerCase())
-          .includes(data.toolkitSlug.toLowerCase())
-      ) {
-        logger.debug(
-          'Trigger does not match toolkits filter',
-          JSON.stringify(parsedFilters.data.toolkits, null, 2)
-        );
-        return false;
-      }
-
-      // Check if triggerId filter matches
-      if (parsedFilters.data.triggerId && parsedFilters.data.triggerId !== data.id) {
-        logger.debug(
-          'Trigger does not match triggerId filter',
-          JSON.stringify(parsedFilters.data.triggerId, null, 2)
-        );
-        return false;
-      }
-
-      // Check if connectedAccountId filter matches
-      if (
-        parsedFilters.data.connectedAccountId &&
-        parsedFilters.data.connectedAccountId !== data.metadata.connectedAccount.id
-      ) {
-        logger.debug(
-          'Trigger does not match connectedAccountId filter',
-          JSON.stringify(parsedFilters.data.connectedAccountId, null, 2)
-        );
-        return false;
-      }
-
-      // Check if triggerName filter matches
-      if (
-        parsedFilters.data.triggerSlug?.length &&
-        !parsedFilters.data.triggerSlug
-          .map(triggerSlug => triggerSlug.toLowerCase())
-          .includes(data.triggerSlug.toLowerCase())
-      ) {
-        logger.debug(
-          'Trigger does not match triggerSlug filter',
-          JSON.stringify(parsedFilters.data.triggerSlug, null, 2)
-        );
-        return false;
-      }
-
-      // Check if triggerData filter matches
-      if (
-        parsedFilters.data.triggerData &&
-        parsedFilters.data.triggerData !== data.metadata.triggerData
-      ) {
-        logger.debug(
-          'Trigger does not match triggerData filter',
-          JSON.stringify(parsedFilters.data.triggerData, null, 2)
-        );
-        return false;
-      }
-
-      // Check if userId (clientUniqueUserId) filter matches
-      if (
-        parsedFilters.data.userId &&
-        parsedFilters.data.userId !== data.metadata.connectedAccount.userId
-      ) {
-        logger.debug(
-          'Trigger does not match userId filter',
-          JSON.stringify(parsedFilters.data.userId, null, 2)
-        );
-        return false;
-      }
-
-      logger.debug('Trigger matches all filters', JSON.stringify(parsedFilters.data, null, 2));
-      // If all filters pass or no filters were provided, return true
-      return true;
-    };
-
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
     await this.pusherService.subscribe((_data: Record<string, unknown>) => {
       logger.debug('Received raw trigger data', JSON.stringify(_data, null, 2));
@@ -382,14 +376,16 @@ export class Triggers {
       // ideally we should have a type for the trigger data
       const data = _data as TriggerData;
       const parsedData = IncomingTriggerPayloadSchema.safeParse({
-        id: data.metadata.id,
+        id: data.metadata.nanoId,
+        uuid: data.metadata.id,
         triggerSlug: data.metadata.triggerName,
         toolkitSlug: data.appName,
         userId: data.metadata.connection?.clientUniqueUserId,
         payload: data.payload,
         originalPayload: data.originalPayload,
         metadata: {
-          id: data.metadata.id,
+          id: data.metadata.nanoId,
+          uuid: data.metadata.id,
           triggerConfig: data.metadata.triggerConfig,
           triggerSlug: data.metadata.triggerName,
           toolkitSlug: data.appName,
@@ -412,7 +408,7 @@ export class Triggers {
           cause: parsedData.error,
         });
       }
-      if (shouldSendTriggerAfterFilters(parsedData.data)) {
+      if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData.data)) {
         try {
           fn(parsedData.data);
         } catch (error) {
