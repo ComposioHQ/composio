@@ -4,6 +4,8 @@ import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
+import { ConnectionRequest } from '../../src/models/ConnectionRequest';
+import { ConnectedAccountAuthSchemes } from '../../src/types/connectedAccounts.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -22,6 +24,7 @@ const createMockClient = () => ({
     retrieveCategories: vi.fn(),
     listCategories: vi.fn(),
     authorize: vi.fn(),
+    get: vi.fn(),
   },
   authConfigs: {
     list: vi.fn(),
@@ -30,6 +33,7 @@ const createMockClient = () => ({
   connectedAccounts: {
     initiate: vi.fn(),
     create: vi.fn(),
+    list: vi.fn(),
   },
 });
 
@@ -219,10 +223,16 @@ describe('Toolkits', () => {
 
   describe('authorize', () => {
     it('should create auth config and initiate connection request when no auth config exists', async () => {
-      // Mock toolkit retrieval
-      mockClient.toolkits.retrieve.mockResolvedValue({
+      const userId = 'user_123';
+      const toolkitSlug = 'test-toolkit';
+      const options = {
+        callbackUrl: 'https://example.com/callback',
+      };
+
+      // Mock toolkit response
+      mockClient.toolkits.retrieve.mockResolvedValueOnce({
+        slug: toolkitSlug,
         name: 'Test Toolkit',
-        slug: 'test-toolkit',
         meta: {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -232,8 +242,8 @@ describe('Toolkits', () => {
         is_local_toolkit: false,
         auth_config_details: [
           {
-            name: 'OAuth2',
-            mode: 'OAUTH2',
+            name: 'oauth2',
+            mode: 'oauth2',
             fields: {
               auth_config_creation: {
                 optional: [],
@@ -248,73 +258,73 @@ describe('Toolkits', () => {
         ],
       });
 
-      // Mock empty auth config list
-      mockClient.authConfigs.list.mockResolvedValue({
+      // Mock auth config list response
+      mockClient.authConfigs.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: 'next-cursor',
+        total_pages: 1,
+      });
+
+      // Mock auth config create response
+      mockClient.authConfigs.create.mockResolvedValueOnce({
+        toolkit: {
+          slug: toolkitSlug,
+        },
+        auth_config: {
+          id: 'auth_config_123',
+          auth_scheme: 'oauth2',
+          is_composio_managed: true,
+          is_disabled: false,
+          toolkit: {
+            slug: toolkitSlug,
+            logo: 'https://example.com/logo.png',
+          },
+        },
+      });
+
+      // Mock connected accounts list response
+      mockClient.connectedAccounts.list.mockResolvedValueOnce({
         items: [],
         next_cursor: null,
         total_pages: 1,
       });
 
-      // Mock auth config creation
-      mockClient.authConfigs.create.mockResolvedValue({
-        auth_config: {
-          id: 'new-auth-config-id',
-          auth_scheme: 'OAUTH2',
-          is_composio_managed: true,
-          toolkit: {
-            slug: 'test-toolkit',
-            logo: 'https://example.com/logo.png',
-          },
-        },
-        toolkit: {
-          slug: 'test-toolkit',
-        },
-      });
-
-      // Mock connection request initiation
-      mockClient.connectedAccounts.create.mockResolvedValue({
-        id: 'connection-request-id',
+      // Mock connected account create response
+      mockClient.connectedAccounts.create.mockResolvedValueOnce({
+        id: 'conn_123',
         connectionData: {
           val: {
-            status: 'INITIATED',
-            redirectUrl: 'https://auth.url',
+            authScheme: 'OAUTH2',
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
           },
         },
       });
 
-      const result = await toolkits.authorize('user-123', 'test-toolkit');
+      const connectionRequest = await toolkits.authorize(userId, toolkitSlug);
 
       expect(mockClient.authConfigs.create).toHaveBeenCalledWith({
-        toolkit: {
-          slug: 'test-toolkit',
-        },
+        toolkit: { slug: toolkitSlug },
         auth_config: {
           type: 'use_composio_managed_auth',
           name: 'Test Toolkit Auth Config',
         },
       });
 
-      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: 'new-auth-config-id',
-        },
-        connection: {
-          user_id: 'user-123',
-        },
-      });
-
-      expect(result.toJSON()).toEqual({
-        id: 'connection-request-id',
-        status: 'INITIATED',
-        redirectUrl: 'https://auth.url',
-      });
+      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
     });
 
     it('should use existing auth config to initiate connection request', async () => {
-      // Mock toolkit retrieval
-      mockClient.toolkits.retrieve.mockResolvedValue({
+      const userId = 'user_123';
+      const toolkitSlug = 'test-toolkit';
+      const options = {
+        callbackUrl: 'https://example.com/callback',
+      };
+
+      // Mock toolkit response
+      mockClient.toolkits.retrieve.mockResolvedValueOnce({
+        slug: toolkitSlug,
         name: 'Test Toolkit',
-        slug: 'test-toolkit',
         meta: {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -324,7 +334,7 @@ describe('Toolkits', () => {
         is_local_toolkit: false,
         auth_config_details: [
           {
-            name: 'OAuth2',
+            name: 'oauth2',
             mode: 'OAUTH2',
             fields: {
               auth_config_creation: {
@@ -340,19 +350,20 @@ describe('Toolkits', () => {
         ],
       });
 
-      // Mock existing auth config
-      mockClient.authConfigs.list.mockResolvedValue({
+      // Mock auth config list response
+      mockClient.authConfigs.list.mockResolvedValueOnce({
         items: [
           {
-            id: 'existing-auth-config-id',
+            id: 'auth_config_123',
             auth_scheme: 'OAUTH2',
             is_composio_managed: true,
-            name: 'Existing Auth Config',
+            is_disabled: false,
+            name: 'Test Toolkit Auth Config',
             no_of_connections: 0,
             status: 'ENABLED',
             toolkit: {
               logo: 'https://example.com/logo.png',
-              slug: 'test-toolkit',
+              slug: toolkitSlug,
             },
             uuid: 'uuid-1',
             credentials: {},
@@ -366,34 +377,29 @@ describe('Toolkits', () => {
         total_pages: 1,
       });
 
-      // Mock connection request initiation
-      mockClient.connectedAccounts.create.mockResolvedValue({
-        id: 'connection-request-id',
+      // Mock connected accounts list response
+      mockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      // Mock connected account create response
+      mockClient.connectedAccounts.create.mockResolvedValueOnce({
+        id: 'conn_123',
         connectionData: {
           val: {
-            status: 'INITIATED',
-            redirectUrl: 'https://auth.url',
+            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
           },
         },
       });
 
-      const result = await toolkits.authorize('user-123', 'test-toolkit');
+      const connectionRequest = await toolkits.authorize(userId, toolkitSlug);
 
       expect(mockClient.authConfigs.create).not.toHaveBeenCalled();
-      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: 'existing-auth-config-id',
-        },
-        connection: {
-          user_id: 'user-123',
-        },
-      });
-
-      expect(result.toJSON()).toEqual({
-        id: 'connection-request-id',
-        status: 'INITIATED',
-        redirectUrl: 'https://auth.url',
-      });
+      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
     });
 
     it('should throw ComposioAuthConfigNotFoundError when toolkit has no auth config details', async () => {

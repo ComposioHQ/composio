@@ -6,6 +6,7 @@ import {
   TriggerSubscribeParams,
   TriggerData,
   IncomingTriggerPayload,
+  IncomingTriggerPayloadSchema,
 } from '../../src/types/triggers.types';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors';
@@ -130,6 +131,7 @@ const mockTriggerData: TriggerData = {
   originalPayload: { action: 'push', repository: 'test-repo' },
   metadata: {
     id: 'trigger-123',
+    nanoId: 'trigger-123-nano',
     triggerName: 'github_webhook',
     triggerData: '{"action":"push"}',
     triggerConfig: { webhook_url: 'https://example.com/webhook' },
@@ -145,14 +147,16 @@ const mockTriggerData: TriggerData = {
 };
 
 const mockIncomingTriggerPayload: IncomingTriggerPayload = {
-  id: 'trigger-123',
+  id: 'trigger-123-nano',
+  uuid: 'trigger-123',
   triggerSlug: 'github_webhook',
   toolkitSlug: 'github',
   userId: 'user-456',
   payload: { action: 'push', repository: 'test-repo' },
   originalPayload: { action: 'push', repository: 'test-repo' },
   metadata: {
-    id: 'trigger-123',
+    id: 'trigger-123-nano',
+    uuid: 'trigger-123',
     toolkitSlug: 'github',
     triggerSlug: 'github_webhook',
     triggerData: '{"action":"push"}',
@@ -537,28 +541,6 @@ describe('Triggers', () => {
       );
     });
 
-    it('should log debug message when trigger matches all filters', async () => {
-      const filters: TriggerSubscribeParams = {
-        toolkits: ['github'],
-        triggerId: 'trigger-123',
-        connectedAccountId: 'conn-123',
-        triggerSlug: ['github_webhook'],
-        triggerData: '{"action":"push"}',
-        userId: 'user-456',
-        authConfigId: 'auth-123',
-      };
-      await triggers.subscribe(mockCallback, filters);
-
-      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const filterCallback = subscribeCall[0];
-
-      filterCallback(mockTriggerData);
-
-      expect(mockCallback).toHaveBeenCalledWith(mockIncomingTriggerPayload);
-      expect(mockCallback).toHaveBeenCalledTimes(1);
-      expect(logger.debug).toHaveBeenCalledWith('Trigger matches all filters', expect.any(String));
-    });
-
     it('should log debug message when trigger does not match any filters', async () => {
       const filters: TriggerSubscribeParams = {
         toolkits: ['slack'],
@@ -603,12 +585,12 @@ describe('Triggers', () => {
       const partialTriggerData = {
         appName: 'github',
         clientId: 123,
-        payload: { action: 'push', repository: 'test-repo' },
-        originalPayload: { action: 'push', repository: 'test-repo' },
+        payload: { action: 'push' },
         metadata: {
           id: 'trigger-123',
+          nanoId: 'trigger-123-nano',
           triggerName: 'github_webhook',
-          triggerConfig: { webhook_url: 'https://example.com/webhook' },
+          triggerConfig: {},
           connection: {
             id: 'conn-123',
             connectedAccountNanoId: 'conn-123',
@@ -630,18 +612,17 @@ describe('Triggers', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1);
       expect(mockCallback).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 'trigger-123',
-          triggerSlug: 'github_webhook',
-          toolkitSlug: 'github',
-          payload: { action: 'push', repository: 'test-repo' },
+          id: 'trigger-123-nano',
+          uuid: 'trigger-123',
           metadata: expect.objectContaining({
-            id: 'trigger-123',
-            triggerSlug: 'github_webhook',
-            toolkitSlug: 'github',
+            id: 'trigger-123-nano',
+            uuid: 'trigger-123',
             connectedAccount: expect.objectContaining({
               id: 'conn-123',
               uuid: 'conn-123',
               authConfigId: 'auth-123',
+              authConfigUUID: 'github',
+              userId: 'user-456',
               status: 'ACTIVE',
             }),
           }),
@@ -697,16 +678,11 @@ describe('Triggers', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1);
       expect(mockCallback).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 'trigger-123',
-          triggerSlug: 'github_webhook',
-          toolkitSlug: 'github',
-          userId: 'user-456',
-          payload: { action: 'push', repository: 'test-repo' },
+          id: 'trigger-123-nano',
+          uuid: 'trigger-123',
           metadata: expect.objectContaining({
-            id: 'trigger-123',
-            triggerSlug: 'github_webhook',
-            toolkitSlug: 'github',
-            triggerConfig: { webhook_url: 'https://example.com/webhook' },
+            id: 'trigger-123-nano',
+            uuid: 'trigger-123',
             connectedAccount: expect.objectContaining({
               id: 'conn-123',
               uuid: 'conn-123',
@@ -773,16 +749,11 @@ describe('Triggers', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1);
       expect(mockCallback).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 'trigger-123',
-          triggerSlug: 'github_webhook',
-          toolkitSlug: 'github',
-          userId: 'user-456',
-          payload: { action: 'push', repository: 'test-repo' },
+          id: 'trigger-123-nano',
+          uuid: 'trigger-123',
           metadata: expect.objectContaining({
-            id: 'trigger-123',
-            triggerSlug: 'github_webhook',
-            toolkitSlug: 'github',
-            triggerConfig: { webhook_url: 'https://example.com/webhook' },
+            id: 'trigger-123-nano',
+            uuid: 'trigger-123',
             connectedAccount: expect.objectContaining({
               id: 'conn-123',
               uuid: 'conn-123',

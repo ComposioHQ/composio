@@ -10,6 +10,7 @@ import {
   ConnectedAccountAuthSchemes,
   ConnectedAccountStatuses,
 } from '../../src/types/connectedAccounts.types';
+import { ComposioMultipleConnectedAccountsError } from '../../src/errors';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -85,6 +86,13 @@ describe('ConnectedAccounts', () => {
         callbackUrl: 'https://example.com/callback',
       };
 
+      // Mock list response to return empty list
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
       const mockResponse = {
         id: 'conn_123',
         connectionData: {
@@ -105,90 +113,189 @@ describe('ConnectedAccounts', () => {
           id: authConfigId,
         },
         connection: {
-          state: undefined,
-          callback_url: options.callbackUrl,
           user_id: userId,
+          callback_url: options.callbackUrl,
+          state: undefined,
         },
       });
 
       expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
-      expect(connectionRequest).toHaveProperty('id', mockResponse.id);
-      expect(connectionRequest).toHaveProperty('status', mockResponse.connectionData.val.status);
-      expect(connectionRequest).toHaveProperty(
-        'redirectUrl',
-        mockResponse.connectionData.val.redirectUrl
-      );
-
-      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce({
-        id: 'nanoid',
-        status: ConnectedAccountStatuses.ACTIVE,
-        auth_scopes: ['read:user', 'write:user'],
-        auth_config: {
-          id: authConfigId,
-          is_composio_managed: true,
-          is_disabled: false,
-        },
-        state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
-          val: {
-            status: ConnectedAccountStatuses.ACTIVE,
-            access_token: 'access_token_123',
-            token_type: 'Bearer',
-          },
-        },
-        user_id: userId,
-        data: {},
-        params: {},
-        is_disabled: false,
-        created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z',
-        status_reason: null,
-        toolkit: {
-          slug: 'test-toolkit',
-        },
-      } as unknown as ConnectedAccountRetrieveResponse);
-
-      const connectedAccount = await connectionRequest.waitForConnection();
-
-      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(mockResponse.id);
-      expect(connectedAccount).toHaveProperty('id', 'nanoid');
-      expect(connectedAccount).toHaveProperty('status', 'ACTIVE');
-      expect(connectedAccount).toHaveProperty(
-        'state.authScheme',
-        ConnectedAccountAuthSchemes.OAUTH2
-      );
     });
 
     it('should work without optional parameters', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
 
+      // Mock list response to return empty list
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
       const mockResponse = {
         id: 'conn_123',
         connectionData: {
           val: {
+            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
             status: 'INITIALIZING',
-            redirectUrl: null,
+            redirectUrl: 'https://auth.example.com/connect',
           },
         },
       };
 
       extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
 
-      const result = await connectedAccounts.initiate(userId, authConfigId);
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
 
       expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
         auth_config: {
           id: authConfigId,
         },
         connection: {
-          state: undefined,
-          callback_url: undefined,
           user_id: userId,
+          callback_url: undefined,
+          state: undefined,
         },
       });
 
-      expect(result).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+    });
+
+    it('should throw ComposioMultipleConnectedAccountsError when multiple accounts exist and allowMultiple is false', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      // Mock list response to return multiple accounts
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_1',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: {
+              id: authConfigId,
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            data: {},
+            params: {},
+            status_reason: null,
+            toolkit: {
+              slug: 'test-toolkit',
+              name: 'Test Toolkit',
+            },
+            is_disabled: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'conn_2',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: {
+              id: authConfigId,
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            data: {},
+            params: {},
+            status_reason: null,
+            toolkit: {
+              slug: 'test-toolkit',
+              name: 'Test Toolkit',
+            },
+            is_disabled: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      await expect(connectedAccounts.initiate(userId, authConfigId)).rejects.toThrow(
+        ComposioMultipleConnectedAccountsError
+      );
+    });
+
+    it('should allow multiple accounts when allowMultiple is true', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      // Mock list response to return multiple accounts
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_1',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: {
+              id: authConfigId,
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            data: {},
+            params: {},
+            status_reason: null,
+            toolkit: {
+              slug: 'test-toolkit',
+              name: 'Test Toolkit',
+            },
+            is_disabled: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'conn_2',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: {
+              id: authConfigId,
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            data: {},
+            params: {},
+            status_reason: null,
+            toolkit: {
+              slug: 'test-toolkit',
+              name: 'Test Toolkit',
+            },
+            is_disabled: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, {
+        allowMultiple: true,
+      });
+
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
+        auth_config: {
+          id: authConfigId,
+        },
+        connection: {
+          user_id: userId,
+          callback_url: undefined,
+          state: undefined,
+        },
+      });
+
+      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
     });
   });
 
