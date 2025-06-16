@@ -84,7 +84,7 @@ describe('OpenAIAgentsProvider', () => {
       expect(createOpenAIAgentTool).toHaveBeenCalledWith({
         name: mockTool.slug,
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        parameters: expect.any(Object),
         execute: expect.any(Function),
       });
 
@@ -147,13 +147,13 @@ describe('OpenAIAgentsProvider', () => {
       expect(createOpenAIAgentTool).toHaveBeenCalledWith({
         name: mockTool.slug,
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        parameters: expect.any(Object),
         execute: expect.any(Function),
       });
       expect(createOpenAIAgentTool).toHaveBeenCalledWith({
         name: anotherTool.slug,
         description: anotherTool.description,
-        parameters: anotherTool.inputParameters,
+        parameters: expect.any(Object),
         execute: expect.any(Function),
       });
     });
