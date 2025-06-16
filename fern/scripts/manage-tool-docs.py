@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to comment/uncomment tool docs in docs.yml, leaving the introduction and first 5 docs.
+Script to comment/uncomment tool docs in docs.yml, leaving only the introduction.
 Uses ruamel.yaml to properly parse and modify the YAML structure.
 """
 
@@ -92,7 +92,7 @@ def process_tool_docs(file_path: Path, action: str) -> None:
         yaml.dump(data, stream)
         content = stream.getvalue()
         
-        # Now manually comment out tools after the 6th one
+        # Now manually comment out tools after the 1st one (introduction)
         lines = content.split('\n')
         new_lines = []
         in_tools_section = False
@@ -117,7 +117,7 @@ def process_tool_docs(file_path: Path, action: str) -> None:
             # Count and process tool entries
             if in_tools_section and '- page:' in line and line.strip().startswith('- page:'):
                 tool_count += 1
-                if tool_count > 6:  # Skip introduction + first 5 tools
+                if tool_count > 1:  # Skip only the introduction
                     # Comment out this line and the next one (path line)
                     indent = len(line) - len(line.lstrip())
                     new_lines.append(' ' * indent + '# ' + line.lstrip())
@@ -144,7 +144,7 @@ def process_tool_docs(file_path: Path, action: str) -> None:
     
     print(f"Successfully {action}ed tool docs in {file_path}")
     if action == 'comment':
-        print("Left uncommented: Introduction + first 5 tool docs")
+        print("Left uncommented: Introduction only")
     else:
         print("All tool docs are now uncommented")
 

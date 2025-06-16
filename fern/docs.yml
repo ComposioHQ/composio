@@ -254,16 +254,16 @@ navigation:
     contents:
     - page: Introduction
       path: tools/introduction.mdx
-    - page: Ably
-      path: tools/ably.mdx
-    - page: Accelo
-      path: tools/accelo.mdx
-    - page: Acculynx
-      path: tools/acculynx.mdx
-    - page: Active Campaign
-      path: tools/active_campaign.mdx
-    - page: Adobe
-      path: tools/adobe.mdx
+    # - page: Ably
+      # path: tools/ably.mdx
+    # - page: Accelo
+      # path: tools/accelo.mdx
+    # - page: Acculynx
+      # path: tools/acculynx.mdx
+    # - page: Active Campaign
+      # path: tools/active_campaign.mdx
+    # - page: Adobe
+      # path: tools/adobe.mdx
     # - page: Aero Workflow
       # path: tools/aero_workflow.mdx
     # - page: Affinity
