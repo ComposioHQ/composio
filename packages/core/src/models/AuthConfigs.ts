@@ -83,6 +83,7 @@ export class AuthConfigs {
       createdBy: authConfig.created_by,
       createdAt: authConfig.created_at,
       lastUpdatedAt: authConfig.last_updated_at,
+      restrictToFollowingTools: authConfig.restrict_to_following_tools,
     });
     if (result.error) {
       throw new ValidationError('Failed to parse auth config response', {

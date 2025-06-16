@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, ZodObject, ZodTypeAny } from 'zod';
 import { JsonSchemaToZodError } from '../errors';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 
@@ -10,7 +10,12 @@ import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
  * @returns The JSON schema with all non-required properties removed
  */
 export const removeNonRequiredProperties = <
-  T extends { type: 'object'; properties: Record<string, unknown>; required?: string[] },
+  T extends {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+    additionalProperties?: boolean;
+  },
 >(
   schema: T
 ): T => {
@@ -21,6 +26,7 @@ export const removeNonRequiredProperties = <
       )
     );
   }
+  schema.additionalProperties = false;
   return schema as T;
 };
 
@@ -63,12 +69,12 @@ export const removeNonRequiredProperties = <
  * // })
  * ```
  */
-export function jsonSchemaToZodSchema(
+export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
   jsonSchema: Record<string, unknown>,
   { strict }: { strict?: boolean } = {
     strict: false,
   }
-): z.ZodTypeAny {
+): T {
   try {
     let schema = jsonSchema;
     // Remove all non-required properties from the schema if strict is true
@@ -82,7 +88,7 @@ export function jsonSchemaToZodSchema(
       );
     }
     // Convert the JSON schema properties to Zod schema
-    const zodSchema = jsonSchemaToZod(schema) as z.ZodTypeAny;
+    const zodSchema = jsonSchemaToZod(schema) as T;
     return zodSchema;
   } catch (error) {
     throw new JsonSchemaToZodError('Failed to convert JSON Schema to Zod Schema', {

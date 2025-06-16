@@ -13,3 +13,4 @@
  * @module providers/openai
  */
 export { OpenAIProvider } from '@composio/core';
+export { OpenAIResponsesProvider } from './OpenAIResponsesProvider';
