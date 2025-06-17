@@ -18,10 +18,7 @@ import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 // import { LogLevel } from '@composio/client/client';
 
-/**
- * Extract the MCP provider type from a base provider
- */
-type ExtractMcpProvider<T> = T extends { mcp: infer TMcp } ? TMcp : McpProvider<unknown>;
+// No longer needed - MCP is now required on all providers
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -105,7 +102,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: ExtractMcpProvider<TProvider>;
+  mcp: TProvider['mcp'];
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -176,8 +173,7 @@ export class Composio<
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
-    this.mcp = (this.provider.mcp ??
-      new McpProvider<McpServerGetResponse>()) as ExtractMcpProvider<TProvider>;
+    this.mcp = this.provider.mcp;
 
     this.mcp.setup(this.client);
 

@@ -5,7 +5,12 @@
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/openai.ts
  */
 import { OpenAI } from 'openai';
-import { BaseNonAgenticProvider, removeNonRequiredProperties } from '@composio/core';
+import {
+  BaseNonAgenticProvider,
+  removeNonRequiredProperties,
+  McpProvider,
+  McpServerGetResponse,
+} from '@composio/core';
 import { Tool, ToolExecuteParams } from '@composio/core';
 import { ExecuteToolModifiers } from '@composio/core';
 import { ExecuteToolFnOptions } from '@composio/core';
@@ -23,6 +28,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   OpenAiTool
 > {
   readonly name = 'openai';
+  readonly mcp = new McpProvider<McpServerGetResponse>();
   private strict: boolean | null;
 
   /**

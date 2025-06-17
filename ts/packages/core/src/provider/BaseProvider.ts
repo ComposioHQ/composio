@@ -3,6 +3,7 @@ import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import { McpProvider } from './McpProvider';
+import { McpServerGetResponse } from '../types/mcp.types';
 
 // Re-export for backward compatibility
 export { McpProvider };
@@ -12,7 +13,7 @@ export { McpProvider };
  * Base class for all toolsets.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
-abstract class BaseProvider<TMcpResponse = unknown> {
+abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
   /**
    * @public
    * The name of the provider.
@@ -23,7 +24,7 @@ abstract class BaseProvider<TMcpResponse = unknown> {
    * @public
    * MCP provider for the framework
    */
-  abstract readonly mcp?: McpProvider<TMcpResponse>;
+  abstract readonly mcp: McpProvider<TMcpResponse>;
   /**
    * @internal
    * Whether the provider is agentic.
@@ -75,7 +76,7 @@ abstract class BaseProvider<TMcpResponse = unknown> {
 export abstract class BaseNonAgenticProvider<
   TToolCollection,
   TTool,
-  TMcpResponse = unknown,
+  TMcpResponse = McpServerGetResponse,
 > extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = false;
 

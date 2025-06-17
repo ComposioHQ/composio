@@ -5,7 +5,7 @@ export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProv
 export type { BaseComposioProvider } from './provider/BaseProvider';
 export { McpProvider } from './provider/McpProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
-export { jsonSchemaToZodSchema } from './utils/jsonSchema';
+export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
 export * from './types/provider.types';

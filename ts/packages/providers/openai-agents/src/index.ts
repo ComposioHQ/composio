@@ -15,6 +15,8 @@ import {
   Tool as ComposioTool,
   ExecuteToolFn,
   jsonSchemaToZodSchema,
+  McpProvider,
+  McpServerGetResponse,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -22,9 +24,11 @@ import { tool as createOpenAIAgentTool } from '@openai/agents';
 type OpenAIAgentsToolCollection = Array<OpenAIAgentTool>;
 export class OpenAIAgentsProvider extends BaseAgenticProvider<
   OpenAIAgentsToolCollection,
-  OpenAIAgentTool
+  OpenAIAgentTool,
+  McpServerGetResponse
 > {
   readonly name = 'openai-agents';
+  readonly mcp = new McpProvider<McpServerGetResponse>();
   private strict: boolean | null;
 
   /**
