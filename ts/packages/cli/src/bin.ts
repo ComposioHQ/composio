@@ -33,13 +33,11 @@ export const UserConfigProviderLiveFromFs = Layer.provide(UserConfigLive, BunFil
 /**
  * Service layer that configures the CLI appearance and default command options.
  */
-export const CliConfigLive = CliConfig.layer(ComposioCliConfig).pipe(
-  Layer.provide(UserConfigProviderLiveFromFs)
-);
+export const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
 const layers = Layer.mergeAll(
   UserConfigProviderLiveFromFs,
-  CliConfigLive,
+  CliConfigLive.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
   NodeProcess.Default,
   ComposioSessionRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
   ComposioToolkitsRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
