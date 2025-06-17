@@ -1,0 +1,67 @@
+{
+  "name": "@composio/cli",
+  "version": "0.1.24",
+  "description": "Composio CLI",
+  "main": "dist/bin.js",
+  "bin": {
+    "composio": "./dist/composio"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/cli"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/bin.js",
+    "types": "dist/bin.d.ts"
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "cli": "bun run src/bin.ts",
+    "build:bin": "bun run ./scripts/build-binary.ts",
+    "build": "tsup",
+    "bin": "./dist/composio",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build && pnpm build:bin"
+  },
+  "keywords": [
+    "composio",
+    "mcp",
+    "cli"
+  ],
+  "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.0",
+  "devDependencies": {
+    "@effect/eslint-plugin": "^0.3.2",
+    "@effect/platform": "^0.84.11",
+    "@effect/vitest": "^0.23.8",
+    "@types/bun": "^1.2.16",
+    "@types/semver": "^7.7.0",
+    "tempy": "^3.1.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@composio/client": "0.1.0-alpha.17",
+    "@composio/core": "workspace:*",
+    "@composio/ts-builders": "workspace:*",
+    "@effect/cli": "^0.63.11",
+    "@effect/platform-bun": "^0.69.16",
+    "@effect/platform-node-shared": "^0.40.2",
+    "chalk": "^5.4.1",
+    "effect": "^3.16.8",
+    "effect-errors": "^1.10.11",
+    "indent-string": "^5.0.0",
+    "semver": "^7.7.2",
+    "superjson": "^2.2.2"
+  },
+  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
+}
