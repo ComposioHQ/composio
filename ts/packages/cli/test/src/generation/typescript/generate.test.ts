@@ -58,7 +58,7 @@ describe('generateTypeScriptSources', () => {
           "
         `);
 
-        assertTypeScriptIsValid({ files: { 'index.ts': source } });
+        assertTypeScriptIsValid({ files: { './index.ts': source } });
       });
 
       it('[Given] a single toolkit with no tools or triggerTypes [Then] it returns a single toolkit source file + the index map', () => {
@@ -90,7 +90,7 @@ describe('generateTypeScriptSources', () => {
           }
           "
         `);
-        assertTypeScriptIsValid({ files: { 'slack.ts': sources[0][1] } });
+        assertTypeScriptIsValid({ files: { './slack.ts': sources[0][1] } });
 
         expect(sources[1]).toHaveLength(2);
         expect(sources[1][0]).toBe(path.join(params.outputDir, 'index.ts'));
@@ -127,7 +127,7 @@ describe('generateTypeScriptSources', () => {
         `);
 
         assertTypeScriptIsValid({
-          files: { 'index.ts': sources[1][1], 'slack.ts': sources[0][1] },
+          files: { './index.ts': sources[1][1], './slack.ts': sources[0][1] },
         });
       });
 
@@ -148,7 +148,7 @@ describe('generateTypeScriptSources', () => {
         const sources = generateTypeScriptSources(params)(index);
         expect(sources).toHaveLength(2);
         expect(sources[0]).toHaveLength(2);
-        expect(sources[0][0]).toBe(path.join(params.outputDir, 'slack.ts'));
+        expect(sources[0][0]).toBe(path.join(params.outputDir, './slack.ts'));
         expect(sources[0][1]).toMatchInlineSnapshot(`
           "/**
            * Map of Composio's SLACK toolkit.
@@ -160,7 +160,7 @@ describe('generateTypeScriptSources', () => {
           }
           "
         `);
-        assertTypeScriptIsValid({ files: { 'slack.ts': sources[0][1] } });
+        assertTypeScriptIsValid({ files: { './slack.ts': sources[0][1] } });
 
         expect(sources[1]).toHaveLength(2);
         expect(sources[1][0]).toBe(path.join(params.outputDir, 'index.ts'));
@@ -195,7 +195,7 @@ describe('generateTypeScriptSources', () => {
 
           "
         `);
-        assertTypeScriptIsValid({ files: { 'index.ts': sources[1][1] } });
+        assertTypeScriptIsValid({ files: { './index.ts': sources[1][1] } });
       });
     });
   });
