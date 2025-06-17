@@ -14,8 +14,6 @@ dependencies = [
     "openai>=1.79.0",
     "composio-anthropic",
     "composio",
-    "composio-core>=0.7.18",
-    "composio-openai>=0.7.18",
 ]
 
 [tool.ruff]

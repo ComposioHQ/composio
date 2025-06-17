@@ -89,6 +89,29 @@ tools = composio.tools.get(
 ```
 </CodeGroup>
 
+## Fetching raw tools
+To examine the raw schema definitition of a tool to understand the input/output parameters or to build custom logic around tool definitions, you can use the following methods. This can be useful for:
+- Understanding exact input parameters and output structures.
+- Building custom logic around tool definitions.
+- Debugging tool interactions.
+- Research and experimentation.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/typescript/raw_tools.ts"
+  startLine={1}
+  endLine={15}
+  title="TypeScript"
+/>
+<SnippetCode 
+  src="fern/snippets/python/raw_tools.py"
+  startLine={1}
+  endLine={15}
+  title="Python"
+/>
+</CodeGroup>
+
+
 ## Filtering by search (Experimental)
 You may also filter tools by searching for them. This is a good way to find tools that are relevant to a given use case.
 

@@ -39,18 +39,29 @@ The [triggers page](https://app.composio.dev/active_triggers?page=1) will show y
   <img src="../assets/images/manage-triggers.png" alt="Manage triggers" />
 </Frame>
 
-You create triggers through the SDK as well.
+You create triggers through the SDK as well. 
+
+First, you can view the required configuration to make the trigger too as follows:
 
 <CodeGroup>
-```typescript TypeScript
-const createResponse = await composio.triggers.create("GITHUB_STAR_ADDED_EVENT", {
-  connectedAccountId: "ca_abc1234",
-  triggerConfig: {
-    owner: "composiohq",
-    repo: "composio",
-  },
-});
-```
+<SnippetCode
+  src="fern/snippets/typescript/triggers.ts"
+  startLine={1}
+  endLine={27}
+  title="TypeScript (new)"
+/>
+
+</CodeGroup>
+
+To create a trigger, first fetch the user's connection ID, then use it along with the required configuration.
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/typescript/triggers.ts"
+  startLine={28}
+  endLine={40}
+  title="TypeScript (new)"
+/>
 ```python Python
 instance = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
@@ -64,25 +75,24 @@ print(instance)
 ```
 </CodeGroup>
 
-You need to fetch the connection ID for the user to create a trigger.
+
+## Subscribing to triggers using the SDK (for development)
+During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
+
+You subscribe to multiple trigger events by configuring the filters.
+When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
+
+This method uses websockets to subscribe to the trigger.
 
 <CodeGroup>
-```typescript TypeScript
-const userId = "user@acme.com";
+<SnippetCode
+src="fern/snippets/typescript/triggers.ts"
+startLine={42}
+endLine={53}
+title="TypeScript (new)"
+/>
 
-const { items: connections } = await composio.connectedAccounts.list({ userIds: [userId] });
-const [{ id: connectedAccountId }] = connections;
-console.log(connectedAccountId);
 
-const createResponse = await composio.triggers.create("GITHUB_STAR_ADDED_EVENT", {
-  connectedAccountId,
-  triggerConfig: {
-    owner: "composiohq",
-    repo: "composio",
-  },
-});
-
-```
 ```python Python
 # Fetch connected account for user
 user_id = "user@acme.com"
