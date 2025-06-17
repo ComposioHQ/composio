@@ -1,9 +1,9 @@
 import path from 'node:path';
-import fs from 'node:fs';
 import * as tempy from 'tempy';
 import { CliApp } from '@effect/cli';
+import { FileSystem } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
-import { Console, DateTime, Effect, Layer, Logger, LogLevel } from 'effect';
+import { Console, DateTime, Effect, Layer, Logger, LogLevel, Schedule } from 'effect';
 import { CliConfigLive } from 'src/bin';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
@@ -62,6 +62,82 @@ export const TestLayer = (input?: TestLiveInput) =>
       composioToolkitsRepositoryTest
     );
 
+    const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
+
+    // Mock `node:process`
+    const nodeProcessTest = new NodeProcess({
+      cwd,
+      platform: 'darwin',
+      arch: 'arm64',
+    });
+    const NodeProcessTest = Layer.succeed(NodeProcess, nodeProcessTest);
+
+    const MockConsoleTestLive = yield* MockConsole.make;
+
+    const layers = Layer.mergeAll(
+      Console.setConsole(MockConsoleTestLive),
+      NodeProcessTest,
+      CliConfigLive,
+      ComposioSessionRepositoryTest,
+      ComposioToolkitsRepositoryTest,
+      EnvLangDetector.Default,
+      BunFileSystem.layer,
+      BunContext.layer,
+      MockTerminal.layer,
+      BunPath.layer
+    );
+
+    return layers;
+  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Layer.unwrapEffect);
+
+// Run @effect/vitest suite with TestLive layer
+export const runEffect =
+  (input?: TestLiveInput) =>
+  <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
+    Effect.provide(self, TestLayer(input)).pipe(Effect.runPromise);
+
+function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
+  return Effect.gen(function* () {
+    if (fixture === undefined) {
+      return;
+    }
+
+    const fs = yield* FileSystem.FileSystem;
+
+    const realFixturePath = path.resolve(
+      new URL('.', import.meta.url).pathname,
+      '..',
+      '..',
+      '__fixtures__',
+      fixture
+    );
+    const tmpFixturesPath = path.join(tempDir, 'test', '__fixtures__', fixture);
+
+    yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
+
+    // Retry the task with a delay between retries and a maximum of 3 retries
+    const policy = Schedule.addDelay(Schedule.recurs(3), () => '100 millis');
+
+    // If all retries fail, run the fallback effect
+    const task = Effect.gen(function* () {
+      yield* fs.makeDirectory(tmpFixturesPath, { recursive: true });
+      yield* fs.copy(realFixturePath, tmpFixturesPath);
+    });
+
+    const repeated = Effect.retryOrElse(policy, () =>
+      Effect.die(`Failed to copy fixture to: ${tmpFixturesPath}`)
+    );
+
+    yield* repeated(task);
+
+    yield* Effect.logDebug(`Copied fixture to: ${tmpFixturesPath}`);
+
+    return tmpFixturesPath;
+  }).pipe(Effect.provide(BunFileSystem.layer));
+}
+
+function setupComposioSessionRepository() {
+  return Effect.gen(function* () {
     const now = yield* DateTime.now;
     const sessionId = 'te00st11-d0c4-4efa-8117-c638886063e0';
     const sessionCode = '001122';
@@ -106,57 +182,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       composioSessionRepositoryTest
     );
 
-    // Mock `node:process`
-    const nodeProcessTest = new NodeProcess({
-      cwd,
-      platform: 'darwin',
-      arch: 'arm64',
-    });
-    const NodeProcessTest = Layer.succeed(NodeProcess, nodeProcessTest);
-
-    const MockConsoleTestLive = yield* MockConsole.make;
-
-    const layers = Layer.mergeAll(
-      Console.setConsole(MockConsoleTestLive),
-      NodeProcessTest,
-      CliConfigLive,
-      ComposioSessionRepositoryTest,
-      ComposioToolkitsRepositoryTest,
-      EnvLangDetector.Default,
-      BunFileSystem.layer,
-      BunContext.layer,
-      MockTerminal.layer,
-      BunPath.layer
-    );
-
-    return layers;
-  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Layer.unwrapEffect);
-
-// Run @effect/vitest suite with TestLive layer
-export const runEffect =
-  (input?: TestLiveInput) =>
-  <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
-    Effect.provide(self, TestLayer(input)).pipe(Effect.runPromise);
-
-function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
-  return Effect.gen(function* () {
-    if (fixture === undefined) {
-      return;
-    }
-
-    const realFixturePath = path.resolve(
-      new URL('.', import.meta.url).pathname,
-      '..',
-      '..',
-      '__fixtures__',
-      fixture
-    );
-    const tmpFixturesPath = path.join(tempDir, 'test', '__fixtures__', fixture);
-
-    yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
-
-    fs.mkdirSync(tmpFixturesPath, { recursive: true });
-    fs.cpSync(realFixturePath, tmpFixturesPath, { recursive: true });
-    return tmpFixturesPath;
+    return ComposioSessionRepositoryTest;
   });
 }
