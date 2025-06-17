@@ -114,7 +114,7 @@ const mockTriggerType = {
     optional: ['secret'],
   },
   toolkit: {
-    name: 'github',
+    slug: 'github',
   },
 };
 
@@ -301,7 +301,7 @@ describe('Triggers', () => {
       expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug);
       expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith({
         user_ids: [userId],
-        toolkit_slugs: [mockTriggerType.toolkit.name],
+        toolkit_slugs: [mockTriggerType.toolkit.slug],
       });
       expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
         connected_account_id: body.connectedAccountId,
