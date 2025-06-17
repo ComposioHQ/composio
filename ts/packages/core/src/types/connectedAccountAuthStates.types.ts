@@ -64,6 +64,8 @@ const BaseSchemeRaw = z
   })
   .catchall(z.unknown());
 
+export type BaseConnectionFields = z.infer<typeof BaseSchemeRaw>;
+
 // OAUTH2
 export const Oauth2InitiatingConnectionDataSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.INITIALIZING),

@@ -66,7 +66,7 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
-        limit: undefined,
+        limit: '9999',
         cursor: undefined,
         important: undefined,
         search: undefined,
