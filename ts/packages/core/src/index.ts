@@ -1,10 +1,12 @@
 // Core exports
 export { Composio } from './composio';
-export { ComposioProvider } from './provider/ComposioProvider';
-export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProvider';
-export type { BaseComposioProvider } from './provider/BaseProvider';
-export { McpProvider } from './provider/McpProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
+export { ComposioProvider } from './provider/ComposioProvider';
+export {
+  BaseNonAgenticProvider,
+  BaseAgenticProvider,
+  BaseComposioProvider,
+} from './provider/BaseProvider';
 export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';

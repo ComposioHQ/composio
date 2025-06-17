@@ -13,9 +13,9 @@ import {
   ToolExecuteParams,
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
-  McpProvider,
-  McpServerGetResponse,
   McpUrlResponse,
+  McpServerGetResponse,
+  logger,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -40,26 +40,47 @@ export interface GoogleGenAIFunctionCall {
 export type GoogleGenAIToolCollection = GoogleTool[];
 
 /**
- * Google GenAI Provider for Composio SDK
- * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
+ * Google Generative AI Provider implementation for Composio
+ *
+ * This provider wraps Composio tools in a format compatible with Google's Generative AI
+ * function calling capabilities, enabling seamless integration with Gemini models.
+ *
+ * @example
+ * ```typescript
+ * // Initialize the provider
+ * const provider = new GoogleProvider();
+ *
+ * // Use with Composio
+ * const composio = new Composio({
+ *   apiKey: 'your-api-key',
+ *   provider: new GoogleProvider()
+ * });
+ *
+ * // Get tools for Google Generative AI
+ * const tools = await composio.tools.get('default', {
+ *   toolkits: ['github']
+ * });
+ *
+ * // Use with Google Generative AI
+ * const genAI = new GoogleGenerativeAI(apiKey);
+ * const model = genAI.getGenerativeModel({
+ *   model: 'gemini-pro',
+ *   tools: tools
+ * });
+ * ```
  */
-export class GoogleProvider extends BaseNonAgenticProvider<
-  GoogleGenAIToolCollection,
-  GoogleTool,
-  McpServerGetResponse
-> {
+export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
   readonly name = 'google';
-  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the GoogleProvider.
    *
-   * This provider enables integration with Google's GenAI API,
-   * supporting both the Gemini Developer API and Vertex AI implementations.
+   * This provider formats tools for use with Google's Generative AI
+   * function calling features.
    *
    * @example
    * ```typescript
-   * // Initialize the Google provider
+   * // Initialize with default settings
    * const provider = new GoogleProvider();
    *
    * // Use with Composio
@@ -67,20 +88,23 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    *   apiKey: 'your-api-key',
    *   provider: new GoogleProvider()
    * });
-   *
-   * // Use the provider to wrap tools for Google GenAI
-   * const googleTools = provider.wrapTools(composioTools);
    * ```
    */
   constructor() {
     super();
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
+    logger.debug('GoogleProvider initialized');
   }
 
   /**
    * Transform MCP URL response into Google-specific format.
-   * Uses the default transformation from base McpProvider.
+   * Google uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
    */
   transformMcpResponse(
     data: McpUrlResponse,
@@ -89,6 +113,7 @@ export class GoogleProvider extends BaseNonAgenticProvider<
     userIds?: string[],
     toolkits?: string[]
   ): McpServerGetResponse {
+    // Google uses the standard format
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),

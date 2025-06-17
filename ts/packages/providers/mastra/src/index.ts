@@ -11,9 +11,8 @@ import {
   Tool,
   ExecuteToolFn,
   jsonSchemaToZodSchema,
-  McpProvider,
+  McpUrlResponse,
 } from '@composio/core';
-import type { McpUrlResponse } from '@composio/core';
 import { createTool } from '@mastra/core';
 
 export type MastraTool = ReturnType<typeof createTool>;
@@ -32,23 +31,19 @@ export class MastraProvider extends BaseAgenticProvider<
   MastraUrlMap
 > {
   readonly name = 'mastra';
-  readonly mcp: McpProvider<MastraUrlMap>;
 
   constructor() {
     super();
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
   }
 
   /**
    * Transform MCP URL response into Mastra-specific format.
-   * This method implements the abstract transformMcpResponse from BaseProvider.
+   * Mastra expects URLs in a key-value map format.
    *
    * @param data - The MCP URL response data
    * @param serverName - Name of the MCP server
    * @param connectedAccountIds - Optional array of connected account IDs
    * @param userIds - Optional array of user IDs
-   * @param toolkits - Optional array of toolkit names
    * @returns Transformed MastraUrlMap
    */
   transformMcpResponse(

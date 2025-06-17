@@ -5,7 +5,7 @@
  * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Reference: https://openai.github.io/openai-agents-js/
  *
- * This provider provides a set of tools for interacting with Vercel AI SDK.
+ * This provider provides a set of tools for interacting with OpenAI's Agents API.
  *
  * @packageDocumentation
  * @module providers/openai-agents
@@ -15,9 +15,8 @@ import {
   Tool as ComposioTool,
   ExecuteToolFn,
   jsonSchemaToZodSchema,
-  McpProvider,
-  McpServerGetResponse,
   McpUrlResponse,
+  McpServerGetResponse,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -25,11 +24,9 @@ import { tool as createOpenAIAgentTool } from '@openai/agents';
 type OpenAIAgentsToolCollection = Array<OpenAIAgentTool>;
 export class OpenAIAgentsProvider extends BaseAgenticProvider<
   OpenAIAgentsToolCollection,
-  OpenAIAgentTool,
-  McpServerGetResponse
+  OpenAIAgentTool
 > {
   readonly name = 'openai-agents';
-  readonly mcp: McpProvider<McpServerGetResponse>;
   private strict: boolean | null;
 
   /**
@@ -50,19 +47,24 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * });
    *
    * // Use the provider to wrap tools for @openai/agents
-   * const vercelTools = provider.wrapTools(composioTools, composio.tools.execute);
+   * const agentTools = provider.wrapTools(composioTools, composio.tools.execute);
    * ```
    */
   constructor(options?: { strict?: boolean }) {
     super();
     this.strict = options?.strict ?? false;
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
   }
 
   /**
    * Transform MCP URL response into OpenAI Agents-specific format.
-   * Uses the default transformation from base McpProvider.
+   * OpenAI Agents uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
    */
   transformMcpResponse(
     data: McpUrlResponse,
@@ -71,6 +73,7 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
     userIds?: string[],
     toolkits?: string[]
   ): McpServerGetResponse {
+    // OpenAI Agents uses the standard format
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),

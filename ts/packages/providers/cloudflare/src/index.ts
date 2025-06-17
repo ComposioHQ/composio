@@ -16,10 +16,9 @@ import {
   BaseNonAgenticProvider,
   ToolExecuteParams,
   ExecuteToolFnOptions,
-  McpProvider,
-  McpServerGetResponse,
-  McpUrlResponse,
   logger,
+  McpUrlResponse,
+  McpServerGetResponse,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -52,11 +51,9 @@ export interface CloudflareFunctionCall {
 
 export class CloudflareProvider extends BaseNonAgenticProvider<
   CloudflareToolCollection,
-  CloudflareTool,
-  McpServerGetResponse
+  CloudflareTool
 > {
   readonly name = 'cloudflare';
-  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the CloudflareProvider.
@@ -79,14 +76,19 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    */
   constructor() {
     super();
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
     logger.debug('CloudflareProvider initialized');
   }
 
   /**
    * Transform MCP URL response into Cloudflare-specific format.
-   * Uses the default transformation from base McpProvider.
+   * Cloudflare uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
    */
   transformMcpResponse(
     data: McpUrlResponse,
@@ -95,6 +97,7 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
     userIds?: string[],
     toolkits?: string[]
   ): McpServerGetResponse {
+    // Cloudflare uses the standard format
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),

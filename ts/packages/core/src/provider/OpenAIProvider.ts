@@ -9,30 +9,18 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseNonAgenticProvider, McpProvider } from './BaseProvider';
-import { McpServerGetResponse, McpUrlResponse } from '../types/mcp.types';
+import { BaseNonAgenticProvider } from './BaseProvider';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
+import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 
-export class OpenAIMcpProvider extends McpProvider<McpServerGetResponse> {
+export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
   readonly name = 'openai';
-
-  // TODO: Implement this
-}
-
-export class OpenAIProvider extends BaseNonAgenticProvider<
-  OpenAiToolCollection,
-  OpenAiTool,
-  McpServerGetResponse
-> {
-  readonly name = 'openai';
-
-  readonly mcp = new OpenAIMcpProvider();
 
   /**
    * Creates a new instance of the OpenAIProvider.
@@ -58,6 +46,17 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     super();
   }
 
+  /**
+   * Transform MCP URL response into OpenAI-specific format.
+   * OpenAI uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
+   */
   transformMcpResponse(
     data: McpUrlResponse,
     serverName: string,
@@ -65,6 +64,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     userIds?: string[],
     toolkits?: string[]
   ): McpServerGetResponse {
+    // OpenAI uses the standard format
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),

@@ -1,8 +1,8 @@
 /**
- * Langchain Provider
+ * Langchain ToolSet
  *
  * Author: Musthaq Ahamad <musthaq@composio.dev>
- * Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/langchain.ts
+ * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/langchain.ts
  *
  * This provider provides a set of tools for interacting with Langchain.
  *
@@ -11,29 +11,25 @@
  */
 import {
   BaseAgenticProvider,
-  jsonSchemaToZodSchema,
   Tool,
   ExecuteToolFn,
-  McpProvider,
-  McpServerGetResponse,
+  jsonSchemaToZodSchema,
   McpUrlResponse,
+  McpServerGetResponse,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
-export type LangChainToolCollection = Array<DynamicStructuredTool>;
-export class LangchainProvider extends BaseAgenticProvider<
-  LangChainToolCollection,
-  DynamicStructuredTool,
-  McpServerGetResponse
-> {
+export type LangchainTool = DynamicStructuredTool;
+export type LangchainToolCollection = LangchainTool[];
+
+export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollection, LangchainTool> {
   readonly name = 'langchain';
-  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the LangchainProvider.
    *
-   * This provider enables integration with the Langchain framework,
-   * allowing Composio tools to be used with Langchain agents and chains.
+   * This provider enables integration with Langchain,
+   * allowing Composio tools to be used within Langchain applications.
    *
    * @example
    * ```typescript
@@ -52,13 +48,18 @@ export class LangchainProvider extends BaseAgenticProvider<
    */
   constructor() {
     super();
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
   }
 
   /**
    * Transform MCP URL response into LangChain-specific format.
-   * Uses the default transformation from base McpProvider.
+   * LangChain uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
    */
   transformMcpResponse(
     data: McpUrlResponse,
@@ -67,6 +68,7 @@ export class LangchainProvider extends BaseAgenticProvider<
     userIds?: string[],
     toolkits?: string[]
   ): McpServerGetResponse {
+    // LangChain uses the standard format
     if (connectedAccountIds?.length && data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),
@@ -138,7 +140,7 @@ export class LangchainProvider extends BaseAgenticProvider<
    * });
    * ```
    */
-  wrapTool(tool: Tool, executeTool: ExecuteToolFn): DynamicStructuredTool {
+  wrapTool(tool: Tool, executeTool: ExecuteToolFn): LangchainTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
@@ -223,7 +225,7 @@ export class LangchainProvider extends BaseAgenticProvider<
    * });
    * ```
    */
-  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): LangChainToolCollection {
+  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): LangchainToolCollection {
     return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 }

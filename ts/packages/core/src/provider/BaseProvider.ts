@@ -2,11 +2,7 @@ import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
-import { McpProvider } from './McpProvider';
-import { McpServerGetResponse, McpUrlResponse } from '../types/mcp.types';
-
-// Re-export for backward compatibility
-export { McpProvider };
+import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 
 /**
  * @internal
@@ -20,11 +16,6 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
    * Used to identify the provider in the telemetry.
    */
   abstract readonly name: string;
-  /**
-   * @public
-   * MCP provider for the framework
-   */
-  abstract readonly mcp: McpProvider<TMcpResponse>;
   /**
    * @internal
    * Whether the provider is agentic.
@@ -68,40 +59,19 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
   }
 
   /**
-   * @protected
-   * Helper method to create an MCP provider with provider-specific transformation logic.
-   * This method creates an inline MCP provider that uses the provider's transformMcpResponse method.
-   * @returns McpProvider instance with custom transformation logic
-   */
-  protected createMcpProvider(): McpProvider<TMcpResponse> {
-    const transformMcpResponse = this.transformMcpResponse.bind(this);
-    return new (class extends McpProvider<TMcpResponse> {
-      protected transformGetResponse(
-        data: McpUrlResponse,
-        serverName: string,
-        connectedAccountIds?: string[],
-        userIds?: string[],
-        toolkits?: string[]
-      ): TMcpResponse {
-        return transformMcpResponse(data, serverName, connectedAccountIds, userIds, toolkits);
-      }
-    })();
-  }
-
-  /**
    * @public
-   * Transform MCP URL response into provider-specific format.
-   * This method should be implemented by each provider to define how MCP responses
-   * are transformed into the provider's expected format.
+   * Optional method to transform MCP URL response into provider-specific format.
+   * Providers can override this method to define custom transformation logic
+   * for MCP server responses.
    *
    * @param data - The MCP URL response data
    * @param serverName - Name of the MCP server
    * @param connectedAccountIds - Optional array of connected account IDs
    * @param userIds - Optional array of user IDs
    * @param toolkits - Optional array of toolkit names
-   * @returns Transformed response in provider-specific format
+   * @returns Transformed response in provider-specific format, or undefined to use default transformation
    */
-  abstract transformMcpResponse(
+  transformMcpResponse?(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],
@@ -118,7 +88,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
 export abstract class BaseNonAgenticProvider<
   TToolCollection,
   TTool,
-  TMcpResponse,
+  TMcpResponse = McpServerGetResponse,
 > extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = false;
 
@@ -144,21 +114,21 @@ export abstract class BaseNonAgenticProvider<
 export abstract class BaseAgenticProvider<
   TToolCollection,
   TTool,
-  TMcpResponse,
+  TMcpResponse = McpServerGetResponse,
 > extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = true;
-
-  abstract readonly mcp: McpProvider<TMcpResponse>;
 
   /**
    * Wrap a tool in the provider specific format.
    * @param tool - The tool to wrap.
+   * @param executeTool - The function to execute the tool.
    * @returns The wrapped tool.
    */
   abstract wrapTool(tool: Tool, executeTool: ExecuteToolFn): TTool;
   /**
    * Wrap a list of tools in the provider specific format.
    * @param tools - The tools to wrap.
+   * @param executeTool - The function to execute the tool.
    * @returns The wrapped tools.
    */
   abstract wrapTools(tools: Tool[], executeTool: ExecuteToolFn): TToolCollection;
@@ -169,6 +139,6 @@ export abstract class BaseAgenticProvider<
  * Base type for all toolsets.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse> =
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> =
   | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse>
   | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;

@@ -5,8 +5,7 @@ import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { MCP } from './models/MCP';
-import { BaseComposioProvider, McpProvider } from './provider/BaseProvider';
-import { McpServerGetResponse } from './types/mcp.types';
+import { BaseComposioProvider } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
@@ -17,6 +16,7 @@ import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { LogLevel } from '@composio/client/client';
+import { McpServerGetResponse } from './types/mcp.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -70,6 +70,12 @@ export type ComposioConfig<
 };
 
 /**
+ * Extract the MCP response type from a provider
+ */
+type ExtractMcpResponseType<T> =
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp> ? TMcp : McpServerGetResponse;
+
+/**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
@@ -91,7 +97,7 @@ export class Composio<
   /**
    * Core models for Composio.
    */
-  tools: Tools<unknown, unknown, unknown, TProvider>;
+  tools: Tools<unknown, unknown, TProvider>;
   toolkits: Toolkits;
   triggers: Triggers;
   provider: TProvider;
@@ -100,7 +106,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: TProvider['mcp'];
+  mcp: MCP<ExtractMcpResponseType<TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -171,9 +177,7 @@ export class Composio<
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
-    this.mcp = this.provider.mcp;
-
-    this.mcp.setup(this.client);
+    this.mcp = new MCP(this.client, this.provider);
 
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);

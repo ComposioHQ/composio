@@ -15,22 +15,16 @@ import {
   Tool,
   ExecuteToolFn,
   jsonSchemaToZodSchema,
-  McpProvider,
-  McpServerGetResponse,
   McpUrlResponse,
+  McpServerGetResponse,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
 import { z } from 'zod';
 
 export type VercelToolCollection = Record<string, VercelTool>;
-export class VercelProvider extends BaseAgenticProvider<
-  VercelToolCollection,
-  VercelTool,
-  McpServerGetResponse
-> {
+export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
   readonly name = 'vercel';
-  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the VercelProvider.
@@ -55,38 +49,6 @@ export class VercelProvider extends BaseAgenticProvider<
    */
   constructor() {
     super();
-    // Use the base provider's createMcpProvider helper method
-    this.mcp = this.createMcpProvider();
-  }
-
-  /**
-   * Transform MCP URL response into Vercel-specific format.
-   * Uses the default transformation from base McpProvider.
-   */
-  transformMcpResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): McpServerGetResponse {
-    if (connectedAccountIds?.length && data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${connectedAccountIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    } else if (userIds?.length && data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${userIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverName,
-    } as McpServerGetResponse;
   }
 
   /**
@@ -217,5 +179,43 @@ export class VercelProvider extends BaseAgenticProvider<
       acc[tool.slug] = this.wrapTool(tool, executeTool);
       return acc;
     }, {} as VercelToolCollection);
+  }
+
+  /**
+   * Transform MCP URL response into Vercel-specific format.
+   * Vercel uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
+   */
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    // Vercel uses the standard format
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 }

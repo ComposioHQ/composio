@@ -47,8 +47,7 @@ import { telemetry } from '../telemetry/Telemetry';
 export class Tools<
   TToolCollection,
   TTool,
-  TMcpResponse,
-  TProvider extends BaseComposioProvider<TToolCollection, TTool, TMcpResponse>,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   private client: ComposioClient;
   private readonly customTools: CustomTools;
