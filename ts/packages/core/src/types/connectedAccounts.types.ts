@@ -10,6 +10,7 @@ export const ConnectedAccountStatuses = {
   ACTIVE: 'ACTIVE',
   FAILED: 'FAILED',
   EXPIRED: 'EXPIRED',
+  INACTIVE: 'INACTIVE',
 } as const;
 export const ConnectedAccountStatusSchema = z.enum([
   ConnectedAccountStatuses.INITIALIZING,
