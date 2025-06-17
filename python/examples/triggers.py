@@ -30,6 +30,17 @@ instance = composio.triggers.create(
 )
 print(instance)
 
+# Or use user ID
+instance = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id="user@email.com",
+    trigger_config={
+        "repo": "composio",
+        "owner": "composiohq",
+    },
+)
+print(instance)
+
 # Disable a trigger instance
 disabled_instance = composio.triggers.disable(trigger_id="123")
 print(disabled_instance)

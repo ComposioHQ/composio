@@ -14,7 +14,9 @@ from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
 
+from composio import exceptions
 from composio.client import HttpClient
+from composio.client.types import trigger_instance_upsert_response
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.core.models.base import Resource
 from composio.core.models.internal import Internal
@@ -387,12 +389,32 @@ class Triggers(Resource):
             page=page or self._client.not_given,
         )
 
+    @t.overload
     def create(
         self,
         slug: str,
+        *,
         connected_account_id: str,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
-    ):
+    ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
+
+    @t.overload
+    def create(
+        self,
+        slug: str,
+        *,
+        user_id: str,
+        trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
+
+    def create(
+        self,
+        slug: str,
+        *,
+        user_id: t.Optional[str] = None,
+        connected_account_id: t.Optional[str] = None,
+        trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse:
         """
         Create a trigger instance
 
@@ -401,11 +423,39 @@ class Triggers(Resource):
         :param trigger_config: The configuration of the trigger
         :return: The trigger instance
         """
+        if user_id is not None:
+            connected_account_id = self._get_connected_account_for_user(
+                trigger=slug,
+                user_id=user_id,
+            )
+
+        if connected_account_id is None:
+            raise exceptions.InvalidParams(
+                "please provide valid `connected_account` or `user_id`"
+            )
+
         return self._client.trigger_instances.upsert(
             slug=slug,
             connected_account_id=connected_account_id,
             body_trigger_config_1=trigger_config or self._client.not_given,
         )
+
+    def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
+        toolkit = self.get_type(slug=trigger).toolkit.name
+        connected_accounts = self._client.connected_accounts.list(
+            toolkit_slugs=[toolkit]
+        )
+        if len(connected_accounts.items) == 0:
+            raise exceptions.NoItemsFound(
+                f"No connected accounts found for {trigger} and {user_id}"
+            )
+
+        account, *_ = sorted(
+            connected_accounts.items,
+            key=lambda x: x.created_at,
+            reverse=True,
+        )
+        return account.id
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """

@@ -56,4 +56,6 @@ __pycache__/
 .wrangler
 .dev.vars
 
+# VS Code
+.vscode
 temp/

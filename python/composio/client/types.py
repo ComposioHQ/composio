@@ -26,6 +26,7 @@ from composio_client.types import (
     toolkit_list_params,
     toolkit_list_response,
     toolkit_retrieve_response,
+    trigger_instance_upsert_response,
 )
 
 Tool: t.TypeAlias = tool_list_response.Item
@@ -45,6 +46,7 @@ __all__ = (
     "connected_account_list_response",
     "connected_account_retrieve_response",
     "connected_account_update_status_response",
+    "trigger_instance_upsert_response",
     "tool_execute_params",
     "tool_execute_response",
     "tool_list_response",
