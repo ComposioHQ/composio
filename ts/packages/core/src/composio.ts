@@ -18,6 +18,11 @@ import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 // import { LogLevel } from '@composio/client/client';
 
+/**
+ * Extract the MCP provider type from a base provider
+ */
+type ExtractMcpProvider<T> = T extends { mcp: infer TMcp } ? TMcp : McpProvider<unknown>;
+
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -91,7 +96,7 @@ export class Composio<
   /**
    * Core models for Composio.
    */
-  tools: Tools<unknown, unknown, TProvider>;
+  tools: Tools<unknown, unknown, unknown, TProvider>;
   toolkits: Toolkits;
   triggers: Triggers;
   provider: TProvider;
@@ -100,7 +105,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: McpProvider<unknown>;
+  mcp: ExtractMcpProvider<TProvider>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -172,7 +177,7 @@ export class Composio<
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
     this.mcp = (this.provider.mcp ??
-      new McpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
+      new McpProvider<McpServerGetResponse>()) as ExtractMcpProvider<TProvider>;
 
     this.mcp.setup(this.client);
 

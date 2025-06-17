@@ -101,7 +101,7 @@ export abstract class BaseNonAgenticProvider<
 export abstract class BaseAgenticProvider<
   TToolCollection,
   TTool,
-  TMcpResponse = unknown,
+  TMcpResponse,
 > extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = true;
 
@@ -126,6 +126,6 @@ export abstract class BaseAgenticProvider<
  * Base type for all toolsets.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = unknown> =
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse> =
   | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse>
   | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;

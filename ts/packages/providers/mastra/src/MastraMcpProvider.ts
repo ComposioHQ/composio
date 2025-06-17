@@ -10,7 +10,7 @@ import { McpProvider } from '@composio/core';
 import type { McpUrlResponse } from '@composio/core';
 
 export interface MastraUrlMap {
-  [name: string]: { url: URL };
+  [name: string]: { url: string };
 }
 
 export class MastraMcpProvider extends McpProvider<MastraUrlMap> {
@@ -26,7 +26,7 @@ export class MastraMcpProvider extends McpProvider<MastraUrlMap> {
       return data.connected_account_urls.reduce(
         (prev: MastraUrlMap, url: string, index: number) => {
           prev[`${serverName}-${index}`] = {
-            url: new URL(url),
+            url: url,
           };
           return prev;
         },
@@ -35,14 +35,14 @@ export class MastraMcpProvider extends McpProvider<MastraUrlMap> {
     } else if (userIds?.length && data.user_ids_url) {
       return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
         prev[`${serverName}-${index}`] = {
-          url: new URL(url),
+          url: url,
         };
         return prev;
       }, {});
     }
     return {
       [serverName]: {
-        url: new URL(data.mcp_url),
+        url: data.mcp_url,
       },
     };
   }

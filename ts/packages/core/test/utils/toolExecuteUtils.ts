@@ -6,7 +6,7 @@ import { connectedAccountMocks, toolkitMocks, toolMocks } from './mocks/data.moc
 import ComposioClient from '@composio/client';
 import { Tool } from '../../src/types/tool.types';
 
-export type TestTools = Tools<unknown, unknown, MockProvider>;
+export type TestTools = Tools<unknown, unknown, unknown, MockProvider>;
 
 export interface TestContext {
   tools: TestTools;
