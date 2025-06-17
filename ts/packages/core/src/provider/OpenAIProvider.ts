@@ -10,7 +10,7 @@
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
 import { BaseNonAgenticProvider, McpProvider } from './BaseProvider';
-import { McpServerGetResponse } from '../types/mcp.types';
+import { McpServerGetResponse, McpUrlResponse } from '../types/mcp.types';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
@@ -56,6 +56,32 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    */
   constructor() {
     super();
+  }
+
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**

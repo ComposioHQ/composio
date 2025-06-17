@@ -27,16 +27,13 @@ const composio = new Composio({
   provider: new MastraProvider(),
 });
 
-
-
-
 // Create an MCP server with Gmail toolkit
 const mcpConfig = await composio.mcp.create(
   "gmail-mcp-" + Date.now(),
   [
     {
       toolkit: "gmail",
-      authConfigId: "<auth_config_id>", // Use your auth config ID
+      authConfigId: "ac_sKNUlwifbN5b", // Use your auth config ID
       allowedTools: [
         "GMAIL_FETCH_EMAILS"
       ]
@@ -48,21 +45,28 @@ const mcpConfig = await composio.mcp.create(
 console.log(`✅ MCP server created: ${mcpConfig.id}`);
 console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 
-// Get server instance with connected accounts
+// Get server instance with connected accounts (using convenience method)
 const serverInstance = await mcpConfig.getServer({
   connectedAccountIds: {
     "gmail": "<connected_account_id>" // Replace it with the connected account id
   }
 });
 
+// Alternative: You can also use the standalone method
+// const serverInstance = await composio.mcp.getServer(mcpConfig.id, {
+//   connectedAccountIds: {
+//     "gmail": "<connected_account_id>"
+//   }
+// });
+
 console.log("Server instances for connected accounts:", serverInstance);
 
 // Initialize MCPClient with the server URLs
 const mcpClient = new MCPClient({
   servers: Object.fromEntries(
-    Object.entries(serverInstance as Record<string, { url: URL }>).map(([key, value]) => [
+    Object.entries(serverInstance as Record<string, { url: string }>).map(([key, value]) => [
       key,
-      { url: value.url }
+      { url: new URL(value.url) }
     ])
   ) satisfies Record<string, MastraMCPServerDefinition>
 });

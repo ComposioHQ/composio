@@ -16,9 +16,7 @@ import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
-// import { LogLevel } from '@composio/client/client';
-
-// No longer needed - MCP is now required on all providers
+import { LogLevel } from '@composio/client/client';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,

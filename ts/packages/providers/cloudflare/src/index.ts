@@ -18,16 +18,45 @@ import {
   ExecuteToolFnOptions,
   McpProvider,
   McpServerGetResponse,
+  McpUrlResponse,
+  logger,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
+/**
+ * Cloudflare Workers AI tool definition
+ */
+export interface CloudflareTool {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+}
+
+/**
+ * Collection of Cloudflare Workers AI tools
+ */
+export type CloudflareToolCollection = CloudflareTool[];
+
+/**
+ * Cloudflare Workers AI function call interface
+ */
+export interface CloudflareFunctionCall {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 export class CloudflareProvider extends BaseNonAgenticProvider<
-  AiToolCollection,
-  AiTextGenerationToolInput
+  CloudflareToolCollection,
+  CloudflareTool,
+  McpServerGetResponse
 > {
   readonly name = 'cloudflare';
-  readonly mcp = new McpProvider<McpServerGetResponse>();
+  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the CloudflareProvider.
@@ -50,6 +79,39 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    */
   constructor() {
     super();
+    // Use the base provider's createMcpProvider helper method
+    this.mcp = this.createMcpProvider();
+    logger.debug('CloudflareProvider initialized');
+  }
+
+  /**
+   * Transform MCP URL response into Cloudflare-specific format.
+   * Uses the default transformation from base McpProvider.
+   */
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**
@@ -79,26 +141,16 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * const cloudflareTool = provider.wrapTool(composioTool);
    * ```
    */
-  wrapTool(tool: Tool): AiTextGenerationToolInput {
-    const formattedSchema: AiTextGenerationToolInput['function'] = {
+  wrapTool(tool: Tool): CloudflareTool {
+    return {
       name: tool.slug!,
       description: tool.description!,
       parameters: tool.inputParameters as unknown as {
         type: 'object';
-        properties: {
-          [key: string]: {
-            type: string;
-            description?: string;
-          };
-        };
-        required: string[];
+        properties: Record<string, unknown>;
+        required?: string[];
       },
     };
-    const cloudflareTool: AiTextGenerationToolInput = {
-      type: 'function',
-      function: formattedSchema,
-    };
-    return cloudflareTool;
   }
 
   /**
@@ -151,14 +203,16 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * });
    * ```
    */
-  wrapTools(tools: Tool[]): AiToolCollection {
-    return tools.reduce(
-      (acc, tool) => ({
-        ...acc,
-        [tool.slug]: this.wrapTool(tool),
-      }),
-      {}
-    );
+  wrapTools(tools: Tool[]): CloudflareToolCollection {
+    return tools.map(tool => ({
+      name: tool.slug!,
+      description: tool.description!,
+      parameters: tool.inputParameters as unknown as {
+        type: 'object';
+        properties: Record<string, unknown>;
+        required?: string[];
+      },
+    }));
   }
 
   /**
@@ -209,12 +263,12 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    */
   async executeToolCall(
     userId: string,
-    tool: { name: string; arguments: unknown },
+    tool: CloudflareFunctionCall,
     options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments,
+      arguments: tool.arguments,
       connectedAccountId: options.connectedAccountId,
       customAuthParams: options.customAuthParams,
       userId: userId,

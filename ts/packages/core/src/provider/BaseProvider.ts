@@ -3,7 +3,7 @@ import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import { McpProvider } from './McpProvider';
-import { McpServerGetResponse } from '../types/mcp.types';
+import { McpServerGetResponse, McpUrlResponse } from '../types/mcp.types';
 
 // Re-export for backward compatibility
 export { McpProvider };
@@ -66,6 +66,48 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
     }
     return this._globalExecuteToolFn(toolSlug, body, modifers);
   }
+
+  /**
+   * @protected
+   * Helper method to create an MCP provider with provider-specific transformation logic.
+   * This method creates an inline MCP provider that uses the provider's transformMcpResponse method.
+   * @returns McpProvider instance with custom transformation logic
+   */
+  protected createMcpProvider(): McpProvider<TMcpResponse> {
+    const transformMcpResponse = this.transformMcpResponse.bind(this);
+    return new (class extends McpProvider<TMcpResponse> {
+      protected transformGetResponse(
+        data: McpUrlResponse,
+        serverName: string,
+        connectedAccountIds?: string[],
+        userIds?: string[],
+        toolkits?: string[]
+      ): TMcpResponse {
+        return transformMcpResponse(data, serverName, connectedAccountIds, userIds, toolkits);
+      }
+    })();
+  }
+
+  /**
+   * @public
+   * Transform MCP URL response into provider-specific format.
+   * This method should be implemented by each provider to define how MCP responses
+   * are transformed into the provider's expected format.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Transformed response in provider-specific format
+   */
+  abstract transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): TMcpResponse;
 }
 
 /**
@@ -76,7 +118,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
 export abstract class BaseNonAgenticProvider<
   TToolCollection,
   TTool,
-  TMcpResponse = McpServerGetResponse,
+  TMcpResponse,
 > extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = false;
 

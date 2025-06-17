@@ -17,6 +17,7 @@ import {
   jsonSchemaToZodSchema,
   McpProvider,
   McpServerGetResponse,
+  McpUrlResponse,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -28,7 +29,7 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
   McpServerGetResponse
 > {
   readonly name = 'openai-agents';
-  readonly mcp = new McpProvider<McpServerGetResponse>();
+  readonly mcp: McpProvider<McpServerGetResponse>;
   private strict: boolean | null;
 
   /**
@@ -55,6 +56,38 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
   constructor(options?: { strict?: boolean }) {
     super();
     this.strict = options?.strict ?? false;
+    // Use the base provider's createMcpProvider helper method
+    this.mcp = this.createMcpProvider();
+  }
+
+  /**
+   * Transform MCP URL response into OpenAI Agents-specific format.
+   * Uses the default transformation from base McpProvider.
+   */
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**

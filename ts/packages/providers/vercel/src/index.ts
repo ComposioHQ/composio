@@ -12,22 +12,25 @@
  */
 import {
   BaseAgenticProvider,
-  Tool as ComposioTool,
+  Tool,
   ExecuteToolFn,
+  jsonSchemaToZodSchema,
   McpProvider,
   McpServerGetResponse,
+  McpUrlResponse,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
+import { z } from 'zod';
 
-type VercelToolCollection = Record<string, VercelTool>;
+export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<
   VercelToolCollection,
   VercelTool,
   McpServerGetResponse
 > {
   readonly name = 'vercel';
-  readonly mcp = new McpProvider<McpServerGetResponse>();
+  readonly mcp: McpProvider<McpServerGetResponse>;
 
   /**
    * Creates a new instance of the VercelProvider.
@@ -52,6 +55,38 @@ export class VercelProvider extends BaseAgenticProvider<
    */
   constructor() {
     super();
+    // Use the base provider's createMcpProvider helper method
+    this.mcp = this.createMcpProvider();
+  }
+
+  /**
+   * Transform MCP URL response into Vercel-specific format.
+   * Uses the default transformation from base McpProvider.
+   */
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**
@@ -103,7 +138,7 @@ export class VercelProvider extends BaseAgenticProvider<
    * }
    * ```
    */
-  wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): VercelTool {
+  wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema((composioTool.inputParameters as Record<string, unknown>) ?? {}),
@@ -177,7 +212,7 @@ export class VercelProvider extends BaseAgenticProvider<
    * }
    * ```
    */
-  wrapTools(tools: ComposioTool[], executeTool: ExecuteToolFn): VercelToolCollection {
+  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): VercelToolCollection {
     return tools.reduce((acc, tool) => {
       acc[tool.slug] = this.wrapTool(tool, executeTool);
       return acc;

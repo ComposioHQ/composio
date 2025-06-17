@@ -6,14 +6,24 @@
  * @packageDocumentation
  * @module providers/mastra
  */
-import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
+import {
+  BaseAgenticProvider,
+  Tool,
+  ExecuteToolFn,
+  jsonSchemaToZodSchema,
+  McpProvider,
+} from '@composio/core';
+import type { McpUrlResponse } from '@composio/core';
 import { createTool } from '@mastra/core';
-import { MastraMcpProvider, MastraUrlMap } from './MastraMcpProvider';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
 export interface MastraToolCollection {
   [key: string]: MastraTool;
+}
+
+export interface MastraUrlMap {
+  [name: string]: { url: string };
 }
 
 export class MastraProvider extends BaseAgenticProvider<
@@ -22,7 +32,55 @@ export class MastraProvider extends BaseAgenticProvider<
   MastraUrlMap
 > {
   readonly name = 'mastra';
-  readonly mcp = new MastraMcpProvider();
+  readonly mcp: McpProvider<MastraUrlMap>;
+
+  constructor() {
+    super();
+    // Use the base provider's createMcpProvider helper method
+    this.mcp = this.createMcpProvider();
+  }
+
+  /**
+   * Transform MCP URL response into Mastra-specific format.
+   * This method implements the abstract transformMcpResponse from BaseProvider.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Transformed MastraUrlMap
+   */
+  transformMcpResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[]
+  ): MastraUrlMap {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.reduce(
+        (prev: MastraUrlMap, url: string, index: number) => {
+          prev[`${serverName}-${index}`] = {
+            url: url,
+          };
+          return prev;
+        },
+        {}
+      );
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
+        prev[`${serverName}-${index}`] = {
+          url: url,
+        };
+        return prev;
+      }, {});
+    }
+    return {
+      [serverName]: {
+        url: data.mcp_url,
+      },
+    };
+  }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
     const mastraTool = createTool({
@@ -48,5 +106,3 @@ export class MastraProvider extends BaseAgenticProvider<
     }, {} as MastraToolCollection);
   }
 }
-
-export { MastraMcpProvider } from './MastraMcpProvider';

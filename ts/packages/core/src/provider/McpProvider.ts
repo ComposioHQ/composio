@@ -63,11 +63,11 @@ export class McpProvider<T> {
    * @param {string} name - Unique name for the MCP server
    * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Authentication configuration options
-   * @returns {Promise<McpServerCreateResponse<T>>} Created server details with instance getter
+   * @returns {Promise<McpServerCreateResponse<T>>} Created server details with getServer convenience method
    *
    * @example
    * ```typescript
-   * const cfg = await composio.mcp.create(
+   * const server = await composio.mcp.create(
    *   "personal-mcp-server",
    *   [
    *     {
@@ -78,6 +78,16 @@ export class McpProvider<T> {
    *   ],
    *   { useComposioManagedAuth: true },
    * );
+   *
+   * // Option 1: Use convenience method on response
+   * const urls = await server.getServer({
+   *   connectedAccountIds: { gmail: "account_id" }
+   * });
+   *
+   * // Option 2: Use standalone method later
+   * const urlsLater = await composio.mcp.getServer(server.id, {
+   *   connectedAccountIds: { gmail: "account_id" }
+   * });
    * ```
    */
   async create(
@@ -118,74 +128,107 @@ export class McpProvider<T> {
       });
     }
 
-    // Add getServer method to response
+    // Return response with convenience getServer method
     return {
       ...mcpServerCreatedResponse,
       toolkits,
       getServer: async (params: MCPGetServerParams): Promise<T> => {
-        if (!this.client) {
-          throw new Error('Client not set');
-        }
-
-        // Validate params using Zod schema
-        const paramsResult = MCPGetServerParamsSchema.safeParse(params);
-        if (paramsResult.error) {
-          throw new ValidationError('Failed to parse get server parameters', {
-            cause: paramsResult.error,
-          });
-        }
-
-        // If connected_account_ids is provided, verify toolkit names
-        if (paramsResult.data.connectedAccountIds) {
-          const providedToolkits = Object.keys(paramsResult.data.connectedAccountIds);
-          const invalidToolkits = providedToolkits.filter(toolkit => !toolkits.includes(toolkit));
-          if (invalidToolkits.length > 0) {
-            throw new ValidationError(
-              `Invalid toolkits provided: ${invalidToolkits.join(', ')}. Available toolkits are: ${toolkits.join(', ')}`,
-              {}
-            );
-          }
-        }
-
-        // Generate URL with error handling
-        let data;
-        try {
-          data = await this.client.mcp.generate.url({
-            user_ids: paramsResult.data.userId ? [paramsResult.data.userId] : [],
-            connected_account_ids: paramsResult.data.connectedAccountIds
-              ? Object.values(paramsResult.data.connectedAccountIds)
-              : [],
-            mcp_server_id: mcpServerCreatedResponse.id,
-            managed_auth_by_composio: authOptions?.useComposioManagedAuth || false,
-          });
-        } catch (error) {
-          throw new ValidationError('Failed to generate MCP server URL', {
-            cause: error,
-          });
-        }
-
-        // Validate the URL generation response
-        const urlResponseResult = GenerateURLResponseSchema.safeParse(data);
-        if (urlResponseResult.error) {
-          throw new ValidationError('Failed to parse MCP URL generation response', {
-            cause: urlResponseResult.error,
-          });
-        }
-
-        // Let derived classes handle the response transformation
-        return this.transformGetResponse(
-          data,
-          mcpServerCreatedResponse.name,
-          paramsResult.data.connectedAccountIds
-            ? Object.values(paramsResult.data.connectedAccountIds)
-            : undefined,
-          paramsResult.data.userId ? [paramsResult.data.userId] : undefined,
-          paramsResult.data.connectedAccountIds
-            ? Object.keys(paramsResult.data.connectedAccountIds)
-            : undefined
-        );
+        // Delegate to the standalone getServer method
+        return this.getServer(mcpServerCreatedResponse.id, params, authOptions);
       },
     };
+  }
+
+  /**
+   * Get server URLs for an existing MCP server
+   * @param {string} id - Server UUID
+   * @param {MCPGetServerParams} params - Parameters for getting server URLs
+   * @param {MCPAuthOptions} [authOptions] - Authentication options (optional, will use server's default if not provided)
+   * @returns {Promise<T>} Transformed server URLs in provider-specific format
+   *
+   * @example
+   * ```typescript
+   * // Get URLs for an existing server
+   * const urls = await composio.mcp.getServer("server-id", {
+   *   connectedAccountIds: {
+   *     gmail: "connected_account_id"
+   *   }
+   * });
+   * ```
+   */
+  async getServer(
+    id: string,
+    params: MCPGetServerParams,
+    authOptions?: MCPAuthOptions
+  ): Promise<T> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+
+    // Get server details first
+    const serverDetails = await this.get(id);
+
+    // Validate params using Zod schema
+    const paramsResult = MCPGetServerParamsSchema.safeParse(params);
+    if (paramsResult.error) {
+      throw new ValidationError('Failed to parse get server parameters', {
+        cause: paramsResult.error,
+      });
+    }
+
+    // Extract toolkits from server details
+    const toolkits = serverDetails.toolkits || [];
+
+    // If connected_account_ids is provided, verify toolkit names
+    if (paramsResult.data.connectedAccountIds) {
+      const providedToolkits = Object.keys(paramsResult.data.connectedAccountIds);
+      const invalidToolkits = providedToolkits.filter(toolkit => !toolkits.includes(toolkit));
+      if (invalidToolkits.length > 0) {
+        throw new ValidationError(
+          `Invalid toolkits provided: ${invalidToolkits.join(', ')}. Available toolkits are: ${toolkits.join(', ')}`,
+          {}
+        );
+      }
+    }
+
+    // Generate URL with error handling
+    let data;
+    try {
+      data = await this.client.mcp.generate.url({
+        user_ids: paramsResult.data.userId ? [paramsResult.data.userId] : [],
+        connected_account_ids: paramsResult.data.connectedAccountIds
+          ? Object.values(paramsResult.data.connectedAccountIds)
+          : [],
+        mcp_server_id: id,
+        managed_auth_by_composio:
+          authOptions?.useComposioManagedAuth ?? serverDetails.managed_auth_via_composio ?? false,
+      });
+    } catch (error) {
+      throw new ValidationError('Failed to generate MCP server URL', {
+        cause: error,
+      });
+    }
+
+    // Validate the URL generation response
+    const urlResponseResult = GenerateURLResponseSchema.safeParse(data);
+    if (urlResponseResult.error) {
+      throw new ValidationError('Failed to parse MCP URL generation response', {
+        cause: urlResponseResult.error,
+      });
+    }
+
+    // Let derived classes handle the response transformation
+    return this.transformGetResponse(
+      data,
+      serverDetails.name,
+      paramsResult.data.connectedAccountIds
+        ? Object.values(paramsResult.data.connectedAccountIds)
+        : undefined,
+      paramsResult.data.userId ? [paramsResult.data.userId] : undefined,
+      paramsResult.data.connectedAccountIds
+        ? Object.keys(paramsResult.data.connectedAccountIds)
+        : undefined
+    );
   }
 
   protected transformGetResponse(
