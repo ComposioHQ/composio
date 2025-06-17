@@ -52,7 +52,28 @@ console.log(JSON.stringify(tools, null, 2));
 
 ```
 ```python Python maxLines=60  wordWrap
+from composio import Composio, schema_modifier
+from composio.types import Tool
 
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
 ```
 
 </CodeGroup>
@@ -114,6 +135,52 @@ console.log(response.choices[0].message.tool_calls);
 
 ```python Python maxLines=60 wordWrap
 
+from openai import OpenAI
+from composio import Composio, schema_modifier
+from composio.types import Tool
+from composio_openai import OpenAIProvider
+
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+# Initialize tools.
+openai_client = OpenAI()
+composio = Composio(provider=OpenAIProvider())
+
+# Define task.
+task = "Star a repo composiohq/composio on GitHub"
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(
+  user_id="default",
+  tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+  modifiers=[
+      modify_schema,
+  ],
+)
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
 ```
 
 </CodeGroup>

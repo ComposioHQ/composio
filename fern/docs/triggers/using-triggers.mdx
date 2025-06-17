@@ -173,21 +173,15 @@ await composio.triggers.subscribe(
 )
 ```
 ```python Python maxLines=60 wordWrap
-user_id = uuid.uuid4()
+user_id = "user@email.com"
+
 # Subscribe to a trigger
 subscription = composio.triggers.subscribe()
+
 # Define a handler
-@subscription.handle(
-  toolkit="GITHUB",
-  user_id=user_id,
-  # trigger_slug="GITHUB_STAR_ADDED_EVENT"
-  # auth_config_id="ac_1234567890",
-  # trigger_id="ti_So9EQf8XnAcy",
-
-)
+@subscription.handle(toolkit="GITHUB", user_id=user_id)
 def handle_github_event(data):
-print(data)
-
+    print(data)
 ```
 </CodeGroup>
 

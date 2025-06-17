@@ -9,7 +9,7 @@
     },
     
     "dev": {
-      "dependsOn": ["api:pull", "sdkdocs", "tools:comment", "snippets:build"],
+      "dependsOn": ["api:pull", "sdkdocs","tools:comment", "snippets:build"],
       "persistent": true,
       "cache": false
     },

@@ -60,7 +60,27 @@ const authModifier = (toolSlug: string, toolkitSlug: string, params: any) => {
 };
 ```
 ```python Python maxLines=25
+from composio import before_execute
+from composio.types import ToolExecuteParams
 
+
+@before_execute(toolkits=["NOTION"])
+def add_custom_auth(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    if params["custom_auth_params"] is None:
+        params["custom_auth_params"] = {"parameters": []}
+
+    params["custom_auth_params"]["parameters"].append(
+        {
+            "name": "x-api-key",
+            "value": os.getenv("NOTION_API_KEY"),
+            "in": "header",
+        }
+    )
+    return params
 ```
 </CodeGroup>
 
@@ -91,6 +111,14 @@ const result = await composio.tools.execute(
 console.log(JSON.stringify(result, null, 2));
 ```
 ```python Python maxLines=20
-
+result = composio.tools.execute(
+    slug="NOTION_GET_DATABASE_ITEMS",
+    user_id="default",
+    arguments={},
+    modifiers=[
+        add_custom_auth,
+    ],
+)
+print(result)
 ```
 </CodeGroup>

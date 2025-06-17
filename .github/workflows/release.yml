@@ -24,8 +24,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -34,7 +34,8 @@ jobs:
         run: pnpm lint
 
       - name: Run Build
-        run: pnpm run build
+        run: pnpm run build:packages
+
       - name: Set up .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Create Release Pull Request & Publish packages
@@ -45,8 +46,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
         with:
           publish: pnpm changeset:release
-          commit: 'Release: update version'
-          title: 'Release: update version'
+          commit: "Release: update version"
+          title: "Release: update version"
 
       - name: Set Version Info
         if: steps.changesets.outputs.published == 'true'
