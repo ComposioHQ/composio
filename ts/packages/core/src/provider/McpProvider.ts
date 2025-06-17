@@ -12,7 +12,6 @@ import {
   MCPGetServerParams,
   McpUrlResponse,
   McpServerCreateResponse,
-  McpServerUrlInfo,
   MCPToolkitConfigsArraySchema,
   MCPAuthOptionsSchema,
   MCPGetServerParamsSchema,
@@ -25,7 +24,7 @@ import {
 } from '../types/mcp.types';
 import { ValidationError } from '../errors/ValidationErrors';
 
-export abstract class McpProvider<T> {
+export class McpProvider<T> {
   client?: ComposioClient;
 
   setup(client: ComposioClient): void {
@@ -189,13 +188,31 @@ export abstract class McpProvider<T> {
     };
   }
 
-  protected abstract transformGetResponse(
+  protected transformGetResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],
     userIds?: string[],
     toolkits?: string[]
-  ): T;
+  ): T {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as T;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as T;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as T;
+  }
 
   /**
    * List MCP server configurations with filtering options

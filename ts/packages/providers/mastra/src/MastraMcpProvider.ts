@@ -6,8 +6,8 @@
  * @packageDocumentation
  * @module providers/mastra/MastraMcpProvider
  */
-import { McpProvider, MCPAuthOptions, MCPToolkitConfig } from '@composio/core';
-import type { McpUrlResponse, McpServerCreateResponse, McpServerGetResponse } from '@composio/core';
+import { McpProvider } from '@composio/core';
+import type { McpUrlResponse } from '@composio/core';
 
 export interface MastraUrlMap {
   [name: string]: { url: URL };

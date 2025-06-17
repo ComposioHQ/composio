@@ -30,6 +30,7 @@ import {
   McpDeleteResponse,
   CustomCreateResponse,
   GenerateURLResponse,
+  GenerateURLParams,
 } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
 
@@ -381,5 +382,10 @@ export class MCP {
     }
 
     return updateResponse;
+  }
+
+  async generateUrl(params: GenerateURLParams): Promise<GenerateURLResponse> {
+    const urlResponse = await this.client.mcp.generate.url(params);
+    return urlResponse;
   }
 }

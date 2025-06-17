@@ -5,7 +5,7 @@ import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { MCP } from './models/MCP';
-import { BaseComposioProvider, BaseMcpProvider, McpProvider } from './provider/BaseProvider';
+import { BaseComposioProvider, McpProvider } from './provider/BaseProvider';
 import { McpServerGetResponse } from './types/mcp.types';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig } from './utils/sdk';
@@ -172,7 +172,7 @@ export class Composio<
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
     this.mcp = (this.provider.mcp ??
-      new BaseMcpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
+      new McpProvider<McpServerGetResponse>()) as McpProvider<unknown>;
 
     this.mcp.setup(this.client);
 

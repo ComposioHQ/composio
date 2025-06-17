@@ -3,7 +3,6 @@ export { Composio } from './composio';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseAgenticProvider, BaseNonAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
-export { BaseMcpProvider } from './provider/BaseMcpProvider';
 export { McpProvider } from './provider/McpProvider';
 export { OpenAIProvider } from './provider/OpenAIProvider';
 export { jsonSchemaToZodSchema } from './utils/jsonSchema';

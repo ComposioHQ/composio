@@ -6,13 +6,7 @@
  * @packageDocumentation
  * @module providers/mastra
  */
-import {
-  BaseAgenticProvider,
-  Tool,
-  ExecuteToolFn,
-  jsonSchemaToZodSchema,
-  McpProvider,
-} from '@composio/core';
+import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
 import { createTool } from '@mastra/core';
 import { MastraMcpProvider } from './MastraMcpProvider';
 

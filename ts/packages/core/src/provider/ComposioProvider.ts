@@ -1,6 +1,6 @@
 import { McpServerGetResponse } from '../types/mcp.types';
 import { Tool } from '../types/tool.types';
-import { BaseMcpProvider, BaseNonAgenticProvider } from './BaseProvider';
+import { McpProvider, BaseNonAgenticProvider } from './BaseProvider';
 
 /**
  * This is a default provider implementation for Composio.
@@ -19,7 +19,7 @@ export class ComposioProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'ComposioProvider';
 
-  readonly mcp = new BaseMcpProvider<McpServerGetResponse>();
+  readonly mcp = new McpProvider<McpServerGetResponse>();
 
   wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;

@@ -3,10 +3,9 @@ import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import { McpProvider } from './McpProvider';
-import { BaseMcpProvider } from './BaseMcpProvider';
 
 // Re-export for backward compatibility
-export { McpProvider, BaseMcpProvider };
+export { McpProvider };
 
 /**
  * @internal

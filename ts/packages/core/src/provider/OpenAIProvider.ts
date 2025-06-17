@@ -9,7 +9,7 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseNonAgenticProvider, BaseMcpProvider } from './BaseProvider';
+import { BaseNonAgenticProvider, McpProvider } from './BaseProvider';
 import { McpServerGetResponse } from '../types/mcp.types';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
@@ -19,7 +19,7 @@ import { ExecuteToolFnOptions } from '../types/provider.types';
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 
-export class OpenAIMcpProvider extends BaseMcpProvider<McpServerGetResponse> {
+export class OpenAIMcpProvider extends McpProvider<McpServerGetResponse> {
   readonly name = 'openai';
 
   // TODO: Implement this
