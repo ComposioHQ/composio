@@ -451,8 +451,8 @@ importers:
   ts/packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.22
-        version: 0.1.0-alpha.22
+        specifier: 0.1.0-alpha.23
+        version: 0.1.0-alpha.23
       '@composio/json-schema-to-zod':
         specifier: 0.1.9
         version: 0.1.9
@@ -924,6 +924,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.22':
     resolution: {integrity: sha512-b9KCO5gy0EsCG+nXikOdm17PiZZ85rw3vwu9aNRIse9rEj2FA1SScpP+P9GN4G0lQHl+QPyDuVvGa6U9AATFeg==}
+
+  '@composio/client@0.1.0-alpha.23':
+    resolution: {integrity: sha512-zDbOJZVR+Ug0a622mjMGsREELKOG6DLF3qKI7qJ9FLP/GpAT7xekyEE7DR0g37zs6ytCy0oV/KMi+KaxxNp+zA==}
 
   '@composio/core@0.1.22':
     resolution: {integrity: sha512-ehu0OdwAgjShWjRaXBVlFnaqykDj6rxWcH3GeE179luNqLIb1p0L+Nazb1IMJ1CFl+DQC/NWkI80K8lgRLBQNQ==}
@@ -5870,6 +5873,8 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.22': {}
 
+  '@composio/client@0.1.0-alpha.23': {}
+
   '@composio/core@0.1.22(ws@8.18.2)':
     dependencies:
       '@composio/client': 0.1.0-alpha.22
@@ -7915,6 +7920,14 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
+  '@vitest/mocker@3.2.3(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))':
+    dependencies:
+      '@vitest/spy': 3.2.3
+      estree-walker: 3.0.3
+      magic-string: 0.30.17
+    optionalDependencies:
+      vite: 6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
+
   '@vitest/mocker@3.2.3(vite@6.3.5(@types/node@22.15.31)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))':
     dependencies:
       '@vitest/spy': 3.2.3
@@ -7922,6 +7935,14 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 6.3.5(@types/node@22.15.31)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
+
+  '@vitest/mocker@3.2.3(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))':
+    dependencies:
+      '@vitest/spy': 3.2.3
+      estree-walker: 3.0.3
+      magic-string: 0.30.17
+    optionalDependencies:
+      vite: 6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/pretty-format@3.2.3':
     dependencies:
@@ -7952,7 +7973,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.3(@types/node@22.15.31)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
+      vitest: 3.2.3(@types/node@24.0.3)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/utils@3.2.3':
     dependencies:
@@ -10540,7 +10561,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.3
-      '@vitest/mocker': 3.2.3(vite@6.3.5(@types/node@22.15.31)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.3(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.3
       '@vitest/runner': 3.2.3
       '@vitest/snapshot': 3.2.3
@@ -10624,7 +10645,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.3
-      '@vitest/mocker': 3.2.3(vite@6.3.5(@types/node@22.15.31)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.3(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.3
       '@vitest/runner': 3.2.3
       '@vitest/snapshot': 3.2.3
