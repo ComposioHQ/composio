@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.23
+
+### Patch Changes
+
+- Improvements in DX in triggers and bug fixes in tools
+- Updated dependencies
+  - @composio/core@0.1.23
+
 ## 0.1.22
 
 ### Patch Changes
