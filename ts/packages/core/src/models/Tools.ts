@@ -278,6 +278,12 @@ export class Tools<
       );
     }
 
+    // if tools are provided, set the limit to 9999 so that all tools are fetched
+    let limit = 'limit' in queryParams.data ? queryParams.data.limit?.toString() : undefined;
+    if ('tools' in queryParams.data) {
+      limit = '9999';
+    }
+
     const tools = await this.client.tools.list({
       tool_slugs: 'tools' in queryParams.data ? queryParams.data.tools?.join(',') : undefined,
       toolkit_slug:
@@ -289,7 +295,7 @@ export class Tools<
             ? 'true'
             : 'false'
           : undefined,
-      limit: 'limit' in queryParams.data ? queryParams.data.limit?.toString() : undefined,
+      limit: limit,
       search: 'search' in queryParams.data ? queryParams.data.search : undefined,
     });
 
