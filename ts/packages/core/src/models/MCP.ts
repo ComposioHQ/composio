@@ -8,8 +8,6 @@
 import ComposioClient from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
 import {
-  MCPGenerateURLParams,
-  MCPCreateMethodResponse,
   MCPToolkitConfig,
   MCPAuthOptions,
   MCPGetServerParams,
@@ -18,25 +16,28 @@ import {
   MCPGetServerParamsSchema,
   CustomCreateResponseSchema,
   GenerateURLResponseSchema,
+  GenerateURLParamsSchema,
+  GenerateURLParamsValidated,
   McpListResponseSchema,
   McpRetrieveResponseSchema,
   McpDeleteResponseSchema,
   McpUpdateResponseSchema,
   McpUrlResponse,
+  McpUrlResponseCamelCase,
   McpServerGetResponse,
   McpServerCreateResponse,
 } from '../types/mcp.types';
-import {
-  McpCreateResponse,
-  McpListResponse,
-  McpUpdateResponse,
-  McpDeleteResponse,
-  CustomCreateResponse,
-  GenerateURLResponse,
-  GenerateURLParams,
-} from '@composio/client/resources/mcp';
+import { CustomCreateResponse, GenerateURLParams } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
 import { BaseComposioProvider } from '../provider/BaseProvider';
+import {
+  transformMcpCreateResponse,
+  transformMcpListResponse,
+  transformMcpRetrieveResponse,
+  transformMcpDeleteResponse,
+  transformMcpUpdateResponse,
+  transformMcpGenerateUrlResponse,
+} from '../utils/transformers/mcp';
 
 /**
  * MCP (Model Control Protocol) class
@@ -145,15 +146,18 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
+    // Transform the response to camelCase
+    const camelCaseResponse = transformMcpCreateResponse(mcpServerCreatedResponse);
+
     // Return response with convenience getServer method
     return {
-      ...mcpServerCreatedResponse,
+      ...camelCaseResponse,
       toolkits,
       getServer: async (params: MCPGetServerParams): Promise<T> => {
         // Delegate to the standalone getServer method
-        return this.getServer(mcpServerCreatedResponse.id, params, authOptions);
+        return this.getServer(camelCaseResponse.id, params, authOptions);
       },
-    };
+    } as McpServerCreateResponse<T>;
   }
 
   /**
@@ -214,7 +218,7 @@ export class MCP<T = McpServerGetResponse> {
           : [],
         mcp_server_id: id,
         managed_auth_by_composio:
-          authOptions?.useComposioManagedAuth ?? serverDetails.managed_auth_via_composio ?? false,
+          authOptions?.useComposioManagedAuth ?? serverDetails.managedAuthViaComposio ?? false,
       });
     } catch (error) {
       throw new ValidationError('Failed to generate MCP server URL', {
@@ -230,9 +234,12 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
-    // Use the transformGetResponse method to transform the response
-    return this.transformGetResponse(
-      data,
+    // Transform to camelCase
+    const camelCaseData = transformMcpGenerateUrlResponse(data);
+
+    // Use the wrapMcpServerResponse method to transform the response
+    return this.wrapMcpServerResponse(
+      camelCaseData,
       serverDetails.name,
       paramsResult.data.connectedAccountIds
         ? Object.values(paramsResult.data.connectedAccountIds)
@@ -276,7 +283,7 @@ export class MCP<T = McpServerGetResponse> {
     toolkits?: string[];
     authConfigs?: string[];
     name?: string;
-  }): Promise<McpListResponse> {
+  }): Promise<ReturnType<typeof transformMcpListResponse>> {
     // List MCP servers with error handling
     let listResponse;
     try {
@@ -301,20 +308,21 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
-    return listResponse;
+    // Transform the response to camelCase
+    return transformMcpListResponse(listResponse);
   }
 
   /**
    * Get details of a specific MCP server
    * @param {string} id - Server UUID
-   * @returns {Promise<McpCreateResponse>} Server details
+   * @returns {Promise<ReturnType<typeof transformMcpRetrieveResponse>>} Server details
    *
    * @example
    * ```typescript
    * const serverDetails = await composio.mcp.get('server-uuid');
    * ```
    */
-  async get(id: string): Promise<McpCreateResponse> {
+  async get(id: string): Promise<ReturnType<typeof transformMcpRetrieveResponse>> {
     // Retrieve MCP server with error handling
     let retrieveResponse;
     try {
@@ -333,20 +341,21 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
-    return retrieveResponse;
+    // Transform the response to camelCase
+    return transformMcpRetrieveResponse(retrieveResponse);
   }
 
   /**
    * Delete an MCP server
    * @param {string} id - Server UUID
-   * @returns {Promise<McpDeleteResponse>} Deletion response
+   * @returns {Promise<ReturnType<typeof transformMcpDeleteResponse>>} Deletion response
    *
    * @example
    * ```typescript
    * const result = await composio.mcp.delete('server-uuid');
    * ```
    */
-  async delete(id: string): Promise<McpDeleteResponse> {
+  async delete(id: string): Promise<ReturnType<typeof transformMcpDeleteResponse>> {
     // Delete MCP server with error handling
     let deleteResponse;
     try {
@@ -365,7 +374,8 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
-    return deleteResponse;
+    // Transform the response to camelCase
+    return transformMcpDeleteResponse(deleteResponse);
   }
 
   /**
@@ -374,7 +384,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {string} name - New unique name for the server
    * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Updated authentication options
-   * @returns {Promise<McpUpdateResponse>} Updated server details
+   * @returns {Promise<ReturnType<typeof transformMcpUpdateResponse>>} Updated server details
    *
    * @example
    * ```typescript
@@ -399,7 +409,7 @@ export class MCP<T = McpServerGetResponse> {
     name: string,
     toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
-  ): Promise<McpUpdateResponse> {
+  ): Promise<ReturnType<typeof transformMcpUpdateResponse>> {
     // Validate inputs using Zod schemas
     this.validateInputs(toolkitConfigs, authOptions);
 
@@ -428,12 +438,63 @@ export class MCP<T = McpServerGetResponse> {
       });
     }
 
-    return updateResponse;
+    // Transform the response to camelCase
+    return transformMcpUpdateResponse(updateResponse);
   }
 
-  async generateUrl(params: GenerateURLParams): Promise<GenerateURLResponse> {
-    const urlResponse = await this.client.mcp.generate.url(params);
-    return urlResponse;
+  /**
+   * Generate URL for an MCP server
+   * @param {GenerateURLParams} params - Parameters for URL generation
+   * @returns {Promise<ReturnType<typeof transformMcpGenerateUrlResponse>>} Generated URL response
+   *
+   * @example
+   * ```typescript
+   * const urlResponse = await composio.mcp.generateUrl({
+   *   userIds: ['user123'],
+   *   connectedAccountIds: ['account456'],
+   *   mcpServerId: 'server-uuid',
+   *   managedAuthByComposio: true
+   * });
+   * ```
+   */
+  async generateUrl(
+    params: GenerateURLParams
+  ): Promise<ReturnType<typeof transformMcpGenerateUrlResponse>> {
+    // Validate parameters using Zod schema
+    const paramsResult = GenerateURLParamsSchema.safeParse(params);
+    if (paramsResult.error) {
+      throw new ValidationError('Failed to parse generateUrl parameters', {
+        cause: paramsResult.error,
+      });
+    }
+
+    const validatedParams: GenerateURLParamsValidated = paramsResult.data;
+
+    // Transform camelCase to snake_case for the API call
+    let urlResponse;
+    try {
+      urlResponse = await this.client.mcp.generate.url({
+        user_ids: validatedParams.userIds || [],
+        connected_account_ids: validatedParams.connectedAccountIds || [],
+        mcp_server_id: validatedParams.mcpServerId,
+        managed_auth_by_composio: validatedParams.managedAuthByComposio,
+      });
+    } catch (error) {
+      throw new ValidationError('Failed to generate MCP URL', {
+        cause: error,
+      });
+    }
+
+    // Validate the response
+    const responseResult = GenerateURLResponseSchema.safeParse(urlResponse);
+    if (responseResult.error) {
+      throw new ValidationError('Failed to parse MCP URL generation response', {
+        cause: responseResult.error,
+      });
+    }
+
+    // Transform the response to camelCase
+    return transformMcpGenerateUrlResponse(urlResponse);
   }
 
   /**
@@ -441,15 +502,15 @@ export class MCP<T = McpServerGetResponse> {
    * If the provider has a custom transform method, use it.
    * Otherwise, use the default transformation.
    *
-   * @param data - The MCP URL response data
+   * @param data - The MCP URL response data (in camelCase)
    * @param serverName - Name of the MCP server
    * @param connectedAccountIds - Optional array of connected account IDs
    * @param userIds - Optional array of user IDs
    * @param toolkits - Optional array of toolkit names
    * @returns Transformed response in appropriate format
    */
-  private transformGetResponse(
-    data: McpUrlResponse,
+  private wrapMcpServerResponse(
+    data: McpUrlResponseCamelCase,
     serverName: string,
     connectedAccountIds?: string[],
     userIds?: string[],
@@ -457,8 +518,15 @@ export class MCP<T = McpServerGetResponse> {
   ): T {
     // Check if provider has a custom transform method
     if (this.provider && typeof this.provider.transformMcpResponse === 'function') {
+      // Convert to snake_case for backward compatibility with providers
+      const snakeCaseData: McpUrlResponse = {
+        mcp_url: data.mcpUrl,
+        ...(data.connectedAccountUrls && { connected_account_urls: data.connectedAccountUrls }),
+        ...(data.userIdsUrl && { user_ids_url: data.userIdsUrl }),
+      };
+
       const transformed = this.provider.transformMcpResponse(
-        data,
+        snakeCaseData,
         serverName,
         connectedAccountIds,
         userIds,
@@ -468,21 +536,21 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Default transformation
-    if (connectedAccountIds?.length && data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
+    if (connectedAccountIds?.length && data.connectedAccountUrls) {
+      return data.connectedAccountUrls.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${connectedAccountIds[index]}`,
         toolkit: toolkits?.[index],
       })) as T;
-    } else if (userIds?.length && data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
+    } else if (userIds?.length && data.userIdsUrl) {
+      return data.userIdsUrl.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${userIds[index]}`,
         toolkit: toolkits?.[index],
       })) as T;
     }
     return {
-      url: new URL(data.mcp_url),
+      url: new URL(data.mcpUrl),
       name: serverName,
     } as T;
   }

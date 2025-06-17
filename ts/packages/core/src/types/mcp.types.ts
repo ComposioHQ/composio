@@ -69,13 +69,29 @@ export const MCPGenerateURLParamsSchema = z.object({
 });
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 
+export const GenerateURLParamsSchema = z.object({
+  userIds: z.array(z.string()).optional(),
+  connectedAccountIds: z.array(z.string()).optional(),
+  mcpServerId: z.string(),
+  managedAuthByComposio: z.boolean().optional(),
+});
+export type GenerateURLParamsValidated = z.infer<typeof GenerateURLParamsSchema>;
+
+// CamelCase response schema for generate URL
+export const GenerateURLResponseCamelCaseSchema = z.object({
+  connectedAccountUrls: z.array(z.string()).optional(),
+  userIdsUrl: z.array(z.string()).optional(),
+  mcpUrl: z.string().min(1, 'MCP URL cannot be empty'),
+});
+
+// Snake_case response schema for API
 export const GenerateURLResponseSchema = z.object({
   connected_account_urls: z.array(z.string()).optional(),
   user_ids_url: z.array(z.string()).optional(),
   mcp_url: z.string().min(1, 'MCP URL cannot be empty'),
 });
 
-export type GenerateURLResponseValidated = z.infer<typeof GenerateURLResponseSchema>;
+export type GenerateURLResponseValidated = z.infer<typeof GenerateURLResponseCamelCaseSchema>;
 
 /**
  * MCP Server Type (Single App)
@@ -160,6 +176,14 @@ export type McpServerUrlInfo = {
 
 export type McpServerGetResponse = McpServerUrlInfo | McpServerUrlInfo[];
 
+// CamelCase URL response
+export type McpUrlResponseCamelCase = {
+  connectedAccountUrls?: string[];
+  userIdsUrl?: string[];
+  mcpUrl: string;
+};
+
+// Snake_case URL response (for internal API use)
 export type McpUrlResponse = {
   connected_account_urls?: string[];
   user_ids_url?: string[];
@@ -171,6 +195,16 @@ export type McpServerCreateResponse<T> = (McpCreateResponse | CustomCreateRespon
   getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
+// CamelCase create response schema
+export const CustomCreateResponseCamelCaseSchema = z.object({
+  id: z.string().min(1, 'Server ID cannot be empty'),
+  name: z.string().min(1, 'Server name cannot be empty'),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  status: z.string().optional(),
+});
+
+// Snake_case create response schema (for API)
 export const CustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
@@ -179,8 +213,24 @@ export const CustomCreateResponseSchema = z.object({
   status: z.string().optional(),
 });
 
-export type CustomCreateResponseValidated = z.infer<typeof CustomCreateResponseSchema>;
+export type CustomCreateResponseValidated = z.infer<typeof CustomCreateResponseCamelCaseSchema>;
 
+// CamelCase list response schema
+export const McpListResponseCamelCaseSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1, 'Server ID cannot be empty'),
+        name: z.string().min(1, 'Server name cannot be empty'),
+        createdAt: z.string().optional(),
+        updatedAt: z.string().optional(),
+        status: z.string().optional(),
+      })
+    )
+    .optional(),
+});
+
+// Snake_case list response schema (for API)
 export const McpListResponseSchema = z.object({
   items: z
     .array(
@@ -195,6 +245,19 @@ export const McpListResponseSchema = z.object({
     .optional(),
 });
 
+// CamelCase retrieve response schema
+export const McpRetrieveResponseCamelCaseSchema = z.object({
+  id: z.string().min(1, 'Server ID cannot be empty'),
+  name: z.string().min(1, 'Server name cannot be empty'),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  status: z.string().optional(),
+  toolkits: z.array(z.string()).optional(),
+  tools: z.array(z.string()).optional(),
+  managedAuthViaComposio: z.boolean().optional(),
+});
+
+// Snake_case retrieve response schema (for API)
 export const McpRetrieveResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
@@ -203,14 +266,35 @@ export const McpRetrieveResponseSchema = z.object({
   status: z.string().optional(),
   toolkits: z.array(z.string()).optional(),
   tools: z.array(z.string()).optional(),
+  managed_auth_via_composio: z.boolean().optional(),
 });
 
+// CamelCase delete response schema
+export const McpDeleteResponseCamelCaseSchema = z.object({
+  id: z.string().min(1, 'Server ID cannot be empty'),
+  deleted: z.boolean().optional(),
+  message: z.string().optional(),
+});
+
+// Snake_case delete response schema (for API)
 export const McpDeleteResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   deleted: z.boolean().optional(),
   message: z.string().optional(),
 });
 
+// CamelCase update response schema
+export const McpUpdateResponseCamelCaseSchema = z.object({
+  id: z.string().min(1, 'Server ID cannot be empty'),
+  name: z.string().min(1, 'Server name cannot be empty'),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  status: z.string().optional(),
+  toolkits: z.array(z.string()).optional(),
+  tools: z.array(z.string()).optional(),
+});
+
+// Snake_case update response schema (for API)
 export const McpUpdateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
@@ -220,3 +304,10 @@ export const McpUpdateResponseSchema = z.object({
   toolkits: z.array(z.string()).optional(),
   tools: z.array(z.string()).optional(),
 });
+
+// Export camelCase response types
+export type McpListResponseCamelCase = z.infer<typeof McpListResponseCamelCaseSchema>;
+export type McpRetrieveResponseCamelCase = z.infer<typeof McpRetrieveResponseCamelCaseSchema>;
+export type McpDeleteResponseCamelCase = z.infer<typeof McpDeleteResponseCamelCaseSchema>;
+export type McpUpdateResponseCamelCase = z.infer<typeof McpUpdateResponseCamelCaseSchema>;
+export type GenerateURLResponseCamelCase = z.infer<typeof GenerateURLResponseCamelCaseSchema>;
