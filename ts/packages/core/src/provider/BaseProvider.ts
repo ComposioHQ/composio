@@ -2,19 +2,29 @@ import { ComposioGlobalExecuteToolFnNotSetError } from '../errors/ToolErrors';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '../types/tool.types';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
+import { McpProvider } from './McpProvider';
+import { BaseMcpProvider } from './BaseMcpProvider';
+
+// Re-export for backward compatibility
+export { McpProvider, BaseMcpProvider };
 
 /**
  * @internal
  * Base class for all toolsets.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
-abstract class BaseProvider {
+abstract class BaseProvider<TMcpResponse = unknown> {
   /**
    * @public
    * The name of the provider.
    * Used to identify the provider in the telemetry.
    */
   abstract readonly name: string;
+  /**
+   * @public
+   * MCP provider for the framework
+   */
+  abstract readonly mcp?: McpProvider<TMcpResponse>;
   /**
    * @internal
    * Whether the provider is agentic.
@@ -63,7 +73,11 @@ abstract class BaseProvider {
  * Base class for all non-agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends BaseProvider {
+export abstract class BaseNonAgenticProvider<
+  TToolCollection,
+  TTool,
+  TMcpResponse = unknown,
+> extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = false;
 
   /**
@@ -85,8 +99,14 @@ export abstract class BaseNonAgenticProvider<TToolCollection, TTool> extends Bas
  * Base class for all agentic toolsets.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
-export abstract class BaseAgenticProvider<TToolCollection, TTool> extends BaseProvider {
+export abstract class BaseAgenticProvider<
+  TToolCollection,
+  TTool,
+  TMcpResponse = unknown,
+> extends BaseProvider<TMcpResponse> {
   override readonly _isAgentic = true;
+
+  abstract readonly mcp: McpProvider<TMcpResponse>;
 
   /**
    * Wrap a tool in the provider specific format.
@@ -107,6 +127,6 @@ export abstract class BaseAgenticProvider<TToolCollection, TTool> extends BasePr
  * Base type for all toolsets.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool> =
-  | BaseNonAgenticProvider<TToolCollection, TTool>
-  | BaseAgenticProvider<TToolCollection, TTool>;
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = unknown> =
+  | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse>
+  | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;

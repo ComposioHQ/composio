@@ -9,7 +9,8 @@
  */
 import { OpenAI } from 'openai';
 import { Stream } from 'openai/streaming';
-import { BaseNonAgenticProvider } from './BaseProvider';
+import { BaseNonAgenticProvider, BaseMcpProvider } from './BaseProvider';
+import { McpServerGetResponse } from '../types/mcp.types';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
@@ -17,22 +18,35 @@ import { ExecuteToolFnOptions } from '../types/provider.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
-export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
+
+export class OpenAIMcpProvider extends BaseMcpProvider<McpServerGetResponse> {
   readonly name = 'openai';
-  
+
+  // TODO: Implement this
+}
+
+export class OpenAIProvider extends BaseNonAgenticProvider<
+  OpenAiToolCollection,
+  OpenAiTool,
+  McpServerGetResponse
+> {
+  readonly name = 'openai';
+
+  readonly mcp = new OpenAIMcpProvider();
+
   /**
    * Creates a new instance of the OpenAIProvider.
-   * 
+   *
    * This is the default provider for the Composio SDK and is automatically
    * available without additional installation.
-   * 
+   *
    * @example
    * ```typescript
    * // The OpenAIProvider is used by default when initializing Composio
    * const composio = new Composio({
    *   apiKey: 'your-api-key'
    * });
-   * 
+   *
    * // You can also explicitly specify it
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
@@ -43,16 +57,16 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   constructor() {
     super();
   }
-  
+
   /**
    * Wraps a Composio tool in the OpenAI function calling format.
-   * 
+   *
    * This method transforms a Composio tool definition into the format
    * expected by OpenAI's function calling API.
-   * 
+   *
    * @param tool - The Composio tool to wrap
    * @returns The wrapped tool in OpenAI format
-   * 
+   *
    * @example
    * ```typescript
    * // Wrap a single tool for use with OpenAI
@@ -67,7 +81,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *     required: ['query']
    *   }
    * };
-   * 
+   *
    * const openAITool = provider.wrapTool(composioTool);
    * ```
    */
@@ -85,13 +99,13 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
 
   /**
    * Wraps multiple Composio tools in the OpenAI function calling format.
-   * 
+   *
    * This method transforms a list of Composio tools into the format
    * expected by OpenAI's function calling API.
-   * 
+   *
    * @param tools - Array of Composio tools to wrap
    * @returns Array of wrapped tools in OpenAI format
-   * 
+   *
    * @example
    * ```typescript
    * // Wrap multiple tools for use with OpenAI
@@ -117,7 +131,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *     }
    *   }
    * ];
-   * 
+   *
    * const openAITools = provider.wrapTools(composioTools);
    * ```
    */
@@ -127,16 +141,16 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
 
   /**
    * Executes a tool call from OpenAI's chat completion.
-   * 
+   *
    * This method processes a tool call from OpenAI's chat completion API,
    * executes the corresponding Composio tool, and returns the result.
-   * 
+   *
    * @param {string} userId - The user ID for authentication and tracking
    * @param {OpenAI.ChatCompletionMessageToolCall} tool - The tool call from OpenAI
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {Promise<string>} The result of the tool call as a JSON string
-   * 
+   *
    * @example
    * ```typescript
    * // Execute a tool call from OpenAI
@@ -148,7 +162,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *     arguments: '{"query":"composio documentation"}'
    *   }
    * };
-   * 
+   *
    * const result = await provider.executeToolCall(
    *   'user123',
    *   toolCall,
@@ -184,7 +198,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {Promise<string[]>} Array of tool execution results as JSON strings
-   * 
+   *
    * @example
    * ```typescript
    * // Handle tool calls from a chat completion response
@@ -206,7 +220,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *     }
    *   ]
    * };
-   * 
+   *
    * const results = await provider.handleToolCalls(
    *   'user123',
    *   chatCompletion,
@@ -243,7 +257,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} Array of tool outputs for submission
-   * 
+   *
    * @example
    * ```typescript
    * // Handle tool calls from an OpenAI Assistant run
@@ -264,13 +278,13 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *     }
    *   }
    * };
-   * 
+   *
    * const toolOutputs = await provider.handleAssistantMessage(
    *   'user123',
    *   run,
    *   { connectedAccountId: 'conn_xyz456' }
    * );
-   * 
+   *
    * // Submit tool outputs back to OpenAI
    * await openai.beta.threads.runs.submitToolOutputs(
    *   thread.id,
@@ -324,7 +338,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>} Generator yielding stream events
-   * 
+   *
    * @example
    * ```typescript
    * // Process an OpenAI Assistant stream with tool calls
@@ -333,7 +347,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *   assistant_id: 'asst_abc123',
    *   tools: provider.wrapTools(composioTools)
    * });
-   * 
+   *
    * // Process the stream and handle tool calls
    * const streamProcessor = provider.waitAndHandleAssistantStreamToolCalls(
    *   'user123',
@@ -342,7 +356,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *   thread,
    *   { connectedAccountId: 'conn_xyz456' }
    * );
-   * 
+   *
    * // Consume the stream events
    * for await (const event of streamProcessor) {
    *   if (event.event === 'thread.message.delta') {
@@ -440,7 +454,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {Promise<OpenAI.Beta.Threads.Run>} The final run object after completion
-   * 
+   *
    * @example
    * ```typescript
    * // Process an OpenAI Assistant run with tool calls
@@ -449,12 +463,12 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *   role: 'user',
    *   content: 'Find information about Composio'
    * });
-   * 
+   *
    * let run = await openai.beta.threads.runs.create(thread.id, {
    *   assistant_id: 'asst_abc123',
    *   tools: provider.wrapTools(composioTools)
    * });
-   * 
+   *
    * // Wait for the run to complete, handling any tool calls
    * run = await provider.waitAndHandleAssistantToolCalls(
    *   'user123',
@@ -463,7 +477,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    *   thread,
    *   { connectedAccountId: 'conn_xyz456' }
    * );
-   * 
+   *
    * // Get the final messages after run completion
    * const messages = await openai.beta.threads.messages.list(thread.id);
    * console.log(messages.data[0].content);
