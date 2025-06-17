@@ -1,0 +1,34 @@
+[project]
+name = "composio"
+version = "1.0.0rc1"
+description = "SDK for integrating Composio with your applications."
+readme = "README.md"
+requires-python = ">=3.10,<4"
+dependencies = [
+    "pysher>=1.0.8",
+    "pydantic>=2.6.4",
+    "composio-client",
+    "typing-extensions>=4.0.0",
+    "openai",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[dependency-groups]
+dev = [
+    "composio",
+    "nox>=2025.5.1",
+    "pytest>=8.4.0",
+    "ruff>=0.11.13",
+    # Langchain provider demo
+    "langchain_openai",
+    "fastapi>=0.115.9",
+    "twine>=6.1.0",
+    "click>=8.2.1",
+    "semver>=3.0.4",
+]
+[tool.uv.sources]
+composio = { workspace = true }
