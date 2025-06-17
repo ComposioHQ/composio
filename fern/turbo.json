@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "tools:uncomment", "sdkdocs"],
-      "outputs": ["pages/*.mdx", "tools/*.mdx", "pages/sdk/**"],
+      "outputs": ["pages/*.mdx", "tools/*.mdx", "pages/**"],
       "cache": true
     },
     
@@ -27,9 +27,9 @@
     },
     
     "snippets:build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "sdkdocs"],
       "outputs": ["pages/**"],
-      "inputs": ["scripts/build-snippets.ts", "snippets/**"],
+      "inputs": ["scripts/build-snippets.ts", "snippets/**", "docs/**"],
       "cache": true
     },
     
@@ -60,7 +60,7 @@
     "sdkdocs": {
       "dependsOn": ["^build"],
       "outputs": ["docs/sdk/**"],
-      "inputs": ["../packages/core/**/*.ts", "../packages/providers/**/*.ts", "typedoc.json"],
+      "inputs": ["../ts/packages/core/**/*.ts", "../ts/packages/providers/**/*.ts", "typedoc.json"],
       "cache": true
     },
     
