@@ -69,6 +69,14 @@ export const MCPGenerateURLParamsSchema = z.object({
 });
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 
+// Snake_case schema for validating the imported GenerateURLParams type
+export const GenerateURLParamsSnakeCaseSchema = z.object({
+  user_ids: z.array(z.string()).optional(),
+  connected_account_ids: z.array(z.string()).optional(),
+  mcp_server_id: z.string(),
+  managed_auth_by_composio: z.boolean().optional(),
+});
+
 export const GenerateURLParamsSchema = z.object({
   userIds: z.array(z.string()).optional(),
   connectedAccountIds: z.array(z.string()).optional(),
@@ -199,18 +207,18 @@ export type McpServerCreateResponse<T> = (McpCreateResponse | CustomCreateRespon
 export const CustomCreateResponseCamelCaseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  status: z.string().optional(),
+  createdAt: z.string().nullish(),
+  updatedAt: z.string().nullish(),
+  status: z.string().nullish(),
 });
 
 // Snake_case create response schema (for API)
 export const CustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  status: z.string().optional(),
+  created_at: z.string().nullish(),
+  updated_at: z.string().nullish(),
+  status: z.string().nullish(),
 });
 
 export type CustomCreateResponseValidated = z.infer<typeof CustomCreateResponseCamelCaseSchema>;

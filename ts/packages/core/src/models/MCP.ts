@@ -16,7 +16,7 @@ import {
   MCPGetServerParamsSchema,
   CustomCreateResponseSchema,
   GenerateURLResponseSchema,
-  GenerateURLParamsSchema,
+  GenerateURLParamsSnakeCaseSchema,
   GenerateURLParamsValidated,
   McpListResponseSchema,
   McpRetrieveResponseSchema,
@@ -450,35 +450,28 @@ export class MCP<T = McpServerGetResponse> {
    * @example
    * ```typescript
    * const urlResponse = await composio.mcp.generateUrl({
-   *   userIds: ['user123'],
-   *   connectedAccountIds: ['account456'],
-   *   mcpServerId: 'server-uuid',
-   *   managedAuthByComposio: true
+   *   user_ids: ['user123'],
+   *   connected_account_ids: ['account456'],
+   *   mcp_server_id: 'server-uuid',
+   *   managed_auth_by_composio: true
    * });
    * ```
    */
   async generateUrl(
     params: GenerateURLParams
   ): Promise<ReturnType<typeof transformMcpGenerateUrlResponse>> {
-    // Validate parameters using Zod schema
-    const paramsResult = GenerateURLParamsSchema.safeParse(params);
+    // Validate parameters using Zod schema (snake_case)
+    const paramsResult = GenerateURLParamsSnakeCaseSchema.safeParse(params);
     if (paramsResult.error) {
       throw new ValidationError('Failed to parse generateUrl parameters', {
         cause: paramsResult.error,
       });
     }
 
-    const validatedParams: GenerateURLParamsValidated = paramsResult.data;
-
-    // Transform camelCase to snake_case for the API call
+    // No transformation needed - params are already in snake_case
     let urlResponse;
     try {
-      urlResponse = await this.client.mcp.generate.url({
-        user_ids: validatedParams.userIds || [],
-        connected_account_ids: validatedParams.connectedAccountIds || [],
-        mcp_server_id: validatedParams.mcpServerId,
-        managed_auth_by_composio: validatedParams.managedAuthByComposio,
-      });
+      urlResponse = await this.client.mcp.generate.url(params);
     } catch (error) {
       throw new ValidationError('Failed to generate MCP URL', {
         cause: error,
