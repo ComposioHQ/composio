@@ -7,6 +7,7 @@ import path from 'path';
 interface MCPArgs {
   url: string;
   client: string;
+  name?: string;
 }
 
 interface MCPConfig {
@@ -39,7 +40,7 @@ type ErrorWithMessage = {
 };
 
 const command: CommandModule<{}, MCPArgs> = {
-  command: 'setup <url>',
+  command: 'setup <url> [name]',
   describe: 'Setup command for app integration',
   builder: (yargs: Argv<{}>): Argv<MCPArgs> => {
     return yargs
@@ -53,22 +54,28 @@ const command: CommandModule<{}, MCPArgs> = {
         describe: 'Client to use (claude, windsurf, cursor)',
         default: 'claude',
         choices: ['claude', 'windsurf', 'cursor'],
+      })
+      .option('name', {
+        type: 'string',
+        describe: 'Name for the server',
       }) as Argv<MCPArgs>;
   },
   handler: async (argv: MCPArgs) => {
-    const { url, client } = argv;
+    const { url, client, name } = argv;
+    const newKey = name || url.split('/').slice(3).join('/').replace(/\//g, '-');
 
     try {
       console.log(chalk.cyan('📝 Configuration Details:'));
       console.log(`   URL: ${chalk.green(url)}`);
-      console.log(`   Client: ${chalk.green(client)}\n`);
+      console.log(`   Client: ${chalk.green(client)}`);
+      console.log(`   Name: ${chalk.green(newKey)}\n`);
 
       const mcpUrl = url;
       const command = `composio --sse "${mcpUrl}"`;
 
       console.log(chalk.cyan('💾 Saving configurations...'));
 
-      saveMcpConfig(url, client, mcpUrl, command);
+      saveMcpConfig(url, client, newKey, mcpUrl, command);
 
       console.log(
         chalk.cyan(`\n🚀 All done! Please restart ${client} for changes to take effect\n`)
@@ -81,7 +88,7 @@ const command: CommandModule<{}, MCPArgs> = {
   },
 };
 
-function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command: string): void {
+function saveMcpConfig(url: string, clientType: string, name: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
     args: ['@composio/mcp@latest', 'start', '--url', mcpUrl],
@@ -150,6 +157,8 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     fs.mkdirSync(configDir, { recursive: true });
   }
 
+  const newKey = name || url.split('/').slice(3).join('/').replace(/\//g, '-');
+
   if (clientType === 'claude') {
     let claudeConfig: ClaudeConfig = { mcpServers: {} };
     if (fs.existsSync(configPath)) {
@@ -164,7 +173,7 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
     if (!claudeConfig.mcpServers) claudeConfig.mcpServers = {};
 
     // Update only the mcpServers entry
-    claudeConfig.mcpServers[url] = config;
+    claudeConfig.mcpServers[newKey] = config;
 
     fs.writeFileSync(configPath, JSON.stringify(claudeConfig, null, 2));
 
@@ -180,7 +189,7 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
       }
     }
 
-    windsurfConfig.mcpServers[url] = config;
+    windsurfConfig.mcpServers[newKey] = config;
     fs.writeFileSync(configPath, JSON.stringify(windsurfConfig, null, 2));
     console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
   } else if (clientType === 'cursor') {
@@ -194,12 +203,11 @@ function saveMcpConfig(url: string, clientType: string, mcpUrl: string, command:
       }
     }
 
-    if (cursorConfig.mcpServers[url]) {
-      delete cursorConfig.mcpServers[url];
+    if (cursorConfig.mcpServers[newKey]) {
+      delete cursorConfig.mcpServers[newKey];
     }
 
     try {
-    const newKey = url.split('/').slice(3).join('/').replace(/\//g, '-');
 
       cursorConfig.mcpServers[newKey] = sseConfig;
       fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
