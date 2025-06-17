@@ -2,9 +2,6 @@ from composio import Composio
 
 composio = Composio()
 
-# Get all tools
-tools = composio.tools.get(user_id="default")
-
 # Get all tools by toolkit
 tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 

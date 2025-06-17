@@ -14,6 +14,7 @@ from composio.core.models import (
     Tools,
     Triggers,
 )
+from composio.core.models.base import allow_tracking
 from composio.core.provider import TProvider
 from composio.core.provider._openai import OpenAIProvider
 from composio.utils.logging import WithLogger
@@ -27,6 +28,7 @@ class SDKConfig(te.TypedDict):
     base_url: te.NotRequired[str]
     timeout: te.NotRequired[int]
     max_retries: te.NotRequired[int]
+    allow_tracking: te.NotRequired[bool]
 
 
 class Composio(t.Generic[TProvider], WithLogger):
@@ -57,6 +59,7 @@ class Composio(t.Generic[TProvider], WithLogger):
         if not api_key:
             raise exceptions.ApiKeyNotProvidedError()
 
+        allow_tracking.set(kwargs.get("allow_tracking", True))
         self._client = HttpClient(
             environment=kwargs.get("environment", "production"),
             provider=provider.name,
