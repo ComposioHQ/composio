@@ -1,0 +1,67 @@
+name: Checks
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.checks.yaml"
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.checks.yaml"
+
+jobs:
+  common-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 50
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: nox cache
+        id: nox-cache
+        uses: actions/cache@v4
+        with:
+          path: python/.nox
+          key: nox-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            nox-
+
+      - name: Mypy cache
+        id: mypy-cache
+        uses: actions/cache@v4
+        with:
+          path: python/.mypy_cache
+          key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            mypy-
+
+      - name: Ruff cache
+        id: ruff-cache
+        uses: actions/cache@v4
+        with:
+          path: python/.ruff_cache
+          key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            ruff-
+
+      - name: Install deps
+        run: |
+          cd python/
+          pip install uv
+          make env
+
+      - name: Lint and type checks
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s chk

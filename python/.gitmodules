@@ -1,0 +1,3 @@
+[submodule "client"]
+	path = client
+	url = git@github.com:composiohq/composio-base-py
