@@ -36,7 +36,7 @@ const mcpConfig = await composio.mcp.create(
   [
     {
       toolkit: "gmail",
-      authConfigId: "ac_HhUjx8ZSdcTG", // Use your auth config ID
+      authConfigId: "<auth_config_id>", // Use your auth config ID
       allowedTools: [
         "GMAIL_FETCH_EMAILS"
       ]
