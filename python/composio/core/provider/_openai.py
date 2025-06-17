@@ -99,7 +99,7 @@ class OpenAIProvider(
         run: Run,
     ) -> t.List:
         """Wait and handle assistant function calls"""
-        tool_outputs = []
+        tool_outputs: list[dict] = []
         if run.required_action is None:
             return tool_outputs
 

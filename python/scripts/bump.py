@@ -1,4 +1,3 @@
-import readline
 import typing as t
 from enum import Enum
 from itertools import chain

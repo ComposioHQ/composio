@@ -39,7 +39,7 @@ class Composio(t.Generic[TProvider], WithLogger):
 
     def __init__(
         self,
-        provider: TProvider = _DEFAULT_PROVIDER,
+        provider: TProvider = _DEFAULT_PROVIDER,  # type: ignore
         **kwargs: te.Unpack[SDKConfig],
     ) -> None:
         """

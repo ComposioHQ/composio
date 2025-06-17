@@ -134,7 +134,7 @@ class Tools(Resource, t.Generic[TProvider]):
         _custom_tools = []
         for tool in tools:
             try:
-                _custom_tools.append(self._custom_tools[tool])
+                _custom_tools.append(t.cast(Tool, self._custom_tools[tool]))
             except KeyError:
                 _tools.append(tool)
         return _tools, _custom_tools

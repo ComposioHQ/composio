@@ -77,7 +77,8 @@ class HttpClient(BaseComposio, WithLogger):
             http_client=http_client,
             _strict_response_validation=_strict_response_validation,
         )
-        _base_client.log = self._logger
+        # TOFIX: Verbosity wrapper impl
+        _base_client.log = self._logger  # type: ignore
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",

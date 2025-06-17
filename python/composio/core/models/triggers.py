@@ -110,14 +110,14 @@ class TriggerSubscription(Resource):
     def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
         """Parse event payload."""
         try:
-            return TriggerEventData(**json.loads(event))
+            return TriggerEventData(**json.loads(event))  # type: ignore
         except Exception as e:
             self.logger.warning(f"Error decoding payload: {e}")
             return None
 
     def _handle_chunked_events(self, event: str) -> None:
         """Handle chunked events."""
-        data = _ChunkedTriggerEventData(**json.loads(event))
+        data = _ChunkedTriggerEventData(**json.loads(event))  # type: ignore
         if data["id"] not in self._chunks:
             self._chunks[data["id"]] = {}
 

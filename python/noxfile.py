@@ -21,7 +21,7 @@ def fmt(session: Session):
 @nox.session
 def chk(session: Session):
     """Check for linter and type issues"""
-    session.install("ruff", "mypy==1.13.0", ".")
+    session.install(".", "ruff", "mypy==1.13.0", ".")
     session.run(*ruff, "check", *modules)
     for module in modules:
         session.run("mypy", "--config-file", "config/mypy.ini", module)

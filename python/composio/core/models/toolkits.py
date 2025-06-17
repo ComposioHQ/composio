@@ -74,14 +74,13 @@ class Toolkits(Resource):
             )
             return auth_config.id
 
-        auth_config = self._client.auth_configs.create(
+        return self._client.auth_configs.create(
             toolkit={"slug": toolkit},
             auth_config={
                 "type": "use_composio_managed_auth",
                 "restrict_to_following_tools": [toolkit],
             },
-        ).auth_config
-        return auth_config.id
+        ).auth_config.id
 
     def authorize(self, *, user_id: str, toolkit: str):
         """
