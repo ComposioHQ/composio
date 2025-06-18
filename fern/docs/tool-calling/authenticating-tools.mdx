@@ -191,9 +191,10 @@ console.log(fieldNames); // e.g. ["apiKey"]
 ```
 
 ```python Python maxLines=60  wordWrap
-required_fields = composio.connected_accounts.get_required_fields(
+required_fields = composio.toolkits.get_connected_account_initiation_fields(
     toolkit="NOTION",
     auth_scheme="API_KEY",
+    required_only=True,
 )
 print(required_fields)
 ```
@@ -296,9 +297,10 @@ composio = Composio()
 
 # Get required fields
 required_fields = [
-    field.name for field in composio.connected_accounts.get_required_fields(
+    field.name for field in composio.toolkits.get_connected_account_initiation_fields(
         toolkit="NOTION",
         auth_scheme="API_KEY",
+        required_only=True,
     )
 ]
 print("required_fields: ", required_fields)

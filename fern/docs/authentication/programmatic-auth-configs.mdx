@@ -112,9 +112,10 @@ const authFields = toolkits.authConfigDetails?.flatMap(
 console.log("Required auth config fields:", authFields);
 ```
 ```python Python maxLines=60  wordWrap
-required_fields = composio.auth_configs.get_required_fields(
+required_fields = composio.toolkits.get_auth_config_creation_fields(
     toolkit="NOTION",
     auth_scheme="OAUTH2",
+    required_only=True,
 )
 print(required_fields)
 ```
@@ -169,9 +170,10 @@ composio = Composio()
 
 # Get required fields
 required_fields = [
-    field.name for field in composio.auth_configs.get_required_fields(
+    field.name for field in toolkits.get_auth_config_creation_fields(
         toolkit="NOTION",
         auth_scheme="OAUTH2",
+        required_only=True,
     )
 ]
 

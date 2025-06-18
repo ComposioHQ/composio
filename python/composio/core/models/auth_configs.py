@@ -4,7 +4,6 @@ import typing as t
 
 import typing_extensions as te
 
-from composio import exceptions
 from composio.client.types import (
     auth_config_create_params,
     auth_config_create_response,
@@ -12,12 +11,8 @@ from composio.client.types import (
     auth_config_list_response,
     auth_config_retrieve_response,
     auth_config_update_params,
-    toolkit_retrieve_response,
 )
 from composio.core.models.base import Resource
-
-if t.TYPE_CHECKING:
-    from .connected_accounts import AuthSchemeL
 
 
 class AuthConfigs(Resource):
@@ -145,22 +140,3 @@ class AuthConfigs(Resource):
         :return: The disabled auth config.
         """
         return self.__update_status(nanoid, "DISABLED")
-
-    def get_required_fields(
-        self,
-        toolkit: str,
-        auth_scheme: AuthSchemeL,
-    ) -> t.List[
-        toolkit_retrieve_response.AuthConfigDetailFieldsAuthConfigCreationRequired
-    ]:
-        """
-        Get the required property for a given toolkit and auth scheme.
-        """
-        info = self._client.toolkits.retrieve(slug=toolkit)
-        for auth_detail in info.auth_config_details or []:
-            if auth_detail.mode == auth_scheme:
-                return auth_detail.fields.auth_config_creation.required
-
-        raise exceptions.InvalidParams(
-            f"auth config details not found with {toolkit=} and {auth_scheme=}"
-        )
