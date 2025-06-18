@@ -146,9 +146,9 @@ const authConfig = await composio.authConfigs.create("NOTION", {
   type: "use_custom_auth",
   authScheme: "OAUTH2", // Replace with the correct scheme for your toolkit if different
   credentials: Object.fromEntries(
-    requiredAuthFields.fields.map(({ name }) => [
+    requiredAuthFields.map(({ name }) => [
       name,
-      process.env[`NOTION_${fieldName.toUpperCase()}`] || "",
+      process.env[`NOTION_${name.toUpperCase()}`] || "",
     ])
   ),
 });

@@ -96,9 +96,7 @@ const requiredFields = await composio.toolkits.getAuthConfigCreationFields('gith
 Example Response:
 
 ```json
-{
-  "authScheme": "OAUTH2",
-  "fields": [
+[
     {
       "name": "client_id",
       "displayName": "Client id",
@@ -125,8 +123,7 @@ Example Response:
       "default": "read_products,write_products,read_orders,write_orders",
       "required": false
     }
-  ]
-}
+]
 ```
 
 **Parameters:**
@@ -136,7 +133,7 @@ Example Response:
 - `options` (object, optional):
   - `requiredOnly` (boolean, optional): Whether to only return the required fields (default: false)
 
-**Returns:** Promise<ToolkitAuthFieldsResponse> - The authschem and fields required for creating an auth config
+**Returns:** Promise<ToolkitAuthFieldsResponse> - The fields required for creating an auth config
 
 **Throws:** ComposioAuthConfigNotFoundError if no auth config is found for the toolkit or the specified auth scheme
 
@@ -161,9 +158,7 @@ const requiredFields = await composio.toolkits.getConnectedAccountInitiationFiel
 Example Response:
 
 ```json
-{
-  "authScheme": "OAUTH2",
-  "fields": [
+[
     {
       "name": "shop",
       "displayName": "Store Subdomain",
@@ -171,8 +166,7 @@ Example Response:
       "default": null,
       "required": true
     }
-  ]
-}
+]
 ```
 
 **Parameters:**
@@ -182,7 +176,7 @@ Example Response:
 - `options` (object, optional):
   - `requiredOnly` (boolean, optional): Whether to only return the required fields (default: false)
 
-**Returns:** Promise<ToolkitAuthFieldsResponse> - The auth schemes and fields required for initiating a connected account
+**Returns:** Promise<ToolkitAuthFieldsResponse> - The fields required for initiating a connected account
 
 **Throws:** ComposioAuthConfigNotFoundError if no auth config is found for the toolkit or the specified auth scheme
 

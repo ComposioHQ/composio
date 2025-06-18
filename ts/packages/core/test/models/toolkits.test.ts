@@ -484,14 +484,11 @@ describe('Toolkits', () => {
           requiredOnly: false,
         }
       );
-      expect(result).toEqual({
-        authScheme: 'OAUTH2',
-        fields: [
-          { name: 'client_id', required: true },
-          { name: 'client_secret', required: true },
-          { name: 'redirect_uri', required: false },
-        ],
-      });
+      expect(result).toEqual([
+        { name: 'client_id', required: true },
+        { name: 'client_secret', required: true },
+        { name: 'redirect_uri', required: false },
+      ]);
     });
 
     it('returns only required fields when requiredOnly is true', async () => {
@@ -502,13 +499,10 @@ describe('Toolkits', () => {
           requiredOnly: true,
         }
       );
-      expect(result).toEqual({
-        authScheme: 'OAUTH2',
-        fields: [
-          { name: 'client_id', required: true },
-          { name: 'client_secret', required: true },
-        ],
-      });
+      expect(result).toEqual([
+        { name: 'client_id', required: true },
+        { name: 'client_secret', required: true },
+      ]);
     });
 
     it('selects the correct auth config by authScheme', async () => {
@@ -552,10 +546,7 @@ describe('Toolkits', () => {
           requiredOnly: true,
         }
       );
-      expect(result).toEqual({
-        authScheme: 'API_KEY',
-        fields: [{ name: 'api_key', required: true }],
-      });
+      expect(result).toEqual([{ name: 'api_key', required: true }]);
     });
 
     it('throws if no authConfigDetails', async () => {
@@ -597,23 +588,17 @@ describe('Toolkits', () => {
       const result = await toolkits.getConnectedAccountInitiationFields(toolkitSlug, 'OAUTH2', {
         requiredOnly: false,
       });
-      expect(result).toEqual({
-        authScheme: 'OAUTH2',
-        fields: [
-          { name: 'code', required: true },
-          { name: 'state', required: false },
-        ],
-      });
+      expect(result).toEqual([
+        { name: 'code', required: true },
+        { name: 'state', required: false },
+      ]);
     });
 
     it('returns only required fields when requiredOnly is true', async () => {
       const result = await toolkits.getConnectedAccountInitiationFields(toolkitSlug, 'OAUTH2', {
         requiredOnly: true,
       });
-      expect(result).toEqual({
-        authScheme: 'OAUTH2',
-        fields: [{ name: 'code', required: true }],
-      });
+      expect(result).toEqual([{ name: 'code', required: true }]);
     });
 
     it('selects the correct auth config by authScheme', async () => {
@@ -657,10 +642,7 @@ describe('Toolkits', () => {
           requiredOnly: true,
         }
       );
-      expect(result).toEqual({
-        authScheme: 'API_KEY',
-        fields: [{ name: 'api_key_code', required: true }],
-      });
+      expect(result).toEqual([{ name: 'api_key_code', required: true }]);
     });
 
     it('throws if no authConfigDetails', async () => {

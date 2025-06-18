@@ -274,10 +274,7 @@ export class Toolkits {
       required: true,
     }));
     if (requiredOnly) {
-      return {
-        authScheme: AuthSchemeEnum.parse(authConfig.mode),
-        fields: requiredFields,
-      };
+      return requiredFields;
     }
 
     const optionalFields = authConfig.fields[authConfigType].optional.map(field => ({
@@ -285,10 +282,7 @@ export class Toolkits {
       required: false,
     }));
 
-    return {
-      authScheme: AuthSchemeEnum.parse(authConfig.mode),
-      fields: [...requiredFields, ...optionalFields],
-    };
+    return [...requiredFields, ...optionalFields];
   }
 
   /**

@@ -114,13 +114,10 @@ export type ToolkitRetrieveCategoriesResponse = z.infer<
   typeof ToolkitRetrieveCategoriesResponseSchema
 >;
 
-export const ToolkitAuthFieldsResponseSchema = z.object({
-  authScheme: AuthSchemeEnum,
-  fields: z.array(
-    ToolkitAuthFieldSchema.extend({
-      required: z.boolean().optional(),
-    })
-  ),
-});
+export const ToolkitAuthFieldsResponseSchema = z.array(
+  ToolkitAuthFieldSchema.extend({
+    required: z.boolean().optional(),
+  })
+);
 
 export type ToolkitAuthFieldsResponse = z.infer<typeof ToolkitAuthFieldsResponseSchema>;
