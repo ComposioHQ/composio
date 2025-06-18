@@ -71,7 +71,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
    * @param toolkits - Optional array of toolkit names
    * @returns Transformed response in provider-specific format, or undefined to use default transformation
    */
-  transformMcpResponse?(
+  wrapMcpServerResponse?(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],

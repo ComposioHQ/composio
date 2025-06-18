@@ -168,7 +168,7 @@ class MockProvider extends BaseAgenticProvider<MockToolCollection, MockTool, Moc
     return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 
-  transformMcpResponse(
+  wrapMcpServerResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],

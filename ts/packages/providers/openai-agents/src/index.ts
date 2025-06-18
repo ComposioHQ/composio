@@ -66,7 +66,7 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * @param toolkits - Optional array of toolkit names
    * @returns Standard MCP server response format
    */
-  transformMcpResponse(
+  wrapMcpServerResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],

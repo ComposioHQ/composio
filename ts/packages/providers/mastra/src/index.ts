@@ -46,7 +46,7 @@ export class MastraProvider extends BaseAgenticProvider<
    * @param userIds - Optional array of user IDs
    * @returns Transformed MastraUrlMap
    */
-  transformMcpResponse(
+  wrapMcpServerResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],

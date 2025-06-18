@@ -510,7 +510,7 @@ export class MCP<T = McpServerGetResponse> {
     toolkits?: string[]
   ): T {
     // Check if provider has a custom transform method
-    if (this.provider && typeof this.provider.transformMcpResponse === 'function') {
+    if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
       // Convert to snake_case for backward compatibility with providers
       const snakeCaseData: McpUrlResponse = {
         mcp_url: data.mcpUrl,
@@ -518,7 +518,7 @@ export class MCP<T = McpServerGetResponse> {
         ...(data.userIdsUrl && { user_ids_url: data.userIdsUrl }),
       };
 
-      const transformed = this.provider.transformMcpResponse(
+      const transformed = this.provider.wrapMcpServerResponse(
         snakeCaseData,
         serverName,
         connectedAccountIds,

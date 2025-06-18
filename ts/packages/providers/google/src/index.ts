@@ -106,7 +106,7 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
    * @param toolkits - Optional array of toolkit names
    * @returns Standard MCP server response format
    */
-  transformMcpResponse(
+  wrapMcpServerResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],

@@ -1,8 +1,8 @@
 /**
- * Langchain ToolSet
+ * Langchain Provider
  *
  * Author: Musthaq Ahamad <musthaq@composio.dev>
- * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/langchain.ts
+ * Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/frameworks/langchain.ts
  *
  * This provider provides a set of tools for interacting with Langchain.
  *
@@ -28,8 +28,9 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollecti
   /**
    * Creates a new instance of the LangchainProvider.
    *
-   * This provider enables integration with Langchain,
-   * allowing Composio tools to be used within Langchain applications.
+   *
+   * This provider enables integration with the Langchain framework,
+   * allowing Composio tools to be used with Langchain agents and chains.
    *
    * @example
    * ```typescript
@@ -61,7 +62,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollecti
    * @param toolkits - Optional array of toolkit names
    * @returns Standard MCP server response format
    */
-  transformMcpResponse(
+  wrapMcpServerResponse(
     data: McpUrlResponse,
     serverName: string,
     connectedAccountIds?: string[],
@@ -140,7 +141,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollecti
    * });
    * ```
    */
-  wrapTool(tool: Tool, executeTool: ExecuteToolFn): LangchainTool {
+  wrapTool(tool: Tool, executeTool: ExecuteToolFn): DynamicStructuredTool {
     const toolName = tool.slug;
     const description = tool.description;
     const appName = tool.toolkit?.name?.toLowerCase();
