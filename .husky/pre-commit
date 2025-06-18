@@ -2,7 +2,7 @@
 
 # Uncomment tools in docs.yml before commit to avoid issues
 echo "Uncommenting tools in docs.yml before commit..."
-(cd fern && python scripts/manage-tool-docs.py uncomment --file docs.yml)
+(cd fern && uv run python scripts/manage-tool-docs.py uncomment --file docs.yml)
 
 # Run existing lint-staged
 pnpm lint-staged
