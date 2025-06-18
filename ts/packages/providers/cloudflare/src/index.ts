@@ -16,42 +16,15 @@ import {
   BaseNonAgenticProvider,
   ToolExecuteParams,
   ExecuteToolFnOptions,
-  logger,
   McpUrlResponse,
   McpServerGetResponse,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
-/**
- * Cloudflare Workers AI tool definition
- */
-export interface CloudflareTool {
-  name: string;
-  description: string;
-  parameters: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-/**
- * Collection of Cloudflare Workers AI tools
- */
-export type CloudflareToolCollection = CloudflareTool[];
-
-/**
- * Cloudflare Workers AI function call interface
- */
-export interface CloudflareFunctionCall {
-  name: string;
-  arguments: Record<string, unknown>;
-}
-
 export class CloudflareProvider extends BaseNonAgenticProvider<
-  CloudflareToolCollection,
-  CloudflareTool
+  AiToolCollection,
+  AiTextGenerationToolInput
 > {
   readonly name = 'cloudflare';
 
@@ -76,7 +49,6 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    */
   constructor() {
     super();
-    logger.debug('CloudflareProvider initialized');
   }
 
   /**
@@ -144,16 +116,26 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * const cloudflareTool = provider.wrapTool(composioTool);
    * ```
    */
-  wrapTool(tool: Tool): CloudflareTool {
-    return {
+  wrapTool(tool: Tool): AiTextGenerationToolInput {
+    const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
       description: tool.description!,
       parameters: tool.inputParameters as unknown as {
         type: 'object';
-        properties: Record<string, unknown>;
-        required?: string[];
+        properties: {
+          [key: string]: {
+            type: string;
+            description?: string;
+          };
+        };
+        required: string[];
       },
     };
+    const cloudflareTool: AiTextGenerationToolInput = {
+      type: 'function',
+      function: formattedSchema,
+    };
+    return cloudflareTool;
   }
 
   /**
@@ -206,16 +188,14 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * });
    * ```
    */
-  wrapTools(tools: Tool[]): CloudflareToolCollection {
-    return tools.map(tool => ({
-      name: tool.slug!,
-      description: tool.description!,
-      parameters: tool.inputParameters as unknown as {
-        type: 'object';
-        properties: Record<string, unknown>;
-        required?: string[];
-      },
-    }));
+  wrapTools(tools: Tool[]): AiToolCollection {
+    return tools.reduce(
+      (acc, tool) => ({
+        ...acc,
+        [tool.slug]: this.wrapTool(tool),
+      }),
+      {}
+    );
   }
 
   /**
@@ -266,12 +246,12 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    */
   async executeToolCall(
     userId: string,
-    tool: CloudflareFunctionCall,
+    tool: { name: string; arguments: unknown },
     options: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: tool.arguments,
+      arguments: typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments,
       connectedAccountId: options.connectedAccountId,
       customAuthParams: options.customAuthParams,
       userId: userId,
