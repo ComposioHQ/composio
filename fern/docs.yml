@@ -40,9 +40,7 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message:
-    '⚠️ Deprecating the initiate connection API! Check out the <a href="/changelog/api-v-3-migration">changelog</a>
-    to learn more.'
+  message: '⚠️ We are launching our new <a href="/sdks-and-docs">SDKs and Docs</a>. These SDKs will be deprecated soon!'
 
 layout:
   tabs-placement: header
@@ -248,17 +246,17 @@ navigation:
       - section: MCP
         icon: plug
         contents:
-        - page: Introduction
-          path: mcp/introduction.mdx
-        - section: MCP Clients
-          slug: clients
-          contents:
-            - page: Cursor
-              path: mcp/cursor.mdx
-            - page: Claude
-              path: mcp/claude.mdx
-            - page: Windsurf
-              path: mcp/windsurf.mdx
+          - page: Introduction
+            path: mcp/introduction.mdx
+          - section: MCP Clients
+            slug: clients
+            contents:
+              - page: Cursor
+                path: mcp/cursor.mdx
+              - page: Claude
+                path: mcp/claude.mdx
+              - page: Windsurf
+                path: mcp/windsurf.mdx
 
       - section: Changelog
         icon: calendar
@@ -366,7 +364,7 @@ navigation:
             api-name: v3
             flattened: false
             paginated: true
-            slug: v3 
+            slug: v3
           - api: v1
             api-name: v1
             paginated: true
@@ -445,6 +443,8 @@ navigation:
             path: tools/battlenet.mdx
           - page: Beeminder
             path: tools/beeminder.mdx
+          - page: Bigmailer
+            path: tools/bigmailer.mdx
           - page: Bitbucket
             path: tools/bitbucket.mdx
           - page: Bitwarden
@@ -477,14 +477,20 @@ navigation:
             path: tools/brex_staging.mdx
           - page: Brightpearl
             path: tools/brightpearl.mdx
+          - page: Brilliant Directories
+            path: tools/brilliant_directories.mdx
           - page: Browseai
             path: tools/browseai.mdx
           - page: Browserbase Tool
             path: tools/browserbase_tool.mdx
           - page: Browserhub
             path: tools/browserhub.mdx
+          - page: Browserless
+            path: tools/browserless.mdx
           - page: Bubble
             path: tools/bubble.mdx
+          - page: Bugbug
+            path: tools/bugbug.mdx
           - page: Cal
             path: tools/cal.mdx
           - page: Calendly
@@ -499,6 +505,8 @@ navigation:
             path: tools/chmeetings.mdx
           - page: Clickup
             path: tools/clickup.mdx
+          - page: Clockify
+            path: tools/clockify.mdx
           - page: Close
             path: tools/close.mdx
           - page: Cloudflare
@@ -523,6 +531,8 @@ navigation:
             path: tools/crustdata.mdx
           - page: Customer Io
             path: tools/customer_io.mdx
+          - page: Cutt Ly
+            path: tools/cutt_ly.mdx
           - page: D2Lbrightspace
             path: tools/d2lbrightspace.mdx
           - page: Dailybot
@@ -559,6 +569,10 @@ navigation:
             path: tools/echtpost.mdx
           - page: Elevenlabs
             path: tools/elevenlabs.mdx
+          - page: Emailoctopus
+            path: tools/emailoctopus.mdx
+          - page: Enigma
+            path: tools/enigma.mdx
           - page: Entelligence
             path: tools/entelligence.mdx
           - page: Epic Games
@@ -567,6 +581,8 @@ navigation:
             path: tools/eventbrite.mdx
           - page: Exa
             path: tools/exa.mdx
+          - page: Excel
+            path: tools/excel.mdx
           - page: Exist
             path: tools/exist.mdx
           - page: Facebook
@@ -627,6 +643,8 @@ navigation:
             path: tools/googlephotos.mdx
           - page: Googlesheets
             path: tools/googlesheets.mdx
+          - page: Googleslides
+            path: tools/googleslides.mdx
           - page: Googlesuper
             path: tools/googlesuper.mdx
           - page: Googletasks
@@ -677,6 +695,10 @@ navigation:
             path: tools/lastpass.mdx
           - page: Launch Darkly
             path: tools/launch_darkly.mdx
+          - page: Leadfeeder
+            path: tools/leadfeeder.mdx
+          - page: Leadoku
+            path: tools/leadoku.mdx
           - page: Lever
             path: tools/lever.mdx
           - page: Lever Sandbox
@@ -695,6 +717,8 @@ navigation:
             path: tools/listennotes.mdx
           - page: Lmnt
             path: tools/lmnt.mdx
+          - page: Lodgify
+            path: tools/lodgify.mdx
           - page: Mailchimp
             path: tools/mailchimp.mdx
           - page: Mailerlite
@@ -739,6 +763,8 @@ navigation:
             path: tools/neon.mdx
           - page: Netsuite
             path: tools/netsuite.mdx
+          - page: Nextdns
+            path: tools/nextdns.mdx
           - page: Ngrok
             path: tools/ngrok.mdx
           - page: Notion
@@ -783,6 +809,8 @@ navigation:
             path: tools/quickbooks.mdx
           - page: Rafflys
             path: tools/rafflys.mdx
+          - page: Ragic
+            path: tools/ragic.mdx
           - page: Ramp
             path: tools/ramp.mdx
           - page: Ravenseotools
@@ -803,10 +831,18 @@ navigation:
             path: tools/rocket_reach.mdx
           - page: Rocketlane
             path: tools/rocketlane.mdx
+          - page: Rootly
+            path: tools/rootly.mdx
+          - page: Rosette Text Analytics
+            path: tools/rosette_text_analytics.mdx
           - page: Sage
             path: tools/sage.mdx
           - page: Salesforce
             path: tools/salesforce.mdx
+          - page: Scrape Do
+            path: tools/scrape_do.mdx
+          - page: Scrapingant
+            path: tools/scrapingant.mdx
           - page: Screenshotone
             path: tools/screenshotone.mdx
           - page: Seismic
@@ -847,6 +883,8 @@ navigation:
             path: tools/square.mdx
           - page: Stack Exchange
             path: tools/stack_exchange.mdx
+          - page: Starton
+            path: tools/starton.mdx
           - page: Stripe
             path: tools/stripe.mdx
           - page: Supabase
@@ -879,6 +917,8 @@ navigation:
             path: tools/todoist.mdx
           - page: Toneden
             path: tools/toneden.mdx
+          - page: Tpscheck
+            path: tools/tpscheck.mdx
           - page: Trello
             path: tools/trello.mdx
           - page: Twitch
