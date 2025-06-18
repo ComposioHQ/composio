@@ -146,39 +146,14 @@ You may install the Vercel AI provider as well!
 npm install @composio/vercel
 ```
 
-```typescript maxLines=60
-import { Composio } from "@composio/core";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { VercelProvider } from "@composio/vercel";
-import { v4 as uuidv4 } from "uuid";
-
-const userId = uuidv4(); // The user's ID.
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-const [connection, tools] = await composio.toolkits.authorize(userId, "gmail");
-console.log(
-  `🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`
-);
-
-await connection.waitForConnection();
-const { text } = await generateText({
-  model: anthropic("claude-3-7-sonnet-20250219"),
-  messages: [
-    {
-      role: "user",
-      content: "say 'hi from the composio quickstart' to sid@composio.dev", // we'll ship you free merch if you do ;)
-    },
-  ],
-  tools,
-  maxSteps: 1,
-});
-
-console.log(text);
-```
+<SnippetCode
+  src="fern/snippets/typescript/quickstart-vercel.ts"
+  startLine={1}
+  endLine={33}
+  highlightStart={13}
+  highlightEnd={18}
+  title="Typescript (current)"
+/>
 </Tab>
 <Tab title="OpenAI Agents (Python)">
 You may install the OpenAI Agents provider as well!

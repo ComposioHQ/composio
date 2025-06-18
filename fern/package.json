@@ -27,14 +27,16 @@
 		"generate": "pnpm tools:generate && pnpm sdkdocs"
 	},
 	"dependencies": {
-		"@composio/anthropic": "^0.1.21",
-		"@composio/core": "^0.1.21",
-		"@composio/vercel": "^0.1.21",
+		"@composio/anthropic": "^0.1.26",
+		"@composio/core": "^0.1.26",
+		"@composio/vercel": "^0.1.26",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@ai-sdk/anthropic": "^1.2.12",
+		"@anthropic-ai/sdk": "^0.52.0",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",
