@@ -149,7 +149,7 @@ class AuthScheme:
                 connected_account_create_params.ConnectionStateUnionMember2Val,
                 {
                     **options,
-                    "status": "INITIALISING",
+                    "status": "INITIALIZING",
                 },
             ),
         }
