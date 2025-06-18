@@ -4,6 +4,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
+import { MCP } from './models/MCP';
 import { BaseComposioProvider } from './provider/BaseProvider';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig } from './utils/sdk';
@@ -15,9 +16,10 @@ import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { LogLevel } from '@composio/client/client';
+import { McpServerGetResponse } from './types/mcp.types';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -68,10 +70,18 @@ export type ComposioConfig<
 };
 
 /**
+ * Extract the MCP response type from a provider
+ */
+type ExtractMcpResponseType<T> =
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp> ? TMcp : McpServerGetResponse;
+
+/**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
-export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> = OpenAIProvider> {
+export class Composio<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+> {
   /**
    * The Composio API client.
    * @type {ComposioClient}
@@ -95,6 +105,8 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
   authConfigs: AuthConfigs;
   // connected accounts
   connectedAccounts: ConnectedAccounts;
+
+  mcp: MCP<ExtractMcpResponseType<TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -145,7 +157,9 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
       apiKey: apiKeyParsed,
       baseURL: baseURLParsed,
       defaultHeaders: config?.defaultHeaders,
-      logLevel: (process.env.COMPOSIO_LOG_LEVEL as LogLevel) ?? undefined,
+      logLevel:
+        (process.env.COMPOSIO_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error' | undefined) ??
+        undefined,
     });
 
     /**
@@ -163,6 +177,7 @@ export class Composio<TProvider extends BaseComposioProvider<unknown, unknown> =
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
     this.tools = new Tools(this.client, this.provider);
+    this.mcp = new MCP(this.client, this.provider);
 
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);

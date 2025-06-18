@@ -316,6 +316,84 @@ const composio = new Composio({
 });
 ```
 
+## MCP (Model Control Protocol)
+
+MCP is a standardized protocol for exposing tools and capabilities to AI models. It acts as a bridge between AI agents and external services, providing secure and managed access to tools through MCP servers.
+
+### What is MCP?
+
+Model Control Protocol (MCP) is designed to solve the challenge of connecting AI models to external tools in a secure, scalable way. Instead of directly integrating tools into AI models, MCP provides:
+
+- **Standardized Communication**: A common protocol that different AI frameworks can understand
+- **Security Isolation**: Tools run in separate MCP servers, isolating them from the AI model
+- **Dynamic Tool Discovery**: AI models can discover available tools at runtime
+- **Provider Flexibility**: Works with multiple AI frameworks through provider adapters
+
+### MCP Servers
+
+MCP servers are the core component that expose tools to AI models. Each server:
+
+- **Hosts specific toolkits**: You choose which toolkits and tools to expose
+- **Manages authentication**: Handles auth for the tools it exposes
+- **Provides secure URLs**: Generates URLs that AI agents can connect to
+- **Supports multiple connections**: Can serve multiple users or AI agents
+
+```typescript
+// Example: Create an MCP server
+const mcpServer = await composio.mcp.create(
+  "email-assistant",
+  [
+    {
+      toolkit: "gmail",
+      authConfigId: "ac_gmail123",
+      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+    }
+  ],
+  { useComposioManagedAuth: true }
+);
+
+// Get server URLs for AI agent to connect
+const serverUrls = await mcpServer.getServer({
+  connectedAccountIds: { gmail: "connected_account_id" }
+});
+```
+
+### MCP vs Direct Tool Execution
+
+There are two ways to use tools in Composio:
+
+1. **Direct Execution** (Traditional approach):
+   ```typescript
+   // Directly execute tools through the SDK
+   const result = await composio.tools.execute('GITHUB_GET_REPO', {
+     userId: 'user123',
+     arguments: { owner: 'example', repo: 'repo' }
+   });
+   ```
+
+2. **MCP Protocol** (Recommended for AI agents):
+   ```typescript
+   // Create MCP server and let AI agent discover/execute tools
+   const server = await composio.mcp.create("github-server", [...]);
+   const urls = await server.getServer({...});
+   // AI agent connects to URLs and executes tools autonomously
+   ```
+
+### When to Use MCP
+
+Use MCP when:
+- Building AI agents that need tool access
+- Working with frameworks that support MCP (Claude, Mastra, etc.)
+- You want standardized tool discovery and execution
+- Security isolation between AI and tools is important
+- You need to expose tools to multiple AI agents
+
+Use direct execution when:
+- Building traditional applications without AI
+- You need fine-grained control over tool execution
+- Working with simple scripts or automation
+- MCP overhead isn't necessary
+
 ## Custom Tools
 
 Custom Tools allow you to extend Composio's functionality by creating your own tools. You define the input and output parameters and provide a handler function that implements the tool's behavior.

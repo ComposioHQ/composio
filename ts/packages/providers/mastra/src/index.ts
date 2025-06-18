@@ -6,7 +6,13 @@
  * @packageDocumentation
  * @module providers/mastra
  */
-import { BaseAgenticProvider, Tool, ExecuteToolFn, jsonSchemaToZodSchema } from '@composio/core';
+import {
+  BaseAgenticProvider,
+  Tool,
+  ExecuteToolFn,
+  jsonSchemaToZodSchema,
+  McpUrlResponse,
+} from '@composio/core';
 import { createTool } from '@mastra/core';
 
 export type MastraTool = ReturnType<typeof createTool>;
@@ -15,8 +21,61 @@ export interface MastraToolCollection {
   [key: string]: MastraTool;
 }
 
-export class MastraProvider extends BaseAgenticProvider<MastraToolCollection, MastraTool> {
+export interface MastraUrlMap {
+  [name: string]: { url: string };
+}
+
+export class MastraProvider extends BaseAgenticProvider<
+  MastraToolCollection,
+  MastraTool,
+  MastraUrlMap
+> {
   readonly name = 'mastra';
+
+  constructor() {
+    super();
+  }
+
+  /**
+   * Transform MCP URL response into Mastra-specific format.
+   * Mastra expects URLs in a key-value map format.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @returns Transformed MastraUrlMap
+   */
+  wrapMcpServerResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[]
+  ): MastraUrlMap {
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.reduce(
+        (prev: MastraUrlMap, url: string, index: number) => {
+          prev[`${serverName}-${index}`] = {
+            url: url,
+          };
+          return prev;
+        },
+        {}
+      );
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
+        prev[`${serverName}-${index}`] = {
+          url: url,
+        };
+        return prev;
+      }, {});
+    }
+    return {
+      [serverName]: {
+        url: data.mcp_url,
+      },
+    };
+  }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
     const mastraTool = createTool({

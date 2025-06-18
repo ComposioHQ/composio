@@ -310,8 +310,8 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * ```
  */
 export type ProviderOptions<TProvider> =
-  TProvider extends BaseComposioProvider<infer TToolCollection, infer TTool>
-    ? TProvider extends BaseAgenticProvider<TToolCollection, TTool>
+  TProvider extends BaseComposioProvider<infer TToolCollection, infer TTool, infer TMcpResponse>
+    ? TProvider extends BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>
       ? AgenticToolOptions
       : ToolOptions
     : never;

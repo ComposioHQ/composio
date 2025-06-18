@@ -5,7 +5,7 @@
  * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Reference: https://openai.github.io/openai-agents-js/
  *
- * This provider provides a set of tools for interacting with Vercel AI SDK.
+ * This provider provides a set of tools for interacting with OpenAI's Agents API.
  *
  * @packageDocumentation
  * @module providers/openai-agents
@@ -15,6 +15,8 @@ import {
   Tool as ComposioTool,
   ExecuteToolFn,
   jsonSchemaToZodSchema,
+  McpUrlResponse,
+  McpServerGetResponse,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -45,12 +47,50 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * });
    *
    * // Use the provider to wrap tools for @openai/agents
-   * const vercelTools = provider.wrapTools(composioTools, composio.tools.execute);
+   * const agentTools = provider.wrapTools(composioTools, composio.tools.execute);
    * ```
    */
   constructor(options?: { strict?: boolean }) {
     super();
     this.strict = options?.strict ?? false;
+  }
+
+  /**
+   * Transform MCP URL response into OpenAI Agents-specific format.
+   * OpenAI Agents uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
+   */
+  wrapMcpServerResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    // OpenAI Agents uses the standard format
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**

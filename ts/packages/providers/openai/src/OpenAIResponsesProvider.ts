@@ -1,20 +1,33 @@
 /**
- * OpenAI ToolSet
+ * OpenAI Toolset
  *
  * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/openai.ts
+ *
+ * This provider provides a set of tools for interacting with OpenAI's ChatCompletions API.
+ *
+ * @packageDocumentation
+ * @module providers/openai
  */
 import { OpenAI } from 'openai';
-import { BaseNonAgenticProvider, removeNonRequiredProperties } from '@composio/core';
-import { Tool, ToolExecuteParams } from '@composio/core';
-import { ExecuteToolModifiers } from '@composio/core';
-import { ExecuteToolFnOptions } from '@composio/core';
+import {
+  BaseNonAgenticProvider,
+  Tool,
+  ToolExecuteParams,
+  ExecuteToolModifiers,
+  ExecuteToolFnOptions,
+  removeNonRequiredProperties,
+  logger,
+  McpUrlResponse,
+  McpServerGetResponse,
+} from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 export type OpenAIResponsesProviderOptions = {
   /**
-   * Whether to enforce strict parameter validation. Default `false`.
+   * Whether to use strict mode for function calls
+   * @default false
    */
   strict?: boolean;
 };
@@ -53,6 +66,44 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   constructor(options?: OpenAIResponsesProviderOptions) {
     super();
     this.strict = options?.strict ?? false;
+  }
+
+  /**
+   * Transform MCP URL response into OpenAI Responses-specific format.
+   * OpenAI Responses uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
+   */
+  wrapMcpServerResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    // OpenAI Responses uses the standard format
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 
   /**

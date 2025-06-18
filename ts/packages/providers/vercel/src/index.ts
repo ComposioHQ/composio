@@ -10,11 +10,19 @@
  * @packageDocumentation
  * @module providers/vercel
  */
-import { BaseAgenticProvider, Tool as ComposioTool, ExecuteToolFn } from '@composio/core';
+import {
+  BaseAgenticProvider,
+  Tool,
+  ExecuteToolFn,
+  jsonSchemaToZodSchema,
+  McpUrlResponse,
+  McpServerGetResponse,
+} from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
+import { z } from 'zod';
 
-type VercelToolCollection = Record<string, VercelTool>;
+export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
   readonly name = 'vercel';
 
@@ -92,7 +100,7 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    * }
    * ```
    */
-  wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): VercelTool {
+  wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): VercelTool {
     return tool({
       description: composioTool.description,
       parameters: jsonSchema((composioTool.inputParameters as Record<string, unknown>) ?? {}),
@@ -166,10 +174,48 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    * }
    * ```
    */
-  wrapTools(tools: ComposioTool[], executeTool: ExecuteToolFn): VercelToolCollection {
+  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): VercelToolCollection {
     return tools.reduce((acc, tool) => {
       acc[tool.slug] = this.wrapTool(tool, executeTool);
       return acc;
     }, {} as VercelToolCollection);
+  }
+
+  /**
+   * Transform MCP URL response into Vercel-specific format.
+   * Vercel uses the standard format by default.
+   *
+   * @param data - The MCP URL response data
+   * @param serverName - Name of the MCP server
+   * @param connectedAccountIds - Optional array of connected account IDs
+   * @param userIds - Optional array of user IDs
+   * @param toolkits - Optional array of toolkit names
+   * @returns Standard MCP server response format
+   */
+  wrapMcpServerResponse(
+    data: McpUrlResponse,
+    serverName: string,
+    connectedAccountIds?: string[],
+    userIds?: string[],
+    toolkits?: string[]
+  ): McpServerGetResponse {
+    // Vercel uses the standard format
+    if (connectedAccountIds?.length && data.connected_account_urls) {
+      return data.connected_account_urls.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${connectedAccountIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    } else if (userIds?.length && data.user_ids_url) {
+      return data.user_ids_url.map((url: string, index: number) => ({
+        url: new URL(url),
+        name: `${serverName}-${userIds[index]}`,
+        toolkit: toolkits?.[index],
+      })) as McpServerGetResponse;
+    }
+    return {
+      url: new URL(data.mcp_url),
+      name: serverName,
+    } as McpServerGetResponse;
   }
 }

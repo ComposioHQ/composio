@@ -14,6 +14,10 @@ interface CustomTool {
 export class ComposioProvider extends BaseNonAgenticProvider<Array<CustomTool>, CustomTool> {
   readonly name = 'ComposioProvider';
 
+  constructor() {
+    super();
+  }
+
   wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };
