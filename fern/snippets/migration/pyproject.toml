@@ -7,6 +7,3 @@ requires-python = ">=3.12"
 dependencies = [
     "composio",
 ]
-
-[tool.uv.sources]
-composio = { git = "ssh://git@github.com/composiohq/py-sdk-v3" }
