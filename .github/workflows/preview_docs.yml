@@ -21,6 +21,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Install git
+        run: |
+          apt-get update && apt-get install -y git
+
       - name: Install Python Dependencies
         working-directory: ./fern
         run: |
