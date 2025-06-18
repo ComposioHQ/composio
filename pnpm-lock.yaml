@@ -283,6 +283,9 @@ importers:
       '@mastra/core':
         specifier: ^0.10.0
         version: 0.10.5(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62)
+      '@mastra/mcp':
+        specifier: ^0.10.3
+        version: 0.10.3(@mastra/core@0.10.5(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62))(zod@3.25.62)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
@@ -476,7 +479,7 @@ importers:
         version: 3.16.8
       effect-errors:
         specifier: ^1.10.11
-        version: 1.10.11(ff5edfb43a1891ed491370151a2c33b9)
+        version: 1.10.11(krha7h4zqwvrjoe7foerbk5wme)
       indent-string:
         specifier: ^5.0.0
         version: 5.0.0
@@ -7154,9 +7157,9 @@ snapshots:
       - valibot
       - zod-openapi
 
-  '@mastra/mcp@0.10.3(@mastra/core@0.10.5(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62))(zod@3.25.62)':
+  '@mastra/mcp@0.10.3(@mastra/core@0.10.5(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62))(zod@3.25.62)':
     dependencies:
-      '@mastra/core': 0.10.5(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62)
+      '@mastra/core': 0.10.5(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.62)
       '@modelcontextprotocol/sdk': 1.12.1
       date-fns: 4.1.0
       exit-hook: 4.0.0
@@ -8821,7 +8824,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.3(@types/node@20.19.1)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.3(@types/node@22.15.31)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/utils@3.2.3':
     dependencies:
@@ -9308,7 +9311,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect-errors@1.10.11(ff5edfb43a1891ed491370151a2c33b9):
+  effect-errors@1.10.11(krha7h4zqwvrjoe7foerbk5wme):
     dependencies:
       '@effect/cluster': 0.39.2(@effect/platform@0.84.11(effect@3.16.8))(@effect/rpc@0.62.2(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.1(@effect/experimental@0.49.1(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.2(@effect/platform@0.84.11(effect@3.16.8))(@effect/rpc@0.62.2(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
       '@effect/platform': 0.84.11(effect@3.16.8)
