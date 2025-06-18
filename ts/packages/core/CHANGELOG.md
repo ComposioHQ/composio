@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.26
+
+### Patch Changes
+
+- Fix function signatures for toolkits auth fields
+
 ## 0.1.25
 
 ### Patch Changes
