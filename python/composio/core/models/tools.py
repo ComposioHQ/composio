@@ -64,6 +64,106 @@ class Tools(Resource, t.Generic[TProvider]):
         self.custom_tool = self._custom_tools.register
         self.provider = provider
 
+    def _filter_custom_tools(
+        self, tools: t.List[str]
+    ) -> t.Tuple[t.List[str], t.List[Tool]]:
+        """Filter out custom tools from the list of tools."""
+        _tools = []
+        _custom_tools = []
+        for tool in tools:
+            try:
+                _custom_tools.append(t.cast(Tool, self._custom_tools[tool]))
+            except KeyError:
+                _tools.append(tool)
+        return _tools, _custom_tools
+
+    def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
+        """
+        Returns schema for the given tool slug.
+        """
+        try:
+            return t.cast(Tool, self._custom_tools[slug])
+        except KeyError:
+            return t.cast(Tool, self._client.tools.retrieve(tool_slug=slug))
+
+    def get_raw_composio_tools(
+        self,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+    ) -> list[Tool]:
+        """
+        Get a list of tool schemas based on the provided filters.
+        """
+        if tools is None and search is None and toolkits is None:
+            raise InvalidParams(
+                "Either `tools`, `search`, or `toolkits` must be provided"
+            )
+
+        tools_list = []
+        if tools is not None:
+            tools, custom_tools = self._filter_custom_tools(tools=tools)
+            tools_list.extend(custom_tools)
+            tools_list.extend(self._client.tools.list(tool_slugs=",".join(tools)).items)
+
+        # Search tools by toolkit slugs and search term
+        if toolkits is not None or search is not None:
+            tools_list.extend(
+                self._client.tools.list(
+                    toolkit_slug=(
+                        ",".join(toolkits) if toolkits else self._client.not_given
+                    ),
+                    search=search if search else self._client.not_given,
+                ).items
+            )
+        return tools_list
+
+    def _get(
+        self,
+        user_id: str,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+    ):
+        """Get a list of tools based on the provided filters."""
+        tools_list = self.get_raw_composio_tools(
+            tools=tools,
+            search=search,
+            toolkits=toolkits,
+        )
+        if modifiers is not None:
+            tools_list = [
+                apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit=tool.toolkit.slug,
+                    tool=tool.slug,
+                    type="schema",
+                    schema=tool,
+                )
+                for tool in tools_list
+            ]
+
+        self._tool_schemas.update({tool.slug: tool for tool in tools_list})
+        if issubclass(type(self.provider), NonAgenticProvider):
+            t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
+                t.cast(
+                    NoneAgenticProviderExecuteFn,
+                    self.execute,
+                )
+            )
+            return t.cast(NonAgenticProvider, self.provider).wrap_tools(
+                tools=tools_list
+            )
+
+        return t.cast(AgenticProvider, self.provider).wrap_tools(
+            tools=tools_list,
+            execute_tool=self._wrap_execute_tool(
+                user_id=user_id,
+                modifiers=modifiers,
+            ),
+        )
+
     @t.overload
     def get(
         self,
@@ -124,82 +224,6 @@ class Tools(Resource, t.Generic[TProvider]):
             search=search,
             toolkits=toolkits,
             modifiers=modifiers,
-        )
-
-    def _filter_custom_tools(
-        self, tools: t.List[str]
-    ) -> t.Tuple[t.List[str], t.List[Tool]]:
-        """Filter out custom tools from the list of tools."""
-        _tools = []
-        _custom_tools = []
-        for tool in tools:
-            try:
-                _custom_tools.append(t.cast(Tool, self._custom_tools[tool]))
-            except KeyError:
-                _tools.append(tool)
-        return _tools, _custom_tools
-
-    def _get(
-        self,
-        user_id: str,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get a list of tools based on the provided filters."""
-        if tools is None and search is None and toolkits is None:
-            raise InvalidParams(
-                "Either `slug`, `tools`, `search`, or `toolkits` must be provided"
-            )
-
-        tools_list = []
-        if tools is not None:
-            tools, custom_tools = self._filter_custom_tools(tools=tools)
-            tools_list.extend(custom_tools)
-            tools_list.extend(self._client.tools.list(tool_slugs=",".join(tools)).items)
-
-        # Search tools by toolkit slugs and search term
-        if toolkits is not None or search is not None:
-            tools_list.extend(
-                self._client.tools.list(
-                    toolkit_slug=(
-                        ",".join(toolkits) if toolkits else self._client.not_given
-                    ),
-                    search=search if search else self._client.not_given,
-                ).items
-            )
-
-        if modifiers is not None:
-            tools_list = [
-                apply_modifier_by_type(
-                    modifiers=modifiers,
-                    toolkit=tool.toolkit.slug,
-                    tool=tool.slug,
-                    type="schema",
-                    schema=tool,
-                )
-                for tool in tools_list
-            ]
-
-        self._tool_schemas.update({tool.slug: tool for tool in tools_list})
-        if issubclass(type(self.provider), NonAgenticProvider):
-            t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
-                t.cast(
-                    NoneAgenticProviderExecuteFn,
-                    self.execute,
-                )
-            )
-            return t.cast(NonAgenticProvider, self.provider).wrap_tools(
-                tools=tools_list
-            )
-
-        return t.cast(AgenticProvider, self.provider).wrap_tools(
-            tools=tools_list,
-            execute_tool=self._wrap_execute_tool(
-                user_id=user_id,
-                modifiers=modifiers,
-            ),
         )
 
     def _wrap_execute_tool(
