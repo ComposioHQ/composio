@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name="composio_crewai",
-    version="1.0.0rc1",
+    version="1.0.0-rc2",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your CrewAI agent.",
