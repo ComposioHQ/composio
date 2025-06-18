@@ -1,23 +1,36 @@
 ---
-title: Composio V3
-subtitle: Learn more about Composio's V3 SDK and how to migrate
-image: 'https://og.composio.dev/api/og?title=V3%20Migration%20Guide' # image for socials
+title: Our next generation SDKs
+subtitle: Learn more about Composio's next generation SDKs and how to migrate
+image: 'https://og.composio.dev/api/og?title=Next%20Generation%20SDKs' # image for socials
 keywords: ''
 hide-nav-links: true
 ---
-After a few months of development, we're excited to release the v3 overhaul of the Composio SDK and APIs! ❤️
 
-The new API features improved usability, enhanced stability, and better scalability. The SDKs built on top of it offer improved ergonomics and more comprehensive feature sets.
+In the last few months, we have experienced very rapid growth in usage of our platform. As such, our team has been working hard to radically improve the performance and developer experience of our platform.
 
-## Why a new version?
+A lot of these changes have happened in the background, but we are excited to finally share our new SDKs with you that compliment our new infra.
 
-Over the past few months, we have observed significant growth in usage of both our APIs and SDKs. Based on extensive feedback from our user community, we identified several key areas requiring improvement:
+The new API features improved usability, enhanced stability, and better scalability. The SDKs built on top of it simplify the developer experience, making it easier than ever to build useful agents.
 
-- More intuitive and consistent naming conventions
-- Enhanced support for LLM and agentic frameworks such as OpenAI, Vercel AI SDK, and OpenAI Agents
-- Improved type safety and developer experience
+## What's new?
 
-After carefully analyzing this feedback, we determined that implementing these improvements effectively required rebuilding the APIs and SDKs from the ground up.
+A lot of the changes are on the infra side, but from the SDK point of view. Here is what you can expect:
+- Faster and more reliable tool execution
+- A simpler but more opinionated SDK
+- Much more intuitive and consistent naming conventions
+- A vastly improved typescript sdk that is meaningfully more type-safe and has full feature parity with the python sdk
+
+There aren't too many new flashy features here (yet) mainly because we wanted to get the bones right — but we feel we have a solid foundation to ship incredible new experiences on top very quickly.
+
+
+## State of the new SDK and what is happening with the old SDKs?
+
+Currently, the new SDKs are in a preview release. These new SDKs come almost fully formed, we do not expect many breaking changes to them but are releasing them in a preview state to get feedback and make necessary changes before locking them in.
+
+As we lock the new SDKs in place, we will deprecate support for the old SDKs. They will continue to work for the foreseeable future but are no longer active maintained. We will continue to push security update and fix any critical bugs but will not be support any new functionality in them.
+
+We urge you to upgrade to the new SDKs as soon as possible.
+
 
 ## Nomenclature
 
@@ -49,17 +62,7 @@ We have transitioned from UUIDs to nano IDs throughout the platform for the foll
 
 > **Note:** Nano IDs are short, unique, and prefixed to indicate the resource type.
 
-## Backward compatibility
 
-Aka, we're not breaking anything.
-
-We have implemented routing from all previous API endpoints to their new v3 counterparts, ensuring backward compatibility during the transition period.
-
-You can continue using previous APIs with the following changes:
-- Switch from UUIDs to nano IDs
-- Update any deprecated parameters or response formats
-
-While previous SDK versions remain functional, **we will deprecate support for them in two weeks**.
 
 ## SDK Changes
 
@@ -537,7 +540,7 @@ Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ
 
 This feature is currently in development for both Python and TypeScript SDKs, with newly created tools built for improved agent accuracy.
 
-### Generated types
+{/* ### Generated types
 
 In the previous Python SDK, you could generate types for tools using the CLI:
 
@@ -552,7 +555,7 @@ from composio_openai import ComposioToolSet, App, Action
 
 print(App.GITHUB)
 print(Action.GITHUB_CREATE_ISSUE)
-```
+``` */}
 
 This feature is currently in development for both Python and TypeScript SDKs.
 
