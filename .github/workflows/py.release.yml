@@ -1,4 +1,4 @@
-name: Releaase Python Packages
+name: Release Python Packages
 on:
   release:
     types: [published]
