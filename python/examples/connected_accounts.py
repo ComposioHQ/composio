@@ -31,7 +31,7 @@ connection_request = composio.connected_accounts.initiate(
 print(connection_request)
 
 # When creating a connected account, you can check for required fields
-required_fields = composio.connected_accounts.get_required_fields(
+required_fields = composio.toolkits.get_connected_account_initiation_fields(
     toolkit="NOTION",
     auth_scheme="API_KEY",
 )

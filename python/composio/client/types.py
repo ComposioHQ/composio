@@ -33,6 +33,34 @@ Tool: t.TypeAlias = tool_list_response.Item
 ToolkitMinimal: t.TypeAlias = tool_list_response.ItemToolkit
 AuthConfig: t.TypeAlias = connected_account_create_params.AuthConfig
 
+Oauth1L: t.TypeAlias = t.Literal["OAUTH1"]
+Oauth2L: t.TypeAlias = t.Literal["OAUTH2"]
+ApiKeyL: t.TypeAlias = t.Literal["API_KEY"]
+BasicL: t.TypeAlias = t.Literal["BASIC"]
+NoAuthL: t.TypeAlias = t.Literal["NO_AUTH"]
+SnowflakeL: t.TypeAlias = t.Literal["SNOWFLAKE"]
+CalcomAuthL: t.TypeAlias = t.Literal["CALCOM_AUTH"]
+BearerTokenL: t.TypeAlias = t.Literal["BEARER_TOKEN"]
+BillcomAuthL: t.TypeAlias = t.Literal["BILLCOM_AUTH"]
+ComposioLinkL: t.TypeAlias = t.Literal["COMPOSIO_LINK"]
+BasicWithJwtL: t.TypeAlias = t.Literal["BASIC_WITH_JWT"]
+GoogleServiceAccountL: t.TypeAlias = t.Literal["GOOGLE_SERVICE_ACCOUNT"]
+
+AuthSchemeL: t.TypeAlias = t.Literal[
+    Oauth1L,
+    Oauth2L,
+    ApiKeyL,
+    BasicL,
+    NoAuthL,
+    SnowflakeL,
+    CalcomAuthL,
+    BearerTokenL,
+    BillcomAuthL,
+    ComposioLinkL,
+    BasicWithJwtL,
+    GoogleServiceAccountL,
+]
+
 __all__ = (
     "auth_config_create_params",
     "auth_config_create_response",
@@ -59,4 +87,5 @@ __all__ = (
     "ToolkitMinimal",
     "AuthConfig",
     "NotGiven",
+    "AuthSchemeL",
 )

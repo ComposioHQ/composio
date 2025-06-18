@@ -10,38 +10,9 @@ from composio.client.types import (
     connected_account_create_params,
     connected_account_retrieve_response,
     connected_account_update_status_response,
-    toolkit_retrieve_response,
 )
 
 from .base import Resource
-
-Oauth1L: t.TypeAlias = t.Literal["OAUTH1"]
-Oauth2L: t.TypeAlias = t.Literal["OAUTH2"]
-ApiKeyL: t.TypeAlias = t.Literal["API_KEY"]
-BasicL: t.TypeAlias = t.Literal["BASIC"]
-NoAuthL: t.TypeAlias = t.Literal["NO_AUTH"]
-SnowflakeL: t.TypeAlias = t.Literal["SNOWFLAKE"]
-CalcomAuthL: t.TypeAlias = t.Literal["CALCOM_AUTH"]
-BearerTokenL: t.TypeAlias = t.Literal["BEARER_TOKEN"]
-BillcomAuthL: t.TypeAlias = t.Literal["BILLCOM_AUTH"]
-ComposioLinkL: t.TypeAlias = t.Literal["COMPOSIO_LINK"]
-BasicWithJwtL: t.TypeAlias = t.Literal["BASIC_WITH_JWT"]
-GoogleServiceAccountL: t.TypeAlias = t.Literal["GOOGLE_SERVICE_ACCOUNT"]
-
-AuthSchemeL: t.TypeAlias = t.Literal[
-    Oauth1L,
-    Oauth2L,
-    ApiKeyL,
-    BasicL,
-    NoAuthL,
-    SnowflakeL,
-    CalcomAuthL,
-    BearerTokenL,
-    BillcomAuthL,
-    ComposioLinkL,
-    BasicWithJwtL,
-    GoogleServiceAccountL,
-]
 
 
 class ConnectionRequest(Resource):
@@ -382,25 +353,6 @@ class ConnectedAccounts:
             status=response.connection_data.val.status,
             redirect_url=getattr(response.connection_data.val, "redirect_url", None),
             client=self._client,
-        )
-
-    def get_required_fields(
-        self,
-        toolkit: str,
-        auth_scheme: AuthSchemeL,
-    ) -> t.List[
-        toolkit_retrieve_response.AuthConfigDetailFieldsConnectedAccountInitiationRequired
-    ]:
-        """
-        Get the required property for a given toolkit and auth scheme.
-        """
-        info = self._client.toolkits.retrieve(slug=toolkit)
-        for auth_detail in info.auth_config_details or []:
-            if auth_detail.mode == auth_scheme:
-                return auth_detail.fields.connected_account_initiation.required
-
-        raise exceptions.InvalidParams(
-            f"auth config details not found with {toolkit=} and {auth_scheme=}"
         )
 
 

@@ -32,7 +32,7 @@ auth_config = composio.auth_configs.create(
 print(auth_config)
 
 # When creating an auth config, you can check for required fields
-required_fields = composio.auth_configs.get_required_fields(
+required_fields = composio.toolkits.get_auth_config_creation_fields(
     toolkit="NOTION",
     auth_scheme="OAUTH2",
 )
