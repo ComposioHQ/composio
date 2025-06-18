@@ -33,6 +33,7 @@ jobs:
         if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          packages-dir: ./python/dist
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
