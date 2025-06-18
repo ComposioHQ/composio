@@ -121,50 +121,44 @@ const customTool = await composio.tools.createCustomTool({
 
 **Returns:** Promise<Tool> - The created custom tool
 
-### getRawComposioTools(userId, query?, modifier?)
+### getRawComposioTools(query?, modifier?)
 
 Lists all tools available in the Composio SDK including custom tools.
 
 ```typescript
 // Get all tools
-const tools = await composio.tools.getRawComposioTools('default');
+const tools = await composio.tools.getRawComposioTools();
 
 // Get tools with filters
-const githubTools = await composio.tools.getRawComposioTools('default', {
+const githubTools = await composio.tools.getRawComposioTools({
   toolkits: ['github'],
   important: true,
 });
 
 // Get tools with schema transformation
-const tools = await composio.tools.getRawComposioTools(
-  'default',
-  {},
-  (toolSlug, toolkitSlug, tool) => {
-    // Add custom properties to tool schema
-    return { ...tool, customProperty: 'value' };
-  }
-);
+const tools = await composio.tools.getRawComposioTools({}, (toolSlug, toolkitSlug, tool) => {
+  // Add custom properties to tool schema
+  return { ...tool, customProperty: 'value' };
+});
 ```
 
 **Parameters:**
 
-- `userId` (string): The user ID for whom to fetch the tools
 - `query` (ToolListParams): Optional query parameters to filter the tools
 - `modifier` (TransformToolSchemaModifier): Optional function to transform tool schemas
 
 **Returns:** Promise<ToolList> - List of tools matching the query criteria
 
-### getRawComposioToolBySlug(userId, slug, modifier?)
+### getRawComposioToolBySlug(slug, modifier?)
 
 Retrieves a tool by its Slug.
 
 ```typescript
-const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
+const tool = await composio.tools.getRawComposioToolBySlug('HACKERNEWS_GET_USER');
 ```
 
 **Parameters:**
 
-- `userId` (string): The user ID for whom to fetch the tool
 - `slug` (string): The ID of the tool to be retrieved
 - `modifier` (TransformToolSchemaModifier): Optional function to transform tool schema
 

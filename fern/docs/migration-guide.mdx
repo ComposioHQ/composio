@@ -7,42 +7,39 @@ hide-nav-links: true
 ---
 After a few months of development, we're excited to release the v3 overhaul of the Composio SDK and APIs! ❤️
 
-The new API is more intuitive to use, more stable, scalable and the SDKs built on top of it are more ergonomic, feature complete.
-
-
-## What's new?
-This major release introduces a new API and SDKs for both TypeScript and Python.
-
+The new API features improved usability, enhanced stability, and better scalability. The SDKs built on top of it offer improved ergonomics and more comprehensive feature sets.
 
 ## Why a new version?
-In the last few months, we noticed an immediate uptick in usage across the board; the APIs as well as the SDKs. Through the feedback from our users and community, we realised a ton of improvements; namely: needed to be made to the SDKs and APIs as well such as a more intuitive nomenclature, more type-safety and a much better developer experience.
 
-- More intuitive and consistent nomenclature
-- Better support for LLM and agentic frameworks like OpenAI, Vercel AI SDK, OpenAI Agents etc.
+Over the past few months, we have observed significant growth in usage of both our APIs and SDKs. Based on extensive feedback from our user community, we identified several key areas requiring improvement:
 
-Pretty soon into internalising this feedback, we realised that the best way to make these improvements was to start from scratch.
+- More intuitive and consistent naming conventions
+- Enhanced support for LLM and agentic frameworks such as OpenAI, Vercel AI SDK, and OpenAI Agents
+- Improved type safety and developer experience
+
+After carefully analyzing this feedback, we determined that implementing these improvements effectively required rebuilding the APIs and SDKs from the ground up.
 
 ## Nomenclature
 
-We have updated several key terms in the SDK and API to make them more intuitive and consistent. The table below summarizes the changes:
+We have updated several key terms in the SDK and API to improve clarity and consistency. The following table summarizes these changes:
 
-| Old Term    | New Term           | Meaning                                                                |
-|-------------|--------------------|------------------------------------------------------------------------|
-| Actions     | Tools              | "Tools" are individual operations or capabilities that can be performed by an LLM agent.|
-| Apps        | Toolkits           | A "toolkit" is a collection of tools grouped under a single app. |
-| Integration | Auth Config        | Each toolkit has it's own "auth config" which contains the appropriate developer credentials and app level configurations like scopes, API endpoints, etc. |
-| Connection  | Connected accounts | "Connected accounts" represent user-linked accounts to a toolkit. |
-| Entity ID   | User ID            | The ID of the user that is performing the action. Can be UUID/email. |
-| Trigger     | Trigger            | A trigger is an event that can be subscribed to. |
-| Toolsets    | Providers          | A "provider" is any LLM/agent framework that can be used with Composio to create agents. |
+| Previous Term | Current Term       | Definition                                                                |
+|---------------|--------------------|--------------------------------------------------------------------------|
+| Actions       | Tools              | Individual operations or capabilities that can be performed by an LLM agent |
+| Apps          | Toolkits           | A collection of tools grouped under a single application                |
+| Integration   | Auth Config        | Configuration containing developer credentials and application-level settings such as scopes and API endpoints. Scoped to a toolkit. |
+| Connection    | Connected accounts | User-linked accounts associated with a toolkit                          |
+| Entity ID     | User ID            | The identifier of the user performing the action (UUID or email)        |
+| Trigger       | Trigger            | An event that can be subscribed to                                      |
+| Toolsets      | Providers          | LLM or agent framework that can be used with Composio to create agents |
 
 ## Switch to nano IDs from UUIDs
-Throughout the product, we've made the switch to using nano IDs instead of UUIDs.
 
-**Why?**
-- UUIDs are very long, not human readable.
-- Harder to copy in a single double-click.
-- Nano IDs let us disambiguate between different types of IDs.
+We have transitioned from UUIDs to nano IDs throughout the platform for the following reasons:
+
+- **Improved readability**: UUIDs are lengthy and difficult to read
+- **Better usability**: Easier to copy with a single double-click
+- **Better organization**: Nano IDs allow us to distinguish between different resource types through prefixes
 
 | Feature           | Nano ID Prefix | Example            |
 |-------------------|----------------|--------------------|
@@ -52,16 +49,21 @@ Throughout the product, we've made the switch to using nano IDs instead of UUIDs
 
 > **Note:** Nano IDs are short, unique, and prefixed to indicate the resource type.
 
-## What happens to old APIs?
-We've managed to re-route all the old APIs to the new ones.
+## Backward compatibility
 
-This means that you can continue to use the old APIs, but with some changes.
+Aka, we're not breaking anything.
 
-- Switch to nano IDs from UUIDs.
-- [ ] what other changes
+We have implemented routing from all previous API endpoints to their new v3 counterparts, ensuring backward compatibility during the transition period.
 
-## SDKs
-You can upgrade to the latest version of the SDKs by running the respective install command:
+You can continue using previous APIs with the following changes:
+- Switch from UUIDs to nano IDs
+- Update any deprecated parameters or response formats
+
+While previous SDK versions remain functional, **we will deprecate support for them in two weeks**.
+
+## SDK Changes
+
+Upgrade to the latest SDK version using the appropriate package manager:
 
 <CodeGroup>
 ```python Python
@@ -72,137 +74,143 @@ npm install @composio/core@next
 ```
 </CodeGroup>
 
-Both the SDKs now follow proper namespacing for each concept.
+Both SDKs now implement proper namespacing for each concept.
 
-### Scoping to `user_id`
-The concept of `entity_id` is now expanded to that of `user_id`.
+### User ID scoping
 
-Most every query is now scoped to a user ID. Fetching tools, initiating connections, executing tools etc, all require a user ID.
+The concept of `entity_id` has been expanded and renamed to `user_id`.
 
-This is to verbosely specify the user of your app for which the action is being performed. In case where it is possible for a user to have multiple accounts (think work / personal Gmail connections), a more verbose *connected account ID* can be used.
+All operations are now scoped to a user ID, including:
+- Fetching tools
+- Initiating connections
+- Executing tools
+- Managing triggers
 
+This change provides explicit specification of the user for whom the action is being performed. When a user may have multiple accounts (such as work and personal Gmail connections), you can use the more specific connected account ID.
 
-### Deprecating ToolSets for [Providers](/get-started/providers)
-In this current version, we deprecate the concept of "toolsets" and replace it with "providers".
+### Replacing ToolSets with [Providers](/get-started/providers)
 
-With providers, Composio aims to standardize the mess of writing tools in different frameworks more deeply.
+We have deprecated "toolsets" in favor of "providers". This change allows Composio to provide deeper standardization for tool implementation across different frameworks.
 
-Previously, one had to always import and use a specific framework's `ComposioToolSet` class.
+Previously, you needed to import and use a framework-specific `ComposioToolSet` class:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/old_tools.py"
   startLine={1}
   endLine={3}
-  title="Python (old)"
+  title="Python (previous)"
 />
 
 <SnippetCode
   src="fern/snippets/migration/old_tools.ts"
   startLine={1}
   endLine={3}
-  title="TypeScript (old)"
+  title="TypeScript (previous)"
 />
 </CodeGroup>
 
-The structure of the SDK is now changed to be more framework agnostic.
-
-**The SDK also ships with OpenAI provider out of the box.**
-
-You can use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't support yet.
+The SDK structure is now framework-agnostic and includes the OpenAI provider out of the box:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/providers.py"
   startLine={1}
-  endLine={7}
-  title="Python (new)"
+  endLine={12}
+  title="Python (current)"
 />
 
 <SnippetCode
   src="fern/snippets/migration/providers.ts"
   startLine={1}
-  endLine={6}
-  title="TypeScript (new)"
+  endLine={12}
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
+You can now use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't yet support.
 
-Read more about providers [here](/get-started/providers) and get the full list of providers [here](/providers).
+Read more about [providers in our documentation](/get-started/providers) and explore the [complete list of available providers](/providers).
 
 ### Fetching and filtering tools
-Previously, fetching the tools let you filter them by;
+
+Previously, you could filter tools by:
 - Apps
-- Actions names (tool names)
+- Action names (tool names)
 - Tags
 
-You could also specify an important flag to get the `important` tools.
+You could also specify an `important` flag to retrieve the most important tools:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/old_tools.py"
   startLine={1}
   endLine={11}
-  title="Python (old)"
+  title="Python (previous)"
 />
 <SnippetCode
   src="fern/snippets/migration/old_tools.ts"
   startLine={1}
   endLine={11}
-  title="TypeScript (old)"
+  title="TypeScript (previous)"
 />
 </CodeGroup>
 
-However, you can now filter them by toolkits, tool slugs, set a `limit` and a search query as well.
+You can now filter tools by:
+- Toolkits
+- Tool slugs
+- Limit parameter
+- Search query
 
-There is no `important` flag, instead the tools are returned in the order of importance.
+The `important` flag has been removed. Instead, tools are returned in order of importance by default:
 
-<Note>Since a `user_id` is explicitly required, the `check_connected_accounts` flag is not required anymore.</Note>
+<Note>Since `user_id` is now explicitly required, the `check_connected_accounts` flag is no longer necessary.</Note>
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/new_tools.py"
   startLine={1}
   endLine={17}
-  title="Python (new)"
+  title="Python (current)"
 />
 
 <SnippetCode
   src="fern/snippets/migration/new_tools.ts"
   startLine={1}
   endLine={25}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 ### Fetching raw tool data
-To examine the raw schema definitition of a tool to understand the input/output parameters or to build custom logic around tool definitions, you can use the following methods.
+
+To examine the raw schema definition of a tool for understanding input/output parameters or building custom logic around tool definitions, use the following methods:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/python/raw_tools.py"
   startLine={1}
   endLine={11}
-  title="Python (new)"
+  title="Python (current)"
 />
 
 <SnippetCode
   src="fern/snippets/typescript/raw_tools.ts"
   startLine={1}
   endLine={11}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 ### Executing tools
-Executing tools remains largely the same. `user_id` is now explicitly required.
 
-For agentic frameworks, the tool object being emitted from `tools.get` is now the respective framework's tool object. Hence, the tool call execution is handled by the agentic framework.
+Tool execution remains largely unchanged, with `user_id` now explicitly required.
+
+For agentic frameworks, the tool object returned from `tools.get` is now the respective framework's native tool object. Tool call execution is handled by the agentic framework itself.
 
 <Note>
-For non-agentic frameworks, Composio provides a helper function to execute the tool calls.
+For non-agentic frameworks, Composio provides a helper function to execute tool calls.
 </Note>
-
 
 <CodeGroup>
 <SnippetCode
@@ -224,82 +232,86 @@ For non-agentic frameworks, Composio provides a helper function to execute the t
 />
 </CodeGroup>
 
-For more information on executing tools for different frameworks, please refer to [Deprecating ToolSets for Providers](#deprecating-toolsets-for-providers)
+For more information on executing tools for different frameworks, see [Replacing ToolSets with Providers](#replacing-toolsets-with-providers).
 
 ### Tool Modifiers (formerly Tool Processors)
-Tool processors are now called *tool modifiers* and now have better developer experience as well as being implemented in TypeScript. Previously, tool processors were only in the Python SDK.
+
+Tool processors have been renamed to *tool modifiers* and now provide an improved developer experience. The implementation is now available in TypeScript too! (previously Python-only).
 
 <SnippetCode
   src="fern/snippets/migration/old_tool_modifiers.py"
   startLine={1}
   endLine={23}
-  title="Python (old)"
+  title="Python (previous)"
 />
 
-| Old   | New   |
-|------------|-----------------|
-| `pre` processor        | `beforeExecute` modifier   |
-| `post` processor       | `afterExecute` modifier    |
-| `schema` processor     | `schema` modifier          |
+| Previous          | Current                 |
+|-------------------|-------------------------|
+| `pre` processor   | `beforeExecute` modifier |
+| `post` processor  | `afterExecute` modifier  |
+| `schema` processor| `schema` modifier        |
 
+The modifiers now leverage language-specific features to provide a more natural developer experience.
 
-Currently, the modifiers leverage the power of the respective language to provide a more natural developer experience.
-
-While previously, tool processors could be applied during SDK initialisation, fetching tools and even executing tools, we've reworked them such that;
-- For Chat Completion providers, modifiers are specified and applied while **executing tools**
-- For Agentic frameworks, modifiers are specified and applied while **fetching tools**
+While tool processors could previously be applied during SDK initialization, tool fetching, and tool execution, we have restructured them as follows:
+- **Chat Completion providers**: Modifiers are specified and applied during tool execution
+- **Agentic frameworks**: Modifiers are specified and applied during tool fetching
 
 #### [Schema Modifiers](/docs/modifiers/schema-modifiers)
-Following example shows schema modifier. This is applicable across all providers.
+
+The following example demonstrates schema modifier usage, applicable across all providers:
 
 <CodeGroup>
-```python Python (new)
+```python Python (current)
 
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
   startLine={1}
   endLine={20}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 #### [Before Modifiers](/docs/modifiers/before-execution)
-Following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the full before modifier documentation [here](/docs/modifiers/before-execution).
+
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifiers/before-execution):
 
 <CodeGroup>
 
-```python Python (new)
+```python Python (current)
 
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
   startLine={54}
   endLine={70}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 #### [After Modifiers](/docs/modifiers/after-execution)
-Following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the full after modifier documentation [here](/docs/modifiers/after-execution).
+
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifiers/after-execution):
 
 <CodeGroup>
 
-```python Python (new)
+```python Python (current)
 
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
   startLine={71}
   endLine={89}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 ### Custom Tools
-The SDK still supports custom tools. [Defining tools from your methods](/docs/custom-tools#creating-a-custom-tool) is still possible and we recommend checking out the documentation [here](/docs/custom-tools#creating-a-custom-tool) for more information.
 
-Due to the change in the nature of SDK, creating custom tools that use Composio's managed authentication is slightly different. In the older SDK, you could create a custom tool like follows:
+The SDK continues to support custom tools. [Creating tools from your methods](/docs/custom-tools#creating-a-custom-tool) remains possible. We recommend reviewing the [detailed custom tools documentation](/docs/custom-tools#creating-a-custom-tool) for more information.
+
+Due to changes in the SDK architecture, creating custom tools that use Composio's managed authentication has been modified. In the previous SDK, you could create a custom tool as follows:
 
 <CodeGroup>
 <SnippetCode
@@ -308,7 +320,7 @@ Due to the change in the nature of SDK, creating custom tools that use Composio'
   endLine={39}
   highlightStart={14}
   highlightEnd={17}
-  title="Python (old)"
+  title="Python (previous)"
 />
 
 <SnippetCode
@@ -317,11 +329,11 @@ Due to the change in the nature of SDK, creating custom tools that use Composio'
   endLine={39}
   highlightStart={16}
   highlightEnd={20}
-  title="TypeScript (old)"
+  title="TypeScript (previous)"
 />
 </CodeGroup>
 
-The *execute tool request* method handles injecting the appropriate base URL and auth credentials for the tool.
+The *execute tool request* method handles injection of the appropriate base URL and authentication credentials for the tool:
 
 <CodeGroup>
 <SnippetCode
@@ -330,7 +342,7 @@ The *execute tool request* method handles injecting the appropriate base URL and
   endLine={39}
   highlightStart={22}
   highlightEnd={22}
-  title="Python (new)"
+  title="Python (current)"
 />
 
 <SnippetCode
@@ -339,81 +351,81 @@ The *execute tool request* method handles injecting the appropriate base URL and
   endLine={39}
   highlightStart={17}
   highlightEnd={17}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
-
-For more information, like executing custom tools, defining custom headers, query parameters, etc, please refer to the [Custom Tools](/docs/custom-tools) documentation.
+For more information, including executing custom tools and defining custom headers and query parameters, refer to the [Custom Tools](/docs/custom-tools) documentation.
 
 ### Auth configs (formerly integrations)
-Integrations are now called *auth configs*. While the name has changed, the concept remains largely the same.
 
-Auth configs store the configuration required for someone to authenticate with a given toolkit; like OAuth developer credentials, configurable base URLs, scopes etc.
+Integrations are now called *auth configs*. While the terminology has changed, the underlying concept remains the same.
 
-Instead of UUIDs, auth configs now use a `nano_id` instead.
+Auth configs store the configuration required for authentication with a given toolkit, including OAuth developer credentials, configurable base URLs, and scopes.
 
+Auth configs now use nano IDs instead of UUIDs:
 
-| Old (UUID) Example                | New (Nano ID) Example   |
-| :------------------------------- | :---------------------- |
-| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ac_8x9w2l3k5m`           |
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ac_8x9w2l3k5m`             |
 
+We recommend storing auth config nano IDs in your database for connecting users to the appropriate auth configuration.
 
-The nano IDs for the auth configs, we recommend you store in a database such that they can be used to connect users to the appropriate auth config.
+For most use cases, you will create auth configs through the dashboard, and this process remains unchanged. Read more about [creating auth configs](/docs/authenticating-tools#creating-an-auth-config) and [customizing auth configs](/docs/custom-auth-configs).
 
-For most cases, you would use the dashboard to create auth configs and the process remains the same. Read more [on creating auth configs](/docs/authenticating-tools#creating-an-auth-config) and on [customizing the auth config](/docs/custom-auth-configs).
+Creating auth configs programmatically in the previous SDK:
 
-Programmatically creating auth configs in the old SDK:
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/old_auth_config.py"
   startLine={1}
   endLine={15}
-  title="Python (old)"
+  title="Python (previous)"
 />
 <SnippetCode
   src="fern/snippets/migration/old_auth_config.ts"
   startLine={1}
   endLine={15}
-  title="TypeScript (old)"
+  title="TypeScript (previous)"
 />
 </CodeGroup>
 
-Programmatically creating auth configs in the new SDK:
+Creating auth configs programmatically in the current SDK:
+
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/new_auth_config.py"
   startLine={1}
   endLine={15}
-  title="Python (new)"
+  title="Python (current)"
 />
 <SnippetCode
   src="fern/snippets/migration/new_auth_config.ts"
   startLine={1}
   endLine={15}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
-For using your own auth credentials etc, please refer to the [Programmatic Auth Configs](/programmatic-auth-configs#using-custom-auth) documentation.
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/programmatic-auth-configs#using-custom-auth) documentation.
 
-<Note>The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/callback` previously it was `https://backend.composio.dev/api/v1/auth-apps/add`</Note>
-
+<Note>The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.</Note>
 
 ### Connected accounts / User IDs
-The major change in how connected accounts and user IDs work is that user IDs are a much more surfaced concept as compared to entities previously.
 
-We've also simplified the process of connecting a user to a toolkit. Instead of having different ways and params to initiate a connection, the SDK and API both require only a `user_id` and `auth_config_id` to initiate a connection.
+The primary change in connected accounts and user IDs is that user IDs are now a more prominent concept compared to entities in previous versions.
 
-This is more explicit and plays well with the fact that developers may have multiple auth configs for a given toolkit.
+We have simplified the process of connecting a user to a toolkit. Instead of multiple methods and parameters for initiating a connection, both the SDK and API now require only a `user_id` and `auth_config_id` to initiate a connection.
 
-Instead of UUIDs, connected accounts now use a `nano_id` instead.
+This approach is more explicit and works well with the ability for developers to have multiple auth configs for a given toolkit.
 
-| Old (UUID) Example                | New (Nano ID) Example   |
-| :------------------------------- | :---------------------- |
-| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ca_8x9w2l3k5m`           |
+Connected accounts now use nano IDs instead of UUIDs:
 
-Earlier you might be initiating a connection like this:
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ca_8x9w2l3k5m`             |
+
+Previously, you might have initiated a connection like this:
 
 <CodeGroup>
 <SnippetCode
@@ -422,7 +434,7 @@ Earlier you might be initiating a connection like this:
   endLine={30}
   highlightStart={11}
   highlightEnd={16}
-  title="Python (old)"
+  title="Python (previous)"
 />
 <SnippetCode
   src="fern/snippets/migration/old_connected_acc.ts"
@@ -430,11 +442,12 @@ Earlier you might be initiating a connection like this:
   endLine={30}
   highlightStart={8}
   highlightEnd={13}
-  title="TypeScript (old)"
+  title="TypeScript (previous)"
 />
 </CodeGroup>
 
-The current process of initiating a connection is as follows:
+The current process for initiating a connection is as follows:
+
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/migration/new_connected_acc.py"
@@ -442,7 +455,7 @@ The current process of initiating a connection is as follows:
   endLine={15}
   highlightStart={8}
   highlightEnd={11}
-  title="Python (new)"
+  title="Python (current)"
 />
 <SnippetCode
   src="fern/snippets/migration/new_connected_acc.ts"
@@ -450,56 +463,58 @@ The current process of initiating a connection is as follows:
   endLine={15}
   highlightStart={8}
   highlightEnd={11}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 ### Triggers
-Composio still supports listening to events from apps using triggers through Websockets and Webhooks.
+
+Composio continues to support listening to application events using triggers through WebSockets and webhooks.
 
 #### Creating triggers
-The process for creating triggers and specifying their configuration has been redesigned to be clearer and more intuitive.
 
-Some triggers require configuration to be specified, for example, the repository name for some GitHub triggers, channel name for Slack triggers, etc.
-You can view the configuration for a trigger as follows:
+The process for creating triggers and specifying their configuration has been redesigned for improved clarity and intuitiveness.
+
+Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. You can view the configuration for a trigger as follows:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/typescript/triggers.ts"
   startLine={1}
   endLine={27}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
-You can then create the trigger with the appropriate configuration.
-- [ ] User IDs to be used here.
+You can then create the trigger with the appropriate configuration:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/typescript/triggers.ts"
   startLine={28}
   endLine={40}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
 #### Enabling/Disabling triggers
-You can enable or disable triggers either through the SDK or via the dashboard. The process for managing triggers in the dashboard remains unchanged.
+
+You can enable or disable triggers through either the SDK or the dashboard. The dashboard process remains unchanged.
 
 Managing triggers with the SDK:
+
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/typescript/triggers.ts"
   startLine={55}
   endLine={56}
-  title="TypeScript (new)"
+  title="TypeScript (current)"
 />
 </CodeGroup>
 
-
 #### Listening to triggers
-The recommended way to listen to triggers is through webhooks. Following are example routes for Next.js and FastAPI.
+
+We recommend listening to triggers through webhooks. The following are example routes for Next.js and FastAPI.
 
 For development, you can also [listen to triggers through the SDK](/docs/using-triggers#subscribing-to-triggers-using-the-sdk-for-development).
 
@@ -514,39 +529,42 @@ For development, you can also [listen to triggers through the SDK](/docs/using-t
 />
 </CodeGroup>
 
-
 ## 🚧 Coming Soon
-### Local tools
-Previously, the Python SDK had a concept of *[local tools](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)*. These were tools that were defined in the SDK and consisted local shell and code related tools like; "clipboard", "sqltool", "shelltool" etc.
 
-This feature is a work in progress for both the Python and TypeScript SDKs with newly made tools built with better accuracy for agents.
+### Local tools
+
+Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)*. These were tools defined within the SDK and consisted of local shell and code-related tools such as "clipboard", "sqltool", and "shelltool".
+
+This feature is currently in development for both Python and TypeScript SDKs, with newly created tools built for improved agent accuracy.
 
 ### Generated types
-In the previous Python SDK, one could generate the types for the tools using the CLI:
+
+In the previous Python SDK, you could generate types for tools using the CLI:
+
 ```bash
 composio apps generate-types
 ```
 
-This would provide the app slugs and tool slugs with IntelliSense support.
+This provided app slugs and tool slugs with IntelliSense support:
 
-```python Python (old)
+```python Python (previous)
 from composio_openai import ComposioToolSet, App, Action
 
 print(App.GITHUB)
 print(Action.GITHUB_CREATE_ISSUE)
 ```
 
-This feature is a work in progress for both the Python and TypeScript SDKs.
-
+This feature is currently in development for both Python and TypeScript SDKs.
 
 ## API Endpoints
-Below is a list of the important API endpoints that have changed. You may use this to quickly find the new v3 API endpoint to migrate to.
 
-<Note>This list is not exhaustive. Please refer to the [API Reference](/api-reference) for the full list of endpoints.</Note>
+The following table lists important API endpoints that have changed. You can use this reference to quickly find the new v3 API endpoint for migration:
+
+<Note>This list is not exhaustive. Please refer to the [API Reference](/api-reference) for the complete list of endpoints.</Note>
 
 ### Toolkits (formerly Apps)
 
-| Old Endpoint | New Endpoint |
+| Previous Endpoint | Current Endpoint |
 | :--- | :--- |
 | [`GET /api/v1/apps`](https://docs.composio.dev/api-reference/api-reference/apps/get-apps) | [`GET /api/v3/toolkits`](https://v3.docs.composio.dev/api-reference/toolkits/get-toolkits) |
 | [`GET /api/v1/apps/list/categories`](https://docs.composio.dev/api-reference/api-reference/apps/list-app-categories) | [`GET /api/v3/toolkits/categories`](https://v3.docs.composio.dev/api-reference/toolkits/get-toolkits-categories) |
@@ -554,7 +572,7 @@ Below is a list of the important API endpoints that have changed. You may use th
 
 ### Tools (formerly Actions)
 
-| Old Endpoint | New Endpoint |
+| Previous Endpoint | Current Endpoint |
 | :--- | :--- |
 | [`GET /api/v2/actions`](https://docs.composio.dev/api-reference/api-reference/actions/list-actions-minimal-v-2) | [`GET /api/v3/tools`](https://v3.docs.composio.dev/api-reference/tools/get-tools) |
 | [`GET /api/v2/actions/list/enums`](https://docs.composio.dev/api-reference/api-reference/actions/list-action-enums) | [`GET /api/v3/tools/enum`](https://v3.docs.composio.dev/api-reference/tools/get-tools-enum) |
@@ -565,7 +583,7 @@ Below is a list of the important API endpoints that have changed. You may use th
 
 ### Auth Configs (formerly Integrations/Connectors)
 
-| Old Endpoint | New Endpoint |
+| Previous Endpoint | Current Endpoint |
 | :--- | :--- |
 | [`GET /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/list-all-connectors) | [`GET /api/v3/auth_configs`](https://v3.docs.composio.dev/api-reference/auth-configs/get-auth-configs) |
 | [`POST /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/create-connector) | [`POST /api/v3/auth_configs`](https://v3.docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
@@ -576,7 +594,7 @@ Below is a list of the important API endpoints that have changed. You may use th
 
 ### Connected Accounts (formerly Connections)
 
-| Old Endpoint | New Endpoint |
+| Previous Endpoint | Current Endpoint |
 | :--- | :--- |
 | [`GET /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/get-connections) | [`GET /api/v3/connected_accounts`](https://v3.docs.composio.dev/api-reference/connected-accounts/get-connected-accounts) |
 | [`POST /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/initiate-connection) | [`POST /api/v3/connected_accounts`](https://v3.docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
@@ -589,7 +607,7 @@ Below is a list of the important API endpoints that have changed. You may use th
 
 ### Triggers
 
-| Old Endpoint | New Endpoint |
+| Previous Endpoint | Current Endpoint |
 | :--- | :--- |
 | [`GET /api/v1/triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/list-triggers) | [`GET /api/v3/triggers_types`](https://v3.docs.composio.dev/api-reference/triggers/get-triggers-types) |
 | [`GET /api/v1/triggers/list/enums`](https://docs.composio.dev/api-reference/api-reference/triggers/list-trigger-enums) | [`GET /api/v3/triggers_types/list/enum`](https://v3.docs.composio.dev/api-reference/triggers/get-triggers-types-list-enum)|

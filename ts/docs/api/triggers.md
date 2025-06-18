@@ -33,15 +33,89 @@ const triggers = await composio.triggers.listActive({
 
 ### Create Trigger Instance
 
-Create a new trigger instance for a specific trigger type:
+Create a new trigger instance for a specific user and trigger type. If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
+
+**With Connected Account ID:**
 
 ```typescript
-const trigger = await composio.triggers.create('trigger-slug', {
-  connectedAccountId: 'connected-account-id',
+const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSAGE', {
+  connectedAccountId: 'ca_jjYIG9L40LDIS', // Specify which connected account to use
   triggerConfig: {
-    // Trigger specific configuration
+    labelIds: 'INBOX',
+    userId: 'me',
+    interval: 60,
   },
 });
+```
+
+**Without Connected Account ID (Using First Available):**
+
+```typescript
+const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSAGE', {
+  triggerConfig: {
+    labelIds: 'INBOX',
+    userId: 'me',
+    interval: 60,
+  },
+}); // Will use the first available connected account
+```
+
+> **Note:** It's recommended to provide a `connectedAccountId` when you have multiple connected accounts for the same toolkit to ensure the trigger is created for the intended account. If not provided, the SDK will use the first available connected account and log a warning.
+
+**Parameters:**
+
+- `userId` (string, required): The ID of the user to create the trigger instance for
+- `slug` (string, required): The slug of the trigger type to create
+- `body` (TriggerInstanceUpsertParams, optional): Configuration for the trigger instance
+  - `connectedAccountId` (string, optional): ID of the connected account to use. If not provided, will use the first available connected account for the user and toolkit
+  - `triggerConfig` (object, optional): Trigger-specific configuration parameters
+
+**Returns:** Promise<TriggerInstanceUpsertResponse> - The created trigger instance with the following structure:
+
+```typescript
+{
+  triggerId: string; // The ID of the created trigger instance
+}
+```
+
+**Throws:**
+
+- `ValidationError`: If the provided parameters are invalid
+- `ComposioTriggerTypeNotFoundError`: If the trigger type with the given slug is not found
+- `ComposioConnectedAccountNotFoundError`: If no connected account is found for the user, or if the specified connected account ID is not found
+
+**Example with Error Handling:**
+
+```typescript
+try {
+  const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSAGE', {
+    // Connected account ID is optional - if not provided, will use first available
+    connectedAccountId: 'ca_jjYIG9L40LDIS',
+    triggerConfig: {
+      labelIds: 'INBOX',
+      userId: 'me',
+      interval: 60,
+    },
+  });
+  console.log('Trigger created:', trigger.triggerId);
+} catch (error) {
+  if (error instanceof ComposioTriggerTypeNotFoundError) {
+    console.error('Trigger type not found:', error.message);
+    // Handle invalid trigger type
+  } else if (error instanceof ComposioConnectedAccountNotFoundError) {
+    console.error('Connected account issue:', error.message);
+    // Handle missing or invalid connected account
+    // This can happen if:
+    // 1. No connected accounts exist for the user and toolkit
+    // 2. The specified connectedAccountId was not found
+  } else if (error instanceof ValidationError) {
+    console.error('Invalid parameters:', error.message);
+    // Handle validation errors
+  } else {
+    console.error('Unexpected error:', error);
+    // Handle other errors
+  }
+}
 ```
 
 ### Update Trigger Instance

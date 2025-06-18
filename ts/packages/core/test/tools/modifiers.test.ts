@@ -26,7 +26,7 @@ describe('Tools Modifiers', () => {
       // mock client to send back the tool
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getRawComposioToolBySlug(userId, slug, schemaModifier);
+      const result = await context.tools.getRawComposioToolBySlug(slug, schemaModifier);
 
       expect(schemaModifier).toHaveBeenCalledTimes(1);
       expect(schemaModifier).toHaveBeenCalledWith(
@@ -54,7 +54,6 @@ describe('Tools Modifiers', () => {
       });
 
       const result = await context.tools.getRawComposioTools(
-        userId,
         { tools: ['TOOL1', 'TOOL2'] },
         schemaModifier
       );
@@ -142,7 +141,7 @@ describe('Tools Modifiers', () => {
         ...executionModifiers,
       });
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(userId, slug, schemaModifier);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, schemaModifier);
       expect(createExecuteToolFnSpy).toHaveBeenCalledWith(
         userId,
         expect.objectContaining(executionModifiers)

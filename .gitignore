@@ -50,8 +50,12 @@ fern/docs/sdk/
 __pycache__/
 *.py[cod]
 *.pyo
-
+*.egg-info/
 
 # wrangler
 .wrangler
 .dev.vars
+
+# VS Code
+.vscode
+temp/

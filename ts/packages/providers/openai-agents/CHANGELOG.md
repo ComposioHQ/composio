@@ -1,5 +1,21 @@
 # @composio/vercel
 
+## 0.1.24
+
+### Patch Changes
+
+- Fix auth schemes for creating connected accounts
+- Updated dependencies
+  - @composio/core@0.1.24
+
+## 0.1.23
+
+### Patch Changes
+
+- Improvements in DX in triggers and bug fixes in tools
+- Updated dependencies
+  - @composio/core@0.1.23
+
 ## 0.1.22
 
 ### Patch Changes

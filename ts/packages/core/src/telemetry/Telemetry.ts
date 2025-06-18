@@ -57,6 +57,7 @@ export class TelemetryTransport {
       language: this.telemetryLanguage,
       version: this.telemetryMetadata?.version,
       platform: this.telemetryMetadata?.isBrowser ? 'browser' : 'node',
+      environment: getEnvVariable('NODE_ENV', 'production') as TelemetryMetricSource['environment'],
     };
     // send telemetry event for SDK initialization
     this.sendMetric([

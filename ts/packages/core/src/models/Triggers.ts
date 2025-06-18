@@ -1,4 +1,4 @@
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIError } from '@composio/client';
 import {
   TriggerInstanceListActiveResponse as TriggerInstanceListActiveResponseComposio,
   TriggersTypeListParams,
@@ -28,8 +28,9 @@ import {
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
-import { ValidationError } from '../errors';
+import { ComposioConnectedAccountNotFoundError, ValidationError } from '../errors';
 import { PusherService } from '../services/pusher/Pusher';
+import { ComposioTriggerTypeNotFoundError } from '../errors/TriggerErrors';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -133,17 +134,20 @@ export class Triggers {
   }
 
   /**
-   * Create a new trigger instance
+   * Create a new trigger instance for a user
+   * If the connected account id is not provided, the first connected account for the user and toolkit will be used
    *
+   * @param {string} userId - The user id of the trigger instance
    * @param {string} slug - The slug of the trigger instance
    * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
    * @returns {Promise<TriggerInstanceUpsertResponse>} The created trigger instance
    */
   async create(
+    userId: string,
     slug: string,
-    body: TriggerInstanceUpsertParams
+    body?: TriggerInstanceUpsertParams
   ): Promise<TriggerInstanceUpsertResponse> {
-    const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body);
+    const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body ?? {});
 
     if (!parsedBody.success) {
       throw new ValidationError(`Invalid parameters passed to create trigger`, {
@@ -151,10 +155,88 @@ export class Triggers {
       });
     }
 
+    // Get the connected account id from the user id
+    let triggerType: TriggersTypeRetrieveResponse;
+    let toolkitSlug: string;
+    try {
+      triggerType = await this.getType(slug);
+      toolkitSlug = triggerType.toolkit.slug;
+    } catch (error) {
+      // for some reason, the triggers types list endpoint returns 400 for invalid user ids
+      if (error instanceof APIError && (error.status === 400 || error.status === 404)) {
+        throw new ComposioTriggerTypeNotFoundError(`Trigger type ${slug} not found`, {
+          cause: error,
+          possibleFixes: [
+            `Please check the trigger slug`,
+            `Visit the toolkit page to see the available triggers`,
+          ],
+        });
+      } else {
+        throw error;
+      }
+    }
+
+    // Attempt to get connected account ID
+    let connectedAccountId: string | undefined = body?.connectedAccountId;
+
+    try {
+      const { items: connectedAccounts } = await this.client.connectedAccounts.list({
+        user_ids: [userId],
+        toolkit_slugs: [toolkitSlug],
+      });
+
+      if (connectedAccounts.length === 0) {
+        throw new ComposioConnectedAccountNotFoundError(
+          `No connected account found for user ${userId} for toolkit ${toolkitSlug}`,
+          {
+            cause: new Error(`No connected account found for user ${userId}`),
+            possibleFixes: [`Create a new connected account for user ${userId}`],
+          }
+        );
+      }
+
+      const accountExists = connectedAccounts.some(acc => acc.id === connectedAccountId);
+      // if the connected account id is provided and it does not exist, throw an error
+      if (connectedAccountId && !accountExists) {
+        throw new ComposioConnectedAccountNotFoundError(
+          `Connected account ID ${connectedAccountId} not found for user ${userId}`,
+          {
+            cause: new Error(
+              `Connected account ID ${connectedAccountId} not found for user ${userId}`
+            ),
+            possibleFixes: [
+              `Create a new connected account for user ${userId}`,
+              `Verify the connected account ID`,
+            ],
+          }
+        );
+      }
+
+      // if the connected account id is not provided, use the first connected account
+      if (!connectedAccountId) {
+        connectedAccountId = connectedAccounts[0].id;
+        logger.warn(
+          `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`
+        );
+      }
+    } catch (error) {
+      if (error instanceof APIError && [400, 404].includes(error.status)) {
+        throw new ComposioConnectedAccountNotFoundError(
+          `No connected account found for user ${userId} for toolkit ${toolkitSlug}`,
+          {
+            cause: error,
+            possibleFixes: [`Create a new connected account for user ${userId}`],
+          }
+        );
+      }
+      throw error;
+    }
+
     const result = await this.client.triggerInstances.upsert(slug, {
-      connected_account_id: parsedBody.data.connectedAccountId,
+      connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
     });
+
     const parsedResult = TriggerInstanceUpsertResponseSchema.safeParse({
       triggerId: result.trigger_id,
     } as TriggerInstanceUpsertResponse);
