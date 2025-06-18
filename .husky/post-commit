@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Re-comment tools in docs.yml after commit for development
+echo "Re-commenting tools in docs.yml for development..."
+(cd fern && python scripts/manage-tool-docs.py comment --file docs.yml)
