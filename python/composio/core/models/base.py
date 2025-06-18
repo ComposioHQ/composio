@@ -4,10 +4,12 @@ Base resource class for representing resources in the composio client.
 
 import contextvars
 import functools
+import os
 import time
 import traceback
 import typing as t
 
+from composio.__version__ import __version__
 from composio.client import HttpClient
 from composio.utils.logging import WithLogger
 
@@ -16,6 +18,7 @@ from ._telemetry import Event, create_event, push_event
 PayloadT = t.TypeVar("PayloadT", bound=dict)
 
 allow_tracking = contextvars.ContextVar[bool]("allow_tracking", default=True)
+_environment = os.getenv("ENVIRONMENT", "development")
 
 
 def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callable:
@@ -28,19 +31,31 @@ def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callab
 
         event: t.Optional[Event] = None
         start_time = time.time()
+        event = create_event(
+            type="metric",
+            functionName=name,
+            timestamp=time.time(),
+            props=attributes,
+            source={
+                "environment": _environment,  # type: ignore
+                "language": "python",
+                "service": "sdk",
+                "version": __version__,
+            },
+            metadata={
+                "provider": self._client.provider,
+            },
+        )
         try:
-            event = create_event(type="metric", functionName=name)
             return method(self, *args, **kwargs)
         except Exception as e:
-            event = create_event(
-                type="error",
-                functionName=name,
-                error={
-                    "name": e.__class__.__name__,
-                    "message": str(e),
-                    "stack": traceback.format_exc(),
-                },
-            )
+            _, payload = event
+            payload["error"] = {
+                "name": e.__class__.__name__,
+                "message": str(e),
+                "stack": traceback.format_exc(),
+            }
+            event = ("error", payload)
             raise e
         finally:
             if event is not None:
