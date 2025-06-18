@@ -1,0 +1,29 @@
+[tool.uv.workspace]
+members = [
+    "python",
+    "python/providers/anthropic",
+    "python/providers/crewai", 
+    "python/providers/gemini",
+    "python/providers/google",
+    "python/providers/langchain",
+    "python/providers/openai",
+    "python/providers/openai_agents",
+    "fern",
+    "fern/snippets/migration"
+]
+
+[tool.uv.sources]
+# Core composio packages
+composio = { workspace = true }
+
+# Provider packages
+composio-anthropic = { workspace = true }
+composio-crewai = { workspace = true }
+composio-gemini = { workspace = true }
+composio-google = { workspace = true }
+composio-langchain = { workspace = true }
+composio-openai = { workspace = true }
+composio-openai-agents = { workspace = true }
+
+# Fern packages
+fern = { workspace = true } 

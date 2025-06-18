@@ -12,16 +12,15 @@ dependencies = [
     "typing-extensions>=4.13.0",
     "composio-client==0.1.0a11",
     "openai>=1.79.0",
-    "composio==1.0.0rc3",
+    "composio",
     # Dependencies for SDK doc generation
     "tqdm>=4.62.0",
     "pyyaml>=6.0",
     "GitPython>=3.1.0",
     "packaging>=20.0",
     "nbformat>=5.0.0",
-    "composio-langchain==1.0.0rc2",
-    "composio-core>=0.7.18",
-    "composio-openai>=0.7.18",
+    "composio-langchain",
+    "composio-openai",
 ]
 
 [tool.ruff]
@@ -33,11 +32,14 @@ line-length = 100
 target-version = ["py312"]
 
 
-[tool.uv.workspace]
-members = ["snippets/migration"]
 
-[tool.setuptools.packages.find]
-include = ["generators*"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["generators"]
 
 [dependency-groups]
 dev = ["composio", "composio-langchain", "langchain>=0.3.25"]

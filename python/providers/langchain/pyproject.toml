@@ -1,0 +1,25 @@
+[project]
+name = "composio-langchain"
+version = "1.0.0-rc2"
+description = "Use Composio to get an array of tools with your Langchain agent."
+readme = "README.md"
+requires-python = ">=3.9,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "langchain",
+    "composio",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build" 

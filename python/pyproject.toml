@@ -30,5 +30,8 @@ dev = [
     "click>=8.2.1",
     "semver>=3.0.4",
 ]
-[tool.uv.sources]
-composio = { workspace = true }
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
