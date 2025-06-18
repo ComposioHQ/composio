@@ -15,7 +15,6 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
-  logger,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -40,34 +39,8 @@ export interface GoogleGenAIFunctionCall {
 export type GoogleGenAIToolCollection = GoogleTool[];
 
 /**
- * Google Generative AI Provider implementation for Composio
- *
- * This provider wraps Composio tools in a format compatible with Google's Generative AI
- * function calling capabilities, enabling seamless integration with Gemini models.
- *
- * @example
- * ```typescript
- * // Initialize the provider
- * const provider = new GoogleProvider();
- *
- * // Use with Composio
- * const composio = new Composio({
- *   apiKey: 'your-api-key',
- *   provider: new GoogleProvider()
- * });
- *
- * // Get tools for Google Generative AI
- * const tools = await composio.tools.get('default', {
- *   toolkits: ['github']
- * });
- *
- * // Use with Google Generative AI
- * const genAI = new GoogleGenerativeAI(apiKey);
- * const model = genAI.getGenerativeModel({
- *   model: 'gemini-pro',
- *   tools: tools
- * });
- * ```
+ * Google GenAI Provider for Composio SDK
+ * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
 export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
   readonly name = 'google';
@@ -75,12 +48,12 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
   /**
    * Creates a new instance of the GoogleProvider.
    *
-   * This provider formats tools for use with Google's Generative AI
-   * function calling features.
+   * This provider enables integration with Google's GenAI API,
+   * supporting both the Gemini Developer API and Vertex AI implementations.
    *
    * @example
    * ```typescript
-   * // Initialize with default settings
+   * // Initialize the Google provider
    * const provider = new GoogleProvider();
    *
    * // Use with Composio
@@ -88,11 +61,13 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
    *   apiKey: 'your-api-key',
    *   provider: new GoogleProvider()
    * });
+   *
+   * // Use the provider to wrap tools for Google GenAI
+   * const googleTools = provider.wrapTools(composioTools);
    * ```
    */
   constructor() {
     super();
-    logger.debug('GoogleProvider initialized');
   }
 
   /**

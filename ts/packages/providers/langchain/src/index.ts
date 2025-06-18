@@ -11,23 +11,23 @@
  */
 import {
   BaseAgenticProvider,
+  jsonSchemaToZodSchema,
   Tool,
   ExecuteToolFn,
-  jsonSchemaToZodSchema,
   McpUrlResponse,
   McpServerGetResponse,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
-export type LangchainTool = DynamicStructuredTool;
-export type LangchainToolCollection = LangchainTool[];
-
-export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollection, LangchainTool> {
+export type LangChainToolCollection = Array<DynamicStructuredTool>;
+export class LangchainProvider extends BaseAgenticProvider<
+  LangChainToolCollection,
+  DynamicStructuredTool
+> {
   readonly name = 'langchain';
 
   /**
    * Creates a new instance of the LangchainProvider.
-   *
    *
    * This provider enables integration with the Langchain framework,
    * allowing Composio tools to be used with Langchain agents and chains.
@@ -226,7 +226,7 @@ export class LangchainProvider extends BaseAgenticProvider<LangchainToolCollecti
    * });
    * ```
    */
-  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): LangchainToolCollection {
+  wrapTools(tools: Tool[], executeTool: ExecuteToolFn): LangChainToolCollection {
     return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 }

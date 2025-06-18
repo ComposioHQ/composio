@@ -1,5 +1,5 @@
 /**
- * OpenAI Responses Provider
+ * OpenAI Toolset
  *
  * Author: Musthaq Ahamad <musthaq@composio.dev>
  * Legacy Reference: https://github.com/ComposioHQ/composio/blob/master/js/src/toolsets/openai.ts
