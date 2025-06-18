@@ -85,11 +85,10 @@ Retrieves the fields required for creating an auth config for a toolkit.
 
 ```typescript
 // Get all fields for creating an auth config
-const fields = await composio.toolkits.getAuthConfigCreationFields('github');
+const fields = await composio.toolkits.getAuthConfigCreationFields('github', 'OAUTH2');
 
 // Get only required fields for a specific auth scheme
-const requiredFields = await composio.toolkits.getAuthConfigCreationFields('github', {
-  authScheme: 'OAUTH2',
+const requiredFields = await composio.toolkits.getAuthConfigCreationFields('github', 'OAUTH2', {
   requiredOnly: true,
 });
 ```
@@ -97,9 +96,7 @@ const requiredFields = await composio.toolkits.getAuthConfigCreationFields('gith
 Example Response:
 
 ```json
-{
-  "authScheme": "OAUTH2",
-  "fields": [
+[
     {
       "name": "client_id",
       "displayName": "Client id",
@@ -126,42 +123,42 @@ Example Response:
       "default": "read_products,write_products,read_orders,write_orders",
       "required": false
     }
-  ]
-}
+]
 ```
 
 **Parameters:**
 
 - `toolkitSlug` (string): The slug of the toolkit to retrieve the fields for
+- `authScheme` (string): The auth scheme to retrieve the fields for (e.g., 'OAUTH2', 'API_KEY')
 - `options` (object, optional):
-  - `authScheme` (string, optional): The auth scheme to retrieve the fields for (e.g., 'OAUTH2', 'API_KEY')
   - `requiredOnly` (boolean, optional): Whether to only return the required fields (default: false)
 
-**Returns:** Promise<ToolkitAuthFieldsResponse> - The authschem and fields required for creating an auth config
+**Returns:** Promise<ToolkitAuthFieldsResponse> - The fields required for creating an auth config
 
 **Throws:** ComposioAuthConfigNotFoundError if no auth config is found for the toolkit or the specified auth scheme
 
-### getConnectedAccountInitiationFields(toolkitSlug, options)
+### getConnectedAccountInitiationFields(toolkitSlug, authScheme, options)
 
 Retrieves the fields required for initiating a connected account for a toolkit.
 
 ```typescript
 // Get all fields for initiating a connected account
-const fields = await composio.toolkits.getConnectedAccountInitiationFields('github');
+const fields = await composio.toolkits.getConnectedAccountInitiationFields('github', 'OAUTH2');
 
 // Get only required fields for a specific auth scheme
-const requiredFields = await composio.toolkits.getConnectedAccountInitiationFields('github', {
-  authScheme: 'OAUTH2',
-  requiredOnly: true,
-});
+const requiredFields = await composio.toolkits.getConnectedAccountInitiationFields(
+  'github',
+  'OAUTH2',
+  {
+    requiredOnly: true,
+  }
+);
 ```
 
 Example Response:
 
 ```json
-{
-  "authScheme": "OAUTH2",
-  "fields": [
+[
     {
       "name": "shop",
       "displayName": "Store Subdomain",
@@ -169,18 +166,17 @@ Example Response:
       "default": null,
       "required": true
     }
-  ]
-}
+]
 ```
 
 **Parameters:**
 
 - `toolkitSlug` (string): The slug of the toolkit to retrieve the fields for
+- `authScheme` (string): The auth scheme to retrieve the fields for (e.g., 'OAUTH2', 'API_KEY')
 - `options` (object, optional):
-  - `authScheme` (string, optional): The auth scheme to retrieve the fields for (e.g., 'OAUTH2', 'API_KEY')
   - `requiredOnly` (boolean, optional): Whether to only return the required fields (default: false)
 
-**Returns:** Promise<ToolkitAuthFieldsResponse> - The auth schemes and fields required for initiating a connected account
+**Returns:** Promise<ToolkitAuthFieldsResponse> - The fields required for initiating a connected account
 
 **Throws:** ComposioAuthConfigNotFoundError if no auth config is found for the toolkit or the specified auth scheme
 

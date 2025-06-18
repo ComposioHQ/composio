@@ -102,12 +102,9 @@ For more complex cases where you need to dynamically discover the exact field na
 const toolkits = await composio.toolkits.get("NOTION");
 
 // Extract field names from authConfigDetails
-const authFields = toolkits.authConfigDetails?.flatMap(
-  detail => [
-    ...detail.fields.authConfigCreation.required.map(field => field.name),
-    ...detail.fields.authConfigCreation.optional.map(field => field.name)
-  ]
-) || [];
+const authFields = await composio.toolkits.getAuthConfigCreationFields('NOTION', 'OAUTH2', {
+  requiredOnly: true,
+});
 
 console.log("Required auth config fields:", authFields);
 ```
@@ -139,13 +136,9 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const toolkits = await composio.toolkits.get("NOTION");
-
-// Extract field names from authConfigDetails
-const requiredAuthFields =
-  toolkits.authConfigDetails?.flatMap((detail) =>
-    detail.fields.authConfigCreation.required.map((field) => field.name)
-  ) || [];
+const authConfigCreationFields = await composio.toolkits.getAuthConfigCreationFields('NOTION', 'OAUTH2', {
+  requiredOnly: true,
+});
 
 console.log("Required auth config fields:", requiredAuthFields);
 
@@ -154,9 +147,9 @@ const authConfig = await composio.authConfigs.create("NOTION", {
   type: "use_custom_auth",
   authScheme: "OAUTH2", // Replace with the correct scheme for your toolkit if different
   credentials: Object.fromEntries(
-    requiredAuthFields.map((fieldName) => [
-      fieldName,
-      process.env[`NOTION_${fieldName.toUpperCase()}`] || "",
+    requiredAuthFields.map(({ name }) => [
+      name,
+      process.env[`NOTION_${name.toUpperCase()}`] || "",
     ])
   ),
 });

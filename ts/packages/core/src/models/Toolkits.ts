@@ -258,12 +258,15 @@ export class Toolkits {
       : toolkit.authConfigDetails[0];
 
     if (!authConfig) {
-      throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
-        meta: {
-          toolkitSlug,
-          authScheme,
-        },
-      });
+      throw new ComposioAuthConfigNotFoundError(
+        `Auth schema ${authScheme} not found for toolkit ${toolkitSlug} with auth scheme ${authScheme}`,
+        {
+          meta: {
+            toolkitSlug,
+            authScheme,
+          },
+        }
+      );
     }
 
     const requiredFields = authConfig.fields[authConfigType].required.map(field => ({
@@ -271,10 +274,7 @@ export class Toolkits {
       required: true,
     }));
     if (requiredOnly) {
-      return {
-        authScheme: AuthSchemeEnum.parse(authConfig.mode),
-        fields: requiredFields,
-      };
+      return requiredFields;
     }
 
     const optionalFields = authConfig.fields[authConfigType].optional.map(field => ({
@@ -282,25 +282,20 @@ export class Toolkits {
       required: false,
     }));
 
-    return {
-      authScheme: AuthSchemeEnum.parse(authConfig.mode),
-      fields: [...requiredFields, ...optionalFields],
-    };
+    return [...requiredFields, ...optionalFields];
   }
 
   /**
    * Retrieves the fields required for creating an auth config for a toolkit.
    * @param toolkitSlug - The slug of the toolkit to retrieve the fields for
    * @param authScheme - The auth scheme to retrieve the fields for
-   * @param requiredOnly - Whether to only return the required fields
+   * @param options.requiredOnly - Whether to only return the required fields
    * @returns {Promise<ToolkitAuthFieldsResponse>} The fields required for creating an auth config
    */
   async getAuthConfigCreationFields(
     toolkitSlug: string,
-    {
-      authScheme,
-      requiredOnly = false,
-    }: { authScheme?: AuthSchemeType; requiredOnly?: boolean } = {}
+    authScheme: AuthSchemeType,
+    { requiredOnly = false }: { requiredOnly?: boolean } = {}
   ): Promise<ToolkitAuthFieldsResponse> {
     return this.getAuthConfigFields(
       toolkitSlug,
@@ -314,15 +309,13 @@ export class Toolkits {
    * Retrieves the fields required for initiating a connected account for a toolkit.
    * @param toolkitSlug - The slug of the toolkit to retrieve the fields for
    * @param authScheme - The auth scheme to retrieve the fields for
-   * @param requiredOnly - Whether to only return the required fields
+   * @param options.requiredOnly - Whether to only return the required fields
    * @returns {Promise<ToolkitAuthFieldsResponse>} The fields required for initiating a connected account
    */
   async getConnectedAccountInitiationFields(
     toolkitSlug: string,
-    {
-      authScheme,
-      requiredOnly = false,
-    }: { authScheme?: AuthSchemeType; requiredOnly?: boolean } = {}
+    authScheme: AuthSchemeType,
+    { requiredOnly = false }: { requiredOnly?: boolean } = {}
   ): Promise<ToolkitAuthFieldsResponse> {
     return this.getAuthConfigFields(
       toolkitSlug,
