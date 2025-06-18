@@ -70,8 +70,13 @@ if (tool_calls) {
 
 ```
 ```python Python maxLines=60  wordWrap
+from openai import OpenAI
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
+
+composio = Composio()
+openai_client = OpenAI()
+user_id = "user@email.com"
 
 @before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
 def before_execute_modifier(
@@ -82,21 +87,25 @@ def before_execute_modifier(
     params["arguments"]["size"] = 1
     return params
 
+
+# Get tools
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+
 # Get response from the LLM
 response = openai_client.chat.completions.create(
     model="gpt-4o-mini",
     tools=tools,
-    messages=messages,
+    messages=[{"role": "user", "content": "Fetch latest posts from hackernews"}],
 )
 print(response)
 
 # Execute the function calls.
 result = composio.provider.handle_tool_calls(
-  response=response,
-  user_id="default",
-  modifiers=[
-      before_execute_modifier, 
-  ]
+    response=response,
+    user_id="default",
+    modifiers=[
+        before_execute_modifier,
+    ],
 )
 print(result)
 ```
