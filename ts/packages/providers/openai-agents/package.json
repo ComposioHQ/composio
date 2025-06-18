@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai-agents",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -29,7 +29,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
-    "@composio/core": "0.1.24",
+    "@composio/core": "0.1.25",
     "@openai/agents": "^0.0.7"
   },
   "devDependencies": {
