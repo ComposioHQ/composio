@@ -862,6 +862,11 @@ navigation:
       path: tools/zoominfo.mdx
 - tab: sdk-reference
   layout:
+  - section: Python
+    icon: python
+    contents:
+    - page: Python SDK Reference
+      path: pages/sdk/python/sdk-reference.md
   - section: TypeScript
     icon: typescript
     contents:

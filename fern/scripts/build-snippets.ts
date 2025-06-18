@@ -24,7 +24,7 @@ function ensureDistDir() {
     fs.rmSync(PAGES_DIR, { recursive: true, force: true });
     console.log('🧹 Cleaned existing pages directory');
   }
-  
+
   // Create fresh pages directory
   fs.mkdirSync(PAGES_DIR, { recursive: true });
 }
@@ -174,8 +174,12 @@ function processFile(srcPath: string, distPath: string) {
   }
 }
 
+function isMarkdownFile(filename: string): boolean {
+  return filename.endsWith('.mdx') || filename.endsWith('.md');
+}
+
 function processAllFiles() {
-  console.log('🔄 Processing all .mdx files...');
+  console.log('🔄 Processing all .mdx and .md files...');
 
   function processDirectory(srcDir: string) {
     const entries = fs.readdirSync(srcDir, { withFileTypes: true });
@@ -187,18 +191,18 @@ function processAllFiles() {
         // Skip dist directory to avoid infinite loops
         if (entry.name === 'dist') continue;
         processDirectory(srcPath);
-      } else if (entry.isFile() && entry.name.endsWith('.mdx')) {
+      } else if (entry.isFile() && isMarkdownFile(entry.name)) {
         // Calculate the relative path from the source directory
         const relativePath = path.relative(DOCS_SRC_DIR, srcPath);
-        
+
         // Check if this file is in the SDK directory
         const isInSDK = relativePath.startsWith('sdk/') || relativePath.startsWith('sdk\\');
-        
+
         // If in SDK, preserve directory structure; otherwise flatten
-        const distPath = isInSDK 
+        const distPath = isInSDK
           ? path.join(PAGES_DIR, relativePath)
           : path.join(PAGES_DIR, entry.name);
-          
+
         processFile(srcPath, distPath);
       }
     }
@@ -214,15 +218,15 @@ function startWatchMode() {
 
   const watcher = watch(DOCS_SRC_DIR, { recursive: true }, (eventType, filename) => {
     if (!filename) return;
-    if (!filename.endsWith('.mdx')) return;
+    if (!isMarkdownFile(filename)) return;
 
     const srcPath = path.join(DOCS_SRC_DIR, filename);
-    
+
     // Check if this file is in the SDK directory
     const isInSDK = filename.startsWith('sdk/') || filename.startsWith('sdk\\');
-    
+
     // If in SDK, preserve directory structure; otherwise flatten
-    const distPath = isInSDK 
+    const distPath = isInSDK
       ? path.join(PAGES_DIR, filename)
       : path.join(PAGES_DIR, path.basename(filename));
 
@@ -240,12 +244,12 @@ function startWatchMode() {
     if (filename.includes('fern/pages')) return; // Skip pages (output) files
     if (filename.includes('fern/scripts')) return; // Skip the script itself
 
-    // If a source file changes, reprocess all .mdx files since we don't know which ones reference it
+    // If a source file changes, reprocess all .mdx and .md files since we don't know which ones reference it
     if (
       eventType === 'change' &&
       (filename.endsWith('.ts') || filename.endsWith('.js') || filename.endsWith('.py'))
     ) {
-      console.log(`🔄 Source file changed: ${filename}, reprocessing all .mdx files...`);
+      console.log(`🔄 Source file changed: ${filename}, reprocessing all .mdx and .md files...`);
       processAllFiles();
     }
   });
