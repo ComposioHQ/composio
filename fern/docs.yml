@@ -254,612 +254,612 @@ navigation:
     contents:
     - page: Introduction
       path: tools/introduction.mdx
-    # - page: Ably
-      # path: tools/ably.mdx
-    # - page: Accelo
-      # path: tools/accelo.mdx
-    # - page: Acculynx
-      # path: tools/acculynx.mdx
-    # - page: Active Campaign
-      # path: tools/active_campaign.mdx
-    # - page: Adobe
-      # path: tools/adobe.mdx
-    # - page: Aero Workflow
-      # path: tools/aero_workflow.mdx
-    # - page: Affinity
-      # path: tools/affinity.mdx
-    # - page: Agencyzoom
-      # path: tools/agencyzoom.mdx
-    # - page: Ahrefs
-      # path: tools/ahrefs.mdx
-    # - page: Airtable
-      # path: tools/airtable.mdx
-    # - page: Alchemy
-      # path: tools/alchemy.mdx
-    # - page: Altoviz
-      # path: tools/altoviz.mdx
-    # - page: Amazon
-      # path: tools/amazon.mdx
-    # - page: Amcards
-      # path: tools/amcards.mdx
-    # - page: Amplitude
-      # path: tools/amplitude.mdx
-    # - page: Apaleo
-      # path: tools/apaleo.mdx
-    # - page: Apollo
-      # path: tools/apollo.mdx
-    # - page: Appdrag
-      # path: tools/appdrag.mdx
-    # - page: Appsflyer
-      # path: tools/appsflyer.mdx
-    # - page: Asana
-      # path: tools/asana.mdx
-    # - page: Ashby
-      # path: tools/ashby.mdx
-    # - page: Atlassian
-      # path: tools/atlassian.mdx
-    # - page: Attio
-      # path: tools/attio.mdx
-    # - page: Auth0
-      # path: tools/auth0.mdx
-    # - page: Axonaut
-      # path: tools/axonaut.mdx
-    # - page: Bamboohr
-      # path: tools/bamboohr.mdx
-    # - page: Bannerbear
-      # path: tools/bannerbear.mdx
-    # - page: Baserow
-      # path: tools/baserow.mdx
-    # - page: Battlenet
-      # path: tools/battlenet.mdx
-    # - page: Beeminder
-      # path: tools/beeminder.mdx
-    # - page: Bigmailer
-      # path: tools/bigmailer.mdx
-    # - page: Bitbucket
-      # path: tools/bitbucket.mdx
-    # - page: Bitwarden
-      # path: tools/bitwarden.mdx
-    # - page: Blackbaud
-      # path: tools/blackbaud.mdx
-    # - page: Blackboard
-      # path: tools/blackboard.mdx
-    # - page: Boldsign
-      # path: tools/boldsign.mdx
-    # - page: Bolna
-      # path: tools/bolna.mdx
-    # - page: Borneo
-      # path: tools/borneo.mdx
-    # - page: Botbaba
-      # path: tools/botbaba.mdx
-    # - page: Box
-      # path: tools/box.mdx
-    # - page: Braintree
-      # path: tools/braintree.mdx
-    # - page: Brandfetch
-      # path: tools/brandfetch.mdx
-    # - page: Breezy Hr
-      # path: tools/breezy_hr.mdx
-    # - page: Brevo
-      # path: tools/brevo.mdx
-    # - page: Brex
-      # path: tools/brex.mdx
-    # - page: Brex Staging
-      # path: tools/brex_staging.mdx
-    # - page: Brightpearl
-      # path: tools/brightpearl.mdx
-    # - page: Brilliant Directories
-      # path: tools/brilliant_directories.mdx
-    # - page: Browseai
-      # path: tools/browseai.mdx
-    # - page: Browserbase Tool
-      # path: tools/browserbase_tool.mdx
-    # - page: Browserhub
-      # path: tools/browserhub.mdx
-    # - page: Browserless
-      # path: tools/browserless.mdx
-    # - page: Bubble
-      # path: tools/bubble.mdx
-    # - page: Bugbug
-      # path: tools/bugbug.mdx
-    # - page: Cal
-      # path: tools/cal.mdx
-    # - page: Calendly
-      # path: tools/calendly.mdx
-    # - page: Canva
-      # path: tools/canva.mdx
-    # - page: Canvas
-      # path: tools/canvas.mdx
-    # - page: Chatwork
-      # path: tools/chatwork.mdx
-    # - page: Chmeetings
-      # path: tools/chmeetings.mdx
-    # - page: Clickup
-      # path: tools/clickup.mdx
-    # - page: Clockify
-      # path: tools/clockify.mdx
-    # - page: Close
-      # path: tools/close.mdx
-    # - page: Cloudflare
-      # path: tools/cloudflare.mdx
-    # - page: Coda
-      # path: tools/coda.mdx
-    # - page: Codeinterpreter
-      # path: tools/codeinterpreter.mdx
-    # - page: Coinbase
-      # path: tools/coinbase.mdx
-    # - page: Coinmarketcal
-      # path: tools/coinmarketcal.mdx
-    # - page: Composio
-      # path: tools/composio.mdx
-    # - page: Composio Search
-      # path: tools/composio_search.mdx
-    # - page: Confluence
-      # path: tools/confluence.mdx
-    # - page: Contentful
-      # path: tools/contentful.mdx
-    # - page: Crustdata
-      # path: tools/crustdata.mdx
-    # - page: Customer Io
-      # path: tools/customer_io.mdx
-    # - page: Cutt Ly
-      # path: tools/cutt_ly.mdx
-    # - page: D2Lbrightspace
-      # path: tools/d2lbrightspace.mdx
-    # - page: Dailybot
-      # path: tools/dailybot.mdx
-    # - page: Datadog
-      # path: tools/datadog.mdx
-    # - page: Datagma
-      # path: tools/datagma.mdx
-    # - page: Datarobot
-      # path: tools/datarobot.mdx
-    # - page: Deel
-      # path: tools/deel.mdx
-    # - page: Demio
-      # path: tools/demio.mdx
-    # - page: Dialpad
-      # path: tools/dialpad.mdx
-    # - page: Digicert
-      # path: tools/digicert.mdx
-    # - page: Discord
-      # path: tools/discord.mdx
-    # - page: Discordbot
-      # path: tools/discordbot.mdx
-    # - page: Docmosis
-      # path: tools/docmosis.mdx
-    # - page: Docusign
-      # path: tools/docusign.mdx
-    # - page: Dropbox
-      # path: tools/dropbox.mdx
-    # - page: Dropbox Sign
-      # path: tools/dropbox_sign.mdx
-    # - page: Dynamics365
-      # path: tools/dynamics365.mdx
-    # - page: Echtpost
-      # path: tools/echtpost.mdx
-    # - page: Elevenlabs
-      # path: tools/elevenlabs.mdx
-    # - page: Emailoctopus
-      # path: tools/emailoctopus.mdx
-    # - page: Enigma
-      # path: tools/enigma.mdx
-    # - page: Entelligence
-      # path: tools/entelligence.mdx
-    # - page: Epic Games
-      # path: tools/epic_games.mdx
-    # - page: Eventbrite
-      # path: tools/eventbrite.mdx
-    # - page: Exa
-      # path: tools/exa.mdx
-    # - page: Excel
-      # path: tools/excel.mdx
-    # - page: Exist
-      # path: tools/exist.mdx
-    # - page: Facebook
-      # path: tools/facebook.mdx
-    # - page: Factorial
-      # path: tools/factorial.mdx
-    # - page: Figma
-      # path: tools/figma.mdx
-    # - page: Finage
-      # path: tools/finage.mdx
-    # - page: Firecrawl
-      # path: tools/firecrawl.mdx
-    # - page: Fireflies
-      # path: tools/fireflies.mdx
-    # - page: Fitbit
-      # path: tools/fitbit.mdx
-    # - page: Flutterwave
-      # path: tools/flutterwave.mdx
-    # - page: Fomo
-      # path: tools/fomo.mdx
-    # - page: Formcarry
-      # path: tools/formcarry.mdx
-    # - page: Formsite
-      # path: tools/formsite.mdx
-    # - page: Foursquare
-      # path: tools/foursquare.mdx
-    # - page: Freshbooks
-      # path: tools/freshbooks.mdx
-    # - page: Freshdesk
-      # path: tools/freshdesk.mdx
-    # - page: Front
-      # path: tools/front.mdx
-    # - page: Github
-      # path: tools/github.mdx
-    # - page: Gmail
-      # path: tools/gmail.mdx
-    # - page: Go To Webinar
-      # path: tools/go_to_webinar.mdx
-    # - page: Gong
-      # path: tools/gong.mdx
-    # - page: Google Analytics
-      # path: tools/google_analytics.mdx
-    # - page: Google Maps
-      # path: tools/google_maps.mdx
-    # - page: Googleads
-      # path: tools/googleads.mdx
-    # - page: Googlebigquery
-      # path: tools/googlebigquery.mdx
-    # - page: Googlecalendar
-      # path: tools/googlecalendar.mdx
-    # - page: Googledocs
-      # path: tools/googledocs.mdx
-    # - page: Googledrive
-      # path: tools/googledrive.mdx
-    # - page: Googlemeet
-      # path: tools/googlemeet.mdx
-    # - page: Googlephotos
-      # path: tools/googlephotos.mdx
-    # - page: Googlesheets
-      # path: tools/googlesheets.mdx
-    # - page: Googleslides
-      # path: tools/googleslides.mdx
-    # - page: Googlesuper
-      # path: tools/googlesuper.mdx
-    # - page: Googletasks
-      # path: tools/googletasks.mdx
-    # - page: Gorgias
-      # path: tools/gorgias.mdx
-    # - page: Gumroad
-      # path: tools/gumroad.mdx
-    # - page: Guru
-      # path: tools/guru.mdx
-    # - page: Hackernews
-      # path: tools/hackernews.mdx
-    # - page: Hackerrank Work
-      # path: tools/hackerrank_work.mdx
-    # - page: Harvest
-      # path: tools/harvest.mdx
-    # - page: Helcim
-      # path: tools/helcim.mdx
-    # - page: Heygen
-      # path: tools/heygen.mdx
-    # - page: Highlevel
-      # path: tools/highlevel.mdx
-    # - page: Hubspot
-      # path: tools/hubspot.mdx
-    # - page: Humanloop
-      # path: tools/humanloop.mdx
-    # - page: Icims Talent Cloud
-      # path: tools/icims_talent_cloud.mdx
-    # - page: Idea Scale
-      # path: tools/idea_scale.mdx
-    # - page: Intercom
-      # path: tools/intercom.mdx
-    # - page: Interzoid
-      # path: tools/interzoid.mdx
-    # - page: Jira
-      # path: tools/jira.mdx
-    # - page: Junglescout
-      # path: tools/junglescout.mdx
-    # - page: Keap
-      # path: tools/keap.mdx
-    # - page: Klaviyo
-      # path: tools/klaviyo.mdx
-    # - page: Klipfolio
-      # path: tools/klipfolio.mdx
-    # - page: Kommo
-      # path: tools/kommo.mdx
-    # - page: Lastpass
-      # path: tools/lastpass.mdx
-    # - page: Launch Darkly
-      # path: tools/launch_darkly.mdx
-    # - page: Leadfeeder
-      # path: tools/leadfeeder.mdx
-    # - page: Leadoku
-      # path: tools/leadoku.mdx
-    # - page: Lever
-      # path: tools/lever.mdx
-    # - page: Lever Sandbox
-      # path: tools/lever_sandbox.mdx
-    # - page: Lexoffice
-      # path: tools/lexoffice.mdx
-    # - page: Linear
-      # path: tools/linear.mdx
-    # - page: Linkedin
-      # path: tools/linkedin.mdx
-    # - page: Linkhut
-      # path: tools/linkhut.mdx
-    # - page: Linkup
-      # path: tools/linkup.mdx
-    # - page: Listennotes
-      # path: tools/listennotes.mdx
-    # - page: Lmnt
-      # path: tools/lmnt.mdx
-    # - page: Lodgify
-      # path: tools/lodgify.mdx
-    # - page: Mailchimp
-      # path: tools/mailchimp.mdx
-    # - page: Mailerlite
-      # path: tools/mailerlite.mdx
-    # - page: Maintainx
-      # path: tools/maintainx.mdx
-    # - page: Mboum
-      # path: tools/mboum.mdx
-    # - page: Mem0
-      # path: tools/mem0.mdx
-    # - page: Metaads
-      # path: tools/metaads.mdx
-    # - page: Metatextai
-      # path: tools/metatextai.mdx
-    # - page: Microsoft Clarity
-      # path: tools/microsoft_clarity.mdx
-    # - page: Microsoft Teams
-      # path: tools/microsoft_teams.mdx
-    # - page: Microsoft Tenant
-      # path: tools/microsoft_tenant.mdx
-    # - page: Miro
-      # path: tools/miro.mdx
-    # - page: Mixpanel
-      # path: tools/mixpanel.mdx
-    # - page: Mocean
-      # path: tools/mocean.mdx
-    # - page: Monday
-      # path: tools/monday.mdx
-    # - page: Mopinion
-      # path: tools/mopinion.mdx
-    # - page: More Trees
-      # path: tools/more_trees.mdx
-    # - page: Moxie
-      # path: tools/moxie.mdx
-    # - page: Moz
-      # path: tools/moz.mdx
-    # - page: Mural
-      # path: tools/mural.mdx
-    # - page: Ncscale
-      # path: tools/ncscale.mdx
-    # - page: Neon
-      # path: tools/neon.mdx
-    # - page: Netsuite
-      # path: tools/netsuite.mdx
-    # - page: Nextdns
-      # path: tools/nextdns.mdx
-    # - page: Ngrok
-      # path: tools/ngrok.mdx
-    # - page: Notion
-      # path: tools/notion.mdx
-    # - page: Oncehub
-      # path: tools/oncehub.mdx
-    # - page: One Drive
-      # path: tools/one_drive.mdx
-    # - page: Onepage
-      # path: tools/onepage.mdx
-    # - page: Open Sea
-      # path: tools/open_sea.mdx
-    # - page: Outlook
-      # path: tools/outlook.mdx
-    # - page: Pagerduty
-      # path: tools/pagerduty.mdx
-    # - page: Pandadoc
-      # path: tools/pandadoc.mdx
-    # - page: Peopledatalabs
-      # path: tools/peopledatalabs.mdx
-    # - page: Perplexityai
-      # path: tools/perplexityai.mdx
-    # - page: Piggy
-      # path: tools/piggy.mdx
-    # - page: Pipedrive
-      # path: tools/pipedrive.mdx
-    # - page: Placekey
-      # path: tools/placekey.mdx
-    # - page: Posthog
-      # path: tools/posthog.mdx
-    # - page: Precoro
-      # path: tools/precoro.mdx
-    # - page: Printnode
-      # path: tools/printnode.mdx
-    # - page: Process Street
-      # path: tools/process_street.mdx
-    # - page: Productboard
-      # path: tools/productboard.mdx
-    # - page: Qualaroo
-      # path: tools/qualaroo.mdx
-    # - page: Quickbooks
-      # path: tools/quickbooks.mdx
-    # - page: Rafflys
-      # path: tools/rafflys.mdx
-    # - page: Ragic
-      # path: tools/ragic.mdx
-    # - page: Ramp
-      # path: tools/ramp.mdx
-    # - page: Ravenseotools
-      # path: tools/ravenseotools.mdx
-    # - page: Recallai
-      # path: tools/recallai.mdx
-    # - page: Reddit
-      # path: tools/reddit.mdx
-    # - page: Resend
-      # path: tools/resend.mdx
-    # - page: Retellai
-      # path: tools/retellai.mdx
-    # - page: Ring Central
-      # path: tools/ring_central.mdx
-    # - page: Rippling
-      # path: tools/rippling.mdx
-    # - page: Rocket Reach
-      # path: tools/rocket_reach.mdx
-    # - page: Rocketlane
-      # path: tools/rocketlane.mdx
-    # - page: Rootly
-      # path: tools/rootly.mdx
-    # - page: Rosette Text Analytics
-      # path: tools/rosette_text_analytics.mdx
-    # - page: Sage
-      # path: tools/sage.mdx
-    # - page: Salesforce
-      # path: tools/salesforce.mdx
-    # - page: Scrape Do
-      # path: tools/scrape_do.mdx
-    # - page: Scrapingant
-      # path: tools/scrapingant.mdx
-    # - page: Screenshotone
-      # path: tools/screenshotone.mdx
-    # - page: Seismic
-      # path: tools/seismic.mdx
-    # - page: Semanticscholar
-      # path: tools/semanticscholar.mdx
-    # - page: Semrush
-      # path: tools/semrush.mdx
-    # - page: Sendgrid
-      # path: tools/sendgrid.mdx
-    # - page: Sentry
-      # path: tools/sentry.mdx
-    # - page: Serpapi
-      # path: tools/serpapi.mdx
-    # - page: Servicem8
-      # path: tools/servicem8.mdx
-    # - page: Servicenow
-      # path: tools/servicenow.mdx
-    # - page: Share Point
-      # path: tools/share_point.mdx
-    # - page: Shopify
-      # path: tools/shopify.mdx
-    # - page: Shortcut
-      # path: tools/shortcut.mdx
-    # - page: Simplesat
-      # path: tools/simplesat.mdx
-    # - page: Slack
-      # path: tools/slack.mdx
-    # - page: Slackbot
-      # path: tools/slackbot.mdx
-    # - page: Smartrecruiters
-      # path: tools/smartrecruiters.mdx
-    # - page: Smugmug
-      # path: tools/smugmug.mdx
-    # - page: Snowflake
-      # path: tools/snowflake.mdx
-    # - page: Square
-      # path: tools/square.mdx
-    # - page: Stack Exchange
-      # path: tools/stack_exchange.mdx
-    # - page: Starton
-      # path: tools/starton.mdx
-    # - page: Stripe
-      # path: tools/stripe.mdx
-    # - page: Supabase
-      # path: tools/supabase.mdx
-    # - page: Survey Monkey
-      # path: tools/survey_monkey.mdx
-    # - page: Tapform
-      # path: tools/tapform.mdx
-    # - page: Tavily
-      # path: tools/tavily.mdx
-    # - page: Terminus
-      # path: tools/terminus.mdx
-    # - page: Text To Pdf
-      # path: tools/text_to_pdf.mdx
-    # - page: Textrazor
-      # path: tools/textrazor.mdx
-    # - page: Timecamp
-      # path: tools/timecamp.mdx
-    # - page: Timekit
-      # path: tools/timekit.mdx
-    # - page: Timely
-      # path: tools/timely.mdx
-    # - page: Tinypng
-      # path: tools/tinypng.mdx
-    # - page: Tinyurl
-      # path: tools/tinyurl.mdx
-    # - page: Tisane
-      # path: tools/tisane.mdx
-    # - page: Todoist
-      # path: tools/todoist.mdx
-    # - page: Toneden
-      # path: tools/toneden.mdx
-    # - page: Tpscheck
-      # path: tools/tpscheck.mdx
-    # - page: Trello
-      # path: tools/trello.mdx
-    # - page: Twitch
-      # path: tools/twitch.mdx
-    # - page: Twitter
-      # path: tools/twitter.mdx
-    # - page: Twitter Media
-      # path: tools/twitter_media.mdx
-    # - page: Typefully
-      # path: tools/typefully.mdx
-    # - page: Venly
-      # path: tools/venly.mdx
-    # - page: Vero
-      # path: tools/vero.mdx
-    # - page: Visme
-      # path: tools/visme.mdx
-    # - page: Waboxapp
-      # path: tools/waboxapp.mdx
-    # - page: Wakatime
-      # path: tools/wakatime.mdx
-    # - page: Wave Accounting
-      # path: tools/wave_accounting.mdx
-    # - page: Weathermap
-      # path: tools/weathermap.mdx
-    # - page: Webex
-      # path: tools/webex.mdx
-    # - page: Webflow
-      # path: tools/webflow.mdx
-    # - page: Whatsapp
-      # path: tools/whatsapp.mdx
-    # - page: Wiz
-      # path: tools/wiz.mdx
-    # - page: Workiom
-      # path: tools/workiom.mdx
-    # - page: Wrike
-      # path: tools/wrike.mdx
-    # - page: Xero
-      # path: tools/xero.mdx
-    # - page: Yandex
-      # path: tools/yandex.mdx
-    # - page: Ynab
-      # path: tools/ynab.mdx
-    # - page: Yousearch
-      # path: tools/yousearch.mdx
-    # - page: Youtube
-      # path: tools/youtube.mdx
-    # - page: Zendesk
-      # path: tools/zendesk.mdx
-    # - page: Zenrows
-      # path: tools/zenrows.mdx
-    # - page: Zenserp
-      # path: tools/zenserp.mdx
-    # - page: Zoho
-      # path: tools/zoho.mdx
-    # - page: Zoho Bigin
-      # path: tools/zoho_bigin.mdx
-    # - page: Zoho Books
-      # path: tools/zoho_books.mdx
-    # - page: Zoho Desk
-      # path: tools/zoho_desk.mdx
-    # - page: Zoho Inventory
-      # path: tools/zoho_inventory.mdx
-    # - page: Zoho Invoice
-      # path: tools/zoho_invoice.mdx
-    # - page: Zoho Mail
-      # path: tools/zoho_mail.mdx
-    # - page: Zoom
-      # path: tools/zoom.mdx
-    # - page: Zoominfo
-      # path: tools/zoominfo.mdx
+    - page: Ably
+      path: tools/ably.mdx
+    - page: Accelo
+      path: tools/accelo.mdx
+    - page: Acculynx
+      path: tools/acculynx.mdx
+    - page: Active Campaign
+      path: tools/active_campaign.mdx
+    - page: Adobe
+      path: tools/adobe.mdx
+    - page: Aero Workflow
+      path: tools/aero_workflow.mdx
+    - page: Affinity
+      path: tools/affinity.mdx
+    - page: Agencyzoom
+      path: tools/agencyzoom.mdx
+    - page: Ahrefs
+      path: tools/ahrefs.mdx
+    - page: Airtable
+      path: tools/airtable.mdx
+    - page: Alchemy
+      path: tools/alchemy.mdx
+    - page: Altoviz
+      path: tools/altoviz.mdx
+    - page: Amazon
+      path: tools/amazon.mdx
+    - page: Amcards
+      path: tools/amcards.mdx
+    - page: Amplitude
+      path: tools/amplitude.mdx
+    - page: Apaleo
+      path: tools/apaleo.mdx
+    - page: Apollo
+      path: tools/apollo.mdx
+    - page: Appdrag
+      path: tools/appdrag.mdx
+    - page: Appsflyer
+      path: tools/appsflyer.mdx
+    - page: Asana
+      path: tools/asana.mdx
+    - page: Ashby
+      path: tools/ashby.mdx
+    - page: Atlassian
+      path: tools/atlassian.mdx
+    - page: Attio
+      path: tools/attio.mdx
+    - page: Auth0
+      path: tools/auth0.mdx
+    - page: Axonaut
+      path: tools/axonaut.mdx
+    - page: Bamboohr
+      path: tools/bamboohr.mdx
+    - page: Bannerbear
+      path: tools/bannerbear.mdx
+    - page: Baserow
+      path: tools/baserow.mdx
+    - page: Battlenet
+      path: tools/battlenet.mdx
+    - page: Beeminder
+      path: tools/beeminder.mdx
+    - page: Bigmailer
+      path: tools/bigmailer.mdx
+    - page: Bitbucket
+      path: tools/bitbucket.mdx
+    - page: Bitwarden
+      path: tools/bitwarden.mdx
+    - page: Blackbaud
+      path: tools/blackbaud.mdx
+    - page: Blackboard
+      path: tools/blackboard.mdx
+    - page: Boldsign
+      path: tools/boldsign.mdx
+    - page: Bolna
+      path: tools/bolna.mdx
+    - page: Borneo
+      path: tools/borneo.mdx
+    - page: Botbaba
+      path: tools/botbaba.mdx
+    - page: Box
+      path: tools/box.mdx
+    - page: Braintree
+      path: tools/braintree.mdx
+    - page: Brandfetch
+      path: tools/brandfetch.mdx
+    - page: Breezy Hr
+      path: tools/breezy_hr.mdx
+    - page: Brevo
+      path: tools/brevo.mdx
+    - page: Brex
+      path: tools/brex.mdx
+    - page: Brex Staging
+      path: tools/brex_staging.mdx
+    - page: Brightpearl
+      path: tools/brightpearl.mdx
+    - page: Brilliant Directories
+      path: tools/brilliant_directories.mdx
+    - page: Browseai
+      path: tools/browseai.mdx
+    - page: Browserbase Tool
+      path: tools/browserbase_tool.mdx
+    - page: Browserhub
+      path: tools/browserhub.mdx
+    - page: Browserless
+      path: tools/browserless.mdx
+    - page: Bubble
+      path: tools/bubble.mdx
+    - page: Bugbug
+      path: tools/bugbug.mdx
+    - page: Cal
+      path: tools/cal.mdx
+    - page: Calendly
+      path: tools/calendly.mdx
+    - page: Canva
+      path: tools/canva.mdx
+    - page: Canvas
+      path: tools/canvas.mdx
+    - page: Chatwork
+      path: tools/chatwork.mdx
+    - page: Chmeetings
+      path: tools/chmeetings.mdx
+    - page: Clickup
+      path: tools/clickup.mdx
+    - page: Clockify
+      path: tools/clockify.mdx
+    - page: Close
+      path: tools/close.mdx
+    - page: Cloudflare
+      path: tools/cloudflare.mdx
+    - page: Coda
+      path: tools/coda.mdx
+    - page: Codeinterpreter
+      path: tools/codeinterpreter.mdx
+    - page: Coinbase
+      path: tools/coinbase.mdx
+    - page: Coinmarketcal
+      path: tools/coinmarketcal.mdx
+    - page: Composio
+      path: tools/composio.mdx
+    - page: Composio Search
+      path: tools/composio_search.mdx
+    - page: Confluence
+      path: tools/confluence.mdx
+    - page: Contentful
+      path: tools/contentful.mdx
+    - page: Crustdata
+      path: tools/crustdata.mdx
+    - page: Customer Io
+      path: tools/customer_io.mdx
+    - page: Cutt Ly
+      path: tools/cutt_ly.mdx
+    - page: D2Lbrightspace
+      path: tools/d2lbrightspace.mdx
+    - page: Dailybot
+      path: tools/dailybot.mdx
+    - page: Datadog
+      path: tools/datadog.mdx
+    - page: Datagma
+      path: tools/datagma.mdx
+    - page: Datarobot
+      path: tools/datarobot.mdx
+    - page: Deel
+      path: tools/deel.mdx
+    - page: Demio
+      path: tools/demio.mdx
+    - page: Dialpad
+      path: tools/dialpad.mdx
+    - page: Digicert
+      path: tools/digicert.mdx
+    - page: Discord
+      path: tools/discord.mdx
+    - page: Discordbot
+      path: tools/discordbot.mdx
+    - page: Docmosis
+      path: tools/docmosis.mdx
+    - page: Docusign
+      path: tools/docusign.mdx
+    - page: Dropbox
+      path: tools/dropbox.mdx
+    - page: Dropbox Sign
+      path: tools/dropbox_sign.mdx
+    - page: Dynamics365
+      path: tools/dynamics365.mdx
+    - page: Echtpost
+      path: tools/echtpost.mdx
+    - page: Elevenlabs
+      path: tools/elevenlabs.mdx
+    - page: Emailoctopus
+      path: tools/emailoctopus.mdx
+    - page: Enigma
+      path: tools/enigma.mdx
+    - page: Entelligence
+      path: tools/entelligence.mdx
+    - page: Epic Games
+      path: tools/epic_games.mdx
+    - page: Eventbrite
+      path: tools/eventbrite.mdx
+    - page: Exa
+      path: tools/exa.mdx
+    - page: Excel
+      path: tools/excel.mdx
+    - page: Exist
+      path: tools/exist.mdx
+    - page: Facebook
+      path: tools/facebook.mdx
+    - page: Factorial
+      path: tools/factorial.mdx
+    - page: Figma
+      path: tools/figma.mdx
+    - page: Finage
+      path: tools/finage.mdx
+    - page: Firecrawl
+      path: tools/firecrawl.mdx
+    - page: Fireflies
+      path: tools/fireflies.mdx
+    - page: Fitbit
+      path: tools/fitbit.mdx
+    - page: Flutterwave
+      path: tools/flutterwave.mdx
+    - page: Fomo
+      path: tools/fomo.mdx
+    - page: Formcarry
+      path: tools/formcarry.mdx
+    - page: Formsite
+      path: tools/formsite.mdx
+    - page: Foursquare
+      path: tools/foursquare.mdx
+    - page: Freshbooks
+      path: tools/freshbooks.mdx
+    - page: Freshdesk
+      path: tools/freshdesk.mdx
+    - page: Front
+      path: tools/front.mdx
+    - page: Github
+      path: tools/github.mdx
+    - page: Gmail
+      path: tools/gmail.mdx
+    - page: Go To Webinar
+      path: tools/go_to_webinar.mdx
+    - page: Gong
+      path: tools/gong.mdx
+    - page: Google Analytics
+      path: tools/google_analytics.mdx
+    - page: Google Maps
+      path: tools/google_maps.mdx
+    - page: Googleads
+      path: tools/googleads.mdx
+    - page: Googlebigquery
+      path: tools/googlebigquery.mdx
+    - page: Googlecalendar
+      path: tools/googlecalendar.mdx
+    - page: Googledocs
+      path: tools/googledocs.mdx
+    - page: Googledrive
+      path: tools/googledrive.mdx
+    - page: Googlemeet
+      path: tools/googlemeet.mdx
+    - page: Googlephotos
+      path: tools/googlephotos.mdx
+    - page: Googlesheets
+      path: tools/googlesheets.mdx
+    - page: Googleslides
+      path: tools/googleslides.mdx
+    - page: Googlesuper
+      path: tools/googlesuper.mdx
+    - page: Googletasks
+      path: tools/googletasks.mdx
+    - page: Gorgias
+      path: tools/gorgias.mdx
+    - page: Gumroad
+      path: tools/gumroad.mdx
+    - page: Guru
+      path: tools/guru.mdx
+    - page: Hackernews
+      path: tools/hackernews.mdx
+    - page: Hackerrank Work
+      path: tools/hackerrank_work.mdx
+    - page: Harvest
+      path: tools/harvest.mdx
+    - page: Helcim
+      path: tools/helcim.mdx
+    - page: Heygen
+      path: tools/heygen.mdx
+    - page: Highlevel
+      path: tools/highlevel.mdx
+    - page: Hubspot
+      path: tools/hubspot.mdx
+    - page: Humanloop
+      path: tools/humanloop.mdx
+    - page: Icims Talent Cloud
+      path: tools/icims_talent_cloud.mdx
+    - page: Idea Scale
+      path: tools/idea_scale.mdx
+    - page: Intercom
+      path: tools/intercom.mdx
+    - page: Interzoid
+      path: tools/interzoid.mdx
+    - page: Jira
+      path: tools/jira.mdx
+    - page: Junglescout
+      path: tools/junglescout.mdx
+    - page: Keap
+      path: tools/keap.mdx
+    - page: Klaviyo
+      path: tools/klaviyo.mdx
+    - page: Klipfolio
+      path: tools/klipfolio.mdx
+    - page: Kommo
+      path: tools/kommo.mdx
+    - page: Lastpass
+      path: tools/lastpass.mdx
+    - page: Launch Darkly
+      path: tools/launch_darkly.mdx
+    - page: Leadfeeder
+      path: tools/leadfeeder.mdx
+    - page: Leadoku
+      path: tools/leadoku.mdx
+    - page: Lever
+      path: tools/lever.mdx
+    - page: Lever Sandbox
+      path: tools/lever_sandbox.mdx
+    - page: Lexoffice
+      path: tools/lexoffice.mdx
+    - page: Linear
+      path: tools/linear.mdx
+    - page: Linkedin
+      path: tools/linkedin.mdx
+    - page: Linkhut
+      path: tools/linkhut.mdx
+    - page: Linkup
+      path: tools/linkup.mdx
+    - page: Listennotes
+      path: tools/listennotes.mdx
+    - page: Lmnt
+      path: tools/lmnt.mdx
+    - page: Lodgify
+      path: tools/lodgify.mdx
+    - page: Mailchimp
+      path: tools/mailchimp.mdx
+    - page: Mailerlite
+      path: tools/mailerlite.mdx
+    - page: Maintainx
+      path: tools/maintainx.mdx
+    - page: Mboum
+      path: tools/mboum.mdx
+    - page: Mem0
+      path: tools/mem0.mdx
+    - page: Metaads
+      path: tools/metaads.mdx
+    - page: Metatextai
+      path: tools/metatextai.mdx
+    - page: Microsoft Clarity
+      path: tools/microsoft_clarity.mdx
+    - page: Microsoft Teams
+      path: tools/microsoft_teams.mdx
+    - page: Microsoft Tenant
+      path: tools/microsoft_tenant.mdx
+    - page: Miro
+      path: tools/miro.mdx
+    - page: Mixpanel
+      path: tools/mixpanel.mdx
+    - page: Mocean
+      path: tools/mocean.mdx
+    - page: Monday
+      path: tools/monday.mdx
+    - page: Mopinion
+      path: tools/mopinion.mdx
+    - page: More Trees
+      path: tools/more_trees.mdx
+    - page: Moxie
+      path: tools/moxie.mdx
+    - page: Moz
+      path: tools/moz.mdx
+    - page: Mural
+      path: tools/mural.mdx
+    - page: Ncscale
+      path: tools/ncscale.mdx
+    - page: Neon
+      path: tools/neon.mdx
+    - page: Netsuite
+      path: tools/netsuite.mdx
+    - page: Nextdns
+      path: tools/nextdns.mdx
+    - page: Ngrok
+      path: tools/ngrok.mdx
+    - page: Notion
+      path: tools/notion.mdx
+    - page: Oncehub
+      path: tools/oncehub.mdx
+    - page: One Drive
+      path: tools/one_drive.mdx
+    - page: Onepage
+      path: tools/onepage.mdx
+    - page: Open Sea
+      path: tools/open_sea.mdx
+    - page: Outlook
+      path: tools/outlook.mdx
+    - page: Pagerduty
+      path: tools/pagerduty.mdx
+    - page: Pandadoc
+      path: tools/pandadoc.mdx
+    - page: Peopledatalabs
+      path: tools/peopledatalabs.mdx
+    - page: Perplexityai
+      path: tools/perplexityai.mdx
+    - page: Piggy
+      path: tools/piggy.mdx
+    - page: Pipedrive
+      path: tools/pipedrive.mdx
+    - page: Placekey
+      path: tools/placekey.mdx
+    - page: Posthog
+      path: tools/posthog.mdx
+    - page: Precoro
+      path: tools/precoro.mdx
+    - page: Printnode
+      path: tools/printnode.mdx
+    - page: Process Street
+      path: tools/process_street.mdx
+    - page: Productboard
+      path: tools/productboard.mdx
+    - page: Qualaroo
+      path: tools/qualaroo.mdx
+    - page: Quickbooks
+      path: tools/quickbooks.mdx
+    - page: Rafflys
+      path: tools/rafflys.mdx
+    - page: Ragic
+      path: tools/ragic.mdx
+    - page: Ramp
+      path: tools/ramp.mdx
+    - page: Ravenseotools
+      path: tools/ravenseotools.mdx
+    - page: Recallai
+      path: tools/recallai.mdx
+    - page: Reddit
+      path: tools/reddit.mdx
+    - page: Resend
+      path: tools/resend.mdx
+    - page: Retellai
+      path: tools/retellai.mdx
+    - page: Ring Central
+      path: tools/ring_central.mdx
+    - page: Rippling
+      path: tools/rippling.mdx
+    - page: Rocket Reach
+      path: tools/rocket_reach.mdx
+    - page: Rocketlane
+      path: tools/rocketlane.mdx
+    - page: Rootly
+      path: tools/rootly.mdx
+    - page: Rosette Text Analytics
+      path: tools/rosette_text_analytics.mdx
+    - page: Sage
+      path: tools/sage.mdx
+    - page: Salesforce
+      path: tools/salesforce.mdx
+    - page: Scrape Do
+      path: tools/scrape_do.mdx
+    - page: Scrapingant
+      path: tools/scrapingant.mdx
+    - page: Screenshotone
+      path: tools/screenshotone.mdx
+    - page: Seismic
+      path: tools/seismic.mdx
+    - page: Semanticscholar
+      path: tools/semanticscholar.mdx
+    - page: Semrush
+      path: tools/semrush.mdx
+    - page: Sendgrid
+      path: tools/sendgrid.mdx
+    - page: Sentry
+      path: tools/sentry.mdx
+    - page: Serpapi
+      path: tools/serpapi.mdx
+    - page: Servicem8
+      path: tools/servicem8.mdx
+    - page: Servicenow
+      path: tools/servicenow.mdx
+    - page: Share Point
+      path: tools/share_point.mdx
+    - page: Shopify
+      path: tools/shopify.mdx
+    - page: Shortcut
+      path: tools/shortcut.mdx
+    - page: Simplesat
+      path: tools/simplesat.mdx
+    - page: Slack
+      path: tools/slack.mdx
+    - page: Slackbot
+      path: tools/slackbot.mdx
+    - page: Smartrecruiters
+      path: tools/smartrecruiters.mdx
+    - page: Smugmug
+      path: tools/smugmug.mdx
+    - page: Snowflake
+      path: tools/snowflake.mdx
+    - page: Square
+      path: tools/square.mdx
+    - page: Stack Exchange
+      path: tools/stack_exchange.mdx
+    - page: Starton
+      path: tools/starton.mdx
+    - page: Stripe
+      path: tools/stripe.mdx
+    - page: Supabase
+      path: tools/supabase.mdx
+    - page: Survey Monkey
+      path: tools/survey_monkey.mdx
+    - page: Tapform
+      path: tools/tapform.mdx
+    - page: Tavily
+      path: tools/tavily.mdx
+    - page: Terminus
+      path: tools/terminus.mdx
+    - page: Text To Pdf
+      path: tools/text_to_pdf.mdx
+    - page: Textrazor
+      path: tools/textrazor.mdx
+    - page: Timecamp
+      path: tools/timecamp.mdx
+    - page: Timekit
+      path: tools/timekit.mdx
+    - page: Timely
+      path: tools/timely.mdx
+    - page: Tinypng
+      path: tools/tinypng.mdx
+    - page: Tinyurl
+      path: tools/tinyurl.mdx
+    - page: Tisane
+      path: tools/tisane.mdx
+    - page: Todoist
+      path: tools/todoist.mdx
+    - page: Toneden
+      path: tools/toneden.mdx
+    - page: Tpscheck
+      path: tools/tpscheck.mdx
+    - page: Trello
+      path: tools/trello.mdx
+    - page: Twitch
+      path: tools/twitch.mdx
+    - page: Twitter
+      path: tools/twitter.mdx
+    - page: Twitter Media
+      path: tools/twitter_media.mdx
+    - page: Typefully
+      path: tools/typefully.mdx
+    - page: Venly
+      path: tools/venly.mdx
+    - page: Vero
+      path: tools/vero.mdx
+    - page: Visme
+      path: tools/visme.mdx
+    - page: Waboxapp
+      path: tools/waboxapp.mdx
+    - page: Wakatime
+      path: tools/wakatime.mdx
+    - page: Wave Accounting
+      path: tools/wave_accounting.mdx
+    - page: Weathermap
+      path: tools/weathermap.mdx
+    - page: Webex
+      path: tools/webex.mdx
+    - page: Webflow
+      path: tools/webflow.mdx
+    - page: Whatsapp
+      path: tools/whatsapp.mdx
+    - page: Wiz
+      path: tools/wiz.mdx
+    - page: Workiom
+      path: tools/workiom.mdx
+    - page: Wrike
+      path: tools/wrike.mdx
+    - page: Xero
+      path: tools/xero.mdx
+    - page: Yandex
+      path: tools/yandex.mdx
+    - page: Ynab
+      path: tools/ynab.mdx
+    - page: Yousearch
+      path: tools/yousearch.mdx
+    - page: Youtube
+      path: tools/youtube.mdx
+    - page: Zendesk
+      path: tools/zendesk.mdx
+    - page: Zenrows
+      path: tools/zenrows.mdx
+    - page: Zenserp
+      path: tools/zenserp.mdx
+    - page: Zoho
+      path: tools/zoho.mdx
+    - page: Zoho Bigin
+      path: tools/zoho_bigin.mdx
+    - page: Zoho Books
+      path: tools/zoho_books.mdx
+    - page: Zoho Desk
+      path: tools/zoho_desk.mdx
+    - page: Zoho Inventory
+      path: tools/zoho_inventory.mdx
+    - page: Zoho Invoice
+      path: tools/zoho_invoice.mdx
+    - page: Zoho Mail
+      path: tools/zoho_mail.mdx
+    - page: Zoom
+      path: tools/zoom.mdx
+    - page: Zoominfo
+      path: tools/zoominfo.mdx
 - tab: sdk-reference
   layout:
   - section: TypeScript

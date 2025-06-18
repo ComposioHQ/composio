@@ -182,7 +182,7 @@ export class Tools<
     userId: string,
     toolSlug: string
   ): Promise<string | null> {
-    const tool = await this.getRawComposioToolBySlug(userId, toolSlug);
+    const tool = await this.getRawComposioToolBySlug(toolSlug);
     if (!tool.toolkit) {
       throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
     }
@@ -223,7 +223,6 @@ export class Tools<
    * This method fetches tools from the Composio API in raw format and combines them with
    * any registered custom tools. The response can be filtered and modified as needed.
    *
-   * @param {string} userId - The user ID for whom to fetch the tools
    * @param {ToolListParams} [query={}] - Optional query parameters to filter the tools
    * @param {TransformToolSchemaModifier} [modifier] - Optional function to transform tool schemas
    * @returns {Promise<ToolList>} List of tools matching the query criteria
@@ -231,16 +230,16 @@ export class Tools<
    * @example
    * ```typescript
    * // Get all tools
-   * const tools = await composio.tools.getRawComposioTools('default');
+   * const tools = await composio.tools.getRawComposioTools();
    *
    * // Get tools with filters
-   * const githubTools = await composio.tools.getRawComposioTools('default', {
+   * const githubTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
    *   important: true
    * });
    *
    * // Get tools with schema transformation
-   * const tools = await composio.tools.getRawComposioTools('default', {},
+   * const tools = await composio.tools.getRawComposioTools({},
    *   (toolSlug, toolkitSlug, tool) => {
    *     // Add custom properties to tool schema
    *     return {...tool, customProperty: 'value'};
@@ -249,7 +248,6 @@ export class Tools<
    * ```
    */
   async getRawComposioTools(
-    userId: string,
     query: ToolListParams,
     modifier?: TransformToolSchemaModifier
   ): Promise<ToolList> {
@@ -303,14 +301,7 @@ export class Tools<
       return [];
     }
     const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
-    // @TODO: Add checks for connectedAccounts for fetched tools
-    // const connectedAccountExists = await this.checkIfConnectedAccountExistsForTools(
-    //   userId,
-    //   caseTransformedTools
-    // );
-    // if (!connectedAccountExists) {
-    //   console.warn('No connected accounts found for the given tools');
-    // }
+
     const customTools = await this.customTools.getCustomTools({
       toolSlugs: 'tools' in queryParams.data ? queryParams.data.tools : undefined,
     });
@@ -340,11 +331,10 @@ export class Tools<
    *
    * @example
    * ```ts
-   * const tool = await composio.tools.getRawComposioToolBySlug('default', 'github');
+   * const tool = await composio.tools.getRawComposioToolBySlug('github');
    * ```
    */
   async getRawComposioToolBySlug(
-    userId: string,
     slug: string,
     modifier?: TransformToolSchemaModifier
   ): Promise<Tool> {
@@ -456,11 +446,11 @@ export class Tools<
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
     // if the first argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(userId, arg2, options?.modifySchema);
+      const tool = await this.getRawComposioToolBySlug(arg2, options?.modifySchema);
       return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
       // if the first argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(userId, arg2, options?.modifySchema);
+      const tools = await this.getRawComposioTools(arg2, options?.modifySchema);
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
@@ -630,7 +620,7 @@ export class Tools<
         return this.handleCustomToolExecution(customTool, body, modifiers);
       } else {
         // handle composio tool execution
-        const composioTool = await this.getRawComposioToolBySlug(body.userId, slug);
+        const composioTool = await this.getRawComposioToolBySlug(slug);
         if (!composioTool) {
           throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
         }

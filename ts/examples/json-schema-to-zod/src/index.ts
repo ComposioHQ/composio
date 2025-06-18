@@ -27,10 +27,7 @@ async function main() {
     console.log('🚀 Starting Json-schema-to-zod Example...');
 
     // Get available tools
-    const tool = await composio.tools.getRawComposioToolBySlug(
-      'default',
-      'GOOGLECALENDAR_PATCH_EVENT'
-    );
+    const tool = await composio.tools.getRawComposioToolBySlug('GOOGLECALENDAR_PATCH_EVENT');
 
     console.log(JSON.stringify(tool.inputParameters, null, 2));
 
