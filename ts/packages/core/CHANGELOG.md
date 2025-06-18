@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.25
+
+### Patch Changes
+
+- Add MCP server to composio SDk
+
 ## 0.1.24
 
 ### Patch Changes
