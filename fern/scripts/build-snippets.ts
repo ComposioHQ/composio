@@ -57,9 +57,23 @@ function getLanguageFromPath(filePath: string): { syntax: string; displayName: s
   return languageMap[extension || ''] || { syntax: 'text', displayName: 'Text' };
 }
 
-function readFileLines(filePath: string, startLine?: number, endLine?: number): string {
+function readFileLines(
+  filePath: string,
+  contextDir: string,
+  startLine?: number,
+  endLine?: number
+): string {
   try {
-    const fullPath = path.resolve(PROJECT_ROOT, filePath);
+    let fullPath: string;
+
+    // If the path starts with './' or '../', resolve it relative to the context directory
+    if (filePath.startsWith('./') || filePath.startsWith('../')) {
+      fullPath = path.resolve(contextDir, filePath);
+    } else {
+      // Otherwise, resolve it relative to the project root
+      fullPath = path.resolve(PROJECT_ROOT, filePath);
+    }
+
     const content = fs.readFileSync(fullPath, 'utf8');
     const lines = content.split('\n');
 
@@ -90,7 +104,7 @@ function generateHighlightString(
   return `{${relativeStart}-${relativeEnd}}`;
 }
 
-function parseSnippetCodeTags(content: string): string {
+function parseSnippetCodeTags(content: string, contextDir: string): string {
   const exampleCodeRegex = /<SnippetCode\s+([^>]*?)(?:\s*\/?>|>\s*<\/SnippetCode>)/g;
 
   return content.replace(exampleCodeRegex, (match, propsString) => {
@@ -129,7 +143,7 @@ function parseSnippetCodeTags(content: string): string {
     }
 
     // Read the file content
-    const codeContent = readFileLines(props.src, props.startLine, props.endLine);
+    const codeContent = readFileLines(props.src, contextDir, props.startLine, props.endLine);
     const langInfo = getLanguageFromPath(props.src);
     const syntax = props.language || langInfo.syntax;
     const displayName = langInfo.displayName;
@@ -154,7 +168,8 @@ function parseSnippetCodeTags(content: string): string {
 function processFile(srcPath: string, distPath: string) {
   try {
     const content = fs.readFileSync(srcPath, 'utf8');
-    const processedContent = parseSnippetCodeTags(content);
+    const contextDir = path.dirname(srcPath);
+    const processedContent = parseSnippetCodeTags(content, contextDir);
 
     // Ensure the directory exists
     const distDir = path.dirname(distPath);
@@ -192,13 +207,8 @@ function processAllFiles() {
         // Calculate the relative path from the source directory
         const relativePath = path.relative(DOCS_SRC_DIR, srcPath);
 
-        // Check if this file is in the SDK directory
-        const isInSDK = relativePath.startsWith('sdk/') || relativePath.startsWith('sdk\\');
-
-        // If in SDK, preserve directory structure; otherwise flatten
-        const distPath = isInSDK
-          ? path.join(PAGES_DIST_DIR, relativePath)
-          : path.join(PAGES_DIST_DIR, entry.name);
+        // Always preserve directory structure
+        const distPath = path.join(PAGES_DIST_DIR, relativePath);
 
         processFile(srcPath, distPath);
       }
@@ -219,13 +229,8 @@ function startWatchMode() {
 
     const srcPath = path.join(DOCS_SRC_DIR, filename);
 
-    // Check if this file is in the SDK directory
-    const isInSDK = filename.startsWith('sdk/') || filename.startsWith('sdk\\');
-
-    // If in SDK, preserve directory structure; otherwise flatten
-    const distPath = isInSDK
-      ? path.join(PAGES_DIST_DIR, filename)
-      : path.join(PAGES_DIST_DIR, path.basename(filename));
+    // Always preserve directory structure
+    const distPath = path.join(PAGES_DIST_DIR, filename);
 
     if (eventType === 'change' && fs.existsSync(srcPath)) {
       console.log(`🔄 File changed: ${filename}`);

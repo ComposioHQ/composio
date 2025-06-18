@@ -35,7 +35,7 @@ In this tutorial, we will create an auth config, initiate a connection, and send
 Basic scaffolding for the server.
 
 <SnippetCode
-  src="fern/snippets/typescript/sample-webserver/index.ts"
+  src="./index.ts"
   startLine={1}
   endLine={10}
   title="Setup"
@@ -53,7 +53,7 @@ For this example, we will create a basic GMAIL auth config.
 You are recommend to store these config ids, so that you can reuse them later.
 
 <SnippetCode
-  src="fern/snippets/typescript/sample-webserver/index.ts"
+  src="./index.ts"
   startLine={12}
   endLine={16}
   title="Auth Configs"
@@ -69,7 +69,7 @@ they will be redirected to the auth flow.
 Once they have authorized the connection, you can use the `id` to get and execute the tools as the user.
 
 <SnippetCode
-  src="fern/snippets/typescript/sample-webserver/index.ts"
+  src="./index.ts"
   startLine={16}
   endLine={27}
   title="Initiating a connection"
@@ -90,7 +90,7 @@ curl -X POST http://localhost:3000/create-connection \
 Now let's send that email.
 
 <SnippetCode
-  src="fern/snippets/typescript/sample-webserver/index.ts"
+  src="./index.ts"
   startLine={29}
   endLine={59}
   title="Sending an email"
@@ -109,7 +109,7 @@ curl -X POST http://localhost:3000/send-email \
 
 ### Full Code
 
-You can see the full code [here](https://github.com/ComposioHQ/composio/blob/next/fern/snippets/typescript/sample-webserver/index.ts).
+You can see the full code [here](https://github.com/ComposioHQ/composio/blob/next/fern/pages/src/examples/sample-webserver/index.ts).
 
 
 ### What just happened?

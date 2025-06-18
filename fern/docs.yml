@@ -123,71 +123,71 @@ navigation:
     skip-slug: true
     contents:
     - page: Welcome
-      path: pages/dist/welcome.mdx
+      path: pages/dist/get-started/welcome.mdx
       slug: welcome
     - page: Quickstart
-      path: pages/dist/quickstart.mdx
+      path: pages/dist/get-started/quickstart.mdx
       slug: quickstart
     - page: IDE and Agent Setup
-      path: pages/dist/dev-setup.mdx
+      path: pages/dist/get-started/dev-setup.mdx
       slug: dev-setup
     - page: Providers
-      path: pages/dist/providers.mdx
+      path: pages/dist/get-started/providers.mdx
       slug: providers
   - section: Tools
     icon: tools
     skip-slug: true
     contents:
     - page: Executing Tools
-      path: pages/dist/executing-tools.mdx
+      path: pages/dist/tool-calling/executing-tools.mdx
       slug: executing-tools
     - page: Authenticating Tools
-      path: pages/dist/authenticating-tools.mdx
+      path: pages/dist/tool-calling/authenticating-tools.mdx
       slug: authenticating-tools
     - page: Fetch and Filter Tools
-      path: pages/dist/fetching-tools.mdx
+      path: pages/dist/tool-calling/fetching-tools.mdx
       slug: fetching-tools
     - section: Modifiers
       slug: modifiers
       contents:
       - page: Schema Modifiers
-        path: pages/dist/schema-modifiers.mdx
+        path: pages/dist/tool-calling/schema-modifiers.mdx
         slug: schema-modifiers
       - page: Before Tool Execution
-        path: pages/dist/before-execution-modifiers.mdx
+        path: pages/dist/tool-calling/before-execution-modifiers.mdx
         slug: before-execution
       - page: After Tool Execution
-        path: pages/dist/after-execution-modifiers.mdx
+        path: pages/dist/tool-calling/after-execution-modifiers.mdx
         slug: after-execution
     - page: Custom tools
-      path: pages/dist/custom-tools.mdx
+      path: pages/dist/tool-calling/custom-tools.mdx
       slug: custom-tools
   - section: Authentication
     icon: lock
     skip-slug: true
     contents:
     - page: Custom Auth Configs
-      path: pages/dist/custom-auth-configs.mdx
+      path: pages/dist/authentication/custom-auth-configs.mdx
       slug: custom-auth-configs
     - page: Programmatic Auth Configs
-      path: pages/dist/programmatic-auth-configs.mdx
+      path: pages/dist/authentication/programmatic-auth-configs.mdx
       slug: programmatic-auth-configs
     - page: Custom Auth Parameters
-      path: pages/dist/custom-auth-params.mdx
+      path: pages/dist/authentication/custom-auth-params.mdx
       slug: custom-auth-params
   - section: Triggers
     icon: bolt
     skip-slug: true
     contents:
     - page: Using Triggers
-      path: pages/dist/using-triggers.mdx
+      path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
   - section: MCP
     icon: server
     skip-slug: true
     contents:
     - page: Introduction
-      path: pages/dist/introduction.mdx
+      path: pages/dist/mcp/introduction.mdx
       slug: mcp-introduction
   - section: Resources
     icon: book
@@ -203,27 +203,27 @@ navigation:
     skip-slug: true
     contents:
     - page: Hello World
-      path: pages/dist/hello-world.mdx
+      path: pages/dist/examples/hello-world.mdx
       slug: examples/hello-world
     - page: Sample Script
-      path: pages/dist/sample-script.mdx
+      path: pages/dist/examples/sample-script.mdx
       slug: examples/sample-script
     - page: Basic Hono Server
-      path: pages/dist/sample-webserver.mdx
+      path: pages/dist/examples/sample-webserver/sample-webserver.mdx
       slug: examples/sample-webserver
   - section: Full Stack Applications
     icon: globe
     skip-slug: true
     contents:
     - page: Full Stack Chat App
-      path: pages/dist/vercel-composio.mdx
+      path: pages/dist/examples/vercel-composio.mdx
       slug: examples/chat-app
   - section: Productivity & Automation
     icon: zap
     skip-slug: true
     contents:
     - page: Gmail Reaper
-      path: pages/dist/gmail-filterer.mdx
+      path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
 - tab: providers
   layout:
@@ -231,23 +231,23 @@ navigation:
     icon: code
     contents:
     - page: OpenAI Provider
-      path: pages/dist/openai.mdx
+      path: pages/dist/providers/openai.mdx
     - page: Anthropic Provider
-      path: pages/dist/anthropic.mdx
+      path: pages/dist/providers/anthropic.mdx
     - page: LangChain Provider
-      path: pages/dist/langchain.mdx
+      path: pages/dist/providers/langchain.mdx
     - page: CrewAI Provider
-      path: pages/dist/crewai.mdx
+      path: pages/dist/providers/crewai.mdx
     - page: Vercel AI SDK Provider
-      path: pages/dist/vercel.mdx
+      path: pages/dist/providers/vercel.mdx
     - page: Google ADK Provider
-      path: pages/dist/google-adk.mdx
+      path: pages/dist/providers/google-adk.mdx
     - page: OpenAI Agents Provider
-      path: pages/dist/openai-agents.mdx
+      path: pages/dist/providers/openai-agents.mdx
     - page: Mastra Provider
-      path: pages/dist/mastra.mdx
+      path: pages/dist/providers/mastra.mdx
     - page: Custom Provider
-      path: pages/dist/custom.mdx
+      path: pages/dist/providers/custom.mdx
 - tab: tools
   layout:
   - section: Tools

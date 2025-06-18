@@ -44,6 +44,7 @@
 		"hono": "^4.7.11",
 		"next": "^15.3.3",
 		"only-allow": "^1.2.1",
+		"openai": "^4.94.0",
 		"react": "^18.3.1",
 		"tailwindcss": "^3.4.17",
 		"typedoc": "^0.28.5",
