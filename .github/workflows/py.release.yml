@@ -26,6 +26,7 @@ jobs:
       - name: Build Artifacts
         run: |
             pip install uv
+            make env
             make build
 
       - name: Publish Artifacts
