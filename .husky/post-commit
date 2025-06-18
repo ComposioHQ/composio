@@ -2,4 +2,4 @@
 
 # Re-comment tools in docs.yml after commit for development
 echo "Re-commenting tools in docs.yml for development..."
-(cd fern && python scripts/manage-tool-docs.py comment --file docs.yml)
+(cd fern && uv run python scripts/manage-tool-docs.py comment --file docs.yml)
