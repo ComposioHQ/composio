@@ -60,7 +60,7 @@ anthropic_client = anthropic.Anthropic()
 composio = Composio(provider=AnthropicProvider())
 
 # Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
+tools = composio.tools.get(user_id="default", tools=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
 
 # Get response from the LLM
 response = anthropic_client.messages.create(
