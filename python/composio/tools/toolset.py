@@ -121,33 +121,11 @@ class ProcessorsType(te.TypedDict):
     """Schema processors"""
 
 
-def _check_agentops() -> bool:
-    """Check if AgentOps is installed and initialized."""
-    if find_spec("agentops") is None:
-        return False
-    import agentops  # pylint: disable=import-outside-toplevel # type: ignore
-
-    return agentops.get_api_key() is not None
-
-
 def _is_ci():
     global _IS_CI
     if _IS_CI is None:
         _IS_CI = os.environ.get("CI") == "true"
     return _IS_CI
-
-
-def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if _check_agentops():
-            import agentops  # pylint: disable=import-outside-toplevel # type: ignore
-
-            action_name = str(kwargs.get("action", "unknown_action"))
-            return agentops.record_action(action_name)(func)(self, *args, **kwargs)
-        return func(self, *args, **kwargs)  # type: ignore
-
-    return wrapper  # type: ignore
 
 
 def _map_enums(_t: t.Type[T], _sequence: t.Sequence[t.Any]) -> t.Sequence[T]:
@@ -1854,7 +1832,6 @@ class ComposioToolSet(_IntegrationMixin):
             entity_id=entity_id,
         )
 
-    @_record_action_if_available
     def execute_action(
         self,
         action: ActionType,
