@@ -4,8 +4,9 @@
 import fs, { watch } from 'fs';
 import path from 'path';
 
-const DOCS_SRC_DIR = path.join(import.meta.dir, '../docs');
-const PAGES_DIR = path.join(import.meta.dir, '../pages');
+// Use default directories (no positional args for folder names)
+const DOCS_SRC_DIR = path.join(import.meta.dir, '../pages/src');
+const PAGES_DIST_DIR = path.join(import.meta.dir, '../pages/dist');
 const PROJECT_ROOT = path.join(import.meta.dir, '../..');
 
 interface SnippetCodeProps {
@@ -19,14 +20,10 @@ interface SnippetCodeProps {
 }
 
 function ensureDistDir() {
-  // Remove existing pages directory to ensure clean build
-  if (fs.existsSync(PAGES_DIR)) {
-    fs.rmSync(PAGES_DIR, { recursive: true, force: true });
-    console.log('🧹 Cleaned existing pages directory');
-  }
+  // Remove existing dist directory to ensure clean build
 
-  // Create fresh pages directory
-  fs.mkdirSync(PAGES_DIR, { recursive: true });
+  // Create fresh dist directory
+  fs.mkdirSync(PAGES_DIST_DIR, { recursive: true });
 }
 
 function getLanguageFromPath(filePath: string): { syntax: string; displayName: string } {
@@ -167,7 +164,7 @@ function processFile(srcPath: string, distPath: string) {
 
     fs.writeFileSync(distPath, processedContent);
     console.log(
-      `✅ Processed: ${path.relative(DOCS_SRC_DIR, srcPath)} -> ${path.relative(PAGES_DIR, distPath)}`
+      `✅ Processed: ${path.relative(DOCS_SRC_DIR, srcPath)} -> ${path.relative(PAGES_DIST_DIR, distPath)}`
     );
   } catch (error) {
     console.error(`❌ Error processing ${srcPath}:`, error);
@@ -200,8 +197,8 @@ function processAllFiles() {
 
         // If in SDK, preserve directory structure; otherwise flatten
         const distPath = isInSDK
-          ? path.join(PAGES_DIR, relativePath)
-          : path.join(PAGES_DIR, entry.name);
+          ? path.join(PAGES_DIST_DIR, relativePath)
+          : path.join(PAGES_DIST_DIR, entry.name);
 
         processFile(srcPath, distPath);
       }
@@ -227,8 +224,8 @@ function startWatchMode() {
 
     // If in SDK, preserve directory structure; otherwise flatten
     const distPath = isInSDK
-      ? path.join(PAGES_DIR, filename)
-      : path.join(PAGES_DIR, path.basename(filename));
+      ? path.join(PAGES_DIST_DIR, filename)
+      : path.join(PAGES_DIST_DIR, path.basename(filename));
 
     if (eventType === 'change' && fs.existsSync(srcPath)) {
       console.log(`🔄 File changed: ${filename}`);
@@ -266,6 +263,8 @@ function startWatchMode() {
 // Main function
 function main() {
   console.log('🚀 Starting SnippetCode processor...');
+  console.log(`Source: ${DOCS_SRC_DIR}`);
+  console.log(`Dist:   ${PAGES_DIST_DIR}`);
 
   ensureDistDir();
   processAllFiles();

@@ -43,8 +43,8 @@ lerna-debug.log*
 fern/tools
 fern/apis/openapi.yml
 fern/apis/openapi-mcp.json
-fern/pages/
-fern/docs/sdk/
+fern/pages/dist/
+fern/pages/sdk/
 
 # Python cache files
 __pycache__/

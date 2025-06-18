@@ -18,7 +18,7 @@ def main():
     """Generate SDK documentation."""
     fern_dir = Path(__file__).parent.parent.parent
     source_dir = fern_dir / "generators" / "python-sdk" / "templates"
-    output_dir = fern_dir / "docs" / "sdk" / "python"
+    output_dir = fern_dir / "pages" / "dist" / "sdk" / "python"
     
     print("Generating Composio Python SDK documentation...")
     print(f"Source: {source_dir}")

@@ -1,6 +1,6 @@
 {
   "plugin": ["typedoc-plugin-zod", "typedoc-plugin-markdown"],
-  "out": "./docs/sdk/typescript",
+  "out": "./pages/dist/sdk/typescript",
   "fileExtension": ".mdx",
   "flattenOutputFiles": false,
   "useHTMLEncodedBrackets": false,

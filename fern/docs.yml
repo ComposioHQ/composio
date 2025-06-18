@@ -123,78 +123,78 @@ navigation:
     skip-slug: true
     contents:
     - page: Welcome
-      path: pages/welcome.mdx
+      path: pages/dist/welcome.mdx
       slug: welcome
     - page: Quickstart
-      path: pages/quickstart.mdx
+      path: pages/dist/quickstart.mdx
       slug: quickstart
     - page: IDE and Agent Setup
-      path: pages/dev-setup.mdx
+      path: pages/dist/dev-setup.mdx
       slug: dev-setup
     - page: Providers
-      path: pages/providers.mdx
+      path: pages/dist/providers.mdx
       slug: providers
   - section: Tools
     icon: tools
     skip-slug: true
     contents:
     - page: Executing Tools
-      path: pages/executing-tools.mdx
+      path: pages/dist/executing-tools.mdx
       slug: executing-tools
     - page: Authenticating Tools
-      path: pages/authenticating-tools.mdx
+      path: pages/dist/authenticating-tools.mdx
       slug: authenticating-tools
     - page: Fetch and Filter Tools
-      path: pages/fetching-tools.mdx
+      path: pages/dist/fetching-tools.mdx
       slug: fetching-tools
     - section: Modifiers
       slug: modifiers
       contents:
       - page: Schema Modifiers
-        path: pages/schema-modifiers.mdx
+        path: pages/dist/schema-modifiers.mdx
         slug: schema-modifiers
       - page: Before Tool Execution
-        path: pages/before-execution-modifiers.mdx
+        path: pages/dist/before-execution-modifiers.mdx
         slug: before-execution
       - page: After Tool Execution
-        path: pages/after-execution-modifiers.mdx
+        path: pages/dist/after-execution-modifiers.mdx
         slug: after-execution
     - page: Custom tools
-      path: pages/custom-tools.mdx
+      path: pages/dist/custom-tools.mdx
       slug: custom-tools
   - section: Authentication
     icon: lock
     skip-slug: true
     contents:
     - page: Custom Auth Configs
-      path: pages/custom-auth-configs.mdx
+      path: pages/dist/custom-auth-configs.mdx
       slug: custom-auth-configs
     - page: Programmatic Auth Configs
-      path: pages/programmatic-auth-configs.mdx
+      path: pages/dist/programmatic-auth-configs.mdx
       slug: programmatic-auth-configs
     - page: Custom Auth Parameters
-      path: pages/custom-auth-params.mdx
+      path: pages/dist/custom-auth-params.mdx
       slug: custom-auth-params
   - section: Triggers
     icon: bolt
     skip-slug: true
     contents:
     - page: Using Triggers
-      path: pages/using-triggers.mdx
+      path: pages/dist/using-triggers.mdx
       slug: using-triggers
   - section: MCP
     icon: server
     skip-slug: true
     contents:
     - page: Introduction
-      path: pages/introduction.mdx
+      path: pages/dist/introduction.mdx
       slug: mcp-introduction
   - section: Resources
     icon: book
     skip-slug: true
     contents:
     - page: Migration Guide
-      path: pages/migration-guide.mdx
+      path: pages/dist/migration-guide.mdx
       slug: migration
 - tab: examples
   layout:
@@ -203,27 +203,27 @@ navigation:
     skip-slug: true
     contents:
     - page: Hello World
-      path: pages/hello-world.mdx
+      path: pages/dist/hello-world.mdx
       slug: examples/hello-world
     - page: Sample Script
-      path: pages/sample-script.mdx
+      path: pages/dist/sample-script.mdx
       slug: examples/sample-script
     - page: Basic Hono Server
-      path: pages/sample-webserver.mdx
+      path: pages/dist/sample-webserver.mdx
       slug: examples/sample-webserver
   - section: Full Stack Applications
     icon: globe
     skip-slug: true
     contents:
     - page: Full Stack Chat App
-      path: pages/vercel-composio.mdx
+      path: pages/dist/vercel-composio.mdx
       slug: examples/chat-app
   - section: Productivity & Automation
     icon: zap
     skip-slug: true
     contents:
     - page: Gmail Reaper
-      path: pages/gmail-filterer.mdx
+      path: pages/dist/gmail-filterer.mdx
       slug: examples/gmail-reaper
 - tab: providers
   layout:
@@ -231,23 +231,23 @@ navigation:
     icon: code
     contents:
     - page: OpenAI Provider
-      path: pages/openai.mdx
+      path: pages/dist/openai.mdx
     - page: Anthropic Provider
-      path: pages/anthropic.mdx
+      path: pages/dist/anthropic.mdx
     - page: LangChain Provider
-      path: pages/langchain.mdx
+      path: pages/dist/langchain.mdx
     - page: CrewAI Provider
-      path: pages/crewai.mdx
+      path: pages/dist/crewai.mdx
     - page: Vercel AI SDK Provider
-      path: pages/vercel.mdx
+      path: pages/dist/vercel.mdx
     - page: Google ADK Provider
-      path: pages/google-adk.mdx
+      path: pages/dist/google-adk.mdx
     - page: OpenAI Agents Provider
-      path: pages/openai-agents.mdx
+      path: pages/dist/openai-agents.mdx
     - page: Mastra Provider
-      path: pages/mastra.mdx
+      path: pages/dist/mastra.mdx
     - page: Custom Provider
-      path: pages/custom.mdx
+      path: pages/dist/custom.mdx
 - tab: tools
   layout:
   - section: Tools
@@ -866,7 +866,7 @@ navigation:
     icon: python
     contents:
     - page: Python SDK Reference
-      path: pages/sdk/python/sdk-reference.md
+      path: pages/dist/sdk/python/sdk-reference.md
   - section: TypeScript
     icon: typescript
     contents:
@@ -874,32 +874,32 @@ navigation:
       slug: core-classes
       contents:
       - page: Composio
-        path: pages/sdk/typescript/composio/classes/Composio.mdx
+        path: pages/dist/sdk/typescript/composio/classes/Composio.mdx
       - page: ComposioProvider
-        path: pages/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
+        path: pages/dist/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
       - page: OpenAIProvider
-        path: pages/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
+        path: pages/dist/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
       - page: BaseAgenticProvider
-        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
+        path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
       - page: BaseNonAgenticProvider
-        path: pages/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
+        path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
     - section: Models
       slug: models
       contents:
       - page: Tools
-        path: pages/sdk/typescript/models/Tools/classes/Tools.mdx
+        path: pages/dist/sdk/typescript/models/Tools/classes/Tools.mdx
       - page: Toolkits
-        path: pages/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
+        path: pages/dist/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
       - page: Triggers
-        path: pages/sdk/typescript/models/Triggers/classes/Triggers.mdx
+        path: pages/dist/sdk/typescript/models/Triggers/classes/Triggers.mdx
       - page: AuthConfigs
-        path: pages/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
+        path: pages/dist/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
       - page: ConnectedAccounts
-        path: pages/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
+        path: pages/dist/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
       - page: ConnectionRequest
-        path: pages/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
+        path: pages/dist/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
       - page: CustomTools
-        path: pages/sdk/typescript/CustomTools/classes/CustomTools.mdx
+        path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
 - tab: api-reference
   layout:
   - section: API Reference
