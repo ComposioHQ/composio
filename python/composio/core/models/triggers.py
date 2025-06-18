@@ -17,13 +17,12 @@ from pysher.connection import Connection as PusherConnection
 from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import trigger_instance_upsert_response
-from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.core.models.base import Resource
 from composio.core.models.internal import Internal
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
 
-PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?fromPython=true"
+PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
 
 
 class TriggerConnectedAccountSchema(t.TypedDict):
@@ -267,11 +266,11 @@ class _SubcriptionBuilder(WithLogger):
 
         return _connection_handler
 
-    def _get_pusher_instance(self) -> Pusher:
+    def _get_pusher_instance(self, key: str, cluster: str) -> Pusher:
         """Get a pusher instance."""
         return Pusher(
-            key=PUSHER_KEY,
-            cluster=PUSHER_CLUSTER,
+            key=key,
+            cluster=cluster,
             auth_endpoint=PUSHER_AUTH_URL.format(base_url=self._client.base_url),
             auth_endpoint_headers={
                 "x-api-key": self._client.api_key,
@@ -283,8 +282,11 @@ class _SubcriptionBuilder(WithLogger):
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         self.logger.debug("Creating trigger subscription")
-        pusher = self._get_pusher_instance()
         project_info = self.internal.get_sdk_realtime_credentials()
+        pusher = self._get_pusher_instance(
+            key=project_info.pusher_key,
+            cluster=project_info.pusher_cluster,
+        )
 
         # Patch pusher logger
         pusher.connection.logger = mock.MagicMock()  # type: ignore
@@ -328,8 +330,6 @@ class Triggers(Resource):
         :param client: The client to use for the triggers resource.
         """
         self._client = client
-        self._pusher_service = self.__init_pusher()
-
         self.list_enum = self._client.triggers_types.retrieve_enum
         self.list = self._client.triggers_types.list
         self.delete = self._client.trigger_instances.manage.delete
@@ -341,20 +341,6 @@ class Triggers(Resource):
         self.disable = functools.partial(
             self._client.trigger_instances.manage.update,
             status="disable",
-        )
-        self.unsubscribe = self._pusher_service.unsubscribe
-
-    def __init_pusher(self):
-        """Initialize the pusher service."""
-        return Pusher(
-            key=PUSHER_KEY,  # TODO: Fetch from API
-            cluster=PUSHER_CLUSTER,  # TODO: Fetch from API
-            auth_endpoint=PUSHER_AUTH_URL.format(base_url=self._client.base_url),
-            auth_endpoint_headers={
-                "x-api-key": self._client.api_key,
-                "x-request-id": str(uuid.uuid4()),
-            },
-            auto_sub=True,
         )
 
     def list_active(
