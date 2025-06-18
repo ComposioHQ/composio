@@ -169,7 +169,7 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         user_id: str,
         *,
-        slug: t.Optional[str] = None,
+        slug: str,
         modifiers: t.Optional[Modifiers] = None,
     ):
         """Get tool by slug"""
@@ -179,7 +179,7 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         user_id: str,
         *,
-        tools: t.Optional[list[str]] = None,
+        tools: list[str],
         modifiers: t.Optional[Modifiers] = None,
     ):
         """Get tools by tool slugs"""
@@ -189,7 +189,7 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         user_id: str,
         *,
-        toolkits: t.Optional[list[str]] = None,
+        toolkits: list[str],
         modifiers: t.Optional[Modifiers] = None,
     ):
         """Get tools by toolkit slugs (Only important tools are returned)"""
@@ -199,11 +199,21 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         user_id: str,
         *,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
+        search: str,
         modifiers: t.Optional[Modifiers] = None,
     ):
-        """Search tool by search term and/or toolkit slugs"""
+        """Search tool by search term"""
+
+    @t.overload
+    def get(
+        self,
+        user_id: str,
+        *,
+        toolkits: list[str],
+        search: t.Optional[str] = None,
+        modifiers: t.Optional[Modifiers] = None,
+    ):
+        """Get tool by search term and/or toolkit slugs and search term"""
 
     def get(
         self,
