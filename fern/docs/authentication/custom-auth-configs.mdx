@@ -106,7 +106,7 @@ connReq.id
 
 console.log(connection);
 
-```
+````
 ```python Python maxLines=60
 # Create a new connected account
 connection_request = composio.connected_accounts.initiate(
@@ -118,7 +118,7 @@ print(connection_request)
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
-```
+````
 
 </CodeGroup>
 
@@ -169,7 +169,7 @@ const redirectUrl = `${composioEndpoint}?${queryParams.toString()}`;
 res.redirect(302, redirectUrl);
 }
 
-```
+````
 
 ```python FastAPI (app.py)
 from fastapi import FastAPI
@@ -187,10 +187,10 @@ composio = Composio()
 @app.get("/authorize/{toolkit}")
 def authorize_app(toolkit: str):
     # retrieve the user id from your app
-    user_id = ""
+    user_id = "<user_id>"
 
     # retrieve the auth config id from your app
-    auth_config_id = ""
+    auth_config_id = "<auth_config_id>"
 
     # initiate the connection request
     connection_request = composio.connected_accounts.initiate(
@@ -198,7 +198,7 @@ def authorize_app(toolkit: str):
         auth_config_id=auth_config_id,
     )
     return RedirectResponse(url=connection_request.redirect_url)
-```
+````
 
 </CodeGroup>
 </Step>
