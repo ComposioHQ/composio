@@ -12,8 +12,14 @@ dependencies = [
     "typing-extensions>=4.13.0",
     "composio-client==0.1.0a11",
     "openai>=1.79.0",
-    "composio-anthropic",
-    "composio",
+    "composio==1.0.0rc1",
+    # Dependencies for SDK doc generation
+    "tqdm>=4.62.0",
+    "pyyaml>=6.0",
+    "GitPython>=3.1.0",
+    "packaging>=20.0",
+    "nbformat>=5.0.0",
+    "composio-langchain==1.0.0rc2",
 ]
 
 [tool.ruff]
@@ -24,17 +30,12 @@ target-version = "py312"
 line-length = 100
 target-version = ["py312"]
 
-[tool.uv.sources]
-composio-langchain = { git = "ssh://git@github.com/composiohq/py-sdk-v3", subdirectory = "providers/langchain" }
-composio-anthropic = { git = "ssh://git@github.com/composiohq/py-sdk-v3", subdirectory = "providers/anthropic" }
-composio = { git = "ssh://git@github.com/composiohq/py-sdk-v3" }
 
 [tool.uv.workspace]
 members = ["snippets/migration"]
 
+[tool.setuptools.packages.find]
+include = ["generators*"]
+
 [dependency-groups]
-dev = [
-    "composio",
-    "composio-langchain",
-    "langchain>=0.3.25",
-]
+dev = ["composio", "composio-langchain", "langchain>=0.3.25"]

@@ -9,7 +9,7 @@
     },
     
     "dev": {
-      "dependsOn": ["api:pull", "sdkdocs","tools:comment", "snippets:build"],
+      "dependsOn": ["api:pull", "sdkdocs", "tools:comment", "snippets:build"],
       "persistent": true,
       "cache": false
     },
@@ -58,9 +58,22 @@
     },
     
     "sdkdocs": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "sdkdocs:ts", "sdkdocs:python"],
       "outputs": ["docs/sdk/**"],
+      "cache": true
+    },
+    
+    "sdkdocs:ts": {
+      "dependsOn": ["^build"],
+      "outputs": ["docs/sdk/typescript/**"],
       "inputs": ["../ts/packages/core/**/*.ts", "../ts/packages/providers/**/*.ts", "typedoc.json"],
+      "cache": true
+    },
+    
+    "sdkdocs:python": {
+      "dependsOn": ["^build"],
+      "outputs": ["docs/sdk/python/**"],
+      "inputs": ["generators/python-sdk/templates/**/*.md", "generators/python-sdk/**/*.py"],
       "cache": true
     },
     
