@@ -40,7 +40,7 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message: '⚠️ We are launching our new <a href="/sdks-and-docs">SDKs and Docs</a>. These SDKs will be deprecated soon!'
+  message: '⚠️ We are launching our new <a href="https://v3.docs.composio.dev">SDKs and Docs</a>. These SDKs will be deprecated soon!'
 
 layout:
   tabs-placement: header
