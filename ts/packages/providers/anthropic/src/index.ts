@@ -15,10 +15,15 @@ import {
   ToolExecuteParams,
   logger,
   McpUrlResponse,
-  McpServerGetResponse,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+
+export type AnthropicMcpServerGetResponse = {
+  type: 'url';
+  url: string;
+  name: string;
+}[];
 
 /**
  * Collection of Anthropic tools
@@ -48,7 +53,8 @@ export type AnthropicContentBlock = {
  */
 export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicToolCollection,
-  AnthropicTool
+  AnthropicTool,
+  AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
@@ -300,11 +306,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * @param data - The MCP URL response data
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
-    // Anthropic uses the standard format
+  wrapMcpServerResponse(data: McpUrlResponse): AnthropicMcpServerGetResponse {
+    // Anthropic uses the standard format with URL objects
     return data.map(item => ({
-      url: new URL(item.url),
+      url: item.url,
       name: item.name,
-    })) as McpServerGetResponse;
+      type: 'url',
+    }));
   }
 }
