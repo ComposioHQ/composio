@@ -1,5 +1,29 @@
 # @composio/vercel
 
+## 0.1.29
+
+### Patch Changes
+
+- Add file upload / download modifiers
+- Updated dependencies
+  - @composio/core@0.1.29
+
+## 0.1.28
+
+### Patch Changes
+
+- Add MCP support for providers
+- Updated dependencies
+  - @composio/core@0.1.28
+
+## 0.1.27
+
+### Patch Changes
+
+- Remove cusrsor and important flags from tools.get
+- Updated dependencies
+  - @composio/core@0.1.27
+
 ## 0.1.26
 
 ### Patch Changes

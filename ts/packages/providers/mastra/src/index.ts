@@ -37,44 +37,19 @@ export class MastraProvider extends BaseAgenticProvider<
   }
 
   /**
-   * Transform MCP URL response into Mastra-specific format.
-   * Mastra expects URLs in a key-value map format.
+   * Transform MCP URL response into Anthropic-specific format.
+   * By default, Anthropic uses the standard format (same as default),
+   * but this method is here to show providers can customize if needed.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-   * @param connectedAccountIds - Optional array of connected account IDs
-   * @param userIds - Optional array of user IDs
-   * @returns Transformed MastraUrlMap
+   * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[]
-  ): MastraUrlMap {
-    if (connectedAccountIds?.length && data.connected_account_urls) {
-      return data.connected_account_urls.reduce(
-        (prev: MastraUrlMap, url: string, index: number) => {
-          prev[`${serverName}-${index}`] = {
-            url: url,
-          };
-          return prev;
-        },
-        {}
-      );
-    } else if (userIds?.length && data.user_ids_url) {
-      return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
-        prev[`${serverName}-${index}`] = {
-          url: url,
-        };
-        return prev;
-      }, {});
-    }
-    return {
-      [serverName]: {
-        url: data.mcp_url,
-      },
-    };
+  wrapMcpServerResponse(data: McpUrlResponse): MastraUrlMap {
+    // Transform to Mastra's URL map format
+    return data.reduce((acc: MastraUrlMap, item) => {
+      acc[item.name] = { url: item.url };
+      return acc;
+    }, {});
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {

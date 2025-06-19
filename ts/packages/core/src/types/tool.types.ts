@@ -25,19 +25,24 @@ const JSONSchemaType = z.enum([
 ]);
 
 // JSON Schema property definition
-const JSONSchemaProperty: z.ZodType<unknown> = z.object({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
-  anyOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  oneOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  allOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  not: z.lazy(() => JSONSchemaProperty).optional(),
+  anyOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  oneOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  allOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  not: z.lazy(() => JSONSchemaPropertySchema).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
   nullable: z.boolean().optional(),
-  properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
+  properties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   required: z.array(z.string()).optional(),
-  items: z.lazy(() => z.union([JSONSchemaProperty, z.array(JSONSchemaProperty)])).optional(),
+  file_uploadable: z.boolean().optional(),
+  file_downloadable: z.boolean().optional(),
+  items: z
+    .lazy(() => z.union([JSONSchemaPropertySchema, z.array(JSONSchemaPropertySchema)]))
+    .optional(),
   enum: z.array(z.any()).optional(),
   const: z.any().optional(),
   minimum: z.number().optional(),
@@ -54,37 +59,38 @@ const JSONSchemaProperty: z.ZodType<unknown> = z.object({
   uniqueItems: z.boolean().optional(),
   minProperties: z.number().optional(),
   maxProperties: z.number().optional(),
-  patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
-  additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaProperty)]).optional(),
+  patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
+  additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaPropertySchema)]).optional(),
   examples: z.array(z.any()).optional(),
   readOnly: z.boolean().optional(),
   writeOnly: z.boolean().optional(),
-  if: z.lazy(() => JSONSchemaProperty).optional(),
-  then: z.lazy(() => JSONSchemaProperty).optional(),
-  else: z.lazy(() => JSONSchemaProperty).optional(),
+  if: z.lazy(() => JSONSchemaPropertySchema).optional(),
+  then: z.lazy(() => JSONSchemaPropertySchema).optional(),
+  else: z.lazy(() => JSONSchemaPropertySchema).optional(),
   $ref: z.string().optional(),
   definitions: z
     .record(
       z.string(),
-      z.lazy(() => JSONSchemaProperty)
+      z.lazy(() => JSONSchemaPropertySchema)
     )
     .optional(),
   $defs: z
     .record(
       z.string(),
-      z.lazy(() => JSONSchemaProperty)
+      z.lazy(() => JSONSchemaPropertySchema)
     )
     .optional(),
 });
+export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
 const ParametersSchema = z.object({
   type: z.literal('object'),
-  anyOf: z.array(JSONSchemaProperty).optional(),
-  oneOf: z.array(JSONSchemaProperty).optional(),
-  allOf: z.array(JSONSchemaProperty).optional(),
-  not: JSONSchemaProperty.optional(),
-  properties: z.record(z.string(), JSONSchemaProperty),
+  anyOf: z.array(JSONSchemaPropertySchema).optional(),
+  oneOf: z.array(JSONSchemaPropertySchema).optional(),
+  allOf: z.array(JSONSchemaPropertySchema).optional(),
+  not: JSONSchemaPropertySchema.optional(),
+  properties: z.record(z.string(), JSONSchemaPropertySchema),
   required: z.array(z.string()).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
@@ -108,6 +114,7 @@ export const ToolSchema = z.object({
   tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
   toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
   version: z.optional(z.string()).describe('The version of the tool, e.g. "1.0.0"'),
+  scopes: z.optional(z.array(z.string())).describe('The scopes of the tool. eg: ["task:add"]'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
@@ -126,65 +133,73 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
-export const ToolListFilterByToolsSchema = z.object({
-  tools: z.array(z.string()),
-});
-export type ToolListFilterByTools = z.infer<typeof ToolListFilterByToolsSchema>;
-
-export const ToolListFilterByToolkitsSchema = z.object({
-  toolkits: z.array(z.string()),
-  important: z.boolean().optional(),
-  cursor: z.string().optional(),
+export const ToolListParamsSchema = z.object({
+  tools: z.array(z.string()).optional(),
+  toolkits: z.array(z.string()).optional(),
+  scopes: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
 });
-export type ToolListFilterByToolkits = z.infer<typeof ToolListFilterByToolkitsSchema>;
 
-export const ToolListFilterBySearchSchema = z.object({
-  search: z.string(),
-  toolkits: z.array(z.string()).optional(),
-  cursor: z.string().optional(),
-  limit: z.number().optional(),
-});
-export type ToolListFilterBySearch = z.infer<typeof ToolListFilterBySearchSchema>;
+type BaseParams = {
+  limit?: number;
+  search?: string;
+  scopes?: string[];
+  tags?: string[];
+};
 
+// tools only
 type ToolsOnlyParams = {
   tools: string[];
   toolkits?: never;
-  important?: never;
-  cursor?: never;
-  limit?: never;
+  scopes?: never;
   search?: never;
+  tags?: never;
 };
 
+// toolkits only
 type ToolkitsOnlyParams = {
+  toolkits: string[];
   tools?: never;
+  scopes?: never;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+
+// toolkit + scopes (single toolkit only)
+type ToolkitScopeOnlyParams = {
+  toolkits: [string];
+  tools?: never;
+  scopes: string[];
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+
+// tags only
+type TagsOnlyParams = {
   toolkits?: string[];
-  important?: boolean;
-  cursor?: string;
-  limit?: number;
+  tags: string[];
+  tools?: never;
   search?: never;
+} & Pick<BaseParams, 'limit'>;
+
+// search only
+type SearchOnlyParams = {
+  tools?: never;
+  toolkits?: never;
+  scopes?: never;
+  limit?: never;
+  search: string;
+  tags?: never;
 };
 
-type ToolkitSearchOnlyParams = {
-  tools?: never;
-  toolkits?: string[];
-  important?: never;
-  cursor?: string;
-  limit?: number;
-  search?: string;
-};
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
  */
-export type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
-
-export const ToolListParamsSchema = z.union([
-  ToolListFilterByToolsSchema,
-  ToolListFilterByToolkitsSchema,
-  ToolListFilterBySearchSchema,
-]);
+export type ToolListParams =
+  | ToolsOnlyParams
+  | ToolkitsOnlyParams
+  | ToolkitScopeOnlyParams
+  | SearchOnlyParams
+  | TagsOnlyParams;
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.

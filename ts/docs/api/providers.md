@@ -102,8 +102,8 @@ const result = await openaiProvider.executeToolCall(
   toolCall,
   { connectedAccountId: 'conn_abc123' },
   {
-    beforeExecute: (toolSlug, toolkitSlug, params) => params,
-    afterExecute: (toolSlug, toolkitSlug, result) => result,
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => params,
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => result,
   }
 );
 ```
@@ -292,3 +292,14 @@ type afterExecuteModifier = (
   result: ToolExecuteResponse
 ) => ToolExecuteResponse;
 ```
+
+// Get tools with filters
+const githubTools = await composio.tools.getRawComposioTools({
+toolkits: ['github'],
+});
+
+// Get tools with schema transformation
+const tools = await composio.tools.getRawComposioTools({}, (toolSlug, toolkitSlug, tool) => {
+// Add custom properties to tool schema
+return { ...tool, customProperty: 'value' };
+});

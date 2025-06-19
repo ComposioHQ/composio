@@ -294,13 +294,13 @@ const tools = await composio.tools.get(
     },
 
     // Modify parameters before execution
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       console.log(`Executing ${toolSlug} tool`);
       return params;
     },
 
     // Transform results after execution
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       // Format the result data for better presentation
       if (result.successful && toolSlug === 'GITHUB_GET_REPO') {
         result.data = {

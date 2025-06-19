@@ -10,11 +10,11 @@ const composio = new Composio({
 
 console.log(`🔄 Fetching tools from composio...`);
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  beforeExecute: async (toolSlug, toolkitSlug, params) => {
+  beforeExecute: async ({ toolSlug, toolkitSlug, params }) => {
     console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
     return params;
   },
-  afterExecute: async (toolSlug, toolkitSlug, result) => {
+  afterExecute: async ({ toolSlug, toolkitSlug, result }) => {
     console.log(`✅ Tool ${toolSlug} executed`);
     return result;
   },

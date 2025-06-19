@@ -10,14 +10,14 @@ const composio = new Composio({
 
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
   // toolkit slug too
-  modifySchema: (toolSlug, toolkitSlug, toolSchema) => {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
     if (toolSlug === 'HACKERNEWS_GET_USER') {
-      toolSchema = {
-        ...toolSchema,
+      schema = {
+        ...schema,
         inputParameters: {
           type: 'object',
           properties: {
-            ...toolSchema.inputParameters?.properties,
+            ...schema.inputParameters?.properties,
             userId: {
               type: 'string',
               description: 'The user ID to get the user for',
@@ -27,7 +27,7 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
       };
     }
 
-    return toolSchema;
+    return schema;
   },
 });
 
@@ -47,17 +47,17 @@ const agenticTools = await vercel.tools.get(
   // what is the type error i am getting here?
   { tools: ['HACKERNEWS_GET_USER'] },
   {
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       // modify the result
       return result;
     },
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       // modify the params
       return params;
     },
-    modifySchema: (toolSlug, toolkitSlug, toolSchema) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       // modify the tool schema
-      return toolSchema;
+      return schema;
     },
   }
 );

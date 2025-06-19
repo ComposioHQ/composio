@@ -12,6 +12,7 @@ from composio.client.types import (
     tool_proxy_params,
     tool_proxy_response,
 )
+from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
 from composio.core.models.custom_tools import CustomTools
 from composio.core.provider import (
@@ -60,6 +61,7 @@ class Tools(Resource, t.Generic[TProvider]):
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
+        self._file_helper = FileHelper(client=self._client)
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
@@ -145,6 +147,11 @@ class Tools(Resource, t.Generic[TProvider]):
             ]
 
         self._tool_schemas.update({tool.slug: tool for tool in tools_list})
+        for tool in tools_list:
+            tool.input_parameters = self._file_helper.process_schema_recursively(
+                schema=tool.input_parameters,
+            )
+
         if issubclass(type(self.provider), NonAgenticProvider):
             t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
                 t.cast(
@@ -356,6 +363,10 @@ class Tools(Resource, t.Generic[TProvider]):
             user_id = processed_params["user_id"]
             arguments = processed_params["arguments"]
 
+        arguments = self._file_helper.substitute_file_uploads(
+            tool=tool,
+            request=arguments,
+        )
         response = (
             self._execute_custom_tool(slug=slug, arguments=arguments)
             if self._custom_tools.get(slug) is not None
@@ -369,7 +380,10 @@ class Tools(Resource, t.Generic[TProvider]):
                 version=version,
             )
         )
-
+        response = self._file_helper.substitute_file_downloads(
+            tool=tool,
+            response=response,
+        )
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,

@@ -5,7 +5,6 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
-import { ConnectedAccountAuthSchemes } from '../../src/types/connectedAccounts.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -389,7 +388,7 @@ describe('Toolkits', () => {
         id: 'conn_123',
         connectionData: {
           val: {
-            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            authScheme: AuthSchemeTypes.OAUTH2,
             status: 'INITIALIZING',
             redirectUrl: 'https://auth.example.com/connect',
           },

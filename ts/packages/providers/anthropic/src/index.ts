@@ -15,10 +15,15 @@ import {
   ToolExecuteParams,
   logger,
   McpUrlResponse,
-  McpServerGetResponse,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+
+export type AnthropicMcpServerGetResponse = {
+  type: 'url';
+  url: string;
+  name: string;
+}[];
 
 /**
  * Collection of Anthropic tools
@@ -48,7 +53,8 @@ export type AnthropicContentBlock = {
  */
 export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicToolCollection,
-  AnthropicTool
+  AnthropicTool,
+  AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
@@ -298,36 +304,14 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * but this method is here to show providers can customize if needed.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-   * @param connectedAccountIds - Optional array of connected account IDs
-   * @param userIds - Optional array of user IDs
-   * @param toolkits - Optional array of toolkit names
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): McpServerGetResponse {
-    // Anthropic uses the standard format
-    if (connectedAccountIds?.length && data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${connectedAccountIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    } else if (userIds?.length && data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${userIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverName,
-    } as McpServerGetResponse;
+  wrapMcpServerResponse(data: McpUrlResponse): AnthropicMcpServerGetResponse {
+    // Anthropic uses the standard format with URL objects
+    return data.map(item => ({
+      url: item.url,
+      name: item.name,
+      type: 'url',
+    }));
   }
 }

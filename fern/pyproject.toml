@@ -10,7 +10,7 @@ dependencies = [
     "click>=8.1.7",
     "ruamel-yaml>=0.18.10",
     "typing-extensions>=4.13.0",
-    "composio-client==0.1.0a11",
+    "composio-client",
     "openai>=1.79.0",
     "composio",
     # Dependencies for SDK doc generation

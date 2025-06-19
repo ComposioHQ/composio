@@ -110,8 +110,8 @@ describe('BaseProvider', () => {
         arguments: { query: 'test' },
       };
       const modifiers = {
-        beforeExecute: vi.fn(x => x),
-        afterExecute: vi.fn(x => x),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       const result = await nonAgenticProvider.executeTool(toolSlug, toolParams, modifiers);
@@ -209,8 +209,8 @@ describe('BaseProvider', () => {
         arguments: { query: 'test' },
       };
       const modifiers = {
-        beforeExecute: vi.fn(x => x),
-        afterExecute: vi.fn(x => x),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       const result = await agenticProvider.executeTool(toolSlug, toolParams, modifiers);

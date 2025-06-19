@@ -19,7 +19,6 @@ export const AuthSchemeTypes = {
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
   COMPOSIO_LINK: 'COMPOSIO_LINK',
   CALCOM_AUTH: 'CALCOM_AUTH',
-  SNOWFLAKE: 'SNOWFLAKE',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
@@ -35,7 +34,6 @@ export const AuthSchemeEnum = z.enum([
   'BASIC_WITH_JWT',
   'COMPOSIO_LINK',
   'CALCOM_AUTH',
-  'SNOWFLAKE',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),

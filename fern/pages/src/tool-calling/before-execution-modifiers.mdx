@@ -140,7 +140,7 @@ const agenticTools = await composio.tools.get(
     ],
   },
   {
-    beforeExecute: (toolSlug, _, params) => {
+    beforeExecute: ({toolSlug, toolkitSlug, params}) => {
       if (toolSlug === "LINEAR_CREATE_LINEAR_ISSUE") {
         params.arguments.project_id = "1234567890";
       }

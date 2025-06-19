@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import ComposioClient, { ComposioError } from '@composio/client';
 import { ConnectionRequestTimeoutError } from '../../src/errors';
-import {
-  ConnectedAccountAuthSchemes,
-  ConnectedAccountStatuses,
-} from '../../src/types/connectedAccounts.types';
+import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
+import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 
 // Mock ComposioClient
 const mockClient = {
@@ -71,7 +69,7 @@ describe('ConnectionRequest', () => {
           is_disabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: 'ACTIVE',
             access_token: 'access_token_123',

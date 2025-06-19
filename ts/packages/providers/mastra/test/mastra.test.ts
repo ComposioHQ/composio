@@ -332,8 +332,8 @@ describe('MastraProvider', () => {
       };
 
       const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       await provider.executeTool(toolSlug, toolParams, modifiers);

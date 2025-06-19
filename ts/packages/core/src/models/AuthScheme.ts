@@ -191,20 +191,6 @@ export class AuthScheme {
   }
 
   /**
-   * Creates a ConnectionData object for Snowflake authentication
-   * @returns ConnectionData object
-   */
-  static Snowflake(params: BaseConnectionFields): ConnectionData {
-    return {
-      authScheme: AuthSchemeTypes.SNOWFLAKE,
-      val: {
-        status: ConnectionStatuses.ACTIVE,
-        ...params,
-      },
-    };
-  }
-
-  /**
    * Creates a ConnectionData object for Bill.com authentication
    * @param params The Bill.com auth parameters
    * @returns ConnectionData object

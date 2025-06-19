@@ -5,12 +5,9 @@ import ComposioClient from '@composio/client';
 import { ConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
 import { ComposioConnectedAccountNotFoundError } from '../../src/errors';
-import { ConnectionStatusEnum } from '../../src/types/connectedAccountAuthStates.types';
-import {
-  ConnectedAccountAuthSchemes,
-  ConnectedAccountStatuses,
-} from '../../src/types/connectedAccounts.types';
+import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ComposioMultipleConnectedAccountsError } from '../../src/errors';
+import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -97,7 +94,7 @@ describe('ConnectedAccounts', () => {
         id: 'conn_123',
         connectionData: {
           val: {
-            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            authScheme: AuthSchemeTypes.OAUTH2,
             status: 'INITIALIZING',
             redirectUrl: 'https://auth.example.com/connect',
           },
@@ -137,7 +134,7 @@ describe('ConnectedAccounts', () => {
         id: 'conn_123',
         connectionData: {
           val: {
-            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            authScheme: AuthSchemeTypes.OAUTH2,
             status: 'INITIALIZING',
             redirectUrl: 'https://auth.example.com/connect',
           },
@@ -271,7 +268,7 @@ describe('ConnectedAccounts', () => {
         id: 'conn_123',
         connectionData: {
           val: {
-            authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+            authScheme: AuthSchemeTypes.OAUTH2,
             status: 'INITIALIZING',
             redirectUrl: 'https://auth.example.com/connect',
           },
@@ -312,7 +309,7 @@ describe('ConnectedAccounts', () => {
           is_disabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: 'ACTIVE',
             access_token: 'access_token_123',
@@ -345,7 +342,7 @@ describe('ConnectedAccounts', () => {
           isDisabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: 'ACTIVE',
             access_token: 'access_token_123',
@@ -454,12 +451,12 @@ describe('ConnectedAccounts', () => {
         auth_scopes: ['read:user', 'write:user'],
         auth_config: {
           id: authConfigId,
-          auth_scheme: ConnectedAccountAuthSchemes.OAUTH2,
+          auth_scheme: AuthSchemeTypes.OAUTH2,
           is_composio_managed: true,
           is_disabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.INITIALIZING,
             access_token: 'access_token_123',
@@ -482,7 +479,7 @@ describe('ConnectedAccounts', () => {
         ...mockGetResponse,
         status: ConnectedAccountStatuses.ACTIVE,
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.ACTIVE,
             access_token: 'access_token_123',
@@ -508,7 +505,7 @@ describe('ConnectedAccounts', () => {
           isDisabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.ACTIVE,
             access_token: 'access_token_123',
@@ -554,7 +551,7 @@ describe('ConnectedAccounts', () => {
           is_disabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.INITIALIZING,
             access_token: 'access_token_123',
@@ -578,7 +575,7 @@ describe('ConnectedAccounts', () => {
         ...mockGetResponse,
         status: 'ACTIVE',
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.ACTIVE,
             access_token: 'access_token_123',
@@ -602,7 +599,7 @@ describe('ConnectedAccounts', () => {
           isDisabled: false,
         },
         state: {
-          authScheme: ConnectedAccountAuthSchemes.OAUTH2,
+          authScheme: AuthSchemeTypes.OAUTH2,
           val: {
             status: ConnectedAccountStatuses.ACTIVE,
             access_token: 'access_token_123',

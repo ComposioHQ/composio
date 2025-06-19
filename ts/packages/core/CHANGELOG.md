@@ -1,5 +1,23 @@
 # @composio/core
 
+## 0.1.29
+
+### Patch Changes
+
+- Add file upload / download modifiers
+
+## 0.1.28
+
+### Patch Changes
+
+- Add MCP support for providers
+
+## 0.1.27
+
+### Patch Changes
+
+- Remove cusrsor and important flags from tools.get
+
 ## 0.1.26
 
 ### Patch Changes

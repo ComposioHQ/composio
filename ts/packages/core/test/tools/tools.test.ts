@@ -67,8 +67,6 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
         limit: '9999',
-        cursor: undefined,
-        important: undefined,
         search: undefined,
         toolkit_slug: undefined,
       });
@@ -79,7 +77,6 @@ describe('Tools', () => {
       const query = {
         toolkits: ['github'],
         limit: 10,
-        important: true,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -93,8 +90,6 @@ describe('Tools', () => {
         tool_slugs: undefined,
         toolkit_slug: 'github',
         limit: '10',
-        cursor: undefined,
-        important: 'true',
         search: undefined,
       });
     });
@@ -105,7 +100,6 @@ describe('Tools', () => {
         toolkits: ['github'],
         search: 'test',
         limit: 10,
-        cursor: 'next-page',
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -119,10 +113,68 @@ describe('Tools', () => {
         tool_slugs: undefined,
         toolkit_slug: 'github',
         limit: '10',
-        cursor: 'next-page',
-        important: undefined,
         search: 'test',
       });
+    });
+
+    it('should handle toolkit scopes parameters correctly', async () => {
+      const userId = 'test-user';
+      const query = {
+        toolkits: ['todoist'],
+        scopes: ['task:add', 'task:read'],
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        tool_slugs: undefined,
+        toolkit_slug: 'todoist',
+        limit: '10',
+        search: undefined,
+        scopes: ['task:add', 'task:read'],
+      });
+    });
+
+    it('should handle toolkit scopes with search parameters correctly', async () => {
+      const userId = 'test-user';
+      const query = {
+        toolkits: ['todoist'],
+        scopes: ['task:add'],
+        search: 'add task',
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        tool_slugs: undefined,
+        toolkit_slug: 'todoist',
+        limit: '10',
+        search: 'add task',
+        scopes: ['task:add'],
+      });
+    });
+
+    it('should throw a validation error when scopes are provided without toolkits', async () => {
+      const userId = 'test-user';
+      const invalidQuery = {
+        scopes: ['task:add'],
+      } as any;
+
+      await expect(context.tools.getRawComposioTools(invalidQuery)).rejects.toThrow(
+        'Invalid tool list parameters'
+      );
     });
 
     it('should transform tool case correctly', async () => {

@@ -168,17 +168,12 @@ class MockProvider extends BaseAgenticProvider<MockToolCollection, MockTool, Moc
     return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): MockMcpResponse {
+  wrapMcpServerResponse(data: McpUrlResponse): MockMcpResponse {
+    // McpUrlResponse is an array of { name, url } objects
     return {
       customFormat: true,
-      serverName,
-      urls: data.connected_account_urls || [data.mcp_url],
+      serverName: data[0]?.name || 'test-mcp-server',
+      urls: data.map(item => item.url),
     };
   }
 }
@@ -384,7 +379,12 @@ describe('MCP', () => {
         managedAuthViaComposio: mockRetrieveResponse.managed_auth_via_composio,
       });
 
-      mockClient.mcp.generate.url.mockResolvedValue(mockGenerateUrlResponse);
+      // Mock a response with only one URL for the single userId
+      const singleUserResponse = {
+        user_ids_url: ['https://mcp.example.com/user_123'],
+        mcp_url: 'https://mcp.example.com/server',
+      };
+      mockClient.mcp.generate.url.mockResolvedValue(singleUserResponse);
 
       const result = await mcpWithProvider.getServer('mcp_123', {
         userId: 'user_123',
@@ -392,7 +392,8 @@ describe('MCP', () => {
 
       expect(result).toMatchObject({
         customFormat: true,
-        serverName: 'test-mcp-server',
+        serverName: 'test-mcp-server-user_123',
+        urls: ['https://mcp.example.com/user_123'],
       });
     });
   });
