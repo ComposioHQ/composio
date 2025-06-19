@@ -204,7 +204,7 @@ class DocumentContent:
         self._blocks.extend(
             [
                 "## Overview",
-                f"### Enum\n`{app_id.upper()}`",
+                f"### SLUG\n`{app_id.upper()}`",
                 f"### Description\n{sanitize_html(description)}",
             ]
         )
@@ -301,8 +301,8 @@ class DocumentContent:
             Self reference for method chaining
         """
         # If this is the first action, add the Actions header
-        if not any("## Actions" in block for block in self._blocks):
-            self._blocks.append("## Actions")
+        if not any("## Tools" in block for block in self._blocks):
+            self._blocks.append("## Tools")
 
         action_contents = []
 
@@ -328,7 +328,10 @@ class DocumentContent:
         if not tool_data['name']:
             return None
         
-        content = [MDX.as_code_block(tool_data['description'], "text")]
+        content = [
+            f"**SLUG:** `{tool_data['slug']}`\n",
+            MDX.as_code_block(tool_data['description'], "text")
+        ]
         
         # Add parameters
         content.append("\n**Action Parameters**\n")
@@ -347,6 +350,7 @@ class DocumentContent:
         return {
             'name': tool.name or tool.slug,
             'description': tool.description,
+            "slug": tool.slug,
             'params': tool.input_parameters,
             'response': tool.output_parameters
         }
