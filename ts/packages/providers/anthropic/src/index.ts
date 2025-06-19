@@ -298,26 +298,13 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * but this method is here to show providers can customize if needed.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): McpServerGetResponse {
+  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
     // Anthropic uses the standard format
-    if (data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    } else if (data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverNames[0],
-    } as McpServerGetResponse;
+    return data.map(item => ({
+      url: new URL(item.url),
+      name: item.name,
+    })) as McpServerGetResponse;
   }
 }

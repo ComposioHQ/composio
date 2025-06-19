@@ -69,7 +69,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
 
    * @returns Transformed response in provider-specific format, or undefined to use default transformation
    */
-  wrapMcpServerResponse?(data: McpUrlResponse, serverNames: string[]): TMcpResponse;
+  wrapMcpServerResponse?(data: McpUrlResponse): TMcpResponse;
 }
 
 /**

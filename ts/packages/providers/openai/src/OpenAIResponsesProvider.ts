@@ -85,13 +85,13 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @param serverName - Name of the MCP server
    * @returns OpenAI-specific MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): OpenAiMcpTool[] {
-    return serverNames.map(name => ({
+  wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
+    return data.map(item => ({
       type: 'mcp',
-      server_label: name,
-      server_url: data.mcp_url,
+      server_label: item.name,
+      server_url: item.url,
       require_approval: 'never',
-    })) as OpenAiMcpTool[];
+    }));
   }
 
   /**

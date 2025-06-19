@@ -71,31 +71,19 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
   }
 
   /**
-   * Transform MCP URL response into Google-specific format.
-   * Google uses the standard format by default.
+   * Transform MCP URL response into Anthropic-specific format.
+   * By default, Anthropic uses the standard format (same as default),
+   * but this method is here to show providers can customize if needed.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): McpServerGetResponse {
-    // Google uses the standard format
-    if (data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    } else if (data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverNames[0],
-    } as McpServerGetResponse;
+  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
+    // Anthropic uses the standard format
+    return data.map(item => ({
+      url: new URL(item.url),
+      name: item.name,
+    })) as McpServerGetResponse;
   }
 
   /**

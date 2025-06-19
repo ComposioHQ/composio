@@ -508,27 +508,22 @@ export class MCP<T = McpServerGetResponse> {
   ): T {
     // Check if provider has a custom transform method
     if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
-      // Convert to snake_case for backward compatibility with providers
-      const snakeCaseData: McpUrlResponse = {
-        mcp_url: data.mcpUrl,
-        ...(data.connectedAccountUrls && { connected_account_urls: data.connectedAccountUrls }),
-        ...(data.userIdsUrl && { user_ids_url: data.userIdsUrl }),
-      };
+      // Convert to array of name and url based on connected accounts or user ids
+      const snakeCaseData: McpUrlResponse = data.connectedAccountUrls?.map((url, index) => ({
+        name: serverName + '-' + connectedAccountIds?.[index],
+        url: url,
+      })) ||
+        data.userIdsUrl?.map((url, index) => ({
+          name: serverName + '-' + userIds?.[index],
+          url: url,
+        })) || [
+          {
+            name: serverName,
+            url: data.mcpUrl,
+          },
+        ];
 
-      let serverNames: string[] = [];
-      if (!connectedAccountIds?.length && !userIds?.length) {
-        serverNames = [serverName];
-      } else {
-        if (connectedAccountIds?.length) {
-          serverNames = connectedAccountIds.map(
-            (id, index) => `${serverName}-${connectedAccountIds[index]}`
-          );
-        } else if (userIds?.length) {
-          serverNames = userIds.map((id, index) => `${serverName}-${userIds[index]}`);
-        }
-      }
-
-      const transformed = this.provider.wrapMcpServerResponse(snakeCaseData, serverNames);
+      const transformed = this.provider.wrapMcpServerResponse(snakeCaseData);
       return transformed as T;
     }
 

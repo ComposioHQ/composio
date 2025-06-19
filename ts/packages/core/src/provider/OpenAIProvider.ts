@@ -51,27 +51,13 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * OpenAI uses the standard format by default.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): McpServerGetResponse {
-    // OpenAI uses the standard format
-    if (data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    } else if (data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: serverNames[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverNames[0],
-    } as McpServerGetResponse;
+  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
+    return data.map(item => ({
+      url: new URL(item.url),
+      name: item.name,
+    }));
   }
 
   /**
