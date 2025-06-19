@@ -26,11 +26,11 @@ const modelInputs = await composio.provider.handleResponse(
   initialResponse,
   {},
   {
-    beforeExecute: async (toolSlug, toolkitSlug, params) => {
+    beforeExecute: async ({ toolSlug, toolkitSlug, params }) => {
       console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
       return params;
     },
-    afterExecute: async (toolSlug, toolkitSlug, result) => {
+    afterExecute: async ({ toolSlug, toolkitSlug, result }) => {
       console.log(`✅ Tool ${toolSlug} executed`);
       return result;
     },
