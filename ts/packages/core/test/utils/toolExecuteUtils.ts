@@ -4,9 +4,9 @@ import { mockClient } from './mocks/client.mock';
 import { MockProvider } from './mocks/provider.mock';
 import { connectedAccountMocks, toolkitMocks, toolMocks } from './mocks/data.mock';
 import ComposioClient from '@composio/client';
-import { Tool } from '../../src/types/tool.types';
+import { Tool, ToolExecuteResponse, ToolExecuteParams } from '../../src/types/tool.types';
 
-export type TestTools = Tools<unknown, unknown, unknown, MockProvider>;
+export type TestTools = Tools<Tool[], Tool, MockProvider>;
 
 export interface TestContext {
   tools: TestTools;
@@ -67,13 +67,15 @@ export const mockToolExecution = async (
   };
 };
 
-export type SchemaModification = Partial<Tool> | ((tool: Tool) => Partial<Tool>);
+export type SchemaModification =
+  | Partial<Tool>
+  | ((context: { schema: Tool; toolSlug: string; toolkitSlug: string }) => Partial<Tool>);
 
 export const createSchemaModifier = (modifications: SchemaModification) => {
-  return vi.fn((toolSlug: string, toolkitSlug: string, tool: Tool) => {
-    const mods = typeof modifications === 'function' ? modifications(tool) : modifications;
+  return vi.fn((context: { schema: Tool; toolSlug: string; toolkitSlug: string }) => {
+    const mods = typeof modifications === 'function' ? modifications(context) : modifications;
     return {
-      ...tool,
+      ...context.schema,
       ...mods,
     };
   });
@@ -84,13 +86,17 @@ export const createExecutionModifiers = ({
   afterModifications = {},
 } = {}) => {
   return {
-    beforeExecute: vi.fn((toolSlug: string, toolkitSlug: string, params: any) => ({
-      ...params,
-      ...beforeModifications,
-    })),
-    afterExecute: vi.fn((toolSlug: string, toolkitSlug: string, response: any) => ({
-      ...response,
-      ...afterModifications,
-    })),
+    beforeExecute: vi.fn(
+      (context: { toolSlug: string; toolkitSlug: string; params: ToolExecuteParams }) => ({
+        ...context.params,
+        ...beforeModifications,
+      })
+    ),
+    afterExecute: vi.fn(
+      (context: { toolSlug: string; toolkitSlug: string; result: ToolExecuteResponse }) => ({
+        ...context.result,
+        ...afterModifications,
+      })
+    ),
   };
 };

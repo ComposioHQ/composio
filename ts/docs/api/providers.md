@@ -102,8 +102,8 @@ const result = await openaiProvider.executeToolCall(
   toolCall,
   { connectedAccountId: 'conn_abc123' },
   {
-    beforeExecute: (toolSlug, toolkitSlug, params) => params,
-    afterExecute: (toolSlug, toolkitSlug, result) => result,
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => params,
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => result,
   }
 );
 ```

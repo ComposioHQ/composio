@@ -1,7 +1,6 @@
 import { Composio } from '@composio/core';
 import { OpenAI } from 'openai';
 
-
 const userId = 'your@email.com';
 const composio = new Composio();
 
@@ -12,15 +11,15 @@ const tools = await composio.tools.get(
     tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
   },
   {
-    modifyToolSchema: (toolSlug, _, toolSchema) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
-        const { inputParameters } = toolSchema;
+        const { inputParameters } = schema;
         if (inputParameters?.properties) {
           delete inputParameters.properties['page'];
         }
         inputParameters.required = ['size'];
       }
-      return toolSchema;
+      return schema;
     },
   }
 );
@@ -58,7 +57,7 @@ if (tool_calls) {
       arguments: JSON.parse(toolArgs),
     },
     {
-      beforeExecute: (toolSlug, _, params) => {
+      beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
         if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
           params.arguments.size = 1;
         }
@@ -68,14 +67,14 @@ if (tool_calls) {
     }
   );
   const result_2 = await composio.tools.execute(
-    "HACKERNEWS_GET_USER",
+    'HACKERNEWS_GET_USER',
     {
       userId,
       arguments: JSON.parse(toolArgs),
     },
     {
-      afterToolExecute: (toolSlug, _, result) => {
-        if (toolSlug === "HACKERNEWS_GET_USER") {
+      afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+        if (toolSlug === 'HACKERNEWS_GET_USER') {
           const { data } = result;
           const { karma } = data.response_data as { karma: number };
           return {

@@ -24,7 +24,7 @@ const tools = await composio.tools.get(
     toolkits: ['github'],
   },
   {
-    modifySchema: (toolSlug, toolkitSlug, tool) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       // Add a prefix to all tool descriptions
       if (tool.description) {
         tool.description = `[Enhanced] ${tool.description}`;
@@ -61,7 +61,7 @@ const result = await composio.tools.execute(
     },
   },
   {
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       // Convert owner names to lowercase
       if (params.arguments.owner) {
         params.arguments.owner = params.arguments.owner.toLowerCase();
@@ -97,7 +97,7 @@ const result = await composio.tools.execute(
     },
   },
   {
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       // Only when execution was successful
       if (result.successful) {
         // Filter out sensitive data
@@ -141,19 +141,19 @@ const tools = await composio.tools.get(
   },
   {
     // Schema modifier
-    modifySchema: (toolSlug, toolkitSlug, tool) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       // Enhance tool schema
-      return tool;
+      return schema;
     },
 
     // Before execution modifier (only works with agentic providers)
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       // Modify execution parameters
       return params;
     },
 
     // After execution modifier (only works with agentic providers)
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       // Transform execution results
       return result;
     },
@@ -193,19 +193,19 @@ For better code organization, you can create reusable modifier functions:
 
 ```typescript
 // Define reusable modifiers
-const addTimestamps = (toolSlug, toolkitSlug, result) => {
+const addTimestamps = ({ toolSlug, toolkitSlug, result }) => {
   if (result.successful) {
     result.data.executedAt = new Date().toISOString();
   }
   return result;
 };
 
-const logExecutions = (toolSlug, toolkitSlug, params) => {
+const logExecutions = ({ toolSlug, toolkitSlug, params }) => {
   console.log(`Executing ${toolSlug} from ${toolkitSlug} at ${new Date().toISOString()}`);
   return params;
 };
 
-const sanitizeInputs = (toolSlug, toolkitSlug, params) => {
+const sanitizeInputs = ({ toolSlug, toolkitSlug, params }) => {
   // Sanitize input parameters to prevent injection attacks
   if (params.arguments) {
     Object.keys(params.arguments).forEach(key => {
@@ -270,18 +270,18 @@ const vercel = new Composio({
 // All modifiers work with agentic providers
 const agenticTools = await vercel.tools.get('default', 'HACKERNEWS_GET_USER', {
   // Schema modifier
-  modifySchema: (toolSlug, toolkitSlug, tool) => {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
     if (tool.inputParameters?.properties?.userId) {
       tool.inputParameters.properties.userId.description = 'HackerNews username (e.g., "pg")';
     }
-    return tool;
+    return schema;
   },
   // Execution modifiers (only work with agentic providers)
-  beforeExecute: (toolSlug, toolkitSlug, params) => {
+  beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
     console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
     return params;
   },
-  afterExecute: (toolSlug, toolkitSlug, result) => {
+  afterExecute: ({ toolSlug, toolkitSlug, result }) => {
     if (result.successful) {
       result.data.processedAt = new Date().toISOString();
     }
@@ -305,11 +305,11 @@ const toolOutputs = await openaiProvider.handleToolCalls(
   { connectedAccountId: 'account_123' }, // Options
   {
     // Manually apply execution modifiers
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       console.log(`Executing ${toolSlug}`);
       return params;
     },
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       result.data.processedAt = new Date().toISOString();
       return result;
     },
@@ -325,7 +325,7 @@ const toolOutputs = await openaiProvider.handleToolCalls(
 // Simple in-memory cache
 const cache = new Map();
 
-const cacheModifier = (toolSlug, toolkitSlug, params) => {
+const cacheModifier = ({ toolSlug, toolkitSlug, params }) => {
   // Create a cache key based on tool slug and arguments
   const cacheKey = `${toolSlug}-${JSON.stringify(params.arguments)}`;
 
@@ -345,7 +345,7 @@ const cacheModifier = (toolSlug, toolkitSlug, params) => {
   return params;
 };
 
-const cacheAfterModifier = (toolSlug, toolkitSlug, result) => {
+const cacheAfterModifier = ({ toolSlug, toolkitSlug, result }) => {
   if (result.successful && result.__cacheKey) {
     // Store in cache
     cache.set(result.__cacheKey, {
@@ -390,7 +390,7 @@ try {
 ### Adding Authentication Headers
 
 ```typescript
-const authModifier = (toolSlug, toolkitSlug, params) => {
+const authModifier = ({ toolSlug, toolkitSlug, params }) => {
   // Add authentication parameters for specific toolkits
   if (toolkitSlug === 'custom-api') {
     if (!params.customAuthParams) {
@@ -429,22 +429,22 @@ const tools = await composio.tools.get(
 ```typescript
 // Create a pipeline of modifiers
 const pipeModifiers = (...modifiers) => {
-  return (toolSlug, toolkitSlug, result) => {
+  return ({ toolSlug, toolkitSlug, result }) => {
     return modifiers.reduce((modifiedResult, modifier) => {
-      return modifier(toolSlug, toolkitSlug, modifiedResult);
+      return modifier({ toolSlug, toolkitSlug, result: modifiedResult });
     }, result);
   };
 };
 
 // Individual transformation steps
-const addMetadata = (toolSlug, toolkitSlug, result) => {
+const addMetadata = ({ toolSlug, toolkitSlug, result }) => {
   if (result.successful) {
     result.data.metadata = { source: toolkitSlug, tool: toolSlug };
   }
   return result;
 };
 
-const formatDates = (toolSlug, toolkitSlug, result) => {
+const formatDates = ({ toolSlug, toolkitSlug, result }) => {
   if (result.successful) {
     // Convert all dates to a consistent format
     Object.keys(result.data).forEach(key => {
@@ -458,7 +458,7 @@ const formatDates = (toolSlug, toolkitSlug, result) => {
   return result;
 };
 
-const removeNulls = (toolSlug, toolkitSlug, result) => {
+const removeNulls = ({ toolSlug, toolkitSlug, result }) => {
   if (result.successful) {
     // Remove null and undefined values
     Object.keys(result.data).forEach(key => {
@@ -551,11 +551,11 @@ const result = await openaiProvider.executeToolCall(
   { connectedAccountId: 'account_123' }, // Options
   {
     // Manually apply execution modifiers
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       console.log(`Executing ${toolSlug}`);
       return params;
     },
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       result.data.processedAt = new Date().toISOString();
       return result;
     },

@@ -189,8 +189,8 @@ describe('AnthropicProvider', () => {
       };
 
       const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       await provider.executeToolCall(userId, toolUse, options, modifiers);
@@ -344,8 +344,8 @@ describe('AnthropicProvider', () => {
       };
 
       const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       await provider.executeTool(toolSlug, toolParams, modifiers);

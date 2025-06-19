@@ -30,9 +30,11 @@ describe('Tools Modifiers', () => {
 
       expect(schemaModifier).toHaveBeenCalledTimes(1);
       expect(schemaModifier).toHaveBeenCalledWith(
-        slug,
-        expect.any(String),
-        expect.objectContaining({ slug })
+        expect.objectContaining({
+          toolSlug: slug,
+          toolkitSlug: expect.any(String),
+          schema: expect.objectContaining({ slug }),
+        })
       );
       expect(result.name).toEqual('Modified Name');
       expect(result.description).toEqual('Modified description');
@@ -40,9 +42,9 @@ describe('Tools Modifiers', () => {
 
     it('should apply schema modifiers to all tools when getting multiple tools', async () => {
       const userId = 'test-user';
-      const schemaModifier = createSchemaModifier((tool: Tool) => ({
-        ...tool,
-        name: `Modified ${tool.name}`,
+      const schemaModifier = createSchemaModifier(({ schema }) => ({
+        ...schema,
+        name: `Modified ${schema.name}`,
       }));
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -82,7 +84,13 @@ describe('Tools Modifiers', () => {
       await context.tools.execute(slug, body, { beforeExecute });
 
       expect(beforeExecute).toHaveBeenCalledTimes(1);
-      expect(beforeExecute).toHaveBeenCalledWith(slug, expect.any(String), body);
+      expect(beforeExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          toolSlug: slug,
+          toolkitSlug: expect.any(String),
+          params: body,
+        })
+      );
       expect(mockClient.tools.execute).toHaveBeenCalledWith(
         slug,
         expect.objectContaining({
@@ -106,11 +114,13 @@ describe('Tools Modifiers', () => {
 
       expect(afterExecute).toHaveBeenCalledTimes(1);
       expect(afterExecute).toHaveBeenCalledWith(
-        slug,
-        expect.any(String),
         expect.objectContaining({
-          data: expect.any(Object),
-          successful: expect.any(Boolean),
+          toolSlug: slug,
+          toolkitSlug: expect.any(String),
+          result: expect.objectContaining({
+            data: expect.any(Object),
+            successful: expect.any(Boolean),
+          }),
         })
       );
       expect(result.data).toHaveProperty('enhanced', true);
@@ -120,32 +130,166 @@ describe('Tools Modifiers', () => {
   describe('Combined Modifiers', () => {
     it('should apply both schema and execution modifiers together', async () => {
       const userId = 'test-user';
-      const slug = 'COMPOSIO_TOOL';
+      const slug = 'GITHUB_GET_REPOS';
 
-      const schemaModifier = createSchemaModifier({
-        description: 'Modified schema',
-      });
+      // Mock analytics and logging functions
+      const trackToolUsage = vi.fn();
+      const logToolError = vi.fn();
 
-      const executionModifiers = createExecutionModifiers();
+      const schemaModifier = createSchemaModifier(({ schema, toolSlug }) => ({
+        ...schema,
+        description: `Enhanced ${toolSlug} for better context`,
+        tags: [...(schema.tags || []), 'enhanced', 'modified'],
+        inputParameters: {
+          type: 'object' as const,
+          properties: {
+            ...schema.inputParameters?.properties,
+            tracking: {
+              type: 'object' as const,
+              properties: {
+                enabled: {
+                  type: 'boolean' as const,
+                  default: true,
+                },
+              },
+            },
+          },
+        },
+      }));
+
+      const executionModifiers = {
+        beforeExecute: vi.fn(({ params, toolSlug }) => {
+          // Add analytics tracking
+          trackToolUsage(toolSlug);
+          return {
+            ...params,
+            arguments: {
+              ...(params.arguments || {}),
+              tracking: {
+                enabled: true,
+                timestamp: expect.any(String),
+              },
+            },
+          };
+        }),
+        afterExecute: vi.fn(({ result, toolSlug }) => {
+          // Log results and handle errors
+          if (!result.successful) {
+            logToolError(toolSlug, result.error);
+          }
+          return {
+            ...result,
+            data: {
+              ...(result.data || {}),
+              processed: true,
+              timestamp: expect.any(String),
+            },
+          };
+        }),
+      };
 
       const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
-      getRawComposioToolBySlugSpy.mockResolvedValueOnce({
+      const mockTool = {
         ...(toolMocks.transformedTool as unknown as Tool),
-        description: 'Modified schema',
-      });
+        description: 'Enhanced GITHUB_GET_REPOS for better context',
+        tags: ['enhanced', 'modified'],
+        inputParameters: {
+          type: 'object' as const,
+          properties: {
+            tracking: {
+              type: 'object' as const,
+              properties: {
+                enabled: {
+                  type: 'boolean' as const,
+                  default: true,
+                },
+              },
+            },
+          },
+        },
+      };
+      getRawComposioToolBySlugSpy.mockResolvedValueOnce(mockTool);
 
       const createExecuteToolFnSpy = vi.spyOn(context.tools as any, 'createExecuteToolFn');
+      const executeWithModifiers = async (params: any) => {
+        // Apply beforeExecute modifier
+        const modifiedParams = await executionModifiers.beforeExecute({
+          toolSlug: slug,
+          toolkitSlug: 'default',
+          params,
+        });
 
-      await context.tools.get(userId, slug, {
+        // Execute the tool
+        const response = await mockClient.tools.execute(slug, modifiedParams);
+
+        // Apply afterExecute modifier
+        return executionModifiers.afterExecute({
+          toolSlug: slug,
+          toolkitSlug: 'default',
+          result: response,
+        });
+      };
+      createExecuteToolFnSpy.mockReturnValueOnce(executeWithModifiers);
+
+      const tool = await context.tools.get(userId, slug, {
         modifySchema: schemaModifier,
         ...executionModifiers,
       });
 
+      // Verify schema modification
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, schemaModifier);
+      expect(mockTool.description).toBe('Enhanced GITHUB_GET_REPOS for better context');
+      expect(mockTool.tags).toContain('enhanced');
+      expect(mockTool.tags).toContain('modified');
+      expect(mockTool.inputParameters).toHaveProperty(['properties', 'tracking']);
+
+      // Verify execution function creation
       expect(createExecuteToolFnSpy).toHaveBeenCalledWith(
         userId,
         expect.objectContaining(executionModifiers)
       );
+
+      // Mock a tool execution to verify the full flow
+      await mockToolExecution(context.tools);
+      mockClient.tools.execute.mockResolvedValueOnce({
+        data: {
+          results: true,
+        },
+        error: null,
+        successful: true,
+        log_id: '123',
+        session_info: {},
+      });
+
+      // Execute the tool using the wrapped execute function
+      const result = await executeWithModifiers({ query: 'test' });
+
+      // Verify analytics tracking was called
+      expect(trackToolUsage).toHaveBeenCalledWith(slug);
+
+      // Verify the execution flow
+      expect(executionModifiers.beforeExecute).toHaveBeenCalledWith({
+        toolSlug: slug,
+        toolkitSlug: 'default',
+        params: { query: 'test' },
+      });
+
+      expect(executionModifiers.afterExecute).toHaveBeenCalledWith({
+        toolSlug: slug,
+        toolkitSlug: 'default',
+        result: {
+          data: {
+            results: true,
+          },
+          error: null,
+          successful: true,
+          log_id: '123',
+          session_info: {},
+        },
+      });
+
+      // Verify no error logging occurred
+      expect(logToolError).not.toHaveBeenCalled();
     });
   });
 });

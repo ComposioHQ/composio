@@ -260,7 +260,11 @@ export class Tools<
     let modifiedParams = params;
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedParams = await modifier(toolSlug, toolkitSlug, modifiedParams);
+        modifiedParams = await modifier({
+          toolSlug,
+          toolkitSlug,
+          params: modifiedParams,
+        });
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -298,7 +302,11 @@ export class Tools<
     let modifiedResult = result;
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedResult = await modifier(toolSlug, toolkitSlug, modifiedResult);
+        modifiedResult = await modifier({
+          toolSlug,
+          toolkitSlug,
+          result: modifiedResult,
+        });
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
@@ -409,7 +417,11 @@ export class Tools<
     if (modifier) {
       if (typeof modifier === 'function') {
         const modifiedPromises = modifiedTools.map(tool =>
-          modifier(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
+          modifier({
+            toolSlug: tool.slug,
+            toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+            schema: tool,
+          })
         );
         modifiedTools = await Promise.all(modifiedPromises);
       } else {
@@ -458,7 +470,11 @@ export class Tools<
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
-        modifiedTool = await modifier(slug, modifiedTool.toolkit?.slug ?? 'unknown', modifiedTool);
+        modifiedTool = await modifier({
+          toolSlug: slug,
+          toolkitSlug: modifiedTool.toolkit?.slug ?? 'unknown',
+          schema: modifiedTool,
+        });
       } else {
         throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
       }
@@ -602,7 +618,11 @@ export class Tools<
   ): Promise<ToolExecuteResponse> {
     if (modifiers?.beforeExecute) {
       if (typeof modifiers.beforeExecute === 'function') {
-        body = await modifiers.beforeExecute(tool.slug, 'unknown', body);
+        body = await modifiers.beforeExecute({
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          params: body,
+        });
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -612,7 +632,11 @@ export class Tools<
 
     if (modifiers?.afterExecute) {
       if (typeof modifiers.afterExecute === 'function') {
-        result = await modifiers.afterExecute(tool.slug, 'unknown', result);
+        result = await modifiers.afterExecute({
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          result,
+        });
       } else {
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }

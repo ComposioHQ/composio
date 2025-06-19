@@ -214,8 +214,8 @@ describe('OpenAIProvider', () => {
       };
 
       const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       await provider.executeToolCall(userId, toolCall, options, modifiers);
@@ -445,8 +445,8 @@ describe('OpenAIProvider', () => {
       };
 
       const modifiers = {
-        beforeExecute: vi.fn(params => params),
-        afterExecute: vi.fn(response => response),
+        beforeExecute: vi.fn(({ params }) => params),
+        afterExecute: vi.fn(({ result }) => result),
       };
 
       await provider.executeTool(toolSlug, toolParams, modifiers);

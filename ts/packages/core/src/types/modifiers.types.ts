@@ -18,41 +18,69 @@ import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
  *
  * @example
  * ```typescript
- * // Add authentication headers to all tool requests
- * const beforeExecute = (toolSlug, toolkitSlug, params) => {
+ * // Example 1: Add authentication headers to all tool requests
+ * const beforeExecute = ({ params, toolSlug, toolkitSlug }) => {
+ *   // Log the execution attempt
+ *   console.log(`Executing ${toolSlug} from toolkit ${toolkitSlug}`);
+ *
+ *   // Add authentication and tracking headers
  *   return {
  *     ...params,
  *     customAuthParams: {
  *       ...params.customAuthParams,
  *       headers: {
  *         ...params.customAuthParams?.headers,
- *         'X-API-Key': 'my-api-key'
+ *         'X-API-Key': 'my-api-key',
+ *         'X-Request-ID': generateRequestId(),
+ *         'X-Toolkit': toolkitSlug
  *       }
  *     }
  *   };
  * };
  *
- * // Transform input parameters for a specific tool
- * const beforeExecute = (toolSlug, toolkitSlug, params) => {
- *   if (toolSlug === 'GITHUB_SEARCH_REPOS') {
- *     // Convert simple query to structured query format
- *     return {
- *       ...params,
- *       arguments: {
- *         ...params.arguments,
- *         q: `${params.arguments.query} in:name,description`
+ * // Example 2: Transform input parameters for specific tools with validation
+ * const beforeExecute = ({ params, toolSlug, toolkitSlug }) => {
+ *   // Handle different tools
+ *   switch (toolSlug) {
+ *     case 'GITHUB_SEARCH_REPOS':
+ *       // Enhance search query with additional filters
+ *       return {
+ *         ...params,
+ *         arguments: {
+ *           ...params.arguments,
+ *           q: `${params.arguments.query} in:name,description language:typescript stars:>100`,
+ *           sort: 'stars',
+ *           order: 'desc'
+ *         }
+ *       };
+ *
+ *     case 'NPM_PACKAGE_INFO':
+ *       // Validate and normalize package name
+ *       const pkgName = params.arguments.packageName.trim().toLowerCase();
+ *       if (!pkgName) {
+ *         throw new Error('Package name is required');
  *       }
- *     };
+ *
+ *       return {
+ *         ...params,
+ *         arguments: {
+ *           ...params.arguments,
+ *           packageName: pkgName,
+ *           includeVersions: true
+ *         }
+ *       };
+ *
+ *     default:
+ *       return params;
  *   }
- *   return params;
  * };
  * ```
  */
-export type beforeExecuteModifier = (
-  toolSlug: string,
-  toolkitSlug: string,
-  toolExecuteParams: ToolExecuteParams
-) => Promise<ToolExecuteParams> | ToolExecuteParams;
+export type beforeExecuteModifier = (context: {
+  toolSlug: string;
+  toolkitSlug: string;
+  params: ToolExecuteParams;
+}) => Promise<ToolExecuteParams> | ToolExecuteParams;
 
 /**
  * Modifier for altering the tool execution response after execution completes.
@@ -71,44 +99,85 @@ export type beforeExecuteModifier = (
  *
  * @example
  * ```typescript
- * // Transform the response data format
- * const afterExecute = (toolSlug, toolkitSlug, response) => {
- *   if (toolSlug === 'GITHUB_LIST_REPOS' && response.successful) {
- *     // Transform the returned repos into a simpler format
+ * // Example 1: Transform and enrich response data
+ * const afterExecute = ({ result, toolSlug, toolkitSlug }) => {
+ *   // Handle successful GitHub repository listing
+ *   if (toolSlug === 'GITHUB_LIST_REPOS' && result.successful) {
+ *     // Transform the returned repos into a more useful format
+ *     const repositories = result.data.items.map(repo => ({
+ *       name: repo.name,
+ *       url: repo.html_url,
+ *       stars: repo.stargazers_count,
+ *       // Add derived and computed fields
+ *       isPopular: repo.stargazers_count > 1000,
+ *       lastUpdated: new Date(repo.updated_at).toLocaleDateString(),
+ *       topics: repo.topics || [],
+ *       license: repo.license?.spdx_id || 'No License'
+ *     }));
+ *
+ *     // Add metadata about the response
  *     return {
- *       ...response,
+ *       ...result,
  *       data: {
- *         repositories: response.data.items.map(repo => ({
- *           name: repo.name,
- *           url: repo.html_url,
- *           stars: repo.stargazers_count
- *         }))
+ *         repositories,
+ *         totalCount: result.data.total_count,
+ *         metadata: {
+ *           queryTime: new Date().toISOString(),
+ *           toolkit: toolkitSlug,
+ *           filterApplied: true
+ *         }
  *       }
  *     };
  *   }
- *   return response;
+ *
+ *   return result;
  * };
  *
- * // Add error handling with custom messages
- * const afterExecute = (toolSlug, toolkitSlug, response) => {
- *   if (!response.successful) {
+ * // Example 2: Comprehensive error handling and logging
+ * const afterExecute = ({ result, toolSlug, toolkitSlug }) => {
+ *   // Log all executions for monitoring
+ *   logToolExecution(toolSlug, toolkitSlug, result.successful);
+ *
+ *   if (!result.successful) {
+ *     // Get error details
+ *     const errorCode = result.error?.code || 'UNKNOWN_ERROR';
+ *     const errorMessage = result.error?.message || 'An unknown error occurred';
+ *
+ *     // Handle specific error cases
+ *     switch (errorCode) {
+ *       case 'RATE_LIMIT_EXCEEDED':
+ *         notifyRateLimitExceeded(toolkitSlug);
+ *         break;
+ *       case 'AUTHENTICATION_FAILED':
+ *         refreshAuthToken(toolkitSlug);
+ *         break;
+ *     }
+ *
+ *     // Return enhanced error response
  *     return {
- *       ...response,
+ *       ...result,
  *       error: {
- *         message: `Error using ${toolSlug}: ${response.error?.message || 'Unknown error'}`,
- *         code: response.error?.code || 'UNKNOWN_ERROR'
+ *         message: `Error using ${toolSlug}: ${errorMessage}`,
+ *         code: errorCode,
+ *         timestamp: new Date().toISOString(),
+ *         context: {
+ *           toolkit: toolkitSlug,
+ *           severity: getSeverityLevel(errorCode),
+ *           retryable: isRetryableError(errorCode)
+ *         }
  *       }
  *     };
  *   }
- *   return response;
+ *
+ *   return result;
  * };
  * ```
  */
-export type afterExecuteModifier = (
-  toolSlug: string,
-  toolkitSlug: string,
-  toolExecuteResponse: ToolExecuteResponse
-) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
+export type afterExecuteModifier = (context: {
+  toolSlug: string;
+  toolkitSlug: string;
+  result: ToolExecuteResponse;
+}) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
 
 /**
  * Modifier for altering the tool schema before it's exposed to consumers.
@@ -127,53 +196,133 @@ export type afterExecuteModifier = (
  *
  * @example
  * ```typescript
- * // Modify the input parameters for a specific tool
- * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
+ * // Example 1: Comprehensive schema modification with validation
+ * const modifySchema = ({ schema, toolSlug, toolkitSlug }) => {
+ *   // Handle specific tools
  *   if (toolSlug === 'HACKERNEWS_GET_USER') {
  *     return {
- *       ...toolSchema,
+ *       ...schema,
+ *       name: 'Get HackerNews User Profile',
+ *       description: 'Retrieve detailed user information from HackerNews',
+ *       version: '2.0.0',
  *       inputParameters: {
- *         ...toolSchema.inputParameters,
+ *         ...schema.inputParameters,
  *         userId: {
  *           type: 'string',
  *           description: 'The HackerNews username to retrieve information for',
- *           required: true
+ *           required: true,
+ *           minLength: 2,
+ *           maxLength: 15,
+ *           pattern: '^[a-zA-Z0-9_-]+$'
+ *         },
+ *         includeSubmissions: {
+ *           type: 'boolean',
+ *           description: 'Include user submissions in the response',
+ *           default: false
+ *         },
+ *         submissionLimit: {
+ *           type: 'number',
+ *           description: 'Maximum number of submissions to return',
+ *           default: 10,
+ *           minimum: 1,
+ *           maximum: 100
+ *         }
+ *       },
+ *       outputSchema: {
+ *         type: 'object',
+ *         properties: {
+ *           user: {
+ *             type: 'object',
+ *             properties: {
+ *               id: { type: 'string' },
+ *               karma: { type: 'number' },
+ *               created: { type: 'string', format: 'date-time' },
+ *               submissions: { type: 'array', items: { type: 'object' } }
+ *             }
+ *           }
  *         }
  *       }
  *     };
  *   }
- *   return toolSchema;
+ *
+ *   return schema;
  * };
  *
- * // Add custom descriptions to all tools in a toolkit
- * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
+ * // Example 2: Add organization-specific customizations
+ * const modifySchema = ({ schema, toolSlug, toolkitSlug }) => {
+ *   // Add organization prefix to all GitHub tools
  *   if (toolkitSlug === 'github') {
- *     return {
- *       ...toolSchema,
- *       description: `Company GitHub tool: ${toolSchema.description}`,
- *       important: true
+ *     const enhancedSchema = {
+ *       ...schema,
+ *       name: `Acme Corp - ${schema.name}`,
+ *       description: `Company GitHub tool: ${schema.description}`,
+ *       category: 'Internal Tools',
+ *       tags: [...(schema.tags || []), 'acme-corp', 'internal'],
+ *       metadata: {
+ *         ...(schema.metadata || {}),
+ *         organization: 'acme-corp',
+ *         department: 'engineering',
+ *         supportContact: 'tools@acme-corp.com'
+ *       },
+ *       authentication: {
+ *         type: 'oauth2',
+ *         scopes: ['repo', 'user'],
+ *         enterpriseServer: 'github.acme-corp.com'
+ *       }
  *     };
+ *
+ *     // Add rate limiting metadata
+ *     if (schema.rateLimit) {
+ *       enhancedSchema.rateLimit = {
+ *         ...schema.rateLimit,
+ *         enterprise: {
+ *           requests: 5000,
+ *           per: '1 hour'
+ *         }
+ *       };
+ *     }
+ *
+ *     return enhancedSchema;
  *   }
- *   return toolSchema;
+ *
+ *   return schema;
  * };
  *
- * // Simplify tool schemas for a specific consumer
- * const modifySchema = (toolSlug, toolkitSlug, toolSchema) => {
- *   // Remove advanced or complex parameters
- *   const { complexParam1, complexParam2, ...simpleInputParams } = toolSchema.inputParameters;
+ * // Example 3: Simplify schemas for external consumers
+ * const modifySchema = ({ schema }) => {
+ *   // Remove internal or complex parameters
+ *   const {
+ *     debugMode,
+ *     internalFlags,
+ *     experimentalFeatures,
+ *     ...simpleInputParams
+ *   } = schema.inputParameters;
+ *
+ *   // Simplify authentication requirements
+ *   const { oauth2, apiKey, ...simpleAuth } = schema.authentication || {};
  *
  *   return {
- *     ...toolSchema,
- *     inputParameters: simpleInputParams
+ *     ...schema,
+ *     inputParameters: simpleInputParams,
+ *     authentication: {
+ *       type: 'apiKey',
+ *       in: 'header',
+ *       name: 'X-API-Key'
+ *     },
+ *     // Remove internal metadata
+ *     metadata: {
+ *       isPublic: true,
+ *       version: schema.metadata?.version
+ *     }
  *   };
  * };
  * ```
  */
-export type TransformToolSchemaModifier = (
-  toolSlug: string,
-  toolkitSlug: string,
-  toolSchema: Tool
-) => Tool | Promise<Tool>;
+export type TransformToolSchemaModifier = (context: {
+  toolSlug: string;
+  toolkitSlug: string;
+  schema: Tool;
+}) => Tool | Promise<Tool>;
 
 /**
  * Options for non-agentic tool configuration.
@@ -187,9 +336,9 @@ export type TransformToolSchemaModifier = (
  * const tools = await composio.tools.get('default', {
  *   toolkits: ['github']
  * }, {
- *   modifySchema: (toolSlug, toolkitSlug, schema) => {
+ *   modifySchema: (context) => {
  *     // Custom schema modifications
- *     return schema;
+ *     return context.schema;
  *   }
  * });
  * ```
@@ -216,15 +365,15 @@ export type ToolOptions = {
  *   userId: 'default',
  *   arguments: { owner: 'composio' }
  * }, {
- *   beforeExecute: (toolSlug, toolkitSlug, params) => {
- *     console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
- *     return params;
+ *   beforeExecute: (context) => {
+ *     console.log(`Executing ${context.toolSlug} from ${context.toolkitSlug}`);
+ *     return context.params;
  *   },
- *   afterExecute: (toolSlug, toolkitSlug, response) => {
- *     if (response.successful) {
- *       console.log(`Successfully executed ${toolSlug}`);
+ *   afterExecute: (context) => {
+ *     if (context.result.successful) {
+ *       console.log(`Successfully executed ${context.toolSlug}`);
  *     }
- *     return response;
+ *     return context.result;
  *   }
  * });
  * ```
@@ -254,27 +403,27 @@ export type ExecuteToolModifiers = {
  * ```typescript
  * // Configure agentic tools with schema and execution modifications
  * const agenticTools = await vercel.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifySchema: (toolSlug, toolkitSlug, schema) => {
+ *   modifySchema: (context) => {
  *     return {
- *       ...schema,
- *       description: `Enhanced ${toolSlug} for better context`
+ *       ...context.schema,
+ *       description: `Enhanced ${context.toolSlug} for better context`
  *     };
  *   },
  *
  *   // Intercept before execution
- *   beforeExecute: (toolSlug, toolkitSlug, params) => {
+ *   beforeExecute: (context) => {
  *     // Add analytics tracking
- *     trackToolUsage(toolSlug);
- *     return params;
+ *     trackToolUsage(context.toolSlug);
+ *     return context.params;
  *   },
  *
  *   // Transform after execution
- *   afterExecute: (toolSlug, toolkitSlug, response) => {
+ *   afterExecute: (context) => {
  *     // Log results and handle errors
- *     if (!response.successful) {
- *       logToolError(toolSlug, response.error);
+ *     if (!context.result.successful) {
+ *       logToolError(context.toolSlug, context.result.error);
  *     }
- *     return response;
+ *     return context.result;
  *   }
  * });
  * ```
@@ -293,7 +442,7 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * ```typescript
  * // With standard provider (non-agentic)
  * const tools = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifySchema: (toolSlug, toolkitSlug, schema) => schema
+ *   modifySchema: (context) => context.schema
  * });
  *
  * // With agentic provider (e.g., VercelProvider)
@@ -303,9 +452,9 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  * });
  *
  * const agenticTools = await vercel.tools.get('default', 'GITHUB_GET_REPOS', {
- *   modifySchema: (toolSlug, toolkitSlug, schema) => schema,
- *   beforeExecute: (toolSlug, toolkitSlug, params) => params,
- *   afterExecute: (toolSlug, toolkitSlug, response) => response
+ *   modifySchema: (context) => context.schema,
+ *   beforeExecute: (context) => context.params,
+ *   afterExecute: (context) => context.result
  * });
  * ```
  */

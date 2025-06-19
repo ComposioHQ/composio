@@ -59,11 +59,11 @@ const result = await composio.tools.execute(
     arguments: { owner: 'composio', repo: 'sdk' },
   },
   {
-    beforeExecute: (toolSlug, toolkitSlug, params) => {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       // Modify params before execution
       return params;
     },
-    afterExecute: (toolSlug, toolkitSlug, result) => {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       // Transform result after execution
       return result;
     },
