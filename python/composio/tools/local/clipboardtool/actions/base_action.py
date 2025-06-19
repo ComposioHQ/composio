@@ -16,8 +16,6 @@ class ClipboardState(TypedDict, total=False):
 class BaseClipboardRequest(BaseModel):
     """Base request for clipboard actions."""
 
-    pass
-
 
 class BaseClipboardResponse(BaseModel):
     """Base response for clipboard actions."""
