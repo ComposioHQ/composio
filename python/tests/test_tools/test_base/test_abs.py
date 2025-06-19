@@ -1,7 +1,7 @@
 """Test abstractions"""
 
 import re
-from typing import Dict
+from typing import Dict, List, Optional
 
 import pytest
 from pydantic import BaseModel, Field
@@ -170,6 +170,63 @@ class TestToolBuilder:
             ]["title"]
             == "Nested Field Property"
         )
+
+    def test_request_schema_anyof_to_nullable_transformation(self) -> None:
+        """Test that anyOf structures with null are converted to nullable properties."""
+
+        class Request(BaseModel):
+            # Required field (should not be affected)
+            required_field: str = Field(..., description="A required field")
+
+            # Optional string (should become nullable)
+            optional_string: Optional[str] = Field(
+                None, description="An optional string"
+            )
+
+            # Optional array (the main case we're fixing)
+            optional_array: Optional[List[str]] = Field(
+                None,
+                description="An optional array of strings",
+                examples=[["item1", "item2"], []],
+            )
+
+            # Optional nested object
+            optional_dict: Optional[Dict[str, str]] = Field(
+                None, description="An optional dictionary"
+            )
+
+        class Response(BaseModel):
+            pass
+
+        class TestAction(Action[Request, Response]):
+            def execute(self, request: Request, metadata: Dict) -> Response:
+                return Response()
+
+        request_schema = TestAction.request.schema()
+        properties = request_schema["properties"]
+
+        # Required field should not have nullable or anyOf
+        assert "anyOf" not in properties["required_field"]
+        assert "nullable" not in properties["required_field"]
+        assert properties["required_field"]["type"] == "string"
+
+        # Optional string should be nullable without anyOf
+        assert "anyOf" not in properties["optional_string"]
+        assert properties["optional_string"]["nullable"] is True
+        assert properties["optional_string"]["type"] == "string"
+
+        # Optional array should be nullable array with items, without anyOf
+        assert "anyOf" not in properties["optional_array"]
+        assert properties["optional_array"]["nullable"] is True
+        assert properties["optional_array"]["type"] == "array"
+        assert "items" in properties["optional_array"]
+        assert properties["optional_array"]["items"]["type"] == "string"
+        assert properties["optional_array"]["default"] is None
+
+        # Optional dict should be nullable without anyOf
+        assert "anyOf" not in properties["optional_dict"]
+        assert properties["optional_dict"]["nullable"] is True
+        assert properties["optional_dict"]["type"] == "object"
 
     def test_missing_methods(self) -> None:
         with pytest.raises(
