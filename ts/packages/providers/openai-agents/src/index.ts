@@ -60,34 +60,25 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * OpenAI Agents uses the standard format by default.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-
+   * @param serverNames - Names of the MCP servers
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): McpServerGetResponse {
+  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): McpServerGetResponse {
     // OpenAI Agents uses the standard format
-    if (connectedAccountIds?.length && data.connected_account_urls) {
+    if (data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         url: new URL(url),
-        name: `${serverName}-${connectedAccountIds[index]}`,
-        toolkit: toolkits?.[index],
+        name: serverNames[index],
       })) as McpServerGetResponse;
-    } else if (userIds?.length && data.user_ids_url) {
+    } else if (data.user_ids_url) {
       return data.user_ids_url.map((url: string, index: number) => ({
         url: new URL(url),
-        name: `${serverName}-${userIds[index]}`,
-        toolkit: toolkits?.[index],
+        name: serverNames[index],
       })) as McpServerGetResponse;
     }
     return {
       url: new URL(data.mcp_url),
-      name: serverName,
+      name: serverNames[0],
     } as McpServerGetResponse;
   }
 
