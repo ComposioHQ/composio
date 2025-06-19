@@ -25,8 +25,6 @@ class CopyFilePathsRequest(BaseClipboardRequest):
 class PasteFilePathsRequest(BaseClipboardRequest):
     """Request to paste file paths from clipboard."""
 
-    pass
-
 
 class PasteFilePathsResponse(BaseClipboardResponse):
     """Response from pasting file paths from clipboard."""

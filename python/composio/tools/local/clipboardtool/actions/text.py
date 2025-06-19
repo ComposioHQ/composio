@@ -24,13 +24,9 @@ class CopyTextRequest(BaseClipboardRequest):
 class CopyTextResponse(BaseClipboardResponse):
     """Response from copying text to clipboard."""
 
-    pass
-
 
 class PasteTextRequest(BaseClipboardRequest):
     """Request to paste text from clipboard."""
-
-    pass
 
 
 class PasteTextResponse(BaseClipboardResponse):

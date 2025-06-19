@@ -65,17 +65,13 @@ def generate_app_id(name: str) -> str:
 
 
 def humanize_titles(properties: t.Dict) -> t.Dict:
-    for field_name, field_properties in properties.items():
-        if "file_uploadable" in field_properties:
+    for name, prop in properties.items():
+        if "file_uploadable" in prop:
             continue
 
-        # Convert to snake case and titelize
-        field_properties["title"] = inflection.titleize(
-            inflection.underscore(field_name).replace("_", " ")
-        )
-
-        if "properties" in field_properties:
-            humanize_titles(field_properties["properties"])
+        prop["title"] = inflection.underscore(name).replace("_", " ").title()
+        if "properties" in prop:
+            prop["properties"] = humanize_titles(prop["properties"])
 
     return properties
 
@@ -116,59 +112,61 @@ class _Request(t.Generic[ModelType]):
         """Initialize request model."""
         self.model = model
 
-    def schema(self) -> t.Dict:
-        """Build request schema."""
-        request = t.cast(t.Type[BaseModel], self.model).model_json_schema(by_alias=True)
-        request = remove_json_ref(request)
-        if "$defs" in request:
-            del request["$defs"]
+    @classmethod
+    def _handle_allOf(cls, prop: t.Dict) -> t.Dict:
+        schemas = prop.pop("allOf")
+        for schema in schemas:
+            prop.update(schema)
 
-        properties = humanize_titles(request.get("properties", {}))
-        for prop in properties.values():
-            if prop.get("file_readable", False):
-                prop["oneOf"] = [
-                    {
-                        "type": prop.get("type"),
-                        "description": prop.get("description", ""),
-                    },
-                    {
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {prop.get('description', '')}",
-                    },
-                ]
-                del prop["type"]  # Remove original type to avoid conflict in oneOf
-                continue
+        if "enum" in prop:
+            prop[
+                "description"
+            ] += f" Note: choose value only from following options - {prop['enum']}"
+        return prop
 
+    @classmethod
+    def _handle_anyOf(cls, prop: t.Dict) -> t.Dict:
+        any_of = prop.pop("anyOf")
+        non_null_types = [
+            td for td in any_of if "type" not in td or td["type"] != "null"
+        ]
+        if not non_null_types:
+            raise InvalidPropertyDefinition(
+                f"No non-null type found for field {prop['title']}"
+            )
+
+        if len([td for td in any_of if "type" not in td or td["type"] != "null"]) > 0:
+            prop["nullable"] = True
+
+        prop.update(any_of[0])
+        return prop
+
+    @classmethod
+    def _remove_union_types_recursively(cls, schema: t.Dict) -> t.Dict:
+        properties = humanize_titles(schema.get("properties", {}))
+        for name, prop in properties.items():
             if "allOf" in prop and len(prop["allOf"]) == 1:
-                (schema,) = prop.pop("allOf")
-                prop.update(schema)
-                if "enum" in schema:
-                    prop[
-                        "description"
-                    ] += f" Note: choose value only from following options - {prop['enum']}"
+                properties[name] = cls._handle_allOf(prop=prop)
 
             if "anyOf" in prop:
-                # Find the non-null type definition
-                non_null_types = [
-                    td for td in prop["anyOf"] if "type" not in td or td["type"] != "null"
-                ]
-                if non_null_types:
-                    typedef = non_null_types[0]
-                    # Remove anyOf and copy all properties from the non-null type
-                    prop.pop("anyOf")
-                    # Update the property with all attributes from the non-null type
-                    prop.update(typedef)
-                    # Add nullable flag to indicate this field can be null
-                    prop["nullable"] = True
-                else:
-                    # raise an exception that there is no non-null type
-                    raise InvalidPropertyDefinition(
-                        f"No non-null type found for field {prop['title']}"
-                    )
+                properties[name] = cls._handle_anyOf(prop=prop)
 
-        request["properties"] = properties
-        return request
+            if "properties" in prop:
+                properties[name] = cls._remove_union_types_recursively(schema=prop)
+
+        schema["properties"] = properties
+        return schema
+
+    def schema(self) -> t.Dict:
+        """Build request schema."""
+        request = remove_json_ref(
+            t.cast(t.Type[BaseModel], self.model).model_json_schema(
+                by_alias=True,
+            )
+        )
+        if "$defs" in request:
+            del request["$defs"]
+        return self._remove_union_types_recursively(schema=request)
 
     def parse(self, request: t.Dict) -> ModelType:
         """Parse request."""
@@ -225,32 +223,8 @@ class _Response(t.Generic[ModelType]):
         if "$defs" in schema:
             del schema["$defs"]
 
-        properties = humanize_titles(schema.get("properties", {}))
-        for prop in properties.values():
-            if prop.get("file_readable", False):
-                prop["oneOf"] = [
-                    {
-                        "type": prop.get("type"),
-                        "description": prop.get("description", ""),
-                    },
-                    {
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {prop.get('description', '')}",
-                    },
-                ]
-                del prop["type"]  # Remove original type to avoid conflict in oneOf
-                continue
-
-            if "allOf" in prop and len(prop["allOf"]) == 1:
-                (schema,) = prop.pop("allOf")
-                prop.update(schema)
-                if "enum" in schema:
-                    prop[
-                        "description"
-                    ] += f" Note: choose value only from following options - {prop['enum']}"
-
-        schema["properties"] = properties
+        # pylint: disable=protected-access
+        schema = _Request._remove_union_types_recursively(schema=schema)
         schema["title"] = f"{self.model.__name__}Wrapper"
         return schema
 

@@ -34,8 +34,6 @@ class CopyImageRequest(BaseClipboardRequest):
 class CopyImageResponse(BaseClipboardResponse):
     """Response from copying image to clipboard."""
 
-    pass
-
 
 class PasteImageRequest(BaseClipboardRequest):
     """Request to paste image from clipboard."""
