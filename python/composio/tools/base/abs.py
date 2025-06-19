@@ -80,6 +80,10 @@ def humanize_titles(properties: t.Dict) -> t.Dict:
     return properties
 
 
+class InvalidPropertyDefinition(ComposioSDKError):
+    """Raise when a property is not defined properly."""
+
+
 class InvalidClassDefinition(ComposioSDKError):
     """Raise when a class is not defined properly."""
 
@@ -147,7 +151,7 @@ class _Request(t.Generic[ModelType]):
             if "anyOf" in prop:
                 # Find the non-null type definition
                 non_null_types = [
-                    td for td in prop["anyOf"] if td.get("type", "null") != "null"
+                    td for td in prop["anyOf"] if "type" not in td or td["type"] != "null"
                 ]
                 if non_null_types:
                     typedef = non_null_types[0]
@@ -157,6 +161,11 @@ class _Request(t.Generic[ModelType]):
                     prop.update(typedef)
                     # Add nullable flag to indicate this field can be null
                     prop["nullable"] = True
+                else:
+                    # raise an exception that there is no non-null type
+                    raise InvalidPropertyDefinition(
+                        f"No non-null type found for field {prop['title']}"
+                    )
 
         request["properties"] = properties
         return request
