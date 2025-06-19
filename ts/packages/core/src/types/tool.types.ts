@@ -131,13 +131,11 @@ export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
   toolkits: z.array(z.string()).optional(),
   scopes: z.array(z.string()).optional(),
-  important: z.boolean().optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
 });
 
 type BaseParams = {
-  important?: boolean;
   limit?: number;
   search?: string;
   scopes?: string[];
@@ -149,7 +147,7 @@ type ToolsOnlyParams = {
   toolkits?: never;
   scopes?: never;
   search?: never;
-} & Omit<BaseParams, 'important' | 'limit' | 'search' | 'scopes'>;
+} & Omit<BaseParams, 'limit' | 'search' | 'scopes'>;
 
 // toolkits only
 type ToolkitsOnlyParams = {
@@ -157,7 +155,7 @@ type ToolkitsOnlyParams = {
   tools?: never;
   scopes?: never;
   search?: never;
-} & Pick<BaseParams, 'important' | 'limit'>;
+} & Pick<BaseParams, 'limit'>;
 
 // toolkit + search
 type ToolkitSearchOnlyParams = {
@@ -171,14 +169,13 @@ type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
-} & Pick<BaseParams, 'important' | 'limit' | 'search'>;
+} & Pick<BaseParams, 'limit' | 'search'>;
 
 // search only
 type SearchOnlyParams = {
   tools?: never;
   toolkits?: never;
   scopes?: never;
-  important?: never;
   limit?: never;
   search: string;
 };
