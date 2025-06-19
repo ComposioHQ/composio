@@ -11,13 +11,22 @@ from pathlib import Path
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from process_sdk_docs import build_sdk_docs
+# Add local python package directory to path (for local composio package)
+workspace_root = Path(__file__).parent.parent.parent.parent
+python_dir = workspace_root / "python"
+if python_dir.exists():
+    sys.path.insert(0, str(python_dir))
+    print(f"Using local composio package from: {python_dir}")
+else:
+    print(f"Warning: Local python directory not found at {python_dir}")
+
+from generators.python_sdk.process_sdk_docs import build_sdk_docs
 
 
 def main():
     """Generate SDK documentation."""
     fern_dir = Path(__file__).parent.parent.parent
-    source_dir = fern_dir / "generators" / "python-sdk" / "templates"
+    source_dir = fern_dir / "generators" / "python_sdk" / "templates"
     output_dir = fern_dir / "pages" / "dist" / "sdk" / "python"
     
     print("Generating Composio Python SDK documentation...")
@@ -30,7 +39,6 @@ def main():
             output_dir=output_dir,
             package_name="composio",
             version="main",
-            repo_owner="composio",
             clean=False  # Don't clean to preserve other files
         )
         

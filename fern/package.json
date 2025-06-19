@@ -12,7 +12,7 @@
 		"tools:generate:dev": "uv run generators/tool_doc_generator/main.py --workers 10 --limit ${LIMIT:-5}",
 		"sdkdocs": "pnpm run sdkdocs:ts && pnpm run sdkdocs:python",
 		"sdkdocs:ts": "pnpm exec typedoc",
-		"sdkdocs:python": "uv run python generators/python-sdk/generate_docs.py",
+		"sdkdocs:python": "uv run python generators/python_sdk/generate_docs.py",
 		"api:pull": "bash scripts/pull-openapi-spec.sh",
 		"snippets:build": "bun run scripts/build-snippets.ts",
 		"snippets:dev": "bun run scripts/build-snippets.ts --watch",

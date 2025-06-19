@@ -96,8 +96,6 @@ def build_sdk_docs(
     output_dir: Path,
     package_name: str,
     version: str = "main",
-    repo_owner: str = "composio",
-    repo_name: Optional[str] = None,
     clean: bool = False
 ):
     """
@@ -108,8 +106,6 @@ def build_sdk_docs(
         output_dir: Directory where processed files will be written
         package_name: Name of the Python package to document
         version: Version of the documentation
-        repo_owner: Owner of the GitHub repository
-        repo_name: Name of the GitHub repository (defaults to package_name)
         clean: Whether to clean the output directory before building
     """
     source_dir = Path(source_dir)
@@ -137,8 +133,6 @@ def build_sdk_docs(
         "version_tag": version,
         "language": "en",
         "package_name": package_name,
-        "repo_owner": repo_owner,
-        "repo_name": repo_name or package_name,
     }
     
     # Phase 1: Process all files and collect anchors
@@ -187,8 +181,6 @@ def main():
     parser.add_argument("output", help="Output directory for processed files")
     parser.add_argument("--package", required=True, help="Python package name to document")
     parser.add_argument("--version", default="main", help="Documentation version")
-    parser.add_argument("--repo-owner", default="composio", help="GitHub repository owner")
-    parser.add_argument("--repo-name", help="GitHub repository name (defaults to package name)")
     parser.add_argument("--no-clean", action="store_true", help="Don't clean output directory")
     
     args = parser.parse_args()
@@ -198,8 +190,6 @@ def main():
         output_dir=Path(args.output),
         package_name=args.package,
         version=args.version,
-        repo_owner=args.repo_owner,
-        repo_name=args.repo_name,
         clean=not args.no_clean
     )
 
