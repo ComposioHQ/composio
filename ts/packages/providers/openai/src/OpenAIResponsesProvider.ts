@@ -17,9 +17,7 @@ import {
   ExecuteToolModifiers,
   ExecuteToolFnOptions,
   removeNonRequiredProperties,
-  logger,
   McpUrlResponse,
-  McpServerGetResponse,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
@@ -41,13 +39,10 @@ export interface OpenAIMcpServerResponse {
   server_label: string;
   server_url: string;
 }
-
-export type OpenAIMcpServerResponseCollection = OpenAIMcpServerResponse | OpenAIMcpServerResponse[];
-
 export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   OpenAiToolCollection,
   OpenAiTool,
-  OpenAIMcpServerResponseCollection
+  OpenAIMcpServerResponse[]
 > {
   readonly name = 'openai';
   private strict: boolean | null;
