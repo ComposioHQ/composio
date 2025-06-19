@@ -1,7 +1,7 @@
 /**
  * OpenAI MCP Gmail Example
  *
- * This example demonstrates how to use Composio SDK with OpenAI to:
+ * This example demonstrates how to use Composio MCP with OpenAI to:
  * 1. Create an MCP server for Gmail toolkit
  * 2. Generate URLs for the server
  * 3. Use OpenAI to summarize emails
