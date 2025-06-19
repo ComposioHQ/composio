@@ -52,20 +52,20 @@
     
     "sdkdocs": {
       "dependsOn": ["^build", "sdkdocs:ts", "sdkdocs:python"],
-      "outputs": ["docs/sdk/**"],
+      "outputs": ["pages/dist/sdk/**"],
       "cache": true
     },
     
     "sdkdocs:ts": {
       "dependsOn": ["^build"],
-      "outputs": ["docs/sdk/typescript/**"],
+      "outputs": ["pages/dist/sdk/typescript/**"],
       "inputs": ["../ts/packages/core/**/*.ts", "../ts/packages/providers/**/*.ts", "typedoc.json"],
       "cache": true
     },
     
     "sdkdocs:python": {
       "dependsOn": ["^build"],
-      "outputs": ["docs/sdk/python/**"],
+      "outputs": ["pages/dist/sdk/python/**"],
       "inputs": ["generators/python-sdk/templates/**/*.md", "generators/python-sdk/**/*.py"],
       "cache": true
     },

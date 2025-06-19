@@ -688,7 +688,9 @@ class ToolDocGenerator:
                     new_layout = []
 
                     # Always add the Tool section with Introduction first
-                    new_layout.append(base_layout)
+                    new_layout.append({
+                        **base_layout
+                    })
 
                     # Add Important section if present
                     if important_tools:
