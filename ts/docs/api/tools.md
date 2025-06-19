@@ -18,7 +18,6 @@ const githubTools = await composio.tools.get('default', {
 // Get tools with search
 const searchTools = await composio.tools.get('default', {
   search: 'user',
-  important: true,
 });
 
 // Get a specific tool by slug
@@ -177,8 +176,6 @@ const tool = await composio.tools.getRawComposioToolBySlug('HACKERNEWS_GET_USER'
 type ToolsOnlyParams = {
   tools: string[]; // List of tool slugs to filter by
   toolkits?: never; // Cannot be used with tools
-  important?: never;
-  cursor?: never;
   limit?: never;
   search?: never;
 };
@@ -186,8 +183,6 @@ type ToolsOnlyParams = {
 type ToolkitsOnlyParams = {
   tools?: never; // Cannot be used with toolkits
   toolkits: string[]; // List of toolkit slugs to filter by
-  important?: boolean; // Filter for important tools
-  cursor?: string; // Pagination cursor
   limit?: number; // Limit the number of results
   search?: never; // Cannot be used with important flag,
 };
@@ -195,8 +190,6 @@ type ToolkitsOnlyParams = {
 type ToolkitSearchOnlyParams = {
   tools?: never; // Cannot be used with search
   toolkits?: string[]; // Optional list of toolkit slugs to filter by
-  important?: never; // Cannot be used with search
-  cursor?: string; // Pagination cursor
   limit?: number; // Limit the number of results
   search: string; // Search term
 };
@@ -223,7 +216,6 @@ const searchResults = await composio.tools.get('default', {
   search: 'repository',
   toolkits: ['github'], // optional
   limit: 10,
-  cursor: 'next-page',
 });
 ```
 
