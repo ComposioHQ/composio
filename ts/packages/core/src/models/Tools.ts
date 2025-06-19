@@ -459,7 +459,7 @@ export class Tools<
    * @internal
    * @description
    * Creates a function that executes a tool.
-   * This function is used by agentic toolsets to execute the tool
+   * This function is used by agentic providers to execute the tool
    *
    * @param {string} userId - The user id
    * @param {ExecuteToolModifiers} modifiers - The modifiers to be applied to the tool
