@@ -25,6 +25,8 @@ import {
 import { CustomTools } from './CustomTools';
 import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
 import {
+  afterExecuteModifier,
+  beforeExecuteModifier,
   ExecuteToolModifiers,
   ProviderOptions,
   TransformToolSchemaModifier,
@@ -41,6 +43,7 @@ import {
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
+import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -219,6 +222,96 @@ export class Tools<
   }
 
   /**
+   * Applies the default schema modifiers to the tools
+   * @param tools - The tools to apply the default schema modifiers to
+   * @returns The tools with the default schema modifiers applied
+   */
+  private async applyDefaultSchemaModifiers(tools: Tool[]): Promise<Tool[]> {
+    const fileToolModifier = new FileToolModifier(this.client);
+    return await Promise.all(
+      tools.map(tool =>
+        fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
+      )
+    );
+  }
+
+  /**
+   * Applies the before execute modifiers to the tool execution params
+   * @param options.toolSlug - The slug of the tool
+   * @param options.toolkitSlug - The slug of the toolkit
+   * @param options.params - The params of the tool execution
+   * @param modifier - The modifier to apply
+   * @returns The modified params
+   */
+  private async applyBeforeExecuteModifiers(
+    tool: Tool,
+    {
+      toolSlug,
+      toolkitSlug,
+      params,
+    }: {
+      toolSlug: string;
+      toolkitSlug: string;
+      params: ToolExecuteParams;
+    },
+    modifier?: beforeExecuteModifier
+  ): Promise<ToolExecuteParams> {
+    const fileToolModifier = new FileToolModifier(this.client);
+    let modifiedParams = params;
+    if (modifier) {
+      if (typeof modifier === 'function') {
+        modifiedParams = await modifier(toolSlug, toolkitSlug, modifiedParams);
+      } else {
+        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
+      }
+    }
+    modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
+      toolSlug,
+      toolkitSlug,
+      params: modifiedParams,
+    });
+    return modifiedParams;
+  }
+
+  /**
+   * Applies the after execute modifiers to the tool execution result
+   * @param options.toolSlug - The slug of the tool
+   * @param options.toolkitSlug - The slug of the toolkit
+   * @param options.result - The result of the tool execution
+   * @param modifier - The modifier to apply
+   * @returns The modified result
+   */
+  private async applyAfterExecuteModifiers(
+    tool: Tool,
+    {
+      toolSlug,
+      toolkitSlug,
+      result,
+    }: {
+      toolSlug: string;
+      toolkitSlug: string;
+      result: ToolExecuteResponse;
+    },
+    modifier?: afterExecuteModifier
+  ): Promise<ToolExecuteResponse> {
+    const fileToolModifier = new FileToolModifier(this.client);
+    let modifiedResult = result;
+    if (modifier) {
+      if (typeof modifier === 'function') {
+        modifiedResult = await modifier(toolSlug, toolkitSlug, modifiedResult);
+      } else {
+        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
+      }
+    }
+    modifiedResult = await fileToolModifier.fileDownloadModifier(tool, {
+      toolSlug,
+      toolkitSlug,
+      result: modifiedResult,
+    });
+    return modifiedResult;
+  }
+
+  /**
    * Lists all tools available in the Composio SDK including custom tools.
    *
    * This method fetches tools from the Composio API in raw format and combines them with
@@ -294,7 +387,7 @@ export class Tools<
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
     };
 
-    logger.info(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
+    logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
     const tools = await this.client.tools.list(filters);
 
@@ -307,7 +400,10 @@ export class Tools<
       toolSlugs: 'tools' in queryParams.data ? queryParams.data.tools : undefined,
     });
 
-    let modifiedTools = [...caseTransformedTools, ...customTools];
+    let modifiedTools = await this.applyDefaultSchemaModifiers([
+      ...caseTransformedTools,
+      ...customTools,
+    ]);
 
     // apply local modifiers if they are provided
     if (modifier) {
@@ -357,8 +453,8 @@ export class Tools<
       });
     }
 
-    // change the case of the tool to camel case
-    let modifiedTool = this.transformToolCases(tool);
+    // change the case of the tool to camel case and apply default modifiers
+    let [modifiedTool] = await this.applyDefaultSchemaModifiers([this.transformToolCases(tool)]);
     // apply local modifiers if they are provided
     if (modifier) {
       if (typeof modifier === 'function') {
@@ -538,13 +634,17 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    if (modifiers?.beforeExecute) {
-      if (typeof modifiers.beforeExecute === 'function') {
-        body = await modifiers.beforeExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', body);
-      } else {
-        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
-      }
-    }
+    // apply before execute modifiers
+    body = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: tool.slug,
+        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+        params: body,
+      },
+      modifiers?.beforeExecute
+    );
+
     // fetch connected accounts if doesn't exist
     let connectedAccountId = body.connectedAccountId;
     if (!connectedAccountId) {
@@ -564,14 +664,15 @@ export class Tools<
     // apply transformations to the response
     result = this.transformToolExecuteResponse(result);
 
-    // apply local modifiers if they are provided
-    if (modifiers?.afterExecute) {
-      if (typeof modifiers.afterExecute === 'function') {
-        result = await modifiers.afterExecute(tool.slug, tool.toolkit?.slug ?? 'unknown', result);
-      } else {
-        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
-      }
-    }
+    result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: tool.slug,
+        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+        result,
+      },
+      modifiers?.afterExecute
+    );
     return result;
   }
 

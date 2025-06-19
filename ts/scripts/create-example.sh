@@ -8,7 +8,7 @@ if [ -z "$1" ]; then
 fi
 
 EXAMPLE_NAME=$1
-EXAMPLE_PATH="examples/$EXAMPLE_NAME"
+EXAMPLE_PATH="ts/examples/$EXAMPLE_NAME"
 CAPITAL_EXAMPLE_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${EXAMPLE_NAME:0:1})${EXAMPLE_NAME:1}"
 
 # Check if example directory already exists

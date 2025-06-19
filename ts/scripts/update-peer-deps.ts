@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const corePkgPackageJson = path.resolve(__dirname, '../packages/core', 'package.json');
+const corePkgPackageJson = path.resolve(__dirname, '../ts/packages/core', 'package.json');
 const corePkg = JSON.parse(fs.readFileSync(corePkgPackageJson, 'utf-8'));
 const coreVersion = corePkg.version;
 
