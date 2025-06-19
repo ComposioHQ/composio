@@ -47,29 +47,12 @@ export class MastraProvider extends BaseAgenticProvider<
    * @returns Transformed MastraUrlMap
    */
   wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): MastraUrlMap {
-    if (data.connected_account_urls) {
-      return data.connected_account_urls.reduce(
-        (prev: MastraUrlMap, url: string, index: number) => {
-          prev[serverNames[index]] = {
-            url: url,
-          };
-          return prev;
-        },
-        {}
-      );
-    } else if (data.user_ids_url) {
-      return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
-        prev[serverNames[index]] = {
-          url: url,
-        };
-        return prev;
-      }, {});
-    }
-    return {
-      [serverNames[0]]: {
-        url: data.mcp_url,
-      },
-    };
+    return serverNames.reduce((prev: MastraUrlMap, name, index) => {
+      prev[name] = {
+        url: data.connected_account_urls?.[index] ?? data.user_ids_url?.[index] ?? data.mcp_url,
+      };
+      return prev;
+    }, {} as MastraUrlMap);
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
