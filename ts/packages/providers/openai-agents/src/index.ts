@@ -58,7 +58,6 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
   /**
    * Transform MCP URL response into OpenAI Agents-specific format.
    * OpenAI Agents uses the standard format by default.
-   *
    * @param data - The MCP URL response data
    * @param serverNames - Names of the MCP servers
    * @returns Standard MCP server response format
