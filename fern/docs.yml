@@ -198,6 +198,13 @@ navigation:
     - page: Gmail Reaper
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
+  - section: Behind the curtain
+    icon: person-booth 
+    skip-slug: true
+    contents:
+    - page: Tool Generator
+      path: pages/dist/examples/tool-generator/tool-generator.mdx
+      slug: examples/tool-generator
 - tab: providers
   layout:
   - section: Providers

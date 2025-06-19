@@ -1,7 +1,8 @@
 import { PusherSubscriptionError } from '../errors/PusherErrors';
+import { CLIENT_PUSHER_KEY } from './constants';
 import logger from './logger';
 
-const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || 'ff9f18c208855d77a152';
+const PUSHER_KEY = CLIENT_PUSHER_KEY || 'ff9f18c208855d77a152';
 const PUSHER_CLUSTER = 'mt1';
 
 type Channel = {

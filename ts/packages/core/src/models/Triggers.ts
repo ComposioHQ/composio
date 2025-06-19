@@ -481,7 +481,7 @@ export class Triggers {
             status: data.metadata.connection?.status,
           },
         },
-      } as IncomingTriggerPayload);
+      });
 
       logger.debug('Parsed trigger data', JSON.stringify(parsedData.data, null, 2));
 

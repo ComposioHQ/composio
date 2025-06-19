@@ -204,7 +204,7 @@ class DocumentContent:
         self._blocks.extend(
             [
                 "## Overview",
-                f"### Enum\n`{app_id.upper()}`",
+                f"### SLUG\n`{app_id.upper()}`",
                 f"### Description\n{sanitize_html(description)}",
             ]
         )
@@ -237,10 +237,8 @@ class DocumentContent:
         
         if hasattr(scheme, 'fields') and scheme.fields:
             for field in scheme.fields:
-                if isinstance(field, tuple) and len(field) == 2:
-                    fields.extend(self._process_tuple_field(field))
-                elif hasattr(field, 'name'):
-                    fields.append(self._create_param_from_field(field))
+                fields.extend(self._process_tuple_field(field))
+               
         
         return fields
 
@@ -303,8 +301,8 @@ class DocumentContent:
             Self reference for method chaining
         """
         # If this is the first action, add the Actions header
-        if not any("## Actions" in block for block in self._blocks):
-            self._blocks.append("## Actions")
+        if not any("## Tools" in block for block in self._blocks):
+            self._blocks.append("## Tools")
 
         action_contents = []
 
@@ -330,7 +328,10 @@ class DocumentContent:
         if not tool_data['name']:
             return None
         
-        content = [MDX.as_code_block(tool_data['description'], "text")]
+        content = [
+            f"**SLUG:** `{tool_data['slug']}`\n",
+            MDX.as_code_block(tool_data['description'], "text")
+        ]
         
         # Add parameters
         content.append("\n**Action Parameters**\n")
@@ -345,29 +346,14 @@ class DocumentContent:
 
     def _extract_tool_data(self, tool: Tool) -> t.Dict[str, t.Any]:
         """Extract data from tool object or dict."""
-        if isinstance(tool, dict):
-            if 'function' in tool:
-                func = tool['function']
-                return {
-                    'name': func.get('name', ''),
-                    'description': func.get('description', ''),
-                    'params': func.get('parameters', {}),
-                    'response': tool.get('output_parameters', {}) or func.get('output_parameters', {})
-                }
-            else:
-                return {
-                    'name': tool.get('name', tool.get('slug', '')),
-                    'description': tool.get('description', ''),
-                    'params': tool.get('input_parameters', {}),
-                    'response': tool.get('output_parameters', {})
-                }
-        else:
-            return {
-                'name': getattr(tool, 'name', getattr(tool, 'slug', '')),
-                'description': getattr(tool, 'description', ''),
-                'params': getattr(tool, 'input_parameters', {}) or {},
-                'response': getattr(tool, 'output_parameters', {}) or {}
-            }
+
+        return {
+            'name': tool.name or tool.slug,
+            'description': tool.description,
+            "slug": tool.slug,
+            'params': tool.input_parameters,
+            'response': tool.output_parameters
+        }
 
     def _process_parameters(self, params: t.Any) -> t.List[str]:
         """Process parameters from various formats."""
@@ -548,7 +534,7 @@ class ToolDocGenerator:
 
         # Extract category from toolkit meta
         category = None
-        if hasattr(toolkit_model, 'meta') and hasattr(toolkit_model.meta, 'categories') and toolkit_model.meta.categories:
+        if toolkit_model.meta.categories:
             # Use the first category if multiple exist
             category = toolkit_model.meta.categories[0].get('name') if isinstance(toolkit_model.meta.categories[0], dict) else getattr(toolkit_model.meta.categories[0], 'name', None)
         
@@ -688,9 +674,7 @@ class ToolDocGenerator:
                     new_layout = []
 
                     # Always add the Tool section with Introduction first
-                    new_layout.append({
-                        **base_layout
-                    })
+                    new_layout.append(base_layout[0])
 
                     # Add Important section if present
                     if important_tools:

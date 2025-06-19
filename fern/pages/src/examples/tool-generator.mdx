@@ -1,0 +1,45 @@
+---
+title: Tool Type Generator
+image: "https://og.composio.dev/api/og?title=Tool%20Type%20Generator"   # image for socials
+description: "An example that show you how to showcase auth scheme and action params for tools"
+keywords: "tool type generator, composio, sdk, tool calling"
+subtitle: "using raw tool definition to build your own platform on top of Composio"
+hide-nav-links: true
+---
+
+This is a bit of a checky tutorial as it is dogfooding the `docs` tool generation process.
+
+To motivate this example clearly, in our tools section — we have details about let's say [`Github`](/tools/github) tool, that shows its auth scheme, actions and their params.
+
+Now why would anyone outside of Composio want to do this? Well if you are building a platform on top of Composio, perchance a Workflow builder like langflow. You would want to show some or all of this information to your users.
+
+This is a non standard use case, that we support and love users building on top of us but if this is uninteresting to you, you can skip this tutorial.
+
+## How does one build a tool type generator?
+
+In composio, we have two internal states for tools
+
+1. Raw tool definition
+2. Provider tool definition
+
+The raw tool definition is an generic input output schema definition that we internally for tools, we expose it for customers if they want to build on top of it but it is not the primary way tools are normally used.
+
+The provider tool definition, translates this raw tool definition to the specific schema of a provider (by default `openai`). 
+
+For building something like this, we need to use the raw tool definition.
+
+
+## Getting the raw tool definition
+
+
+
+
+<SnippetCode src="fern/generators/tool_doc_generator/main.py" path="tool_doc_generator/main.py" startLine={532} endLine={534} relativeHighlightStart={2} relativeHighlightEnd={2} wordWrap />
+
+
+
+
+
+
+
+
