@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_praisonai",
-    version="0.7.18",
+    version="0.7.19-rc.1",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio Tools to enhance your PraisonAI agents capabilities.",
