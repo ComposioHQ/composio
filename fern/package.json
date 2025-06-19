@@ -15,7 +15,7 @@
 		"sdkdocs:python": "uv run python generators/python_sdk/generate_docs.py",
 		"api:pull": "bash scripts/pull-openapi-spec.sh",
 		"snippets:build": "bun run scripts/build-snippets.ts",
-		"snippets:dev": "bun run scripts/build-snippets.ts --watch",
+		"snippets:dev": "bun watch scripts/build-snippets.ts --watch",
 		"add-og": "uv run scripts/add_og_imgs.py",
 		"check": "fern check",
 		"dev": "bun run scripts/build-snippets.ts --watch & fern docs dev",

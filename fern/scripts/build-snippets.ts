@@ -17,6 +17,10 @@ interface SnippetCodeProps {
   highlightEnd?: number;
   title?: string;
   language?: string;
+  wordWrap?: boolean;
+  relativeHighlightStart?: number;
+  relativeHighlightEnd?: number;
+  path?: string;
 }
 
 function ensureDistDir() {
@@ -134,8 +138,36 @@ function parseSnippetCodeTags(content: string, contextDir: string): string {
     const titleMatch = propsString.match(/title=["']([^"']+)["']/);
     if (titleMatch) props.title = titleMatch[1];
 
+    const pathMatch = propsString.match(/path=["']([^"']+)["']/);
+    if (pathMatch) props.path = pathMatch[1];
+
     const languageMatch = propsString.match(/language=["']([^"']+)["']/);
     if (languageMatch) props.language = languageMatch[1];
+
+    const relativeHighlightStartMatch = propsString.match(
+      /relativeHighlightStart=(?:["'](\d+)["']|{(\d+)})/
+    );
+    if (relativeHighlightStartMatch)
+      props.relativeHighlightStart = parseInt(
+        relativeHighlightStartMatch[1] || relativeHighlightStartMatch[2]
+      );
+
+    const relativeHighlightEndMatch = propsString.match(
+      /relativeHighlightEnd=(?:["'](\d+)["']|{(\d+)})/
+    );
+    if (relativeHighlightEndMatch)
+      props.relativeHighlightEnd = parseInt(
+        relativeHighlightEndMatch[1] || relativeHighlightEndMatch[2]
+      );
+
+    // Extract wordWrap boolean prop
+    const wordWrapMatch = propsString.match(/wordWrap=(?:["']?(true|false)["']?|{(true|false)})/);
+    if (wordWrapMatch) {
+      props.wordWrap = (wordWrapMatch[1] || wordWrapMatch[2]) === 'true';
+    } else if (propsString.includes('wordWrap')) {
+      // Handle case where wordWrap is specified without a value (defaults to true)
+      props.wordWrap = true;
+    }
 
     if (!props.src) {
       console.warn('⚠️  SnippetCode tag missing src attribute:', match);
@@ -149,17 +181,29 @@ function parseSnippetCodeTags(content: string, contextDir: string): string {
     const displayName = langInfo.displayName;
 
     // Generate highlight string if needed
-    const highlightString =
-      props.highlightStart && props.highlightEnd
-        ? generateHighlightString(props.startLine || 1, props.highlightStart, props.highlightEnd)
-        : '';
+    let highlightString = '';
+    if (props.relativeHighlightStart && props.relativeHighlightEnd) {
+      // Use relative highlights directly
+      if (props.relativeHighlightStart === props.relativeHighlightEnd) {
+        highlightString = `{${props.relativeHighlightStart}}`;
+      } else {
+        highlightString = `{${props.relativeHighlightStart}-${props.relativeHighlightEnd}}`;
+      }
+    } else if (props.highlightStart && props.highlightEnd) {
+      // Use absolute highlights and convert to relative
+      highlightString = generateHighlightString(
+        props.startLine || 1,
+        props.highlightStart,
+        props.highlightEnd
+      );
+    }
 
-    // Use provided title or fall back to language display name
-    const title = props.title || displayName;
+    // Use title priority: explicit title > path > implicit title (displayName)
+    const title = props.title || props.path || displayName;
     const titleComment = ` title="${title}"`;
 
     // Create the code block with syntax, display name, and maxLines
-    const codeBlock = `\`\`\`${syntax} ${displayName}${highlightString ? ` ${highlightString}` : ''}${titleComment} maxLines=40\n${codeContent}\n\`\`\``;
+    const codeBlock = `\`\`\`${syntax} ${displayName}${highlightString ? ` ${highlightString}` : ''}${titleComment} maxLines=40 ${props.wordWrap ? 'wordWrap' : ''}\n${codeContent}\n\`\`\``;
 
     return codeBlock;
   });

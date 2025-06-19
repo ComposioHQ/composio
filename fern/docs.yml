@@ -198,6 +198,13 @@ navigation:
     - page: Gmail Reaper
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
+  - section: Behind the curtain
+    icon: person-booth 
+    skip-slug: true
+    contents:
+    - page: Tool Generator
+      path: pages/dist/examples/tool-generator/tool-generator.mdx
+      slug: examples/tool-generator
 - tab: providers
   layout:
   - section: Providers
@@ -227,27 +234,6 @@ navigation:
     contents:
     - page: Introduction
       path: tools/introduction.mdx
-  - section: Important
-    contents:
-    - page: Github
-      slug: tools/github
-      path: tools/github.mdx
-    - page: Gmail
-      slug: tools/gmail
-      path: tools/gmail.mdx
-    - page: Notion
-      slug: tools/notion
-      path: tools/notion.mdx
-  - section: Scheduling & Booking
-    contents:
-    - page: Googlecalendar
-      slug: tools/googlecalendar
-      path: tools/googlecalendar.mdx
-  - section: No Auth
-    contents:
-    - page: Composio
-      slug: tools/composio
-      path: tools/composio.mdx
 - tab: sdk-reference
   layout:
   - section: Python
