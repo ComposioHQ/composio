@@ -259,22 +259,6 @@ describe('AuthScheme', () => {
     });
   });
 
-  describe('Snowflake', () => {
-    it('should create Snowflake connection data', () => {
-      const result = AuthScheme.Snowflake();
-
-      expect(result).toEqual({
-        authScheme: AuthSchemeTypes.SNOWFLAKE,
-        val: {
-          status: ConnectionStatuses.ACTIVE,
-        },
-      });
-
-      // Verify Zod schema validation
-      expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
-    });
-  });
-
   describe('BillcomAuth', () => {
     it('should create BillcomAuth connection data', () => {
       const params = {

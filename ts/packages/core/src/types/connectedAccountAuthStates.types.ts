@@ -352,21 +352,21 @@ const CalcomAuthConnectionDataSchema = z.discriminatedUnion('status', [
 ]);
 
 // SNOWFLAKE
-const SnowflakeInitiatingSchema = BaseSchemeRaw.extend({
-  status: z.literal(ConnectionStatuses.ACTIVE),
-}).catchall(z.unknown());
-const SnowflakeConnectionDataSchema = z.discriminatedUnion('status', [
-  SnowflakeInitiatingSchema,
-  SnowflakeInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  SnowflakeInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+// const SnowflakeInitiatingSchema = BaseSchemeRaw.extend({
+//   status: z.literal(ConnectionStatuses.ACTIVE),
+// }).catchall(z.unknown());
+// const SnowflakeConnectionDataSchema = z.discriminatedUnion('status', [
+//   SnowflakeInitiatingSchema,
+//   SnowflakeInitiatingSchema.extend({
+//     status: z.literal(ConnectionStatuses.FAILED),
+//     error: z.string().optional(),
+//     error_description: z.string().optional(),
+//   }).catchall(z.unknown()),
+//   SnowflakeInitiatingSchema.extend({
+//     status: z.literal(ConnectionStatuses.EXPIRED),
+//     expired_at: z.string().optional(),
+//   }).catchall(z.unknown()),
+// ]);
 
 export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
   z.object({
@@ -432,13 +432,13 @@ export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
      */
     val: CalcomAuthConnectionDataSchema,
   }),
-  z.object({
-    authScheme: z.literal(AuthSchemeTypes.SNOWFLAKE),
-    /**
-     * the main connection data discriminated by auth scheme
-     */
-    val: SnowflakeConnectionDataSchema,
-  }),
+  // z.object({
+  //   authScheme: z.literal(AuthSchemeTypes.SNOWFLAKE),
+  //   /**
+  //    * the main connection data discriminated by auth scheme
+  //    */
+  //   val: SnowflakeConnectionDataSchema,
+  // }),
   z.object({
     authScheme: z.literal(AuthSchemeTypes.BILLCOM_AUTH),
     /**

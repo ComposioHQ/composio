@@ -108,6 +108,7 @@ export const ToolSchema = z.object({
   tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
   toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
   version: z.optional(z.string()).describe('The version of the tool, e.g. "1.0.0"'),
+  scopes: z.optional(z.array(z.string())).describe('The scopes of the tool. eg: ["task:add"]'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
@@ -126,65 +127,73 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
-export const ToolListFilterByToolsSchema = z.object({
-  tools: z.array(z.string()),
-});
-export type ToolListFilterByTools = z.infer<typeof ToolListFilterByToolsSchema>;
-
-export const ToolListFilterByToolkitsSchema = z.object({
-  toolkits: z.array(z.string()),
-  important: z.boolean().optional(),
-  cursor: z.string().optional(),
+export const ToolListParamsSchema = z.object({
+  tools: z.array(z.string()).optional(),
+  toolkits: z.array(z.string()).optional(),
+  scopes: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
 });
-export type ToolListFilterByToolkits = z.infer<typeof ToolListFilterByToolkitsSchema>;
 
-export const ToolListFilterBySearchSchema = z.object({
-  search: z.string(),
-  toolkits: z.array(z.string()).optional(),
-  cursor: z.string().optional(),
-  limit: z.number().optional(),
-});
-export type ToolListFilterBySearch = z.infer<typeof ToolListFilterBySearchSchema>;
+type BaseParams = {
+  limit?: number;
+  search?: string;
+  scopes?: string[];
+  tags?: string[];
+};
 
+// tools only
 type ToolsOnlyParams = {
   tools: string[];
   toolkits?: never;
-  important?: never;
-  cursor?: never;
-  limit?: never;
+  scopes?: never;
   search?: never;
+  tags?: never;
 };
 
+// toolkits only
 type ToolkitsOnlyParams = {
+  toolkits: string[];
   tools?: never;
+  scopes?: never;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+
+// toolkit + scopes (single toolkit only)
+type ToolkitScopeOnlyParams = {
+  toolkits: [string];
+  tools?: never;
+  scopes: string[];
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+
+// tags only
+type TagsOnlyParams = {
   toolkits?: string[];
-  important?: boolean;
-  cursor?: string;
-  limit?: number;
+  tags: string[];
+  tools?: never;
   search?: never;
+} & Pick<BaseParams, 'limit'>;
+
+// search only
+type SearchOnlyParams = {
+  tools?: never;
+  toolkits?: never;
+  scopes?: never;
+  limit?: never;
+  search: string;
+  tags?: never;
 };
 
-type ToolkitSearchOnlyParams = {
-  tools?: never;
-  toolkits?: string[];
-  important?: never;
-  cursor?: string;
-  limit?: number;
-  search?: string;
-};
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
  */
-export type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
-
-export const ToolListParamsSchema = z.union([
-  ToolListFilterByToolsSchema,
-  ToolListFilterByToolkitsSchema,
-  ToolListFilterBySearchSchema,
-]);
+export type ToolListParams =
+  | ToolsOnlyParams
+  | ToolkitsOnlyParams
+  | ToolkitScopeOnlyParams
+  | SearchOnlyParams
+  | TagsOnlyParams;
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.
