@@ -20,6 +20,7 @@ import {
   ToolRetrieveResponse,
   ToolListResponse as ComposioToolListResponse,
   ToolExecuteResponse as ComposioToolExecuteResponse,
+  ToolListParams as ComposioToolListParams,
 } from '@composio/client/resources/tools';
 import { CustomTools } from './CustomTools';
 import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
@@ -282,20 +283,22 @@ export class Tools<
       limit = '9999';
     }
 
-    const tools = await this.client.tools.list({
-      tool_slugs: 'tools' in queryParams.data ? queryParams.data.tools?.join(',') : undefined,
-      toolkit_slug:
-        'toolkits' in queryParams.data ? queryParams.data.toolkits?.join(',') : undefined,
-      cursor: 'cursor' in queryParams.data ? queryParams.data.cursor : undefined,
-      important:
-        'important' in queryParams.data
-          ? queryParams.data.important
-            ? 'true'
-            : 'false'
-          : undefined,
-      limit: limit,
+    const filters: ComposioToolListParams = {
+      ...('tools' in queryParams.data ? { tool_slugs: queryParams.data.tools?.join(',') } : {}),
+      ...('toolkits' in queryParams.data
+        ? { toolkit_slug: queryParams.data.toolkits?.join(',') }
+        : {}),
+      ...('important' in queryParams.data
+        ? { important: queryParams.data.important ? 'true' : 'false' }
+        : {}),
+      ...(limit ? { limit } : {}),
+      scopes: 'scopes' in queryParams.data ? queryParams.data.scopes : undefined,
       search: 'search' in queryParams.data ? queryParams.data.search : undefined,
-    });
+    };
+
+    logger.info(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
+
+    const tools = await this.client.tools.list(filters);
 
     if (!tools) {
       return [];

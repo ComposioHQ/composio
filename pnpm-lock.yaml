@@ -482,7 +482,7 @@ importers:
         version: 3.16.8
       effect-errors:
         specifier: ^1.10.11
-        version: 1.10.11(krha7h4zqwvrjoe7foerbk5wme)
+        version: 1.10.11(ff5edfb43a1891ed491370151a2c33b9)
       indent-string:
         specifier: ^5.0.0
         version: 5.0.0
@@ -527,8 +527,8 @@ importers:
   ts/packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.23
-        version: 0.1.0-alpha.23
+        specifier: 0.1.0-alpha.24
+        version: 0.1.0-alpha.24
       '@composio/json-schema-to-zod':
         specifier: 0.1.9
         version: 0.1.9
@@ -650,7 +650,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.44
-        version: 0.3.58(openai@5.3.0(zod@3.25.62))
+        version: 0.3.58(openai@5.3.0(ws@8.18.2)(zod@3.25.62))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1027,8 +1027,8 @@ packages:
   '@composio/client@0.1.0-alpha.22':
     resolution: {integrity: sha512-b9KCO5gy0EsCG+nXikOdm17PiZZ85rw3vwu9aNRIse9rEj2FA1SScpP+P9GN4G0lQHl+QPyDuVvGa6U9AATFeg==}
 
-  '@composio/client@0.1.0-alpha.23':
-    resolution: {integrity: sha512-zDbOJZVR+Ug0a622mjMGsREELKOG6DLF3qKI7qJ9FLP/GpAT7xekyEE7DR0g37zs6ytCy0oV/KMi+KaxxNp+zA==}
+  '@composio/client@0.1.0-alpha.24':
+    resolution: {integrity: sha512-CC8drumVzTNZP6Hh9eR69MTwXR2UBmsPPgLgvTZUtBI5qVatjpEl018prMQXuWIzDa9eOKhQnUDNjU52cqo4sQ==}
 
   '@composio/core@0.1.22':
     resolution: {integrity: sha512-ehu0OdwAgjShWjRaXBVlFnaqykDj6rxWcH3GeE179luNqLIb1p0L+Nazb1IMJ1CFl+DQC/NWkI80K8lgRLBQNQ==}
@@ -6434,7 +6434,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.22': {}
 
-  '@composio/client@0.1.0-alpha.23': {}
+  '@composio/client@0.1.0-alpha.24': {}
 
   '@composio/core@0.1.22(ws@8.18.2)':
     dependencies:
@@ -7023,14 +7023,14 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/core@0.3.58(openai@5.3.0(zod@3.25.62))':
+  '@langchain/core@0.3.58(openai@5.3.0(ws@8.18.2)(zod@3.25.62))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.31(openai@5.3.0(zod@3.25.62))
+      langsmith: 0.3.31(openai@5.3.0(ws@8.18.2)(zod@3.25.62))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -8827,7 +8827,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.3(@types/node@20.19.1)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.3(@types/node@24.0.3)(@vitest/ui@3.2.3)(jiti@1.21.7)(tsx@4.20.1)(yaml@2.8.0)
 
   '@vitest/utils@3.2.3':
     dependencies:
@@ -9314,7 +9314,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect-errors@1.10.11(krha7h4zqwvrjoe7foerbk5wme):
+  effect-errors@1.10.11(ff5edfb43a1891ed491370151a2c33b9):
     dependencies:
       '@effect/cluster': 0.39.2(@effect/platform@0.84.11(effect@3.16.8))(@effect/rpc@0.62.2(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.1(@effect/experimental@0.49.1(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.2(@effect/platform@0.84.11(effect@3.16.8))(@effect/rpc@0.62.2(@effect/platform@0.84.11(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
       '@effect/platform': 0.84.11(effect@3.16.8)
@@ -10134,7 +10134,7 @@ snapshots:
     optionalDependencies:
       openai: 4.104.0(ws@8.18.2)(zod@3.25.62)
 
-  langsmith@0.3.31(openai@5.3.0(zod@3.25.62)):
+  langsmith@0.3.31(openai@5.3.0(ws@8.18.2)(zod@3.25.62)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2

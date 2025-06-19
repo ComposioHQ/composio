@@ -178,7 +178,6 @@ export class ConnectedAccounts {
         id: authConfigId,
       },
       connection: {
-        state: options?.config,
         callback_url: options?.callbackUrl,
         user_id: userId,
       },

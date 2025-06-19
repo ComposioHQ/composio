@@ -62,38 +62,6 @@ export const CreateConnectedAccountResponseSchema = z.object({
 });
 export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccountResponseSchema>;
 
-export const ConnectedAccountAuthSchemes = {
-  OAUTH1: 'OAUTH1',
-  OAUTH2: 'OAUTH2',
-  COMPOSIO_LINK: 'COMPOSIO_LINK',
-  API_KEY: 'API_KEY',
-  BASIC: 'BASIC',
-  BEARER_TOKEN: 'BEARER_TOKEN',
-  GOOGLE_SERVICE_ACCOUNT: 'GOOGLE_SERVICE_ACCOUNT',
-  NO_AUTH: 'NO_AUTH',
-  CALCOM_AUTH: 'CALCOM_AUTH',
-  SNOWFLAKE: 'SNOWFLAKE',
-  BILLCOM_AUTH: 'BILLCOM_AUTH',
-  BASIC_WITH_JWT: 'BASIC_WITH_JWT',
-} as const;
-export const ConnectedAccountAuthSchemesSchema = z.enum([
-  ConnectedAccountAuthSchemes.OAUTH2,
-  ConnectedAccountAuthSchemes.OAUTH1,
-  ConnectedAccountAuthSchemes.API_KEY,
-  ConnectedAccountAuthSchemes.BASIC,
-  ConnectedAccountAuthSchemes.BILLCOM_AUTH,
-  ConnectedAccountAuthSchemes.BEARER_TOKEN,
-  ConnectedAccountAuthSchemes.GOOGLE_SERVICE_ACCOUNT,
-  ConnectedAccountAuthSchemes.NO_AUTH,
-  ConnectedAccountAuthSchemes.BASIC_WITH_JWT,
-  ConnectedAccountAuthSchemes.COMPOSIO_LINK,
-  ConnectedAccountAuthSchemes.CALCOM_AUTH,
-  ConnectedAccountAuthSchemes.SNOWFLAKE,
-]);
-export type ConnectedAccountAuthSchemesEnum = z.infer<typeof ConnectedAccountAuthSchemesSchema>;
-export type ConnectedAccountAuthSchemes =
-  (typeof ConnectedAccountAuthSchemes)[keyof typeof ConnectedAccountAuthSchemes];
-
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
   isComposioManaged: z.boolean(),
