@@ -1,6 +1,6 @@
 ---
 title: Providers
-image: 'https://og.composio.dev/api/og?title=Providers' # image for socials
+image: "https://og.composio.dev/api/og?title=Providers"   # image for socials
 keywords: ''
 hide-nav-links: false
 ---
@@ -34,19 +34,16 @@ OpenAI is a completion provider. You can use it to generate text, function calls
 ```typescript TypeScript
 import { Composio } from "@composio/core";
 import { OpenAIProvider } from "@composio/openai";
-import { OpenAI } from "openai";
 
-const composio = new Composio({
-provider: new OpenAIProvider(),
-});
+const composio = new Composio({ provider: new OpenAIProvider() });
 
-````
+```
 ```python Python
 from composio import Composio
 from composio_openai import OpenAIProvider
 
 composio = Composio(provider=OpenAIProvider())
-````
+```
 
 </CodeGroup>
 </Tab>
@@ -58,37 +55,29 @@ import { Composio } from "@composio/core";
 import { AnthropicProvider } from "@composio/anthropic";
 import { Anthropic } from "@anthropic-ai/sdk";
 
-const composio = new Composio({
-provider: new AnthropicProvider(),
-});
+const composio = new Composio({ provider: new AnthropicProvider() });
 
-const anthropic = new Anthropic();
-
-````
+```
 ```python Python
 from composio import Composio
 from composio_anthropic import AnthropicProvider
 
 composio = Composio(provider=AnthropicProvider())
-````
+```
 
 </CodeGroup>
 </Tab>
 <Tab title="Vercel AI SDK">
 ```typescript TypeScript
 import { Composio } from "@composio/core";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { VercelProvider } from "@composio/vercel";
 
-const userId = "00000000-0000-0000-0000-000000000000"; // The user's ID.
-
 const composio = new Composio({
-apiKey: process.env.COMPOSIO_API_KEY,
-provider: new VercelProvider(),
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
 });
 
-````
+```
 </Tab>
 <Tab title="Mastra">
 ```typescript TypeScript
@@ -101,7 +90,7 @@ const composio = new Composio({
   provider: new MastraProvider(),
 });
 
-````
+```
 
 </Tab>
 <Tab title="OpenAI Agents">
@@ -182,6 +171,5 @@ composio = Composio(provider=OpenAIAgentsProvider())
 </CardGroup>
 
 <Tip title="Custom Toolsets" icon="puzzle">
-Using a framework not supported? Create a [custom toolset](/toolsets/custom)!
+Using a framework not supported? Create a [custom provider](/providers/custom)!
 </Tip>
-```

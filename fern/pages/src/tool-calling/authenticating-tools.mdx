@@ -1,6 +1,6 @@
 ---
 title: Authenticating Tools
-image: 'https://og.composio.dev/api/og?title=Authenticating%20Tools' # image for socials
+image: "https://og.composio.dev/api/og?title=Authenticating%20Tools"   # image for socials
 keywords: ''
 subtitle: 'Learn how to authenticate tools'
 hide-nav-links: false
@@ -22,48 +22,37 @@ Once created, it's reusable across multiple users.
 
 </Note>
 
-<Tabs>
-  <Tab title="Dashboard">
-    The dashboard offers a guided process for all app types.
-    <Steps>
-      <Step title="Select App">
-        Navigate to the [Apps page](https://app.composio.dev/apps) and choose the app you want to integrate (for example, Google Sheets).
-        <Frame background="subtle" title="Application Selection Screen">
-          <img src="../../../assets/images/integration-step-1-0.png" />
-        </Frame>
-      </Step>
-      <Step title="Initiate Setup">
-        Click the **"Setup Integration"** button.
-        <Frame background="subtle" title="Auth Config Setup Interface">
-          <img src="../../../assets/images/integration-step-2-0.png" />
-        </Frame>
-      </Step>
-      <Step title="Configure Auth Config Settings">
-        Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
-        Switch between the auth schemes and configure the scopes, developer credentials, etc here.
+The dashboard offers a guided process for all app types.
+<Steps>
+  <Step title="Select App">
+    Navigate to the [Apps page](https://app.composio.dev/apps) and choose the app you want to integrate (for example, Google Sheets).
+    <Frame background="subtle" title="Application Selection Screen">
+      <img src="../../../assets/images/integration-step-1-0.png" />
+    </Frame>
+  </Step>
+  <Step title="Initiate Setup">
+    Click the **"Setup Integration"** button.
+    <Frame background="subtle" title="Auth Config Setup Interface">
+      <img src="../../../assets/images/integration-step-2-0.png" />
+    </Frame>
+  </Step>
+  <Step title="Configure Auth Config Settings">
+    Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
+    Switch between the auth schemes and configure the scopes, developer credentials, etc here.
 
-        <Note title="Composio Managed Auth" icon="info">
-        You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
-        It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
-        </Note>
+    <Note title="Composio Managed Auth" icon="info">
+    You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
+    It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
+    </Note>
 
-        <Frame background="subtle" title="Auth Config Settings">
-          <img src="../../../assets/images/auth-config-creation.png" />
-        </Frame>
-      </Step>
-      <Step title="Create and Get ID">
-        Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. You'll need this ID in your application code.
-      </Step>
-    </Steps>
-
-  </Tab>
-  <Tab title="CLI">
-    - [ ] kirimase style auth config builder creator
-    ```bash
-    composio auth config create <app-name>
-    ```
-  </Tab>
-</Tabs>
+    <Frame background="subtle" title="Auth Config Settings">
+      <img src="../../../assets/images/auth-config-creation.png" />
+    </Frame>
+  </Step>
+  <Step title="Create and Get ID">
+    Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. You'll need this ID in your application code.
+  </Step>
+</Steps>
 
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
   In case of dealing with multiple toolkits across different projects, you can create auth configs
@@ -96,7 +85,7 @@ await connRequest.waitForConnection();
 await composio.connectedAccounts.waitForConnection(id);
 
 ```
-```python Python maxLines=60  wordWrap
+```python Python maxLines=60 wordWrap
 from composio import Composio
 
 linear_auth_config_id = "ac_1234"
