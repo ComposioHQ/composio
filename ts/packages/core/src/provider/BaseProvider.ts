@@ -6,7 +6,7 @@ import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 
 /**
  * @internal
- * Base class for all toolsets.
+ * Base class for all providers.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
 abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
@@ -82,7 +82,7 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
 
 /**
  * @public
- * Base class for all non-agentic toolsets.
+ * Base class for all non-agentic providers.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
 export abstract class BaseNonAgenticProvider<
@@ -108,7 +108,7 @@ export abstract class BaseNonAgenticProvider<
 
 /**
  * @public
- * Base class for all agentic toolsets.
+ * Base class for all agentic providers.
  * This class is not meant to be used directly, but rather to be extended by concrete provider implementations.
  */
 export abstract class BaseAgenticProvider<
@@ -136,7 +136,7 @@ export abstract class BaseAgenticProvider<
 
 /**
  * @internal
- * Base type for all toolsets.
+ * Base type for all providers.
  * This type is used to infer the type of the provider from the provider implementation.
  */
 export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> =
