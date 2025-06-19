@@ -392,7 +392,7 @@ describe('MCP', () => {
 
       expect(result).toMatchObject({
         customFormat: true,
-        serverName: 'test-mcp-server',
+        serverName: 'test-mcp-server-user_123',
       });
     });
   });
