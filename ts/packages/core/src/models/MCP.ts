@@ -17,7 +17,6 @@ import {
   CustomCreateResponseSchema,
   GenerateURLResponseSchema,
   GenerateURLParamsSnakeCaseSchema,
-  GenerateURLParamsValidated,
   McpListResponseSchema,
   McpRetrieveResponseSchema,
   McpDeleteResponseSchema,
@@ -518,13 +517,20 @@ export class MCP<T = McpServerGetResponse> {
         ...(data.userIdsUrl && { user_ids_url: data.userIdsUrl }),
       };
 
-      const transformed = this.provider.wrapMcpServerResponse(
-        snakeCaseData,
-        serverName,
-        connectedAccountIds,
-        userIds,
-        toolkits
-      );
+      let serverNames: string[] = [];
+      if (!connectedAccountIds?.length && !userIds?.length) {
+        serverNames = [serverName];
+      } else {
+        if (connectedAccountIds?.length) {
+          serverNames = connectedAccountIds.map(
+            (id, index) => `${serverName}-${connectedAccountIds[index]}`
+          );
+        } else if (userIds?.length) {
+          serverNames = userIds.map((id, index) => `${serverName}-${userIds[index]}`);
+        }
+      }
+
+      const transformed = this.provider.wrapMcpServerResponse(snakeCaseData, serverNames);
       return transformed as T;
     }
 

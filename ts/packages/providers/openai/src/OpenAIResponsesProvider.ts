@@ -88,24 +88,19 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @param toolkits - Optional array of toolkit names
    * @returns OpenAI-specific MCP server response format
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[]
-  ): OpenAiMcpTool[] {
+  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): OpenAiMcpTool[] {
     // OpenAI Responses uses a custom format
-    if (connectedAccountIds?.length && data.connected_account_urls) {
+    if (data.connected_account_urls) {
       return data.connected_account_urls.map((url: string, index: number) => ({
         type: 'mcp',
-        server_label: `${serverName}-${connectedAccountIds[index]}`,
+        server_label: serverNames[index],
         server_url: url,
         require_approval: 'never',
       })) as OpenAiMcpTool[];
-    } else if (userIds?.length && data.user_ids_url) {
+    } else if (data.user_ids_url) {
       return data.user_ids_url.map((url: string, index: number) => ({
         type: 'mcp',
-        server_label: `${serverName}-${userIds[index]}`,
+        server_label: serverNames[index],
         server_url: url,
         require_approval: 'never',
       })) as OpenAiMcpTool[];
@@ -113,7 +108,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
     return [
       {
         type: 'mcp',
-        server_label: serverName,
+        server_label: serverNames[0],
         server_url: data.mcp_url,
         require_approval: 'never',
       },

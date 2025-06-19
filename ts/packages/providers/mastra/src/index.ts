@@ -46,32 +46,27 @@ export class MastraProvider extends BaseAgenticProvider<
    * @param userIds - Optional array of user IDs
    * @returns Transformed MastraUrlMap
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[]
-  ): MastraUrlMap {
-    if (connectedAccountIds?.length && data.connected_account_urls) {
+  wrapMcpServerResponse(data: McpUrlResponse, serverNames: string[]): MastraUrlMap {
+    if (data.connected_account_urls) {
       return data.connected_account_urls.reduce(
         (prev: MastraUrlMap, url: string, index: number) => {
-          prev[`${serverName}-${index}`] = {
+          prev[serverNames[index]] = {
             url: url,
           };
           return prev;
         },
         {}
       );
-    } else if (userIds?.length && data.user_ids_url) {
+    } else if (data.user_ids_url) {
       return data.user_ids_url.reduce((prev: MastraUrlMap, url: string, index: number) => {
-        prev[`${serverName}-${index}`] = {
+        prev[serverNames[index]] = {
           url: url,
         };
         return prev;
       }, {});
     }
     return {
-      [serverName]: {
+      [serverNames[0]]: {
         url: data.mcp_url,
       },
     };
