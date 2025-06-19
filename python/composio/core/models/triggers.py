@@ -317,12 +317,6 @@ class _SubcriptionBuilder(WithLogger):
 class Triggers(Resource):
     """Triggers (instance) class"""
 
-    enable: t.Callable
-    """Enables a trigger given its id"""
-
-    disable: t.Callable
-    """Disables a trigger given its id"""
-
     def __init__(self, client: HttpClient):
         """
         Initialize the triggers resource.
@@ -332,15 +326,24 @@ class Triggers(Resource):
         self._client = client
         self.list_enum = self._client.triggers_types.retrieve_enum
         self.list = self._client.triggers_types.list
-        self.delete = self._client.trigger_instances.manage.delete
         self.get_type = self._client.triggers_types.retrieve
-        self.enable = functools.partial(
-            self._client.trigger_instances.manage.update,
+
+    def delete(self, trigger_id: str):
+        """Delete a trigger instance by ID"""
+        return self._client.trigger_instances.remove_upsert(slug=trigger_id)
+
+    def enable(self, trigger_id: str):
+        """Enable a trigger instance by ID"""
+        return self._client.trigger_instances.update_status(
             status="enable",
+            slug=trigger_id,
         )
-        self.disable = functools.partial(
-            self._client.trigger_instances.manage.update,
+
+    def disable(self, trigger_id: str):
+        """Disable a trigger instance by ID"""
+        return self._client.trigger_instances.update_status(
             status="disable",
+            slug=trigger_id,
         )
 
     def list_active(
@@ -410,10 +413,21 @@ class Triggers(Resource):
         :return: The trigger instance
         """
         if user_id is not None:
-            connected_account_id = self._get_connected_account_for_user(
-                trigger=slug,
-                user_id=user_id,
+            connected_account_id = self.get_type(slug=slug).toolkit.name
+            connected_accounts = self._client.connected_accounts.list(
+                toolkit_slugs=[connected_account_id]
             )
+            if len(connected_accounts.items) == 0:
+                raise exceptions.NoItemsFound(
+                    f"No connected accounts found for {slug}"
+                )
+
+            account, *_ = sorted(
+                connected_accounts.items,
+                key=lambda x: x.created_at,
+                reverse=True,
+            )
+            connected_account_id = account.id
 
         if connected_account_id is None:
             raise exceptions.InvalidParams(
@@ -425,23 +439,6 @@ class Triggers(Resource):
             connected_account_id=connected_account_id,
             body_trigger_config_1=trigger_config or self._client.not_given,
         )
-
-    def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
-        toolkit = self.get_type(slug=trigger).toolkit.name
-        connected_accounts = self._client.connected_accounts.list(
-            toolkit_slugs=[toolkit]
-        )
-        if len(connected_accounts.items) == 0:
-            raise exceptions.NoItemsFound(
-                f"No connected accounts found for {trigger} and {user_id}"
-            )
-
-        account, *_ = sorted(
-            connected_accounts.items,
-            key=lambda x: x.created_at,
-            reverse=True,
-        )
-        return account.id
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """
