@@ -9,13 +9,14 @@ import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig } from './utils/sdk';
 import logger from './utils/logger';
-import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
+import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { McpServerGetResponse } from './types/mcp.types';
+import { getEnvVariable } from './utils/env';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -156,9 +157,7 @@ export class Composio<
       apiKey: apiKeyParsed,
       baseURL: baseURLParsed,
       defaultHeaders: config?.defaultHeaders,
-      logLevel:
-        (process.env.COMPOSIO_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error' | undefined) ??
-        undefined,
+      logLevel: COMPOSIO_LOG_LEVEL,
     });
 
     /**
