@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_lyzr",
-    version="0.7.19-rc.1",
+    version="0.7.19",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Lyzr workflow.",
