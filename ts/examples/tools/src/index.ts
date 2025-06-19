@@ -42,18 +42,6 @@ async function main() {
     });
 
     console.log(JSON.stringify(result, null, 2));
-
-    // const fileId = result.data.response_data.file_id;
-    // const fileId = '1xChVLOxiMBGqSjoI3K6stKPpuNFiYb_d';
-
-    // const downloadResult = await composio.tools.execute('GOOGLEDRIVE_PARSE_FILE', {
-    //   arguments: {
-    //     file_id: fileId,
-    //   },
-    //   userId: 'default',
-    // });
-
-    // console.log(JSON.stringify(downloadResult, null, 2));
   } catch (error) {
     console.error('❌ Error running example:', error);
   }
