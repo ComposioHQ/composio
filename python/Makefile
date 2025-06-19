@@ -47,8 +47,8 @@ bump: clean-build
 	@uv run python scripts/bump.py
 
 build: clean-build
-	@uv run python -m build
+	@./.venv/bin/python -m build
 	@for provider in $(shell ls -d providers/*); do\
-		uv run python -m build $$provider;\
+		./.venv/bin/python -m build $$provider;\
 		cp $$provider/dist/* dist/;\
 	done
