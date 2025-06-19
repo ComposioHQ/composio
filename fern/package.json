@@ -6,7 +6,7 @@
 	"packageManager": "pnpm@10.8.0",
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"clean": "rm -rf ./dist && rm -rf ./node_modules && rm -rf ./docs/snippets/dist",
+		"clean": "git clean -xdf node_modules",
 		"compile": "npx tailwindcss -i ./assets/input.css -o ./dist/output.css",
 		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10",
 		"tools:generate:dev": "uv run generators/tool_doc_generator/main.py --workers 10 --limit ${LIMIT:-5}",
@@ -26,14 +26,14 @@
 		"generate": "pnpm tools:generate && pnpm sdkdocs"
 	},
 	"dependencies": {
-		"@composio/anthropic": "^0.1.21",
-		"@composio/core": "^0.1.21",
-		"@composio/vercel": "^0.1.21",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@anthropic-ai/sdk": "^0.52.0",
+		"@composio/core": "workspace:*",
+		"@composio/vercel": "workspace:*",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",

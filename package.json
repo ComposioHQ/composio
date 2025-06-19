@@ -29,7 +29,9 @@
     "changeset:version": "changeset version",
     "changeset:release": "pnpm run build:packages && changeset publish",
     "changeset:pre-enter": "changeset pre enter alpha",
-    "changeset:pre-exit": "changeset pre exit alpha"
+    "changeset:pre-exit": "changeset pre exit alpha",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspace": "pnpm turbo clean"
   },
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
@@ -55,5 +57,8 @@
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@composio/anthropic": "^0.1.26"
   }
 }
