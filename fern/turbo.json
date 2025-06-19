@@ -3,13 +3,13 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "tools:uncomment", "sdkdocs"],
+      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
       "outputs": ["pages/*.mdx", "tools/*.mdx", "pages/**"],
       "cache": true
     },
     
     "dev": {
-      "dependsOn": ["api:pull", "sdkdocs", "tools:comment", "snippets:build"],
+      "dependsOn": ["api:pull", "sdkdocs", "tools:generate:dev", "snippets:build"],
       "persistent": true,
       "cache": false
     },
@@ -44,17 +44,10 @@
       "cache": true,
       "env": ["COMPOSIO_API_KEY"]
     },
-    
-    "tools:comment": {
-      "outputs": ["docs.yml"],
-      "inputs": ["scripts/manage-tool-docs.py", "docs.yml"],
-      "cache": true
-    },
-    
-    "tools:uncomment": {
-      "outputs": ["docs.yml"],
-      "inputs": ["scripts/manage-tool-docs.py", "docs.yml"],
-      "cache": true
+    "tools:generate:dev": {
+      "cache": false,
+      "inputs": ["generators/tool_doc_generator/**/*.py"],
+      "env": ["COMPOSIO_API_KEY", "LIMIT"]
     },
     
     "sdkdocs": {

@@ -20,19 +20,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Install git
-        run: |
-          apt-get update && apt-get install -y git
-
       - name: Install Python Dependencies
         working-directory: ./fern
         run: |
           uv sync
           uv run composio apps generate-types
-
-      - name: Install Fern
-        run: npm install -g fern-api
 
       - name: Build documentation with Turbo
         working-directory: ./fern

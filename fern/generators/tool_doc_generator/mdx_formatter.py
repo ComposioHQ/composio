@@ -18,12 +18,13 @@ class MDX:
     """
 
     @staticmethod
-    def as_frontmatter(app_name: str | None = None) -> str:
+    def as_frontmatter(app_name: str | None = None, category: str | None = None) -> str:
         """
         Generate MDX frontmatter.
         
         Args:
             app_name: The name of the application
+            category: The category of the application
             
         Returns:
             Formatted MDX frontmatter string
@@ -31,6 +32,8 @@ class MDX:
         frontmatter = f'title: "{app_name}"'
         if app_name is not None:
             frontmatter += f'\nsubtitle: "Learn how to use {app_name} with Composio"'
+        if category is not None:
+            frontmatter += f'\ncategory: "{category}"'
         return "---\n" + frontmatter + "\n---\n"
 
     @staticmethod

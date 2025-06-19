@@ -18,6 +18,39 @@ import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# Disable telemetry to avoid background network requests
+os.environ["COMPOSIO_TELEMETRY_DISABLED"] = "true"
+os.environ["COMPOSIO_DISABLE_TELEMETRY"] = "true"
+os.environ["TELEMETRY_DISABLED"] = "true"
+
+# Import MDX linting functionality
+from composio import Composio
+from composio.client.types import (
+    Tool,
+    toolkit_list_response,
+    toolkit_retrieve_response,
+)
+from dotenv import load_dotenv
+from inflection import titleize
+from generators.tool_doc_generator.mdx_formatter import MDX
+from generators.tool_doc_generator.base_docs import base_layout
+
+# Import from the same directory
+
+
+IMPORTANT_TOOL_SLUGS = [
+    "twitter",
+    "gmail",
+    "github",
+    "notion",
+    "googlesheets",
+    "shopify",
+    "stripe",
+]
+
+
+
+
 try:
     from ruamel.yaml import YAML
 
@@ -32,19 +65,37 @@ except ImportError:
         "ruamel.yaml not found, falling back to standard yaml. Install with: uv pip install ruamel.yaml"
     )
 
-# Import MDX linting functionality
-from composio.client.collections import Actions, AppAuthScheme, ActionModel
-from composio_openai import App, ComposioToolSet
-from dotenv import load_dotenv
-from inflection import titleize
 
-# Import from the same directory
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mdx_formatter import MDX
 
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+class TelemetryFilter(logging.Filter):
+    """Filter out telemetry-related log messages"""
+    
+    def filter(self, record):
+        # Filter out telemetry-related messages
+        message = record.getMessage()
+        telemetry_keywords = [
+            "telemetry.composio.dev",
+            "telemetry",
+            "TELEMETRY",
+            "metrics/invocations",
+            "errors"
+        ]
+        
+        # Also filter by logger name
+        if "telemetry" in record.name.lower():
+            return False
+            
+        # Filter by message content
+        for keyword in telemetry_keywords:
+            if keyword in message:
+                return False
+                
+        return True
 
 
 def sanitize_html(text: str) -> str:
@@ -114,17 +165,18 @@ class DocumentContent:
 
     _blocks: list[str] = field(default_factory=list)
 
-    def add_frontmatter(self, app_name: str) -> "DocumentContent":
+    def add_frontmatter(self, app_name: str, category: t.Optional[str] = None) -> "DocumentContent":
         """
         Add frontmatter section to the document.
 
         Args:
             app_name: The name of the application
+            category: The category of the application
 
         Returns:
             Self reference for method chaining
         """
-        self._blocks.append(MDX.as_frontmatter(app_name))
+        self._blocks.append(MDX.as_frontmatter(app_name, category))
         return self
 
     def add_overview_section(
@@ -132,7 +184,7 @@ class DocumentContent:
         app_name: str,
         app_id: str,
         description: str,
-        auth_schemes: t.Optional[t.List[AppAuthScheme]] = None,
+        auth_schemes: t.Optional[t.List[toolkit_retrieve_response.AuthConfigDetail]] = None,
         tags: t.Optional[list] = None,
     ) -> "DocumentContent":
         """
@@ -159,26 +211,7 @@ class DocumentContent:
 
         # Authentication schemes if present
         if auth_schemes:
-            self._blocks.append("### Authentication Details")
-            for scheme in auth_schemes:
-                field_block = []
-                for field in scheme.fields:
-                    # Apply sanitization to auth field properties too
-                    safe_name = field.name.replace('"', '\\"')
-                    safe_type = str(field.type).replace('"', '\\"')
-                    safe_default = str(field.default).replace('"', '\\"') if field.default else ""
-
-                    field_block.append(
-                        MDX.as_param(
-                            name=safe_name,
-                            required=field.required,
-                            typ=safe_type,
-                            default=safe_default,
-                        )
-                    )
-                self._blocks.append(
-                    MDX.as_accordion(title=scheme.auth_mode, content="\n".join(field_block))
-                )
+            self._add_auth_schemes(auth_schemes)
 
         # Tags if present
         if tags:
@@ -188,12 +221,83 @@ class DocumentContent:
 
         return self
 
-    def add_actions(self, actions: t.List[ActionModel]) -> "DocumentContent":
+    def _add_auth_schemes(self, auth_schemes: t.List[toolkit_retrieve_response.AuthConfigDetail]) -> None:
+        """Add authentication schemes section."""
+        self._blocks.append("### Authentication Details")
+        
+        for scheme in auth_schemes:
+            fields = self._extract_auth_fields(scheme)
+            if fields:
+                auth_type = self._get_auth_type(scheme)
+                self._blocks.append(MDX.as_accordion(auth_type, "\n".join(fields)))
+
+    def _extract_auth_fields(self, scheme: toolkit_retrieve_response.AuthConfigDetail) -> t.List[str]:
+        """Extract authentication fields from scheme."""
+        fields = []
+        
+        if hasattr(scheme, 'fields') and scheme.fields:
+            for field in scheme.fields:
+                if isinstance(field, tuple) and len(field) == 2:
+                    fields.extend(self._process_tuple_field(field))
+                elif hasattr(field, 'name'):
+                    fields.append(self._create_param_from_field(field))
+        
+        return fields
+
+    def _process_tuple_field(self, field: tuple) -> t.List[str]:
+        """Process tuple-style authentication field."""
+        fields = []
+        _, field_config = field
+        
+        for field_list, required in [(getattr(field_config, 'required', []), True),
+                                      (getattr(field_config, 'optional', []), False)]:
+            for f in field_list:
+                if hasattr(f, 'name'):
+                    fields.append(self._create_param_from_field(f, required))
+        
+        return fields
+
+    def _create_param_from_field(self, field: toolkit_retrieve_response.AuthConfigDetail, required: t.Optional[bool] = None) -> str:
+        """Create parameter string from field object."""
+        return MDX.as_param(
+            name=str(field.name).replace('"', '\\"'),
+            required=required if required is not None else getattr(field, 'required', False),
+            typ=str(getattr(field, 'type', '')).replace('"', '\\"'),
+            default=str(getattr(field, 'default', '')).replace('"', '\\"') if getattr(field, 'default', None) else "",
+            doc=str(getattr(field, 'description', '')).replace('"', '\\"')
+        )
+
+    def _get_auth_type(self, scheme: toolkit_retrieve_response.AuthConfigDetail) -> str:
+        """Get authentication type from scheme."""
+        auth_type = (
+            getattr(scheme, 'mode', None) or 
+            getattr(scheme, 'type', None) or 
+            getattr(scheme, 'auth_type', None) or 
+            getattr(scheme, 'auth_mode', None) or 
+            'Authentication'
+        )
+        
+        auth_type_mapping = {
+            'oauth2': 'OAuth2',
+            'OAUTH2': 'OAuth2',
+            'api_key': 'API Key',
+            'API_KEY': 'API Key',
+            'bearer_token': 'Bearer Token',
+            'BEARER_TOKEN': 'Bearer Token',
+            'basic': 'Basic Auth',
+            'BASIC': 'Basic Auth',
+            'no_auth': 'No Authentication',
+            'NO_AUTH': 'No Authentication'
+        }
+        
+        return auth_type_mapping.get(auth_type, auth_type.replace('_', ' ').title())
+
+    def add_actions(self, actions: t.List[Tool]) -> "DocumentContent":
         """
         Add actions section to the document.
 
         Args:
-            actions: List of action models to document
+            actions: List of tool models to document
 
         Returns:
             Self reference for method chaining
@@ -202,74 +306,115 @@ class DocumentContent:
         if not any("## Actions" in block for block in self._blocks):
             self._blocks.append("## Actions")
 
-        all_action_content = []
+        action_contents = []
 
-        for action in actions:
-            action_content = []
-            params = action.parameters
-            response = action.response
-
-            # Description with encoding fixes and sanitization
-            action_content.append(
-                # sanitize_html(action.description.replace("<<", "(").replace(">>", ")"))
-                MDX.as_code_block(action.description, "text")
-            )
-
-            # Process parameters with enhanced sanitization to avoid MDX parsing issues
-            action_params = []
-            for k, v in params.properties.items():
-                # Get the basic sanitized description
-                doc = sanitize_html(v.get("description", ""))
-                param_content = MDX.as_param(
-                    name=k,
-                    typ=str(v.get("type", "")),
-                    doc=doc,
-                    default=v.get("default", ""),
-                    required=k in params.required if params.required else False,
-                )
-                action_params.append(param_content)
-
-            # Process responses with the same enhanced sanitization
-            action_responses = []
-            for k, v in response.properties.items():
-                # Get the basic sanitized description
-                doc = sanitize_html(v.get("description", ""))
-                action_response = MDX.as_param(name=k, typ=str(v.get("type", "")), doc=doc)
-                action_responses.append(action_response)
-
-            # Add sections to action content
-            action_content.append("\n**Action Parameters**\n")
-            action_content.append("\n".join(action_params))
-
-            action_content.append("\n**Action Response**\n")
-            action_content.append("\n".join(action_responses))
-
-            # Create accordion for this action, sanitizing the title
-            safe_action_name = action.name
-
-            # Check for operator patterns in the action name (<4mb type issues)
-            if "<" in safe_action_name or ">" in safe_action_name:
-                # Handle comparison operators that cause MDX parsing issues
-                safe_action_name = re.sub(r"<(\d+)", r"less than \1", safe_action_name)
-                safe_action_name = re.sub(r">(\d+)", r"greater than \1", safe_action_name)
-                safe_action_name = re.sub(r"<=(\d+)", r"less than or equal to \1", safe_action_name)
-                safe_action_name = re.sub(
-                    r">=(\d+)", r"greater than or equal to \1", safe_action_name
-                )
-
-                # Handle remaining < and > characters
-                safe_action_name = safe_action_name.replace("<", "&lt;").replace(">", "&gt;")
-
-            all_action_content.append(MDX.as_accordion(safe_action_name, "\n".join(action_content)))
+        logger.info(f"Processing {len(actions)} actions for documentation")
+        for i, tool in enumerate(actions):
+            content = self._process_tool(tool)
+            if content:
+                action_contents.append(content)
 
         # Only wrap in accordion group if there are actions
-        if all_action_content:
-            self._blocks.append(MDX.as_accordion_group("\n".join(all_action_content)))
+        if action_contents:
+            self._blocks.append(MDX.as_accordion_group("\n".join(action_contents)))
         else:
+            logger.info(f"No action content generated for {len(actions)} tools")
             self._blocks.append("""This app has actions coming soon! Feel free to raise a request for it in our [GitHub Issues](https://github.com/ComposioHQ/composio/issues).
                                 
                                 You can also create [custom actions](/tool-calling/customizing-tools#extending-composio-toolkits) for the app using Composio Auth.""")
         return self
+
+    def _process_tool(self, tool: Tool) -> t.Optional[str]:
+        """Process a single tool and return accordion content."""
+        tool_data = self._extract_tool_data(tool)
+        if not tool_data['name']:
+            return None
+        
+        content = [MDX.as_code_block(tool_data['description'], "text")]
+        
+        # Add parameters
+        content.append("\n**Action Parameters**\n")
+        content.append("\n".join(self._process_parameters(tool_data['params'])))
+        
+        # Add responses
+        content.append("\n**Action Response**\n")
+        content.append("\n".join(self._process_parameters(tool_data['response'])))
+        
+        safe_name = self._sanitize_action_name(tool_data['name'])
+        return MDX.as_accordion(safe_name, "\n".join(content))
+
+    def _extract_tool_data(self, tool: Tool) -> t.Dict[str, t.Any]:
+        """Extract data from tool object or dict."""
+        if isinstance(tool, dict):
+            if 'function' in tool:
+                func = tool['function']
+                return {
+                    'name': func.get('name', ''),
+                    'description': func.get('description', ''),
+                    'params': func.get('parameters', {}),
+                    'response': tool.get('output_parameters', {}) or func.get('output_parameters', {})
+                }
+            else:
+                return {
+                    'name': tool.get('name', tool.get('slug', '')),
+                    'description': tool.get('description', ''),
+                    'params': tool.get('input_parameters', {}),
+                    'response': tool.get('output_parameters', {})
+                }
+        else:
+            return {
+                'name': getattr(tool, 'name', getattr(tool, 'slug', '')),
+                'description': getattr(tool, 'description', ''),
+                'params': getattr(tool, 'input_parameters', {}) or {},
+                'response': getattr(tool, 'output_parameters', {}) or {}
+            }
+
+    def _process_parameters(self, params: t.Any) -> t.List[str]:
+        """Process parameters from various formats."""
+        if not params or not isinstance(params, dict):
+            return []
+        
+        param_list = []
+        
+        if 'properties' in params:
+            properties = params.get('properties', {})
+            required = params.get('required', [])
+            
+            for name, schema in properties.items():
+                param_list.append(MDX.as_param(
+                    name=name,
+                    typ=str(schema.get("type", "")),
+                    doc=sanitize_html(schema.get("description", "")),
+                    default=schema.get("default", ""),
+                    required=name in required
+                ))
+        else:
+            for name, schema in params.items():
+                if isinstance(schema, dict):
+                    param_list.append(MDX.as_param(
+                        name=name,
+                        typ=str(schema.get("type", "")),
+                        doc=sanitize_html(schema.get("description", "")),
+                        default=schema.get("default", ""),
+                        required=schema.get("required", False)
+                    ))
+        
+        return param_list
+
+    def _sanitize_action_name(self, name: str) -> str:
+        """Sanitize action name for MDX."""
+        if "<" in name or ">" in name:
+            replacements = [
+                (r"<(\d+)", r"less than \1"),
+                (r">(\d+)", r"greater than \1"),
+                (r"<=(\d+)", r"less than or equal to \1"),
+                (r">=(\d+)", r"greater than or equal to \1")
+            ]
+            for pattern, replacement in replacements:
+                name = re.sub(pattern, replacement, name)
+            name = name.replace("<", "&lt;").replace(">", "&gt;")
+        
+        return name
 
     def __str__(self) -> str:
         """Convert document content to string."""
@@ -289,34 +434,39 @@ class ToolDocGenerator:
 
         Args:
             include_local: Whether to include local development tools
-            skip_lint: Whether to skip the linting step
         """
         # Load environment variables
         load_dotenv()
 
-        # Initialize toolset
-        self.toolset = ComposioToolSet()
+        # Initialize composio client
+        self.composio = Composio()
         self.include_local = include_local
-        self.actions_obj = Actions(self.toolset.client)
 
         # For tracking generated tools
         self.generated_tools = []
         self.problematic_actions = []
 
-    def generate_docs(self, output_path: Path, max_workers: int | None = None) -> None:
+    def generate_docs(self, output_path: Path, max_workers: int | None = None, limit: int | None = None) -> None:
         """
         Generate documentation for all apps in parallel.
 
         Args:
             output_path: Path to output directory
             max_workers: Maximum number of parallel workers (default: CPU count * 5)
+            limit: Limit processing to first N toolkits (for debugging)
         """
         # Ensure output directory exists
         output_path.mkdir(parents=True, exist_ok=True)
 
         # Get all apps
-        apps = self.toolset.get_apps(include_local=self.include_local)
-        logger.info(f"Starting documentation generation for {len(apps)} apps")
+        toolkits = self.composio.toolkits.get()
+        
+        # Apply limit if specified
+        if limit is not None:
+            toolkits = toolkits[:limit]
+            logger.info(f"Limited to first {limit} toolkits")
+        
+        logger.info(f"Starting documentation generation for {len(toolkits)} toolkits")
 
         # Track failures with a synchronized list
         from threading import Lock
@@ -331,24 +481,24 @@ class ToolDocGenerator:
             # Use CPU count as default but cap at 10 to avoid connection pool issues
             max_workers = min(10, multiprocessing.cpu_count())
 
-        def process_app(app):
-            """Process a single app with proper exception handling"""
+        def process_app(toolkit):
+            """Process a single toolkit with proper exception handling"""
             try:
-                self._generate_app_doc(app, output_path)
-                logger.info(f"✅ Generated docs for {app.name}")
+                self._generate_app_doc(toolkit, output_path)
+                logger.info(f"✅ Generated docs for {toolkit.name}")
                 return True
             except Exception as e:
                 with failed_apps_lock:
-                    failed_apps.append((app.name, str(e)))
-                logger.error(f"❌ Failed to generate docs for {app.name}: {e}")
+                    failed_apps.append((toolkit.name, str(e)))
+                logger.error(f"❌ Failed to generate docs for {toolkit.name}: {e}")
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(traceback.format_exc())
+                    logger.info(traceback.format_exc())
                 return False
 
         # Use ThreadPoolExecutor for parallel processing
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all app processing tasks
-            future_to_app = {executor.submit(process_app, app): app for app in apps}
+            future_to_app = {executor.submit(process_app, toolkit): toolkit for toolkit in toolkits}
 
             # Collect results as they complete
             success_count = 0
@@ -358,64 +508,100 @@ class ToolDocGenerator:
 
         # Log final statistics
         if failed_apps:
-            logger.warning("\nFailed to generate docs for the following apps:")
+            logger.warning("\nFailed to generate docs for the following toolkits:")
             for app_name, error in failed_apps:
                 logger.warning(f"- {app_name}: {error}")
-            logger.warning(f"\nTotal failed apps: {len(failed_apps)}/{len(apps)}")
+            logger.warning(f"\nTotal failed toolkits: {len(failed_apps)}/{len(toolkits)}")
         else:
-            logger.info(f"\nSuccessfully generated docs for all {len(apps)} apps!")
+            logger.info(f"\nSuccessfully generated docs for all {len(toolkits)} toolkits!")
 
-        logger.info(f"Generated {success_count} app docs in parallel using {max_workers} workers")
+        logger.info(f"Generated {success_count} toolkit docs in parallel using {max_workers} workers")
 
         # Update docs.yml with the generated tools
         self.update_docs_yml(output_path.parent / "docs.yml")
 
-    def _generate_app_doc(self, app: App, output_path: Path) -> None:
+    def _generate_app_doc(self, toolkit: toolkit_list_response.Item, output_path: Path) -> None:
         """
-        Generate documentation for a single app.
+        Generate documentation for a single toolkit.
 
         Args:
-            app: The app to generate documentation for
+            toolkit: The toolkit to generate documentation for
             output_path: Output directory path
         """
-        # Get app model and actions
-        app_model = self.toolset.get_app(app.name)
-        actions = self.actions_obj._get_actions(apps=[app.name], allow_all=True)
+        # Get toolkit model and tools
+        toolkit_model = self.composio.toolkits.get(slug=toolkit.slug)
+        tools = self.composio.tools.get_raw_composio_tools(toolkits=[toolkit.slug])
+        logger.info(f"Toolkit tools: {toolkit}")
+       
+        
+        logger.info(f"Retrieved {len(tools)} tools for {toolkit.name}")
+        if tools:
+            logger.debug(f"First tool type: {type(tools[0])}")
+            if hasattr(tools[0], '__dict__'):
+                logger.debug(f"First tool attributes: {list(tools[0].__dict__.keys())}")
+            elif isinstance(tools[0], dict):
+                logger.debug(f"First tool dict keys: {list(tools[0].keys())}")
+            logger.debug(f"Sample tool: {str(tools[0])[:200]}...")
 
         # Create content
         content = DocumentContent()
 
+        # Extract category from toolkit meta
+        category = None
+        if hasattr(toolkit_model, 'meta') and hasattr(toolkit_model.meta, 'categories') and toolkit_model.meta.categories:
+            # Use the first category if multiple exist
+            category = toolkit_model.meta.categories[0].get('name') if isinstance(toolkit_model.meta.categories[0], dict) else getattr(toolkit_model.meta.categories[0], 'name', None)
+        
         # Add frontmatter
-        content.add_frontmatter(titleize(app.name))
+        content.add_frontmatter(titleize(toolkit.name), category)
 
         # Handle auth schemes safely
         auth_schemes = None
         try:
-            auth_schemes = app_model.auth_schemes
+            auth_schemes = toolkit_model.auth_config_details
         except Exception as e:
-            logger.debug(f"Could not process auth schemes for {app.name}: {e}")
+            logger.info(f"Could not process auth schemes for {toolkit.name}: {e}")
             # Continue without auth schemes
 
-        # Sanitize the app description
+
+        no_auth = "NO_AUTH" in (toolkit.auth_schemes or [])
+
+        logger.info(f"No auth: {no_auth}")
+
+
 
         # Add overview section
         content.add_overview_section(
-            app_name=app.name,
-            app_id=app.key,  # type: ignore
-            description=app.description,  # type: ignore
+            app_name=toolkit.name,
+            app_id=toolkit.slug,
+            description=toolkit.meta.description,
             auth_schemes=auth_schemes,
         )
 
         # Filter out problematic actions
-        filtered_actions = [
-            action for action in actions 
-            if action.name not in self.problematic_actions
-        ]
+        filtered_tools = []
+        for tool in tools:
+            # Extract tool slug for filtering
+            if isinstance(tool, dict):
+                if 'function' in tool:
+                    tool_slug = tool['function'].get('name', '')
+                else:
+                    tool_slug = tool.get('slug', '')
+            else:
+                tool_slug = getattr(tool, 'slug', '')
+                
+            if tool_slug not in self.problematic_actions:
+                filtered_tools.append(tool)
+            else:
+                logger.info(f"Filtered out problematic tool: {tool_slug}")
+        
+        logger.info(f"After filtering: {len(filtered_tools)} tools remaining out of {len(tools)}")
+        
         # Add actions section (only the filtered ones)
-        content.add_actions(filtered_actions)
+        content.add_actions(filtered_tools)
 
         # Write to file
-        filename = f"{app.name.lower()}.mdx"
+        filename = f"{toolkit.slug.lower()}.mdx"
         output_file = output_path / filename
         content_str = str(content)
 
@@ -425,101 +611,117 @@ class ToolDocGenerator:
         with threading.Lock():
             self.generated_tools.append(
                 {
-                    "name": app.name.lower(),
-                    "display_name": titleize(app.name),
+                    "name": toolkit.slug.lower(),
+                    "display_name": titleize(toolkit.name.lower()),
                     "path": f"tools/{filename}",
+                    "category": category,
+                    "tool_count": len(tools),
+                    "no_auth": no_auth,
                 }
             )
 
     def update_docs_yml(self, docs_yml_path: Path) -> None:
         """
-        Update the docs.yml file with the generated tools.
+        Update the docs.yml file with the generated tools, grouped by section:
+        - Important
+        - Categories (each key becomes a section)
+        - Proxy Apps
+        - No Auth
 
         Args:
             docs_yml_path: Path to the docs.yml file
         """
+        import yaml  # Use PyYAML for writing
+
         logger.info(f"Updating docs.yml with {len(self.generated_tools)} tools")
 
         try:
             # Sort tools alphabetically by name
             sorted_tools = sorted(self.generated_tools, key=lambda x: x["name"])
 
-            # Create page entries for generated tools
-            tools_contents = []
+            # Prepare sections
+            important_tools = []
+            proxy_apps = []
+            no_auth_tools = []
+            categories: dict[str, list] = {}
+        
+
             for tool in sorted_tools:
-                tools_contents.append({"page": tool["display_name"], "path": tool["path"]})
+                entry = {"page": tool["display_name"], "slug": "tools/" + tool["name"], "path": tool["path"]}
+                name = tool["name"]
+                category = tool.get("category", "").strip()
 
-            if USE_RUAMEL:
-                # Use ruamel.yaml to preserve comments and formatting
-                yaml = YAML()
-                yaml.preserve_quotes = True
-                yaml.indent(mapping=2, sequence=4, offset=2)
+                if name in IMPORTANT_TOOL_SLUGS:
+                    important_tools.append(entry)
+                elif tool.get("tool_count") == 0:
+                    proxy_apps.append(entry)
+                elif tool.get("no_auth"):
+                    no_auth_tools.append(entry)
+                elif category:
+                    lower_category = category.lower()
+                    if lower_category not in categories:
+                        categories[lower_category] = []
+                    categories[lower_category].append(entry)
 
-                # Read the current docs.yml
-                with open(docs_yml_path, "r") as f:
-                    docs_data = yaml.load(f)
+            # Read the current docs.yml
+            with open(docs_yml_path, "r") as f:
+                docs_data = yaml.safe_load(f)
 
-                # Find the "tools" tab section in the navigation structure
-                for tab_section in docs_data.get("navigation", []):
-                    if tab_section.get("tab") == "tools":
-                        # Find the tools section
-                        for section in tab_section.get("layout", []):
-                            if section.get("section") == "Tools":
-                                # Preserve the Introduction entry if it exists
-                                existing_contents = section.get("contents", [])
-                                intro_entries = [
-                                    item for item in existing_contents 
-                                    if item.get("page") == "Introduction"
-                                ]
-                                
-                                # Add introduction entries first, then the generated tools
-                                final_contents = intro_entries + tools_contents
-                                
-                                # Update the section contents
-                                section["contents"] = final_contents
-                                break
-                        break
+            logger.info(f"Important tools: {important_tools}")
+            logger.info(f"Proxy apps: {proxy_apps}")
+            logger.info(f"No auth tools: {no_auth_tools}")
 
-                # Write the updated YAML back to the file
-                with open(docs_yml_path, "w") as f:
-                    yaml.dump(docs_data, f)
-            else:
-                # Fallback to standard yaml
-                # Read the current docs.yml
-                with open(docs_yml_path, "r") as f:
-                    docs_data = yaml_module.safe_load(f)
+            # Sort categories by number of elements (descending), then by name
+            sorted_categories = sorted(
+                categories.items(),
+                key=lambda item: (-len(item[1]), item[0])
+            )
 
-                # Find the "tools" tab section in the navigation structure
-                for tab_section in docs_data.get("navigation", []):
-                    if tab_section.get("tab") == "tools":
-                        # Find the tools section
-                        for section in tab_section.get("layout", []):
-                            if section.get("section") == "Tools":
-                                # Preserve the Introduction entry if it exists
-                                existing_contents = section.get("contents", [])
-                                intro_entries = [
-                                    item for item in existing_contents 
-                                    if item.get("page") == "Introduction"
-                                ]
-                                
-                                # Add introduction entries first, then the generated tools
-                                final_contents = intro_entries + tools_contents
-                                
-                                # Update the section contents
-                                section["contents"] = final_contents
-                                break
-                        break
+            logger.info(f"Category keys: {list(categories.keys())}")
+            logger.info(f"Sorted categories keys: {[cat for cat, _ in sorted_categories]}")
 
-                # Write the updated YAML back to the file
-                with open(docs_yml_path, "w") as f:
-                    yaml_module.dump(docs_data, f, default_flow_style=False, sort_keys=False)
+
+            # Find the "tools" tab section in the navigation structure
+            for tab_section in docs_data.get("navigation", []):
+                if tab_section.get("tab") == "tools":
+                    logger.info(f"Tab section: {tab_section}")
+                    new_layout = []
+
+                    # Always add the Tool section with Introduction first
+                    new_layout.append(base_layout)
+
+                    # Add Important section if present
+                    if important_tools:
+                        new_layout.append({"section": "Important", "contents": important_tools})
+
+
+                    # Add each category as its own section
+                    for cat, tools_list in sorted_categories:
+                        if tools_list:
+                            new_layout.append({"section": titleize(cat), "contents": tools_list})
+
+                    # Add Proxy Apps section if present
+                    if proxy_apps:
+                        new_layout.append({"section": "Proxy Apps", "contents": proxy_apps})
+
+                    # Add No Auth section if present
+                    if no_auth_tools:
+                        new_layout.append({"section": "No Auth", "contents": no_auth_tools})
+
+                    logger.info("new_layout: %s", new_layout)
+                    tab_section["layout"] = new_layout
+                    break
+
+            # Write the updated YAML back to the file
+            with open(docs_yml_path, "w") as f:
+                yaml.dump(docs_data, f, default_flow_style=False, sort_keys=False)
 
             logger.info(f"✅ Updated docs.yml with {len(self.generated_tools)} tools")
 
         except Exception as e:
             logger.error(f"Failed to update docs.yml: {e}")
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(traceback.format_exc())
+                logger.info(traceback.format_exc())
 
 
 def configure_logging(log_level: str) -> None:
@@ -538,6 +740,14 @@ def configure_logging(log_level: str) -> None:
         format="%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    
+    # Add telemetry filter to root logger to filter out telemetry requests
+    telemetry_filter = TelemetryFilter()
+    logging.getLogger().addFilter(telemetry_filter)
+    
+    # Also add filter to specific loggers that might handle HTTP requests
+    for logger_name in ["httpx", "urllib3", "requests"]:
+        logging.getLogger(logger_name).addFilter(telemetry_filter)
 
 
 def cli_main() -> int:
@@ -586,6 +796,13 @@ def cli_main() -> int:
         help="Skip the linting step when generating documentation",
         default=False,
     )
+    parser.add_argument(
+        "--limit",
+        "-l",
+        type=int,
+        help="Limit processing to first N toolkits (for debugging)",
+        default=None,
+    )
 
     args = parser.parse_args()
 
@@ -599,13 +816,15 @@ def cli_main() -> int:
         generator = ToolDocGenerator(include_local=args.include_local)
 
         # Generate docs with specified number of workers
-        generator.generate_docs(output_path, max_workers=args.workers)
+        generator.generate_docs(output_path, max_workers=args.workers, limit=args.limit)
 
-        return 0
+        # Force exit immediately without waiting for background telemetry
+        logger.info("Documentation generation complete. Exiting immediately.")
+        os._exit(0)
     except Exception as e:
         logger.error(f"Error generating documentation: {e}")
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(traceback.format_exc())
+            logger.info(traceback.format_exc())
         return 1
 
 
@@ -616,7 +835,8 @@ def generate_tool_docs(
     log_level="info", 
     workers=None, 
     lint_only=False, 
-    no_lint=False
+    no_lint=False,
+    limit=None
 ):
     """
     Generate tool documentation
@@ -629,6 +849,7 @@ def generate_tool_docs(
         workers: Number of parallel worker threads
         lint_only: Only lint existing MDX files without generating new ones
         no_lint: Skip the linting step when generating documentation
+        limit: Limit processing to first N toolkits (for debugging)
     """
     # Configure logging
     configure_logging(log_level)
@@ -637,9 +858,11 @@ def generate_tool_docs(
     generator = ToolDocGenerator(include_local=include_local)
     
     # Generate docs with specified number of workers
-    generator.generate_docs(output_dir, max_workers=workers)
+    generator.generate_docs(output_dir, max_workers=workers, limit=limit)
     
-    return 0
+    # Force exit immediately without waiting for background telemetry
+    logger.info("Documentation generation complete. Exiting immediately.")
+    os._exit(0)
 
 
 if __name__ == "__main__":
