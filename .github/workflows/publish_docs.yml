@@ -18,6 +18,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install git
+        run: apt-get update && apt-get install -y git
+
       - name: Install dependencies
         run: pnpm install
       - name: Install Python Dependencies
