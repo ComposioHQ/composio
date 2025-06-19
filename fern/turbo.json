@@ -27,7 +27,7 @@
     },
     
     "snippets:build": {
-      "dependsOn": ["^build", "sdkdocs"],
+      "dependsOn": ["^build"],
       "outputs": ["pages/**"],
       "inputs": ["scripts/build-snippets.ts", "snippets/**", "docs/**"],
       "cache": true
@@ -71,23 +71,23 @@
     },
     
     "check": {
-      "dependsOn": ["tools:comment", "snippets:build"],
+      "dependsOn": ["snippets:build"],
       "cache": false
     },
     
     "links": {
-      "dependsOn": ["tools:uncomment", "snippets:build"],
+      "dependsOn": ["snippets:build"],
       "cache": false
     },
     
     "preview": {
-      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
+      "dependsOn": ["snippets:build"],
       "cache": false,
       "env": ["FERN_TOKEN"]
     },
     
     "publish": {
-      "dependsOn": ["tools:uncomment", "snippets:build", "sdkdocs"],
+      "dependsOn": ["snippets:build"],
       "cache": false,
       "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
     },
