@@ -509,19 +509,26 @@ export class MCP<T = McpServerGetResponse> {
     // Check if provider has a custom transform method
     if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
       // Convert to array of name and url based on connected accounts or user ids
-      const snakeCaseData: McpUrlResponse = data.connectedAccountUrls?.map((url, index) => ({
-        name: serverName + '-' + connectedAccountIds?.[index],
-        url: url,
-      })) ||
-        data.userIdsUrl?.map((url, index) => ({
+      let snakeCaseData: McpUrlResponse;
+
+      if (data.connectedAccountUrls?.length) {
+        snakeCaseData = data.connectedAccountUrls.map((url, index) => ({
+          name: serverName + '-' + connectedAccountIds?.[index],
+          url: url,
+        }));
+      } else if (data.userIdsUrl?.length) {
+        snakeCaseData = data.userIdsUrl.map((url, index) => ({
           name: serverName + '-' + userIds?.[index],
           url: url,
-        })) || [
+        }));
+      } else {
+        snakeCaseData = [
           {
             name: serverName,
             url: data.mcpUrl,
           },
         ];
+      }
 
       const transformed = this.provider.wrapMcpServerResponse(snakeCaseData);
       return transformed as T;
