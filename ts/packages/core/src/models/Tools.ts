@@ -294,7 +294,7 @@ export class Tools<
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
     };
 
-    logger.info(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
+    logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
     const tools = await this.client.tools.list(filters);
 
