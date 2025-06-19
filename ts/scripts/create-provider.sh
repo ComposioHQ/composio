@@ -8,7 +8,7 @@ if [ -z "$1" ]; then
 fi
 
 TOOLSET_NAME=$1
-TOOLSET_PATH="packages/providers/$TOOLSET_NAME"
+TOOLSET_PATH="ts/packages/providers/$TOOLSET_NAME"
 CAPITAL_TOOLSET_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${TOOLSET_NAME:0:1})${TOOLSET_NAME:1}"
 
 # Check if provider should be agentic

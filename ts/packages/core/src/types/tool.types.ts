@@ -25,19 +25,24 @@ const JSONSchemaType = z.enum([
 ]);
 
 // JSON Schema property definition
-const JSONSchemaProperty: z.ZodType<unknown> = z.object({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
   type: z.union([JSONSchemaType, z.array(JSONSchemaType)]).optional(),
   description: z.string().optional(),
-  anyOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  oneOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  allOf: z.lazy(() => z.array(JSONSchemaProperty)).optional(),
-  not: z.lazy(() => JSONSchemaProperty).optional(),
+  anyOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  oneOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  allOf: z.lazy(() => z.array(JSONSchemaPropertySchema)).optional(),
+  not: z.lazy(() => JSONSchemaPropertySchema).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
   nullable: z.boolean().optional(),
-  properties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
+  properties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
   required: z.array(z.string()).optional(),
-  items: z.lazy(() => z.union([JSONSchemaProperty, z.array(JSONSchemaProperty)])).optional(),
+  file_uploadable: z.boolean().optional(),
+  file_downloadable: z.boolean().optional(),
+  items: z
+    .lazy(() => z.union([JSONSchemaPropertySchema, z.array(JSONSchemaPropertySchema)]))
+    .optional(),
   enum: z.array(z.any()).optional(),
   const: z.any().optional(),
   minimum: z.number().optional(),
@@ -54,37 +59,38 @@ const JSONSchemaProperty: z.ZodType<unknown> = z.object({
   uniqueItems: z.boolean().optional(),
   minProperties: z.number().optional(),
   maxProperties: z.number().optional(),
-  patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaProperty)).optional(),
-  additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaProperty)]).optional(),
+  patternProperties: z.lazy(() => z.record(z.string(), JSONSchemaPropertySchema)).optional(),
+  additionalProperties: z.union([z.boolean(), z.lazy(() => JSONSchemaPropertySchema)]).optional(),
   examples: z.array(z.any()).optional(),
   readOnly: z.boolean().optional(),
   writeOnly: z.boolean().optional(),
-  if: z.lazy(() => JSONSchemaProperty).optional(),
-  then: z.lazy(() => JSONSchemaProperty).optional(),
-  else: z.lazy(() => JSONSchemaProperty).optional(),
+  if: z.lazy(() => JSONSchemaPropertySchema).optional(),
+  then: z.lazy(() => JSONSchemaPropertySchema).optional(),
+  else: z.lazy(() => JSONSchemaPropertySchema).optional(),
   $ref: z.string().optional(),
   definitions: z
     .record(
       z.string(),
-      z.lazy(() => JSONSchemaProperty)
+      z.lazy(() => JSONSchemaPropertySchema)
     )
     .optional(),
   $defs: z
     .record(
       z.string(),
-      z.lazy(() => JSONSchemaProperty)
+      z.lazy(() => JSONSchemaPropertySchema)
     )
     .optional(),
 });
+export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
 const ParametersSchema = z.object({
   type: z.literal('object'),
-  anyOf: z.array(JSONSchemaProperty).optional(),
-  oneOf: z.array(JSONSchemaProperty).optional(),
-  allOf: z.array(JSONSchemaProperty).optional(),
-  not: JSONSchemaProperty.optional(),
-  properties: z.record(z.string(), JSONSchemaProperty),
+  anyOf: z.array(JSONSchemaPropertySchema).optional(),
+  oneOf: z.array(JSONSchemaPropertySchema).optional(),
+  allOf: z.array(JSONSchemaPropertySchema).optional(),
+  not: JSONSchemaPropertySchema.optional(),
+  properties: z.record(z.string(), JSONSchemaPropertySchema),
   required: z.array(z.string()).optional(),
   title: z.string().optional(),
   default: z.any().optional(),
