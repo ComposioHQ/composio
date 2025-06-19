@@ -236,7 +236,7 @@ export class Tools<
    * // Get tools with filters
    * const githubTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
-   *   important: true
+   *   limit: 10
    * });
    *
    * // Get tools with schema transformation
@@ -288,12 +288,10 @@ export class Tools<
       ...('toolkits' in queryParams.data
         ? { toolkit_slug: queryParams.data.toolkits?.join(',') }
         : {}),
-      ...('important' in queryParams.data
-        ? { important: queryParams.data.important ? 'true' : 'false' }
-        : {}),
       ...(limit ? { limit } : {}),
-      scopes: 'scopes' in queryParams.data ? queryParams.data.scopes : undefined,
-      search: 'search' in queryParams.data ? queryParams.data.search : undefined,
+      ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
+      ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
+      ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
     };
 
     logger.info(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
@@ -390,9 +388,20 @@ export class Tools<
    * });
    *
    * // Get tools with search
-   * const tools = await composio.tools.get('default', {
+   * const searchTools = await composio.tools.get('default', {
    *   search: 'user',
-   *   important: true
+   *   limit: 10
+   * });
+   *
+   * // Get a specific tool by slug
+   * const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+   *
+   * // Get a tool with schema modifications
+   * const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
+   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
+   *     // Customize the tool schema
+   *     return {...schema, description: 'Custom description'};
+   *   }
    * });
    * ```
    */

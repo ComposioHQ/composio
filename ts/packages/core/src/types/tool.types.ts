@@ -131,6 +131,7 @@ export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
   toolkits: z.array(z.string()).optional(),
   scopes: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
 });
@@ -139,6 +140,7 @@ type BaseParams = {
   limit?: number;
   search?: string;
   scopes?: string[];
+  tags?: string[];
 };
 
 // tools only
@@ -147,29 +149,30 @@ type ToolsOnlyParams = {
   toolkits?: never;
   scopes?: never;
   search?: never;
-} & Omit<BaseParams, 'limit' | 'search' | 'scopes'>;
+  tags?: never;
+};
 
 // toolkits only
 type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
-  search?: never;
-} & Pick<BaseParams, 'limit'>;
-
-// toolkit + search
-type ToolkitSearchOnlyParams = {
-  toolkits: string[];
-  tools?: never;
-  scopes?: never;
-} & Pick<BaseParams, 'limit' | 'search'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // toolkit + scopes (single toolkit only)
 type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
-} & Pick<BaseParams, 'limit' | 'search'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+
+// tags only
+type TagsOnlyParams = {
+  toolkits?: string[];
+  tags: string[];
+  tools?: never;
+  search?: never;
+} & Pick<BaseParams, 'limit'>;
 
 // search only
 type SearchOnlyParams = {
@@ -178,6 +181,7 @@ type SearchOnlyParams = {
   scopes?: never;
   limit?: never;
   search: string;
+  tags?: never;
 };
 
 /**
@@ -187,9 +191,9 @@ type SearchOnlyParams = {
 export type ToolListParams =
   | ToolsOnlyParams
   | ToolkitsOnlyParams
-  | ToolkitSearchOnlyParams
   | ToolkitScopeOnlyParams
-  | SearchOnlyParams;
+  | SearchOnlyParams
+  | TagsOnlyParams;
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.
