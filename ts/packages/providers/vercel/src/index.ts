@@ -14,7 +14,6 @@ import {
   BaseAgenticProvider,
   Tool,
   ExecuteToolFn,
-  jsonSchemaToZodSchema,
   McpUrlResponse,
   McpServerGetResponse,
 } from '@composio/core';
@@ -182,40 +181,18 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
   }
 
   /**
-   * Transform MCP URL response into Vercel-specific format.
-   * Vercel uses the standard format by default.
+   * Transform MCP URL response into Anthropic-specific format.
+   * By default, Anthropic uses the standard format (same as default),
+   * but this method is here to show providers can customize if needed.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
-   * @param connectedAccountIds - Optional array of connected account IDs
-   * @param userIds - Optional array of user IDs
-   * @param toolkits - Optional array of toolkit names
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(
-    data: McpUrlResponse,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): McpServerGetResponse {
-    // Vercel uses the standard format
-    if (connectedAccountIds?.length && data.connected_account_urls) {
-      return data.connected_account_urls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${connectedAccountIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    } else if (userIds?.length && data.user_ids_url) {
-      return data.user_ids_url.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${userIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as McpServerGetResponse;
-    }
-    return {
-      url: new URL(data.mcp_url),
-      name: serverName,
-    } as McpServerGetResponse;
+  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
+    // Anthropic uses the standard format
+    return data.map(item => ({
+      url: new URL(item.url),
+      name: item.name,
+    })) as McpServerGetResponse;
   }
 }

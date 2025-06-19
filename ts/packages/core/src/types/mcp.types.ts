@@ -193,10 +193,9 @@ export type McpUrlResponseCamelCase = {
 
 // Snake_case URL response (for internal API use)
 export type McpUrlResponse = {
-  connected_account_urls?: string[];
-  user_ids_url?: string[];
-  mcp_url: string;
-};
+  name: string;
+  url: string;
+}[];
 
 export type McpServerCreateResponse<T> = (McpCreateResponse | CustomCreateResponse) & {
   toolkits: string[];

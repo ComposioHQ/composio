@@ -17,7 +17,6 @@ import {
   CustomCreateResponseSchema,
   GenerateURLResponseSchema,
   GenerateURLParamsSnakeCaseSchema,
-  GenerateURLParamsValidated,
   McpListResponseSchema,
   McpRetrieveResponseSchema,
   McpDeleteResponseSchema,
@@ -497,9 +496,7 @@ export class MCP<T = McpServerGetResponse> {
    *
    * @param data - The MCP URL response data (in camelCase)
    * @param serverName - Name of the MCP server
-   * @param connectedAccountIds - Optional array of connected account IDs
-   * @param userIds - Optional array of user IDs
-   * @param toolkits - Optional array of toolkit names
+
    * @returns Transformed response in appropriate format
    */
   private wrapMcpServerResponse(
@@ -511,20 +508,29 @@ export class MCP<T = McpServerGetResponse> {
   ): T {
     // Check if provider has a custom transform method
     if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
-      // Convert to snake_case for backward compatibility with providers
-      const snakeCaseData: McpUrlResponse = {
-        mcp_url: data.mcpUrl,
-        ...(data.connectedAccountUrls && { connected_account_urls: data.connectedAccountUrls }),
-        ...(data.userIdsUrl && { user_ids_url: data.userIdsUrl }),
-      };
+      // Convert to array of name and url based on connected accounts or user ids
+      let snakeCaseData: McpUrlResponse;
 
-      const transformed = this.provider.wrapMcpServerResponse(
-        snakeCaseData,
-        serverName,
-        connectedAccountIds,
-        userIds,
-        toolkits
-      );
+      if (data.connectedAccountUrls?.length) {
+        snakeCaseData = data.connectedAccountUrls.map((url, index) => ({
+          name: serverName + '-' + connectedAccountIds?.[index],
+          url: url,
+        }));
+      } else if (data.userIdsUrl?.length) {
+        snakeCaseData = data.userIdsUrl.map((url, index) => ({
+          name: serverName + '-' + userIds?.[index],
+          url: url,
+        }));
+      } else {
+        snakeCaseData = [
+          {
+            name: serverName,
+            url: data.mcpUrl,
+          },
+        ];
+      }
+
+      const transformed = this.provider.wrapMcpServerResponse(snakeCaseData);
       return transformed as T;
     }
 

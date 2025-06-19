@@ -10,6 +10,7 @@
     "start:assistant": "bun src/assistants.ts",
     "start:agents": "bun src/agents-api/index.ts",
     "examples": "bun src/examples.ts",
+    "start:mcp": "bun src/mcp.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
