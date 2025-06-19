@@ -1,5 +1,13 @@
 # @composio/mastra
 
+## 0.1.27
+
+### Patch Changes
+
+- Remove cusrsor and important flags from tools.get
+- Updated dependencies
+  - @composio/core@0.1.27
+
 ## 0.1.26
 
 ### Patch Changes

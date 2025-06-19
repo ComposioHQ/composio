@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.27
+
+### Patch Changes
+
+- Remove cusrsor and important flags from tools.get
+
 ## 0.1.26
 
 ### Patch Changes
