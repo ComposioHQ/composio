@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.29
+
+### Patch Changes
+
+- Add file upload / download modifiers
+
 ## 0.1.28
 
 ### Patch Changes
