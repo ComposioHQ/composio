@@ -24,7 +24,6 @@ jobs:
         working-directory: ./fern
         run: |
           uv sync
-          uv run composio apps generate-types
 
       - name: Build documentation with Turbo
         working-directory: ./fern
