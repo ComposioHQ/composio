@@ -34,11 +34,12 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
       -H "x-api-key: <YOUR_API_KEY>" \
       -H "Content-Type: application/json" \
       -d '{
-        "name": "Gmail",
-        "apps": [
-          "gmail"
+        "name": "Gmail MCP Server",
+        "allowed_tools": [
+          "GMAIL_FETCH_EMAIL",
+          "GMAIL_CREATE_EMAIL_DRAFT",
         ],
-        "auth_config_id": {}
+        "auth_config_ids": ["ac_auth_12]
       }'
     ```
     The response looks like:
@@ -46,21 +47,21 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
     ```json
     {
       "id": "5bc757cc-7a8e-431c-8616-7f57cbed2423",
-      "name": "gdrive_searcher",
-      "auth_config_id": "a8a244c4-4a52-488e-8a01-2e504d069d16",
+      "name": "Gmail MCP Server"",
+      "auth_config_ids": ["a8a244c4-4a52-488e-8a01-2e504d069d16"],
       "allowed_tools": [
-        "GOOGLEDRIVE_FIND_FILE",
-        "GOOGLEDRIVE_FIND_FOLDER",
-        "GOOGLEDRIVE_DOWNLOAD_FILE"
+        "GMAIL_FETCH_EMAIL",
+        "GMAIL_CREATE_EMAIL_DRAFT",
       ],
-      "mcp_url": "https://mcp.composio.dev/composio/server/5bc757cc-7a8e-431c-8616-7f57cbed2423?transport=sse",
+      "mcp_url": "https://mcp.composio.dev/composio/server/5bc757cc-7a8z-431c-8616-7f57cbed2421?transport=sse",
       "commands": {
         "cursor": "npx @composio/mcp@latest setup \"<mcp_url>\" --client cursor",
         "claude":  "npx @composio/mcp@latest setup \"<mcp_url>\" --client claude",
         "windsurf": "npx @composio/mcp@latest setup \"<mcp_url>\" --client windsurf"
       },
       "created_at": "2025-05-18T22:15:25.926Z",
-      "updated_at": "2025-05-18T22:15:25.926Z"
+      "updated_at": "2025-05-18T22:15:25.926Z",
+      "managed_auth_via_composio": false
     }
     ```
   </Step>
