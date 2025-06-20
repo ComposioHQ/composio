@@ -31,7 +31,7 @@ const transformProperties = (properties: JSONSchemaProperty): JSONSchemaProperty
     };
   }
 
-  return properties;
+  return newProperties;
 };
 
 export class FileToolModifier {
@@ -127,8 +127,6 @@ export class FileToolModifier {
       result: ToolExecuteResponse;
     }
   ): Promise<ToolExecuteResponse> {
-    console.log(JSON.stringify(options.result, null, 2));
-    console.log(JSON.stringify(tool.outputParameters, null, 2));
     for (const [key, value] of Object.entries(options.result?.data)) {
       const fileData = value as { s3url?: string; mimetype?: string };
 

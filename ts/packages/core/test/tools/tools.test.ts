@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
-import { Tool } from '../../src/types/tool.types';
+import { Tool, ToolListParams } from '../../src/types/tool.types';
 import { Tools } from '../../src/models/Tools';
 import ComposioClient from '@composio/client';
 import {
@@ -119,7 +119,7 @@ describe('Tools', () => {
 
     it('should handle toolkit scopes parameters correctly', async () => {
       const userId = 'test-user';
-      const query = {
+      const query: ToolListParams = {
         toolkits: ['todoist'],
         scopes: ['task:add', 'task:read'],
         limit: 10,
@@ -143,7 +143,7 @@ describe('Tools', () => {
 
     it('should handle toolkit scopes with search parameters correctly', async () => {
       const userId = 'test-user';
-      const query = {
+      const query: ToolListParams = {
         toolkits: ['todoist'],
         scopes: ['task:add'],
         search: 'add task',
