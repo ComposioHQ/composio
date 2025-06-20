@@ -219,7 +219,6 @@ interface TelemetryMetadata {
   source: string; // The runtime environment
   version: string; // The SDK version
   isBrowser: boolean; // Whether the SDK is running in a browser
-  sessionId: string; // A random session ID (changes each init)
 }
 ```
 

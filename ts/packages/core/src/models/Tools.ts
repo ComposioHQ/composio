@@ -56,8 +56,13 @@ export class Tools<
   private client: ComposioClient;
   private readonly customTools: CustomTools;
   private provider: TProvider;
+  private autoUploadDownloadFiles: boolean;
 
-  constructor(client: ComposioClient, provider: TProvider) {
+  constructor(
+    client: ComposioClient,
+    provider: TProvider,
+    options?: { autoUploadDownloadFiles: boolean }
+  ) {
     if (!client) {
       throw new Error('ComposioClient is required');
     }
@@ -68,6 +73,7 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = provider;
+    this.autoUploadDownloadFiles = options?.autoUploadDownloadFiles ?? true;
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider
@@ -227,12 +233,16 @@ export class Tools<
    * @returns The tools with the default schema modifiers applied
    */
   private async applyDefaultSchemaModifiers(tools: Tool[]): Promise<Tool[]> {
-    const fileToolModifier = new FileToolModifier(this.client);
-    return await Promise.all(
-      tools.map(tool =>
-        fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
-      )
-    );
+    if (this.autoUploadDownloadFiles) {
+      const fileToolModifier = new FileToolModifier(this.client);
+      return await Promise.all(
+        tools.map(tool =>
+          fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
+        )
+      );
+    } else {
+      return tools;
+    }
   }
 
   /**
@@ -256,8 +266,17 @@ export class Tools<
     },
     modifier?: beforeExecuteModifier
   ): Promise<ToolExecuteParams> {
-    const fileToolModifier = new FileToolModifier(this.client);
     let modifiedParams = params;
+    // if auto upload download files is enabled, upload the files to the Composio API
+    if (this.autoUploadDownloadFiles) {
+      const fileToolModifier = new FileToolModifier(this.client);
+      modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
+        toolSlug,
+        toolkitSlug,
+        params: modifiedParams,
+      });
+    }
+    // apply the before execute modifiers
     if (modifier) {
       if (typeof modifier === 'function') {
         modifiedParams = await modifier({
@@ -269,11 +288,6 @@ export class Tools<
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
     }
-    modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
-      toolSlug,
-      toolkitSlug,
-      params: modifiedParams,
-    });
     return modifiedParams;
   }
 
@@ -298,8 +312,17 @@ export class Tools<
     },
     modifier?: afterExecuteModifier
   ): Promise<ToolExecuteResponse> {
-    const fileToolModifier = new FileToolModifier(this.client);
     let modifiedResult = result;
+    // if auto upload download files is enabled, download the files from the Composio API
+    if (this.autoUploadDownloadFiles) {
+      const fileToolModifier = new FileToolModifier(this.client);
+      modifiedResult = await fileToolModifier.fileDownloadModifier(tool, {
+        toolSlug,
+        toolkitSlug,
+        result: modifiedResult,
+      });
+    }
+    // apply the after execute modifiers
     if (modifier) {
       if (typeof modifier === 'function') {
         modifiedResult = await modifier({
@@ -311,11 +334,7 @@ export class Tools<
         throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
       }
     }
-    modifiedResult = await fileToolModifier.fileDownloadModifier(tool, {
-      toolSlug,
-      toolkitSlug,
-      result: modifiedResult,
-    });
+
     return modifiedResult;
   }
 

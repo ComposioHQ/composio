@@ -17,8 +17,7 @@ import path from 'path';
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  allowTracking: false,
-  allowTracing: false,
+  allowTracking: false
 });
 
 /**
@@ -42,6 +41,7 @@ async function main() {
     });
 
     console.log(JSON.stringify(result, null, 2));
+    
   } catch (error) {
     console.error('❌ Error running example:', error);
   }

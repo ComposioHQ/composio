@@ -41,7 +41,6 @@ export type TelemetryMetadata = {
    * @example 'openai', 'anthropic', 'google', 'azure', 'composio'
    */
   provider?: string;
-  sessionId?: string;
   isBrowser?: boolean;
 };
 

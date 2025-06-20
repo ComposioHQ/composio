@@ -92,12 +92,12 @@ export class FileToolModifier {
       if (toolProperty?.file_uploadable) {
         logger.debug(`Processing file upload for: ${key}`);
         try {
-          const fileData = await getFileDataAfterUploadingToS3(
-            args[key] as string,
-            options.toolSlug,
-            options.toolkitSlug ?? 'unknown',
-            this.client
-          );
+          const fileData = await getFileDataAfterUploadingToS3({
+            path: args[key] as string,
+            toolSlug: options.toolSlug,
+            toolkitSlug: options.toolkitSlug ?? 'unknown',
+            client: this.client,
+          });
           args[key] = fileData;
         } catch (error) {
           throw new ComposioFileUploadError(`Failed to upload file: ${key}`, {
