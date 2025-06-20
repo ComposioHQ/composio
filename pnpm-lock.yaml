@@ -437,7 +437,7 @@ importers:
         version: 16.5.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.62)
+        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -8719,7 +8719,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@20.19.1)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.4(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/utils@3.2.4':
     dependencies:
