@@ -19,7 +19,7 @@ import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
 import { ConnectedAccounts } from './ConnectedAccounts';
 import { ConnectionRequest } from './ConnectionRequest';
 import { telemetry } from '../telemetry/Telemetry';
-import { AuthSchemeEnum, AuthSchemeType } from '../types/authConfigs.types';
+import { AuthConfigListResponse, AuthSchemeEnum, AuthSchemeType } from '../types/authConfigs.types';
 import logger from '../utils/logger';
 /**
  * Toolkits class
@@ -380,6 +380,20 @@ export class Toolkits {
     const authConfig = await composioAuthConfig.list({
       toolkit: toolkitSlug,
     });
+    if (authConfig.items?.length === 0) {
+      throw new ComposioAuthConfigNotFoundError(
+        `No auth configs found for toolkit ${toolkitSlug}`,
+        {
+          meta: {
+            toolkitSlug,
+          },
+          possibleFixes: [
+            `Please Create an auth config for the toolkit ${toolkitSlug} via the dashboard`,
+          ],
+        }
+      );
+    }
+
     // pick the first auth config
     authConfigIdToUse = authConfig.items[0]?.id;
 
