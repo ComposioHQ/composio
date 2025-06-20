@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.1.30
+
+### Patch Changes
+
+- Improved support for file handling
+- Updated dependencies
+  - @composio/core@0.1.30
+
 ## 0.1.29
 
 ### Patch Changes

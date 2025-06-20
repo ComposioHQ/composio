@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.30
+
+### Patch Changes
+
+- Improved support for file handling
+
 ## 0.1.29
 
 ### Patch Changes
