@@ -340,16 +340,16 @@ class ConnectedAccounts:
         :param options: The options to create the connected account with.
         :return: The connection request.
         """
+        connection: dict[str, t.Any] = {"user_id": user_id}
+        if callback_url is not None:
+            connection["callback_url"] = connection
+
+        if config is not None:
+            connection["state"] = connection
+
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
-            connection=t.cast(
-                connected_account_create_params.Connection,
-                {
-                    "user_id": user_id,
-                    "state": config,
-                    "callback_url": callback_url,
-                },
-            ),
+            connection=t.cast(connected_account_create_params.Connection, connection),
         )
         return ConnectionRequest(
             id=response.id,
