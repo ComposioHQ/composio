@@ -262,8 +262,9 @@ console.log(result.data);  // Contains Google Drive file details
 ```
 
 ```python Python maxLines=60 wordWrap
-from composio import Composio
 import os
+
+from composio import Composio
 
 composio = Composio()
 
@@ -316,7 +317,7 @@ result = composio.tools.execute(
 )
 
 # Result includes local file path
-print(result.data["file"]["uri"])  # "/path/to/downloaded/file.pdf"
+print(result.data["file"])  # "/path/to/downloaded/file.pdf"
 ```
 </CodeGroup>
 

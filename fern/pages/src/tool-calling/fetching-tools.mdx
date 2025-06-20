@@ -58,7 +58,7 @@ const tools = await composio.tools.get(userId, {
 tools = composio.tools.get(
     user_id,
     toolkits=["GITHUB"],
-    limit=5,  // Returns the top 5 important tools from the toolkit
+    limit=5,  # Returns the top 5 important tools from the toolkit
 )
 ```
 </CodeGroup>
@@ -88,7 +88,7 @@ const tools = await composio.tools.get(userId, {
 tools = composio.tools.get(
     user_id,
     toolkits=["GITHUB"],
-    scopes=["repo",],  // Only get tools requiring these scopes
+    scopes=["repo"],  # Only get tools requiring these scopes
     limit=10
 )
 ```
@@ -173,8 +173,8 @@ tools = composio.tools.get(
 tools = composio.tools.get(
     user_id,
     search="repository issues",
-    toolkits=["GITHUB"],  // Optional: limit search to specific toolkit
-    limit=5  // Optional: limit number of results
+    toolkits=["GITHUB"],  # Optional: limit search to specific toolkit
+    limit=5  # Optional: limit number of results
 )
 ```
 </CodeGroup>
