@@ -322,7 +322,7 @@ print(result.data["file"]["uri"])  # "/path/to/downloaded/file.pdf"
 
 ### Disabling Auto File Handling
 
-You can disable automatic file handling when initializing the SDK:
+You can disable automatic file handling when initializing the Typescript SDK:
 
 <CodeGroup>
 ```typescript TypeScript maxLines=60 wordWrap
@@ -337,19 +337,6 @@ const fileData = await composio.files.upload({
   toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
   toolkitSlug: 'googledrive'
 });
-```
-
-```python Python maxLines=60 wordWrap
-composio = Composio(
-    auto_upload_download_files=False
-)
-
-# Now you need to handle files manually using composio.files API
-file_data = composio.files.upload(
-    file_path=os.path.join(os.getcwd(), "document.pdf"),
-    tool_slug="GOOGLEDRIVE_UPLOAD_FILE",
-    toolkit_slug="googledrive"
-)
 ```
 </CodeGroup>
 
