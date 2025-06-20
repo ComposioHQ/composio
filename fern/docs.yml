@@ -40,7 +40,7 @@ typography:
         weight: 600
         style: normal
 announcement:
-  message: '🎉 Our next generation of SDK are now available in preview. <a href="https://v3.composio.dev">Try them out now</a>!'
+  message: '🎉 Our next generation of SDK are now available in preview. <a href="https://v3.docs.composio.dev">Try them out now</a>!'
 
 layout:
   tabs-placement: header
