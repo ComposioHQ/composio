@@ -178,13 +178,15 @@ type ToolsOnlyParams = {
   toolkits?: never; // Cannot be used with tools
   limit?: never;
   search?: never;
-};
+  scopes?: never; 
+}
 
 type ToolkitsOnlyParams = {
   tools?: never; // Cannot be used with toolkits
   toolkits: string[]; // List of toolkit slugs to filter by
   limit?: number; // Limit the number of results
-  search?: never; // Cannot be used with important flag,
+  search?: never; // Cannot be used with important flag
+  scopes?: string[]; // Optional list of required OAuth scopes
 };
 
 type ToolkitSearchOnlyParams = {
@@ -192,6 +194,7 @@ type ToolkitSearchOnlyParams = {
   toolkits?: string[]; // Optional list of toolkit slugs to filter by
   limit?: number; // Limit the number of results
   search: string; // Search term
+  scopes?: string[]; // Optional list of required OAuth scopes
 };
 
 type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
@@ -202,6 +205,29 @@ Note: The parameters are organized into three mutually exclusive combinations:
 1. Using `tools` array to fetch specific tools by their slugs
 2. Using `toolkits` with optional `important` flag to fetch tools from specific toolkits
 3. Using `search` with optional `toolkits` to search for tools by name/description
+4. Using `scopes` can only be done with a single `toolkits` slug
+
+You can also filter tools by their scopes:
+
+```typescript
+// Get tools with specific scopes
+const scopedTools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  scopes: ['read:repo', 'write:repo'],  // Only get tools requiring these scopes
+});
+
+// Search tools with specific scopes
+const searchedScopedTools = await composio.tools.get('default', {
+  search: 'repository',
+  scopes: ['read:repo'],  // Only get tools requiring read:repo scope
+  limit: 10,
+});
+```
+
+The `scopes` parameter allows you to:
+- Filter tools based on their required OAuth scopes
+- Get tools that match specific permission levels
+- Ensure tools align with available user permissions
 
 Examples:
 

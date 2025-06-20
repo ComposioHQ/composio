@@ -232,3 +232,113 @@ response = composio.tools.proxy(
 </CodeGroup>
 
 If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).
+
+## Automatic File Handling
+
+Composio SDK includes automatic file handling for tools that work with files. When enabled (default), the SDK automatically handles file uploads and downloads during tool execution.
+
+### File Upload
+
+When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs. Here's an example using Google Drive upload:
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+import { Composio } from '@composio/core';
+import path from 'path';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+// Upload a local file to Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'default',
+  arguments: {
+    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path
+  }
+});
+
+console.log(result.data);  // Contains Google Drive file details
+```
+
+```python Python maxLines=60 wordWrap
+import os
+
+from composio import Composio
+
+composio = Composio()
+
+# Upload a local file to Google Drive
+result = composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    user_id="default",
+    arguments={
+        "file_to_upload": os.path.join(os.getcwd(), "document.pdf")  # Local file path
+    }
+)
+
+print(result.data)  # Contains Google Drive file details
+```
+</CodeGroup>
+
+The SDK automatically:
+1. Reads the file content
+2. Uploads it to secure storage
+3. Passes the file metadata to the tool
+
+### File Download
+
+When a tool returns file outputs, the SDK automatically:
+1. Downloads the file to a local temporary directory
+2. Provides the local file path in the response
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+// Download a file from Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+  userId: 'default',
+  arguments: {
+    file_id: 'your_file_id'
+  }
+});
+
+// Result includes local file path
+console.log(result.data.file.uri);  // "/path/to/downloaded/file.pdf"
+```
+
+```python Python maxLines=60 wordWrap
+# Download a file from Google Drive
+result = composio.tools.execute(
+    "GOOGLEDRIVE_DOWNLOAD_FILE",
+    user_id="default",
+    arguments={
+        "file_id": "your_file_id"
+    }
+)
+
+# Result includes local file path
+print(result.data["file"])  # "/path/to/downloaded/file.pdf"
+```
+</CodeGroup>
+
+### Disabling Auto File Handling
+
+You can disable automatic file handling when initializing the Typescript SDK:
+
+<CodeGroup>
+```typescript TypeScript maxLines=60 wordWrap
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  autoUploadDownloadFiles: false
+});
+
+// Now you need to handle files manually using composio.files API
+const fileData = await composio.files.upload({
+  filePath: path.join(__dirname, 'document.pdf'),
+  toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
+  toolkitSlug: 'googledrive'
+});
+```
+</CodeGroup>
+
+For more details on file handling, see [Auto Upload and Download Files](/docs/advanced/auto-upload-download).
