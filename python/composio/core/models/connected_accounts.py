@@ -227,14 +227,14 @@ class AuthScheme:
             ),
         }
 
-    def snowflake(
+    def billcom_auth(
         self, options: connected_account_create_params.ConnectionStateUnionMember9Val
     ) -> connected_account_create_params.ConnectionState:
         """
-        Create a new connected account using Snowflake.
+        Create a new connected account using Bill.com auth.
         """
         return {
-            "auth_scheme": "SNOWFLAKE",
+            "auth_scheme": "BILLCOM_AUTH",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember9Val,
                 {
@@ -244,25 +244,8 @@ class AuthScheme:
             ),
         }
 
-    def billcom_auth(
-        self, options: connected_account_create_params.ConnectionStateUnionMember10Val
-    ) -> connected_account_create_params.ConnectionState:
-        """
-        Create a new connected account using Bill.com auth.
-        """
-        return {
-            "auth_scheme": "BILLCOM_AUTH",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember10Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
-
     def basic_with_jwt(
-        self, options: connected_account_create_params.ConnectionStateUnionMember11Val
+        self, options: connected_account_create_params.ConnectionStateUnionMember10Val
     ) -> connected_account_create_params.ConnectionState:
         """
         Create a new connected account using basic auth with JWT.
@@ -270,7 +253,7 @@ class AuthScheme:
         return {
             "auth_scheme": "BASIC_WITH_JWT",
             "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember11Val,
+                connected_account_create_params.ConnectionStateUnionMember10Val,
                 {
                     **options,
                     "status": "ACTIVE",
