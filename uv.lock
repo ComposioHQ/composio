@@ -812,8 +812,12 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "composio" },
+    { name = "composio-gemini" },
     { name = "composio-langchain" },
+    { name = "composio-openai-agents" },
+    { name = "google-genai" },
     { name = "langchain" },
+    { name = "openai-agents" },
 ]
 
 [package.metadata]
@@ -838,8 +842,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "composio", editable = "python" },
+    { name = "composio-gemini", editable = "python/providers/gemini" },
     { name = "composio-langchain", editable = "python/providers/langchain" },
+    { name = "composio-openai-agents", editable = "python/providers/openai_agents" },
+    { name = "google-genai", specifier = ">=1.20.0" },
     { name = "langchain", specifier = ">=0.3.25" },
+    { name = "openai-agents", specifier = ">=0.0.19" },
 ]
 
 [[package]]

@@ -64,46 +64,18 @@ The dashboard offers a guided process for all app types.
 Here's how to authenticate a toolkit for a given user using the OAuth flow.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60  {3, 8-11}
-import { Composio } from "@composio/core";
-
-const composio = new Composio();
-const linearAuthConfigId = "ac_1234";
-const userId = "your@email.com";
-
-// Initiate the OAuth connection request
-const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
-
-// Destructure redirectUrl for easier access
-const { redirectUrl, id } = connRequest;
-console.log(redirectUrl);
-
-// Wait for the connection to be established
-await connRequest.waitForConnection();
-
-// If you only have the connection request ID, you can also wait using:
-await composio.connectedAccounts.waitForConnection(id);
-
-```
-```python Python maxLines=60 wordWrap
-from composio import Composio
-
-linear_auth_config_id = "ac_1234"
-user_id = "user@email.com"
-composio = Composio()
-
-# Create a new connected account
-connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=linear_auth_config_id,
-)
-print(connection_request.redirect_url)
-
-# Wait for the connection to be established
-connected_account = connection_request.wait_for_connection()
-print(connected_account)
-```
-
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/auth-tools.ts"
+  startLine={1}
+  endLine={21}
+  title="TypeScript"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/python/auth-tools.py"
+  startLine={1}
+  endLine={21}
+  title="Python"
+/>
 </CodeGroup>
 
 ## Connecting to an API Key toolkit
@@ -115,37 +87,18 @@ For API key based toolkits, you can either request the user to provide the API k
 If you know the required authentication fields for your toolkit (like `apiKey` for most API-based services), you can directly create the connection:
 
 <CodeGroup>
-```typescript TypeScript maxLines=60
-const authConfigId = "ac_1234"; // For example, auth config id of Serp API
-
-const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    data: {
-      apiKey: "sk_1234567890", // The field name for the API key/token
-    },
-  }
-);
-
-```
-```python Python maxLines=60  wordWrap
-from composio.types import auth_scheme
-
-auth_config_id = "ac_1234"
-
-connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=auth_config_id,
-    config=auth_scheme.api_key(
-        options={
-            "api_key": "sk_1234567890",
-        },
-    ),
-)
-print(connection_request)
-```
-
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/auth-tools.ts"
+  startLine={25}
+  endLine={34}
+  title="TypeScript"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/python/auth-tools.py"
+  startLine={1}
+  endLine={21}
+  title="Python"
+/>
 </CodeGroup>
 
 ### Fetching the field name

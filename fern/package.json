@@ -23,7 +23,9 @@
 		"build": "echo 'Build orchestrated by Turbo'",
 		"preview": "fern generate --docs --preview --log-level debug",
 		"publish": "fern generate --docs",
-		"generate": "pnpm tools:generate && pnpm sdkdocs"
+		"generate": "pnpm tools:generate && pnpm sdkdocs",
+		"snippet:new": "bun run scripts/snippet-new.ts",
+		"doc:new": "bun run scripts/doc-new.ts"
 	},
 	"dependencies": {
 		"fern-api": "^0.51.39",
@@ -31,14 +33,17 @@
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
+		"@composio/openai": "workspace:*",
 		"@composio/vercel": "workspace:*",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
 		"@types/yaml": "^1.9.7",
+		"ai": "^4.3.8",
 		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
 		"next": "^15.3.3",
@@ -50,6 +55,7 @@
 		"typedoc-plugin-markdown": "^4.6.4",
 		"typedoc-plugin-zod": "^1.4.1",
 		"typescript": "^5.8.3",
+		"uuid": "^11.1.0",
 		"vitest": "^3.1.4",
 		"yaml": "^2.8.0"
 	}

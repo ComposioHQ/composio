@@ -12,92 +12,56 @@ The OpenAI Provider is the default provider for the Composio SDK. It transforms 
 By default the OpenAI Provider is installed when you install the Composio SDK. You can also install it manually:
 
 <CodeGroup>
-```typescript TypeScript
+```bash title="TypeScript" for="typescript"
 npm install @composio/openai
 ```
-```python Python
+```bash title="Python" for="python"
 pip install composio[openai]
 ```
 </CodeGroup>
 The OpenAI Provider is used by default when you initialize the Composio SDK but you can explicitly specify it.
 
 <CodeGroup>
-```typescript
-import { Composio } from "@composio/core";
-import { OpenAIProvider } from "@composio/openai";
-import { OpenAI } from "openai";
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={1}
+  endLine={7}
+/>
+<SnippetCode
+  src="fern/snippets/providers/python/openai-provider.py"
+  startLine={1}
+  endLine={8}
+/>
+</CodeGroup>
 
-const composio = new Composio({
-  apiKey: "your-composio-api-key",
-  provider: new OpenAIProvider(),
-});
+## Responses API
+The Responses API is the recommended way to build more agentic flows with the OpenAI API. Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/guides/responses-vs-chat-completions)
 
-const openai = new OpenAI();
-```
-
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={5}
+  endLine={24}
+/>
 ```python
-from openai import OpenAI
-from composio import Composio
-from composio_openai import OpenAIProvider
 
-# Initialize tools.
-openai_client = OpenAI()
-composio = Composio(provider=OpenAIProvider())
 ```
 </CodeGroup>
 
-
-## Responses API
-
-> Handling tool calls from the Responses API
-- [ ] Pending on SDK
-
-### Streaming
-> Handling streaming responses from the Responses API
-- [ ] Pending on SDK
-
 ## Chat Completion API
+Chat Completion API is the industry standard for building LLM-powered applications. Chat completions is also adopted and used by many other LLM providers apart from OpenAI.
 
 <CodeGroup>
-```typescript {15}
-const userId = "your@example.com";
-const tools = await composio.tools.get(userId, "HACKERNEWS");
-
-const completion = await openai.chat.completions.create({
-  model: "gpt-4o",
-  messages: [
-    {
-      role: "user",
-      content: "What is the latest hackernews post about?",
-    },
-  ],
-  tools: tools,
-});
-
-const result = await composio.provider.handleToolCall(userId, completion);
-
-console.log(result);
-```
-```python
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
-
-# Get response from the LLM
-response = openai_client.chat.completions.create(
-    model="gpt-4o",
-    tools=tools,
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": task},
-    ],
-)
-print(response)
-
-# Execute the function calls.
-# import ipdb; ipdb.set_trace()
-result = composio.provider.handle_tool_calls(response=response, user_id="default")
-print(result)
-```
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={26}
+  endLine={45}
+/>
+<SnippetCode
+  src="fern/snippets/providers/python/openai-provider.py"
+  startLine={10}
+  endLine={24}
+/>
 
 </CodeGroup>
 
@@ -139,10 +103,6 @@ if (toolCall) {
 
 ```
 </CodeGroup> */}
-
-### Streaming
-> Handling streaming responses from the Chat Completion API
-- [ ] Pending on SDK
 
 ## Modifiers
 Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
