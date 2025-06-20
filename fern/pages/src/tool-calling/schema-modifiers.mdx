@@ -1,6 +1,6 @@
 ---
 title: Schema Modifiers
-image: 'https://og.composio.dev/api/og?title=Schema%20Modifiers' # image for socials
+image: "https://og.composio.dev/api/og?title=Schema%20Modifiers"   # image for socials
 keywords: ''
 subtitle: 'Learn how to use schema modifiers to transform tool schemas before they are seen by agents.'
 hide-nav-links: false
@@ -15,10 +15,11 @@ Schema modifiers transform a tool's schema before the tool is seen by an agent.
 <Frame>
   <img src="../../../assets/images/schema-modifier.png" alt="Schema Modifier" />
 </Frame>
-**Useful for:** - Adding arguments to the tool. For example, adding a `thought` argument to the tool
-to prompt the agent to explain the reasoning. - Hiding arguments from the tool. In cases where the
-argument is irrelevant to the tool. - Adding extra arguments to the tool schema for custom use cases
-or execution. - Adding default values to tool arguments.
+**Useful for:** 
+- Adding arguments to the tool. For example, adding a `thought` argument to the tool to prompt the agent to explain the reasoning.
+- Hiding arguments from the tool. In cases where the argument is irrelevant to the tool.
+- Adding extra arguments to the tool schema for custom use cases or execution.
+- Adding default values to tool arguments.
 
 <Note>
   Below we modify the schema of the `HACKERNEWS_GET_LATEST_POSTS` to make the `size` argument
@@ -26,6 +27,30 @@ or execution. - Adding default values to tool arguments.
 </Note>
 
 <CodeGroup>
+```python Python maxLines=60  wordWrap
+from composio import Composio, schema_modifier
+from composio.types import Tool
+
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
+```
 ```typescript TypeScript maxLines=60 wordWrap
 const userId = "your@email.com";
 
@@ -51,11 +76,23 @@ const tools = await composio.tools.get(
 console.log(JSON.stringify(tools, null, 2));
 
 ```
-```python Python maxLines=60  wordWrap
+
+</CodeGroup>
+
+In using the above modified tool schema, the `page` argument is removed and the `size` argument is required.
+
+You can test this out by viewing the tool call response in the LLM too!
+
+<Accordion title="Schema modified tool call">
+<CodeGroup>
+
+```python Python maxLines=60 wordWrap
+
+from openai import OpenAI
 from composio import Composio, schema_modifier
 from composio.types import Tool
+from composio_openai import OpenAIProvider
 
-user_id = "your@email.com"
 
 @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
 def modify_schema(
@@ -67,23 +104,37 @@ def modify_schema(
     schema.input_parameters["required"] = ["size"]
     return schema
 
+# Initialize tools.
+openai_client = OpenAI()
+composio = Composio(provider=OpenAIProvider())
+
+# Define task.
+task = "Get the latest posts from Hacker News"
+
+# Get GitHub tools that are pre-configured
 tools = composio.tools.get(
-    user_id=user_id,
-    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
-    modifiers=[
-        modify_schema,
-    ]
+  user_id="default",
+  tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+  modifiers=[
+      modify_schema,
+  ],
 )
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
 ```
-
-</CodeGroup>
-
-In using the above modified tool schema, the `page` argument is removed and the `size` argument is required.
-
-You can test this out by viewing the tool call response in the LLM too!
-
-<Accordion title="Schema modified tool call">
-<CodeGroup>
 
 ```typescript TypeScript maxLines=60 wordWrap
 import { Composio } from '@composio/core';
@@ -131,56 +182,6 @@ const response = await openai.chat.completions.create({
 });
 
 console.log(response.choices[0].message.tool_calls);
-```
-
-```python Python maxLines=60 wordWrap
-
-from openai import OpenAI
-from composio import Composio, schema_modifier
-from composio.types import Tool
-from composio_openai import OpenAIProvider
-
-
-@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
-def modify_schema(
-    tool: str,
-    toolkit: str,
-    schema: Tool,
-) -> Tool:
-    _ = schema.input_parameters["properties"].pop("page", None)
-    schema.input_parameters["required"] = ["size"]
-    return schema
-
-# Initialize tools.
-openai_client = OpenAI()
-composio = Composio(provider=OpenAIProvider())
-
-# Define task.
-task = "Star a repo composiohq/composio on GitHub"
-
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(
-  user_id="default",
-  tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
-  modifiers=[
-      modify_schema,
-  ],
-)
-
-# Get response from the LLM
-response = openai_client.chat.completions.create(
-    model="gpt-4o-mini",
-    tools=tools,
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": task},
-    ],
-)
-print(response)
-
-# Execute the function calls.
-result = composio.provider.handle_tool_calls(response=response, user_id="default")
-print(result)
 ```
 
 </CodeGroup>

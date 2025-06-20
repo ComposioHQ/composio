@@ -27,6 +27,7 @@
     "vitest": "^3.1.4"
   },
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "build": "tsup",
     "test": "vitest run"
   },

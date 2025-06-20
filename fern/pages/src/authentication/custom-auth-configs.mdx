@@ -1,6 +1,6 @@
 ---
 title: Custom Auth Configs
-image: 'https://og.composio.dev/api/og?title=Custom%20Auth%20Configs' # image for socials
+image: "https://og.composio.dev/api/og?title=Custom%20Auth%20Configs"   # image for socials
 subtitle: 'Guide to using customising auth configs for a toolkit '
 keywords: ''
 hide-nav-links: true
@@ -95,18 +95,6 @@ As usual, copy and use the auth config ID starting with `ac_` in your applicatio
 This auth config is now ready to be used in your application!
 
 <CodeGroup>
-```typescript TypeScript maxLines=60
-const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
-
-console.log(connReq.redirectUrl);
-
-const connection = await composio.connectedAccounts.waitForConnection(
-connReq.id
-);
-
-console.log(connection);
-
-````
 ```python Python maxLines=60
 # Create a new connected account
 connection_request = composio.connected_accounts.initiate(
@@ -118,7 +106,19 @@ print(connection_request)
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
-````
+```
+```typescript TypeScript maxLines=60
+const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
+
+console.log(connReq.redirectUrl);
+
+const connection = await composio.connectedAccounts.waitForConnection(
+connReq.id
+);
+
+console.log(connection);
+
+```
 
 </CodeGroup>
 
@@ -149,28 +149,6 @@ Create a redirect logic, either through your DNS or in your application to redir
 **Example: API Route for OAuth Redirect**
 
 <CodeGroup>
-```typescript Next.js (pages/api/composio-redirect.ts)
-import type { NextApiRequest, NextApiResponse } from 'next';
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  // The target Composio endpoint that handles OAuth callbacks
-  const composioEndpoint = 'https://backend.composio.dev/api/v3/toolkits/callback';
-
-// Extract and preserve all query parameters
-const queryParams = new URLSearchParams();
-Object.entries(req.query).forEach(([key, value]) => {
-if (typeof value === 'string') {
-queryParams.append(key, value);
-}
-});
-
-// Redirect to Composio with all query parameters intact
-const redirectUrl = `${composioEndpoint}?${queryParams.toString()}`;
-res.redirect(302, redirectUrl);
-}
-
-````
-
 ```python FastAPI (app.py)
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -198,7 +176,29 @@ def authorize_app(toolkit: str):
         auth_config_id=auth_config_id,
     )
     return RedirectResponse(url=connection_request.redirect_url)
-````
+```
+
+```typescript Next.js (pages/api/composio-redirect.ts)
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  // The target Composio endpoint that handles OAuth callbacks
+  const composioEndpoint = 'https://backend.composio.dev/api/v3/toolkits/callback';
+
+// Extract and preserve all query parameters
+const queryParams = new URLSearchParams();
+Object.entries(req.query).forEach(([key, value]) => {
+if (typeof value === 'string') {
+queryParams.append(key, value);
+}
+});
+
+// Redirect to Composio with all query parameters intact
+const redirectUrl = `${composioEndpoint}?${queryParams.toString()}`;
+res.redirect(302, redirectUrl);
+}
+
+```
 
 </CodeGroup>
 </Step>

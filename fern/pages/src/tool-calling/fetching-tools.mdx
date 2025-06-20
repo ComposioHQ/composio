@@ -24,6 +24,13 @@ Composio determines the importance of a tool based on the usage and relevance of
 </Tip>
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+tools = composio.tools.get(
+    user_id,
+    toolkits=["GITHUB", "HACKERNEWS"],
+)
+```
+
 ```typescript TypeScript maxLines=60 wordWrap
 const tools = await composio.tools.get(
   userId,
@@ -31,13 +38,6 @@ const tools = await composio.tools.get(
     toolkits: ["GITHUB", "LINEAR"],
   }
 );
-```
-
-```python Python maxLines=60 wordWrap
-tools = composio.tools.get(
-    user_id,
-    toolkits=["GITHUB", "HACKERNEWS"],
-)
 ```
 </CodeGroup>
 
@@ -48,18 +48,18 @@ Multiple toolkits have 100s of tools. These can easily overwhelm the LLM. Hence,
 The default `limit` is 20 -- meaning you get the top 20 important tools from the toolkit.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const tools = await composio.tools.get(userId, {
-  toolkits: ["GITHUB"],
-  limit: 5, // Returns the top 5 important tools from the toolkit
-});
-```
 ```python Python maxLines=60 wordWrap
 tools = composio.tools.get(
     user_id,
     toolkits=["GITHUB"],
     limit=5,  # Returns the top 5 important tools from the toolkit
 )
+```
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  toolkits: ["GITHUB"],
+  limit: 5, // Returns the top 5 important tools from the toolkit
+});
 ```
 </CodeGroup>
 
@@ -75,14 +75,6 @@ Scope filtering can only be used with a single toolkit at a time.
 </Tip>
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-// Get GitHub tools that require specific scopes
-const tools = await composio.tools.get(userId, {
-  toolkits: ["GITHUB"],
-  scopes: ["repo"],  // Only get tools requiring these scopes
-  limit: 10
-});
-```
 ```python Python maxLines=60 wordWrap
 # Get GitHub tools that require specific scopes
 tools = composio.tools.get(
@@ -92,22 +84,20 @@ tools = composio.tools.get(
     limit=10
 )
 ```
+```typescript TypeScript maxLines=60 wordWrap
+// Get GitHub tools that require specific scopes
+const tools = await composio.tools.get(userId, {
+  toolkits: ["GITHUB"],
+  scopes: ["repo"],  // Only get tools requiring these scopes
+  limit: 10
+});
+```
 </CodeGroup>
 
 ## Filtering by tool
 You may specify the list of tools to fetch by directly providing the tool names. Browse the list of tools [here](/tools) to view and inspect the tools for each toolkit.
 
 <CodeGroup>
-
-```typescript TypeScript maxLines=60 wordWrap
-const tools = await composio.tools.get(userId, {
-  tools: [
-    "GITHUB_CREATE_AN_ISSUE",
-    "GITHUB_CREATE_AN_ISSUE_COMMENT",
-    "GITHUB_CREATE_A_COMMIT",
-  ],
-});
-```
 
 ```python Python maxLines=60 wordWrap
 tools = composio.tools.get(
@@ -118,6 +108,16 @@ tools = composio.tools.get(
         "GITHUB_CREATE_A_COMMIT",
     ],
 )
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  tools: [
+    "GITHUB_CREATE_AN_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE_COMMENT",
+    "GITHUB_CREATE_A_COMMIT",
+  ],
+});
 ```
 </CodeGroup>
 
@@ -130,16 +130,16 @@ To examine the raw schema definitition of a tool to understand the input/output 
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/typescript/raw_tools.ts"
-  startLine={1}
-  endLine={15}
-  title="TypeScript"
+  src="fern/snippets/tool-calling/python/raw_tools.py"
+  startLine={5}
+  endLine={7}
+  title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/python/raw_tools.py"
-  startLine={1}
-  endLine={15}
-  title="Python"
+  src="fern/snippets/tool-calling/typescript/raw_tools.ts"
+  startLine={5}
+  endLine={7}
+  title="TypeScript"
 />
 </CodeGroup>
 
@@ -150,19 +150,6 @@ You may also filter tools by searching for them. This is a good way to find tool
 This step runs a semantic search on the tool names and descriptions and returns the most relevant tools.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const tools = await composio.tools.get(userId, {
-  search: "hubspot organize contacts",
-});
-
-// Search within a specific toolkit
-const tools = await composio.tools.get(userId, {
-  search: "repository issues",
-  toolkits: ["GITHUB"],  // Optional: limit search to specific toolkit
-  limit: 5  // Optional: limit number of results
-});
-```
-
 ```python Python maxLines=60 wordWrap
 tools = composio.tools.get(
     user_id,
@@ -176,6 +163,19 @@ tools = composio.tools.get(
     toolkits=["GITHUB"],  # Optional: limit search to specific toolkit
     limit=5  # Optional: limit number of results
 )
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+const tools = await composio.tools.get(userId, {
+  search: "hubspot organize contacts",
+});
+
+// Search within a specific toolkit
+const tools = await composio.tools.get(userId, {
+  search: "repository issues",
+  toolkits: ["GITHUB"],  // Optional: limit search to specific toolkit
+  limit: 5  // Optional: limit number of results
+});
 ```
 </CodeGroup>
 

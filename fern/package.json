@@ -6,7 +6,7 @@
 	"packageManager": "pnpm@10.8.0",
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"clean": "rm -rf ./dist && rm -rf ./node_modules && rm -rf ./docs/snippets/dist",
+		"clean": "git clean -xdf node_modules",
 		"compile": "npx tailwindcss -i ./assets/input.css -o ./dist/output.css",
 		"tools:generate": "uv run generators/tool_doc_generator/main.py --workers 10",
 		"tools:generate:dev": "uv run generators/tool_doc_generator/main.py --workers 10 --limit ${LIMIT:-5}",
@@ -23,24 +23,34 @@
 		"build": "echo 'Build orchestrated by Turbo'",
 		"preview": "fern generate --docs --preview --log-level debug",
 		"publish": "fern generate --docs",
-		"generate": "pnpm tools:generate && pnpm sdkdocs"
+		"generate": "pnpm tools:generate && pnpm sdkdocs",
+		"snippet:new": "bun run scripts/snippet-new.ts",
+		"doc:new": "bun run scripts/doc-new.ts"
 	},
 	"dependencies": {
-		"@composio/anthropic": "^0.1.21",
-		"@composio/core": "^0.1.21",
-		"@composio/vercel": "^0.1.21",
+		"@composio/anthropic": "^0.1.31",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@ai-sdk/anthropic": "^1.2.12",
+		"@anthropic-ai/sdk": "^0.52.0",
+		"@composio/core": "workspace:*",
+		"@composio/langchain": "^0.1.31",
+		"@composio/openai": "workspace:*",
+		"@composio/vercel": "workspace:*",
+		"@langchain/langgraph": "^0.2.72",
+		"@langchain/openai": "^0.5.10",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
 		"@types/yaml": "^1.9.7",
+		"ai": "^4.3.8",
 		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
+		"messages": "link:@langchain/core/messages",
 		"next": "^15.3.3",
 		"only-allow": "^1.2.1",
 		"openai": "^4.94.0",
@@ -50,6 +60,7 @@
 		"typedoc-plugin-markdown": "^4.6.4",
 		"typedoc-plugin-zod": "^1.4.1",
 		"typescript": "^5.8.3",
+		"uuid": "^11.1.0",
 		"vitest": "^3.1.4",
 		"yaml": "^2.8.0"
 	}

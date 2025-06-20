@@ -22,6 +22,7 @@
     "dist"
   ],
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "cli": "bun run src/bin.ts",
     "build:bin": "bun run ./scripts/build-binary.ts",
     "build": "tsup",

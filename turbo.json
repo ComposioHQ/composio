@@ -8,6 +8,12 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["dist/"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "//#clean": {
+      "cache": false
     }
   }
 }
