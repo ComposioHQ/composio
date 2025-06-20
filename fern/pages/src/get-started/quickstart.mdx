@@ -26,11 +26,11 @@ export COMPOSIO_API_KEY=your_api_key
 ## Install the SDK
 First and foremost, install the Composio SDK.
 <CodeGroup>
-```bash title="TypeScript" for="typescript"
-npm install @composio/core@next
-```
 ```bash title="Python" for="python"
 pip install composio
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core@next
 ```
 </CodeGroup>
 
@@ -39,6 +39,13 @@ pip install composio
 To use the SDK, you need to initialize it with your API key:
 
 <CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio(
+  # api_key="your-api-key",
+)
+```
 ```typescript TypeScript
 import { Composio } from '@composio/core';
 
@@ -46,13 +53,6 @@ import { Composio } from '@composio/core';
 const composio = new Composio({
   // apiKey: 'your-api-key',
 });
-```
-```python Python
-from composio import Composio
-
-composio = Composio(
-  # api_key="your-api-key",
-)
 ```
 </CodeGroup>
 

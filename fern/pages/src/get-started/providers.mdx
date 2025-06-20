@@ -31,6 +31,12 @@ Here's how you can generate text with various providers using Composio SDK:
 <Tab title="OpenAI (Default)">
 OpenAI is a completion provider. You can use it to generate text, function calls.
 <CodeGroup>
+```python Python
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+composio = Composio(provider=OpenAIProvider())
+```
 ```typescript TypeScript
 import { Composio } from "@composio/core";
 import { OpenAIProvider } from "@composio/openai";
@@ -38,18 +44,18 @@ import { OpenAIProvider } from "@composio/openai";
 const composio = new Composio({ provider: new OpenAIProvider() });
 
 ```
-```python Python
-from composio import Composio
-from composio_openai import OpenAIProvider
-
-composio = Composio(provider=OpenAIProvider())
-```
 
 </CodeGroup>
 </Tab>
 <Tab title="Anthropic">
 Anthropic is a completion provider. You can use it to generate text, function calls.
 <CodeGroup>
+```python Python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+```
 ```typescript TypeScript
 import { Composio } from "@composio/core";
 import { AnthropicProvider } from "@composio/anthropic";
@@ -58,13 +64,6 @@ import { Anthropic } from "@anthropic-ai/sdk";
 const composio = new Composio({ provider: new AnthropicProvider() });
 
 ```
-```python Python
-from composio import Composio
-from composio_anthropic import AnthropicProvider
-
-composio = Composio(provider=AnthropicProvider())
-```
-
 </CodeGroup>
 </Tab>
 <Tab title="Vercel AI SDK">
@@ -95,11 +94,40 @@ const composio = new Composio({
 </Tab>
 <Tab title="OpenAI Agents">
 ```python Python
+import asyncio
+
+from agents import Agent, Runner
+
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
+# Initialize Composio toolset
 composio = Composio(provider=OpenAIAgentsProvider())
 
+# Get all the tools
+tools = composio.tools.get(
+    user_id="default",
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+)
+
+# Create an agent with the tools
+agent = Agent(
+    name="GitHub Agent",
+    instructions="You are a helpful assistant.",
+    tools=tools,
+)
+
+# Run the agent
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input=(
+            "Star the repository composiohq/composio on GitHub"
+        ),
+    )
+    print(result.final_output)
+
+asyncio.run(main())
 ```
 </Tab>
 </Tabs>

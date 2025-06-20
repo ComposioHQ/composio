@@ -175,12 +175,6 @@ navigation:
     icon: rocket
     skip-slug: true
     contents:
-    - page: Hello World
-      path: pages/dist/examples/hello-world.mdx
-      slug: examples/hello-world
-    - page: Sample Script
-      path: pages/dist/examples/sample-script.mdx
-      slug: examples/sample-script
     - page: Basic Hono Server
       path: pages/dist/examples/sample-webserver/sample-webserver.mdx
       slug: examples/sample-webserver
@@ -225,10 +219,15 @@ navigation:
     - page: Mastra Provider
       path: pages/dist/providers/mastra.mdx
   - section: Writing your own provider
+    skip-slug: true
     icon: code
     contents:
     - page: TypeScript
-      path: pages/dist/providers/custom.mdx
+      path: pages/dist/providers/ts-custom.mdx
+      slug: providers/custom/typescript
+    - page: Python
+      path: pages/dist/providers/py-custom.mdx
+      slug: providers/custom/python
 - tab: tools
   layout:
   - section: Tool

@@ -12,25 +12,25 @@ The OpenAI Provider is the default provider for the Composio SDK. It transforms 
 By default the OpenAI Provider is installed when you install the Composio SDK. You can also install it manually:
 
 <CodeGroup>
-```bash title="TypeScript" for="typescript"
-npm install @composio/openai
-```
 ```bash title="Python" for="python"
 pip install composio[openai]
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/openai
 ```
 </CodeGroup>
 The OpenAI Provider is used by default when you initialize the Composio SDK but you can explicitly specify it.
 
 <CodeGroup>
 <SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={1}
-  endLine={7}
-/>
-<SnippetCode
   src="fern/snippets/providers/python/openai-provider.py"
   startLine={1}
   endLine={8}
+/>
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={1}
+  endLine={7}
 />
 </CodeGroup>
 
@@ -38,14 +38,14 @@ The OpenAI Provider is used by default when you initialize the Composio SDK but 
 The Responses API is the recommended way to build more agentic flows with the OpenAI API. Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/guides/responses-vs-chat-completions)
 
 <CodeGroup>
+```python
+
+```
 <SnippetCode
   src="fern/snippets/providers/typescript/openai.ts"
   startLine={5}
   endLine={24}
 />
-```python
-
-```
 </CodeGroup>
 
 ## Chat Completion API
@@ -53,14 +53,14 @@ Chat Completion API is the industry standard for building LLM-powered applicatio
 
 <CodeGroup>
 <SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={26}
-  endLine={45}
-/>
-<SnippetCode
   src="fern/snippets/providers/python/openai-provider.py"
   startLine={10}
   endLine={24}
+/>
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={26}
+  endLine={45}
 />
 
 </CodeGroup>

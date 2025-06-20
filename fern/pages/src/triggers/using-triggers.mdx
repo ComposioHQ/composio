@@ -56,12 +56,6 @@ First, you can view the required configuration to make the trigger too as follow
 To create a trigger, first fetch the user's connection ID, then use it along with the required configuration.
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/triggers/typescript/triggers.ts"
-  startLine={28}
-  endLine={40}
-  title="TypeScript (new)"
-/>
 ```python Python
 instance = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
@@ -73,6 +67,12 @@ instance = composio.triggers.create(
 )
 print(instance)
 ```
+<SnippetCode
+  src="fern/snippets/triggers/typescript/triggers.ts"
+  startLine={28}
+  endLine={40}
+  title="TypeScript (new)"
+/>
 </CodeGroup>
 
 
@@ -85,14 +85,6 @@ When you specify multiple multiple filters, _ALL_ of them must match for the tri
 This method uses websockets to subscribe to the trigger.
 
 <CodeGroup>
-<SnippetCode
-src="fern/snippets/triggers/typescript/triggers.ts"
-startLine={42}
-endLine={53}
-title="TypeScript (new)"
-/>
-
-
 ```python Python
 # Fetch connected account for user
 user_id = "user@acme.com"
@@ -115,6 +107,13 @@ instance = composio.triggers.create(
 print(instance)
 ```
 
+<SnippetCode
+src="fern/snippets/triggers/typescript/triggers.ts"
+startLine={42}
+endLine={53}
+title="TypeScript (new)"
+/>
+
 </CodeGroup>
 
 
@@ -128,13 +127,13 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 <CodeGroup>
 
 <SnippetCode
-  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
-  title="app/api/webhook/route.ts"
+  src="fern/snippets/triggers/python/trigger-webhook.py"
+  title="app/route.py"
 />
 
 <SnippetCode
-  src="fern/snippets/triggers/python/trigger-webhook.py"
-  title="app/route.py"
+  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
+  title="app/api/webhook/route.ts"
 />
 
 </CodeGroup>
@@ -143,16 +142,16 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 When subscribing to triggers, it is helpful to know the payload type recieved from the trigger. You can inspect the payload type by fetching the trigger type.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
-
-console.log(triggerType.payload);
-```
-
 ```python Python maxLines=60 wordWrap
 # Get a trigger by id
 trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
 print(trigger.payload)
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
+
+console.log(triggerType.payload);
 ```
 
 </CodeGroup>
@@ -168,6 +167,17 @@ You subscribe to multiple trigger events by configuring the filters.
 When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+user_id = "user@email.com"
+
+# Subscribe to a trigger
+subscription = composio.triggers.subscribe()
+
+# Define a handler
+@subscription.handle(toolkit="GITHUB", user_id=user_id)
+def handle_github_event(data):
+    print(data)
+```
 ```typescript TypeScript maxLines=60 wordWrap
 await composio.triggers.subscribe(
   triggerData => {
@@ -181,17 +191,6 @@ await composio.triggers.subscribe(
     // authConfigId: "ac_1234567890"
   }
 )
-```
-```python Python maxLines=60 wordWrap
-user_id = "user@email.com"
-
-# Subscribe to a trigger
-subscription = composio.triggers.subscribe()
-
-# Define a handler
-@subscription.handle(toolkit="GITHUB", user_id=user_id)
-def handle_github_event(data):
-    print(data)
 ```
 </CodeGroup>
 
@@ -211,30 +210,22 @@ The dashboard will show you the trigger configuration to fill in.
 </Frame>
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
-
-console.log(triggerType.config);
-
-```
 ```python Python maxLines=60 wordWrap
 # Get a trigger by id
 trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
 print(trigger.config)
 ```
 
+```typescript TypeScript maxLines=60 wordWrap
+const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
+
+console.log(triggerType.config);
+
+```
+
 </CodeGroup>
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-await composio.triggers.create("GITHUB_PULL_REQUEST_EVENT", {
-  connectedAccountId: "ca_k_py8Qbd17_d",
-  triggerConfig: {  // Properties expected for trigger config
-    owner: "composiohq",
-    repo: "composio",
-  },
-});
-```
 ```python Python maxLines=60 wordWrap
 instance = composio.triggers.create(
     slug="GITHUB_PULL_REQUEST_EVENT",
@@ -245,6 +236,15 @@ instance = composio.triggers.create(
     },
 )
 ```
+```typescript TypeScript maxLines=60 wordWrap
+await composio.triggers.create("GITHUB_PULL_REQUEST_EVENT", {
+  connectedAccountId: "ca_k_py8Qbd17_d",
+  triggerConfig: {  // Properties expected for trigger config
+    owner: "composiohq",
+    repo: "composio",
+  },
+});
+```
 </CodeGroup>
 
 ## Enabling/Disabling triggers
@@ -252,26 +252,26 @@ instance = composio.triggers.create(
 In cases where the trigger isn't required for the system, it can be disabled.
 
 <CodeGroup>
-  ```typescript TypeScript maxLines=60 wordWrap
-  await composio.triggers.disable("ti_abcd123");
-  ```
   ```python Python maxLines=60 wordWrap
   # Disable a trigger instance 
   disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
   print(disabled_instance) 
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.disable("ti_abcd123");
   ```
 </CodeGroup>
 
 If needed, the trigger can be enabled again.
 
 <CodeGroup>
-  ```typescript TypeScript maxLines=60 wordWrap
-  await composio.triggers.enable("ti_abcd123");
-  ```
   ```python Python maxLines=60 wordWrap
   # Enable a trigger instance
   enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
   print(enabled_instance)
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.enable("ti_abcd123");
   ```
 </CodeGroup>
 

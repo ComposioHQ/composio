@@ -203,6 +203,37 @@ def get_issue_info_direct(
 You can add custom headers and query parameters to your toolkit-based tools using the `parameters` option in `executeToolRequest`:
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+@composio.tools.custom_tool(toolkit="github")
+def get_issue_info(
+    request: GetIssueInfoInput,
+    execute_request: ExecuteRequestFn,
+    auth_credentials: dict,
+) -> dict:
+    """Get information about a GitHub issue."""
+    response = execute_request(
+        endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+        method="GET",
+        parameters=[
+            {
+                "name": "Accept",
+                "value": "application/vnd.github.v3+json",
+                "type": "header",
+            },
+            {
+                "name": "Authorization",
+                "value": f"Bearer {auth_credentials['access_token']}",
+                "type": "header",
+            },
+            {
+                "name": 'X-Custom-Header',
+                "value": 'custom-value',
+                "type": 'header',
+            },
+        ],
+    )
+    return {"data": response.data}
+```
 ```typescript TypeScript maxLines=60
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_SEARCH_REPOSITORIES',
@@ -247,37 +278,6 @@ const tool = await composio.tools.createCustomTool({
   },
 });
 ```
-```python Python maxLines=60 wordWrap
-@composio.tools.custom_tool(toolkit="github")
-def get_issue_info(
-    request: GetIssueInfoInput,
-    execute_request: ExecuteRequestFn,
-    auth_credentials: dict,
-) -> dict:
-    """Get information about a GitHub issue."""
-    response = execute_request(
-        endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
-        method="GET",
-        parameters=[
-            {
-                "name": "Accept",
-                "value": "application/vnd.github.v3+json",
-                "type": "header",
-            },
-            {
-                "name": "Authorization",
-                "value": f"Bearer {auth_credentials['access_token']}",
-                "type": "header",
-            },
-            {
-                "name": 'X-Custom-Header',
-                "value": 'custom-value',
-                "type": 'header',
-            },
-        ],
-    )
-    return {"data": response.data}
-```
 </CodeGroup>
 
 ## Executing Custom Tools
@@ -285,6 +285,13 @@ def get_issue_info(
 You can execute custom tools just like any other tool:
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+response = composio.tools.execute(
+    user_id="default",
+    slug="TOOL_SLUG", # For the tool above you can use `get_issue_info.slug`
+    arguments={"issue_number": 1},
+)
+```
 ```typescript TypeScript maxLines=60 wordWrap
 const result = await composio.tools.execute('TOOL_SLUG', {
   arguments: {
@@ -293,13 +300,6 @@ const result = await composio.tools.execute('TOOL_SLUG', {
   userId: 'user-id',
   connectedAccountId: 'optional-account-id', // Required for toolkit-based tools
 });
-```
-```python Python maxLines=60 wordWrap
-response = composio.tools.execute(
-    user_id="default",
-    slug="TOOL_SLUG", # For the tool above you can use `get_issue_info.slug`
-    arguments={"issue_number": 1},
-)
 ```
 </CodeGroup>
 
