@@ -435,6 +435,9 @@ importers:
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
+      openai:
+        specifier: ^4.94.0
+        version: 4.104.0(ws@8.18.2)(zod@3.25.62)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9

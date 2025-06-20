@@ -1,5 +1,21 @@
 # @composio/langchain
 
+## 0.1.31
+
+### Patch Changes
+
+- e660385: Fix file upload / download
+- Updated dependencies [e660385]
+  - @composio/core@0.1.31
+
+## 0.1.30
+
+### Patch Changes
+
+- Improved support for file handling
+- Updated dependencies
+  - @composio/core@0.1.30
+
 ## 0.1.29
 
 ### Patch Changes

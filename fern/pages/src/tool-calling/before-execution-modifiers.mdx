@@ -22,7 +22,7 @@ These modifiers are called before the tool is executed by the LLM. This allows y
 </Frame>
 
 <Note>
-  Below we use the `beforeToolExecute` modifier to modify the number of posts returned by the
+  Below we use the `beforeExecute` modifier to modify the number of posts returned by the
   `HACKERNEWS_GET_LATEST_POSTS` tool.
 </Note>
 
@@ -56,7 +56,7 @@ if (tool_calls) {
       arguments: JSON.parse(toolArgs),
     },
     {
-      beforeToolExecute: (toolSlug, _, params) => {
+      beforeExecute: { toolSlug, toolkitSlug, params }) => {
         if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
           params.arguments.size = 1;
         }

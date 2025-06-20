@@ -9,13 +9,18 @@
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["composio", "example", "tools"],
+  "keywords": [
+    "composio",
+    "example",
+    "tools"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "openai": "^4.94.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

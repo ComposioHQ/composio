@@ -3,6 +3,7 @@ import pathModule from 'path';
 import ComposioClient from '@composio/client';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
+import { FileDownloadData, FileUploadData } from '../types/files.types';
 
 const readFileContent = async (path: string): Promise<{ content: string; mimeType: string }> => {
   try {
@@ -76,16 +77,17 @@ const uploadFileToS3 = async (
   return key;
 };
 
-export const getFileDataAfterUploadingToS3 = async (
-  path: string,
-  toolSlug: string,
-  toolkitSlug: string,
-  client: ComposioClient
-): Promise<{
-  name: string;
-  mimetype: string;
-  s3key: string;
-}> => {
+export const getFileDataAfterUploadingToS3 = async ({
+  path,
+  toolSlug,
+  toolkitSlug,
+  client,
+}: {
+  path: string;
+  toolSlug: string;
+  toolkitSlug: string;
+  client: ComposioClient;
+}): Promise<FileUploadData> => {
   const isURL = path.startsWith('http');
   const fileData = isURL ? await readFileContentFromURL(path) : await readFileContent(path);
   logger.debug(`Uploading file to S3: ${path}`);
@@ -115,7 +117,7 @@ export const downloadFileFromS3 = async ({
   toolSlug: string;
   s3Url: string;
   mimeType: string;
-}) => {
+}): Promise<FileDownloadData> => {
   const response = await fetch(s3Url);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
@@ -128,7 +130,7 @@ export const downloadFileFromS3 = async ({
   return {
     name: fileName,
     mimeType: mimeType,
-    s3Key: s3Url,
+    s3Url: s3Url,
     filePath: filePath,
   };
 };

@@ -227,14 +227,14 @@ class AuthScheme:
             ),
         }
 
-    def snowflake(
+    def billcom_auth(
         self, options: connected_account_create_params.ConnectionStateUnionMember9Val
     ) -> connected_account_create_params.ConnectionState:
         """
-        Create a new connected account using Snowflake.
+        Create a new connected account using Bill.com auth.
         """
         return {
-            "auth_scheme": "SNOWFLAKE",
+            "auth_scheme": "BILLCOM_AUTH",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember9Val,
                 {
@@ -244,25 +244,8 @@ class AuthScheme:
             ),
         }
 
-    def billcom_auth(
-        self, options: connected_account_create_params.ConnectionStateUnionMember10Val
-    ) -> connected_account_create_params.ConnectionState:
-        """
-        Create a new connected account using Bill.com auth.
-        """
-        return {
-            "auth_scheme": "BILLCOM_AUTH",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember10Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
-
     def basic_with_jwt(
-        self, options: connected_account_create_params.ConnectionStateUnionMember11Val
+        self, options: connected_account_create_params.ConnectionStateUnionMember10Val
     ) -> connected_account_create_params.ConnectionState:
         """
         Create a new connected account using basic auth with JWT.
@@ -270,7 +253,7 @@ class AuthScheme:
         return {
             "auth_scheme": "BASIC_WITH_JWT",
             "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember11Val,
+                connected_account_create_params.ConnectionStateUnionMember10Val,
                 {
                     **options,
                     "status": "ACTIVE",
@@ -324,6 +307,7 @@ class ConnectedAccounts:
         user_id: str,
         auth_config_id: str,
         *,
+        callback_url: t.Optional[str] = None,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
     ) -> ConnectionRequest:
         """
@@ -335,18 +319,20 @@ class ConnectedAccounts:
 
         :param user_id: The user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
+        :param callback_url: Callback URL to use for OAuth apps.
         :param options: The options to create the connected account with.
         :return: The connection request.
         """
+        connection: dict[str, t.Any] = {"user_id": user_id}
+        if callback_url is not None:
+            connection["callback_url"] = connection
+
+        if config is not None:
+            connection["state"] = connection
+
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
-            connection=t.cast(
-                connected_account_create_params.Connection,
-                {
-                    "user_id": user_id,
-                    "state": config,
-                },
-            ),
+            connection=t.cast(connected_account_create_params.Connection, connection),
         )
         return ConnectionRequest(
             id=response.id,

@@ -13,10 +13,9 @@ import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
-import { getRandomUUID } from './utils/uuid';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { McpServerGetResponse } from './types/mcp.types';
-import { getEnvVariable } from './utils/env';
+import { Files } from './models/Files';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -38,11 +37,11 @@ export type ComposioConfig<
    */
   allowTracking?: boolean;
   /**
-   * Whether to allow tracing for the Composio instance.
+   * Whether to automatically upload and download files during tool execution.
    * @example true, false
    * @default true
    */
-  allowTracing?: boolean;
+  autoUploadDownloadFiles?: boolean;
   /**
    * The tool provider to use for this Composio instance.
    * @example new OpenAIProvider()
@@ -101,6 +100,7 @@ export class Composio<
   toolkits: Toolkits;
   triggers: Triggers;
   provider: TProvider;
+  files: Files;
   // auth configs
   authConfigs: AuthConfigs;
   // connected accounts
@@ -118,7 +118,6 @@ export class Composio<
    * @param {string} [config.apiKey] - The API key for authenticating with the Composio API
    * @param {string} [config.baseURL] - The base URL for the Composio API (defaults to production URL)
    * @param {boolean} [config.allowTracking=true] - Whether to allow anonymous usage analytics
-   * @param {boolean} [config.allowTracing=true] - Whether to allow request tracing for debugging
    * @param {TProvider} [config.provider] - The provider to use for this Composio instance (defaults to OpenAIProvider)
    *
    * @example
@@ -167,19 +166,21 @@ export class Composio<
     this.config = {
       ...config,
       allowTracking: config?.allowTracking ?? true,
-      allowTracing: config?.allowTracing ?? true,
     };
 
     /**
      * Set the default provider, if not provided by the user.
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
-    this.tools = new Tools(this.client, this.provider);
+    this.tools = new Tools(this.client, this.provider, {
+      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
+    });
     this.mcp = new MCP(this.client, this.provider);
 
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
+    this.files = new Files(this.client);
 
     // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
@@ -196,9 +197,6 @@ export class Composio<
         isBrowser: typeof window !== 'undefined',
         provider: this.provider?.name ?? 'openai',
         host: this.config.host,
-        // @TODO: Users might want to pass their own session id
-        // @TODO: We shouldn't be doing this as people might always have one session id throughout the process in server
-        sessionId: this.config.allowTracing ? getRandomUUID() : undefined, // @TODO: get the session id
       });
     }
     telemetry.instrument(this);

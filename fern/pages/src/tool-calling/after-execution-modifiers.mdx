@@ -22,7 +22,7 @@ These modifiers are called after the tool is executed by the LLM. This allows yo
 </Frame>
 
 <Note>
-  Below we use the `afterToolExecute` modifier to truncate the output of the `HACKERNEWS_GET_USER`
+  Below we use the `afterExecute` modifier to truncate the output of the `HACKERNEWS_GET_USER`
   tool and only return the karma of the user.
 </Note>
 
@@ -56,7 +56,7 @@ if (tool_calls) {
       arguments: JSON.parse(toolArgs),
     },
     {
-      afterToolExecute: (toolSlug, _, result) => {
+      afterExecute: ({ toolSlug, toolkitSlug, result }) => {
         if (toolSlug === "HACKERNEWS_GET_USER") {
           const { data } = result;
           const { karma } = data.response_data as { karma: number };

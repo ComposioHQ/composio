@@ -732,7 +732,7 @@ class Triggers(Resource):
         )
 
     def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
-        toolkit = self.get_type(slug=trigger).toolkit.name
+        toolkit = self.get_type(slug=trigger).toolkit.slug
         connected_accounts = self._client.connected_accounts.list(
             toolkit_slugs=[toolkit]
         )
