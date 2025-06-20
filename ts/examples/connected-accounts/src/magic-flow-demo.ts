@@ -19,6 +19,8 @@ const connectionRequest = await composio.toolkits.authorize(userId, 'github');
 // Redirect the user to continue to auth flow
 const redirectUrl = connectionRequest.redirectUrl;
 
+console.log(`Redirect the user to ${redirectUrl}`);
+
 // Wait for the user to connect the account / singin to GitHub
 const connectedAccount = await connectionRequest.waitForConnection();
 
