@@ -324,6 +324,7 @@ class ConnectedAccounts:
         user_id: str,
         auth_config_id: str,
         *,
+        callback_url: t.Optional[str] = None,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
     ) -> ConnectionRequest:
         """
@@ -335,6 +336,7 @@ class ConnectedAccounts:
 
         :param user_id: The user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
+        :param callback_url: Callback URL to use for OAuth apps.
         :param options: The options to create the connected account with.
         :return: The connection request.
         """
@@ -345,6 +347,7 @@ class ConnectedAccounts:
                 {
                     "user_id": user_id,
                     "state": config,
+                    "callback_url": callback_url,
                 },
             ),
         )
