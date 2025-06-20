@@ -62,6 +62,9 @@ importers:
 
   fern:
     dependencies:
+      '@composio/anthropic':
+        specifier: ^0.1.31
+        version: 0.1.31(@anthropic-ai/sdk@0.52.0)(@composio/core@ts+packages+core)
       fern-api:
         specifier: ^0.51.39
         version: 0.51.39
@@ -81,12 +84,21 @@ importers:
       '@composio/core':
         specifier: workspace:*
         version: link:../ts/packages/core
+      '@composio/langchain':
+        specifier: ^0.1.31
+        version: 0.1.31(@composio/core@ts+packages+core)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))
       '@composio/openai':
         specifier: workspace:*
         version: link:../ts/packages/providers/openai
       '@composio/vercel':
         specifier: workspace:*
         version: link:../ts/packages/providers/vercel
+      '@langchain/langgraph':
+        specifier: ^0.2.72
+        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
+      '@langchain/openai':
+        specifier: ^0.5.10
+        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
       '@types/convict':
         specifier: ^6.1.6
         version: 6.1.6
@@ -111,10 +123,11 @@ importers:
       hono:
         specifier: ^4.7.11
         version: 4.8.0
-        version: 4.8.0
+      messages:
+        specifier: link:@langchain/core/messages
+        version: link:@langchain/core/messages
       next:
         specifier: ^15.3.3
-        version: 15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1)
         version: 15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1)
       only-allow:
         specifier: ^1.2.1
@@ -180,7 +193,6 @@ importers:
       openai:
         specifier: ^4.94.0
         version: 4.104.0(ws@8.18.2)(zod@3.25.67)
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -235,7 +247,6 @@ importers:
       '@google/genai':
         specifier: ^1.1.0
         version: 1.5.1(@modelcontextprotocol/sdk@1.13.0)
-        version: 1.5.1(@modelcontextprotocol/sdk@1.13.0)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
@@ -258,7 +269,6 @@ importers:
       zod-to-json-schema:
         specifier: ^3.24.5
         version: 3.24.5(zod@3.25.67)
-        version: 3.24.5(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -277,19 +287,19 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^0.3.56
-        version: 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
+        version: 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
       '@langchain/langgraph':
         specifier: ^0.2.72
-        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.32))
+        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
       '@langchain/openai':
         specifier: ^0.5.10
-        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(ws@8.18.2)
+        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.32)
+        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -302,7 +312,6 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.16
-        version: 1.3.22(zod@3.25.67)
         version: 1.3.22(zod@3.25.67)
       '@composio/core':
         specifier: workspace:*
@@ -332,7 +341,6 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.16
         version: 1.3.22(zod@3.25.67)
-        version: 1.3.22(zod@3.25.67)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -341,7 +349,6 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
         version: 4.3.16(react@18.3.1)(zod@3.25.67)
     devDependencies:
       '@types/bun':
@@ -403,7 +410,6 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.16
         version: 1.3.22(zod@3.25.67)
-        version: 1.3.22(zod@3.25.67)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -412,7 +418,6 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
         version: 4.3.16(react@18.3.1)(zod@3.25.67)
     devDependencies:
       '@types/bun':
@@ -459,7 +464,6 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.16
         version: 1.3.22(zod@3.25.67)
-        version: 1.3.22(zod@3.25.67)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -468,7 +472,6 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
         version: 4.3.16(react@18.3.1)(zod@3.25.67)
       dotenv:
         specifier: ^16.5.0
@@ -540,7 +543,6 @@ importers:
         version: 3.1.0
       tsup:
         specifier: ^8.5.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       tsx:
         specifier: ^4.20.3
@@ -616,7 +618,6 @@ importers:
       tsup:
         specifier: ^8.4.0
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -635,7 +636,6 @@ importers:
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -656,7 +656,6 @@ importers:
       tsup:
         specifier: ^8.4.0
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -669,14 +668,12 @@ importers:
       '@google/genai':
         specifier: ^1.1.0
         version: 1.5.1(@modelcontextprotocol/sdk@1.13.0)
-        version: 1.5.1(@modelcontextprotocol/sdk@1.13.0)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -693,7 +690,6 @@ importers:
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -714,7 +710,6 @@ importers:
       tsup:
         specifier: ^8.4.0
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -727,14 +722,12 @@ importers:
       openai:
         specifier: ^4.3.8
         version: 4.104.0(ws@8.18.2)(zod@3.25.67)
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -748,14 +741,12 @@ importers:
       '@openai/agents':
         specifier: ^0.0.7
         version: 0.0.7(ws@8.18.2)(zod@3.25.67)
-        version: 0.0.7(ws@8.18.2)(zod@3.25.67)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -769,14 +760,12 @@ importers:
       ai:
         specifier: ^4.3.8
         version: 4.3.16(react@18.3.1)(zod@3.25.67)
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
       tsup:
         specifier: ^8.4.0
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       typescript:
         specifier: ^5.8.3
@@ -800,18 +789,11 @@ importers:
       tsup:
         specifier: ^8.4.0
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
-        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.0)
       vitest:
         specifier: ^3.1.4
         version: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
 packages:
-
-  '@ai-sdk/anthropic@1.2.12':
-    resolution: {integrity: sha512-YSzjlko7JvuiyQFmI9RN1tNZdEiZxc+6xld/0tq/VkJaHpEzGAb1yiNxxvmYVcjvfu/PcvCxAAYXmTYQQ63IHQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.0.0
 
   '@ai-sdk/anthropic@1.2.12':
     resolution: {integrity: sha512-YSzjlko7JvuiyQFmI9RN1tNZdEiZxc+6xld/0tq/VkJaHpEzGAb1yiNxxvmYVcjvfu/PcvCxAAYXmTYQQ63IHQ==}
@@ -1072,6 +1054,12 @@ packages:
   '@cloudflare/workers-types@4.20250619.0':
     resolution: {integrity: sha512-OYmVTA45rEEsOmchtltDnrG6BBaOPB7LUGKoyE8AwkfanUOc3/wwuMZ50i1jq6NKrV1TZLsKUKzrwe1NtVGOzQ==}
 
+  '@composio/anthropic@0.1.31':
+    resolution: {integrity: sha512-MoeCOu42YqqP9rH4y0K9xte0Xc2ycRaZVJg0jLM1H7uV46AbW59sIygyC7S3jg2b96LXwMPcuW2z1EM0igpbGg==}
+    peerDependencies:
+      '@anthropic-ai/sdk': ^0.52.0
+      '@composio/core': 0.1.31
+
   '@composio/client@0.1.0-alpha.17':
     resolution: {integrity: sha512-iNCDSgdwfFVsjbbyZIMknMPy4uO8Xw5+MP2aI+yoQo34VXF17Fi6ZHYirrJPf8RbdoRROZTDJjC/rU18mMzC2Q==}
 
@@ -1080,6 +1068,12 @@ packages:
 
   '@composio/json-schema-to-zod@0.1.9':
     resolution: {integrity: sha512-uDOAPPkaMWM2DJLCFCW6/rxTgair6EmQ4Ojo6RDayzIl2BRUro0wGkpof4Za8sJPrmdTfSqteRMDy46xPnOYhw==}
+
+  '@composio/langchain@0.1.31':
+    resolution: {integrity: sha512-SKc7KgX2+CQ9tQgzwOIRKhBhmdQweyx45l6kC2MJuvLRe6hA/Rx3ejzt9NrGH/lvDnZeefhbCV/G0URycnS0cw==}
+    peerDependencies:
+      '@composio/core': 0.1.31
+      '@langchain/core': ^0.3.44
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -1761,11 +1755,7 @@ packages:
 
   '@next/env@15.3.4':
     resolution: {integrity: sha512-ZkdYzBseS6UjYzz6ylVKPOK+//zLWvD6Ta+vpoye8cW11AjiQjGYVibF0xuvT4L0iJfAPfZLFidaEzAOywyOAQ==}
-  '@next/env@15.3.4':
-    resolution: {integrity: sha512-ZkdYzBseS6UjYzz6ylVKPOK+//zLWvD6Ta+vpoye8cW11AjiQjGYVibF0xuvT4L0iJfAPfZLFidaEzAOywyOAQ==}
 
-  '@next/swc-darwin-arm64@15.3.4':
-    resolution: {integrity: sha512-z0qIYTONmPRbwHWvpyrFXJd5F9YWLCsw3Sjrzj2ZvMYy9NPQMPZ1NjOJh4ojr4oQzcGYwgJKfidzehaNa1BpEg==}
   '@next/swc-darwin-arm64@15.3.4':
     resolution: {integrity: sha512-z0qIYTONmPRbwHWvpyrFXJd5F9YWLCsw3Sjrzj2ZvMYy9NPQMPZ1NjOJh4ojr4oQzcGYwgJKfidzehaNa1BpEg==}
     engines: {node: '>= 10'}
@@ -1774,22 +1764,16 @@ packages:
 
   '@next/swc-darwin-x64@15.3.4':
     resolution: {integrity: sha512-Z0FYJM8lritw5Wq+vpHYuCIzIlEMjewG2aRkc3Hi2rcbULknYL/xqfpBL23jQnCSrDUGAo/AEv0Z+s2bff9Zkw==}
-  '@next/swc-darwin-x64@15.3.4':
-    resolution: {integrity: sha512-Z0FYJM8lritw5Wq+vpHYuCIzIlEMjewG2aRkc3Hi2rcbULknYL/xqfpBL23jQnCSrDUGAo/AEv0Z+s2bff9Zkw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
   '@next/swc-linux-arm64-gnu@15.3.4':
     resolution: {integrity: sha512-l8ZQOCCg7adwmsnFm8m5q9eIPAHdaB2F3cxhufYtVo84pymwKuWfpYTKcUiFcutJdp9xGHC+F1Uq3xnFU1B/7g==}
-  '@next/swc-linux-arm64-gnu@15.3.4':
-    resolution: {integrity: sha512-l8ZQOCCg7adwmsnFm8m5q9eIPAHdaB2F3cxhufYtVo84pymwKuWfpYTKcUiFcutJdp9xGHC+F1Uq3xnFU1B/7g==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-musl@15.3.4':
-    resolution: {integrity: sha512-wFyZ7X470YJQtpKot4xCY3gpdn8lE9nTlldG07/kJYexCUpX1piX+MBfZdvulo+t1yADFVEuzFfVHfklfEx8kw==}
   '@next/swc-linux-arm64-musl@15.3.4':
     resolution: {integrity: sha512-wFyZ7X470YJQtpKot4xCY3gpdn8lE9nTlldG07/kJYexCUpX1piX+MBfZdvulo+t1yADFVEuzFfVHfklfEx8kw==}
     engines: {node: '>= 10'}
@@ -1798,30 +1782,22 @@ packages:
 
   '@next/swc-linux-x64-gnu@15.3.4':
     resolution: {integrity: sha512-gEbH9rv9o7I12qPyvZNVTyP/PWKqOp8clvnoYZQiX800KkqsaJZuOXkWgMa7ANCCh/oEN2ZQheh3yH8/kWPSEg==}
-  '@next/swc-linux-x64-gnu@15.3.4':
-    resolution: {integrity: sha512-gEbH9rv9o7I12qPyvZNVTyP/PWKqOp8clvnoYZQiX800KkqsaJZuOXkWgMa7ANCCh/oEN2ZQheh3yH8/kWPSEg==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
   '@next/swc-linux-x64-musl@15.3.4':
     resolution: {integrity: sha512-Cf8sr0ufuC/nu/yQ76AnarbSAXcwG/wj+1xFPNbyNo8ltA6kw5d5YqO8kQuwVIxk13SBdtgXrNyom3ZosHAy4A==}
-  '@next/swc-linux-x64-musl@15.3.4':
-    resolution: {integrity: sha512-Cf8sr0ufuC/nu/yQ76AnarbSAXcwG/wj+1xFPNbyNo8ltA6kw5d5YqO8kQuwVIxk13SBdtgXrNyom3ZosHAy4A==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-win32-arm64-msvc@15.3.4':
-    resolution: {integrity: sha512-ay5+qADDN3rwRbRpEhTOreOn1OyJIXS60tg9WMYTWCy3fB6rGoyjLVxc4dR9PYjEdR2iDYsaF5h03NA+XuYPQQ==}
   '@next/swc-win32-arm64-msvc@15.3.4':
     resolution: {integrity: sha512-ay5+qADDN3rwRbRpEhTOreOn1OyJIXS60tg9WMYTWCy3fB6rGoyjLVxc4dR9PYjEdR2iDYsaF5h03NA+XuYPQQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-x64-msvc@15.3.4':
-    resolution: {integrity: sha512-4kDt31Bc9DGyYs41FTL1/kNpDeHyha2TC0j5sRRoKCyrhNcfZ/nRQkAUlF27mETwm8QyHqIjHJitfcza2Iykfg==}
   '@next/swc-win32-x64-msvc@15.3.4':
     resolution: {integrity: sha512-4kDt31Bc9DGyYs41FTL1/kNpDeHyha2TC0j5sRRoKCyrhNcfZ/nRQkAUlF27mETwm8QyHqIjHJitfcza2Iykfg==}
     engines: {node: '>= 10'}
@@ -3987,8 +3963,6 @@ packages:
 
   hono@4.8.0:
     resolution: {integrity: sha512-NoiHrqJxoe1MYXqW+/0/Q4NCizKj2Ivm4KmX8mOSBtw9UJ7KYaOGKkO7csIwO5UlZpfvVRdcgiMb0GGyjEjtcw==}
-  hono@4.8.0:
-    resolution: {integrity: sha512-NoiHrqJxoe1MYXqW+/0/Q4NCizKj2Ivm4KmX8mOSBtw9UJ7KYaOGKkO7csIwO5UlZpfvVRdcgiMb0GGyjEjtcw==}
     engines: {node: '>=16.9.0'}
 
   http-errors@2.0.0:
@@ -4291,14 +4265,6 @@ packages:
       openai:
         optional: true
 
-  langsmith@0.3.33:
-    resolution: {integrity: sha512-imNIaBL6+ElE5eMzNHYwFxo6W/6rHlqcaUjCYoIeGdCYWlARxE3CTGKul5DJnaUgGP2CTLFeNXyvRx5HWC/4KQ==}
-    peerDependencies:
-      openai: '*'
-    peerDependenciesMeta:
-      openai:
-        optional: true
-
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
@@ -4518,8 +4484,6 @@ packages:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
 
-  next@15.3.4:
-    resolution: {integrity: sha512-mHKd50C+mCjam/gcnwqL1T1vPx/XQNFlXqFIVdgQdVAFY9iIQtY0IfaVflEYzKiqjeA7B0cYYMaCrmAYFjs4rA==}
   next@15.3.4:
     resolution: {integrity: sha512-mHKd50C+mCjam/gcnwqL1T1vPx/XQNFlXqFIVdgQdVAFY9iIQtY0IfaVflEYzKiqjeA7B0cYYMaCrmAYFjs4rA==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
@@ -4869,8 +4833,6 @@ packages:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.6:
-    resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
@@ -5784,7 +5746,6 @@ packages:
 snapshots:
 
   '@ai-sdk/anthropic@1.2.12(zod@3.25.67)':
-  '@ai-sdk/anthropic@1.2.12(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
@@ -5795,22 +5756,12 @@ snapshots:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       zod: 3.25.67
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      zod: 3.25.67
 
-  '@ai-sdk/openai@1.3.22(zod@3.25.67)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      zod: 3.25.67
-
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.67)':
   '@ai-sdk/provider-utils@2.2.8(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
-      zod: 3.25.67
       zod: 3.25.67
 
   '@ai-sdk/provider@1.1.3':
@@ -5818,10 +5769,7 @@ snapshots:
       json-schema: 0.4.0
 
   '@ai-sdk/react@1.2.12(react@18.3.1)(zod@3.25.67)':
-  '@ai-sdk/react@1.2.12(react@18.3.1)(zod@3.25.67)':
     dependencies:
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
       react: 18.3.1
@@ -5829,15 +5777,10 @@ snapshots:
       throttleit: 2.1.0
     optionalDependencies:
       zod: 3.25.67
-      zod: 3.25.67
 
-  '@ai-sdk/ui-utils@1.2.11(zod@3.25.67)':
   '@ai-sdk/ui-utils@1.2.11(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      zod: 3.25.67
-      zod-to-json-schema: 3.24.5(zod@3.25.67)
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       zod: 3.25.67
       zod-to-json-schema: 3.24.5(zod@3.25.67)
@@ -6459,6 +6402,11 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250619.0': {}
 
+  '@composio/anthropic@0.1.31(@anthropic-ai/sdk@0.52.0)(@composio/core@ts+packages+core)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.52.0
+      '@composio/core': link:ts/packages/core
+
   '@composio/client@0.1.0-alpha.17': {}
 
   '@composio/client@0.1.0-alpha.24': {}
@@ -6467,6 +6415,11 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       zod: 3.25.67
+
+  '@composio/langchain@0.1.31(@composio/core@ts+packages+core)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))':
+    dependencies:
+      '@composio/core': link:ts/packages/core
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
 
   '@composio/mcp@1.0.3-0': {}
 
@@ -6743,14 +6696,12 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.2
 
   '@google/genai@1.5.1(@modelcontextprotocol/sdk@1.13.0)':
-  '@google/genai@1.5.1(@modelcontextprotocol/sdk@1.13.0)':
     dependencies:
       google-auth-library: 9.15.1
       ws: 8.18.2
       zod: 3.25.67
       zod-to-json-schema: 3.24.5(zod@3.25.67)
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.13.0
       '@modelcontextprotocol/sdk': 1.13.0
     transitivePeerDependencies:
       - bufferutil
@@ -6887,7 +6838,6 @@ snapshots:
       '@inquirer/type': 2.0.0
       '@types/mute-stream': 0.0.4
       '@types/node': 22.15.32
-      '@types/node': 22.15.32
       '@types/wrap-ansi': 3.0.0
       ansi-escapes: 4.3.2
       cli-width: 4.1.0
@@ -7016,23 +6966,6 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))':
-    dependencies:
-      '@cfworker/json-schema': 4.1.1
-      ansi-styles: 5.2.0
-      camelcase: 6.3.0
-      decamelize: 1.2.0
-      js-tiktoken: 1.0.20
-      langsmith: 0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
-      mustache: 4.2.0
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      uuid: 10.0.0
-      zod: 3.25.67
-      zod-to-json-schema: 3.24.5(zod@3.25.67)
-    transitivePeerDependencies:
-      - openai
-
   '@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
@@ -7050,42 +6983,32 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))':
+  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
       uuid: 10.0.0
 
-  '@langchain/langgraph-sdk@0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(react@18.3.1)':
+  '@langchain/langgraph-sdk@0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)':
     dependencies:
       '@types/json-schema': 7.0.15
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
       react: 18.3.1
 
-  '@langchain/langgraph@0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.32))':
+  '@langchain/langgraph@0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
-      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))
-      '@langchain/langgraph-sdk': 0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(react@18.3.1)
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))
+      '@langchain/langgraph-sdk': 0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)
       uuid: 10.0.0
       zod: 3.25.67
     optionalDependencies:
-      zod-to-json-schema: 3.24.5(zod@3.25.32)
+      zod-to-json-schema: 3.24.5(zod@3.25.67)
     transitivePeerDependencies:
       - react
-
-  '@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32)))(ws@8.18.2)':
-    dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.32))
-      js-tiktoken: 1.0.20
-      openai: 4.104.0(ws@8.18.2)(zod@3.25.32)
-      zod: 3.25.32
-    transitivePeerDependencies:
-      - encoding
-      - ws
 
   '@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)':
     dependencies:
@@ -7124,9 +7047,6 @@ snapshots:
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
       '@mastra/schema-compat': 0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
-      '@mastra/schema-compat': 0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/auto-instrumentations-node': 0.59.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))
       '@opentelemetry/core': 2.0.1(@opentelemetry/api@1.9.0)
@@ -7142,12 +7062,9 @@ snapshots:
       '@opentelemetry/semantic-conventions': 1.34.0
       '@sindresorhus/slugify': 2.2.1
       ai: 4.3.16(react@18.3.1)(zod@3.25.67)
-      ai: 4.3.16(react@18.3.1)(zod@3.25.67)
       cohere-ai: 7.17.1
       date-fns: 3.6.0
       dotenv: 16.5.0
-      hono: 4.8.0
-      hono-openapi: 0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67)
       hono: 4.8.0
       hono-openapi: 0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67)
       json-schema: 0.4.0
@@ -7157,7 +7074,6 @@ snapshots:
       radash: 12.1.1
       sift: 17.1.3
       xstate: 5.19.4
-      zod: 3.25.67
       zod: 3.25.67
     transitivePeerDependencies:
       - '@hono/arktype-validator'
@@ -7185,24 +7101,18 @@ snapshots:
       exit-hook: 4.0.0
       fast-deep-equal: 3.1.3
       hono: 4.8.0
-      hono: 4.8.0
       uuid: 11.1.0
-      zod: 3.25.67
       zod: 3.25.67
       zod-from-json-schema: 0.0.5
     transitivePeerDependencies:
       - supports-color
 
   '@mastra/schema-compat@0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)':
-  '@mastra/schema-compat@0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)':
     dependencies:
-      ai: 4.3.16(react@18.3.1)(zod@3.25.67)
       ai: 4.3.16(react@18.3.1)(zod@3.25.67)
       json-schema: 0.4.0
       zod: 3.25.67
-      zod: 3.25.67
       zod-from-json-schema: 0.0.5
-      zod-to-json-schema: 3.24.5(zod@3.25.67)
       zod-to-json-schema: 3.24.5(zod@3.25.67)
 
   '@modelcontextprotocol/sdk@1.13.0':
@@ -7240,37 +7150,28 @@ snapshots:
     optional: true
 
   '@next/env@15.3.4': {}
-  '@next/env@15.3.4': {}
 
-  '@next/swc-darwin-arm64@15.3.4':
   '@next/swc-darwin-arm64@15.3.4':
     optional: true
 
   '@next/swc-darwin-x64@15.3.4':
-  '@next/swc-darwin-x64@15.3.4':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@15.3.4':
   '@next/swc-linux-arm64-gnu@15.3.4':
     optional: true
 
   '@next/swc-linux-arm64-musl@15.3.4':
-  '@next/swc-linux-arm64-musl@15.3.4':
     optional: true
 
-  '@next/swc-linux-x64-gnu@15.3.4':
   '@next/swc-linux-x64-gnu@15.3.4':
     optional: true
 
   '@next/swc-linux-x64-musl@15.3.4':
-  '@next/swc-linux-x64-musl@15.3.4':
     optional: true
 
   '@next/swc-win32-arm64-msvc@15.3.4':
-  '@next/swc-win32-arm64-msvc@15.3.4':
     optional: true
 
-  '@next/swc-win32-x64-msvc@15.3.4':
   '@next/swc-win32-x64-msvc@15.3.4':
     optional: true
 
@@ -7288,7 +7189,6 @@ snapshots:
 
   '@openai/agents-core@0.0.7(ws@8.18.2)(zod@3.25.67)':
     dependencies:
-      '@openai/zod': zod@3.25.67
       '@openai/zod': zod@3.25.67
       debug: 4.4.1
       openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
@@ -8547,7 +8447,6 @@ snapshots:
   '@types/bunyan@1.8.11':
     dependencies:
       '@types/node': 24.0.3
-      '@types/node': 24.0.3
 
   '@types/chai@5.2.2':
     dependencies:
@@ -8555,7 +8454,6 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.0.3
       '@types/node': 24.0.3
 
   '@types/convict@6.1.6':
@@ -8584,7 +8482,6 @@ snapshots:
   '@types/memcached@2.2.10':
     dependencies:
       '@types/node': 24.0.3
-      '@types/node': 24.0.3
 
   '@types/minimatch@5.1.2': {}
 
@@ -8594,7 +8491,6 @@ snapshots:
 
   '@types/mysql@2.15.26':
     dependencies:
-      '@types/node': 24.0.3
       '@types/node': 24.0.3
 
   '@types/node-fetch@2.6.12':
@@ -8623,7 +8519,6 @@ snapshots:
   '@types/oracledb@6.5.2':
     dependencies:
       '@types/node': 24.0.3
-      '@types/node': 24.0.3
 
   '@types/pg-pool@2.0.6':
     dependencies:
@@ -8651,7 +8546,6 @@ snapshots:
   '@types/tedious@4.0.14':
     dependencies:
       '@types/node': 24.0.3
-      '@types/node': 24.0.3
 
   '@types/unist@3.0.3': {}
 
@@ -8663,7 +8557,6 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.0.3
       '@types/node': 24.0.3
 
   '@types/yaml@1.9.7':
@@ -8823,7 +8716,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.4(@types/node@20.19.1)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -8862,18 +8755,13 @@ snapshots:
       humanize-ms: 1.2.1
 
   ai@4.3.16(react@18.3.1)(zod@3.25.67):
-  ai@4.3.16(react@18.3.1)(zod@3.25.67):
     dependencies:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       '@ai-sdk/react': 1.2.12(react@18.3.1)(zod@3.25.67)
       '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      '@ai-sdk/react': 1.2.12(react@18.3.1)(zod@3.25.67)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
       '@opentelemetry/api': 1.9.0
       jsondiffpatch: 0.6.0
-      zod: 3.25.67
       zod: 3.25.67
     optionalDependencies:
       react: 18.3.1
@@ -9009,7 +8897,6 @@ snapshots:
 
   bun-types@1.2.16:
     dependencies:
-      '@types/node': 24.0.3
       '@types/node': 24.0.3
 
   bundle-require@5.1.0(esbuild@0.25.5):
@@ -9184,8 +9071,6 @@ snapshots:
       pusher-js: 8.4.0-rc2
       resolve-package-path: 4.0.3
       uuid: 10.0.0
-      zod: 3.25.67
-      zod-to-json-schema: 3.24.5(zod@3.25.67)
       zod: 3.25.67
       zod-to-json-schema: 3.24.5(zod@3.25.67)
     transitivePeerDependencies:
@@ -9877,7 +9762,6 @@ snapshots:
   help-me@5.0.0: {}
 
   hono-openapi@0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67):
-  hono-openapi@0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67):
     dependencies:
       json-schema-walker: 2.0.0
       openapi-types: 12.1.3
@@ -9885,10 +9769,7 @@ snapshots:
       effect: 3.16.8
       hono: 4.8.0
       zod: 3.25.67
-      hono: 4.8.0
-      zod: 3.25.67
 
-  hono@4.8.0: {}
   hono@4.8.0: {}
 
   http-errors@2.0.0:
@@ -10105,7 +9986,6 @@ snapshots:
       uuid: 10.0.0
       yaml: 2.8.0
       zod: 3.25.67
-      zod: 3.25.67
     optionalDependencies:
       axios: 1.10.0
     transitivePeerDependencies:
@@ -10124,18 +10004,6 @@ snapshots:
       uuid: 10.0.0
     optionalDependencies:
       openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
-
-  langsmith@0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.32)):
-    dependencies:
-      '@types/uuid': 10.0.0
-      chalk: 4.1.2
-      console-table-printer: 2.14.3
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      semver: 7.7.2
-      uuid: 10.0.0
-    optionalDependencies:
-      openai: 4.104.0(ws@8.18.2)(zod@3.25.32)
 
   langsmith@0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.67)):
     dependencies:
@@ -10348,9 +10216,7 @@ snapshots:
   negotiator@1.0.0: {}
 
   next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1):
-  next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@next/env': 15.3.4
       '@next/env': 15.3.4
       '@swc/counter': 0.1.3
       '@swc/helpers': 0.5.15
@@ -10361,14 +10227,6 @@ snapshots:
       react-dom: 19.1.0(react@18.3.1)
       styled-jsx: 5.1.6(react@18.3.1)
     optionalDependencies:
-      '@next/swc-darwin-arm64': 15.3.4
-      '@next/swc-darwin-x64': 15.3.4
-      '@next/swc-linux-arm64-gnu': 15.3.4
-      '@next/swc-linux-arm64-musl': 15.3.4
-      '@next/swc-linux-x64-gnu': 15.3.4
-      '@next/swc-linux-x64-musl': 15.3.4
-      '@next/swc-win32-arm64-msvc': 15.3.4
-      '@next/swc-win32-x64-msvc': 15.3.4
       '@next/swc-darwin-arm64': 15.3.4
       '@next/swc-darwin-x64': 15.3.4
       '@next/swc-linux-arm64-gnu': 15.3.4
@@ -10638,28 +10496,22 @@ snapshots:
       pathe: 2.0.3
 
   postcss-import@15.1.0(postcss@8.5.6):
-  postcss-import@15.1.0(postcss@8.5.6):
     dependencies:
-      postcss: 8.5.6
       postcss: 8.5.6
       postcss-value-parser: 4.2.0
       read-cache: 1.0.0
       resolve: 1.22.10
 
   postcss-js@4.0.1(postcss@8.5.6):
-  postcss-js@4.0.1(postcss@8.5.6):
     dependencies:
       camelcase-css: 2.0.1
       postcss: 8.5.6
-      postcss: 8.5.6
 
-  postcss-load-config@4.0.2(postcss@8.5.6):
   postcss-load-config@4.0.2(postcss@8.5.6):
     dependencies:
       lilconfig: 3.1.3
       yaml: 2.8.0
     optionalDependencies:
-      postcss: 8.5.6
       postcss: 8.5.6
 
   postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.3)(yaml@2.8.0):
@@ -10672,9 +10524,7 @@ snapshots:
       yaml: 2.8.0
 
   postcss-nested@6.2.0(postcss@8.5.6):
-  postcss-nested@6.2.0(postcss@8.5.6):
     dependencies:
-      postcss: 8.5.6
       postcss: 8.5.6
       postcss-selector-parser: 6.1.2
 
@@ -10691,7 +10541,6 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.6:
   postcss@8.5.6:
     dependencies:
       nanoid: 3.3.11
@@ -10734,7 +10583,6 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 24.0.3
       '@types/node': 24.0.3
       long: 5.3.2
 
@@ -11181,14 +11029,12 @@ snapshots:
   supergateway@2.8.3:
     dependencies:
       '@modelcontextprotocol/sdk': 1.13.0
-      '@modelcontextprotocol/sdk': 1.13.0
       body-parser: 1.20.3
       cors: 2.8.5
       express: 4.21.2
       uuid: 11.1.0
       ws: 8.18.2
       yargs: 17.7.2
-      zod: 3.25.67
       zod: 3.25.67
     transitivePeerDependencies:
       - bufferutil
@@ -11227,11 +11073,6 @@ snapshots:
       normalize-path: 3.0.0
       object-hash: 3.0.0
       picocolors: 1.1.1
-      postcss: 8.5.6
-      postcss-import: 15.1.0(postcss@8.5.6)
-      postcss-js: 4.0.1(postcss@8.5.6)
-      postcss-load-config: 4.0.2(postcss@8.5.6)
-      postcss-nested: 6.2.0(postcss@8.5.6)
       postcss: 8.5.6
       postcss-import: 15.1.0(postcss@8.5.6)
       postcss-js: 4.0.1(postcss@8.5.6)
@@ -11335,7 +11176,6 @@ snapshots:
       tinyglobby: 0.2.14
       tree-kill: 1.2.2
     optionalDependencies:
-      postcss: 8.5.6
       postcss: 8.5.6
       typescript: 5.8.3
     transitivePeerDependencies:
@@ -11541,7 +11381,6 @@ snapshots:
       fdir: 6.4.6(picomatch@4.0.2)
       picomatch: 4.0.2
       postcss: 8.5.6
-      postcss: 8.5.6
       rollup: 4.43.0
       tinyglobby: 0.2.14
     optionalDependencies:
@@ -11557,7 +11396,6 @@ snapshots:
       fdir: 6.4.6(picomatch@4.0.2)
       picomatch: 4.0.2
       postcss: 8.5.6
-      postcss: 8.5.6
       rollup: 4.43.0
       tinyglobby: 0.2.14
     optionalDependencies:
@@ -11572,7 +11410,6 @@ snapshots:
       esbuild: 0.25.5
       fdir: 6.4.6(picomatch@4.0.2)
       picomatch: 4.0.2
-      postcss: 8.5.6
       postcss: 8.5.6
       rollup: 4.43.0
       tinyglobby: 0.2.14
@@ -11796,12 +11633,6 @@ snapshots:
   zod-from-json-schema@0.0.5:
     dependencies:
       zod: 3.25.67
-      zod: 3.25.67
-
-  zod-to-json-schema@3.24.5(zod@3.25.32):
-    dependencies:
-      zod: 3.25.32
-    optional: true
 
   zod-to-json-schema@3.24.5(zod@3.25.67):
     dependencies:

@@ -28,6 +28,7 @@
 		"doc:new": "bun run scripts/doc-new.ts"
 	},
 	"dependencies": {
+		"@composio/anthropic": "^0.1.31",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
@@ -36,8 +37,11 @@
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
+		"@composio/langchain": "^0.1.31",
 		"@composio/openai": "workspace:*",
 		"@composio/vercel": "workspace:*",
+		"@langchain/langgraph": "^0.2.72",
+		"@langchain/openai": "^0.5.10",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",
@@ -46,6 +50,7 @@
 		"ai": "^4.3.8",
 		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
+		"messages": "link:@langchain/core/messages",
 		"next": "^15.3.3",
 		"only-allow": "^1.2.1",
 		"openai": "^4.94.0",

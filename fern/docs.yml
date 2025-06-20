@@ -199,7 +199,7 @@ navigation:
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
   - section: Behind the curtain
-    icon: person-booth 
+    icon: person-booth
     skip-slug: true
     contents:
     - page: Tool Generator
@@ -207,7 +207,7 @@ navigation:
       slug: examples/tool-generator
 - tab: providers
   layout:
-  - section: Providers
+  - section: Supported Providers
     icon: code
     contents:
     - page: OpenAI Provider
@@ -220,13 +220,14 @@ navigation:
       path: pages/dist/providers/crewai.mdx
     - page: Vercel AI SDK Provider
       path: pages/dist/providers/vercel.mdx
-    - page: Google ADK Provider
-      path: pages/dist/providers/google-adk.mdx
     - page: OpenAI Agents Provider
       path: pages/dist/providers/openai-agents.mdx
     - page: Mastra Provider
       path: pages/dist/providers/mastra.mdx
-    - page: Custom Provider
+  - section: Writing your own provider
+    icon: code
+    contents:
+    - page: TypeScript
       path: pages/dist/providers/custom.mdx
 - tab: tools
   layout:

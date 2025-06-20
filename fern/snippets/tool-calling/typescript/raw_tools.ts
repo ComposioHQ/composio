@@ -2,10 +2,6 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-const tools_1 = await composio.tools.getRawComposioToolBySlug('user@acme.org', 'GITHUB_CREATE_AN_ISSUE');
-console.log(tools_1);
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_OCTOCAT');
 
-const tools_2 = await composio.tools.getRawComposioTools('user@acme.org', {
-  toolkits: ['SLACK'],
-});
-console.log(tools_2);
+console.log(JSON.stringify(tool, null, 2));

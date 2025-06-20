@@ -9,13 +9,24 @@ hide-nav-links: false
 The LangChain Provider transforms Composio tools into a format compatible with LangChain's function calling capabilities.
 
 ## Setup
-```bash
+<CodeGroup>
+```bash title="Python" for="python"
 pip install composio[langchain] langchain
 ```
+```bash title="TypeScript" for="typescript"
+npm install @composio/langchain
+```
+</CodeGroup>
 
 ## Usage
 
+<CodeGroup>
 <SnippetCode
   src="fern/snippets/providers/python/langchain-provider.py"
-  title="langchain-provider.py"
+  title="Python"
 />
+<SnippetCode
+  src="fern/snippets/providers/typescript/langchain.ts"
+  title="TypeScript"
+/>
+</CodeGroup>

@@ -116,7 +116,7 @@ print(result)
 Agentic providers have a function execution step.
 The modifier is configured on the `tools.get` method which modifies the execution logic within the framework!
 <CodeGroup>
-```typescript TypeScript maxLines=60  wordWrap {24-27}
+```typescript TypeScript (Vercel) maxLines=60  wordWrap {24-27}
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { generateText } from "ai";
@@ -152,7 +152,7 @@ const agenticTools = await composio.tools.get(
 );
 
 ```
-```python Python maxLines=60  wordWrap
+```python Python (CrewAI) maxLines=60  wordWrap
 from composio import Composio, after_execute
 from composio.types import ToolExecutionResponse
 from composio_crewai import CrewAIProvider
