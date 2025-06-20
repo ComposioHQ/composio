@@ -162,6 +162,9 @@ navigation:
     - page: Introduction
       path: pages/dist/mcp/introduction.mdx
       slug: mcp-introduction
+    - page: Partner Program
+      path: pages/dist/mcp/partner-api.mdx
+      slug: mcp-partner-api
   - section: Resources
     icon: book
     skip-slug: true
@@ -199,7 +202,7 @@ navigation:
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
   - section: Behind the curtain
-    icon: person-booth 
+    icon: person-booth
     skip-slug: true
     contents:
     - page: Tool Generator
