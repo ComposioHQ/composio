@@ -380,20 +380,6 @@ export class Toolkits {
     const authConfig = await composioAuthConfig.list({
       toolkit: toolkitSlug,
     });
-    if (authConfig.items?.length === 0) {
-      throw new ComposioAuthConfigNotFoundError(
-        `No auth configs found for toolkit ${toolkitSlug}`,
-        {
-          meta: {
-            toolkitSlug,
-          },
-          possibleFixes: [
-            `Please Create an auth config for the toolkit ${toolkitSlug} via the dashboard`,
-          ],
-        }
-      );
-    }
-
     // pick the first auth config
     authConfigIdToUse = authConfig.items[0]?.id;
 
@@ -401,20 +387,40 @@ export class Toolkits {
     if (!authConfigIdToUse) {
       // create authConfig using composioManagedAuthSchemes
       if (toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0) {
-        const authConfig = await composioAuthConfig.create(toolkitSlug, {
-          type: 'use_composio_managed_auth',
-          name: `${toolkit.name} Auth Config`,
-        });
-        authConfigIdToUse = authConfig.id;
+        try {
+          const authConfig = await composioAuthConfig.create(toolkitSlug, {
+            type: 'use_composio_managed_auth',
+            name: `${toolkit.name} Auth Config`,
+          });
+          authConfigIdToUse = authConfig.id;
+        } catch (error) {
+          if (error instanceof ComposioClient.APIError && error.status === 400) {
+            throw new ComposioAuthConfigNotFoundError(
+              `No Default auth config found for toolkit ${toolkitSlug}`,
+              {
+                meta: {
+                  toolkitSlug,
+                },
+                cause: error,
+                possibleFixes: [
+                  `Please Create an auth config for the toolkit ${toolkitSlug} via the dashboard`,
+                ],
+              }
+            );
+          }
+          throw error;
+        }
       } else {
-        throw new ComposioAuthConfigNotFoundError('No auth config found for toolkit', {
-          meta: {
-            toolkitSlug,
-          },
-        });
+        throw new ComposioAuthConfigNotFoundError(
+          `No auth configs found for toolkit ${toolkitSlug}`,
+          {
+            meta: {
+              toolkitSlug,
+            },
+          }
+        );
       }
     }
-
     // create the auth config
     const composioConnectedAccount = new ConnectedAccounts(this.client);
     return await composioConnectedAccount.initiate(userId, authConfigIdToUse, {

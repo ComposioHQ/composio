@@ -25,23 +25,28 @@ const composio = new Composio({
  */
 async function main() {
   try {
-    console.log('🚀 Starting Tools Example...');
+    console.log('🚀 Starting Upload file Example...');
 
-    const tools = await composio.tools.getRawComposioTools({
-      tools: ['GOOGLEDRIVE_UPLOAD_FILE'],
-    });
-
-    console.log(JSON.stringify(tools, null, 2));
-
+    console.log('🔄 Uploading file...');
     const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
       arguments: {
         file_to_upload: path.join(__dirname, 'image.png'),
       },
       userId: 'default',
     });
-
+    console.log('✅ File uploaded successfully...');
     console.log(JSON.stringify(result, null, 2));
-    
+
+    console.log('🔄 Downloading file...');
+    const result2 = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+      arguments: {
+        file_id: (result.data.response_data as unknown as { id: string }).id,
+      },
+      userId: 'default',
+    });
+    console.log('✅ File downloaded successfully...');
+    console.log(JSON.stringify(result2, null, 2));
+
   } catch (error) {
     console.error('❌ Error running example:', error);
   }
