@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.31
+
+### Patch Changes
+
+- e660385: Fix file upload / download
+
 ## 0.1.30
 
 ### Patch Changes

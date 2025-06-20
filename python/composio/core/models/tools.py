@@ -93,6 +93,8 @@ class Tools(Resource, t.Generic[TProvider]):
         tools: t.Optional[list[str]] = None,
         search: t.Optional[str] = None,
         toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        limit: t.Optional[int] = None,
     ) -> list[Tool]:
         """
         Get a list of tool schemas based on the provided filters.
@@ -116,6 +118,8 @@ class Tools(Resource, t.Generic[TProvider]):
                         ",".join(toolkits) if toolkits else self._client.not_given
                     ),
                     search=search if search else self._client.not_given,
+                    scopes=scopes,
+                    limit=str(limit) if limit is not None else self._client.not_given,
                 ).items
             )
         return tools_list
@@ -126,13 +130,17 @@ class Tools(Resource, t.Generic[TProvider]):
         tools: t.Optional[list[str]] = None,
         search: t.Optional[str] = None,
         toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
     ):
         """Get a list of tools based on the provided filters."""
         tools_list = self.get_raw_composio_tools(
             tools=tools,
             search=search,
             toolkits=toolkits,
+            scopes=scopes,
+            limit=limit,
         )
         if modifiers is not None:
             tools_list = [
@@ -197,6 +205,8 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: str,
         *,
         toolkits: list[str],
+        scopes: t.Optional[t.List[str]] = None,
+        limit: t.Optional[int] = None,
         modifiers: t.Optional[Modifiers] = None,
     ):
         """Get tools by toolkit slugs (Only important tools are returned)"""
@@ -218,6 +228,7 @@ class Tools(Resource, t.Generic[TProvider]):
         *,
         toolkits: list[str],
         search: t.Optional[str] = None,
+        limit: t.Optional[int] = None,
         modifiers: t.Optional[Modifiers] = None,
     ):
         """Get tool by search term and/or toolkit slugs and search term"""
@@ -230,7 +241,9 @@ class Tools(Resource, t.Generic[TProvider]):
         tools: t.Optional[list[str]] = None,
         search: t.Optional[str] = None,
         toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
     ):
         """Get a tool or list of tools based on the provided arguments."""
         if slug is not None:
@@ -240,7 +253,9 @@ class Tools(Resource, t.Generic[TProvider]):
             tools=tools,
             search=search,
             toolkits=toolkits,
+            scopes=scopes,
             modifiers=modifiers,
+            limit=limit,
         )
 
     def _wrap_execute_tool(

@@ -1,6 +1,6 @@
 [project]
 name = "composio-gemini"
-version = "1.0.0-rc4"
+version = "1.0.0-rc5"
 description = "Use Composio to get an array of tools with your Gemini agent."
 readme = "README.md"
 requires-python = ">=3.9,<4"

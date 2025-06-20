@@ -24,6 +24,8 @@ console.log(`Redirect the user to ${redirectUrl}`);
 // Wait for the user to connect the account / singin to GitHub
 const connectedAccount = await connectionRequest.waitForConnection();
 
+console.log(`Connected account created: ${JSON.stringify(connectedAccount, null, 2)}`);
+
 // ------------------------------------------------------------
 // 2. Get the GitHub tools
 // ------------------------------------------------------------
@@ -47,3 +49,5 @@ const response = await openai.chat.completions.create({
   tools: tools,
   tool_choice: 'auto',
 });
+
+console.log(`Response: ${JSON.stringify(response, null, 2)}`);

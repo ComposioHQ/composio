@@ -88,6 +88,7 @@ class CustomTool:
             output_parameters={},
             available_versions=[],
             version="1.0.0",
+            scopes=[],
             slug=self.slug,
             toolkit=tool_list_response.ItemToolkit(
                 logo="",
