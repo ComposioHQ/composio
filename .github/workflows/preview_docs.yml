@@ -35,7 +35,7 @@ jobs:
 
       - name: Build documentation with Turbo
         working-directory: ./fern
-        run: pnpm turbo run build
+        run: pnpm turbo run build --filter=composio-docs
 
       - name: Generate preview URL
         id: generate-docs
