@@ -112,7 +112,3 @@ export async function setup() {
 
   await Effect.runPromise(program);
 }
-
-export async function tearDown() {
-  console.log('[Global teardown]');
-}

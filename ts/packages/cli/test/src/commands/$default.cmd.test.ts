@@ -58,21 +58,21 @@ describe('CLI: composio', () => {
 
           [0;1mCOMMANDS[0m
 
-            - version                                                     Display your account information.
+            - version                                                                Display your account information.
 
-            - whoami                                                      Display your account information.
+            - whoami                                                                 Display your account information.
 
-            - login                                                       Log in to the Composio SDK.
+            - login                                                                  Log in to the Composio SDK.
 
-            - generate [(-o, --output-dir directory)]                     Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
+            - generate [(-o, --output-dir directory)]                                Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
 
-            - py                                                          Handle Python projects.
+            - py                                                                     Handle Python projects.
 
-            - py generate [(-o, --output-dir directory)]                  Updates the local type stubs with the latest app data.
+            - py generate [(-o, --output-dir directory)]                             Updates the local type stubs with the latest app data.
 
-            - ts                                                          Handle TypeScript projects.
+            - ts                                                                     Handle TypeScript projects.
 
-            - ts generate [(-o, --output-dir directory)] [--single-file]  Updates the local type stubs with the latest app data.
+            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled]  Updates the local type stubs with the latest app data.
           "
         `);
       })

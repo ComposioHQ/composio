@@ -99,7 +99,7 @@ describe('generateTypeScriptSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { SLACK } from "./slack.ts"
+          import { SLACK } from "./slack.undefined"
 
           /**
            * Map of Composio toolkits to actions.
@@ -169,7 +169,7 @@ describe('generateTypeScriptSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { SLACK } from "./slack.ts"
+          import { SLACK } from "./slack.undefined"
 
           /**
            * Map of Composio toolkits to actions.

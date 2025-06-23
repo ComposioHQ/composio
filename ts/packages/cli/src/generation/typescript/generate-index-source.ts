@@ -27,12 +27,13 @@ import * as ts from '@composio/ts-builders';
 import { pipe, Record, Array as Arr } from 'effect';
 import type { ToolkitIndex } from '../create-toolkit-index';
 
-type generateTypeScriptIndexMapSourceParams = {
+type GenerateTypeScriptIndexMapSourceParams = {
   banner: string;
   emitSingleFile: boolean;
+  importExtension: 'ts' | 'js';
 };
 
-export function generateIndexSource(params: generateTypeScriptIndexMapSourceParams) {
+export function generateIndexSource(params: GenerateTypeScriptIndexMapSourceParams) {
   return (index: ToolkitIndex) => {
     const indexMap = generateTypeScriptIndexMapSource(params)(index);
     const toolkitUnionType = generateToolkitUnionType(index);
@@ -57,7 +58,7 @@ ${toolsByToolkitType}
 /**
  * Generates a list of Python source files that should be written to disk by the caller.
  */
-export function generateTypeScriptIndexMapSource(params: generateTypeScriptIndexMapSourceParams) {
+export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndexMapSourceParams) {
   return (index: ToolkitIndex): string => {
     const indexMapEntries = pipe(
       index,
@@ -74,7 +75,9 @@ export function generateTypeScriptIndexMapSource(params: generateTypeScriptIndex
         break;
       }
 
-      indexMapFile.addImport(ts.moduleImport(`./${value.slug}.ts`).named(toolkitName));
+      indexMapFile.addImport(
+        ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName)
+      );
     }
 
     indexMapFile.add(
