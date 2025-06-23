@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "test": "bun test",
     "start": "bun run src/index.ts"
   },

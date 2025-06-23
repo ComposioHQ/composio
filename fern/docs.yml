@@ -175,12 +175,6 @@ navigation:
     icon: rocket
     skip-slug: true
     contents:
-    - page: Hello World
-      path: pages/dist/examples/hello-world.mdx
-      slug: examples/hello-world
-    - page: Sample Script
-      path: pages/dist/examples/sample-script.mdx
-      slug: examples/sample-script
     - page: Basic Hono Server
       path: pages/dist/examples/sample-webserver/sample-webserver.mdx
       slug: examples/sample-webserver
@@ -199,7 +193,7 @@ navigation:
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
   - section: Behind the curtain
-    icon: person-booth 
+    icon: person-booth
     skip-slug: true
     contents:
     - page: Tool Generator
@@ -207,7 +201,7 @@ navigation:
       slug: examples/tool-generator
 - tab: providers
   layout:
-  - section: Providers
+  - section: Supported Providers
     icon: code
     contents:
     - page: OpenAI Provider
@@ -220,20 +214,47 @@ navigation:
       path: pages/dist/providers/crewai.mdx
     - page: Vercel AI SDK Provider
       path: pages/dist/providers/vercel.mdx
-    - page: Google ADK Provider
-      path: pages/dist/providers/google-adk.mdx
     - page: OpenAI Agents Provider
       path: pages/dist/providers/openai-agents.mdx
     - page: Mastra Provider
       path: pages/dist/providers/mastra.mdx
-    - page: Custom Provider
-      path: pages/dist/providers/custom.mdx
+  - section: Writing your own provider
+    skip-slug: true
+    icon: code
+    contents:
+    - page: TypeScript
+      path: pages/dist/providers/ts-custom.mdx
+      slug: providers/custom/typescript
+    - page: Python
+      path: pages/dist/providers/py-custom.mdx
+      slug: providers/custom/python
 - tab: tools
   layout:
   - section: Tool
     contents:
     - page: Introduction
       path: tools/introduction.mdx
+  - section: Important
+    contents:
+    - page: Github
+      slug: tools/github
+      path: tools/github.mdx
+    - page: Gmail
+      slug: tools/gmail
+      path: tools/gmail.mdx
+    - page: Notion
+      slug: tools/notion
+      path: tools/notion.mdx
+  - section: Scheduling & Booking
+    contents:
+    - page: Googlecalendar
+      slug: tools/googlecalendar
+      path: tools/googlecalendar.mdx
+  - section: No Auth
+    contents:
+    - page: Composio
+      slug: tools/composio
+      path: tools/composio.mdx
 - tab: sdk-reference
   layout:
   - section: Python
@@ -270,8 +291,6 @@ navigation:
         path: pages/dist/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
       - page: ConnectedAccounts
         path: pages/dist/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
-      - page: ConnectionRequest
-        path: pages/dist/sdk/typescript/ConnectionRequest/classes/ConnectionRequest.mdx
       - page: CustomTools
         path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
 - tab: api-reference

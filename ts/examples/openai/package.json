@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
     "start:chat-completion": "bun src/chat-completions.ts",
     "start:assistant": "bun src/assistants.ts",
