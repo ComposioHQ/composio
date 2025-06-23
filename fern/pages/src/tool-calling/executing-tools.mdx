@@ -239,7 +239,7 @@ Composio SDK includes automatic file handling for tools that work with files. Wh
 
 ### File Upload
 
-When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs. Here's an example using Google Drive upload:
+When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs or a `File` object. Here's an example using Google Drive upload:
 
 <CodeGroup>
 ```typescript TypeScript maxLines=60 wordWrap
@@ -254,7 +254,7 @@ const composio = new Composio({
 const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   userId: 'default',
   arguments: {
-    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path
+    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path or URL or File object
   }
 });
 
