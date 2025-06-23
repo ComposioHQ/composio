@@ -162,6 +162,9 @@ navigation:
     - page: Introduction
       path: pages/dist/mcp/introduction.mdx
       slug: mcp-introduction
+    - page: Providers
+      path: pages/dist/mcp/providers.mdx
+      slug: mcp-providers
   - section: Resources
     icon: book
     skip-slug: true
