@@ -14,6 +14,7 @@ import {
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
+import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes } from 'src/models/trigger-types';
 
@@ -72,15 +73,16 @@ export const TestLayer = (input?: TestLiveInput) =>
     });
     const NodeProcessTest = Layer.succeed(NodeProcess, nodeProcessTest);
 
-    const MockConsoleTestLive = yield* MockConsole.make;
+    const _console = yield* MockConsole.effect;
 
     const layers = Layer.mergeAll(
-      Console.setConsole(MockConsoleTestLive),
+      Console.setConsole(_console),
       NodeProcessTest,
       CliConfigLive,
       ComposioSessionRepositoryTest,
       ComposioToolkitsRepositoryTest,
       EnvLangDetector.Default,
+      JsPackageManagerDetector.Default,
       BunFileSystem.layer,
       BunContext.layer,
       MockTerminal.layer,
@@ -88,13 +90,13 @@ export const TestLayer = (input?: TestLiveInput) =>
     );
 
     return layers;
-  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Layer.unwrapEffect);
+  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Layer.unwrapScoped);
 
 // Run @effect/vitest suite with TestLive layer
-export const runEffect =
-  (input?: TestLiveInput) =>
-  <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
-    Effect.provide(self, TestLayer(input)).pipe(Effect.runPromise);
+// export const runEffect =
+//   (input?: TestLiveInput) =>
+//   <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
+//     Effect.provide(self, TestLayer(input)).pipe(Effect.scoped, Effect.runPromise);
 
 function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
   return Effect.gen(function* () {

@@ -10,7 +10,7 @@ describe('CLI: composio generate', () => {
   )(it => {
     it.effect('[Given] a valid Python project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
-        const args = ['generate'];
+        const args = ['generate', '--output-dir', '.'];
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
@@ -26,7 +26,7 @@ describe('CLI: composio generate', () => {
   )(it => {
     it.effect('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
-        const args = ['generate'];
+        const args = ['generate', '--output-dir', '.'];
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');

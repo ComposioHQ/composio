@@ -13,7 +13,9 @@ export class EnvLangDetector extends Effect.Service<EnvLangDetector>()('services
     const fs = yield* FileSystem.FileSystem;
 
     return {
-      detectEnvLanguage: (cwd: string) =>
+      detectEnvLanguage: (
+        cwd: string
+      ): Effect.Effect<'TypeScript' | 'Python', EnvLangDetectorError, never> =>
         Effect.gen(function* () {
           const files = yield* pipe(
             fs.readDirectory(cwd),

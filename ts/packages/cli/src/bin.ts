@@ -14,6 +14,7 @@ import {
 } from 'src/services/composio-clients';
 import { NodeProcess } from 'src/services/node-process';
 import { EnvLangDetector } from './services/env-lang-detector';
+import { JsPackageManagerDetector } from './services/js-package-manager-detector';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -42,6 +43,7 @@ const layers = Layer.mergeAll(
   ComposioSessionRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
   ComposioToolkitsRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
   EnvLangDetector.Default,
+  JsPackageManagerDetector.Default,
   BunContext.layer,
   BunFileSystem.layer
 );

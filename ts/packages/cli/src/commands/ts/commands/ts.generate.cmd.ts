@@ -1,12 +1,16 @@
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
-import { Console, Effect, Option } from 'effect';
+import { Console, Data, Effect, Option, Match } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
 import { generateTypeScriptSources } from 'src/generation/typescript/generate';
+import {
+  JsPackageManagerDetector,
+  type PackageManager,
+} from 'src/services/js-package-manager-detector';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -14,11 +18,10 @@ export const outputOpt = Options.optional(
   })
 ).pipe(
   Options.withAlias('o'),
-  Options.withDescription(
-    'Output directory for the generated Python type stubs (default: `./.generated/composio-py`)'
-  )
+  Options.withDescription('Output directory for the generated TypeScript type stubs.')
 );
 
+// TODO: rename to `--compact`
 export const singleFile = Options.boolean('single-file').pipe(
   Options.withDefault(false),
   Options.withDescription('Emit a single TypeScript file')
@@ -32,6 +35,70 @@ export const tsCmd$Generate = _tsCmd$Generate.pipe(
   Command.withHandler(generateTypescriptTypeStubs)
 );
 
+export class ComposioCorePkgNotFound extends Data.TaggedError('error/ComposioCorePkgNotFound')<{
+  readonly message: string;
+  readonly cause: string;
+  readonly fix?: string;
+}> {}
+
+function findComposioCoreGeneratedPath(cwd: string) {
+  return Effect.gen(function* () {
+    /**
+     * Returns a `ComposioCorePkgNotFound` error with the given message and cause.
+     * It lazily identifies the package manager used by the user to tell them how to install `@composio/core`.
+     */
+    const onError = (message: string) => (e: Error | string) =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug('Identifying JS package manager...');
+        const pkgManagerDetector = yield* JsPackageManagerDetector;
+        const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
+          Effect.andThen(pkgManager => pkgManager),
+          Effect.tapError(e => Effect.logError(e)),
+          Effect.catchAll(() => Effect.succeed('npm' as PackageManager))
+        );
+
+        yield* Effect.logDebug({ pkgManager });
+
+        const installCmd = Match.value(pkgManager).pipe(
+          Match.when('pnpm', () => 'pnpm add'),
+          Match.when('bun', () => 'bun add'),
+          Match.when('yarn', () => 'yarn add'),
+          Match.when('npm', () => 'npm install -S'),
+          Match.exhaustive
+        );
+
+        const fix = `Install @composio/core with \`${installCmd} @composio/core\`, or specify an output directory using \`--output-dir\``;
+
+        return new ComposioCorePkgNotFound({
+          cause: e instanceof Error ? e.message : e,
+          fix,
+          message,
+        });
+      }) satisfies Effect.Effect<ComposioCorePkgNotFound, never, JsPackageManagerDetector>;
+
+    const fs = yield* FileSystem.FileSystem;
+
+    // First, try to find @composio/core in node_modules
+    const nodeModulesPath = path.join(cwd, 'node_modules', '@composio', 'core');
+    const nodeModulesExists = yield* fs
+      .exists(nodeModulesPath)
+      .pipe(
+        Effect.catchAll(e =>
+          Effect.flip(onError('@composio/core not readable in `node_modules`')(e))
+        )
+      );
+
+    yield* Effect.log({ nodeModulesExists });
+
+    if (nodeModulesExists) {
+      return path.join(nodeModulesPath, 'generated');
+    }
+
+    const err = yield* onError('@composio/core not found')('@composio/core not installed');
+    return yield* Effect.fail(err);
+  }) satisfies Effect.Effect<string, ComposioCorePkgNotFound, unknown>;
+}
+
 export function generateTypescriptTypeStubs({
   outputOpt,
   singleFile,
@@ -39,12 +106,18 @@ export function generateTypescriptTypeStubs({
   return Effect.gen(function* () {
     const process = yield* NodeProcess;
     const cwd = process.cwd;
-
     const fs = yield* FileSystem.FileSystem;
 
-    const outputDir = outputOpt.pipe(
-      Option.getOrElse(() => path.join(cwd, '.generated', 'composio-ts'))
+    yield* Effect.log({ cwd });
+
+    // Determine output directory
+    const outputDir = yield* outputOpt.pipe(
+      Option.match({
+        onNone: () => findComposioCoreGeneratedPath(cwd),
+        onSome: dir => Effect.succeed(dir),
+      })
     );
+
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
     yield* Console.log('Fetching latest data from Composio API...');
@@ -70,6 +143,16 @@ export function generateTypescriptTypeStubs({
 
     yield* Effect.all(sources.map(([filePath, content]) => fs.writeFileString(filePath, content)));
 
-    return yield* Console.log('✅ Type stubs generated successfully.');
+    // If we generated to @composio/core/generated, log the import path
+    if (
+      outputDir.includes('node_modules/@composio/core/generated') ||
+      outputDir.includes('@composio/core/generated')
+    ) {
+      yield* Console.log('✅ Type stubs generated successfully.');
+      yield* Console.log('You can now import generated types from "@composio/core/generated"');
+    } else {
+      yield* Console.log('✅ Type stubs generated successfully.');
+      yield* Console.log(`Generated files are available at: ${outputDir}`);
+    }
   });
 }
