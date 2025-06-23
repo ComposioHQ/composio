@@ -5,10 +5,13 @@ import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
 
-const readFileContent = async (path: string): Promise<{ content: string; mimeType: string }> => {
+const readFileContent = async (
+  path: string
+): Promise<{ fileName: string; content: string; mimeType: string }> => {
   try {
     const content = require('fs').readFileSync(path);
     return {
+      fileName: path,
       content: content.toString('base64'),
       mimeType: 'application/octet-stream',
     };
@@ -19,7 +22,7 @@ const readFileContent = async (path: string): Promise<{ content: string; mimeTyp
 
 const readFileContentFromURL = async (
   path: string
-): Promise<{ content: string; mimeType: string }> => {
+): Promise<{ fileName: string; content: string; mimeType: string }> => {
   const response = await fetch(path);
   if (!response.ok) {
     throw new Error(`Failed to fetch file: ${response.statusText}`);
@@ -30,6 +33,7 @@ const readFileContentFromURL = async (
   return {
     content: content.toString('base64'),
     mimeType,
+    fileName: path,
   };
 };
 
@@ -77,22 +81,47 @@ const uploadFileToS3 = async (
   return key;
 };
 
-export const getFileDataAfterUploadingToS3 = async ({
-  path,
-  toolSlug,
-  toolkitSlug,
-  client,
-}: {
-  path: string;
-  toolSlug: string;
-  toolkitSlug: string;
-  client: ComposioClient;
-}): Promise<FileUploadData> => {
-  const isURL = path.startsWith('http');
-  const fileData = isURL ? await readFileContentFromURL(path) : await readFileContent(path);
-  logger.debug(`Uploading file to S3: ${path}`);
+const readFile = async (
+  file: File | string
+): Promise<{ fileName: string; content: string; mimeType: string }> => {
+  if (file instanceof File) {
+    // if file is a File, read the content from the file
+    const content = await file.arrayBuffer();
+    return {
+      fileName: file.name,
+      content: Buffer.from(content).toString('base64'),
+      mimeType: file.type,
+    };
+  } else if (typeof file === 'string') {
+    if (file.startsWith('http')) {
+      return await readFileContentFromURL(file);
+    } else {
+      return await readFileContent(file);
+    }
+  }
+  throw new Error('Invalid file type');
+};
+
+export const getFileDataAfterUploadingToS3 = async (
+  file: File | string,
+  {
+    toolSlug,
+    toolkitSlug,
+    client,
+  }: {
+    toolSlug: string;
+    toolkitSlug: string;
+    client: ComposioClient;
+  }
+): Promise<FileUploadData> => {
+  if (!file) {
+    throw new Error('Either path or blob must be provided');
+  }
+
+  const fileData = await readFile(file);
+  logger.debug(`Uploading file to S3...`);
   const s3key = await uploadFileToS3(
-    pathModule.basename(path) || `${toolSlug}_${Date.now()}`,
+    pathModule.basename(fileData.fileName),
     fileData.content,
     toolSlug,
     toolkitSlug,
@@ -102,8 +131,7 @@ export const getFileDataAfterUploadingToS3 = async ({
 
   logger.debug(`Done! File uploaded to S3: ${s3key}`, JSON.stringify(fileData, null, 2));
   return {
-    name:
-      pathModule.basename(path) || `${toolSlug}_${Date.now()}.${fileData.mimeType.split('/')[1]}`,
+    name: fileData.fileName,
     mimetype: fileData.mimeType,
     s3key: s3key,
   };
@@ -206,6 +234,7 @@ export const saveFile = (file: string, content: string | Buffer, isTempFile: boo
 
     return filePath;
   } catch (_error) {
+    logger.debug(`Error saving file: ${_error}`);
     return null;
   }
 };

@@ -33,6 +33,12 @@ async function main() {
     console.log(`✅ Fetched ${tools.length} tools`);
 
     console.log('🔄 Creating message with Anthropic...');
+    const messages: Anthropic.Messages.MessageParam[] = [
+      {
+        role: 'user',
+        content: "Fetch the details of the user 'pg' from Hacker News and summarize their profile",
+      },
+    ];
     /**
      * Create a message with Anthropic that may use tools
      */
@@ -40,13 +46,11 @@ async function main() {
       model: 'claude-3-7-sonnet-latest',
       max_tokens: 1024,
       tools: tools,
-      messages: [
-        {
-          role: 'user',
-          content:
-            "Fetch the details of the user 'pg' from Hacker News and summarize their profile",
-        },
-      ],
+      messages,
+    });
+    messages.push({
+      role: 'assistant',
+      content: message.content,
     });
 
     console.log('✅ Message created, processing tool calls if any...');
@@ -63,8 +67,9 @@ async function main() {
        * Execute the tool calls using Composio
        */
       const toolResults = await composio.provider.handleToolCalls('default', message);
+      messages.push(...toolResults);
 
-      console.log('✅ Tool results:', toolResults);
+      console.log('✅ Tool results:', messages);
 
       /**
        * Send a follow-up message with the tool results
@@ -72,33 +77,7 @@ async function main() {
       const followUpMessage = await anthropic.messages.create({
         model: 'claude-3-7-sonnet-latest',
         max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content:
-              "Fetch the details of the user 'pg' from Hacker News and summarize their profile",
-          },
-          {
-            role: 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: "I'll fetch the details for the Hacker News user 'pg'.",
-              },
-              ...toolUseBlocks,
-            ],
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'tool_result',
-                tool_use_id: toolUseBlocks[0].id,
-                content: toolResults[0],
-              },
-            ],
-          },
-        ],
+        messages,
       });
 
       /**

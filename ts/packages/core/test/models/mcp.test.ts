@@ -563,10 +563,10 @@ describe('MCP', () => {
       mockClient.mcp.generate.url.mockResolvedValue(mockGenerateUrlResponse);
 
       const params = {
-        user_ids: ['user123'],
-        connected_account_ids: ['account456'],
-        mcp_server_id: 'mcp_123',
-        managed_auth_by_composio: true,
+        userIds: ['user123'],
+        connectedAccountIds: ['account456'],
+        mcpServerId: 'mcp_123',
+        composioManagedAuth: true,
       };
 
       const result = await mcp.generateUrl(params);
@@ -590,8 +590,8 @@ describe('MCP', () => {
 
     it('should validate parameters', async () => {
       const invalidParams = {
-        user_ids: 'not-an-array' as unknown as string[], // Should be an array
-        mcp_server_id: 'mcp_123',
+        userIds: 'not-an-array' as unknown as string[], // Should be an array
+        mcpServerId: 'mcp_123',
       };
 
       await expect(mcp.generateUrl(invalidParams)).rejects.toThrow(ValidationError);
@@ -602,8 +602,8 @@ describe('MCP', () => {
 
       await expect(
         mcp.generateUrl({
-          mcp_server_id: 'mcp_123',
-          user_ids: ['user123'],
+          mcpServerId: 'mcp_123',
+          userIds: ['user123'],
         })
       ).rejects.toThrow('Failed to generate MCP URL');
     });

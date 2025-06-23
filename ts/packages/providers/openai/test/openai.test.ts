@@ -279,7 +279,9 @@ describe('OpenAIProvider', () => {
         undefined,
         undefined
       );
-      expect(results).toEqual([JSON.stringify({ result: 'success' })]);
+      expect(results).toEqual([
+        { role: 'tool', tool_call_id: 'call-123', content: JSON.stringify({ result: 'success' }) },
+      ]);
     });
 
     it('should handle multiple tool calls', async () => {
@@ -357,8 +359,16 @@ describe('OpenAIProvider', () => {
         undefined
       );
       expect(results).toEqual([
-        JSON.stringify({ result: 'success-1' }),
-        JSON.stringify({ result: 'success-2' }),
+        {
+          role: 'tool',
+          tool_call_id: 'call-123',
+          content: JSON.stringify({ result: 'success-1' }),
+        },
+        {
+          role: 'tool',
+          tool_call_id: 'call-456',
+          content: JSON.stringify({ result: 'success-2' }),
+        },
       ]);
     });
   });

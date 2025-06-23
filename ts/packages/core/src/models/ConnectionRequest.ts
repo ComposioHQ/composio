@@ -1,5 +1,5 @@
 /**
- * @fileoverview Connection request class for Composio SDK, used to manage an initiated connection request.
+ * @fileoverview Connection request function for Composio SDK, used to manage an initiated connection request.
  *
  * @author Musthaq Ahamad <musthaq@composio.dev>
  * @date 2025-05-05
@@ -18,24 +18,31 @@ import {
 import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccountsErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
-export class ConnectionRequest {
-  private client: ComposioClient;
-  public id: string;
-  public status?: ConnectedAccountStatus;
-  public redirectUrl?: string | null;
+import { ConnectionRequest, ConnectionRequestState } from '../types/connectionRequest.types';
 
-  constructor(
-    client: ComposioClient,
-    connectedAccountId: string,
-    status?: ConnectedAccountStatus,
-    redirectUrl?: string | null
-  ) {
-    this.client = client;
-    this.id = connectedAccountId;
-    this.status = status || ConnectedAccountStatuses.INITIATED;
-    this.redirectUrl = redirectUrl;
-    telemetry.instrument(this);
-  }
+/**
+ * Creates a connection request object with methods to manage the connection lifecycle.
+ *
+ * @param {ComposioClient} client - The Composio client instance
+ * @param {string} connectedAccountId - The ID of the connected account
+ * @param {ConnectedAccountStatus} [status] - Initial status of the connection
+ * @param {string | null} [redirectUrl] - OAuth redirect URL if applicable
+ * @returns {ConnectionRequestState & { waitForConnection: (timeout?: number) => Promise<ConnectedAccountRetrieveResponse> }}
+ * Connection request object with state and methods
+ */
+export function createConnectionRequest(
+  client: ComposioClient,
+  connectedAccountId: string,
+  status?: ConnectedAccountStatus,
+  redirectUrl?: string | null
+): ConnectionRequest {
+  const state: ConnectionRequestState = {
+    id: connectedAccountId,
+    status: status || ConnectedAccountStatuses.INITIATED,
+    redirectUrl,
+  };
+
+  telemetry.instrument(state);
 
   /**
    * Waits for the connection request to complete and become active.
@@ -63,20 +70,22 @@ export class ConnectionRequest {
    * const connection = await connectionRequest.waitForConnection(120000);
    * ```
    */
-  async waitForConnection(timeout: number = 60000): Promise<ConnectedAccountRetrieveResponse> {
+  async function waitForConnection(
+    timeout: number = 60000
+  ): Promise<ConnectedAccountRetrieveResponse> {
     try {
-      const response = await this.client.connectedAccounts.retrieve(this.id);
+      const response = await client.connectedAccounts.retrieve(state.id);
       if (response.status === ConnectedAccountStatuses.ACTIVE) {
-        this.status = ConnectedAccountStatuses.ACTIVE;
+        state.status = ConnectedAccountStatuses.ACTIVE;
         return transformConnectedAccountResponse(response);
       }
     } catch (error) {
       if (error instanceof ComposioClient.NotFoundError) {
         throw new ComposioConnectedAccountNotFoundError(
-          `Connected account with id ${this.id} not found`,
+          `Connected account with id ${state.id} not found`,
           {
             meta: {
-              connectedAccountId: this.id,
+              connectedAccountId: state.id,
             },
           }
         );
@@ -95,9 +104,9 @@ export class ConnectionRequest {
 
     while (Date.now() - start < timeout) {
       try {
-        const response = await this.client.connectedAccounts.retrieve(this.id);
+        const response = await client.connectedAccounts.retrieve(state.id);
 
-        this.status = response.status;
+        state.status = response.status;
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
           return transformConnectedAccountResponse(response);
         }
@@ -107,7 +116,7 @@ export class ConnectionRequest {
             `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
             {
               meta: {
-                connectedAccountId: this.id,
+                connectedAccountId: state.id,
                 status: response.status,
                 statusReason: response.status_reason,
               },
@@ -121,37 +130,13 @@ export class ConnectionRequest {
       }
     }
 
-    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${this.id}`);
+    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${state.id}`);
   }
 
-  /**
-   * Returns a JSON-serializable representation of the connection request
-   * Excludes the private client property to avoid cyclic reference issues
-   */
-  toJSON(): Record<string, unknown> {
-    return {
-      id: this.id,
-      status: this.status,
-      redirectUrl: this.redirectUrl,
-    };
-  }
-
-  /**
-   * Returns a string representation of the connection request
-   */
-  toString(): string {
-    return JSON.stringify(this.toJSON(), null, 2);
-  }
-}
-
-export const connectionRequest = (client: ComposioClient) => {
   return {
-    waitForConnection: async (connectedAccountId: string, timeout: number = 60000) => {
-      return new ConnectionRequest(
-        client,
-        connectedAccountId,
-        ConnectedAccountStatuses.INITIATED
-      ).waitForConnection(timeout);
-    },
+    ...state,
+    waitForConnection,
+    toJSON: () => ({ ...state }),
+    toString: () => JSON.stringify(state, null, 2),
   };
-};
+}
