@@ -162,6 +162,9 @@ navigation:
     - page: Introduction
       path: pages/dist/mcp/introduction.mdx
       slug: mcp-introduction
+    - page: Partner Program
+      path: pages/dist/mcp/partner-api.mdx
+      slug: mcp-partner-api
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
