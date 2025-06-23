@@ -67,6 +67,7 @@ if (require.main === module) {
   runWithArgs.pipe(
     Effect.provide(layers),
     Effect.provide(BunContext.layer),
+    Effect.scoped,
     Effect.withSpan('composio-cli', {
       attributes: {
         name: constants.APP_NAME,

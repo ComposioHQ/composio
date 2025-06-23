@@ -90,7 +90,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     );
 
     return layers;
-  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Layer.unwrapScoped);
+  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Effect.scoped, Layer.unwrapEffect);
 
 // Run @effect/vitest suite with TestLive layer
 // export const runEffect =

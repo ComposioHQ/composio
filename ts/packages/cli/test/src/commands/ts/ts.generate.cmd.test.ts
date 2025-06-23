@@ -149,7 +149,7 @@ describe('CLI: composio ts generate', () => {
             })
         );
 
-        it.effect(
+        it.scoped(
           '[Given] --output-dir [Then] it generates type stubs relative to the given output directory',
           () =>
             Effect.gen(function* () {
@@ -241,7 +241,7 @@ describe('CLI: composio ts generate', () => {
             })
         );
 
-        it.effect('[Given] --compact [Then] it generates type stubs in a single file', () =>
+        it.scoped('[Given] --compact [Then] it generates type stubs in a single file', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -268,7 +268,7 @@ describe('CLI: composio ts generate', () => {
           })
         );
 
-        it.effect('[Given] --transpiled [Then] it generates both .ts and .js files', () =>
+        it.scoped('[Given] --transpiled [Then] it generates both .ts and .js files', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -299,7 +299,7 @@ describe('CLI: composio ts generate', () => {
           })
         );
 
-        it.effect('[Given] no `--output-dir` [Then] it compiles by default', () =>
+        it.scoped('[Given] no `--output-dir` [Then] it compiles by default', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -329,7 +329,7 @@ describe('CLI: composio ts generate', () => {
           })
         );
 
-        it.effect(
+        it.scoped(
           '[Given] `--output-dir` with no `--transpiled` [Then] it does not generate .js files',
           () =>
             Effect.gen(function* () {
@@ -354,7 +354,7 @@ describe('CLI: composio ts generate', () => {
             })
         );
 
-        it.effect('[Given] `--compact` [Then] it generates in the correct location', () =>
+        it.scoped('[Given] `--compact` [Then] it generates in the correct location', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -418,7 +418,7 @@ describe('CLI: composio ts generate', () => {
           toolkitsData: appClientData,
         })
       )(it => {
-        it.effect('[Given] no custom output dir [Then] [Then] it raises an error', () =>
+        it.scoped('[Given] no custom output dir [Then] [Then] it raises an error', () =>
           Effect.gen(function* () {
             const args = ['ts', 'generate'];
 

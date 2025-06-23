@@ -8,7 +8,7 @@ describe('CLI: composio generate', () => {
       fixture: 'python-project',
     })
   )(it => {
-    it.effect('[Given] a valid Python project in cwd [Then] it detects its language', () =>
+    it.scoped('[Given] a valid Python project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
         const args = ['generate', '--output-dir', '.'];
         yield* cli(args);
@@ -24,7 +24,7 @@ describe('CLI: composio generate', () => {
       fixture: 'typescript-project',
     })
   )(it => {
-    it.effect('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
+    it.scoped('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
         const args = ['generate', '--output-dir', '.'];
         yield* cli(args);

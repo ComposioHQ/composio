@@ -25,7 +25,7 @@
 
 import * as ts from '@composio/ts-builders';
 import { pipe, Record, Array as Arr } from 'effect';
-import type { ToolkitIndex } from '../create-toolkit-index';
+import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 
 type GenerateTypeScriptIndexMapSourceParams = {
   banner: string;

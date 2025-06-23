@@ -10,7 +10,7 @@ describe('JsPackageManagerDetector', () => {
   const testLayer = Layer.provideMerge(JsPackageManagerDetector.Default, BunFileSystem.layer);
 
   layer(testLayer)(it => {
-    it.effect('should detect pnpm from lock file', () =>
+    it.scoped('should detect pnpm from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -24,7 +24,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.effect('should detect bun from lock file', () =>
+    it.scoped('should detect bun from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -38,7 +38,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.effect('should detect yarn from lock file', () =>
+    it.scoped('should detect yarn from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -52,7 +52,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.effect('should detect npm from lock file', () =>
+    it.scoped('should detect npm from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -66,7 +66,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.effect('should detect from package.json if no lock file is present', () =>
+    it.scoped('should detect from package.json if no lock file is present', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -83,7 +83,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.effect('should detect recursively from parent directory', () =>
+    it.scoped('should detect recursively from parent directory', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;

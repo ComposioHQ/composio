@@ -6,7 +6,7 @@ import { sanitize } from 'test/__utils__/sanitize';
 
 describe('CLI: composio', () => {
   layer(TestLive())(it => {
-    it.effect('[Given] unknown argument [Then] print error message', () =>
+    it.scoped('[Given] unknown argument [Then] print error message', () =>
       Effect.gen(function* () {
         const args = ['--bar'];
 
@@ -22,7 +22,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.effect('[Given] --help flag [Then] prints help message', () =>
+    it.scoped('[Given] --help flag [Then] prints help message', () =>
       Effect.gen(function* () {
         const args = ['--help'];
         yield* cli(args);
@@ -80,7 +80,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.effect("[Given] --version flag [Then] prints composio's version from package.json", () =>
+    it.scoped("[Given] --version flag [Then] prints composio's version from package.json", () =>
       Effect.gen(function* () {
         const args = ['--version'];
         yield* cli(args);
@@ -92,7 +92,7 @@ describe('CLI: composio', () => {
   });
 
   // layer(TestLive())(it => {
-  //   it.effect('[Pressing] CTRL+C [Then] quit wizard mode', () =>
+  //   it.scoped('[Pressing] CTRL+C [Then] quit wizard mode', () =>
   //     Effect.gen(function* () {
   //       const args = ['--wizard'];
 

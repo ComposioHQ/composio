@@ -26,24 +26,17 @@
 import * as ts from '@composio/ts-builders';
 import { pipe, Record } from 'effect';
 import type { ToolkitName } from 'src/models/toolkits';
-import type { ToolkitIndex, ToolkitIndexData } from '../create-toolkit-index';
-
-type SourceFile = [filename: string, content: string];
-
-type GenerateTypeScriptToolkitSourcesInput = {
-  banner: string;
-  emitSingleFile: boolean;
-  outputDir: string;
-};
+import type { ToolkitIndex, ToolkitIndexData } from 'src/generation/create-toolkit-index';
+import type { SourceFile } from 'src/generation/types';
 
 /**
- * Generates a list of Python source files that should be written to disk by the caller.
+ * Generates a list of TypeScript source files that should be written to disk by the caller.
  */
-export function generateTypeScriptToolkitSources(params: GenerateTypeScriptToolkitSourcesInput) {
+export function generateTypeScriptToolkitSources(banner: string) {
   return (index: ToolkitIndex): Array<SourceFile> => {
     const toolkitSources = pipe(
       index,
-      Record.mapEntries(generateTypeScriptToolkitSource(params)),
+      Record.mapEntries(generateTypeScriptToolkitSource(banner)),
       Record.toEntries
     );
 
@@ -51,7 +44,7 @@ export function generateTypeScriptToolkitSources(params: GenerateTypeScriptToolk
   };
 }
 
-function generateTypeScriptToolkitSource(_params: GenerateTypeScriptToolkitSourcesInput) {
+function generateTypeScriptToolkitSource(_banner: string) {
   return (
     { slug, tools, triggerTypes }: ToolkitIndexData,
     toolkitName: ToolkitName
