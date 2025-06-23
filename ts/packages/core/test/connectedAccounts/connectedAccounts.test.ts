@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient from '@composio/client';
-import { ConnectionRequest } from '../../src/models/ConnectionRequest';
+import { ConnectionRequest } from '../../src/types/connectionRequest.types';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
 import { ComposioConnectedAccountNotFoundError } from '../../src/errors';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
@@ -116,7 +116,9 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
     it('should work without optional parameters', async () => {
@@ -156,7 +158,9 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
     it('should throw ComposioMultipleConnectedAccountsError when multiple accounts exist and allowMultiple is false', async () => {
@@ -292,7 +296,9 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
   });
 
