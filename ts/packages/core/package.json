@@ -14,11 +14,16 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs"
+    },
+    "./generated": {
+      "import": "./generated/index.js",
+      "types": "./generated/index.d.ts"
     }
   },
   "files": [
     "README.md",
-    "dist"
+    "dist",
+    "generated"
   ],
   "scripts": {
     "build": "tsup",
