@@ -67,6 +67,7 @@ export const ConnectedAccountAuthConfigSchema = z.object({
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
 });
+export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConfigSchema>;
 
 export const ConnectedAccountRetrieveResponseSchema = z.object({
   id: z.string(),
@@ -84,8 +85,7 @@ export const ConnectedAccountRetrieveResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-// for some reason the list item doesn't have params
-export const ConnectedAccountListResponseItemSchema = ConnectedAccountAuthConfigSchema;
+
 export type ConnectedAccountRetrieveResponse = z.infer<
   typeof ConnectedAccountRetrieveResponseSchema
 >;

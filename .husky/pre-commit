@@ -1,8 +1,8 @@
-#!/usr/bin/env sh
+# #!/usr/bin/env sh
 
 # Uncomment tools in docs.yml before commit to avoid issues
-echo "Uncommenting tools in docs.yml before commit..."
-(cd fern && uv run python generators/tool_doc_generator/pre_commit_tool_doc.py)
+# echo "Uncommenting tools in docs.yml before commit..."
+# (cd fern && uv run python generators/tool_doc_generator/pre_commit_tool_doc.py)
 
 # Run existing lint-staged
 pnpm lint-staged

@@ -132,7 +132,7 @@ const outputs = await openaiProvider.handleToolCalls('user123', chatCompletion);
 - `options` (ExecuteToolFnOptions): Optional parameters for tool execution
 - `modifiers` (ExecuteToolModifiers): Optional modifiers for request/response transformation
 
-**Returns:** Promise<string[]> - The results of the tool calls
+**Returns:** Promise<OpenAI.ChatCompletionToolMessageParam[]> - The results of the tool calls
 
 #### handleAssistantMessage(userId, run, options?, modifiers?)
 

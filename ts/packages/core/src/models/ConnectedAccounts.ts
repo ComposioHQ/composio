@@ -21,7 +21,8 @@ import {
   ConnectedAccountListResponse,
   ConnectedAccountListResponseSchema,
 } from '../types/connectedAccounts.types';
-import { ConnectionRequest } from './ConnectionRequest';
+import { ConnectionRequest } from '../types/connectionRequest.types';
+import { createConnectionRequest } from './ConnectionRequest';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
@@ -187,7 +188,7 @@ export class ConnectedAccounts {
         ? response.connectionData.val.redirectUrl
         : null;
 
-    return new ConnectionRequest(
+    return createConnectionRequest(
       this.client,
       response.id,
       response.connectionData.val.status,
@@ -221,7 +222,7 @@ export class ConnectedAccounts {
     connectedAccountId: string,
     timeout: number = 60000
   ): Promise<ConnectedAccountRetrieveResponse> {
-    const connectionRequest = new ConnectionRequest(this.client, connectedAccountId);
+    const connectionRequest = createConnectionRequest(this.client, connectedAccountId);
     return connectionRequest.waitForConnection(timeout);
   }
 

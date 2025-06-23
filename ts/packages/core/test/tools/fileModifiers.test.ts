@@ -111,8 +111,7 @@ describe('FileToolModifier', () => {
         params,
       });
 
-      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith({
-        path: '/path/to/file.txt',
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/file.txt', {
         toolSlug: 'test-tool',
         toolkitSlug: 'test-toolkit',
         client: mockClient,
@@ -140,6 +139,38 @@ describe('FileToolModifier', () => {
           params,
         })
       ).rejects.toThrow(ComposioFileUploadError);
+    });
+
+    it('should handle File object for file_uploadable parameters', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const fileObject = new File(['test content'], 'file.txt', { type: 'text/plain' });
+      const params = {
+        arguments: {
+          file: fileObject,
+          text: 'some text',
+        },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith(fileObject, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.file).toEqual(mockFileData);
+      expect(result.arguments?.text).toBe('some text');
     });
   });
 

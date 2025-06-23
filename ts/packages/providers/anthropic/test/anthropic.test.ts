@@ -240,7 +240,19 @@ describe('AnthropicProvider', () => {
         undefined,
         undefined
       );
-      expect(results).toEqual([JSON.stringify({ result: 'success' })]);
+      expect(results).toEqual([
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tu_123',
+              content: JSON.stringify({ result: 'success' }),
+              cache_control: undefined,
+            },
+          ],
+        },
+      ]);
     });
 
     it('should handle multiple tool calls', async () => {
@@ -297,8 +309,23 @@ describe('AnthropicProvider', () => {
         undefined
       );
       expect(results).toEqual([
-        JSON.stringify({ result: 'success-1' }),
-        JSON.stringify({ result: 'success-2' }),
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tu_123',
+              content: JSON.stringify({ result: 'success-1' }),
+              cache_control: undefined,
+            },
+            {
+              type: 'tool_result',
+              tool_use_id: 'tu_456',
+              content: JSON.stringify({ result: 'success-2' }),
+              cache_control: undefined,
+            },
+          ],
+        },
       ]);
     });
 
