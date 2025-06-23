@@ -74,7 +74,7 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
 </Steps>
 
 <Tip>
-  Currently, the default transport is `sse`. Support for `transport=http-stream` will be available soon.
+  SSE support will be deprecated soon. To use the latest protocol, if you are using `/sse` or the `transport=sse` query parameter, change your endpoint to use `/mcp` and remove the `transport` query parameter.
 </Tip>
 
 ### Configuring authentication
