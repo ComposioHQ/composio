@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.33
+
+### Patch Changes
+
+- Fix types and exports
+
 ## 0.1.32
 
 ### Patch Changes

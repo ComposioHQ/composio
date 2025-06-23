@@ -1,5 +1,13 @@
 # @composio/google
 
+## 0.1.33
+
+### Patch Changes
+
+- Fix types and exports
+- Updated dependencies
+  - @composio/core@0.1.33
+
 ## 0.1.32
 
 ### Patch Changes
