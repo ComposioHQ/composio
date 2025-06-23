@@ -123,11 +123,7 @@ if (completion.choices[0].message.tool_calls) {
       { role: 'system', content: 'You are a helpful assistant with GitHub tools.' },
       { role: 'user', content: 'Find information about the Composio SDK repository' },
       completion.choices[0].message,
-      {
-        role: 'tool',
-        content: toolOutputs[0],
-        tool_call_id: completion.choices[0].message.tool_calls[0].id,
-      },
+      ...toolOutputs,
     ],
     tools,
   });
@@ -347,7 +343,7 @@ class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAi
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ): Promise<string[]>;
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]>;
 
   handleAssistantMessage(
     userId: string,

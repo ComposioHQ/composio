@@ -229,7 +229,7 @@ const result = await composio.provider.executeToolCall(
 );
 ```
 
-##### `handleToolCalls(userId: string, message: Message, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string[]>`
+##### `handleToolCalls(userId: string, message: Message, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<Anthropic.Messages.MessageParam[]>`
 
 Processes and executes all tool calls found in an Anthropic message response. This method automatically extracts tool calls from the message content, executes them, and returns their results.
 
@@ -245,7 +245,7 @@ Processes and executes all tool calls found in an Anthropic message response. Th
   - `afterExecute`: Transform response after execution
 
 **Returns:**
-Promise<string[]>: Array of JSON-stringified results from each tool execution
+Promise<Anthropic.Messages.MessageParam[]>: Tool execution results for the assistant message
 
 **Example:**
 
@@ -284,9 +284,9 @@ const results = await provider.handleToolCalls(
   }
 );
 
-// results will be an array of stringified JSON responses
+// results will be an array of tool execution responses
 // from each tool execution in the order they appeared
-// in the message content
+// this can be passed directly to LLM
 ```
 
 ## Contributing
