@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Files class for Composio SDK, used to manage files.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-06-23
+ * @module Files
+ */
 import ComposioClient from '@composio/client';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
 import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/fileUtils';
@@ -16,16 +23,15 @@ export class Files {
    * @returns The file data.
    */
   async upload({
-    filePath,
+    file,
     toolSlug,
     toolkitSlug,
   }: {
-    filePath: string;
+    file: File | string;
     toolSlug: string;
     toolkitSlug: string;
   }): Promise<FileUploadData> {
-    const fileData = await getFileDataAfterUploadingToS3({
-      path: filePath,
+    const fileData = await getFileDataAfterUploadingToS3(file, {
       toolSlug,
       toolkitSlug,
       client: this.client,

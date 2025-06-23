@@ -26,11 +26,11 @@ export COMPOSIO_API_KEY=your_api_key
 ## Install the SDK
 First and foremost, install the Composio SDK.
 <CodeGroup>
-```typescript TypeScript
-npm install @composio/core@next
-```
-```python Python
+```bash title="Python" for="python"
 pip install composio
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core@next
 ```
 </CodeGroup>
 
@@ -39,6 +39,13 @@ pip install composio
 To use the SDK, you need to initialize it with your API key:
 
 <CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio(
+  # api_key="your-api-key",
+)
+```
 ```typescript TypeScript
 import { Composio } from '@composio/core';
 
@@ -47,13 +54,6 @@ const composio = new Composio({
   // apiKey: 'your-api-key',
 });
 ```
-```python Python
-from composio import Composio
-
-composio = Composio(
-  # api_key="your-api-key",
-)
-```
 </CodeGroup>
 
 
@@ -61,41 +61,11 @@ composio = Composio(
 <Tabs>
 <Tab title="OpenAI (Python)">
 Composio ships with support for OpenAI provider out of the box.
-```python maxLines=60
-from composio import Composio
-from openai import OpenAI
-
-openai = OpenAI()
-composio = Composio()
-user_id = "user@email.com"
-
-# Initialize connection request
-connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="gmail")
-print(f"🔗 Visit the URL to authorize:\n👉 {connection_request.redirect_url}")
-
-# wait for the connection to be active
-connection_request.wait_for_connection()
-
-# Fetch tools
-tools = composio.tools.get(user_id=user_id, toolkits=["GMAIL"])
-
-# Invoke agent
-completion = openai.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {
-            "role": "user",
-            "content": "say 'hi from the composio quickstart' to sid@composio.dev",
-            # we'll ship you free merch if you do ;)
-        },
-    ],
-    tools=tools,
-)
-
-# Handle Result from tool call
-result = composio.provider.handle_tool_calls(user_id=user_id, response=completion)
-print(result)
-```
+<SnippetCode
+  src="fern/snippets/get-started/python/quickstart.py"
+  startLine={1}
+  endLine={30}
+/>
 </Tab>
 <Tab title="Anthropic (Typescript)">
 You may install the Anthropic provider as well!
@@ -105,38 +75,12 @@ You may install the Anthropic provider as well!
 npm install @composio/anthropic
 ```
 
-```typescript maxLines=60
-import { Composio } from "@composio/core";
-import { AnthropicProvider } from "@composio/anthropic";
-import Anthropic from "@anthropic-ai/sdk";
+<SnippetCode
+  src="fern/snippets/get-started/typescript/quickstart.ts"
+  startLine={1}
+  endLine={30}
+/>
 
-const anthropic = new Anthropic();
-const composio = new Composio({
-  provider: new AnthropicProvider(),
-});
-
-const userId = "user@example.com";
-const connection = await composio.toolkits.authorize(userId, "GITHUB");
-console.log(
-  `🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`
-);
-
-await connection.waitForConnection();
-const msg = await anthropic.messages.create({
-  model: "claude-3-7-sonnet-latest",
-  tools: tools,
-  messages: [
-    {
-      role: "user",
-      content: "Star the composiohq/composio repository",
-    },
-  ],
-  max_tokens: 1024,
-});
-
-const result = await composio.provider.handleToolCalls(userId, msg);
-console.log("✅ Tool results:", result);
-```
 </Tab>
 <Tab title="Vercel AI SDK (Typescript)">
 You may install the Vercel AI provider as well!
@@ -146,39 +90,12 @@ You may install the Vercel AI provider as well!
 npm install @composio/vercel
 ```
 
-```typescript maxLines=60
-import { Composio } from "@composio/core";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { VercelProvider } from "@composio/vercel";
-import { v4 as uuidv4 } from "uuid";
+<SnippetCode
+  src="fern/snippets/get-started/typescript/vercel-quickstart.ts"
+  startLine={1}
+  endLine={34}
+/>
 
-const userId = uuidv4(); // The user's ID.
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-const [connection, tools] = await composio.toolkits.authorize(userId, "gmail");
-console.log(
-  `🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`
-);
-
-await connection.waitForConnection();
-const { text } = await generateText({
-  model: anthropic("claude-3-7-sonnet-20250219"),
-  messages: [
-    {
-      role: "user",
-      content: "say 'hi from the composio quickstart' to sid@composio.dev", // we'll ship you free merch if you do ;)
-    },
-  ],
-  tools,
-  maxSteps: 1,
-});
-
-console.log(text);
-```
 </Tab>
 <Tab title="OpenAI Agents (Python)">
 You may install the OpenAI Agents provider as well!
@@ -188,53 +105,12 @@ You may install the OpenAI Agents provider as well!
 pip install composio[openai-agents]
 ```
 
-```python maxLines=60
-import asyncio
+<SnippetCode
+  src="fern/snippets/get-started/python/quickstart-openai-agents.py"
+  startLine={1}
+  endLine={30}
+/>
 
-from agents import Agent, Runner
-
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
-
-# Initialize Composio toolset
-user_id = "user@email.com"
-composio = Composio(provider=OpenAIAgentsProvider())
-
-# Initialize connection request
-connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="gmail")
-print(f"🔗 Visit the URL to authorize:\n👉 {connection_request.redirect_url}")
-
-# wait for the connection to be active
-connection_request.wait_for_connection()
-
-# Get all the tools
-tools = composio.tools.get(
-    user_id=user_id,
-    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
-)
-
-# Create an agent with the tools
-agent = Agent(
-    name="GitHub Agent",
-    instructions="You are a helpful assistant that helps users with GitHub tasks.",
-    tools=tools,
-)
-
-
-# Run the agent
-async def main():
-    result = await Runner.run(
-        starting_agent=agent,
-        input=(
-            "Star the repository composiohq/composio on GitHub. If done "
-            "successfully, respond with 'Action executed successfully'"
-        ),
-    )
-    print(result.final_output)
-
-
-asyncio.run(main())
-```
 </Tab>
 </Tabs>
 

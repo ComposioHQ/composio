@@ -15,69 +15,19 @@ This approach works consistently across all supported non-agent providers.
 To learn how to setup these providers, see [Providers](/providers).
 
 <CodeGroup>
-```typescript TypeScript (Anthropic) maxLines=60
-import { Composio } from "@composio/core";
-import { AnthropicProvider } from "@composio/anthropic";
-
-const userId = "user@acme.com"; // User's UUID
-
-const anthropic = new Anthropic();
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider(),
-});
-
-const tools = await composio.tools.get(userId, {
-  tools: ["GITHUB_GET_THE_ZEN_OF_GITHUB"],
-});
-
-const msg = await anthropic.messages.create({
-  model: "claude-3-7-sonnet-latest",
-  tools: tools,
-  messages: [
-    {
-      role: "user",
-      content: "gimme me some zen!!",
-    },
-  ],
-  max_tokens: 1024,
-});
-
-
-const result = await composio.provider.handleToolCalls(userId, msg);
-console.log(result);
-```
-
-```python Python (Google) maxLines=60
-import anthropic
-
-from composio import Composio
-from composio_anthropic import AnthropicProvider
-
-
-# Initialize tools.
-anthropic_client = anthropic.Anthropic()
-composio = Composio(provider=AnthropicProvider())
-
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", tools=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
-
-# Get response from the LLM
-response = anthropic_client.messages.create(
-    model="claude-3-opus-20240229",
-    max_tokens=1024,
-    tools=tools,
-    messages=[
-        {"role": "user", "content": "gimme me some zen"},
-    ],
-)
-
-# Execute the function calls.
-result = composio.provider.handle_tool_calls(user_id="default", response=response)
-print(result)
-```
+<SnippetCode
+  src="fern/snippets/tool-calling/python/exec-tool-completions.py"
+  startLine={1}
+  endLine={25}
+  title="Python (Google)"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
+  startLine={1}
+  endLine={30}
+  title="TypeScript (Anthropic)"
+/>
 </CodeGroup>
-
 
 ## Using Agentic Frameworks
 Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
@@ -88,76 +38,18 @@ Here, the tool execution is handled by the agentic framework. Composio makes sur
 </Tip>
 
 <CodeGroup>
-```typescript TypeScript (Vercel) maxLines=60 wordWrap
-import { Composio } from "@composio/core";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { VercelProvider } from "@composio/vercel";
-
-const userId = "0000";
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-const tools = await composio.tools.get(userId, {
-    toolkits: ["LINEAR"],
-    limit: 15,
-});
-
-const { text } = await generateText({
-  model: anthropic("claude-3-7-sonnet-20250219"),
-  messages: [
-    {
-      role: "user",
-      content:
-        "Fetch all my projects",
-    },
-  ],
-  tools,
-  maxSteps: 5,
-});
-
-console.log(text);
-```
-
-```python Python (OpenAI Agents SDK)maxLines=60 wordWrap
-import asyncio
-from agents import Agent, Runner
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
-
-user_id = "0000"
-
-# Initialize Composio toolset
-composio = Composio(provider=OpenAIAgentsProvider())
-
-# Get all the tools
-tools = composio.tools.get(
-    user_id=user_id,
-    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
-)
-
-# Create an agent with the tools
-agent = Agent(
-    name="GitHub Agent",
-    instructions="You are a helpful assistant.",
-    tools=tools,
-)
-
-# Run the agent
-async def main():
-    result = await Runner.run(
-        starting_agent=agent,
-        input=(
-            "Star the repository composiohq/composio on GitHub."
-        ),
-    )
-    print(result.final_output)
-
-asyncio.run(main())
-```
+<SnippetCode
+  src="fern/snippets/tool-calling/python/exec-tool-agentic.py"
+  startLine={1}
+  endLine={37}
+  title="Python (OpenAI Agents SDK)"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
+  startLine={1}
+  endLine={30}
+  title="TypeScript (Anthropic)"
+/>
 </CodeGroup>
 
 ## Tools are scoped to a user
@@ -172,19 +64,6 @@ For more information on authentication, see [Authenticating Tools](./authenticat
 In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const userId = "user@example.com";
-const composio = new Composio();
-
-const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
-  userId,
-  arguments: {
-    username: "pg",
-  },
-});
-console.log(result);
-```
-
 ```python Python maxLines=60 wordWrap
 
 user_id = "user@example.com"
@@ -197,24 +76,24 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+```typescript TypeScript maxLines=60 wordWrap
+const userId = "user@example.com";
+const composio = new Composio();
+
+const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
+  userId,
+  arguments: {
+    username: "pg",
+  },
+});
+console.log(result);
+```
 </CodeGroup> 
 
 ### Proxy Execute -- Manually calling toolkit APIs
 You can also proxy requests to an API of any supported toolkit. This is useful when you want to manually call an API of a toolkit and inject the authentication state from Composio.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-// Send a custom request to a toolkit
-const { data } = await composio.tools.proxyExecute({
-  toolkitSlug: 'github',
-  userId: 'user@example.com',
-  data: {
-    endpoint: '/repos/owner/repo/issues',
-    method: 'GET'
-  }
-});
-console.log(data);
-```
 ```python Python maxLines=60 wordWrap
 response = composio.tools.proxy(
     endpoint="/repos/composiohq/composio/issues/1",
@@ -229,6 +108,18 @@ response = composio.tools.proxy(
     ],
 )
 ```
+```typescript TypeScript maxLines=60 wordWrap
+// Send a custom request to a toolkit
+const { data } = await composio.tools.proxyExecute({
+  toolkitSlug: 'github',
+  userId: 'user@example.com',
+  data: {
+    endpoint: '/repos/owner/repo/issues',
+    method: 'GET'
+  }
+});
+console.log(data);
+```
 </CodeGroup>
 
 If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).
@@ -239,28 +130,9 @@ Composio SDK includes automatic file handling for tools that work with files. Wh
 
 ### File Upload
 
-When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs. Here's an example using Google Drive upload:
+When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs or a `File` object. Here's an example using Google Drive upload:
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-import { Composio } from '@composio/core';
-import path from 'path';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
-
-// Upload a local file to Google Drive
-const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
-  userId: 'default',
-  arguments: {
-    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path
-  }
-});
-
-console.log(result.data);  // Contains Google Drive file details
-```
-
 ```python Python maxLines=60 wordWrap
 import os
 
@@ -279,6 +151,25 @@ result = composio.tools.execute(
 
 print(result.data)  # Contains Google Drive file details
 ```
+
+```typescript TypeScript maxLines=60 wordWrap
+import { Composio } from '@composio/core';
+import path from 'path';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+// Upload a local file to Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'default',
+  arguments: {
+    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path or URL or File object
+  }
+});
+
+console.log(result.data);  // Contains Google Drive file details
+```
 </CodeGroup>
 
 The SDK automatically:
@@ -293,19 +184,6 @@ When a tool returns file outputs, the SDK automatically:
 2. Provides the local file path in the response
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-// Download a file from Google Drive
-const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
-  userId: 'default',
-  arguments: {
-    file_id: 'your_file_id'
-  }
-});
-
-// Result includes local file path
-console.log(result.data.file.uri);  // "/path/to/downloaded/file.pdf"
-```
-
 ```python Python maxLines=60 wordWrap
 # Download a file from Google Drive
 result = composio.tools.execute(
@@ -318,6 +196,19 @@ result = composio.tools.execute(
 
 # Result includes local file path
 print(result.data["file"])  # "/path/to/downloaded/file.pdf"
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+// Download a file from Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+  userId: 'default',
+  arguments: {
+    file_id: 'your_file_id'
+  }
+});
+
+// Result includes local file path
+console.log(result.data.file.uri);  // "/path/to/downloaded/file.pdf"
 ```
 </CodeGroup>
 

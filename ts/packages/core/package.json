@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -21,6 +21,7 @@
     "dist"
   ],
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "build": "tsup",
     "test": "vitest run"
   },

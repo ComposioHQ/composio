@@ -22,6 +22,8 @@ console.log(`🔄 Createting a connection request`);
  */
 const ConnectionRequest = await composio.connectedAccounts.initiate('default', authConfig.id);
 
+console.log(ConnectionRequest);
+
 console.log(
   `🔗 Please visit the following URL to authorize the user: ${ConnectionRequest.redirectUrl}`
 );

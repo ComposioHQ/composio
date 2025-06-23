@@ -199,7 +199,9 @@ describe('OpenAIProvider', () => {
         undefined,
         undefined
       );
-      expect(results).toEqual([JSON.stringify({ result: 'success' })]);
+      expect(results).toEqual([
+        { role: 'tool', tool_call_id: 'call-123', content: JSON.stringify({ result: 'success' }) },
+      ]);
     });
 
     it('should handle multiple tool calls', async () => {
@@ -244,7 +246,9 @@ describe('OpenAIProvider', () => {
       const results = await provider.handleToolCalls(userId, chatCompletion);
 
       expect(executeToolCallSpy).toHaveBeenCalledTimes(1);
-      expect(results).toEqual([JSON.stringify({ result: 'success' })]);
+      expect(results).toEqual([
+        { role: 'tool', tool_call_id: 'call-123', content: JSON.stringify({ result: 'success' }) },
+      ]);
     });
   });
 

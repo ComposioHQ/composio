@@ -13,18 +13,29 @@ The Anthropic Provider transforms Composio tools into a format compatible with A
 Anthropic provider can be installed for both the SDKs.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60  wordWrap
-npm install @composio/anthropic @anthropic-ai/sdk
+```bash title="Python" for="python" maxLines=60  wordWrap
+pip install composio[anthropic]
 ```
 
-```python Python maxLines=60  wordWrap
-pip install composio[anthropic]
+```bash title="TypeScript" for="typescript" maxLines=60  wordWrap
+npm install @composio/anthropic @anthropic-ai/sdk
 ```
 </CodeGroup>
 
 You can specify the provider in the constructor. The constructor also takes in an optional `cacheTools` parameter.
 
 <CodeGroup>
+```python Python maxLines=60  wordWrap
+import anthropic
+
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+# Initialize tools.
+anthropic_client = anthropic.Anthropic()
+composio = Composio(provider=AnthropicProvider())
+```
+
 ```typescript TypeScript maxLines=60 wordWrap {5}
 import { Composio } from "@composio/core";
 import { AnthropicProvider } from "@composio/anthropic";
@@ -37,22 +48,33 @@ const composio = new Composio({
 
 const anthropic = new Anthropic();
 ```
-
-```python Python maxLines=60  wordWrap
-import anthropic
-
-from composio import Composio
-from composio_anthropic import AnthropicProvider
-
-# Initialize tools.
-anthropic_client = anthropic.Anthropic()
-composio = Composio(provider=AnthropicProvider())
-```
 </CodeGroup>
 
 ## Usage
 
 <CodeGroup>
+```python Python maxLines=60  wordWrap
+# Define your user ID
+user_id = "default"
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
+
+# Get response from the LLM
+response = anthropic_client.messages.create(
+    model="claude-3-5-sonnet-20240620",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "Star me composiohq/composio repo in github."},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
+print(result)
+```
+
 ```typescript TypeScript maxLines=60 wordWrap
 const userId = "user@acme.com";
 const tools = await composio.tools.get(userId, {
@@ -74,28 +96,6 @@ const msg = await anthropic.messages.create({
 const res = await composio.provider.handleToolCalls(userId, msg);
 
 console.log(JSON.parse(res[0]).details);
-```
-
-```python Python maxLines=60  wordWrap
-# Define your user ID
-user_id = "default"
-
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
-
-# Get response from the LLM
-response = anthropic_client.messages.create(
-    model="claude-3-5-sonnet-20240620",
-    max_tokens=1024,
-    tools=tools,
-    messages=[
-        {"role": "user", "content": "Star me composiohq/composio repo in github."},
-    ],
-)
-
-# Execute the function calls.
-result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
-print(result)
 ```
 </CodeGroup>
 

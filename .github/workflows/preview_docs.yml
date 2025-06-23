@@ -29,14 +29,13 @@ jobs:
         working-directory: ./fern
         run: |
           uv sync
-          uv run composio apps generate-types
 
       - name: Install Fern
         run: npm install -g fern-api
 
       - name: Build documentation with Turbo
         working-directory: ./fern
-        run: pnpm turbo run build
+        run: pnpm turbo run build --filter=composio-docs
 
       - name: Generate preview URL
         id: generate-docs

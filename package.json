@@ -29,11 +29,16 @@
     "changeset:version": "changeset version",
     "changeset:release": "pnpm run build:packages && changeset publish",
     "changeset:pre-enter": "changeset pre enter alpha",
-    "changeset:pre-exit": "changeset pre exit alpha"
+    "changeset:pre-exit": "changeset pre exit alpha",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspace": "pnpm turbo clean"
   },
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
     "@changesets/cli": "^2.29.4",
+    "@composio/anthropic": "workspace:*",
+    "@composio/core": "workspace:*",
+    "@composio/openai": "workspace:*",
     "@types/node": "^22.15.18",
     "@vitest/ui": "^3.1.4",
     "eslint": "^9.25.1",
