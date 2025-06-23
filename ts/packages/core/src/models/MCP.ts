@@ -14,19 +14,28 @@ import {
   MCPToolkitConfigsArraySchema,
   MCPAuthOptionsSchema,
   MCPGetServerParamsSchema,
-  CustomCreateResponseSchema,
-  GenerateURLResponseSchema,
-  GenerateURLParamsSnakeCaseSchema,
-  McpListResponseSchema,
+  ComposioCustomCreateResponseSchema,
+  ComposioMcpListResponseSchema,
   McpRetrieveResponseSchema,
-  McpDeleteResponseSchema,
-  McpUpdateResponseSchema,
+  ComposioMcpDeleteResponseSchema,
+  ComposioMcpUpdateResponseSchema,
   McpUrlResponse,
   McpUrlResponseCamelCase,
   McpServerGetResponse,
   McpServerCreateResponse,
+  ComposioGenerateURLResponseSchema,
+  McpListResponse,
+  McpRetrieveResponse,
+  McpDeleteResponse,
+  McpUpdateResponse,
+  GenerateURLResponse,
+  GenerateURLParamsSchema,
+  GenerateURLParams,
 } from '../types/mcp.types';
-import { CustomCreateResponse, GenerateURLParams } from '@composio/client/resources/mcp';
+import {
+  CustomCreateResponse as CustomCreateResponseRaw,
+  GenerateURLParams as GenerateURLParamsRaw,
+} from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import {
@@ -122,7 +131,7 @@ export class MCP<T = McpServerGetResponse> {
     const toolkits = toolkitConfigs.map(config => config.toolkit);
 
     // Create a custom MCP server with the toolkit configurations
-    let mcpServerCreatedResponse: CustomCreateResponse;
+    let mcpServerCreatedResponse: CustomCreateResponseRaw;
     try {
       mcpServerCreatedResponse = await this.client.mcp.custom.create({
         name,
@@ -138,7 +147,8 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the server creation response
-    const serverResponseResult = CustomCreateResponseSchema.safeParse(mcpServerCreatedResponse);
+    const serverResponseResult =
+      ComposioCustomCreateResponseSchema.safeParse(mcpServerCreatedResponse);
     if (serverResponseResult.error) {
       throw new ValidationError('Failed to parse MCP server creation response', {
         cause: serverResponseResult.error,
@@ -226,7 +236,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the URL generation response
-    const urlResponseResult = GenerateURLResponseSchema.safeParse(data);
+    const urlResponseResult = ComposioGenerateURLResponseSchema.safeParse(data);
     if (urlResponseResult.error) {
       throw new ValidationError('Failed to parse MCP URL generation response', {
         cause: urlResponseResult.error,
@@ -282,7 +292,7 @@ export class MCP<T = McpServerGetResponse> {
     toolkits?: string[];
     authConfigs?: string[];
     name?: string;
-  }): Promise<ReturnType<typeof transformMcpListResponse>> {
+  }): Promise<McpListResponse> {
     // List MCP servers with error handling
     let listResponse;
     try {
@@ -300,7 +310,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the list response
-    const listResponseResult = McpListResponseSchema.safeParse(listResponse);
+    const listResponseResult = ComposioMcpListResponseSchema.safeParse(listResponse);
     if (listResponseResult.error) {
       throw new ValidationError('Failed to parse MCP server list response', {
         cause: listResponseResult.error,
@@ -314,14 +324,14 @@ export class MCP<T = McpServerGetResponse> {
   /**
    * Get details of a specific MCP server
    * @param {string} id - Server UUID
-   * @returns {Promise<ReturnType<typeof transformMcpRetrieveResponse>>} Server details
+   * @returns {Promise<McpRetrieveResponse>} Server details
    *
    * @example
    * ```typescript
    * const serverDetails = await composio.mcp.get('server-uuid');
    * ```
    */
-  async get(id: string): Promise<ReturnType<typeof transformMcpRetrieveResponse>> {
+  async get(id: string): Promise<McpRetrieveResponse> {
     // Retrieve MCP server with error handling
     let retrieveResponse;
     try {
@@ -347,14 +357,14 @@ export class MCP<T = McpServerGetResponse> {
   /**
    * Delete an MCP server
    * @param {string} id - Server UUID
-   * @returns {Promise<ReturnType<typeof transformMcpDeleteResponse>>} Deletion response
+   * @returns {Promise<McpDeleteResponse>} Deletion response
    *
    * @example
    * ```typescript
    * const result = await composio.mcp.delete('server-uuid');
    * ```
    */
-  async delete(id: string): Promise<ReturnType<typeof transformMcpDeleteResponse>> {
+  async delete(id: string): Promise<McpDeleteResponse> {
     // Delete MCP server with error handling
     let deleteResponse;
     try {
@@ -366,7 +376,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the delete response
-    const deleteResponseResult = McpDeleteResponseSchema.safeParse(deleteResponse);
+    const deleteResponseResult = ComposioMcpDeleteResponseSchema.safeParse(deleteResponse);
     if (deleteResponseResult.error) {
       throw new ValidationError('Failed to parse MCP server delete response', {
         cause: deleteResponseResult.error,
@@ -383,7 +393,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {string} name - New unique name for the server
    * @param {MCPToolkitConfig[]} toolkitConfigs - Array of toolkit configurations
    * @param {MCPAuthOptions} [authOptions] - Updated authentication options
-   * @returns {Promise<ReturnType<typeof transformMcpUpdateResponse>>} Updated server details
+   * @returns {Promise<McpUpdateResponse>} Updated server details
    *
    * @example
    * ```typescript
@@ -408,7 +418,7 @@ export class MCP<T = McpServerGetResponse> {
     name: string,
     toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
-  ): Promise<ReturnType<typeof transformMcpUpdateResponse>> {
+  ): Promise<McpUpdateResponse> {
     // Validate inputs using Zod schemas
     this.validateInputs(toolkitConfigs, authOptions);
 
@@ -430,7 +440,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the update response
-    const updateResponseResult = McpUpdateResponseSchema.safeParse(updateResponse);
+    const updateResponseResult = ComposioMcpUpdateResponseSchema.safeParse(updateResponse);
     if (updateResponseResult.error) {
       throw new ValidationError('Failed to parse MCP server update response', {
         cause: updateResponseResult.error,
@@ -444,7 +454,7 @@ export class MCP<T = McpServerGetResponse> {
   /**
    * Generate URL for an MCP server
    * @param {GenerateURLParams} params - Parameters for URL generation
-   * @returns {Promise<ReturnType<typeof transformMcpGenerateUrlResponse>>} Generated URL response
+   * @returns {Promise<GenerateURLResponse>} Generated URL response
    *
    * @example
    * ```typescript
@@ -456,11 +466,9 @@ export class MCP<T = McpServerGetResponse> {
    * });
    * ```
    */
-  async generateUrl(
-    params: GenerateURLParams
-  ): Promise<ReturnType<typeof transformMcpGenerateUrlResponse>> {
+  async generateUrl(params: GenerateURLParams): Promise<GenerateURLResponse> {
     // Validate parameters using Zod schema (snake_case)
-    const paramsResult = GenerateURLParamsSnakeCaseSchema.safeParse(params);
+    const paramsResult = GenerateURLParamsSchema.safeParse(params);
     if (paramsResult.error) {
       throw new ValidationError('Failed to parse generateUrl parameters', {
         cause: paramsResult.error,
@@ -470,7 +478,12 @@ export class MCP<T = McpServerGetResponse> {
     // No transformation needed - params are already in snake_case
     let urlResponse;
     try {
-      urlResponse = await this.client.mcp.generate.url(params);
+      urlResponse = await this.client.mcp.generate.url({
+        mcp_server_id: params.mcpServerId,
+        user_ids: params.userIds,
+        connected_account_ids: params.connectedAccountIds,
+        managed_auth_by_composio: params.managedAuthByComposio,
+      });
     } catch (error) {
       throw new ValidationError('Failed to generate MCP URL', {
         cause: error,
@@ -478,7 +491,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the response
-    const responseResult = GenerateURLResponseSchema.safeParse(urlResponse);
+    const responseResult = ComposioGenerateURLResponseSchema.safeParse(urlResponse);
     if (responseResult.error) {
       throw new ValidationError('Failed to parse MCP URL generation response', {
         cause: responseResult.error,

@@ -1,7 +1,7 @@
 import {
-  CustomCreateResponse,
-  McpCreateResponse,
-  GenerateURLResponse,
+  CustomCreateResponse as CustomCreateResponseRaw,
+  McpCreateResponse as McpCreateResponseRaw,
+  GenerateURLResponse as GenerateURLResponseRaw,
 } from '@composio/client/resources/mcp';
 import { z } from 'zod';
 
@@ -70,7 +70,7 @@ export const MCPGenerateURLParamsSchema = z.object({
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 
 // Snake_case schema for validating the imported GenerateURLParams type
-export const GenerateURLParamsSnakeCaseSchema = z.object({
+export const ComposioGenerateURLParamsSchema = z.object({
   user_ids: z.array(z.string()).optional(),
   connected_account_ids: z.array(z.string()).optional(),
   mcp_server_id: z.string(),
@@ -83,23 +83,23 @@ export const GenerateURLParamsSchema = z.object({
   mcpServerId: z.string(),
   managedAuthByComposio: z.boolean().optional(),
 });
-export type GenerateURLParamsValidated = z.infer<typeof GenerateURLParamsSchema>;
+export type GenerateURLParams = z.infer<typeof GenerateURLParamsSchema>;
 
 // CamelCase response schema for generate URL
-export const GenerateURLResponseCamelCaseSchema = z.object({
+export const GenerateURLResponseSchema = z.object({
   connectedAccountUrls: z.array(z.string()).optional(),
   userIdsUrl: z.array(z.string()).optional(),
   mcpUrl: z.string().min(1, 'MCP URL cannot be empty'),
 });
 
 // Snake_case response schema for API
-export const GenerateURLResponseSchema = z.object({
+export const ComposioGenerateURLResponseSchema = z.object({
   connected_account_urls: z.array(z.string()).optional(),
   user_ids_url: z.array(z.string()).optional(),
   mcp_url: z.string().min(1, 'MCP URL cannot be empty'),
 });
 
-export type GenerateURLResponseValidated = z.infer<typeof GenerateURLResponseCamelCaseSchema>;
+export type GenerateURLResponseValidated = z.infer<typeof GenerateURLResponseSchema>;
 
 /**
  * MCP Server Type (Single App)
@@ -165,9 +165,9 @@ export type MCPServerCreateResponse = z.infer<typeof MCPServerCreateResponseSche
  * MCP Create Method Response Type
  * Extends the API response with a getServer method for retrieving server instances
  */
-export type MCPCreateMethodResponse<T = GenerateURLResponse> = (
-  | McpCreateResponse
-  | CustomCreateResponse
+export type MCPCreateMethodResponse<T = GenerateURLResponseRaw> = (
+  | McpCreateResponseRaw
+  | CustomCreateResponseRaw
 ) & {
   toolkits: string[];
   getServer: (params: MCPGetServerParams) => Promise<T>;
@@ -197,22 +197,23 @@ export type McpUrlResponse = {
   url: string;
 }[];
 
-export type McpServerCreateResponse<T> = (McpCreateResponse | CustomCreateResponse) & {
+export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateResponseRaw) & {
   toolkits: string[];
   getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
 // CamelCase create response schema
-export const CustomCreateResponseCamelCaseSchema = z.object({
+export const CustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   createdAt: z.string().nullish(),
   updatedAt: z.string().nullish(),
   status: z.string().nullish(),
 });
+export type CustomCreateResponse = z.infer<typeof CustomCreateResponseSchema>;
 
 // Snake_case create response schema (for API)
-export const CustomCreateResponseSchema = z.object({
+export const ComposioCustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   created_at: z.string().nullish(),
@@ -220,10 +221,10 @@ export const CustomCreateResponseSchema = z.object({
   status: z.string().nullish(),
 });
 
-export type CustomCreateResponseValidated = z.infer<typeof CustomCreateResponseCamelCaseSchema>;
+export type CustomCreateResponseValidated = z.infer<typeof CustomCreateResponseSchema>;
 
 // CamelCase list response schema
-export const McpListResponseCamelCaseSchema = z.object({
+export const McpListResponseSchema = z.object({
   items: z
     .array(
       z.object({
@@ -238,7 +239,7 @@ export const McpListResponseCamelCaseSchema = z.object({
 });
 
 // Snake_case list response schema (for API)
-export const McpListResponseSchema = z.object({
+export const ComposioMcpListResponseSchema = z.object({
   items: z
     .array(
       z.object({
@@ -253,7 +254,7 @@ export const McpListResponseSchema = z.object({
 });
 
 // CamelCase retrieve response schema
-export const McpRetrieveResponseCamelCaseSchema = z.object({
+export const McpRetrieveResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   createdAt: z.string().optional(),
@@ -265,7 +266,7 @@ export const McpRetrieveResponseCamelCaseSchema = z.object({
 });
 
 // Snake_case retrieve response schema (for API)
-export const McpRetrieveResponseSchema = z.object({
+export const ComposioMcpRetrieveResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   created_at: z.string().optional(),
@@ -277,21 +278,21 @@ export const McpRetrieveResponseSchema = z.object({
 });
 
 // CamelCase delete response schema
-export const McpDeleteResponseCamelCaseSchema = z.object({
-  id: z.string().min(1, 'Server ID cannot be empty'),
-  deleted: z.boolean().optional(),
-  message: z.string().optional(),
-});
-
-// Snake_case delete response schema (for API)
 export const McpDeleteResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   deleted: z.boolean().optional(),
   message: z.string().optional(),
 });
 
+// Snake_case delete response schema (for API)
+export const ComposioMcpDeleteResponseSchema = z.object({
+  id: z.string().min(1, 'Server ID cannot be empty'),
+  deleted: z.boolean().optional(),
+  message: z.string().optional(),
+});
+
 // CamelCase update response schema
-export const McpUpdateResponseCamelCaseSchema = z.object({
+export const McpUpdateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   createdAt: z.string().optional(),
@@ -302,7 +303,7 @@ export const McpUpdateResponseCamelCaseSchema = z.object({
 });
 
 // Snake_case update response schema (for API)
-export const McpUpdateResponseSchema = z.object({
+export const ComposioMcpUpdateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
   name: z.string().min(1, 'Server name cannot be empty'),
   created_at: z.string().optional(),
@@ -313,8 +314,8 @@ export const McpUpdateResponseSchema = z.object({
 });
 
 // Export camelCase response types
-export type McpListResponseCamelCase = z.infer<typeof McpListResponseCamelCaseSchema>;
-export type McpRetrieveResponseCamelCase = z.infer<typeof McpRetrieveResponseCamelCaseSchema>;
-export type McpDeleteResponseCamelCase = z.infer<typeof McpDeleteResponseCamelCaseSchema>;
-export type McpUpdateResponseCamelCase = z.infer<typeof McpUpdateResponseCamelCaseSchema>;
-export type GenerateURLResponseCamelCase = z.infer<typeof GenerateURLResponseCamelCaseSchema>;
+export type McpListResponse = z.infer<typeof McpListResponseSchema>;
+export type McpRetrieveResponse = z.infer<typeof McpRetrieveResponseSchema>;
+export type McpDeleteResponse = z.infer<typeof McpDeleteResponseSchema>;
+export type McpUpdateResponse = z.infer<typeof McpUpdateResponseSchema>;
+export type GenerateURLResponse = z.infer<typeof GenerateURLResponseSchema>;

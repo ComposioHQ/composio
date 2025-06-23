@@ -17,10 +17,11 @@ import { ValidationError } from '../errors/ValidationErrors';
 import { AuthConfigs } from './AuthConfigs';
 import { ComposioAuthConfigNotFoundError } from '../errors/AuthConfigErrors';
 import { ConnectedAccounts } from './ConnectedAccounts';
-import { ConnectionRequest } from './ConnectionRequest';
+import { ConnectionRequest } from '../types/connectionRequest.types';
 import { telemetry } from '../telemetry/Telemetry';
-import { AuthConfigListResponse, AuthSchemeEnum, AuthSchemeType } from '../types/authConfigs.types';
+import { AuthSchemeType } from '../types/authConfigs.types';
 import logger from '../utils/logger';
+import { APIError } from 'openai';
 /**
  * Toolkits class
  *
@@ -151,7 +152,7 @@ export class Toolkits {
       }
       return parsedResult.data;
     } catch (error) {
-      if (error instanceof ComposioClient.NotFoundError) {
+      if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
         throw new ComposioToolkitNotFoundError(`Toolkit with slug ${slug} not found`, {
           meta: {
             slug,
