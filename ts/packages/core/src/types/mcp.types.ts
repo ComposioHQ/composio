@@ -81,7 +81,7 @@ export const GenerateURLParamsSchema = z.object({
   userIds: z.array(z.string()).optional(),
   connectedAccountIds: z.array(z.string()).optional(),
   mcpServerId: z.string(),
-  managedAuthByComposio: z.boolean().optional(),
+  composioManagedAuth: z.boolean().optional(),
 });
 export type GenerateURLParams = z.infer<typeof GenerateURLParamsSchema>;
 

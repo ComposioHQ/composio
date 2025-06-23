@@ -459,10 +459,10 @@ export class MCP<T = McpServerGetResponse> {
    * @example
    * ```typescript
    * const urlResponse = await composio.mcp.generateUrl({
-   *   user_ids: ['user123'],
-   *   connected_account_ids: ['account456'],
-   *   mcp_server_id: 'server-uuid',
-   *   managed_auth_by_composio: true
+   *   userIds: ['user123'],
+   *   connectedAccountIds: ['account456'],
+   *   mcpServerId: 'server-uuid',
+   *   composioManagedAuth: true
    * });
    * ```
    */
@@ -482,7 +482,7 @@ export class MCP<T = McpServerGetResponse> {
         mcp_server_id: params.mcpServerId,
         user_ids: params.userIds,
         connected_account_ids: params.connectedAccountIds,
-        managed_auth_by_composio: params.managedAuthByComposio,
+        managed_auth_by_composio: params.composioManagedAuth,
       });
     } catch (error) {
       throw new ValidationError('Failed to generate MCP URL', {

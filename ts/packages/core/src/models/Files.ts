@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Files class for Composio SDK, used to manage files.
+ *
+ * @author Musthaq Ahamad <musthaq@composio.dev>
+ * @date 2025-06-23
+ * @module Files
+ */
 import ComposioClient from '@composio/client';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
 import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/fileUtils';

@@ -566,7 +566,7 @@ describe('MCP', () => {
         userIds: ['user123'],
         connectedAccountIds: ['account456'],
         mcpServerId: 'mcp_123',
-        managedAuthByComposio: true,
+        composioManagedAuth: true,
       };
 
       const result = await mcp.generateUrl(params);
