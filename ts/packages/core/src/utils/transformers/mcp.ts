@@ -20,13 +20,14 @@ import {
   McpCreateResponse as McpCreateResponseRaw,
   McpDeleteResponse as McpDeleteResponseRaw,
   McpUpdateResponse as McpUpdateResponseRaw,
+  McpRetrieveResponse as McpRetrieveResponseRaw,
 } from '@composio/client/resources/mcp';
 
 /**
  * Transform MCP create response from snake_case to camelCase
  */
 export function transformMcpCreateResponse(
-  response: CustomCreateResponseRaw
+  response: CustomCreateResponseRaw | McpCreateResponseRaw
 ): CustomCreateResponse {
   const result = CustomCreateResponseSchema.safeParse({
     id: response.id,
@@ -73,7 +74,9 @@ export function transformMcpListResponse(response: McpListResponseRaw): McpListR
 /**
  * Transform MCP retrieve response from snake_case to camelCase
  */
-export function transformMcpRetrieveResponse(response: McpCreateResponseRaw): McpRetrieveResponse {
+export function transformMcpRetrieveResponse(
+  response: McpRetrieveResponseRaw
+): McpRetrieveResponse {
   const result = McpRetrieveResponseSchema.safeParse({
     id: response.id,
     name: response.name,
