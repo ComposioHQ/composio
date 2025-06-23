@@ -1,5 +1,13 @@
 # @composio/cloudflare
 
+## 0.1.32
+
+### Patch Changes
+
+- Add support for File type in uploading files
+- Updated dependencies
+  - @composio/core@0.1.32
+
 ## 0.1.31
 
 ### Patch Changes
