@@ -16,16 +16,15 @@ export class Files {
    * @returns The file data.
    */
   async upload({
-    filePath,
+    file,
     toolSlug,
     toolkitSlug,
   }: {
-    filePath: string;
+    file: File | string;
     toolSlug: string;
     toolkitSlug: string;
   }): Promise<FileUploadData> {
-    const fileData = await getFileDataAfterUploadingToS3({
-      path: filePath,
+    const fileData = await getFileDataAfterUploadingToS3(file, {
       toolSlug,
       toolkitSlug,
       client: this.client,

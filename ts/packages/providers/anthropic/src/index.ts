@@ -265,8 +265,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     message: Anthropic.Message,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ): Promise<string[]> {
-    const outputs: string[] = [];
+  ): Promise<Anthropic.Messages.MessageParam[]> {
+    const outputs: Anthropic.Messages.ToolResultBlockParam[] = [];
 
     // Filter and map tool use blocks from message content
     const toolUseBlocks: AnthropicToolUseBlock[] = [];
@@ -292,10 +292,16 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     }
 
     for (const toolUse of toolUseBlocks) {
-      outputs.push(await this.executeToolCall(userId, toolUse, options, modifiers));
+      const toolResult = await this.executeToolCall(userId, toolUse, options, modifiers);
+      outputs.push({
+        type: 'tool_result',
+        tool_use_id: toolUse.id,
+        content: toolResult,
+        cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+      });
     }
 
-    return outputs;
+    return outputs.length > 0 ? [{ role: 'user', content: outputs }] : [];
   }
 
   /**

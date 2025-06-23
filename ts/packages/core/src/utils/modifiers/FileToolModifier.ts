@@ -64,12 +64,11 @@ const hydrateFiles = async (
   // 1. Direct file upload
   // ──────────────────────────────────────────────────────────────────────────
   if (schema?.file_uploadable) {
-    // Upload only if the runtime value is a string (i.e., a local path)
-    if (typeof value !== 'string') return value;
+    // Upload only if the runtime value is a string (i.e., a local path) or blob
+    if (typeof value !== 'string' && !(value instanceof File)) return value;
 
     logger.debug(`Uploading file "${value}"`);
-    return getFileDataAfterUploadingToS3({
-      path: value,
+    return getFileDataAfterUploadingToS3(value, {
       toolSlug: ctx.toolSlug,
       toolkitSlug: ctx.toolkitSlug,
       client: ctx.client,
@@ -151,7 +150,7 @@ const hydrateDownloads = async (value: unknown, ctx: { toolSlug: string }): Prom
 
       return {
         uri: dl.filePath,
-        file_downloaded: true,
+        file_downloaded: dl.filePath ? true : false,
         s3url,
         mimeType: dl.mimeType,
       };
