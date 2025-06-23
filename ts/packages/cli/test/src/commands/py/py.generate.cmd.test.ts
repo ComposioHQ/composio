@@ -24,25 +24,30 @@ describe('CLI: composio py generate', () => {
 
   layer(
     TestLive({
-      fixture: 'python-project',
+      fixture: 'python-project-with-composio-core',
       toolkitsData: appClientData,
     })
   )(it => {
     describe('[Given] valid fetched app data', () => {
       it.scoped.skip(
-        '[Given] no arguments [Then] it generates type stubs relative to the cache directory',
+        '[Given] no arguments [Then] it generates type stubs relative the `composio` module if detectable by uv',
         () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
 
-            vi.stubEnv('COMPOSIO_CACHE_DIR', cwd);
-
             const args = ['py', 'generate'];
             yield* cli(args);
 
-            const outputDir = path.join(cwd, '.generated', 'composio-py');
+            const outputDir = path.join(
+              cwd,
+              '.venv',
+              'lib',
+              'python3.12',
+              'site-packages',
+              'composio'
+            );
 
             const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
             const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.py'));
