@@ -1,5 +1,13 @@
 # @composio/google
 
+## 0.1.34
+
+### Patch Changes
+
+- Add exports for connection request
+- Updated dependencies
+  - @composio/core@0.1.34
+
 ## 0.1.33
 
 ### Patch Changes

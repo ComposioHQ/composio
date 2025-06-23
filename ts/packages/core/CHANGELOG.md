@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.34
+
+### Patch Changes
+
+- Add exports for connection request
+
 ## 0.1.33
 
 ### Patch Changes
