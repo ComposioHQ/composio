@@ -70,7 +70,7 @@ export const MCPGenerateURLParamsSchema = z.object({
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 
 // Snake_case schema for validating the imported GenerateURLParams type
-export const GenerateURLParamsSnakeCaseSchema = z.object({
+export const ComposioGenerateURLParamsSchema = z.object({
   user_ids: z.array(z.string()).optional(),
   connected_account_ids: z.array(z.string()).optional(),
   mcp_server_id: z.string(),
@@ -83,7 +83,7 @@ export const GenerateURLParamsSchema = z.object({
   mcpServerId: z.string(),
   managedAuthByComposio: z.boolean().optional(),
 });
-export type GenerateURLParamsValidated = z.infer<typeof GenerateURLParamsSchema>;
+export type GenerateURLParams = z.infer<typeof GenerateURLParamsSchema>;
 
 // CamelCase response schema for generate URL
 export const GenerateURLResponseSchema = z.object({

@@ -15,8 +15,6 @@ import {
   MCPAuthOptionsSchema,
   MCPGetServerParamsSchema,
   ComposioCustomCreateResponseSchema,
-  GenerateURLResponseSchema,
-  GenerateURLParamsSnakeCaseSchema,
   ComposioMcpListResponseSchema,
   McpRetrieveResponseSchema,
   ComposioMcpDeleteResponseSchema,
@@ -31,10 +29,12 @@ import {
   McpDeleteResponse,
   McpUpdateResponse,
   GenerateURLResponse,
+  GenerateURLParamsSchema,
+  GenerateURLParams,
 } from '../types/mcp.types';
 import {
   CustomCreateResponse as CustomCreateResponseRaw,
-  GenerateURLParams,
+  GenerateURLParams as GenerateURLParamsRaw,
 } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
 import { BaseComposioProvider } from '../provider/BaseProvider';
@@ -468,7 +468,7 @@ export class MCP<T = McpServerGetResponse> {
    */
   async generateUrl(params: GenerateURLParams): Promise<GenerateURLResponse> {
     // Validate parameters using Zod schema (snake_case)
-    const paramsResult = GenerateURLParamsSnakeCaseSchema.safeParse(params);
+    const paramsResult = GenerateURLParamsSchema.safeParse(params);
     if (paramsResult.error) {
       throw new ValidationError('Failed to parse generateUrl parameters', {
         cause: paramsResult.error,
@@ -478,7 +478,12 @@ export class MCP<T = McpServerGetResponse> {
     // No transformation needed - params are already in snake_case
     let urlResponse;
     try {
-      urlResponse = await this.client.mcp.generate.url(params);
+      urlResponse = await this.client.mcp.generate.url({
+        mcp_server_id: params.mcpServerId,
+        user_ids: params.userIds,
+        connected_account_ids: params.connectedAccountIds,
+        managed_auth_by_composio: params.managedAuthByComposio,
+      });
     } catch (error) {
       throw new ValidationError('Failed to generate MCP URL', {
         cause: error,
