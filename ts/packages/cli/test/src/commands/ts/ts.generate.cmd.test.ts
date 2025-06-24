@@ -96,7 +96,7 @@ describe('CLI: composio ts generate', () => {
                 /**
                  * Map of Composio toolkits to actions.
                  */
-                export const composio = {
+                export const Toolkits = {
                   GMAIL: GMAIL,
                   SLACK: SLACK,
                 }
@@ -115,7 +115,7 @@ describe('CLI: composio ts generate', () => {
                 /**
                  * Given a toolkit, returns the tools available for that toolkit.
                  */
-                export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+                export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
                 "
               `);
@@ -133,10 +133,10 @@ describe('CLI: composio ts generate', () => {
               const testSourceCodePath = path.join(cwd, 'src', 'index.js');
               const testSourceCode = yield* fs.readFileString(testSourceCodePath);
               expect(testSourceCode).toMatchInlineSnapshot(`
-                "import { composio } from '@composio/core/generated';
+                "import { Toolkits } from '@composio/core/generated';
 
                 console.log('Test: Using generated Composio types');
-                console.log(composio.GMAIL.tools.CREATE_EMAIL_DRAFT);
+                console.log(Toolkits.GMAIL.tools.CREATE_EMAIL_DRAFT);
                 "
               `);
 
@@ -205,7 +205,7 @@ describe('CLI: composio ts generate', () => {
                 /**
                  * Map of Composio toolkits to actions.
                  */
-                export const composio = {
+                export const Toolkits = {
                   GMAIL: GMAIL,
                   SLACK: SLACK,
                 }
@@ -224,7 +224,7 @@ describe('CLI: composio ts generate', () => {
                 /**
                  * Given a toolkit, returns the tools available for that toolkit.
                  */
-                export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+                export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
                 "
               `);
@@ -381,7 +381,7 @@ describe('CLI: composio ts generate', () => {
               /**
                * Map of Composio toolkits to actions.
                */
-              export const composio = {
+              export const Toolkits = {
                 GMAIL: GMAIL,
                 SLACK: SLACK,
               }
@@ -400,7 +400,7 @@ describe('CLI: composio ts generate', () => {
               /**
                * Given a toolkit, returns the tools available for that toolkit.
                */
-              export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+              export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
               "
             `);

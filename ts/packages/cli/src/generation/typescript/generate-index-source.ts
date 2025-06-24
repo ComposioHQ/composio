@@ -27,6 +27,8 @@ import * as ts from '@composio/ts-builders';
 import { pipe, Record, Array as Arr } from 'effect';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 
+const BARREL_OBJECT_NAME = 'Toolkits';
+
 type GenerateTypeScriptIndexMapSourceParams = {
   banner: string;
   emitSingleFile: boolean;
@@ -83,7 +85,9 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
     indexMapFile.add(
       ts
         .moduleExport(
-          ts.constDeclaration('composio').setValue(ts.objectValue().addMultiple(indexMapEntries))
+          ts
+            .constDeclaration(BARREL_OBJECT_NAME)
+            .setValue(ts.objectValue().addMultiple(indexMapEntries))
         )
         .setDocComment(ts.docComment('Map of Composio toolkits to actions.'))
     );
@@ -130,12 +134,12 @@ export function generateToolsByToolkitType(): string {
         ts
           .typeDeclaration(
             'ToolsByToolkit',
-            ts.typeOfType(ts.keyType(ts.namedType('composio'), ts.namedType('Toolkit')))
+            ts.typeOfType(ts.keyType(ts.namedType(BARREL_OBJECT_NAME), ts.namedType('$Toolkit')))
           )
           .addGenericParameter(
             ts
-              .genericParameter('Toolkit')
-              .extends(ts.keyOfType(ts.typeOfType(ts.namedType('composio'))))
+              .genericParameter('$Toolkit')
+              .extends(ts.keyOfType(ts.typeOfType(ts.namedType(BARREL_OBJECT_NAME))))
           )
       )
       .setDocComment(doc)
