@@ -1,10 +1,10 @@
 import ComposioClient, { APIError } from '@composio/client';
 import {
   TriggerInstanceListActiveResponse as TriggerInstanceListActiveResponseComposio,
-  TriggersTypeListParams,
-  TriggersTypeListResponse,
+  TriggersTypeListParams as TriggersTypeListParamsRaw,
+  TriggersTypeListResponse as TriggersTypeListResponseRaw,
   TriggersTypeRetrieveEnumResponse,
-  TriggersTypeRetrieveResponse,
+  TriggersTypeRetrieveResponse as TriggersTypeRetrieveResponseRaw,
 } from '@composio/client/resources/index';
 import {
   TriggerInstanceUpsertResponseSchema,
@@ -25,6 +25,12 @@ import {
   IncomingTriggerPayloadSchema,
   IncomingTriggerPayload,
   TriggerData,
+  TriggersTypeListParams,
+  TriggersTypeListResponse,
+  TriggersTypeListResponseSchema,
+  TriggersTypeListParamsSchema,
+  TriggersTypeRetrieveResponse,
+  TriggersTypeRetrieveResponseSchema,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
@@ -320,7 +326,36 @@ export class Triggers {
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
   async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse> {
-    return this.client.triggersTypes.list(query);
+    const parsedQuery = TriggersTypeListParamsSchema.safeParse(query ?? {});
+    if (parsedQuery.error) {
+      throw new ValidationError(`Invalid parameters passed to list trigger types`, {
+        cause: parsedQuery.error,
+      });
+    }
+
+    const result = await this.client.triggersTypes.list({
+      cursor: parsedQuery.data.cursor,
+      limit: parsedQuery.data.limit,
+      toolkit_slugs: parsedQuery.data.toolkitSlugs,
+    });
+
+    const parsedResult = TriggersTypeListResponseSchema.safeParse({
+      items: result.items.map(item => ({
+        slug: item.slug,
+        name: item.name,
+        description: item.description,
+        payload: item.payload,
+        config: item.config,
+      })),
+      nextCursor: result.next_cursor,
+      totalPages: result.total_pages,
+    });
+    if (parsedResult.error) {
+      throw new ValidationError(`Invalid trigger type list response`, {
+        cause: parsedResult.error,
+      });
+    }
+    return parsedResult.data;
   }
 
   /**
@@ -331,7 +366,26 @@ export class Triggers {
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    return this.client.triggersTypes.retrieve(slug);
+    const result = await this.client.triggersTypes.retrieve(slug);
+    const parsedResult = TriggersTypeRetrieveResponseSchema.safeParse({
+      slug: result.slug,
+      name: result.name,
+      description: result.description,
+      instructions: result.instructions,
+      toolkit: {
+        logo: result.toolkit.logo,
+        slug: result.toolkit.slug,
+        uuid: result.toolkit.uuid,
+      },
+      payload: result.payload,
+      config: result.config,
+    });
+    if (parsedResult.error) {
+      throw new ValidationError(`Invalid trigger type retrieve response`, {
+        cause: parsedResult.error,
+      });
+    }
+    return parsedResult.data;
   }
 
   /**
