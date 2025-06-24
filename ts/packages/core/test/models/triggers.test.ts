@@ -95,26 +95,43 @@ const mockTriggerTypes = {
       slug: 'github_webhook',
       name: 'GitHub Webhook',
       description: 'Triggered when a GitHub event occurs',
+      // instructions: 'Instructions',
       config: {
         required: ['webhook_url'],
         optional: ['secret'],
       },
+      payload: {
+        action: 'push',
+        repository: 'test-repo',
+      },
+      toolkit: {
+        slug: 'github',
+        name: 'github',
+        logo: 'https://example.com/github.png',
+      },
     },
   ],
-  totalPages: 1,
-  page: 1,
+  total_pages: 1,
+  next_cursor: null,
 };
 
 const mockTriggerType = {
   slug: 'github_webhook',
   name: 'GitHub Webhook',
   description: 'Triggered when a GitHub event occurs',
+  instructions: 'Instructions',
   config: {
     required: ['webhook_url'],
     optional: ['secret'],
   },
+  payload: {
+    action: 'push',
+    repository: 'test-repo',
+  },
   toolkit: {
     slug: 'github',
+    name: 'github',
+    logo: 'https://example.com/github.png',
   },
 };
 
@@ -464,18 +481,32 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes();
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(undefined);
-      expect(result).toEqual(mockTriggerTypes);
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({});
+      expect(result).toEqual({
+        items: mockTriggerTypes.items.map(item => ({
+          ...item,
+          payload: item.payload ?? {},
+        })),
+        nextCursor: mockTriggerTypes.next_cursor,
+        totalPages: mockTriggerTypes.total_pages,
+      });
     });
 
     it('should list trigger types with query parameters', async () => {
-      const query = { limit: 10, toolkit: 'github' };
+      const query = { limit: 10, toolkits: ['github'] };
       mockClient.triggersTypes.list.mockResolvedValue(mockTriggerTypes);
 
       const result = await triggers.listTypes(query);
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(query);
-      expect(result).toEqual(mockTriggerTypes);
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
+        limit: query.limit,
+        toolkit_slugs: query.toolkits,
+      });
+      expect(result).toEqual({
+        items: mockTriggerTypes.items,
+        nextCursor: mockTriggerTypes.next_cursor,
+        totalPages: mockTriggerTypes.total_pages,
+      });
     });
   });
 

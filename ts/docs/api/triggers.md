@@ -204,7 +204,9 @@ List and retrieve available trigger types:
 
 ```typescript
 // List all trigger types
-const triggerTypes = await composio.triggers.listTypes();
+const triggerTypes = await composio.triggers.listTypes({
+  toolkits: ['github']
+});
 
 // Get details of a specific trigger type
 const triggerType = await composio.triggers.getType('trigger-slug');
