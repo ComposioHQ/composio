@@ -28,7 +28,6 @@
 		"doc:new": "bun run scripts/doc-new.ts"
 	},
 	"dependencies": {
-		"@composio/anthropic": "^0.1.35",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
@@ -37,7 +36,7 @@
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
-		"@composio/langchain": "^0.1.35",
+		"@composio/langchain": "workspace:*",
 		"@composio/openai": "workspace:*",
 		"@composio/vercel": "workspace:*",
 		"@langchain/langgraph": "^0.2.72",
