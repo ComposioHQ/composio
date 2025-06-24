@@ -10,7 +10,8 @@ describe('generateTypeScriptSources', () => {
     const _params = {
       outputDir: '<cwd>',
       emitSingleFile: false,
-    };
+      importExtension: 'ts',
+    } as const satisfies Omit<Parameters<typeof generateTypeScriptSources>[0], 'banner'>;
 
     describe('with banner', () => {
       const params = {

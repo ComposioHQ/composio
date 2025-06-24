@@ -16,5 +16,6 @@ export default defineConfig({
       tsconfig: './tsconfig.test.json',
     },
     includeSource: ['src/**/*.ts', 'test/**/*.ts'],
+    globalSetup: './test/__utils__/vitest.global-setup.ts',
   },
 });

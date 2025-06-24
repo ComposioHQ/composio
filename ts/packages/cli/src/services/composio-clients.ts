@@ -155,6 +155,12 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
 
       return {
         getToolkits: () =>
+          // Effect.succeed([
+          //   {
+          //     slug: 'gmail',
+          //     name: 'GMAIL',
+          //   } as unknown as Toolkit,
+          // ]),
           client.toolkits.list().pipe(
             Effect.map(response => response.items),
             Effect.flatMap(toolkits =>

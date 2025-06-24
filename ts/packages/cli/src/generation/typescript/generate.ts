@@ -4,15 +4,18 @@ import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptToolkitSources } from './generate-toolkit-sources';
 import { generateIndexSource } from './generate-index-source';
 
+type SourceFile = readonly [filename: string, content: string];
+
 type GenerateTypeScriptSourcesParams = {
   banner: string;
   emitSingleFile: boolean;
   outputDir: string;
+  importExtension: 'ts' | 'js';
 };
 
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
-  return (index: ToolkitIndex): Array<readonly [string, string]> => {
-    const toolkiteSources = generateTypeScriptToolkitSources(params)(index);
+  return (index: ToolkitIndex): Array<SourceFile> => {
+    const toolkiteSources = generateTypeScriptToolkitSources(params.banner)(index);
 
     const indexSource = generateIndexSource(params)(index);
     const indexFilename = path.join(params.outputDir, 'index.ts');

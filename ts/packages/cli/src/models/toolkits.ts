@@ -3,7 +3,7 @@ import { JSONTransformSchema } from './utils/json-transform-schema';
 
 export const Toolkit = Schema.Struct({
   name: Schema.String, // "Gmail"
-  slug: Schema.String, // "gmail"
+  slug: Schema.Trim.pipe(Schema.nonEmptyString()), // "gmail"
   auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2", "BEARER_TOKEN" ]
   composio_managed_auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2" ]
   is_local_toolkit: Schema.Boolean,
