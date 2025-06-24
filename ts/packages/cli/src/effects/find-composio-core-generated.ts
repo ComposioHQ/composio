@@ -65,13 +65,6 @@ export function pyFindComposioCoreGenerated(cwd: string) {
     yield* Effect.logDebug({ composioCorePath });
 
     return composioCorePath;
-
-    // return yield* composioCorePath.pipe(
-    //   Option.match({
-    //     onNone: () => onError('composio-core not found')('No output from uv python command'),
-    //     onSome: (path) => Effect.succeed(path)
-    //   })
-    // );
   }) satisfies Effect.Effect<string, ComposioCorePkgNotFound, unknown>;
 }
 
@@ -127,8 +120,6 @@ export function jsFindComposioCoreGenerated(cwd: string) {
           Effect.flip(onError('@composio/core not readable in `node_modules`')(e))
         )
       );
-
-    yield* Effect.log({ nodeModulesExists });
 
     if (nodeModulesExists) {
       return path.join(nodeModulesPath, 'generated');
