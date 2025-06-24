@@ -21,7 +21,7 @@ When these events take place, triggers capture relevant information and deliver 
 
 ## Creating a trigger
 
-Head to the any app that supports triggers, eg [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
+Head to any app that supports triggers, such as [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
 
 <video
   src="../../../assets/videos/enabling-triggers.mp4"
@@ -39,15 +39,13 @@ The [triggers page](https://app.composio.dev/active_triggers?page=1) will show y
   <img src="../../../assets/images/manage-triggers.png" alt="Manage triggers" />
 </Frame>
 
-You create triggers through the SDK as well. 
-
-First, you can view the required configuration to make the trigger too as follows:
+You can also create triggers programmatically using the SDK. To get started, first view the required configuration for creating a trigger:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/triggers/typescript/triggers.ts"
   startLine={1}
-  endLine={27}
+  endLine={30}
   title="TypeScript (new)"
 />
 
@@ -69,8 +67,8 @@ print(instance)
 ```
 <SnippetCode
   src="fern/snippets/triggers/typescript/triggers.ts"
-  startLine={28}
-  endLine={40}
+  startLine={31}
+  endLine={46}
   title="TypeScript (new)"
 />
 </CodeGroup>
@@ -80,9 +78,9 @@ print(instance)
 During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
 
 You subscribe to multiple trigger events by configuring the filters.
-When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
+When you specify multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
 
-This method uses websockets to subscribe to the trigger.
+This method uses WebSocket to subscribe to the trigger.
 
 <CodeGroup>
 ```python Python
@@ -109,8 +107,8 @@ print(instance)
 
 <SnippetCode
 src="fern/snippets/triggers/typescript/triggers.ts"
-startLine={42}
-endLine={53}
+startLine={49}
+endLine={60}
 title="TypeScript (new)"
 />
 
@@ -118,7 +116,7 @@ title="TypeScript (new)"
 
 
 ## Subscribing to triggers through Webhooks
-To receive trigger events via webhooks, you need to configure a publicly accessible URL where Composio can send the event payloads. This URL should point to an endpoint in your application that can process incoming webhook requests.
+For production environments, you can receive trigger events via webhooks. This requires configuring a publicly accessible URL where Composio can send event payloads. The URL should point to an endpoint in your application that processes these incoming webhook requests.
 
 <Frame caption="Webhook setup" background="subtle">
   <img src="../../../assets/images/setup-webhook.png" alt="Webhook setup" />
@@ -139,7 +137,7 @@ To receive trigger events via webhooks, you need to configure a publicly accessi
 </CodeGroup>
 
 ### Trigger payload types
-When subscribing to triggers, it is helpful to know the payload type recieved from the trigger. You can inspect the payload type by fetching the trigger type.
+When subscribing to triggers, it is helpful to know the payload type received from the trigger. You can inspect the payload type by fetching the trigger type.
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap
@@ -158,13 +156,9 @@ console.log(triggerType.payload);
 
 ## Subscribing to triggers through the SDK
 
-During development you may not have a proper webhook setup -- you can subscribe to triggers directly through the SDK. 
+During development, when you may not have a proper webhook setup, you can subscribe to triggers directly through the SDK. This implementation uses WebSocket to establish a real-time connection to the trigger.
 
-This uses websockets to subscribe to the trigger.
-
-You subscribe to multiple trigger events by configuring the filters.
-
-When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
+You can subscribe to multiple trigger events by configuring filters. When specifying multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap
@@ -196,9 +190,7 @@ await composio.triggers.subscribe(
 
 ## Specifying trigger configuration
 
-In some cases, triggers require certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
-
-The dashboard will show you the trigger configuration to fill in.
+Triggers often require specific configuration to properly handle events. You can inspect and configure these properties through both the dashboard and the SDK.
 
 <Frame caption="Trigger configuration" background="subtle">
   <img
