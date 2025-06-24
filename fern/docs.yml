@@ -101,9 +101,6 @@ navigation:
     - page: Quickstart
       path: pages/dist/get-started/quickstart.mdx
       slug: quickstart
-    - page: IDE and Agent Setup
-      path: pages/dist/get-started/dev-setup.mdx
-      slug: dev-setup
     - page: Providers
       path: pages/dist/get-started/providers.mdx
       slug: providers
@@ -175,6 +172,9 @@ navigation:
     - page: Migration Guide
       path: pages/dist/migration-guide.mdx
       slug: migration
+    - page: IDE and Agent Setup
+      path: pages/dist/get-started/dev-setup.mdx
+      slug: ide-and-agent-setup
 - tab: examples
   layout:
   - section: Getting Started
