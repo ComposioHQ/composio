@@ -1,5 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
+import { NodeProcess } from 'src/services/node-process';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
 describe('CLI: composio generate', () => {
@@ -10,7 +11,10 @@ describe('CLI: composio generate', () => {
   )(it => {
     it.scoped('[Given] a valid Python project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
-        const args = ['generate', '--output-dir', '.'];
+        const process = yield* NodeProcess;
+        const cwd = process.cwd;
+
+        const args = ['generate', '--output-dir', cwd];
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
@@ -26,7 +30,10 @@ describe('CLI: composio generate', () => {
   )(it => {
     it.scoped('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
-        const args = ['generate', '--output-dir', '.'];
+        const process = yield* NodeProcess;
+        const cwd = process.cwd;
+
+        const args = ['generate', '--output-dir', cwd];
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');

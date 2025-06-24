@@ -10,7 +10,8 @@ describe('generateTypeScriptSources', () => {
     const _params = {
       outputDir: '<cwd>',
       emitSingleFile: false,
-    };
+      importExtension: 'ts',
+    } as const satisfies Omit<Parameters<typeof generateTypeScriptSources>[0], 'banner'>;
 
     describe('with banner', () => {
       const params = {
@@ -99,7 +100,7 @@ describe('generateTypeScriptSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { SLACK } from "./slack.undefined"
+          import { SLACK } from "./slack.ts"
 
           /**
            * Map of Composio toolkits to actions.
@@ -169,7 +170,7 @@ describe('generateTypeScriptSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { SLACK } from "./slack.undefined"
+          import { SLACK } from "./slack.ts"
 
           /**
            * Map of Composio toolkits to actions.
