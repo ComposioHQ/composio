@@ -1,10 +1,10 @@
 import ComposioClient, { APIError } from '@composio/client';
 import {
   TriggerInstanceListActiveResponse as TriggerInstanceListActiveResponseComposio,
-  TriggersTypeListParams,
-  TriggersTypeListResponse,
+  TriggersTypeListParams as TriggersTypeListParamsRaw,
+  TriggersTypeListResponse as TriggersTypeListResponseRaw,
   TriggersTypeRetrieveEnumResponse,
-  TriggersTypeRetrieveResponse,
+  TriggersTypeRetrieveResponse as TriggersTypeRetrieveResponseRaw,
 } from '@composio/client/resources/index';
 import {
   TriggerInstanceUpsertResponseSchema,
@@ -25,12 +25,19 @@ import {
   IncomingTriggerPayloadSchema,
   IncomingTriggerPayload,
   TriggerData,
+  TriggersTypeListParams,
+  TriggersTypeListResponse,
+  TriggersTypeListResponseSchema,
+  TriggersTypeListParamsSchema,
+  TriggersTypeRetrieveResponse,
+  TriggerTypeSchema,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
 import { ComposioConnectedAccountNotFoundError, ValidationError } from '../errors';
 import { PusherService } from '../services/pusher/Pusher';
 import { ComposioTriggerTypeNotFoundError } from '../errors/TriggerErrors';
+import { transform } from '../utils/transform';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -274,7 +281,7 @@ export class Triggers {
     const result = await this.client.triggerInstances.manage.delete(triggerId);
     const parsedResult = TriggerInstanceManageDeleteResponseSchema.safeParse({
       triggerId: result.trigger_id,
-    } as TriggerInstanceManageDeleteResponse);
+    });
 
     if (!parsedResult.success) {
       throw new ValidationError(`Invalid trigger instance manage delete response`, {
@@ -320,7 +327,25 @@ export class Triggers {
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
   async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse> {
-    return this.client.triggersTypes.list(query);
+    const parsedQuery = transform(query ?? {})
+      .with(TriggersTypeListParamsSchema)
+      .using(raw => raw);
+
+    const result = await this.client.triggersTypes.list({
+      cursor: parsedQuery.cursor,
+      limit: parsedQuery.limit,
+      toolkit_slugs: parsedQuery.toolkits,
+    });
+
+    const parsedResult = transform(result)
+      .with(TriggersTypeListResponseSchema)
+      .using(raw => ({
+        items: raw.items,
+        nextCursor: raw.next_cursor,
+        totalPages: raw.total_pages,
+      }));
+
+    return parsedResult;
   }
 
   /**
@@ -331,7 +356,24 @@ export class Triggers {
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    return this.client.triggersTypes.retrieve(slug);
+    const result = await this.client.triggersTypes.retrieve(slug);
+    const parsedResult = transform(result)
+      .with(TriggerTypeSchema)
+      .using(raw => ({
+        slug: raw.slug,
+        name: raw.name,
+        description: raw.description,
+        instructions: raw.instructions,
+        toolkit: {
+          logo: raw.toolkit.logo,
+          slug: raw.toolkit.slug,
+          name: raw.toolkit.name,
+        },
+        payload: raw.payload,
+        config: raw.config,
+      }));
+
+    return parsedResult;
   }
 
   /**
