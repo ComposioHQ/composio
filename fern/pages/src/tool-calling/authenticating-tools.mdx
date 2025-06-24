@@ -1,6 +1,6 @@
 ---
 title: Authenticating Tools
-image: 'https://og.composio.dev/api/og?title=Authenticating%20Tools' # image for socials
+image: "https://og.composio.dev/api/og?title=Authenticating%20Tools"   # image for socials
 keywords: ''
 subtitle: 'Learn how to authenticate tools'
 hide-nav-links: false
@@ -22,48 +22,38 @@ Once created, it's reusable across multiple users.
 
 </Note>
 
-<Tabs>
-  <Tab title="Dashboard">
-    The dashboard offers a guided process for all app types.
-    <Steps>
-      <Step title="Select App">
-        Navigate to the [Apps page](https://app.composio.dev/apps) and choose the app you want to integrate (for example, Google Sheets).
-        <Frame background="subtle" title="Application Selection Screen">
-          <img src="../../../assets/images/integration-step-1-0.png" />
-        </Frame>
-      </Step>
-      <Step title="Initiate Setup">
-        Click the **"Setup Integration"** button.
-        <Frame background="subtle" title="Auth Config Setup Interface">
-          <img src="../../../assets/images/integration-step-2-0.png" />
-        </Frame>
-      </Step>
-      <Step title="Configure Auth Config Settings">
-        Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
-        Switch between the auth schemes and configure the scopes, developer credentials, etc here.
+The dashboard offers a guided process for all app types.
+<Steps>
+  <Step title="Select App">
+    Navigate to the [Apps page](https://app.composio.dev/apps) and choose the app you want to integrate (for example, Google Sheets).
+    <Frame background="subtle" title="Application Selection Screen">
+      <img src="../../../assets/images/integration-step-1-0.png" />
+    </Frame>
+  </Step>
+  <Step title="Initiate Setup">
+    Click the **"Setup Integration"** button.
+    <Frame background="subtle" title="Auth Config Setup Interface">
+      <img src="../../../assets/images/integration-step-2-0.png" />
+    </Frame>
+  </Step>
+  <Step title="Configure Auth Config Settings">
+    Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
+    Switch between the auth schemes and configure the scopes, developer credentials, etc here.
 
-        <Note title="Composio Managed Auth" icon="info">
-        You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
-        It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
-        </Note>
+    <Note title="Composio Managed Auth" icon="info">
+    You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
+    It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
+    </Note>
 
-        <Frame background="subtle" title="Auth Config Settings">
-          <img src="../../../assets/images/auth-config-creation.png" />
-        </Frame>
-      </Step>
-      <Step title="Create and Get ID">
-        Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. You'll need this ID in your application code.
-      </Step>
-    </Steps>
-
-  </Tab>
-  <Tab title="CLI">
-    - [ ] kirimase style auth config builder creator
-    ```bash
-    composio auth config create <app-name>
-    ```
-  </Tab>
-</Tabs>
+    <Frame background="subtle" title="Auth Config Settings">
+      <img src="../../../assets/images/auth-config-creation.png" />
+    </Frame>
+  </Step>
+  <Step title="Create and Get auth config ID">
+    Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
+    **This ID will be used to create connections to the toolkit for a given user.**
+  </Step>
+</Steps>
 
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
   In case of dealing with multiple toolkits across different projects, you can create auth configs
@@ -75,46 +65,18 @@ Once created, it's reusable across multiple users.
 Here's how to authenticate a toolkit for a given user using the OAuth flow.
 
 <CodeGroup>
-```typescript TypeScript maxLines=60  {3, 8-11}
-import { Composio } from "@composio/core";
-
-const composio = new Composio();
-const linearAuthConfigId = "ac_1234";
-const userId = "your@email.com";
-
-// Initiate the OAuth connection request
-const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
-
-// Destructure redirectUrl for easier access
-const { redirectUrl, id } = connRequest;
-console.log(redirectUrl);
-
-// Wait for the connection to be established
-await connRequest.waitForConnection();
-
-// If you only have the connection request ID, you can also wait using:
-await composio.connectedAccounts.waitForConnection(id);
-
-```
-```python Python maxLines=60  wordWrap
-from composio import Composio
-
-linear_auth_config_id = "ac_1234"
-user_id = "user@email.com"
-composio = Composio()
-
-# Create a new connected account
-connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=linear_auth_config_id,
-)
-print(connection_request.redirect_url)
-
-# Wait for the connection to be established
-connected_account = connection_request.wait_for_connection()
-print(connected_account)
-```
-
+<SnippetCode
+  src="fern/snippets/tool-calling/python/auth-tools.py"
+  startLine={1}
+  endLine={21}
+  title="Python"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/auth-tools.ts"
+  startLine={1}
+  endLine={21}
+  title="TypeScript"
+/>
 </CodeGroup>
 
 ## Connecting to an API Key toolkit
@@ -126,200 +88,46 @@ For API key based toolkits, you can either request the user to provide the API k
 If you know the required authentication fields for your toolkit (like `apiKey` for most API-based services), you can directly create the connection:
 
 <CodeGroup>
-```typescript TypeScript maxLines=60
-const authConfigId = "ac_1234"; // For example, auth config id of Serp API
-
-const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    data: {
-      apiKey: "sk_1234567890", // The field name for the API key/token
-    },
-  }
-);
-
-```
-```python Python maxLines=60  wordWrap
-from composio.types import auth_scheme
-
-auth_config_id = "ac_1234"
-
-connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=auth_config_id,
-    config=auth_scheme.api_key(
-        options={
-            "api_key": "sk_1234567890",
-        },
-    ),
-)
-print(connection_request)
-```
-
+<SnippetCode
+  src="fern/snippets/tool-calling/python/auth-tools.py"
+  startLine={23}
+  endLine={31}
+  title="Python"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/auth-tools.ts"
+  startLine={24}
+  endLine={37}
+  title="TypeScript"
+/>
 </CodeGroup>
 
-### Fetching the field name
+## Specifying auth schemes
+Composio supports a wide range of auth schemes; OAuth2, API Key, HTTP Basic and many more.
+Each app (and toolkit) has different connection options required for each auth scheme. For example;
+- Shopify requires an *API key* from each user from each user for the API Key auth scheme.
+- Airtable requires the Bearer token from each user for the *Bearer* auth scheme.
 
-For more complex cases where you want to dynamically discover the exact field names and handle different auth schemes programmatically, you can fetch the auth field details first.
+The auth scheme information is typed and can be configured as follows:
 
-Here's how to fetch the auth field names for a toolkit:
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 {9-12}
-import { Composio } from "@composio/core";
-
-const composio = new Composio();
-
-const userId = "your@email.com";
-const toolkits = await composio.toolkits.get("SERPAPI");
-
-// Destructure for easier access to authConfigDetails
-const { authConfigDetails = [] } = toolkits;
-
-// Extract required and optional field names using destructuring
-const fieldNames = authConfigDetails.flatMap(({ fields }) => {
-  const { connectedAccountInitiation } = fields;
-  return [
-    ...(connectedAccountInitiation.required?.map(({ name }) => name) || []),
-    ...(connectedAccountInitiation.optional?.map(({ name }) => name) || [])
-  ];
-});
-
-console.log(fieldNames); // e.g. ["apiKey"]
-
-```
-
-```python Python maxLines=60  wordWrap
-required_fields = composio.toolkits.get_connected_account_initiation_fields(
-    toolkit="NOTION",
-    auth_scheme="API_KEY",
-    required_only=True,
-)
-print(required_fields)
-```
-
+<SnippetCode
+  src="fern/snippets/tool-calling/python/auth-tools.py"
+  startLine={32}
+  endLine={44}
+  title="Python"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/auth-tools.ts"
+  startLine={38}
+  endLine={50}
+  title="TypeScript"
+/>
 </CodeGroup>
 
 It might be useful to read all the optional and required auth config fields for a toolkit and optionally prompt the user for the values.
 
-<Accordion title="Putting it all together">
-Below is a sample script that request the user or uses environment variables to read all the required fields for a token based toolkit.
-<CodeGroup>
-```typescript TypeScript maxLines=60
-import { Composio } from "@composio/core";
-import * as readline from "readline";
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-const userId = "your@email.com";
-const authConfigId = "ac_k_py8Qbd17_d"; // For example, auth config id of Serp API
-
-// Flag to control whether to prompt user for input or use environment variables
-const REQUEST_USER_INPUT = true; // Set to false to use environment variables
-
-const toolkits = await composio.toolkits.get("SERPAPI");
-
-// Destructure for easier access to authConfigDetails
-const { authConfigDetails = [] } = toolkits;
-
-// Extract required and optional field names using destructuring
-const authFields = authConfigDetails.flatMap(({ fields }) => {
-  const { connectedAccountInitiation } = fields;
-  return [
-    ...(connectedAccountInitiation.required?.map(({ name }) => name) || []),
-    ...(connectedAccountInitiation.optional?.map(({ name }) => name) || []),
-  ];
-});
-
-console.log("Required authentication fields:", authFields);
-
-// Function to prompt user for input
-async function promptUser(fieldName: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    rl.question(`Please enter value for ${fieldName}: `, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
-}
-
-// Collect authentication data
-const authData: Record<string, string> = {};
-
-if (REQUEST_USER_INPUT) {
-  // Request user input for each required field
-  for (const fieldName of authFields) {
-    authData[fieldName] = await promptUser(fieldName);
-  }
-} else {
-  // Read values from environment variables
-  console.log("Reading values from environment variables...");
-  for (const fieldName of authFields) {
-    const envValue = process.env[fieldName.toUpperCase()];
-    if (envValue) {
-      authData[fieldName] = envValue;
-      console.log(`Found ${fieldName} in environment variables`);
-    } else {
-      console.warn(
-        `Warning: Environment variable ${fieldName.toUpperCase()} not found`
-      );
-      authData[fieldName] = ""; // Set empty string as fallback
-    }
-  }
-}
-
-console.log("Using authentication data:", authData);
-
-const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    data: authData,
-  }
-);
-
-console.log("Connection request ID:", connectionRequest.id);
-
-```
-```python Python maxLines=60  wordWrap
-import os
-from composio import Composio
-
-composio = Composio()
-
-# Get required fields
-required_fields = [
-    field.name for field in composio.toolkits.get_connected_account_initiation_fields(
-        toolkit="NOTION",
-        auth_scheme="API_KEY",
-        required_only=True,
-    )
-]
-print("required_fields: ", required_fields)
-
-# Create a new connected account (API Key)
-connection_request = composio.connected_accounts.initiate(
-    user_id="1234567890",
-    auth_config_id="1234567890",
-    config=auth_scheme.api_key(
-        options={
-            field: os.getenv(f"NOTION_{field.upper()}") for field in required_fields
-        },
-    ),
-)
-print(connection_request)
-```
-
-</CodeGroup>
-</Accordion>
 
 ## Redirecting users
 
@@ -327,13 +135,16 @@ To control where the users are redirected after they have authenticated, you can
 In this case, the user will be redirected to `https://www.yourapp.com/callback` after they have authenticated.
 
 <CodeGroup>
-```typescript maxLines=60
-const connectionRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    callbackUrl: "https://www.yourapp.com/callback",
-  }
-);
-```
+<SnippetCode
+  src="fern/snippets/tool-calling/python/callback-url.py"
+  startLine={10}
+  endLine={20}
+  title="Python"
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/callback-url.ts"
+  startLine={10}
+  endLine={20}
+  title="TypeScript"
+/>
 </CodeGroup>

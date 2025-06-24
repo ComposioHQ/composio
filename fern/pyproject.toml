@@ -41,5 +41,17 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["generators"]
 
+[tool.uv.sources]
+composio-openai-agents = { workspace = true }
+composio-gemini = { workspace = true }
+
 [dependency-groups]
-dev = ["composio", "composio-langchain", "langchain>=0.3.25"]
+dev = [
+    "composio",
+    "composio-gemini",
+    "composio-langchain",
+    "composio-openai-agents",
+    "google-genai>=1.20.0",
+    "langchain>=0.3.25",
+    "openai-agents>=0.0.19",
+]

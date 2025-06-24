@@ -1,5 +1,23 @@
 # @composio/core
 
+## 0.1.34
+
+### Patch Changes
+
+- Add exports for connection request
+
+## 0.1.33
+
+### Patch Changes
+
+- Fix types and exports
+
+## 0.1.32
+
+### Patch Changes
+
+- Add support for File type in uploading files
+
 ## 0.1.31
 
 ### Patch Changes

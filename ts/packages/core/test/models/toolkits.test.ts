@@ -4,7 +4,7 @@ import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
-import { ConnectionRequest } from '../../src/models/ConnectionRequest';
+import { APIError } from '@composio/client';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -235,7 +235,7 @@ describe('Toolkits', () => {
       is_local_toolkit: false,
       auth_config_details: [
         {
-          name: 'oauth2',
+          name: 'OAUTH2',
           mode: 'OAUTH2',
           fields: {
             auth_config_creation: {
@@ -264,9 +264,6 @@ describe('Toolkits', () => {
 
       // Mock auth config creation
       mockClient.authConfigs.create.mockResolvedValueOnce({
-        toolkit: {
-          slug: toolkitSlug,
-        },
         auth_config: {
           id: 'auth_config_123',
           auth_scheme: 'OAUTH2',
@@ -276,10 +273,10 @@ describe('Toolkits', () => {
           no_of_connections: 0,
           status: 'ENABLED',
           uuid: 'uuid-1',
-          toolkit: {
-            logo: 'https://example.com/logo.png',
-            slug: toolkitSlug,
-          },
+        },
+        toolkit: {
+          logo: 'https://example.com/logo.png',
+          slug: toolkitSlug,
         },
       });
 
@@ -294,6 +291,7 @@ describe('Toolkits', () => {
       mockClient.connectedAccounts.create.mockResolvedValueOnce({
         id: 'conn_123',
         connectionData: {
+          type: 'OAUTH2',
           val: {
             status: 'INITIALIZING',
             redirectUrl: 'https://auth.example.com/connect',
@@ -326,7 +324,9 @@ describe('Toolkits', () => {
           user_id: userId,
         },
       });
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
       expect(connectionRequest.redirectUrl).toBe('https://auth.example.com/connect');
     });
 
@@ -391,7 +391,9 @@ describe('Toolkits', () => {
           user_id: userId,
         },
       });
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
       expect(connectionRequest.redirectUrl).toBe('https://auth.example.com/connect');
     });
 
@@ -448,7 +450,7 @@ describe('Toolkits', () => {
 
     it('should throw ComposioToolkitNotFoundError when toolkit does not exist', async () => {
       mockClient.toolkits.retrieve.mockRejectedValue(
-        new Error('Toolkit with slug non-existent not found')
+        new APIError(400, 'Toolkit not found', 'Toolkit not found', new Headers())
       );
 
       const promise = toolkits.authorize('user-123', 'non-existent');

@@ -236,13 +236,21 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
     chatCompletion: OpenAI.ChatCompletion,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
-  ) {
-    const outputs: string[] = [];
+  ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
+    const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
     for (const message of chatCompletion.choices) {
       if (message.message.tool_calls) {
-        outputs.push(
-          await this.executeToolCall(userId, message.message.tool_calls[0], options, modifiers)
+        const toolResult = await this.executeToolCall(
+          userId,
+          message.message.tool_calls[0],
+          options,
+          modifiers
         );
+        outputs.push({
+          role: 'tool',
+          tool_call_id: message.message.tool_calls[0].id,
+          content: toolResult,
+        });
       }
     }
     return outputs;

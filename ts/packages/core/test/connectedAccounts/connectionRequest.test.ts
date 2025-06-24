@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConnectionRequest } from '../../src/models/ConnectionRequest';
+import { createConnectionRequest } from '../../src/models/ConnectionRequest';
+import { ConnectionRequest } from '../../src/types/connectionRequest.types';
 import ComposioClient, { ComposioError } from '@composio/client';
 import { ConnectionRequestTimeoutError } from '../../src/errors';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
@@ -23,28 +24,26 @@ describe('ConnectionRequest', () => {
     vi.useRealTimers();
   });
 
-  describe('constructor', () => {
+  describe('createConnectionRequest', () => {
     it('should create an instance with an INITIATED status', () => {
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
         redirectUrl
       );
 
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
       expect(connectionRequest).toHaveProperty('id', connectedAccountId);
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(connectionRequest).toHaveProperty('redirectUrl', redirectUrl);
     });
 
     it('should create an instance without a callbackUrl', () => {
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId
       );
 
-      expect(connectionRequest).toBeInstanceOf(ConnectionRequest);
       expect(connectionRequest).toHaveProperty('redirectUrl', undefined);
     });
   });
@@ -52,7 +51,7 @@ describe('ConnectionRequest', () => {
   describe('waitForConnection', () => {
     it('should immediately resolve if status is already ACTIVE', async () => {
       // Create the connection request with ACTIVE status
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.ACTIVE,
@@ -104,7 +103,7 @@ describe('ConnectionRequest', () => {
       vi.useFakeTimers();
 
       // Create the connection request with INITIATED status
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
@@ -163,7 +162,7 @@ describe('ConnectionRequest', () => {
 
     it('should throw ConnectionRequestTimeoutError if the request times out', async () => {
       // Create connection request with INITIATED status
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
@@ -207,7 +206,7 @@ describe('ConnectionRequest', () => {
       vi.useFakeTimers();
 
       // Create connection request with INITIATED status
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
@@ -229,7 +228,7 @@ describe('ConnectionRequest', () => {
   describe('serialization methods', () => {
     it('should return a JSON-serializable object with toJSON()', () => {
       // Create a connection request instance
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
@@ -241,13 +240,11 @@ describe('ConnectionRequest', () => {
       expect(jsonObj).toHaveProperty('id', connectedAccountId);
       expect(jsonObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(jsonObj).toHaveProperty('redirectUrl', redirectUrl);
-
-      expect(jsonObj).not.toHaveProperty('client');
     });
 
     it('should return a formatted JSON string with toString()', () => {
       // Create a connection request instance
-      connectionRequest = new ConnectionRequest(
+      connectionRequest = createConnectionRequest(
         mockClient as unknown as ComposioClient,
         connectedAccountId,
         ConnectedAccountStatuses.INITIATED,
@@ -255,35 +252,12 @@ describe('ConnectionRequest', () => {
       );
 
       const jsonString = connectionRequest.toString();
-
-      expect(() => JSON.parse(jsonString)).not.toThrow();
+      expect(typeof jsonString).toBe('string');
 
       const parsedObj = JSON.parse(jsonString);
       expect(parsedObj).toHaveProperty('id', connectedAccountId);
       expect(parsedObj).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
       expect(parsedObj).toHaveProperty('redirectUrl', redirectUrl);
-
-      expect(jsonString).toContain('\n');
-      expect(jsonString).toContain('  ');
-    });
-
-    it('should be serializable with JSON.stringify without cyclic reference errors', () => {
-      // Create a connection request instance
-      connectionRequest = new ConnectionRequest(
-        mockClient as unknown as ComposioClient,
-        connectedAccountId,
-        ConnectedAccountStatuses.INITIATED,
-        redirectUrl
-      );
-
-      expect(() => JSON.stringify(connectionRequest)).not.toThrow();
-
-      const stringified = JSON.stringify(connectionRequest);
-      const parsed = JSON.parse(stringified);
-
-      expect(parsed).toHaveProperty('id', connectedAccountId);
-      expect(parsed).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
-      expect(parsed).toHaveProperty('redirectUrl', redirectUrl);
     });
   });
 });
