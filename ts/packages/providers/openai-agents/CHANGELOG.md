@@ -1,5 +1,21 @@
 # @composio/vercel
 
+## 0.1.34
+
+### Patch Changes
+
+- Add exports for connection request
+- Updated dependencies
+  - @composio/core@0.1.34
+
+## 0.1.33
+
+### Patch Changes
+
+- Fix types and exports
+- Updated dependencies
+  - @composio/core@0.1.33
+
 ## 0.1.32
 
 ### Patch Changes

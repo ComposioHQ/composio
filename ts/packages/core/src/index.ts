@@ -19,6 +19,7 @@ export * from './types/toolkit.types';
 export * from './types/triggers.types';
 export * from './types/mcp.types';
 export * from './types/files.types';
+export * from './types/connectionRequest.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
