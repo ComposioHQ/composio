@@ -7,31 +7,45 @@ keywords: ''
 hide-nav-links: false
 ---
 
-This guide explains how to setup your IDE, and coding agents to help you ship faster with Composio.
+This comprehensive guide explains how to setup your IDE and coding agents to help you ship faster with Composio. We'll cover optimal configurations for popular editors and AI coding assistants.
 
-## Index docs
-Cursor can index docs which is a great way to ask questions about Composio and building with our SDKs.
+## Cursor
+Cursor is an AI-powered code editor that can significantly accelerate your development with Composio. Here's how to set it up optimally.
+
+### Index Documentation
+Cursor can index documentation, making it easy to ask questions about Composio and get contextual answers while coding.
 
 <Frame>
   <img src="../../../assets/images/index-docs.png" alt="Index docs" />
 </Frame>
 
-Once indexed, you can ask questions!
+### To index Composio documentation:
 
+1. Open Cursor Settings (Shift + Cmd/Ctrl + J)
+2. Navigate to "Features" → "Codebase indexing"
+3. Add the Composio documentation URLs:
+
+- https://v3.docs.composio.dev
+- https://github.com/ComposioHQ/composio (for source code reference)
+
+Once indexed, you can ask questions directly in the chat!
 <Frame>
   <img src="../../../assets/images/ask-index-docs.png" alt="Index docs question" />
 </Frame>
 
 
-## Optimise Cursor
-
-To optimize your experience building with Composio, you can add also instructions to Cursor's system settings. We recommend adding the below prompt to the project rules.
+### Optimize Cursor with Custom Rules
+To get the best experience building with Composio, add custom instructions to Cursor's AI system. This helps the AI understand Composio's patterns and best practices.
 
 <Frame>
   <img src="../../../assets/images/cursor-settings.png" alt="Cursor settings" />
 </Frame>
 
-You can add the following to your Cursor "Rules for AI" to help you build with Composio.
+**To add custom rules:**
+
+1. Open Cursor Settings (Shift + Cmd/Ctrl + J)
+2. Go to "General" → "Rules for AI"
+3. Add the appropriate prompt below based on your language
 
 <CodeGroup>
 ```md TypeScript

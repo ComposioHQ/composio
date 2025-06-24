@@ -5,27 +5,137 @@ keywords: ''
 hide-nav-links: false
 ---
 
-Every LLM framework and provider essentially does the same thing - **tool calling and giving agents skills** - but each has its own unique syntax and implementation. Whether you're using OpenAI, Anthropic, CrewAI, or LangGraph, you're solving the same problems with different APIs.
+Providers in Composio act as bridges between your AI models and external tools. They transform Composio's tools into formats that different AI platforms can understand and use, making it possible to integrate with any AI framework seamlessly.
 
-<Frame>
-  <img
-    src="../../../assets/images/providers-and-toolsets.png"
-    alt="Providers and Toolsets"
-    width="400px"
-    height="auto"
-  />
-</Frame>
+## What are Providers?
+Think of providers as translators. Different AI platforms (like OpenAI, Anthropic Claude, or LangChain) expect tools to be formatted in their specific way. Instead of manually converting Composio tools for each platform, providers handle this transformation automatically.
 
-Composio standardizes this mess. Use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't support yet. No more rewriting tool integrations when you switch providers.
+For example:
+- OpenAI expects tools in a specific JSON schema format with type: "function"
+- Anthropic Claude expects tools with an input_schema structure
+- LangChain expects tools as callable functions with specific parameters
 
-Composio has two types of providers:
+Providers ensure that Composio tools work correctly with your chosen AI platform without you having to worry about the technical details.
 
-- **Completion Providers**: These frameworks are simply used to generate text, function calls. They don't have an automatic function execution step.
-- **Agentic Providers**: These providers are used to create agents. They have a function execution step and the tools are executed automatically.
+## How Providers Work
+When you get tools from Composio, the provider:
+- Takes Composio tools (which have a standardized format)
+- Transforms them into your AI platform's expected format
+- Returns the formatted tools ready to use with your AI model
 
-## Providers
+<CodeGroup>
+```typescript TypeScript
+// This happens automatically behind the scenes
+const composioTool = {
+  slug: "GITHUB_GET_REPO",
+  description: "Get repository information",
+  inputParameters: { owner: "string", repo: "string" }
+}
 
+// Provider transforms it to OpenAI format
+const openaiTool = {
+  type: "function",
+  function: {
+    name: "GITHUB_GET_REPO",
+    description: "Get repository information",
+    parameters: { properties: { owner: { type: "string" }, repo: { type: "string" } } }
+  }
+}
+```
+</CodeGroup>
+
+## Available Providers
+Composio supports two categories of providers:
+
+### Non-Agentic Providers
+These providers work with AI platforms that use chat completion APIs, where you control the tool execution flow. The AI model analyzes your conversation and suggests which tools to use, but your code decides when and how to execute them.
+With chat completion APIs, the typical flow is:
+
+1. You send a message to the AI model along with available tools
+2. The AI responds with either a text message or a request to use specific tools
+3. If tools are requested, you execute them and send the results back to continue the conversation
+
+Example providers:
+- **OpenAI Provider** - Works with GPT-3.5, GPT-4, and other OpenAI models via their Chat Completions API
+- **Anthropic Provider** - Works with Claude models via Anthropic's Messages API
+- **Google Provider** - Works with Gemini models via Google's generateContent API
+
+### Agentic Providers
+These providers work with AI frameworks that can execute tools autonomously. The AI agent can decide to run tools on its own without your direct intervention.
+
+- **LangChain Provider** - Works with LangChain framework
+- **Vercel Provider** - Works with Vercel AI SDK
+- **Mastra Provider** - Works with Mastra framework
+
+## Using Providers
 Here's how you can generate text with various providers using Composio SDK:
+
+### Default Provider (OpenAI)
+If you don't specify a provider, Composio uses the OpenAI provider by default:
+<CodeGroup>
+```python Python
+from openai import OpenAI
+from composio import Composio
+
+# Initialize tools.
+openai_client = OpenAI()
+composio = Composio(api_key="your-composio-api-key")
+
+# Define task.
+task = "Star a repo composiohq/composio on GitHub"
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
+
+
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+// Uses OpenAI provider automatically
+const composio = new Composio({
+  apiKey: 'your-composio-api-key'
+});
+
+// Get tools formatted for OpenAI
+const tools = await composio.tools.get('default', {
+  toolkits: ['github']
+});
+
+// Use with OpenAI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Star the repo composiohq/composio on GitHub' },
+  ],
+  tools: tools // Already formatted for OpenAI
+});
+
+// Execute the function calls.
+const result = await composio.provider.handleToolCalls("user@example.com", completion)
+console.log(result)
+
+```
+</CodeGroup>
+
+### Using a Different Provider
+To use a different provider, specify it when initializing Composio:
 
 <Tabs>
 <Tab title="OpenAI (Default)">
@@ -133,6 +243,43 @@ asyncio.run(main())
 </Tabs>
 
 
+## Installation
+Different providers may require additional packages:
+
+
+<CodeGroup>
+```shell Python
+# Core SDK (includes OpenAI provider)
+npm install @composio/core
+
+# Additional providers
+npm install @composio/anthropic
+npm install @composio/google  
+npm install @composio/langchain
+npm install @composio/vercel
+```
+```shell Typescript
+# Core SDK (includes OpenAI provider)
+npm install @composio/core
+
+# Additional providers
+npm install @composio/anthropic
+npm install @composio/google  
+npm install @composio/langchain
+npm install @composio/vercel
+```
+</CodeGroup>
+
+### Choosing the Right Provider
+Select a provider based on your AI platform:
+
+- **Building with OpenAI models?** → Use OpenAIProvider (default)
+- **Using Claude?** → Use AnthropicProvider
+- **Working with Gemini?** → Use GoogleProvider
+- **Building LangChain agents?** → Use LangChainProvider
+- **Using Vercel AI SDK?** → Use VercelProvider
+- **Working with Mastra?** → Use MastraProvider
+
 ## Supported Providers
 ### Chat Completions
 <CardGroup cols={3}>
@@ -201,3 +348,30 @@ asyncio.run(main())
 <Tip title="Custom Toolsets" icon="puzzle">
 Using a framework not supported? Create a [custom provider](/providers/custom)!
 </Tip>
+
+## Best Practices
+
+- Choose the right provider for your AI platform from the start
+- Stick with one provider per application for consistency
+- Use provider-specific helper methods when available for easier integration
+- Handle errors consistently regardless of provider choice
+- Test tool execution in your development environment before deployment
+
+
+
+## Common Questions
+
+**Q: Can I switch providers after initializing Composio?**
+> No, providers are set during initialization. Create a new Composio instance with a different provider if needed.
+
+**Q: Do I need different API keys for different providers?**
+> Yes, your Composio API key is used only for tool authentication, and is not used by the provider. You need to use provider specific API keys for each provider.
+
+**Q: Can I use multiple providers in the same application?**
+> Yes, create separate Composio instances with different providers for different parts of your application.
+
+**Q: What happens if I use the wrong provider?**
+> Your AI platform might not understand the tool format, leading to errors. Always match the provider to your AI platform.
+
+**Q: Are there performance differences between providers?**
+> Providers are lightweight adapters and have minimal performance impact. The main differences are in features and AI platform compatibility.
