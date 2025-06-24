@@ -5,6 +5,7 @@
   "description": "Example project for Json-schema-to-zod",
   "main": "src/index.ts",
   "scripts": {
+    "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
