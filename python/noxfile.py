@@ -4,8 +4,12 @@ from nox.sessions import Session
 
 nox.options.default_venv_backend = "uv"
 
-# TODO: Add providers
-modules = ["composio/", "tests/", "examples/", "scripts/"]
+modules = [
+    "composio/",
+    "examples/",
+    "scripts/",
+    "tests/",
+]
 
 ruff = ["ruff", "--config", "config/ruff.toml"]
 

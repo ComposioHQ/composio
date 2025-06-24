@@ -5,11 +5,12 @@ members = [
     "python/providers/crewai", 
     "python/providers/gemini",
     "python/providers/google",
+    "python/providers/google_adk",
     "python/providers/langchain",
     "python/providers/openai",
     "python/providers/openai_agents",
-    "fern",
-    "fern/snippets/migration"
+    "fern/snippets/migration",
+    "fern"
 ]
 
 [tool.uv.sources]
@@ -19,11 +20,12 @@ composio = { workspace = true }
 # Provider packages
 composio-anthropic = { workspace = true }
 composio-crewai = { workspace = true }
+composio-langchain = { workspace = true }
 composio-gemini = { workspace = true }
 composio-google = { workspace = true }
-composio-langchain = { workspace = true }
+composio-google-adk = { workspace = true }
 composio-openai = { workspace = true }
 composio-openai-agents = { workspace = true }
 
 # Fern packages
-fern = { workspace = true } 
+fern = { workspace = true }
