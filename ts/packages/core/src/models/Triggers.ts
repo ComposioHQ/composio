@@ -30,13 +30,14 @@ import {
   TriggersTypeListResponseSchema,
   TriggersTypeListParamsSchema,
   TriggersTypeRetrieveResponse,
-  TriggersTypeRetrieveResponseSchema,
+  TriggerTypeSchema,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
 import { ComposioConnectedAccountNotFoundError, ValidationError } from '../errors';
 import { PusherService } from '../services/pusher/Pusher';
 import { ComposioTriggerTypeNotFoundError } from '../errors/TriggerErrors';
+import { transform } from '../utils/transform';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -280,7 +281,7 @@ export class Triggers {
     const result = await this.client.triggerInstances.manage.delete(triggerId);
     const parsedResult = TriggerInstanceManageDeleteResponseSchema.safeParse({
       triggerId: result.trigger_id,
-    } as TriggerInstanceManageDeleteResponse);
+    });
 
     if (!parsedResult.success) {
       throw new ValidationError(`Invalid trigger instance manage delete response`, {
@@ -326,36 +327,25 @@ export class Triggers {
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
   async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse> {
-    const parsedQuery = TriggersTypeListParamsSchema.safeParse(query ?? {});
-    if (parsedQuery.error) {
-      throw new ValidationError(`Invalid parameters passed to list trigger types`, {
-        cause: parsedQuery.error,
-      });
-    }
+    const parsedQuery = transform(query ?? {})
+      .with(TriggersTypeListParamsSchema)
+      .using(raw => raw);
 
     const result = await this.client.triggersTypes.list({
-      cursor: parsedQuery.data.cursor,
-      limit: parsedQuery.data.limit,
-      toolkit_slugs: parsedQuery.data.toolkitSlugs,
+      cursor: parsedQuery.cursor,
+      limit: parsedQuery.limit,
+      toolkit_slugs: parsedQuery.toolkits,
     });
 
-    const parsedResult = TriggersTypeListResponseSchema.safeParse({
-      items: result.items.map(item => ({
-        slug: item.slug,
-        name: item.name,
-        description: item.description,
-        payload: item.payload,
-        config: item.config,
-      })),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    });
-    if (parsedResult.error) {
-      throw new ValidationError(`Invalid trigger type list response`, {
-        cause: parsedResult.error,
-      });
-    }
-    return parsedResult.data;
+    const parsedResult = transform(result)
+      .with(TriggersTypeListResponseSchema)
+      .using(raw => ({
+        items: raw.items,
+        nextCursor: raw.next_cursor,
+        totalPages: raw.total_pages,
+      }));
+
+    return parsedResult;
   }
 
   /**
@@ -367,25 +357,23 @@ export class Triggers {
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
     const result = await this.client.triggersTypes.retrieve(slug);
-    const parsedResult = TriggersTypeRetrieveResponseSchema.safeParse({
-      slug: result.slug,
-      name: result.name,
-      description: result.description,
-      instructions: result.instructions,
-      toolkit: {
-        logo: result.toolkit.logo,
-        slug: result.toolkit.slug,
-        uuid: result.toolkit.uuid,
-      },
-      payload: result.payload,
-      config: result.config,
-    });
-    if (parsedResult.error) {
-      throw new ValidationError(`Invalid trigger type retrieve response`, {
-        cause: parsedResult.error,
-      });
-    }
-    return parsedResult.data;
+    const parsedResult = transform(result)
+      .with(TriggerTypeSchema)
+      .using(raw => ({
+        slug: raw.slug,
+        name: raw.name,
+        description: raw.description,
+        instructions: raw.instructions,
+        toolkit: {
+          logo: raw.toolkit.logo,
+          slug: raw.toolkit.slug,
+          name: raw.toolkit.name,
+        },
+        payload: raw.payload,
+        config: raw.config,
+      }));
+
+    return parsedResult;
   }
 
   /**

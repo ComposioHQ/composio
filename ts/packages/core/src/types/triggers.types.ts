@@ -145,7 +145,7 @@ export type TriggerData = {
 export const TriggersTypeListParamsSchema = z.object({
   cursor: z.string().optional(),
   limit: z.number().nullish(),
-  toolkitSlugs: z.array(z.string()).nullish(),
+  toolkits: z.array(z.string()).nullish(),
 });
 export type TriggersTypeListParams = z.infer<typeof TriggersTypeListParamsSchema>;
 
@@ -153,6 +153,12 @@ export const TriggerTypeSchema = z.object({
   slug: z.string(),
   name: z.string(),
   description: z.string(),
+  instructions: z.string().optional(),
+  toolkit: z.object({
+    logo: z.string(),
+    slug: z.string(),
+    name: z.string(),
+  }),
   payload: z.record(z.unknown()),
   config: z.record(z.unknown()),
 });
@@ -166,19 +172,4 @@ export const TriggersTypeListResponseSchema = z.object({
 });
 
 export type TriggersTypeListResponse = z.infer<typeof TriggersTypeListResponseSchema>;
-
-export const TriggersTypeRetrieveResponseSchema = z.object({
-  slug: z.string(),
-  name: z.string(),
-  description: z.string(),
-  instructions: z.string(),
-  toolkit: z.object({
-    logo: z.string(),
-    slug: z.string(),
-    uuid: z.string(),
-  }),
-  payload: z.record(z.unknown()),
-  config: z.record(z.unknown()),
-});
-
-export type TriggersTypeRetrieveResponse = z.infer<typeof TriggersTypeRetrieveResponseSchema>;
+export type TriggersTypeRetrieveResponse = z.infer<typeof TriggerTypeSchema>;
