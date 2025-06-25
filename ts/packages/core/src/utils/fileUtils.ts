@@ -11,7 +11,7 @@ const readFileContent = async (
   try {
     const content = require('fs').readFileSync(path);
     return {
-      fileName: path,
+      fileName: pathModule.basename(path) || `file_${Date.now()}.${path.split('.').pop()}`,
       content: content.toString('base64'),
       mimeType: 'application/octet-stream',
     };
@@ -33,7 +33,7 @@ const readFileContentFromURL = async (
   return {
     content: content.toString('base64'),
     mimeType,
-    fileName: path,
+    fileName: pathModule.basename(path) || `file_${Date.now()}.${path.split('.').pop()}`,
   };
 };
 
