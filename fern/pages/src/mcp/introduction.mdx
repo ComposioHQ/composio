@@ -66,7 +66,7 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
     ```
   </Step>
   <Step title="Client applications connect to the server">
-    The resultant `mcp_url`; (`https://mcp.composio.dev/composio/server/<UUID>?transport=sse`) is used by the client applications to connect to the server.  
+    The resultant `mcp_url`; (`https://mcp.composio.dev/composio/server/<UUID>/mcp`) is used by the client applications to connect to the server.  
     The URL accepts three optional query parameters:
 
 | Query param | Purpose |
@@ -79,7 +79,7 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
 </Steps>
 
 <Tip>
-  Currently, the default transport is `sse`. Support for `transport=http-stream` will be available soon.
+ SSE support will be deprecated soon. To use the latest protocol, if you are using `/sse` or the `transport=sse` query parameter, change your endpoint to use `/mcp` and remove the transport query parameter.
 </Tip>
 
 ### Configuring authentication
