@@ -2,14 +2,11 @@
 CrewAI demo.
 """
 
-import os
-
+from composio_crewai import CrewAIProvider
 from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from composio import Composio
-from composio_crewai import CrewAIProvider
-
 
 # Initialize tools.
 openai_client = ChatOpenAI()

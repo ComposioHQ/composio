@@ -6,7 +6,6 @@ from pathlib import Path
 
 from setuptools import setup
 
-
 setup(
     name="composio_openai",
     version="1.0.0-rc5",

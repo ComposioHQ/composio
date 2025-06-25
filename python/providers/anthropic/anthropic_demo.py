@@ -3,10 +3,9 @@ Anthropic claude demo.7
 """
 
 import anthropic
-
-from composio import Composio
 from composio_anthropic import AnthropicProvider
 
+from composio import Composio
 
 # Initialize tools.
 anthropic_client = anthropic.Anthropic()

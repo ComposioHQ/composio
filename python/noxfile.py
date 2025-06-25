@@ -6,9 +6,10 @@ nox.options.default_venv_backend = "uv"
 
 modules = [
     "composio/",
+    "providers/",
+    "tests/",
     "examples/",
     "scripts/",
-    "tests/",
 ]
 
 ruff = ["ruff", "--config", "config/ruff.toml"]

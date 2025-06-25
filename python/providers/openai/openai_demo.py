@@ -2,10 +2,10 @@
 OpenAI demo.
 """
 
-from openai import OpenAI
-from composio import Composio
 from composio_openai import OpenAIProvider
+from openai import OpenAI
 
+from composio import Composio
 
 # Initialize tools.
 openai_client = OpenAI()
@@ -31,4 +31,3 @@ print(response)
 # Execute the function calls.
 result = composio.provider.handle_tool_calls(response=response, user_id="default")
 print(result)
-

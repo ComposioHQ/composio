@@ -1,6 +1,7 @@
 """Setup configuration for the composio crewai toolset"""
 
 from pathlib import Path
+
 from setuptools import setup
 
 setup(

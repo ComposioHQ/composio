@@ -2,13 +2,12 @@
 Langchain demo.
 """
 
-from composio import Composio
 from composio_langchain import LangchainProvider
-
 from langchain import hub  # type: ignore
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
+from composio import Composio
 
 # Pull relevant agent model.
 prompt = hub.pull("hwchase17/openai-functions-agent")

@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from composio_openai import OpenAIProvider
 from openai import OpenAI
 
 from composio import Composio
-from composio_openai import OpenAIProvider
-
 
 # Initialize tools.
 openai_client = OpenAI()

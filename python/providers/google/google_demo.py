@@ -3,11 +3,10 @@ Google AI Python Gemini demo.
 """
 
 import dotenv
-
-from composio import Composio
 from composio_google import GoogleProvider
 from vertexai.generative_models import GenerativeModel
 
+from composio import Composio
 
 # Load environment variables from .env
 dotenv.load_dotenv()
