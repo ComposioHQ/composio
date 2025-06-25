@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.0
+
+### Patch Changes
+
+- Fix file upload handlers
+
 ## 0.1.35
 
 ### Patch Changes

@@ -28,8 +28,8 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:release": "pnpm run build:packages && changeset publish",
-    "changeset:pre-enter": "changeset pre enter alpha",
-    "changeset:pre-exit": "changeset pre exit alpha",
+    "changeset:pre-enter": "changeset pre enter",
+    "changeset:pre-exit": "changeset pre exit",
     "clean": "git clean -xdf node_modules",
     "clean:workspace": "pnpm turbo clean"
   },
