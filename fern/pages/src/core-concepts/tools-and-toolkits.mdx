@@ -1,0 +1,767 @@
+---
+title: Tools and Toolkits
+subtitle: Understanding the tools and toolkits of Composio
+image: 'https://og.composio.dev/api/og?title=Tools%20and%20Toolkits' # image for socials
+keywords: ''
+hide-nav-links: false
+---
+
+Tools and Toolkits form the core functionality of Composio, enabling your applications to interact with external services. Understanding the distinction between these concepts and how to use them effectively is essential for building robust integrations.
+
+## Understanding the Hierarchy
+
+### Tools: Individual Actions
+
+A **Tool** represents a single, specific action that can be performed with an external service. Each tool has:
+
+- **Unique Slug**: A standardized identifier (e.g., `GITHUB_GET_REPO`)
+- **Input Parameters**: The data required to execute the tool
+- **Output Schema**: The structure of data returned
+- **Authentication Requirements**: Whether user authorization is needed
+
+<CodeGroup>
+```python Python
+# Example: Getting repository information
+result = composio.tools.execute('GITHUB_GET_REPO',
+    user_id='user_123',
+    arguments={
+        'owner': 'composiohq',
+        'repo': 'composio'
+    }
+)
+
+# The tool returns structured data
+
+print(result.data.name) // "sdk"
+print(result.data.description) // Repository description
+print(result.data.stargazers_count) // Number of stars
+
+````
+
+```typescript TypeScript
+// Example: Getting repository information
+const result = await composio.tools.execute('GITHUB_GET_REPO', {
+  userId: 'user_123',
+  arguments: {
+    owner: 'composiohq',
+    repo: 'composio'
+  }
+});
+
+// The tool returns structured data
+console.log(result.data.name);          // "sdk"
+console.log(result.data.description);   // Repository description
+console.log(result.data.stargazers_count); // Number of stars
+````
+
+</CodeGroup>
+
+### Toolkits: Service/App Collections
+
+A **Toolkit** is a collection of related tools that work with the same external service. For example:
+
+- **GitHub Toolkit**: Contains tools for repositories, issues, pull requests, users, organizations
+- **Gmail Toolkit**: Contains tools for reading, sending, searching emails
+- **Slack Toolkit**: Contains tools for messaging, channels, user management
+
+<CodeGroup>
+```python Python
+# Get all tools from the GitHub toolkit
+github_tools = composio.tools.get('user_123',
+    toolkits=['github']
+)
+
+print(f"GitHub toolkit contains {len(github_tools)} tools")
+
+# Outputs: GitHub toolkit contains 45+ tools
+
+````
+
+```typescript TypeScript
+// Get all tools from the GitHub toolkit
+const githubTools = await composio.tools.get('user_123', {
+  toolkits: ['github']
+});
+
+console.log(`GitHub toolkit contains ${githubTools.length} tools`);
+// Outputs: GitHub toolkit contains 45+ tools
+````
+
+</CodeGroup>
+
+## Tool Anatomy
+
+### Tool Structure
+
+Every tool follows a consistent structure:
+
+<CodeGroup>
+```json JSON
+{
+  "slug": "GITHUB_GET_REPO",
+  "name": "Get Repository",
+  "description": "Retrieve information about a specific GitHub repository",
+  "inputParameters": {
+    "type": "object",
+    "properties": {
+      "owner": {
+        "type": "string",
+        "description": "Repository owner username or organization name"
+      },
+      "repo": {
+        "type": "string", 
+        "description": "Repository name"
+      }
+    },
+    "required": ["owner", "repo"]
+  },
+  "outputParameters": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string" },
+      "description": { "type": "string" },
+      "stargazers_count": { "type": "integer" },
+      "html_url": { "type": "string" }
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Tool Categories
+
+Tools can be categorized by their authentication requirements:
+
+**Public Tools** - No authentication required:
+
+<CodeGroup>
+```python Python
+# HackerNews tools work without user authentication
+user = await composio.tools.execute('HACKERNEWS_GET_USER',
+    user_id='default',
+    arguments={'user_id': 'pg'}
+)
+```
+
+```typescript TypeScript
+// HackerNews tools work without user authentication
+const user = await composio.tools.execute('HACKERNEWS_GET_USER', {
+  userId: 'default',
+  arguments: { userId: 'pg' },
+});
+```
+
+</CodeGroup>
+
+**Authenticated Tools** - Require user authorization:
+
+<CodeGroup>
+```python Python
+# GitHub tools require connected account
+repos = await composio.tools.execute('GITHUB_LIST_REPOS',
+    user_id='user_123',
+    connected_account_id='ca_github_abc123',
+    arguments={'per_page': 10}
+)
+```
+
+```typescript TypeScript
+// GitHub tools require connected account
+const repos = await composio.tools.execute('GITHUB_LIST_REPOS', {
+  userId: 'user_123',
+  connectedAccountId: 'ca_github_abc123',
+  arguments: { per_page: 10 },
+});
+```
+
+</CodeGroup>
+
+## Working with Tools
+
+### Discovering Available Tools
+
+**List tools by Toolkit:**
+
+<CodeGroup>
+
+```python Python
+# Get tools from specific toolkits
+tools = await composio.tools.get('user_123',
+    toolkits=['github', 'gmail']
+)
+```
+
+```typescript TypeScript
+// Get tools from specific toolkits
+const tools = await composio.tools.get('user_123', {
+  toolkits: ['github', 'gmail'],
+});
+```
+
+</CodeGroup>
+
+**Search for Tools:**
+
+<CodeGroup>
+
+```python Python
+# Search tools by name or description
+search_results = composio.tools.get('user_123',
+    search='repository',
+    limit=10
+)
+```
+
+```typescript TypeScript
+// Search tools by name or description
+const searchResults = await composio.tools.get('user_123', {
+  search: 'repository',
+  limit: 10,
+});
+```
+
+</CodeGroup>
+
+**Get Specific Tools:**
+
+<CodeGroup>
+
+```python Python
+# Get specific tools by their slugs
+specific_tools = await composio.tools.get('user_123',
+    tools=['GITHUB_GET_REPO', 'GITHUB_CREATE_ISSUE', 'GMAIL_SEND_EMAIL']
+)
+```
+
+```typescript TypeScript
+// Get specific tools by their slugs
+const specificTools = await composio.tools.get('user_123', {
+  tools: ['GITHUB_GET_REPO', 'GITHUB_CREATE_ISSUE', 'GMAIL_SEND_EMAIL'],
+});
+```
+
+</CodeGroup>
+
+### Tool Execution Patterns
+
+**Basic Execution:**
+
+<CodeGroup>
+
+```python Python
+try:
+    result = await composio.tools.execute('GITHUB_GET_REPO',
+        user_id='user_123',
+        arguments={
+            'owner': 'composio',
+            'repo': 'sdk'
+        }
+    )
+
+    if result.successful:
+        print('Repository data:', result.data)
+    else:
+        print('Tool execution failed:', result.error)
+except Exception as error:
+    print('SDK error:', str(error))
+```
+
+```typescript TypeScript
+try {
+  const result = await composio.tools.execute('GITHUB_GET_REPO', {
+    userId: 'user_123',
+    arguments: {
+      owner: 'composio',
+      repo: 'sdk',
+    },
+  });
+
+  if (result.successful) {
+    console.log('Repository data:', result.data);
+  } else {
+    console.error('Tool execution failed:', result.error);
+  }
+} catch (error) {
+  console.error('SDK error:', error.message);
+}
+```
+
+</CodeGroup>
+
+**With Connected Account:**
+
+<CodeGroup>
+```python Python
+# For tools requiring authentication
+result = composio.tools.execute('GITHUB_CREATE_ISSUE',
+    user_id='user_123',
+    connected_account_id='ca_abc123',
+    arguments={
+        'owner': 'myorg',
+        'repo': 'myrepo',
+        'title': 'Bug Report',
+        'body': 'Description of the issue...'
+    }
+)
+```
+
+```typescript TypeScript
+// For tools requiring authentication
+const result = await composio.tools.execute('GITHUB_CREATE_ISSUE', {
+  userId: 'user_123',
+  connectedAccountId: 'ca_abc123',
+  arguments: {
+    owner: 'myorg',
+    repo: 'myrepo',
+    title: 'Bug Report',
+    body: 'Description of the issue...',
+  },
+});
+```
+
+</CodeGroup>
+
+## Toolkit Authentication Patterns
+
+### OAuth2 Toolkits
+
+Most modern services use OAuth2 for secure authentication:
+
+<CodeGroup>
+```python Python
+# Initiate OAuth flow
+connection_request = await composio.toolkits.authorize('user_123', 'github')
+
+# User visits connection_request.redirect_url to authorize
+
+# After authorization, get the connected account
+
+connected_account = await composio.connected_accounts.wait_for_connection(
+connection_request.id
+)
+
+# Use the connected account with toolkit tools
+
+result = await composio.tools.execute('GITHUB_GET_REPO',
+user_id='user_123',
+connected_account_id=connected_account.id,
+arguments={'owner': 'composio', 'repo': 'sdk'}
+)
+
+````
+```typescript TypeScript
+// Initiate OAuth flow
+const connectionRequest = await composio.toolkits.authorize('user_123', 'github');
+
+// User visits connectionRequest.redirectUrl to authorize
+// After authorization, get the connected account
+const connectedAccount = await composio.connectedAccounts.waitForConnection(
+connectionRequest.id
+);
+
+// Use the connected account with toolkit tools
+const result = await composio.tools.execute('GITHUB_GET_REPO', {
+userId: 'user_123',
+connectedAccountId: connectedAccount.id,
+arguments: { owner: 'composio', repo: 'sdk' }
+});
+
+````
+
+</CodeGroup>
+
+### API Key Toolkits
+
+Some services use API keys for authentication:
+
+```typescript TypeScript
+// Connect using API key
+const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'auth_config_id', {
+  config: AuthScheme.ApiKey({
+    api_key: 'user_provided_api_key',
+  }),
+});
+```
+
+<CodeGroup>
+
+```python Python
+# Connect using API key
+connection_request = await composio.connected_accounts.initiate(
+    'user_123',
+    'auth_config_id',
+    config=AuthScheme.api_key(
+        api_key='user_provided_api_key'
+    )
+)
+```
+
+```typescript TypeScript
+// Connect using API key
+const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'auth_config_id', {
+  config: AuthScheme.ApiKey({
+    api_key: 'user_provided_api_key',
+  }),
+});
+```
+
+</CodeGroup>
+
+### No Authentication Required
+
+Some toolkits provide public data without authentication:
+
+<CodeGroup>
+
+```python
+# Public tools work without connected accounts
+result = await composio.tools.execute('HACKERNEWS_GET_USER',
+    user_id='default',
+    arguments={'user_id': 'pg'}
+)
+```
+
+```typescript TypeScript
+// Public tools work without connected accounts
+const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
+  userId: 'default',
+  arguments: { userId: 'pg' },
+});
+```
+
+</CodeGroup>
+
+## Advanced Tool Features
+
+### Tool Parameters and Validation
+
+Tools automatically validate input parameters:
+
+<CodeGroup>
+
+```python Python
+# This will fail validation
+try:
+    await composio.tools.execute('GITHUB_GET_REPO',
+        user_id='user_123',
+        arguments={
+            'owner': 'composio'
+            // Missing required 'repo' parameter
+        }
+    )
+except Exception as error:
+    print('Validation error:', str(error))
+    // Error: Missing required parameter 'repo'
+```
+
+```typescript TypeScript
+// This will fail validation
+try {
+  await composio.tools.execute('GITHUB_GET_REPO', {
+    userId: 'user_123',
+    arguments: {
+      owner: 'composio',
+      // Missing required 'repo' parameter
+    },
+  });
+} catch (error) {
+  console.error('Validation error:', error.message);
+  // Error: Missing required parameter 'repo'
+}
+```
+
+</CodeGroup>
+
+### File Handling
+
+Some tools support file operations:
+
+<CodeGroup>
+
+```python Python
+# Tools with file upload capability
+result = await composio.tools.execute('GOOGLE_DRIVE_UPLOAD_FILE',
+    user_id='user_123',
+    arguments={
+        'file_to_upload': '/path/to/local/file.pdf'  // SDK handles upload automatically
+    }
+)
+
+# Tools that return files
+file_result = await composio.tools.execute('GOOGLE_DRIVE_DOWNLOAD_FILE',
+    user_id='user_123',
+    arguments={'file_id': 'file_id'}
+)
+
+# SDK automatically downloads file to local path
+print('Downloaded to:', file_result.data.file.uri)
+```
+```typescript TypeScript
+// Tools with file upload capability
+const result = await composio.tools.execute('GOOGLE_DRIVE_UPLOAD_FILE', {
+  userId: 'user_123',
+  arguments: {
+    file_to_upload: '/path/to/local/file.pdf',  // SDK handles upload automatically
+  }
+});
+
+// Tools that return files
+const fileResult = await composio.tools.execute('GOOGLE_DRIVE_DOWNLOAD_FILE', {
+userId: 'user_123',
+arguments: { file_id: 'file_id' }
+});
+
+// SDK automatically downloads file to local path
+console.log('Downloaded to:', fileResult.data.file.uri);
+
+```
+
+</CodeGroup>
+
+### Error Handling Patterns
+
+Different types of errors require different handling approaches:
+
+
+<CodeGroup>
+```python Python
+async def execute_tool_safely(tool_slug: str, params: dict):
+    try:
+        result = await composio.tools.execute(tool_slug, **params)
+
+        if result.successful:
+            return result.data
+        else:
+            # Tool-level error (e.g., API rate limit, invalid parameters)
+            raise ToolExecutionError(result.error)
+    except ComposioToolNotFoundError:
+        # Tool doesn't exist
+        print('Tool not found:', tool_slug)
+        raise
+    except ComposioConnectedAccountNotFoundError:
+        # User hasn't connected the required account
+        print('Account not connected for toolkit')
+        raise
+    except Exception as error:
+        # Other SDK errors
+        print('Unexpected error:', str(error))
+        raise
+```
+
+```typescript TypeScript
+async function executeToolSafely(toolSlug: string, params: Record<string, any>) {
+  try {
+    const result = await composio.tools.execute(toolSlug, params);
+    
+    if (result.successful) {
+      return result.data;
+    } else {
+      // Tool-level error (e.g., API rate limit, invalid parameters)
+      throw new ToolExecutionError(result.error);
+    }
+  } catch (error) {
+    if (error instanceof ComposioToolNotFoundError) {
+      // Tool doesn't exist
+      console.error('Tool not found:', toolSlug);
+    } else if (error instanceof ComposioConnectedAccountNotFoundError) {
+      // User hasn't connected the required account
+      console.error('Account not connected for toolkit');
+    } else {
+      // Other SDK errors
+      console.error('Unexpected error:', error);
+    }
+    throw error;
+  }
+}
+```
+
+</CodeGroup>
+
+## Tool Discovery and Documentation
+
+### Exploring Toolkit Capabilities
+
+<CodeGroup>
+
+```python Python
+# Get toolkit information
+toolkit = await composio.toolkits.get('github')
+print(f"{toolkit.name} has {toolkit.meta.tools_count} tools")
+
+# List all tools in a toolkit
+tools = await composio.tools.get('user_123',
+    toolkits=['github']
+)
+
+for tool in tools:
+    print(f"{tool.function.name}: {tool.function.description}")
+```
+```typescript TypeScript
+// Get toolkit information
+const toolkit = await composio.toolkits.get('github');
+console.log(`${toolkit.name} has ${toolkit.meta.toolsCount} tools`);
+
+// List all tools in a toolkit
+const tools = await composio.tools.get('user_123', {
+toolkits: ['github']
+});
+
+tools.forEach(tool => {
+console.log(`${tool.function.name}: ${tool.function.description}`);
+});
+
+```
+
+</CodeGroup>
+
+### Understanding Tool Requirements
+
+<CodeGroup>
+
+```python Python
+# Get detailed tool information
+tool = await composio.tools.get_raw_composio_tool_by_slug('GITHUB_GET_REPO')
+print('Required parameters:', tool.input_parameters.required)
+print('All parameters:', list(tool.input_parameters.properties.keys()))
+```
+```typescript TypeScript
+// Get detailed tool information
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPO');
+console.log('Required parameters:', tool.inputParameters.required);
+console.log('All parameters:', Object.keys(tool.inputParameters.properties));
+```
+
+</CodeGroup>
+
+## Integration with AI Providers
+
+Tools are automatically formatted for different AI providers:
+
+### OpenAI Integration
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+openai = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+tools = await composio.tools.get('user_123',
+    toolkits=['github']
+)
+
+completion = await openai.chat.completions.create(
+    model='gpt-4',
+    messages=[
+        {'role': 'user', 'content': 'Get information about the composio/sdk repository'}
+    ],
+    tools=tools  # Tools are pre-formatted for OpenAI
+)
+```
+```typescript TypeScript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const tools = await composio.tools.get('user_123', {
+toolkits: ['github']
+});
+
+const completion = await openai.chat.completions.create({
+model: 'gpt-4',
+messages: [
+{ role: 'user', content: 'Get information about the composio/sdk repository' }
+],
+tools: tools // Tools are pre-formatted for OpenAI
+});
+
+```
+
+</CodeGroup>
+
+### LangChain Integration
+
+<CodeGroup>
+```python Python
+from composio.providers.langchain import LangChainProvider
+
+langchain_composio = Composio(
+    provider=LangChainProvider()
+)
+
+tools = await langchain_composio.tools.get('user_123',
+    toolkits=['github']
+)
+
+# Tools are formatted as LangChain tools
+agent = tools.create_executor(model='gpt-4')
+```
+```typescript TypeScript
+import { LangChainProvider } from '@composio/langchain';
+
+const langchainComposio = new Composio({
+provider: new LangChainProvider()
+});
+
+const tools = await langchainComposio.tools.get('user_123', {
+toolkits: ['github']
+});
+
+// Tools are formatted as LangChain tools
+const agent = tools.createExecutor({ model: 'gpt-4' });
+
+```
+</CodeGroup>
+
+## Best Practices
+
+### Tool Selection
+
+- **Be Specific**: Request only the tools you need rather than entire toolkits
+- **Use Search**: Leverage search functionality to find relevant tools
+- **Check Requirements**: Verify authentication requirements before using tools
+
+### Error Handling
+
+- **Check Success**: Always verify `result.successful` before using data
+- **Handle Missing Connections**: Gracefully handle cases where users haven't connected accounts
+- **Validate Inputs**: Ensure required parameters are provided
+
+### Performance
+
+- **Batch Operations**: Group related tool executions when possible
+- **Cache Results**: Store frequently accessed data to reduce API calls
+- **Rate Limiting**: Be aware of external service rate limits
+
+### Security
+
+- **User Context**: Always execute tools in the correct user context
+- **Parameter Validation**: Validate user inputs before passing to tools
+- **Error Information**: Be careful not to expose sensitive error details to end users
+
+## Troubleshooting Common Issues
+
+### Authentication Errors
+
+```javascript
+// Check if user has connected the required toolkit
+const accounts = await composio.connectedAccounts.list({
+  userIds: ['user_123'],
+  toolkitSlugs: ['github'],
+});
+
+if (accounts.items.length === 0) {
+  // User needs to connect GitHub
+  const connection = await composio.toolkits.authorize('user_123', 'github');
+}
+```
+
+### Parameter Validation Errors
+
+```javascript
+// Get tool schema to understand required parameters
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPO');
+console.log('Required parameters:', tool.inputParameters.required);
+console.log('Parameter schemas:', tool.inputParameters.properties);
+```
+
+---
+
+Understanding tools and toolkits is fundamental to building effective integrations with Composio. These concepts provide the building blocks for connecting your applications to the external services your users need.

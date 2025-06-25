@@ -101,9 +101,31 @@ navigation:
     - page: Quickstart
       path: pages/dist/get-started/quickstart.mdx
       slug: quickstart
+  - section: Core Concepts
+    icon: book
+    skip-slug: true
+    contents:
+    - page: Overview
+      path: pages/dist/core-concepts/overview.mdx
+      slug: core-concepts
+    - page: User IDs
+      path: pages/dist/core-concepts/user-ids.mdx
+      slug: user-ids
+    - page: Tools and Toolkits
+      path: pages/dist/core-concepts/tools-and-toolkits.mdx
+      slug: tools-and-toolkits
     - page: Providers
-      path: pages/dist/get-started/providers.mdx
+      path: pages/dist/core-concepts/providers.mdx
       slug: providers
+    - page: Connected Accounts
+      path: pages/dist/core-concepts/connected-accounts.mdx
+      slug: connected-accounts
+    - page: Auth Configs
+      path: pages/dist/core-concepts/auth-configs.mdx
+      slug: auth-configs
+    - page: Triggers
+      path: pages/dist/core-concepts/triggers.mdx
+      slug: triggers
   - section: Tools
     icon: tools
     skip-slug: true
