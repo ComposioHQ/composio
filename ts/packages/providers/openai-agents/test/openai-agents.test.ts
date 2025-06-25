@@ -200,4 +200,80 @@ describe('OpenAIAgentsProvider', () => {
       expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
     });
   });
+
+  describe('MCP functionality', () => {
+    describe('wrapMcpServerResponse', () => {
+      it('should transform McpUrlResponse to standard McpServerGetResponse format', () => {
+        const mcpResponse = [
+          { name: 'server-1', url: 'https://mcp1.example.com' },
+          { name: 'server-2', url: 'https://mcp2.example.com' },
+          { name: 'server-3', url: 'https://mcp3.example.com' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(3);
+        expect(result[0]).toEqual({
+          url: new URL('https://mcp1.example.com'),
+          name: 'server-1',
+        });
+        expect(result[1]).toEqual({
+          url: new URL('https://mcp2.example.com'),
+          name: 'server-2',
+        });
+        expect(result[2]).toEqual({
+          url: new URL('https://mcp3.example.com'),
+          name: 'server-3',
+        });
+      });
+
+      it('should handle empty array', () => {
+        const mcpResponse: Array<{ name: string; url: string }> = [];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(0);
+      });
+
+      it('should handle single item array', () => {
+        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual({
+          url: new URL('https://single.example.com'),
+          name: 'single-server',
+        });
+      });
+    });
+
+    describe('MCP integration with provider', () => {
+      it('should correctly type the MCP response transformation', () => {
+        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        // TypeScript should infer this as McpServerGetResponse
+        expect(result[0]).toHaveProperty('url');
+        expect(result[0]).toHaveProperty('name');
+        expect(result[0].url).toBeInstanceOf(URL);
+        expect(result[0].url.href).toBe('https://test.example.com/');
+      });
+
+      it('should work with MCP provider instance', () => {
+        // Verify the provider can transform MCP responses
+        const newProvider = new OpenAIAgentsProvider();
+        const testResponse = [{ name: 'test', url: 'https://test.com' }];
+
+        const result = newProvider.wrapMcpServerResponse(testResponse);
+        expect(result).toHaveLength(1);
+        expect(result[0].name).toBe('test');
+        expect(result[0].url.href).toBe('https://test.com/');
+      });
+    });
+  });
 });

@@ -458,4 +458,99 @@ describe('MastraProvider', () => {
       expect(Array.isArray(wrapped)).toBe(false);
     });
   });
+
+  describe('MCP functionality', () => {
+    describe('wrapMcpServerResponse', () => {
+      it('should transform McpUrlResponse to MastraUrlMap format', () => {
+        const mcpResponse = [
+          { name: 'server-1', url: 'https://mcp1.example.com' },
+          { name: 'server-2', url: 'https://mcp2.example.com' },
+          { name: 'server-3', url: 'https://mcp3.example.com' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(result).toEqual({
+          'server-1': { url: 'https://mcp1.example.com' },
+          'server-2': { url: 'https://mcp2.example.com' },
+          'server-3': { url: 'https://mcp3.example.com' },
+        });
+      });
+
+      it('should handle empty array', () => {
+        const mcpResponse: Array<{ name: string; url: string }> = [];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(result).toEqual({});
+      });
+
+      it('should handle single item array', () => {
+        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(result).toEqual({
+          'single-server': { url: 'https://single.example.com' },
+        });
+      });
+
+      it('should handle duplicate names by overwriting', () => {
+        const mcpResponse = [
+          { name: 'duplicate', url: 'https://first.example.com' },
+          { name: 'duplicate', url: 'https://second.example.com' },
+          { name: 'unique', url: 'https://unique.example.com' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        // The second duplicate should overwrite the first
+        expect(result).toEqual({
+          duplicate: { url: 'https://second.example.com' },
+          unique: { url: 'https://unique.example.com' },
+        });
+      });
+
+      it('should preserve URL format exactly', () => {
+        const mcpResponse = [
+          { name: 'http-server', url: 'http://insecure.example.com' },
+          { name: 'https-server', url: 'https://secure.example.com' },
+          { name: 'port-server', url: 'https://example.com:8080/path' },
+          { name: 'query-server', url: 'https://example.com?param=value' },
+          { name: 'fragment-server', url: 'https://example.com#section' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(result).toEqual({
+          'http-server': { url: 'http://insecure.example.com' },
+          'https-server': { url: 'https://secure.example.com' },
+          'port-server': { url: 'https://example.com:8080/path' },
+          'query-server': { url: 'https://example.com?param=value' },
+          'fragment-server': { url: 'https://example.com#section' },
+        });
+      });
+    });
+
+    describe('MCP integration with provider', () => {
+      it('should correctly type the MCP response transformation', () => {
+        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        // TypeScript should infer this as MastraUrlMap
+        const urlMap: { [name: string]: { url: string } } = result;
+        expect(urlMap['test-server'].url).toBe('https://test.example.com');
+      });
+
+      it('should work with MCP provider instance', () => {
+        // Verify the provider can transform MCP responses
+        const newProvider = new MastraProvider();
+        const testResponse = [{ name: 'test', url: 'https://test.com' }];
+
+        const result = newProvider.wrapMcpServerResponse(testResponse);
+        expect(result).toEqual({ test: { url: 'https://test.com' } });
+      });
+    });
+  });
 });
