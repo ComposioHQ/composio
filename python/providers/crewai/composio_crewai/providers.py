@@ -1,10 +1,7 @@
 import typing as t
 
 import pydantic
-import pydantic.error_wrappers
-import typing_extensions as te
 from crewai.tools import BaseTool
-
 
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
@@ -25,7 +22,6 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
         """Wrap a tool as a CrewAI tool."""
 
         class Wrapper(BaseTool):
-
             def _run(self, **kwargs):
                 try:
                     return execute_tool(slug=tool.slug, arguments=kwargs)

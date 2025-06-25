@@ -2,22 +2,21 @@
 
 import types
 import typing as t
-
 from inspect import Signature
 
 import pydantic
 from langchain_core.tools import StructuredTool as BaseStructuredTool
 
+from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
+from composio.types import Tool
 from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
-from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
-from composio.types import Tool
+
 
 class StructuredTool(BaseStructuredTool):
-
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
@@ -25,7 +24,10 @@ class StructuredTool(BaseStructuredTool):
             return {"successful": False, "error": parse_pydantic_error(e), "data": None}
 
 
-class LangchainProvider(AgenticProvider[StructuredTool, t.List[StructuredTool]], name="langchain",):
+class LangchainProvider(
+    AgenticProvider[StructuredTool, t.List[StructuredTool]],
+    name="langchain",
+):
     """
     Composio toolset for Langchain framework.
     """
@@ -57,7 +59,9 @@ class LangchainProvider(AgenticProvider[StructuredTool, t.List[StructuredTool]],
         action_func.__doc__ = description
         return action_func
 
-    def wrap_tool(self, tool: Tool, execute_tool: AgenticProviderExecuteFn) -> StructuredTool:
+    def wrap_tool(
+        self, tool: Tool, execute_tool: AgenticProviderExecuteFn
+    ) -> StructuredTool:
         """Wraps composio tool as Langchain StructuredTool object."""
         return t.cast(
             StructuredTool,

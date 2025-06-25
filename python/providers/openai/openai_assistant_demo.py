@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from composio_openai import OpenAIProvider
 from openai import OpenAI
 
 from composio import Composio
-from composio_openai import OpenAIProvider
-
 
 # Initialize tools.
 openai_client = OpenAI()
@@ -55,7 +54,8 @@ run = openai_client.beta.threads.runs.create(
 )
 
 # Execute function calls
-run_after_tool_calls = composio.wait_and_handle_assistant_tool_calls(
+run_after_tool_calls = composio.provider.wait_and_handle_assistant_tool_calls(
+    user_id="default",
     client=openai_client,
     run=run,
     thread=thread,
