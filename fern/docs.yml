@@ -248,19 +248,1053 @@ navigation:
     - page: Gmail
       slug: tools/gmail
       path: tools/gmail.mdx
+    - page: Googlesheets
+      slug: tools/googlesheets
+      path: tools/googlesheets.mdx
     - page: Notion
       slug: tools/notion
       path: tools/notion.mdx
+    - page: Shopify
+      slug: tools/shopify
+      path: tools/shopify.mdx
+    - page: Stripe
+      slug: tools/stripe
+      path: tools/stripe.mdx
+    - page: Twitter
+      slug: tools/twitter
+      path: tools/twitter.mdx
+  - section: Crm
+    contents:
+    - page: Acculynx
+      slug: tools/acculynx
+      path: tools/acculynx.mdx
+    - page: Affinity
+      slug: tools/affinity
+      path: tools/affinity.mdx
+    - page: Agencyzoom
+      slug: tools/agencyzoom
+      path: tools/agencyzoom.mdx
+    - page: Apollo
+      slug: tools/apollo
+      path: tools/apollo.mdx
+    - page: Attio
+      slug: tools/attio
+      path: tools/attio.mdx
+    - page: Close
+      slug: tools/close
+      path: tools/close.mdx
+    - page: Dynamics365
+      slug: tools/dynamics365
+      path: tools/dynamics365.mdx
+    - page: Freshdesk
+      slug: tools/freshdesk
+      path: tools/freshdesk.mdx
+    - page: Gorgias
+      slug: tools/gorgias
+      path: tools/gorgias.mdx
+    - page: Hubspot
+      slug: tools/hubspot
+      path: tools/hubspot.mdx
+    - page: Intercom
+      slug: tools/intercom
+      path: tools/intercom.mdx
+    - page: Kommo
+      slug: tools/kommo
+      path: tools/kommo.mdx
+    - page: Pipedrive
+      slug: tools/pipedrive
+      path: tools/pipedrive.mdx
+    - page: Salesforce
+      slug: tools/salesforce
+      path: tools/salesforce.mdx
+    - page: Simplesat
+      slug: tools/simplesat
+      path: tools/simplesat.mdx
+    - page: Zendesk
+      slug: tools/zendesk
+      path: tools/zendesk.mdx
+    - page: Zoho
+      slug: tools/zoho
+      path: tools/zoho.mdx
+    - page: Zoominfo
+      slug: tools/zoominfo
+      path: tools/zoominfo.mdx
+  - section: Analytics & Data
+    contents:
+    - page: Amplitude
+      slug: tools/amplitude
+      path: tools/amplitude.mdx
+    - page: Browseai
+      slug: tools/browseai
+      path: tools/browseai.mdx
+    - page: Exa
+      slug: tools/exa
+      path: tools/exa.mdx
+    - page: Firecrawl
+      slug: tools/firecrawl
+      path: tools/firecrawl.mdx
+    - page: Fireflies
+      slug: tools/fireflies
+      path: tools/fireflies.mdx
+    - page: Googlebigquery
+      slug: tools/googlebigquery
+      path: tools/googlebigquery.mdx
+    - page: Kibana
+      slug: tools/kibana
+      path: tools/kibana.mdx
+    - page: Microsoft Clarity
+      slug: tools/microsoft_clarity
+      path: tools/microsoft_clarity.mdx
+    - page: Mixpanel
+      slug: tools/mixpanel
+      path: tools/mixpanel.mdx
+    - page: Peopledatalabs
+      slug: tools/peopledatalabs
+      path: tools/peopledatalabs.mdx
+    - page: Placekey
+      slug: tools/placekey
+      path: tools/placekey.mdx
+    - page: Posthog
+      slug: tools/posthog
+      path: tools/posthog.mdx
+    - page: Serpapi
+      slug: tools/serpapi
+      path: tools/serpapi.mdx
+    - page: Servicenow
+      slug: tools/servicenow
+      path: tools/servicenow.mdx
+    - page: Snowflake
+      slug: tools/snowflake
+      path: tools/snowflake.mdx
+    - page: Tavily
+      slug: tools/tavily
+      path: tools/tavily.mdx
+  - section: Collaboration & Communication
+    contents:
+    - page: Chatwork
+      slug: tools/chatwork
+      path: tools/chatwork.mdx
+    - page: Dailybot
+      slug: tools/dailybot
+      path: tools/dailybot.mdx
+    - page: Dialpad
+      slug: tools/dialpad
+      path: tools/dialpad.mdx
+    - page: Discordbot
+      slug: tools/discordbot
+      path: tools/discordbot.mdx
+    - page: Echtpost
+      slug: tools/echtpost
+      path: tools/echtpost.mdx
+    - page: Googlemeet
+      slug: tools/googlemeet
+      path: tools/googlemeet.mdx
+    - page: Microsoft Teams
+      slug: tools/microsoft_teams
+      path: tools/microsoft_teams.mdx
+    - page: Outlook
+      slug: tools/outlook
+      path: tools/outlook.mdx
+    - page: Retellai
+      slug: tools/retellai
+      path: tools/retellai.mdx
+    - page: Share Point
+      slug: tools/share_point
+      path: tools/share_point.mdx
+    - page: Slackbot
+      slug: tools/slackbot
+      path: tools/slackbot.mdx
+    - page: Zoom
+      slug: tools/zoom
+      path: tools/zoom.mdx
+  - section: Productivity & Project Management
+    contents:
+    - page: Airtable
+      slug: tools/airtable
+      path: tools/airtable.mdx
+    - page: Clickup
+      slug: tools/clickup
+      path: tools/clickup.mdx
+    - page: Coda
+      slug: tools/coda
+      path: tools/coda.mdx
+    - page: Googledocs
+      slug: tools/googledocs
+      path: tools/googledocs.mdx
+    - page: Googletasks
+      slug: tools/googletasks
+      path: tools/googletasks.mdx
+    - page: Linear
+      slug: tools/linear
+      path: tools/linear.mdx
+    - page: Linkhut
+      slug: tools/linkhut
+      path: tools/linkhut.mdx
+    - page: Monday
+      slug: tools/monday
+      path: tools/monday.mdx
+    - page: Onepage
+      slug: tools/onepage
+      path: tools/onepage.mdx
+    - page: Shortcut
+      slug: tools/shortcut
+      path: tools/shortcut.mdx
+    - page: Todoist
+      slug: tools/todoist
+      path: tools/todoist.mdx
+    - page: Wrike
+      slug: tools/wrike
+      path: tools/wrike.mdx
+  - section: Developer Tools & Devops
+    contents:
+    - page: Ably
+      slug: tools/ably
+      path: tools/ably.mdx
+    - page: Baserow
+      slug: tools/baserow
+      path: tools/baserow.mdx
+    - page: Bitbucket
+      slug: tools/bitbucket
+      path: tools/bitbucket.mdx
+    - page: Contentful
+      slug: tools/contentful
+      path: tools/contentful.mdx
+    - page: Datadog
+      slug: tools/datadog
+      path: tools/datadog.mdx
+    - page: Neon
+      slug: tools/neon
+      path: tools/neon.mdx
+    - page: Ngrok
+      slug: tools/ngrok
+      path: tools/ngrok.mdx
+    - page: Pagerduty
+      slug: tools/pagerduty
+      path: tools/pagerduty.mdx
+    - page: Sentry
+      slug: tools/sentry
+      path: tools/sentry.mdx
+    - page: Supabase
+      slug: tools/supabase
+      path: tools/supabase.mdx
+    - page: Zenrows
+      slug: tools/zenrows
+      path: tools/zenrows.mdx
+  - section: Marketing & Social Media
+    contents:
+    - page: Active Campaign
+      slug: tools/active_campaign
+      path: tools/active_campaign.mdx
+    - page: Ahrefs
+      slug: tools/ahrefs
+      path: tools/ahrefs.mdx
+    - page: Amcards
+      slug: tools/amcards
+      path: tools/amcards.mdx
+    - page: Brandfetch
+      slug: tools/brandfetch
+      path: tools/brandfetch.mdx
+    - page: Crustdata
+      slug: tools/crustdata
+      path: tools/crustdata.mdx
+    - page: Klaviyo
+      slug: tools/klaviyo
+      path: tools/klaviyo.mdx
+    - page: Linkedin
+      slug: tools/linkedin
+      path: tools/linkedin.mdx
+    - page: Mailchimp
+      slug: tools/mailchimp
+      path: tools/mailchimp.mdx
+    - page: Reddit
+      slug: tools/reddit
+      path: tools/reddit.mdx
+    - page: Sendgrid
+      slug: tools/sendgrid
+      path: tools/sendgrid.mdx
+    - page: Twitter Media
+      slug: tools/twitter_media
+      path: tools/twitter_media.mdx
+  - section: Ai & Machine Learning
+    contents:
+    - page: Humanloop
+      slug: tools/humanloop
+      path: tools/humanloop.mdx
+    - page: Lmnt
+      slug: tools/lmnt
+      path: tools/lmnt.mdx
+    - page: Mem0
+      slug: tools/mem0
+      path: tools/mem0.mdx
+    - page: Perplexityai
+      slug: tools/perplexityai
+      path: tools/perplexityai.mdx
+    - page: Semanticscholar
+      slug: tools/semanticscholar
+      path: tools/semanticscholar.mdx
+    - page: Textrazor
+      slug: tools/textrazor
+      path: tools/textrazor.mdx
+    - page: Typefully
+      slug: tools/typefully
+      path: tools/typefully.mdx
+  - section: Document & File Management
+    contents:
+    - page: Docusign
+      slug: tools/docusign
+      path: tools/docusign.mdx
+    - page: Dropbox
+      slug: tools/dropbox
+      path: tools/dropbox.mdx
+    - page: Googledrive
+      slug: tools/googledrive
+      path: tools/googledrive.mdx
+    - page: Googlephotos
+      slug: tools/googlephotos
+      path: tools/googlephotos.mdx
+    - page: Googlesuper
+      slug: tools/googlesuper
+      path: tools/googlesuper.mdx
+    - page: One Drive
+      slug: tools/one_drive
+      path: tools/one_drive.mdx
+    - page: Pandadoc
+      slug: tools/pandadoc
+      path: tools/pandadoc.mdx
+  - section: Other / Miscellaneous
+    contents:
+    - page: Browserbase Tool
+      slug: tools/browserbase_tool
+      path: tools/browserbase_tool.mdx
+    - page: Foursquare
+      slug: tools/foursquare
+      path: tools/foursquare.mdx
+    - page: Google Maps
+      slug: tools/google_maps
+      path: tools/google_maps.mdx
+    - page: Linkup
+      slug: tools/linkup
+      path: tools/linkup.mdx
+    - page: More Trees
+      slug: tools/more_trees
+      path: tools/more_trees.mdx
+    - page: Tinyurl
+      slug: tools/tinyurl
+      path: tools/tinyurl.mdx
+    - page: Yousearch
+      slug: tools/yousearch
+      path: tools/yousearch.mdx
+  - section: Productivity
+    contents:
+    - page: Asana
+      slug: tools/asana
+      path: tools/asana.mdx
+    - page: Bolna
+      slug: tools/bolna
+      path: tools/bolna.mdx
+    - page: Jira
+      slug: tools/jira
+      path: tools/jira.mdx
+    - page: Slack
+      slug: tools/slack
+      path: tools/slack.mdx
+    - page: Trello
+      slug: tools/trello
+      path: tools/trello.mdx
+  - section: Finance & Accounting
+    contents:
+    - page: Flutterwave
+      slug: tools/flutterwave
+      path: tools/flutterwave.mdx
+    - page: Quickbooks
+      slug: tools/quickbooks
+      path: tools/quickbooks.mdx
+    - page: Ramp
+      slug: tools/ramp
+      path: tools/ramp.mdx
+    - page: Recallai
+      slug: tools/recallai
+      path: tools/recallai.mdx
   - section: Scheduling & Booking
     contents:
+    - page: Apaleo
+      slug: tools/apaleo
+      path: tools/apaleo.mdx
+    - page: Cal
+      slug: tools/cal
+      path: tools/cal.mdx
+    - page: Calendly
+      slug: tools/calendly
+      path: tools/calendly.mdx
     - page: Googlecalendar
       slug: tools/googlecalendar
       path: tools/googlecalendar.mdx
+  - section: Workflow Automation
+    contents:
+    - page: Bannerbear
+      slug: tools/bannerbear
+      path: tools/bannerbear.mdx
+    - page: Formsite
+      slug: tools/formsite
+      path: tools/formsite.mdx
+    - page: Process Street
+      slug: tools/process_street
+      path: tools/process_street.mdx
+    - page: Workiom
+      slug: tools/workiom
+      path: tools/workiom.mdx
+  - section: Design & Creative Tools
+    contents:
+    - page: Canva
+      slug: tools/canva
+      path: tools/canva.mdx
+    - page: Figma
+      slug: tools/figma
+      path: tools/figma.mdx
+    - page: Webflow
+      slug: tools/webflow
+      path: tools/webflow.mdx
+  - section: Email Marketing
+    contents:
+    - page: Bigmailer
+      slug: tools/bigmailer
+      path: tools/bigmailer.mdx
+    - page: Brevo
+      slug: tools/brevo
+      path: tools/brevo.mdx
+    - page: Emailoctopus
+      slug: tools/emailoctopus
+      path: tools/emailoctopus.mdx
+  - section: Collaboration
+    contents:
+    - page: Confluence
+      slug: tools/confluence
+      path: tools/confluence.mdx
+    - page: Gong
+      slug: tools/gong
+      path: tools/gong.mdx
+  - section: Education & Lms
+    contents:
+    - page: Canvas
+      slug: tools/canvas
+      path: tools/canvas.mdx
+    - page: D2Lbrightspace
+      slug: tools/d2lbrightspace
+      path: tools/d2lbrightspace.mdx
+  - section: Finance
+    contents:
+    - page: Altoviz
+      slug: tools/altoviz
+      path: tools/altoviz.mdx
+    - page: Finage
+      slug: tools/finage
+      path: tools/finage.mdx
+  - section: Time Tracking
+    contents:
+    - page: Clockify
+      slug: tools/clockify
+      path: tools/clockify.mdx
+    - page: Timecamp
+      slug: tools/timecamp
+      path: tools/timecamp.mdx
+  - section: Web Scraping
+    contents:
+    - page: Scrape Do
+      slug: tools/scrape_do
+      path: tools/scrape_do.mdx
+    - page: Scrapingant
+      slug: tools/scrapingant
+      path: tools/scrapingant.mdx
+  - section: Accounting
+    contents:
+    - page: Bill
+      slug: tools/bill
+      path: tools/bill.mdx
+  - section: Advertising & Marketing
+    contents:
+    - page: Googleads
+      slug: tools/googleads
+      path: tools/googleads.mdx
+  - section: Ai Video
+    contents:
+    - page: Heygen
+      slug: tools/heygen
+      path: tools/heygen.mdx
+  - section: Api
+    contents:
+    - page: Screenshotone
+      slug: tools/screenshotone
+      path: tools/screenshotone.mdx
+  - section: Blockchain
+    contents:
+    - page: Alchemy
+      slug: tools/alchemy
+      path: tools/alchemy.mdx
+  - section: Browser Automation
+    contents:
+    - page: Browserless
+      slug: tools/browserless
+      path: tools/browserless.mdx
+  - section: Business Intelligence
+    contents:
+    - page: Klipfolio
+      slug: tools/klipfolio
+      path: tools/klipfolio.mdx
+  - section: Communication
+    contents:
+    - page: Whatsapp
+      slug: tools/whatsapp
+      path: tools/whatsapp.mdx
+  - section: Compliance
+    contents:
+    - page: Tpscheck
+      slug: tools/tpscheck
+      path: tools/tpscheck.mdx
+  - section: Cryptocurrency
+    contents:
+    - page: Coinbase
+      slug: tools/coinbase
+      path: tools/coinbase.mdx
+  - section: Data & Analytics
+    contents:
+    - page: Excel
+      slug: tools/excel
+      path: tools/excel.mdx
+  - section: Data Services
+    contents:
+    - page: Enigma
+      slug: tools/enigma
+      path: tools/enigma.mdx
+  - section: Database Management
+    contents:
+    - page: Ragic
+      slug: tools/ragic
+      path: tools/ragic.mdx
+  - section: Dev Tools
+    contents:
+    - page: Gitlab
+      slug: tools/gitlab
+      path: tools/gitlab.mdx
+  - section: E Commerce
+    contents:
+    - page: Junglescout
+      slug: tools/junglescout
+      path: tools/junglescout.mdx
+  - section: Ed
+    contents:
+    - page: Blackboard
+      slug: tools/blackboard
+      path: tools/blackboard.mdx
+  - section: Email
+    contents:
+    - page: Resend
+      slug: tools/resend
+      path: tools/resend.mdx
+  - section: Entertainment & Media
+    contents:
+    - page: Youtube
+      slug: tools/youtube
+      path: tools/youtube.mdx
+  - section: Erp
+    contents:
+    - page: Bamboohr
+      slug: tools/bamboohr
+      path: tools/bamboohr.mdx
+  - section: Financial Data
+    contents:
+    - page: Nasdaq Data Link Time Series And Table Data
+      slug: tools/nasdaq_data_link_time_series_and_table_data
+      path: tools/nasdaq_data_link_time_series_and_table_data.mdx
+  - section: Form Backend
+    contents:
+    - page: Formcarry
+      slug: tools/formcarry
+      path: tools/formcarry.mdx
+  - section: Gaming
+    contents:
+    - page: Discord
+      slug: tools/discord
+      path: tools/discord.mdx
+  - section: Incident Management
+    contents:
+    - page: Rootly
+      slug: tools/rootly
+      path: tools/rootly.mdx
+  - section: Internet Security
+    contents:
+    - page: Nextdns
+      slug: tools/nextdns
+      path: tools/nextdns.mdx
+  - section: Knowledge Base
+    contents:
+    - page: Box
+      slug: tools/box
+      path: tools/box.mdx
+  - section: Lead Generation
+    contents:
+    - page: Leadfeeder
+      slug: tools/leadfeeder
+      path: tools/leadfeeder.mdx
+  - section: Maintenance Management
+    contents:
+    - page: Maintainx
+      slug: tools/maintainx
+      path: tools/maintainx.mdx
+  - section: Marketing
+    contents:
+    - page: Fomo
+      slug: tools/fomo
+      path: tools/fomo.mdx
+  - section: Natural Language Processing
+    contents:
+    - page: Rosette Text Analytics
+      slug: tools/rosette_text_analytics
+      path: tools/rosette_text_analytics.mdx
+  - section: Networking
+    contents:
+    - page: Cloudflare
+      slug: tools/cloudflare
+      path: tools/cloudflare.mdx
+  - section: Nft
+    contents:
+    - page: Open Sea
+      slug: tools/open_sea
+      path: tools/open_sea.mdx
+  - section: Photography
+    contents:
+    - page: Smugmug
+      slug: tools/smugmug
+      path: tools/smugmug.mdx
+  - section: Podcast
+    contents:
+    - page: Listennotes
+      slug: tools/listennotes
+      path: tools/listennotes.mdx
+  - section: Project Management
+    contents:
+    - page: Rocketlane
+      slug: tools/rocketlane
+      path: tools/rocketlane.mdx
+  - section: Sales
+    contents:
+    - page: Leadoku
+      slug: tools/leadoku
+      path: tools/leadoku.mdx
+  - section: Security & Compliance
+    contents:
+    - page: Borneo
+      slug: tools/borneo
+      path: tools/borneo.mdx
+  - section: Seo
+    contents:
+    - page: Semrush
+      slug: tools/semrush
+      path: tools/semrush.mdx
+  - section: Social Media
+    contents:
+    - page: Metaads
+      slug: tools/metaads
+      path: tools/metaads.mdx
+  - section: Testing
+    contents:
+    - page: Bugbug
+      slug: tools/bugbug
+      path: tools/bugbug.mdx
+  - section: Url Shortening
+    contents:
+    - page: Cutt Ly
+      slug: tools/cutt_ly
+      path: tools/cutt_ly.mdx
+  - section: Vacation Rental Software
+    contents:
+    - page: Lodgify
+      slug: tools/lodgify
+      path: tools/lodgify.mdx
+  - section: Voice
+    contents:
+    - page: Elevenlabs
+      slug: tools/elevenlabs
+      path: tools/elevenlabs.mdx
+  - section: Web3 Development
+    contents:
+    - page: Starton
+      slug: tools/starton
+      path: tools/starton.mdx
+  - section: Website Builders
+    contents:
+    - page: Brilliant Directories
+      slug: tools/brilliant_directories
+      path: tools/brilliant_directories.mdx
+  - section: Proxy Apps
+    contents:
+    - page: Accelo
+      slug: tools/accelo
+      path: tools/accelo.mdx
+    - page: Adobe
+      slug: tools/adobe
+      path: tools/adobe.mdx
+    - page: Aero Workflow
+      slug: tools/aero_workflow
+      path: tools/aero_workflow.mdx
+    - page: Amazon
+      slug: tools/amazon
+      path: tools/amazon.mdx
+    - page: Appdrag
+      slug: tools/appdrag
+      path: tools/appdrag.mdx
+    - page: Appsflyer
+      slug: tools/appsflyer
+      path: tools/appsflyer.mdx
+    - page: Ashby
+      slug: tools/ashby
+      path: tools/ashby.mdx
+    - page: Atlassian
+      slug: tools/atlassian
+      path: tools/atlassian.mdx
+    - page: Auth0
+      slug: tools/auth0
+      path: tools/auth0.mdx
+    - page: Axonaut
+      slug: tools/axonaut
+      path: tools/axonaut.mdx
+    - page: Battlenet
+      slug: tools/battlenet
+      path: tools/battlenet.mdx
+    - page: Beeminder
+      slug: tools/beeminder
+      path: tools/beeminder.mdx
+    - page: Bitwarden
+      slug: tools/bitwarden
+      path: tools/bitwarden.mdx
+    - page: Blackbaud
+      slug: tools/blackbaud
+      path: tools/blackbaud.mdx
+    - page: Boldsign
+      slug: tools/boldsign
+      path: tools/boldsign.mdx
+    - page: Botbaba
+      slug: tools/botbaba
+      path: tools/botbaba.mdx
+    - page: Braintree
+      slug: tools/braintree
+      path: tools/braintree.mdx
+    - page: Breezy Hr
+      slug: tools/breezy_hr
+      path: tools/breezy_hr.mdx
+    - page: Brex
+      slug: tools/brex
+      path: tools/brex.mdx
+    - page: Brex Staging
+      slug: tools/brex_staging
+      path: tools/brex_staging.mdx
+    - page: Brightpearl
+      slug: tools/brightpearl
+      path: tools/brightpearl.mdx
+    - page: Browserhub
+      slug: tools/browserhub
+      path: tools/browserhub.mdx
+    - page: Bubble
+      slug: tools/bubble
+      path: tools/bubble.mdx
+    - page: Chmeetings
+      slug: tools/chmeetings
+      path: tools/chmeetings.mdx
+    - page: Coinmarketcal
+      slug: tools/coinmarketcal
+      path: tools/coinmarketcal.mdx
+    - page: Customer Io
+      slug: tools/customer_io
+      path: tools/customer_io.mdx
+    - page: Datagma
+      slug: tools/datagma
+      path: tools/datagma.mdx
+    - page: Datarobot
+      slug: tools/datarobot
+      path: tools/datarobot.mdx
+    - page: Deel
+      slug: tools/deel
+      path: tools/deel.mdx
+    - page: Demio
+      slug: tools/demio
+      path: tools/demio.mdx
+    - page: Digicert
+      slug: tools/digicert
+      path: tools/digicert.mdx
+    - page: Docmosis
+      slug: tools/docmosis
+      path: tools/docmosis.mdx
+    - page: Dropbox Sign
+      slug: tools/dropbox_sign
+      path: tools/dropbox_sign.mdx
+    - page: Epic Games
+      slug: tools/epic_games
+      path: tools/epic_games.mdx
+    - page: Eventbrite
+      slug: tools/eventbrite
+      path: tools/eventbrite.mdx
+    - page: Exist
+      slug: tools/exist
+      path: tools/exist.mdx
+    - page: Facebook
+      slug: tools/facebook
+      path: tools/facebook.mdx
+    - page: Factorial
+      slug: tools/factorial
+      path: tools/factorial.mdx
+    - page: Fitbit
+      slug: tools/fitbit
+      path: tools/fitbit.mdx
+    - page: Freshbooks
+      slug: tools/freshbooks
+      path: tools/freshbooks.mdx
+    - page: Front
+      slug: tools/front
+      path: tools/front.mdx
+    - page: Go To Webinar
+      slug: tools/go_to_webinar
+      path: tools/go_to_webinar.mdx
+    - page: Google Analytics
+      slug: tools/google_analytics
+      path: tools/google_analytics.mdx
+    - page: Googleslides
+      slug: tools/googleslides
+      path: tools/googleslides.mdx
+    - page: Gumroad
+      slug: tools/gumroad
+      path: tools/gumroad.mdx
+    - page: Guru
+      slug: tools/guru
+      path: tools/guru.mdx
+    - page: Hackerrank Work
+      slug: tools/hackerrank_work
+      path: tools/hackerrank_work.mdx
+    - page: Harvest
+      slug: tools/harvest
+      path: tools/harvest.mdx
+    - page: Helcim
+      slug: tools/helcim
+      path: tools/helcim.mdx
+    - page: Highlevel
+      slug: tools/highlevel
+      path: tools/highlevel.mdx
+    - page: Icims Talent Cloud
+      slug: tools/icims_talent_cloud
+      path: tools/icims_talent_cloud.mdx
+    - page: Idea Scale
+      slug: tools/idea_scale
+      path: tools/idea_scale.mdx
+    - page: Interzoid
+      slug: tools/interzoid
+      path: tools/interzoid.mdx
+    - page: Keap
+      slug: tools/keap
+      path: tools/keap.mdx
+    - page: Lastpass
+      slug: tools/lastpass
+      path: tools/lastpass.mdx
+    - page: Launch Darkly
+      slug: tools/launch_darkly
+      path: tools/launch_darkly.mdx
+    - page: Lever
+      slug: tools/lever
+      path: tools/lever.mdx
+    - page: Lever Sandbox
+      slug: tools/lever_sandbox
+      path: tools/lever_sandbox.mdx
+    - page: Lexoffice
+      slug: tools/lexoffice
+      path: tools/lexoffice.mdx
+    - page: Mailerlite
+      slug: tools/mailerlite
+      path: tools/mailerlite.mdx
+    - page: Mboum
+      slug: tools/mboum
+      path: tools/mboum.mdx
+    - page: Metatextai
+      slug: tools/metatextai
+      path: tools/metatextai.mdx
+    - page: Microsoft Tenant
+      slug: tools/microsoft_tenant
+      path: tools/microsoft_tenant.mdx
+    - page: Miro
+      slug: tools/miro
+      path: tools/miro.mdx
+    - page: Mocean
+      slug: tools/mocean
+      path: tools/mocean.mdx
+    - page: Mopinion
+      slug: tools/mopinion
+      path: tools/mopinion.mdx
+    - page: Moxie
+      slug: tools/moxie
+      path: tools/moxie.mdx
+    - page: Moz
+      slug: tools/moz
+      path: tools/moz.mdx
+    - page: Mural
+      slug: tools/mural
+      path: tools/mural.mdx
+    - page: Ncscale
+      slug: tools/ncscale
+      path: tools/ncscale.mdx
+    - page: Netsuite
+      slug: tools/netsuite
+      path: tools/netsuite.mdx
+    - page: Oncehub
+      slug: tools/oncehub
+      path: tools/oncehub.mdx
+    - page: Piggy
+      slug: tools/piggy
+      path: tools/piggy.mdx
+    - page: Precoro
+      slug: tools/precoro
+      path: tools/precoro.mdx
+    - page: Printnode
+      slug: tools/printnode
+      path: tools/printnode.mdx
+    - page: Productboard
+      slug: tools/productboard
+      path: tools/productboard.mdx
+    - page: Qualaroo
+      slug: tools/qualaroo
+      path: tools/qualaroo.mdx
+    - page: Rafflys
+      slug: tools/rafflys
+      path: tools/rafflys.mdx
+    - page: Ravenseotools
+      slug: tools/ravenseotools
+      path: tools/ravenseotools.mdx
+    - page: Ring Central
+      slug: tools/ring_central
+      path: tools/ring_central.mdx
+    - page: Rippling
+      slug: tools/rippling
+      path: tools/rippling.mdx
+    - page: Rocket Reach
+      slug: tools/rocket_reach
+      path: tools/rocket_reach.mdx
+    - page: Sage
+      slug: tools/sage
+      path: tools/sage.mdx
+    - page: Seismic
+      slug: tools/seismic
+      path: tools/seismic.mdx
+    - page: Servicem8
+      slug: tools/servicem8
+      path: tools/servicem8.mdx
+    - page: Smartrecruiters
+      slug: tools/smartrecruiters
+      path: tools/smartrecruiters.mdx
+    - page: Square
+      slug: tools/square
+      path: tools/square.mdx
+    - page: Stack Exchange
+      slug: tools/stack_exchange
+      path: tools/stack_exchange.mdx
+    - page: Survey Monkey
+      slug: tools/survey_monkey
+      path: tools/survey_monkey.mdx
+    - page: Tapform
+      slug: tools/tapform
+      path: tools/tapform.mdx
+    - page: Terminus
+      slug: tools/terminus
+      path: tools/terminus.mdx
+    - page: Timekit
+      slug: tools/timekit
+      path: tools/timekit.mdx
+    - page: Timely
+      slug: tools/timely
+      path: tools/timely.mdx
+    - page: Tinypng
+      slug: tools/tinypng
+      path: tools/tinypng.mdx
+    - page: Tisane
+      slug: tools/tisane
+      path: tools/tisane.mdx
+    - page: Toneden
+      slug: tools/toneden
+      path: tools/toneden.mdx
+    - page: Twitch
+      slug: tools/twitch
+      path: tools/twitch.mdx
+    - page: Venly
+      slug: tools/venly
+      path: tools/venly.mdx
+    - page: Vero
+      slug: tools/vero
+      path: tools/vero.mdx
+    - page: Visme
+      slug: tools/visme
+      path: tools/visme.mdx
+    - page: Waboxapp
+      slug: tools/waboxapp
+      path: tools/waboxapp.mdx
+    - page: Wakatime
+      slug: tools/wakatime
+      path: tools/wakatime.mdx
+    - page: Wave Accounting
+      slug: tools/wave_accounting
+      path: tools/wave_accounting.mdx
+    - page: Webex
+      slug: tools/webex
+      path: tools/webex.mdx
+    - page: Wiz
+      slug: tools/wiz
+      path: tools/wiz.mdx
+    - page: Xero
+      slug: tools/xero
+      path: tools/xero.mdx
+    - page: Yandex
+      slug: tools/yandex
+      path: tools/yandex.mdx
+    - page: Ynab
+      slug: tools/ynab
+      path: tools/ynab.mdx
+    - page: Zenserp
+      slug: tools/zenserp
+      path: tools/zenserp.mdx
+    - page: Zoho Bigin
+      slug: tools/zoho_bigin
+      path: tools/zoho_bigin.mdx
+    - page: Zoho Books
+      slug: tools/zoho_books
+      path: tools/zoho_books.mdx
+    - page: Zoho Desk
+      slug: tools/zoho_desk
+      path: tools/zoho_desk.mdx
+    - page: Zoho Inventory
+      slug: tools/zoho_inventory
+      path: tools/zoho_inventory.mdx
+    - page: Zoho Invoice
+      slug: tools/zoho_invoice
+      path: tools/zoho_invoice.mdx
+    - page: Zoho Mail
+      slug: tools/zoho_mail
+      path: tools/zoho_mail.mdx
   - section: No Auth
     contents:
+    - page: Codeinterpreter
+      slug: tools/codeinterpreter
+      path: tools/codeinterpreter.mdx
     - page: Composio
       slug: tools/composio
       path: tools/composio.mdx
+    - page: Composio Search
+      slug: tools/composio_search
+      path: tools/composio_search.mdx
+    - page: Entelligence
+      slug: tools/entelligence
+      path: tools/entelligence.mdx
+    - page: Hackernews
+      slug: tools/hackernews
+      path: tools/hackernews.mdx
+    - page: Text To Pdf
+      slug: tools/text_to_pdf
+      path: tools/text_to_pdf.mdx
+    - page: Weathermap
+      slug: tools/weathermap
+      path: tools/weathermap.mdx
 - tab: sdk-reference
   layout:
   - section: Python
