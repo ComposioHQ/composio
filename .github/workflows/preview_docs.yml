@@ -29,6 +29,7 @@ jobs:
         working-directory: ./fern
         run: |
           uv sync
+          uv pip install ../python 
 
       - name: Install Fern
         run: npm install -g fern-api
