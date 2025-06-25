@@ -1,0 +1,20 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "composio-docs": "0.0.0",
+    "@composio/core": "0.1.35",
+    "@composio/json-schema-to-zod": "0.1.9",
+    "@composio/anthropic": "0.1.35",
+    "@composio/cloudflare": "0.1.35",
+    "@composio/google": "0.1.35",
+    "@composio/langchain": "0.1.35",
+    "@composio/mastra": "0.1.35",
+    "@composio/openai": "0.1.35",
+    "@composio/openai-agents": "0.1.35",
+    "@composio/vercel": "0.1.35"
+  },
+  "changesets": [
+    "cuddly-dragons-knock"
+  ]
+}
