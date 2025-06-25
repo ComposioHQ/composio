@@ -1,9 +1,9 @@
 import asyncio
 
 from agents import Agent, Runner
+from composio_openai_agents import OpenAIAgentsProvider
 
 from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
 
 # Initialize Composio toolset
 composio = Composio(provider=OpenAIAgentsProvider())
@@ -20,6 +20,7 @@ agent = Agent(
     instructions="You are a helpful assistant that helps users with GitHub tasks.",
     tools=tools,
 )
+
 
 # Run the agent
 async def main():

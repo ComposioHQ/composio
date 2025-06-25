@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio Claude plugin.
+Setup configuration for Composio Google AI Python Gemini plugin
 """
 
 from pathlib import Path
@@ -7,11 +7,11 @@ from pathlib import Path
 from setuptools import setup
 
 setup(
-    name="composio_anthropic",
+    name="composio_google_adk",
     version="1.0.0-rc5",
     author="Composio",
     author_email="tech@composio.dev",
-    description="Use Composio to get an array of tools with your Anthropic LLMs.",
+    description="Use Composio to get an array of tools with your Google AI Python Gemini model.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
@@ -20,7 +20,9 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
-    install_requires=["anthropic>=0.25.7"],
+    python_requires=">=3.9,<4",
+    install_requires=[
+        "google-adk",
+    ],
     include_package_data=True,
 )

@@ -1,10 +1,9 @@
 import typing as t
 
-from anthropic.types.tool_use_block import ToolUseBlock
-from anthropic.types.tool_param import ToolParam
-from anthropic.types.message import Message as ToolsBetaMessage
 from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
-
+from anthropic.types.message import Message as ToolsBetaMessage
+from anthropic.types.tool_param import ToolParam
+from anthropic.types.tool_use_block import ToolUseBlock
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
@@ -58,7 +57,7 @@ class AnthropicProvider(
         """
         Handle tool calls from Anthropic Claude chat completion object.
 
-        :param response: Chat completion object from 
+        :param response: Chat completion object from
             `anthropic.Anthropic.beta.tools.messages.create` function call.
         :param user_id: User ID to use for executing function calls.
         :param modifiers: Modifiers to use for executing function calls.
