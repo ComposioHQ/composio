@@ -41,8 +41,8 @@ _Note:_ When opening a PR make sure you open the PR against `development` and no
       source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
       # Install dependencies
-      uv pip install -e .
-      uv pip install -e python/swe
+      uv pip install -e python/ # install composio-core
+      uv pip install -e python/swe # install swe agent
 
       # Install plugins as needed
       uv pip install -e python/plugins/autogen
@@ -56,9 +56,8 @@ _Note:_ When opening a PR make sure you open the PR against `development` and no
       uv pip install -e python/plugins/openai
 
 ## For a clean PR run checks in the following order before pushing the code on a PR
-
 - make clean
-- make format-code
+- make format-code # if tox not installed: pip install 'tox>=4.21,<5' 
 - make check-code
 
 ## Further commands needed during development

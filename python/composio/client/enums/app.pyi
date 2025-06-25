@@ -107,6 +107,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     DISCORD: "App"
     DISCORDBOT: "App"
     DOCMOSIS: "App"
+    DOC_RAG_TOOL: "App"
     DOCUSIGN: "App"
     DROPBOX: "App"
     DROPBOX_SIGN: "App"

@@ -1,0 +1,2995 @@
+# Welcome to Composio
+
+
+  Composio introduction image
+
+
+
+  Give your AI IDE access to Composio's documentation using our llms.txt files: ([short
+  .txt](/llms.txt), [long .txt](/llms-full.txt))
+
+
+Composio is the fastest way to enable your AI agents to take real-world actions—without dealing with individual API integrations, authentication flows, or complex tool formatting.
+
+* **Access 3000+ tools** out of the box across popular apps like Slack, GitHub, Notion, and more. [Browse tools →](/tools/)
+* **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
+* **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
+* **Customize tools** for your proprietary APIs or internal functions via [modifiers](/docs/modifiers/schema-modifiers).
+* **Integrate seamlessly** with frameworks like OpenAI, Anthropic, LangChain, Vercel AI SDK, and more.
+* **Enhance reliability** with [input/output processing hooks](/docs/modifiers/before-execution) to clean or transform data on the fly.
+
+No more writing dozens of bespoke integrations. Composio handles auth, tool normalization, and execution—so your agents can focus on reasoning, not plumbing.
+
+**We even optimize tool calls automatically for better accuracy—free of cost.**
+
+
+# Quickstart
+
+> Add authenticated tool-calling to any LLM agent in three steps.
+
+This guide walks you through **authenticated tool calling**—the foundation of how Composio connects your AI agents to real-world actions.
+
+You'll learn how to:
+
+1. **Discover and add tools** relevant to your use case (e.g., Slack, GitHub, Notion) to your AI agent
+2. **Authenticate tools** securely on behalf of a specific user, with fine-grained access control
+3. **Enable your LLM** (like OpenAI, Claude, or LangChain) to invoke these tools reliably using structured tool call formats
+
+Composio provides first-class SDKs for both **TypeScript** and **Python**, making it easy to integrate no matter what stack you're building with.
+
+**Before you start!**
+
+
+  1. Ensure you have created an account on [Composio](https://app.composio.dev) and have Python 3.8+ *or* NodeJS 18+ installed!
+  2. Get your API key from the [developer dashboard](https://app.composio.dev/developers) and set it as an environment variable.
+
+  ```bash
+  export COMPOSIO_API_KEY=your_api_key
+  ```
+
+  
+    Ensure you save the API key in a 
+
+    `.env`
+
+     file and don't commit it to version control!
+  
+
+
+## Install the SDK
+
+First, install the Composio SDK for your preferred language:
+
+
+  ```bash title="Python" for="python"
+  pip install composio
+  ```
+
+  ```bash title="TypeScript" for="typescript"
+  npm install @composio/core@next
+  ```
+
+
+## Initialize the SDK
+
+You’ll need to initialize the SDK with your Composio API key. This allows you to authenticate requests and access tools on behalf of your users.
+
+
+  ```python Python
+  from composio import Composio
+
+  composio = Composio(
+    # api_key="your-api-key",
+  )
+  ```
+
+  ```typescript TypeScript
+  import { Composio } from '@composio/core';
+
+  // Initialize the SDK
+  const composio = new Composio({
+    // apiKey: 'your-api-key',
+  });
+  ```
+
+
+## Authorize Tools & Run Them with an Agent
+
+Composio supports multiple LLM providers. Here’s how to use Composio with some of the most popular ones:
+
+
+  
+    Composio ships with support for OpenAI provider out of the box.
+
+    ```python Python title="Python" maxLines=40 
+    from composio import Composio
+    from openai import OpenAI
+
+    openai = OpenAI()
+    composio = Composio()
+    user_id = "user@email.com"
+
+    # Initialize connection request
+    connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="gmail")
+    print(f"🔗 Visit the URL to authorize:\n👉 {connection_request.redirect_url}")
+
+    # wait for the connection to be active
+    connection_request.wait_for_connection()
+
+    # Fetch tools
+    tools = composio.tools.get(user_id=user_id, toolkits=["GMAIL"])
+
+    # Invoke agent
+    completion = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "user",
+                "content": "say 'hi from the composio quickstart' to sid@composio.dev",
+                # we'll ship you free merch if you do ;)
+            },
+        ],
+        tools=tools,
+    )
+
+    ```
+  
+
+  
+    You may install the Anthropic provider as well!
+
+    **Installation**
+
+    ```bash
+    npm install @composio/anthropic
+    ```
+
+    ```typescript TypeScript title="TypeScript" maxLines=40 
+    import { Composio } from '@composio/core';
+    import { AnthropicProvider } from '@composio/anthropic';
+    import Anthropic from '@anthropic-ai/sdk';
+
+    const anthropic = new Anthropic();
+    const composio = new Composio({ provider: new AnthropicProvider() });
+    const userId = 'user@example.com';
+
+    const connection = await composio.toolkits.authorize(userId, 'LINEAR');
+    console.log(`🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`);
+
+    const tools = await composio.tools.get(userId, { toolkits: ['LINEAR'] });
+    await connection.waitForConnection();
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-3-7-sonnet-latest',
+      tools: tools,
+      messages: [
+        {
+          role: 'user',
+          content: 'Get my linear projects',
+        },
+      ],
+      max_tokens: 1024,
+    });
+
+    const result = await composio.provider.handleToolCalls(userId, msg);
+    console.log('✅ Tool results:', result);
+
+    ```
+  
+
+  
+    You may install the Vercel AI provider as well!
+
+    **Installation**
+
+    ```bash
+    npm install @composio/vercel
+    ```
+
+    ```typescript TypeScript title="TypeScript" maxLines=40 
+    import { Composio } from '@composio/core';
+    import { generateText } from 'ai';
+    import { anthropic } from '@ai-sdk/anthropic';
+    import { VercelProvider } from '@composio/vercel';
+    import { v4 as uuidv4 } from 'uuid';
+
+    const userId = uuidv4(); // The user's ID.
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+      provider: new VercelProvider(),
+    });
+
+    const connection = await composio.toolkits.authorize(userId, 'gmail');
+    console.log(`🔗 Visit the URL to authorize:\n👉 ${connection.redirectUrl}`);
+
+    await connection.waitForConnection();
+
+    const tools = await composio.tools.get(userId, { tools: ['GMAIL_SEND_EMAIL'] });
+
+    const { text } = await generateText({
+      model: anthropic('claude-3-7-sonnet-20250219'),
+      messages: [
+        {
+          role: 'user',
+          content: "say 'hi from the composio quickstart' to sid@composio.dev", // we'll ship you free merch if you do ;)
+        },
+      ],
+      tools,
+      maxSteps: 3,
+    });
+
+    console.log(text);
+
+    ```
+  
+
+  
+    You may install the OpenAI Agents provider as well!
+
+    **Installation**
+
+    ```bash
+    pip install composio[openai-agents]
+    ```
+
+    ```python Python title="Python" maxLines=40 
+    import asyncio
+
+    from agents import Agent, Runner
+
+    from composio import Composio
+    from composio_openai_agents import OpenAIAgentsProvider
+
+    # Initialize Composio toolset
+    user_id = "user@email.com"
+    composio = Composio(provider=OpenAIAgentsProvider())
+
+    # Initialize connection request
+    connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="gmail")
+    print(f"🔗 Visit the URL to authorize:\n👉 {connection_request.redirect_url}")
+
+    # wait for the connection to be active
+    connection_request.wait_for_connection()
+
+    # Get all the tools
+    tools = composio.tools.get(
+        user_id=user_id,
+        tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+    )
+
+    # Create an agent with the tools
+    agent = Agent(
+        name="GitHub Agent",
+        instructions="You are a helpful assistant that helps users with GitHub tasks.",
+        tools=tools,
+    )
+    ```
+  
+
+
+
+  You just:
+
+  1. Authorized a user account with Composio
+  2. Passed those tool permissions into an LLM framework
+  3. Let the LLM securely call real tools on the user’s behalf
+
+  All OAuth flows and tool execution were automatically handled by Composio.
+
+
+## Next steps
+
+
+  
+    Learn how to use Composio with various agent SDK and frameworks.
+  
+
+  
+    Learn how to work with tools and tool calling on a deeper level with Composio.
+  
+
+  
+    Authorize tools for multiple users.
+  
+
+  
+    Listen for external events to trigger actions in your agents
+  
+
+
+
+# IDE and Agent Setup
+
+> Setup your AI IDE and agent to help you ship faster with Composio
+
+This guide explains how to setup your IDE, and coding agents to help you ship faster with Composio.
+
+## Index docs
+
+Cursor can index docs which is a great way to ask questions about Composio and building with our SDKs.
+
+
+  Index docs
+
+
+Once indexed, you can ask questions!
+
+
+  Index docs question
+
+
+## Optimise Cursor
+
+To optimize your experience building with Composio, you can add also instructions to Cursor's system settings. We recommend adding the below prompt to the project rules.
+
+
+  Cursor settings
+
+
+You can add the following to your Cursor "Rules for AI" to help you build with Composio.
+
+
+  ```md TypeScript
+  You are the best TypeScript developer known for your high taste and usage of new and cutting-edge practices.
+  You are building with Composio's TypeScript SDK. Composio is platform for building with authenticated tools for AI agents and workflows.
+  It lets you build agents that that can work across a user's apps like Gmail, Notion, Slack.
+
+  Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
+  [Composio Documentation](https://v3.docs.composio.dev)
+
+  - [Quickstart](https://v3.docs.composio.dev/docs/quickstart.mdx): Add authenticated tool-calling to any LLM agent in three steps.
+  - [Configuration](https://v3.docs.composio.dev/docs/configuration.mdx)
+  - [Providers](https://v3.docs.composio.dev/docs/providers.mdx)
+  - [Executing Tools](https://v3.docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
+  - [Authenticating Tools](https://v3.docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
+  - [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolsets
+  - [Schema Modifiers](https://v3.docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
+  - [Before Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
+  - [After Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
+  - [Creating custom tools](https://v3.docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
+  - [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customising auth configs for a toolkit
+  - [Programmatic Auth Configs](https://v3.docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
+  - [Custom Auth Parameters](https://v3.docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
+  - [Using Triggers](https://v3.docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events
+  - [OpenAI Providers](https://v3.docs.composio.dev/providers/openai.mdx)
+  - [Anthropic Provider](https://v3.docs.composio.dev/providers/anthropic.mdx)
+  - [LangGraph Provider](https://v3.docs.composio.dev/providers/langgraph.mdx)
+  - [CrewAI Provider](https://v3.docs.composio.dev/providers/crewai.mdx)
+  - [Vercel AI SDK Provider](https://v3.docs.composio.dev/providers/vercel.mdx)
+  - [Google ADK Provider](https://v3.docs.composio.dev/providers/google-adk.mdx)
+  - [OpenAI Agents Provider](https://v3.docs.composio.dev/providers/openai-agents.mdx)
+  - [Mastra Provider](https://v3.docs.composio.dev/providers/mastra.mdx)
+  - [Custom Providers](https://v3.docs.composio.dev/toolsets/custom.mdx)
+
+  ```
+
+  ```md Python
+  You are the best Python developer known for your high taste and usage of new and cutting-edge practices.
+  You are building with Composio's Python SDK. Composio is platform for building with authenticated tools for AI agents and workflows.
+  It lets you build agents that that can work across a user's apps like Gmail, Notion, Slack.
+
+  Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
+  [Composio Documentation](https://v3.docs.composio.dev)
+  - [Quickstart](https://v3.docs.composio.dev/docs/quickstart.mdx): Add authenticated tool-calling to any LLM agent in three steps.
+  - [Configuration](https://v3.docs.composio.dev/docs/configuration.mdx)
+  - [Providers](https://v3.docs.composio.dev/docs/toolsets.mdx)
+  - [Executing Tools](https://v3.docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
+  - [Authenticating Tools](https://v3.docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
+  - [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolsets
+  - [Schema Modifiers](https://v3.docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
+  - [Before Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
+  - [After Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
+  - [Creating custom tools](https://v3.docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
+  - [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customising auth configs for a toolkit
+  - [Programmatic Auth Configs](https://v3.docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
+  - [Custom Auth Parameters](https://v3.docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
+  - [Using Triggers](https://v3.docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events
+  - [OpenAI Providers](https://v3.docs.composio.dev/providers/openai.mdx)
+  - [Anthropic Provider](https://v3.docs.composio.dev/providers/anthropic.mdx)
+  - [LangGraph Provider](https://v3.docs.composio.dev/providers/langgraph.mdx)
+  - [CrewAI Provider](https://v3.docs.composio.dev/providers/crewai.mdx)
+  - [Vercel AI SDK Provider](https://v3.docs.composio.dev/providers/vercel.mdx)
+  - [Google ADK Provider](https://v3.docs.composio.dev/providers/google-adk.mdx)
+  - [OpenAI Agents Provider](https://v3.docs.composio.dev/providers/openai-agents.mdx)
+  - [Mastra Provider](https://v3.docs.composio.dev/providers/mastra.mdx)
+  - [Custom Providers](https://v3.docs.composio.dev/toolsets/custom.mdx)
+  ```
+
+
+
+# Providers
+
+Providers in Composio act as bridges between your AI models and external tools. They transform Composio's tools into formats that different AI frameworks can understand and use, making it possible to integrate with any AI framework seamlessly.
+
+## What are Providers?
+
+Think of providers as translators. Different AI frameworks (like OpenAI, Anthropic Claude, or LangChain) expect tools to be formatted in their specific way. Instead of manually converting Composio tools for each framework, providers handle this transformation automatically.
+
+For example:
+
+* OpenAI expects tools in a specific JSON schema format with type: "function"
+* Anthropic Claude expects tools with an input\_schema structure
+* LangChain expects tools as callable functions with specific parameters
+
+Providers ensure that Composio tools work correctly with your chosen AI platform without you having to worry about the technical details.
+
+## Using Providers
+
+Here's how you can generate text with various providers using Composio SDK:
+
+### Default Provider (OpenAI)
+
+If you don't specify a provider, Composio uses the OpenAI provider by default:
+
+
+  ```python Python
+  from openai import OpenAI
+  from composio import Composio
+
+  # Initialize tools.
+  openai_client = OpenAI()
+  composio = Composio(api_key="your-composio-api-key")
+
+  # Define task.
+  task = "Star a repo composiohq/composio on GitHub"
+
+  # Get GitHub tools that are pre-configured
+  tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+  # Get response from the LLM
+  response = openai_client.chat.completions.create(
+      model="gpt-4o-mini",
+      tools=tools,
+      messages=[
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": task},
+      ],
+  )
+  print(response)
+
+  # Execute the function calls.
+  result = composio.provider.handle_tool_calls(response=response, user_id="default")
+  print(result)
+
+
+  ```
+
+  ```typescript TypeScript
+  import { Composio } from '@composio/core';
+
+  // Uses OpenAI provider automatically
+  const composio = new Composio({
+    apiKey: 'your-composio-api-key'
+  });
+
+  // Get tools formatted for OpenAI
+  const tools = await composio.tools.get('default', {
+    toolkits: ['github']
+  });
+
+  // Use with OpenAI
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Star the repo composiohq/composio on GitHub' },
+    ],
+    tools: tools // Already formatted for OpenAI
+  });
+
+  // Execute the function calls.
+  const result = await composio.provider.handleToolCalls("user@example.com", completion)
+  console.log(result)
+
+  ```
+
+
+### Using a Different Provider
+
+Different providers may require additional packages:
+
+
+  ```shell Python
+  # Core SDK (includes OpenAI provider)
+  pip install composio
+
+  # Additional providers
+  pip install composio-anthropic
+  pip install composio-google
+  pip install composio-langchain
+  pip install composio-crewai
+  ```
+
+  ```shell Typescript
+  # Core SDK (includes OpenAI provider)
+  npm install @composio/core
+
+  # Additional providers
+  npm install @composio/anthropic
+  npm install @composio/google  
+  npm install @composio/langchain
+  npm install @composio/vercel
+  ```
+
+
+To use a different provider, specify it when initializing Composio:
+
+
+  
+    OpenAI is a completion provider. You can use it to generate text, function calls.
+
+    
+      ```python Python
+      from composio import Composio
+      from composio_openai import OpenAIProvider
+
+      composio = Composio(provider=OpenAIProvider())
+      ```
+
+      ```typescript TypeScript
+      import { Composio } from "@composio/core";
+      import { OpenAIProvider } from "@composio/openai";
+
+      const composio = new Composio({ provider: new OpenAIProvider() });
+
+      ```
+    
+  
+
+  
+    Anthropic is a completion provider. You can use it to generate text, function calls.
+
+    
+      ```python Python
+      from composio import Composio
+      from composio_anthropic import AnthropicProvider
+
+      composio = Composio(provider=AnthropicProvider())
+      ```
+
+      ```typescript TypeScript
+      import { Composio } from "@composio/core";
+      import { AnthropicProvider } from "@composio/anthropic";
+      import { Anthropic } from "@anthropic-ai/sdk";
+
+      const composio = new Composio({ provider: new AnthropicProvider() });
+
+      ```
+    
+  
+
+  
+    ```typescript TypeScript
+    import { Composio } from "@composio/core";
+    import { VercelProvider } from "@composio/vercel";
+
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+      provider: new VercelProvider(),
+    });
+
+    ```
+  
+
+  
+    ```typescript TypeScript
+    import { MastraProvider } from '@composio/mastra';
+    import { Agent } from '@mastra/core/agent';
+    import { Composio } from '@composio/core';
+
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+      provider: new MastraProvider(),
+    });
+
+    ```
+  
+
+  
+    ```python Python
+    import asyncio
+
+    from agents import Agent, Runner
+
+    from composio import Composio
+    from composio_openai_agents import OpenAIAgentsProvider
+
+    # Initialize Composio toolset
+    composio = Composio(provider=OpenAIAgentsProvider())
+
+    # Get all the tools
+    tools = composio.tools.get(
+        user_id="default",
+        tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+    )
+
+    # Create an agent with the tools
+    agent = Agent(
+        name="GitHub Agent",
+        instructions="You are a helpful assistant.",
+        tools=tools,
+    )
+
+    # Run the agent
+    async def main():
+        result = await Runner.run(
+            starting_agent=agent,
+            input=(
+                "Star the repository composiohq/composio on GitHub"
+            ),
+        )
+        print(result.final_output)
+
+    asyncio.run(main())
+    ```
+  
+
+
+## Supported Providers
+
+Composio supports two different types of providers based on the type of AI framework you are using:
+
+### Non-Agentic Providers
+
+These providers work with AI platforms that use chat completion APIs, where you control the tool execution flow. The AI model analyzes your conversation and suggests which tools to use, but your code decides when and how to execute them.
+With chat completion APIs, the typical flow is:
+
+1. You send a message to the AI model along with available tools
+2. The AI responds with either a text message or a request to use specific tools
+3. If tools are requested, you execute them and send the results back to continue the conversation
+
+
+  } href="/providers/openai">
+    Integrate with OpenAI's tool calling and agents.
+  
+
+  } href="/providers/anthropic">
+    Use Anthropic's Claude models with Composio tools.
+  
+
+  } href="/providers/google-adk">
+    Integrate with Google's Gemini models.
+  
+
+
+### Agentic Providers
+
+These providers work with AI frameworks that can execute tools autonomously. The AI agent can decide to run tools on its own without your direct intervention.
+
+
+  } href="/providers/langgraph">
+    Add tools to LangGraph agent flows.
+  
+
+  
+    Enable tool calling in CrewAI multi-agent systems.
+  
+
+  } href="/providers/vercel">
+    Use Composio tools with Vercel's AI SDK.
+  
+
+  
+    Add tools to OpenAI's new Agents API.
+  
+
+  
+    Use Composio tools with Mastra agent framework.
+  
+
+
+
+  Using a framework not yet supported by Composio? Create a [custom provider](/providers/custom)!
+
+
+### Choosing the Right Provider
+
+Select a provider based on your AI platform:
+
+* **Building with OpenAI models?** → Use OpenAIProvider (default)
+* **Using Claude?** → Use AnthropicProvider
+* **Working with Gemini?** → Use GoogleProvider
+* **Building LangChain agents?** → Use LangChainProvider
+* **Using Vercel AI SDK?** → Use VercelProvider
+* **Working with Mastra?** → Use MastraProvider
+
+## Best Practices
+
+* Choose the right provider for your AI platform from the start
+* Stick with one provider per application for consistency
+* Use provider-specific helper methods when available for easier integration
+* Handle errors consistently regardless of provider choice
+* Test tool execution in your development environment before deployment
+
+## Common Questions
+
+**Q: Can I switch providers after initializing Composio?**
+
+> No, providers are set during initialization. Create a new Composio instance with a different provider if needed.
+
+**Q: Do I need different API keys for different providers?**
+
+> Yes, your Composio API key is used only for tool authentication, and is not used by the provider. You need to use provider specific API keys for each provider.
+
+**Q: Can I use multiple providers in the same application?**
+
+> Yes, create separate Composio instances with different providers for different parts of your application.
+
+**Q: What happens if I use the wrong provider?**
+
+> Your AI platform might not understand the tool format, leading to errors. Always match the provider to your AI platform.
+
+**Q: Are there performance differences between providers?**
+
+> Providers are lightweight adapters and have minimal performance impact. The main differences are in features and AI platform compatibility.
+
+
+# Executing Tools
+
+> Learn how to execute Composio's tools with different providers and frameworks
+
+Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tools for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+
+## Using Chat Completions
+
+For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
+This approach works consistently across all supported non-agent providers.
+
+To learn how to setup these providers, see [Providers](/providers).
+
+
+  ```python Python title="Python (Google)" maxLines=40 
+  from composio import Composio
+  from composio_gemini import GeminiProvider
+  from google import genai
+  from google.genai import types
+  from uuid import uuid4
+
+  user_id = uuid4()
+
+  # Create composio client
+  composio = Composio(provider=GeminiProvider())
+
+  # Create google client
+  client = genai.Client()
+
+  # Create genai client config
+  config = types.GenerateContentConfig(
+      tools=composio.tools.get(
+          user_id=user_id,
+          tools=[
+              "COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH",
+          ],
+      )
+  )
+
+  # Use the chat interface.
+  ```
+
+  ```typescript TypeScript title="TypeScript (Anthropic)" maxLines=40 
+  import { Composio } from '@composio/core';
+  import { AnthropicProvider } from '@composio/anthropic';
+  import { Anthropic } from '@anthropic-ai/sdk';
+
+  const userId = '0000-1111-2222-3333'; // User's UUID
+
+  const anthropic = new Anthropic();
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    provider: new AnthropicProvider(),
+  });
+
+  const tools = await composio.tools.get(userId, {
+    tools: ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH'],
+  });
+
+  const msg = await anthropic.messages.create({
+    model: 'claude-3-7-sonnet-latest',
+    tools: tools,
+    messages: [
+      {
+        role: 'user',
+        content: "What's new with OpenAI?",
+      },
+    ],
+    max_tokens: 1024,
+  });
+
+  const result = await composio.provider.handleToolCalls(userId, msg);
+  console.log(result);
+  ```
+
+
+## Using Agentic Frameworks
+
+Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
+
+
+  Here, the tool execution is handled by the agentic framework. Composio makes sure the tools are formatted into the correct objects for the agentic framework to execute.
+
+
+
+  ```python Python title="Python (OpenAI Agents SDK)" maxLines=40 
+  import asyncio
+  from agents import Agent, Runner
+  from composio import Composio
+  from composio_openai_agents import OpenAIAgentsProvider
+  from uuid import uuid4
+
+  user_id = uuid4()
+
+  # Initialize Composio toolset
+  composio = Composio(provider=OpenAIAgentsProvider())
+
+  # Get all the tools
+  tools = composio.tools.get(
+      user_id=user_id,
+      toolkits=["COMPOSIO_SEARCH"],
+  )
+
+  # Create an agent with the tools
+  agent = Agent(
+      name="Deep Researcher",
+      instructions="You are an investigative journalist.",
+      tools=tools,
+  )
+
+
+  # Run the agent
+  async def main():
+      result = await Runner.run(
+          starting_agent=agent,
+          input=("Do a thorought DEEP research on Ilya Sutskever"),
+      )
+      print(result.final_output)
+
+
+  asyncio.run(main())
+
+  ```
+
+  ```typescript TypeScript title="TypeScript (Anthropic)" maxLines=40 
+  import { Composio } from '@composio/core';
+  import { generateText } from 'ai';
+  import { anthropic } from '@ai-sdk/anthropic';
+  import { VercelProvider } from '@composio/vercel';
+
+  const userId = '0000-1111-2222-3333';
+
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    provider: new VercelProvider(),
+  });
+
+  const tools = await composio.tools.get(userId, {
+    toolkits: ['COMPOSIO_SEARCH'],
+    limit: 10,
+  });
+
+  const { text } = await generateText({
+    model: anthropic('claude-3-7-sonnet-20250219'),
+    messages: [
+      {
+        role: 'user',
+        content: 'Do a thorough DEEP research on Ilya Sutskever',
+      },
+    ],
+    tools,
+    maxSteps: 5,
+  });
+
+  console.log(text);
+  ```
+
+
+## Tools are scoped to a user
+
+Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
+
+The authentication state is checked and used while fetching and executing a tool.
+
+You need to authorize the user to execute tools.
+For more information on authentication, see [Authenticating Tools](./authenticating-tools).
+
+## For Humans (deterministic tool calling)
+
+In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
+
+
+  ```python Python maxLines=60 wordWrap
+
+  user_id = "user@example.com"
+  composio = Composio()
+
+  result = composio.tools.execute(
+      "HACKERNEWS_GET_USER",
+      user_id=user_id,
+      arguments={"username": "pg"}
+  )
+  print(result)
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const userId = "user@example.com";
+  const composio = new Composio();
+
+  const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
+    userId,
+    arguments: {
+      username: "pg",
+    },
+  });
+  console.log(result);
+  ```
+
+
+### Proxy Execute -- Manually calling toolkit APIs
+
+You can also proxy requests to an API of any supported toolkit. This is useful when you want to manually call an API of a toolkit and inject the authentication state from Composio.
+
+
+  ```python Python maxLines=60 wordWrap
+  response = composio.tools.proxy(
+      endpoint="/repos/composiohq/composio/issues/1",
+      method="GET",
+      connected_account_id="ac_1234",  # use connected account for github
+      parameters=[
+          {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json",
+              "type": "header",
+          },
+      ],
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  // Send a custom request to a toolkit
+  const { data } = await composio.tools.proxyExecute({
+    toolkitSlug: 'github',
+    userId: 'user@example.com',
+    data: {
+      endpoint: '/repos/owner/repo/issues',
+      method: 'GET'
+    }
+  });
+  console.log(data);
+  ```
+
+
+If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).
+
+## Automatic File Handling
+
+Composio SDK includes automatic file handling for tools that work with files. When enabled (default), the SDK automatically handles file uploads and downloads during tool execution.
+
+### File Upload
+
+When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs or a `File` object. Here's an example using Google Drive upload:
+
+
+  ```python Python maxLines=60 wordWrap
+  import os
+
+  from composio import Composio
+
+  composio = Composio()
+
+  # Upload a local file to Google Drive
+  result = composio.tools.execute(
+      "GOOGLEDRIVE_UPLOAD_FILE",
+      user_id="default",
+      arguments={
+          "file_to_upload": os.path.join(os.getcwd(), "document.pdf")  # Local file path
+      }
+  )
+
+  print(result.data)  # Contains Google Drive file details
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  import { Composio } from '@composio/core';
+  import path from 'path';
+
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY
+  });
+
+  // Upload a local file to Google Drive
+  const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+    userId: 'default',
+    arguments: {
+      file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path or URL or File object
+    }
+  });
+
+  console.log(result.data);  // Contains Google Drive file details
+  ```
+
+
+The SDK automatically:
+
+1. Reads the file content
+2. Uploads it to secure storage
+3. Passes the file metadata to the tool
+
+### File Download
+
+When a tool returns file outputs, the SDK automatically:
+
+1. Downloads the file to a local temporary directory
+2. Provides the local file path in the response
+
+
+  ```python Python maxLines=60 wordWrap
+  # Download a file from Google Drive
+  result = composio.tools.execute(
+      "GOOGLEDRIVE_DOWNLOAD_FILE",
+      user_id="default",
+      arguments={
+          "file_id": "your_file_id"
+      }
+  )
+
+  # Result includes local file path
+  print(result.data["file"])  # "/path/to/downloaded/file.pdf"
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  // Download a file from Google Drive
+  const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+    userId: 'default',
+    arguments: {
+      file_id: 'your_file_id'
+    }
+  });
+
+  // Result includes local file path
+  console.log(result.data.file.uri);  // "/path/to/downloaded/file.pdf"
+  ```
+
+
+### Disabling Auto File Handling
+
+You can disable automatic file handling when initializing the Typescript SDK:
+
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    autoUploadDownloadFiles: false
+  });
+
+  // Now you need to handle files manually using composio.files API
+  const fileData = await composio.files.upload({
+    filePath: path.join(__dirname, 'document.pdf'),
+    toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
+    toolkitSlug: 'googledrive'
+  });
+  ```
+
+
+For more details on file handling, see [Auto Upload and Download Files](/docs/advanced/auto-upload-download).
+
+
+# Authenticating Tools
+
+> Learn how to authenticate tools
+
+Different apps (like Slack, Notion, Shopify) have their own authentication flows that users must complete to grant access to their accounts. Agents need authenticated access to these tools to perform actions on behalf of users.
+
+## Creating an auth config
+
+Each toolkit comes with it's own *auth config*.
+This configuration is used to authenticate the users to the tools.
+
+The first step is to create an auth config for any toolkit that you want to use.
+
+
+  The appropriate developer credentials and app level configurations like scopes, API endpoints, etc. are scoped to an auth config.
+
+  Once created, it's reusable across multiple users.
+
+
+The dashboard offers a guided process for all app types.
+
+
+  
+    Navigate to the [Apps page](https://app.composio.dev/apps) and choose the app you want to integrate (for example, Google Sheets).
+
+    
+      
+    
+  
+
+  
+    Click the **"Setup Integration"** button.
+
+    
+      
+    
+  
+
+  
+    Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
+    Switch between the auth schemes and configure the scopes, developer credentials, etc here.
+
+    
+      You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
+      It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
+    
+
+    
+      
+    
+  
+
+  
+    Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. This is your auth config ID. This is *not* a sensitive ID -- you can save it in environment variables or a database.
+    **This ID will be used to create connections to the toolkit for a given user.**
+  
+
+
+
+  In case of dealing with multiple toolkits across different projects, you can create auth configs
+  programmatically.
+
+
+## Connecting to an OAuth toolkit
+
+Here's how to authenticate a toolkit for a given user using the OAuth flow.
+
+
+  ```python Python title="Python" maxLines=40 
+  from composio import Composio
+
+  linear_auth_config_id = "ac_dqYN9oElNVlg"
+  user_id = "0000-1111-2222"
+  composio = Composio()
+
+  # Create a new connected account
+  connection_request = composio.connected_accounts.initiate(
+      user_id=user_id, auth_config_id=linear_auth_config_id, config=auth_scheme.oauth2()
+  )
+  print(connection_request.redirect_url)
+
+  # Wait for the connection to be established
+  connected_account = connection_request.wait_for_connection()
+
+  # If you only have the connection request ID, you can also wait using:
+
+  connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+  # Recommended for when connection_request object is destroyed
+
+  # API key based toolkit
+  ```
+
+  ```typescript TypeScript title="TypeScript" maxLines=40 
+  import { Composio } from '@composio/core';
+
+  const composio = new Composio();
+  const linearAuthConfigId = 'ac_dqYN9oElNVlg';
+
+  const userId = '1111-2222-3333';
+
+  // Initiate the OAuth connection request
+  const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
+
+  // Destructure redirectUrl for easier access
+  const { redirectUrl, id } = connRequest;
+  console.log(redirectUrl);
+
+  // Wait for the connection to be established
+  await connRequest.waitForConnection();
+
+  // If you only have the connection request ID, you can also wait using:
+  // Recommended for when connRequest object is destroyed
+  await composio.connectedAccounts.waitForConnection(id);
+
+  ```
+
+
+## Connecting to an API Key toolkit
+
+For API key based toolkits, you can either request the user to provide the API key or provide your own!
+
+### Creating the connection
+
+If you know the required authentication fields for your toolkit (like `apiKey` for most API-based services), you can directly create the connection:
+
+
+  ```python Python title="Python" maxLines=40 
+  serp_auth_config_id = "ac_VWmFEC55Zgv6"
+
+  # Retrieved from the user
+  user_api_key = "sk_1234567890"
+
+  connection_request = composio.connected_accounts.initiate(
+      user_id=user_id, auth_config_id=serp_auth_config_id, config=auth_scheme.api_key(user_api_key)
+  )
+
+  ```
+
+  ```typescript TypeScript title="TypeScript" maxLines=40 
+  import { AuthScheme } from '@composio/core';
+  const serpAuthConfigId = 'ac_VWmFEC55Zgv6';
+
+  // Retrieved from the user
+  const userApiKey = 'sk_1234567890';
+
+  const serpConnectionRequest = await composio.connectedAccounts.initiate(userId, serpAuthConfigId, {
+    config: AuthScheme.APIKey({
+      api_key: userApiKey,
+    }),
+  });
+
+  console.log(JSON.stringify(serpConnectionRequest, null, 2));
+
+  ```
+
+
+## Specifying auth schemes
+
+Composio supports a wide range of auth schemes; OAuth2, API Key, HTTP Basic and many more.
+Each app (and toolkit) has different connection options required for each auth scheme. For example;
+
+* Shopify requires an *API key* from each user from each user for the API Key auth scheme.
+* Airtable requires the Bearer token from each user for the *Bearer* auth scheme.
+
+The auth scheme information is typed and can be configured as follows:
+
+
+  ```python Python title="Python" maxLines=40 
+  # Auth scheme config for Airtable Bearer
+  from composio.types import auth_scheme
+  airtable_auth_config_id = "ac_1234567"
+
+  # Retrieved from user
+  user_bearer_token = "1234567890"
+
+  airtable_connection_req = composio.connected_accounts.initiate(
+      user_id=user_id,
+      auth_config_id=airtable_auth_config_id,
+      config=auth_scheme.bearer_token()
+  )
+
+  ```
+
+  ```typescript TypeScript title="TypeScript" maxLines=40 
+  // Auth scheme for Airtable Bearer
+  import { AuthScheme } from '@composio/core';
+  const airtableAuthConfigId = 'ac_1234567890';
+
+  // Retrieved from the user
+  const userBearerToken = '1234567890';
+
+  const airtableConnectionRequest = await composio.connectedAccounts.initiate(
+    userId, airtableAuthConfigId, {
+    config: AuthScheme.BearerToken({
+      token: userBearerToken,
+    }),
+  });
+  ```
+
+
+It might be useful to read all the optional and required auth config fields for a toolkit and optionally prompt the user for the values.
+
+## Redirecting users
+
+To control where the users are redirected after they have authenticated, you can use the `redirectUrl` parameter in the `initiate` method.
+In this case, the user will be redirected to `https://www.yourapp.com/callback` after they have authenticated.
+
+
+  ```python Python title="Python" maxLines=40 
+  connection_request = composio.connected_accounts.initiate(
+      user_id=user_id, auth_config_id=linear_auth_config_id, config=auth_scheme.oauth2()
+  )
+  print(connection_request.redirect_url)
+
+  # Wait for the connection to be established
+  connected_account = connection_request.wait_for_connection()
+  ```
+
+  ```typescript TypeScript title="TypeScript" maxLines=40 
+  const connRequest = await composio.connectedAccounts.initiate(
+    userId,
+    linearAuthConfigId,
+    {
+      callbackUrl: 'https://www.yourapp.com/callback',
+    }
+  );
+
+  console.log(connRequest.redirectUrl);
+
+  await connRequest.waitForConnection();
+  ```
+
+
+
+# Fetching and Filtering Tools
+
+> Learn how to fetch and filter Composio's tools and toolsets
+
+To effectively use tools, it is recommended to fetch, inspect, and filter them based on your criteria.
+
+This process returns a union of all tools that match the specified criteria, ensuring you provide the most relevant tools to the agents.
+
+When fetching tools, they are automatically formatted to match the requirements of the provider you are using. This means you do not need to manually convert or adapt the tool format.
+
+## Filtering by toolkit
+
+Toolkits are collections of tools that from a specific app!
+
+Fetching tools from a toolkit is a good way to get a sense of the tools available.
+
+
+  When you fetch tools from a toolkit, the most important tools are returned first.
+
+  Composio determines the importance of a tool based on the usage and relevance of the tool.
+
+
+
+  ```python Python maxLines=60 wordWrap
+  tools = composio.tools.get(
+      user_id,
+      toolkits=["GITHUB", "HACKERNEWS"],
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tools = await composio.tools.get(
+    userId,
+    {
+      toolkits: ["GITHUB", "LINEAR"],
+    }
+  );
+  ```
+
+
+**Limiting the results**
+
+Multiple toolkits have 100s of tools. These can easily overwhelm the LLM. Hence, the SDK allows you to limit the number of tools returned.
+
+The default `limit` is 20 -- meaning you get the top 20 important tools from the toolkit.
+
+
+  ```python Python maxLines=60 wordWrap
+  tools = composio.tools.get(
+      user_id,
+      toolkits=["GITHUB"],
+      limit=5,  # Returns the top 5 important tools from the toolkit
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tools = await composio.tools.get(userId, {
+    toolkits: ["GITHUB"],
+    limit: 5, // Returns the top 5 important tools from the toolkit
+  });
+  ```
+
+
+**Filtering by scopes**
+
+When working with OAuth-based toolkits, you can filter tools based on their required scopes. This is useful when you want to:
+
+* Get tools that match specific permission levels
+* Ensure tools align with available user permissions
+* Filter tools based on their required OAuth scopes
+
+
+  Scope filtering can only be used with a single toolkit at a time.
+
+
+
+  ```python Python maxLines=60 wordWrap
+  # Get GitHub tools that require specific scopes
+  tools = composio.tools.get(
+      user_id,
+      toolkits=["GITHUB"],
+      scopes=["repo"],  # Only get tools requiring these scopes
+      limit=10
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  // Get GitHub tools that require specific scopes
+  const tools = await composio.tools.get(userId, {
+    toolkits: ["GITHUB"],
+    scopes: ["repo"],  // Only get tools requiring these scopes
+    limit: 10
+  });
+  ```
+
+
+## Filtering by tool
+
+You may specify the list of tools to fetch by directly providing the tool names. Browse the list of tools [here](/tools) to view and inspect the tools for each toolkit.
+
+
+  ```python Python maxLines=60 wordWrap
+  tools = composio.tools.get(
+      user_id,
+      tools=[
+          "GITHUB_CREATE_AN_ISSUE",
+          "GITHUB_CREATE_AN_ISSUE_COMMENT",
+          "GITHUB_CREATE_A_COMMIT",
+      ],
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tools = await composio.tools.get(userId, {
+    tools: [
+      "GITHUB_CREATE_AN_ISSUE",
+      "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "GITHUB_CREATE_A_COMMIT",
+    ],
+  });
+  ```
+
+
+## Fetching raw tools
+
+To examine the raw schema definitition of a tool to understand the input/output parameters or to build custom logic around tool definitions, you can use the following methods. This can be useful for:
+
+* Understanding exact input parameters and output structures.
+* Building custom logic around tool definitions.
+* Debugging tool interactions.
+* Research and experimentation.
+
+
+  ```python Python title="Python" maxLines=40 
+  tool = composio.tools.get_raw_composio_tool_by_slug("HACKERNEWS_GET_LATEST_POSTS")
+
+  print(tool.model_dump_json())
+  ```
+
+  ```typescript TypeScript title="TypeScript" maxLines=40 
+  const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_OCTOCAT');
+
+  console.log(JSON.stringify(tool, null, 2));
+  ```
+
+
+## Filtering by search (Experimental)
+
+You may also filter tools by searching for them. This is a good way to find tools that are relevant to a given use case.
+
+This step runs a semantic search on the tool names and descriptions and returns the most relevant tools.
+
+
+  ```python Python maxLines=60 wordWrap
+  tools = composio.tools.get(
+      user_id,
+      search="hubspot organize contacts",
+  )
+
+  # Search within a specific toolkit
+  tools = composio.tools.get(
+      user_id,
+      search="repository issues",
+      toolkits=["GITHUB"],  # Optional: limit search to specific toolkit
+      limit=5  # Optional: limit number of results
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tools = await composio.tools.get(userId, {
+    search: "hubspot organize contacts",
+  });
+
+  // Search within a specific toolkit
+  const tools = await composio.tools.get(userId, {
+    search: "repository issues",
+    toolkits: ["GITHUB"],  // Optional: limit search to specific toolkit
+    limit: 5  // Optional: limit number of results
+  });
+  ```
+
+
+## Filter Combinations
+
+When fetching tools, you must use one of these filter combinations:
+
+1. **Tools Only**: Fetch specific tools by their slugs
+   ```typescript
+   { tools: ["TOOL_1", "TOOL_2"] }
+   ```
+
+2. **Toolkits Only**: Fetch tools from specific toolkits
+   ```typescript
+   { toolkits: ["TOOLKIT_1", "TOOLKIT_2"], limit?: number }
+   ```
+
+3. **Single Toolkit with Scopes**: Fetch tools requiring specific OAuth scopes
+   ```typescript
+   { toolkits: ["GITHUB"], scopes: ["read:repo"], limit?: number }
+   ```
+
+4. **Search**: Search across all tools or within specific toolkits
+   ```typescript
+   { search: "query", toolkits?: string[], limit?: number }
+   ```
+
+These combinations are mutually exclusive - you can't mix `tools` with `search` or use `scopes` with multiple toolkits.
+
+
+# Schema Modifiers
+
+> Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
+
+Schema modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
+
+## Schema Modifiers
+
+Schema modifiers transform a tool's schema before the tool is seen by an agent.
+
+
+  Schema Modifier
+
+
+**Useful for:**
+
+* Adding arguments to the tool. For example, adding a `thought` argument to the tool to prompt the agent to explain the reasoning.
+* Hiding arguments from the tool. In cases where the argument is irrelevant to the tool.
+* Adding extra arguments to the tool schema for custom use cases or execution.
+* Adding default values to tool arguments.
+
+
+  Below we modify the schema of the `HACKERNEWS_GET_LATEST_POSTS` to make the `size` argument
+  required and remove the `page` argument.
+
+
+
+  ```python Python maxLines=60  wordWrap
+  from composio import Composio, schema_modifier
+  from composio.types import Tool
+
+  user_id = "your@email.com"
+
+  @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+  def modify_schema(
+      tool: str,
+      toolkit: str,
+      schema: Tool,
+  ) -> Tool:
+      _ = schema.input_parameters["properties"].pop("page", None)
+      schema.input_parameters["required"] = ["size"]
+      return schema
+
+  tools = composio.tools.get(
+      user_id=user_id,
+      tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+      modifiers=[
+          modify_schema,
+      ]
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const userId = "your@email.com";
+
+  const tools = await composio.tools.get(
+    userId,
+    {
+      tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    },
+    {
+      modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
+        if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+          const { inputParameters } = schema;
+          if (inputParameters?.properties) {
+            delete inputParameters.properties["page"];
+          }
+          inputParameters.required = ["size"];
+        }
+        return schema;
+      },
+    }
+  );
+
+  console.log(JSON.stringify(tools, null, 2));
+
+  ```
+
+
+In using the above modified tool schema, the `page` argument is removed and the `size` argument is required.
+
+You can test this out by viewing the tool call response in the LLM too!
+
+
+  
+    ```python Python maxLines=60 wordWrap
+
+    from openai import OpenAI
+    from composio import Composio, schema_modifier
+    from composio.types import Tool
+    from composio_openai import OpenAIProvider
+
+
+    @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+    def modify_schema(
+        tool: str,
+        toolkit: str,
+        schema: Tool,
+    ) -> Tool:
+        _ = schema.input_parameters["properties"].pop("page", None)
+        schema.input_parameters["required"] = ["size"]
+        return schema
+
+    # Initialize tools.
+    openai_client = OpenAI()
+    composio = Composio(provider=OpenAIProvider())
+
+    # Define task.
+    task = "Get the latest posts from Hacker News"
+
+    # Get GitHub tools that are pre-configured
+    tools = composio.tools.get(
+      user_id="default",
+      tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+      modifiers=[
+          modify_schema,
+      ],
+    )
+
+    # Get response from the LLM
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        tools=tools,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": task},
+        ],
+    )
+    print(response)
+
+    # Execute the function calls.
+    result = composio.provider.handle_tool_calls(response=response, user_id="default")
+    print(result)
+    ```
+
+    ```typescript TypeScript maxLines=60 wordWrap
+    import { Composio } from '@composio/core';
+    import { OpenAI } from 'openai';
+
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+    });
+    const openai = new OpenAI();
+
+    const userId = 'your@email.com';
+
+    const tools = await composio.tools.get(
+      userId,
+      {
+        tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+      },
+      {
+        modifyToolSchema: (toolSlug, _, toolSchema) => {
+          if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
+            const { inputParameters } = toolSchema;
+            if (inputParameters?.properties) {
+              delete inputParameters.properties['page'];
+            }
+            inputParameters.required = ['size'];
+          }
+          return toolSchema;
+        },
+      }
+    );
+
+    console.log(JSON.stringify(tools, null, 2));
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that can help with tasks.',
+        },
+        { role: 'user', content: 'Get the latest posts from Hacker News' },
+      ],
+      tools: tools,
+      tool_choice: 'auto',
+    });
+
+    console.log(response.choices[0].message.tool_calls);
+    ```
+  
+
+
+
+# Before Execution Modifiers
+
+> Learn how to use before execution modifiers to modify tool arguments before execution.
+
+Before execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
+
+## Before Execution Modifiers
+
+These modifiers are called before the tool is executed by the LLM. This allows you to modify the *arguments* called by the LLM before they are executed by Composio.
+
+**Useful for:**
+
+* Injecting an argument into the tool execution.
+* Overriding the arguments emitted by the LLM.
+
+
+  Before Execution Modifier
+
+
+
+  Below we use the `beforeExecute` modifier to modify the number of posts returned by the
+  `HACKERNEWS_GET_LATEST_POSTS` tool.
+
+
+
+  
+    Since completion providers don't have a function execution step -- Composio will execute the tool call directly.
+
+    Hence, the modifier is configured on the `tools.execute` method.
+
+    
+      ```python Python maxLines=60  wordWrap
+      from openai import OpenAI
+      from composio import Composio, before_execute
+      from composio.types import ToolExecuteParams
+
+      composio = Composio()
+      openai_client = OpenAI()
+      user_id = "user@email.com"
+
+      @before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+      def before_execute_modifier(
+          tool: str,
+          toolkit: str,
+          params: ToolExecuteParams,
+      ) -> ToolExecuteParams:
+          params["arguments"]["size"] = 1
+          return params
+
+
+      # Get tools
+      tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+
+      # Get response from the LLM
+      response = openai_client.chat.completions.create(
+          model="gpt-4o-mini",
+          tools=tools,
+          messages=[{"role": "user", "content": "Fetch latest posts from hackernews"}],
+      )
+      print(response)
+
+      # Execute the function calls.
+      result = composio.provider.handle_tool_calls(
+          response=response,
+          user_id="default",
+          modifiers=[
+              before_execute_modifier,
+          ],
+      )
+      print(result)
+      ```
+
+      ```typescript TypeScript maxLines=60 wordWrap {11, 20-28}
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        tools,
+        tool_choice: "auto",
+      });
+
+      const { tool_calls } = response.choices[0].message;
+      console.log(tool_calls);
+
+      if (tool_calls) {
+        const {
+          function: { arguments: toolArgs },
+        } = tool_calls[0];
+
+        const result = await composio.tools.execute(
+          "HACKERNEWS_GET_LATEST_POSTS",
+          {
+            userId,
+            arguments: JSON.parse(toolArgs),
+          },
+          {
+            beforeExecute: { toolSlug, toolkitSlug, params }) => {
+              if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+                params.arguments.size = 1;
+              }
+              console.log(params);
+              return params;
+            },
+          }
+        );
+        console.log(JSON.stringify(result, null, 2));
+      }
+
+      ```
+    
+  
+
+  
+    Agentic providers have a function execution step.
+    The modifier is configured on the `tools.get` method which modifies the execution logic within the framework!
+
+    
+      ```python Python (CrewAI) maxLines=60  wordWrap
+      from composio import Composio, before_execute
+      from composio.types import ToolExecuteParams
+      from composio_crewai import CrewAIProvider
+
+      composio = Composio(provider=CrewAIProvider())
+
+      @before_execute(tools=["LINEAR_CREATE_LINEAR_ISSUE"])
+      def modify_linear_project_id(
+          tool: str,
+          toolkit: str,
+          params: ToolExecuteParams,
+      ) -> ToolExecuteParams:
+          params["arguments"]["project_id"] = "1234567890"
+          return params
+
+      tools = composio.tools.get(
+          user_id="default",
+          tools=[
+              "HACKERNEWS_GET_LATEST_POSTS",
+              "HACKERNEWS_GET_USER",
+              "LINEAR_CREATE_LINEAR_ISSUE",
+          ],
+          modifiers=[
+              after_execute_modifier,
+          ]
+      )
+      ```
+
+      ```typescript TypeScript (Mastra) maxLines=60  wordWrap {22-26}
+      import { Composio } from "@composio/core";
+      import { MastraProvider } from "@composio/mastra";
+      import { Agent } from "@mastra/core/agent";
+
+      const composio = new Composio({
+        apiKey: process.env.COMPOSIO_API_KEY,
+        provider: new MastraProvider(),
+      });
+
+      const userId = "user@acme.com"; // The user's ID.
+
+      const agenticTools = await composio.tools.get(
+        userId,
+        {
+          tools: [
+            "HACKERNEWS_GET_LATEST_POSTS",
+            "HACKERNEWS_GET_USER",
+            "LINEAR_CREATE_LINEAR_ISSUE",
+          ],
+        },
+        {
+          beforeExecute: ({toolSlug, toolkitSlug, params}) => {
+            if (toolSlug === "LINEAR_CREATE_LINEAR_ISSUE") {
+              params.arguments.project_id = "1234567890";
+            }
+            return params;
+          },
+        }
+      );
+
+      const { text } = await generateText({
+        model: openai("gpt-4o-mini"),
+        messages: [
+          { role: "user", content: "Create an issue to `sid` to add RLS" },
+        ],
+        tools: agenticTools,
+        maxSteps: 5,
+      });
+
+      ```
+    
+  
+
+
+
+# After Execution Modifiers
+
+> Learn how to use after execution modifiers to transform tool results after execution.
+
+After execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
+
+## After Execution Modifiers
+
+These modifiers are called after the tool is executed by the LLM. This allows you to modify the *result* of the tool before it is returned to the agent.
+
+**Useful for:**
+
+* Modifying or truncating the output of the tool.
+* Convert the output to a different format before returning it to the agent.
+
+
+  After Execution Modifier
+
+
+
+  Below we use the `afterExecute` modifier to truncate the output of the `HACKERNEWS_GET_USER`
+  tool and only return the karma of the user.
+
+
+
+  
+    Since completion providers don't have a function execution step -- Composio will execute the tool call directly.
+
+    Hence, the modifier is configured on the `tools.execute` method.
+
+    
+      ```python Python maxLines=60  wordWrap
+      from composio import Composio, after_execute
+      from composio.types import ToolExecutionResponse
+
+      @after_execute(tools=["HACKERNEWS_GET_USER"])
+      def after_execute_modifier(
+          tool: str,
+          toolkit: str,
+          response: ToolExecutionResponse,
+      ) -> ToolExecutionResponse:
+          return {
+              **response,
+              "data": {
+                  "karama": response["data"]["karama"],
+              },
+          }
+
+      # Get response from the LLM
+      response = openai_client.chat.completions.create(
+          model="gpt-4o-mini",
+          tools=tools,
+          messages=messages,
+      )
+      print(response)
+
+      # Execute the function calls.
+      result = composio.provider.handle_tool_calls(
+        response=response,
+        user_id="default",
+        modifiers=[
+           after_execute_modifier, 
+        ]
+      )
+      print(result)
+      ```
+
+      ```typescript TypeScript maxLines=60  wordWrap
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        tools,
+        tool_choice: "auto",
+      });
+
+      const { tool_calls } = response.choices[0].message;
+      console.log(tool_calls);
+
+      if (tool_calls) {
+        const {
+          function: { arguments: toolArgs },
+        } = tool_calls[0];
+
+        const result = await composio.tools.execute(
+          "HACKERNEWS_GET_USER",
+          {
+            userId,
+            arguments: JSON.parse(toolArgs),
+          },
+          {
+            afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+              if (toolSlug === "HACKERNEWS_GET_USER") {
+                const { data } = result;
+                const { karma } = data.response_data as { karma: number };
+                return {
+                  ...result,
+                  data: { karma },
+                };
+              }
+              return result;
+            },
+          }
+        );
+        console.log(JSON.stringify(result, null, 2));
+      }
+
+      ```
+    
+  
+
+  
+    Agentic providers have a function execution step.
+    The modifier is configured on the `tools.get` method which modifies the execution logic within the framework!
+
+    
+      ```python Python (CrewAI) maxLines=60  wordWrap
+      from composio import Composio, after_execute
+      from composio.types import ToolExecutionResponse
+      from composio_crewai import CrewAIProvider
+
+      composio = Composio(provider=CrewAIProvider())
+
+      @after_execute(tools=["HACKERNEWS_GET_USER"])
+      def after_execute_modifier(
+          tool: str,
+          toolkit: str,
+          response: ToolExecutionResponse,
+      ) -> ToolExecutionResponse:
+          return {
+              **response,
+              "data": {
+                  "karma": response["data"]["karma"],
+              },
+          }
+
+
+      tools = composio.tools.get(
+          user_id="default",
+          slug="HACKERNEWS_GET_USER",
+          modifiers=[
+              after_execute_modifier,
+          ]
+      )
+      ```
+
+      ```typescript TypeScript (Vercel) maxLines=60  wordWrap {24-27}
+      import { Composio } from "@composio/core";
+      import { VercelProvider } from "@composio/vercel";
+      import { generateText } from "ai";
+      import { openai } from "@ai-sdk/openai";
+      import { v4 as uuidv4 } from "uuid";
+
+      const composio = new Composio({
+        apiKey: process.env.COMPOSIO_API_KEY,
+        provider: new VercelProvider(),
+      });
+
+      const userId = uuidv4(); // The user's ID.
+
+      const agenticTools = await composio.tools.get(
+        userId,
+        {
+          tools: ["HACKERNEWS_GET_USER"],
+        },
+        {
+          afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+            if (toolSlug === "HACKERNEWS_GET_USER") {
+              const {
+                data: { response_data: { karma } = {} } = {},
+              } = result;
+              return {
+                ...result,
+                data: { karma },
+              };
+            }
+            return result;
+          },
+        }
+      );
+
+      ```
+    
+  
+
+
+
+# Creating custom tools
+
+> Learn how to extend Composio's toolkits with your own tools
+
+Custom tools allow you to create your own tools that can be used with Composio.
+
+1. Standalone tools - Simple tools that don't require any authentication
+2. Toolkit-based tools - Tools that require authentication and can use toolkit credentials
+
+## Creating a Custom Tool
+
+### Standalone Tool
+
+A standalone tool is the simplest form of custom tool. It only requires input parameters and an execute function:
+
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tool = await composio.tools.createCustomTool({
+    slug: 'CALCULATE_SQUARE',
+    name: 'Calculate Square',
+    description: 'Calculates the square of a number',
+    inputParams: z.object({
+      number: z.number().describe('The number to calculate the square of'),
+    }),
+    execute: async input => {
+      const { number } = input;
+      return {
+        data: { result: number * number },
+        error: null,
+        successful: true,
+      };
+    },
+  });
+  ```
+
+  ```python Python maxLines=60 wordWrap
+  from pydantic import BaseModel, Field
+
+  from composio import Composio
+  from composio.types import ExecuteRequestFn
+
+  composio = Composio()
+
+
+  class AddTwoNumbersInput(BaseModel):
+      a: int = Field(
+          ...,
+          description="The first number to add",
+      )
+      b: int = Field(
+          ...,
+          description="The second number to add",
+      )
+
+  # function name will be used as slug
+  @composio.tools.custom_tool
+  def add_two_numbers(request: AddTwoNumbersInput) -> int:
+      """Add two numbers."""
+      return request.a + request.b
+  ```
+
+
+### Toolkit-based Tool
+
+A toolkit-based tool has access to two ways of making authenticated requests:
+
+1. Using `executeToolRequest` - The recommended way to make authenticated requests to the toolkit's API endpoints. Composio automatically handles credential injection and baseURL resolution:
+
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tool = await composio.tools.createCustomTool({
+    slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
+    name: 'Github star composio repositories',
+    toolkitSlug: 'github',
+    description: 'Star any specificied repo of `composiohq` user',
+    inputParams: z.object({
+      repository: z.string().describe('The repository to star'),
+      page: z.number().optional().describe('Pagination page number'),
+      customHeader: z.string().optional().describe('Custom header'),
+    }),
+    execute: async (input, connectionConfig, executeToolRequest) => {
+      // This method makes authenticated requests to relevant API
+      // You can use relative paths!
+      // Composio will automatically inject the baseURL
+      const result = await executeToolRequest({
+        endpoint: `/user/starred/composiohq/${input.repository}`,
+        method: 'PUT',
+        body: {},
+        // Add custom headers or query parameters
+        parameters: [
+          // Add query parameters
+          {
+            name: 'page',
+            value: input.page?.toString() || '1',
+            in: 'query',
+          },
+          // Add custom headers
+          {
+            name: 'x-custom-header',
+            value: input.customHeader || 'default-value',
+            in: 'header',
+          },
+        ],
+      });
+      return result;
+    },
+  });
+  ```
+
+  ```python Python maxLines=60 wordWrap
+  class GetIssueInfoInput(BaseModel):
+      issue_number: int = Field(
+          ...,
+          description="The number of the issue to get information about",
+      )
+
+  # function name will be used as slug
+  @composio.tools.custom_tool(toolkit="github")
+  def get_issue_info(
+      request: GetIssueInfoInput,
+      execute_request: ExecuteRequestFn,
+      auth_credentials: dict,
+  ) -> dict:
+      """Get information about a GitHub issue."""
+      response = execute_request(
+          endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+          method="GET",
+          parameters=[
+              {
+                  "name": "Accept",
+                  "value": "application/vnd.github.v3+json",
+                  "type": "header",
+              },
+              {
+                  "name": "Authorization",
+                  "value": f"Bearer {auth_credentials['access_token']}",
+                  "type": "header",
+              },
+          ],
+      )
+      return {"data": response.data}
+  ```
+
+
+2. Using `connectionConfig` - For making direct API calls when needed:
+
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const tool = await composio.tools.createCustomTool({
+    slug: 'GITHUB_DIRECT_API',
+    name: 'Direct GitHub API Call',
+    description: 'Makes direct calls to GitHub API',
+    toolkitSlug: 'github',
+    inputParams: z.object({
+      repo: z.string().describe('Repository name'),
+    }),
+    execute: async (input, connectionConfig, executeToolRequest) => {
+      // Use connectionConfig for direct API calls
+      const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
+        headers: {
+          Authorization: `Bearer ${connectionConfig.access_token}`,
+        },
+      });
+
+      return {
+        data: await result.json(),
+        error: null,
+        successful: true,
+      };
+
+  },
+  });
+
+  ```
+
+  ```python Python maxLines=60 wordWrap
+  import requests
+
+  @composio.tools.custom_tool(toolkit="github")
+  def get_issue_info_direct(
+      request: GetIssueInfoInput,
+      execute_request: ExecuteRequestFn,
+      auth_credentials: dict,
+  ) -> dict:
+      """Get information about a GitHub issue."""
+      response = requests.get(
+          f"https://api.github.com/repos/composiohq/composio/issues/{request.issue_number}",
+          headers={
+              "Accept": "application/vnd.github.v3+json",
+              "Authorization": f"Bearer {auth_credentials['access_token']}",
+          },
+      )
+      return {"data": response.json()}
+  ```
+
+
+### Using Custom Headers and Query Parameters
+
+You can add custom headers and query parameters to your toolkit-based tools using the `parameters` option in `executeToolRequest`:
+
+
+  ```python Python maxLines=60 wordWrap
+  @composio.tools.custom_tool(toolkit="github")
+  def get_issue_info(
+      request: GetIssueInfoInput,
+      execute_request: ExecuteRequestFn,
+      auth_credentials: dict,
+  ) -> dict:
+      """Get information about a GitHub issue."""
+      response = execute_request(
+          endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+          method="GET",
+          parameters=[
+              {
+                  "name": "Accept",
+                  "value": "application/vnd.github.v3+json",
+                  "type": "header",
+              },
+              {
+                  "name": "Authorization",
+                  "value": f"Bearer {auth_credentials['access_token']}",
+                  "type": "header",
+              },
+              {
+                  "name": 'X-Custom-Header',
+                  "value": 'custom-value',
+                  "type": 'header',
+              },
+          ],
+      )
+      return {"data": response.data}
+  ```
+
+  ```typescript TypeScript maxLines=60
+  const tool = await composio.tools.createCustomTool({
+    slug: 'GITHUB_SEARCH_REPOSITORIES',
+    name: 'Search GitHub Repositories',
+    description: 'Search for repositories with custom parameters',
+    toolkitSlug: 'github',
+    inputParams: z.object({
+      query: z.string().describe('Search query'),
+      perPage: z.number().optional().describe('Results per page'),
+      acceptType: z.string().optional().describe('Custom accept header'),
+    }),
+    execute: async (input, connectionConfig, executeToolRequest) => {
+      const result = await executeToolRequest({
+        endpoint: '/search/repositories',
+        method: 'GET',
+        parameters: [
+          // Add query parameters for pagination
+          {
+            name: 'q',
+            value: input.query,
+            in: 'query',
+          },
+          {
+            name: 'per_page',
+            value: (input.perPage || 30).toString(),
+            in: 'query',
+          },
+          // Add custom headers
+          {
+            name: 'Accept',
+            value: input.acceptType || 'application/vnd.github.v3+json',
+            in: 'header',
+          },
+          {
+            name: 'X-Custom-Header',
+            value: 'custom-value',
+            in: 'header',
+          },
+        ],
+      });
+      return result;
+    },
+  });
+  ```
+
+
+## Executing Custom Tools
+
+You can execute custom tools just like any other tool:
+
+
+  ```python Python maxLines=60 wordWrap
+  response = composio.tools.execute(
+      user_id="default",
+      slug="TOOL_SLUG", # For the tool above you can use `get_issue_info.slug`
+      arguments={"issue_number": 1},
+  )
+  ```
+
+  ```typescript TypeScript maxLines=60 wordWrap
+  const result = await composio.tools.execute('TOOL_SLUG', {
+    arguments: {
+      // Tool input parameters
+    },
+    userId: 'user-id',
+    connectedAccountId: 'optional-account-id', // Required for toolkit-based tools
+  });
+  ```
+
+
+## Best Practices
+
+1. Use descriptive names and slugs for your tools
+2. Always provide descriptions for input parameters using `describe()`
+3. Handle errors gracefully in your execute function
+4. For toolkit-based tools:
+   * Prefer `executeToolRequest` over direct API calls when possible
+   * Use relative paths with `executeToolRequest` - Composio will automatically inject the correct baseURL
+   * Use the `parameters` option to add custom headers or query parameters:
+     ```typescript
+     parameters: [
+       { name: 'page', value: '1', in: 'query' }, // Adds ?page=1 to URL
+       { name: 'x-custom', value: 'value', in: 'header' }, // Adds header
+     ];
+     ```
+   * Remember that `executeToolRequest` can only call tools from the same toolkit
+   * Use `executeToolRequest` to leverage Composio's automatic credential handling
+   * Only use `connectionConfig` when you need to make direct API calls or interact with different services
+5. Chain multiple toolkit operations using `executeToolRequest` for better maintainability
+
+## Limitations
+
+1. Custom tools are stored in memory and are not persisted
+2. They need to be recreated when the application restarts
+3. Toolkit-based tools require a valid connected account with the specified toolkit
+4. `executeToolRequest` can only execute tools from the same toolkit that the custom tool belongs to
+5. Each toolkit-based tool can only use one connected account at a time
+
+
+# Custom Auth Configs
+
+> Guide to using customising auth configs for a toolkit 
+
+Many toolkits support a level of customisation for the auth config, specifically OAuth applications.
+
+This guide will walk you through the process of customising the auth config for toolkits where you can configure the developer app.
+
+## Creating a custom auth config
+
+Some apps, like PostHog, Hubspot, Linear, etc. allow customizing the auth config for your usage.
+
+You'll need to customize the auth config in cases where you want to add in a different field than the default. This could be the subdomain, base URL, client ID, client secret, etc.
+
+
+  
+    You may change the subdomain for the PostHog toolkit to match your own instance.
+
+    
+      
+    
+  
+
+  
+    For Hubspot you may customize everything here. For each auth scheme there is a different set of fields.
+
+    If you choose to use your own developer app for OAuth2 scheme, you will have to provide the client ID and client secret.
+
+    
+      
+    
+  
+
+
+Toolkits that support OAuth2 allow using your own developer app. This is the recommended approach for most cases.
+
+
+  We recommend using your own developer app for OAuth2 scheme as it is suited more for production usage with many users and more granular control over scopes.
+
+  However getting OAuth approvals takes time so Composio provides a default developer app!
+
+
+## OAuth2 Auth Configs
+
+
+  
+    To set up a custom OAuth config, you'll need the OAuth Client ID and Client Secret.
+
+    You can generate the client ID and client secret from your provider's OAuth configuration page.
+
+    Examples for Google and GitHub:
+
+    
+      
+        
+          
+        
+      
+
+      
+        
+          
+        
+      
+    
+  
+
+  
+    When creating your OAuth app, make sure to configure the Authorized Redirect URI to point to the Composio callback URL below:
+
+    ```
+    https://backend.composio.dev/api/v3/toolkits/callback
+    ```
+  
+
+  
+    Once you have the OAuth credentials, you can add them to the auth config in the dashboard.
+
+    1. Select the OAuth2 scheme.
+    2. Select the scopes to request from users. Default scopes are pre-filled for most apps.
+    3. Add the OAuth client ID and client secret. Keep the redirect URL as is for now!
+    4. Click **"Create Integration"** once done!
+
+    
+      
+    
+
+    As usual, copy and use the auth config ID starting with `ac_` in your application code via a secret manager.
+  
+
+
+This auth config is now ready to be used in your application!
+
+
+  ```python Python maxLines=60
+  # Create a new connected account
+  connection_request = composio.connected_accounts.initiate(
+      user_id="user_id",
+      auth_config_id="ac_1234",
+  )
+  print(connection_request)
+
+  # Wait for the connection to be established
+  connected_account = connection_request.wait_for_connection()
+  print(connected_account)
+  ```
+
+  ```typescript TypeScript maxLines=60
+  const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
+
+  console.log(connReq.redirectUrl);
+
+  const connection = await composio.connectedAccounts.waitForConnection(
+  connReq.id
+  );
+
+  console.log(connection);
+
+  ```
+
+
+### White-labeling the OAuth Consent Screen
+
+By default the users will see an OAuth screen like the one below:
+
+
+  
+
+
+The OAuth redirect URL is surfaced in the some OAuth providers' consent screens. This may cause confusion for some users as that URL is not of the same domain as the application.
+
+To remediate this:
+
+
+  
+    Specify the Authorized Redirect URI to your own domain in the OAuth configuration.
+    For example:
+
+    ```
+    https://yourdomain.com/api/composio-redirect
+    ```
+  
+
+  
+    Create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v3/toolkits/callback`
+
+    **Example: API Route for OAuth Redirect**
+
+    
+      ```python FastAPI (app.py)
+      from fastapi import FastAPI
+      from fastapi.responses import RedirectResponse
+
+      from composio import Composio
+
+      # Create a FastAPI app
+      app = FastAPI()
+
+      # Create a Composio client
+      composio = Composio()
+
+
+      @app.get("/authorize/{toolkit}")
+      def authorize_app(toolkit: str):
+          # retrieve the user id from your app
+          user_id = ""
+
+          # retrieve the auth config id from your app
+          auth_config_id = ""
+
+          # initiate the connection request
+          connection_request = composio.connected_accounts.initiate(
+              user_id=user_id,
+              auth_config_id=auth_config_id,
+          )
+          return RedirectResponse(url=connection_request.redirect_url)
+      ```
+
+      ```typescript Next.js (pages/api/composio-redirect.ts)
+      import type { NextApiRequest, NextApiResponse } from 'next';
+
+      export default function handler(req: NextApiRequest, res: NextApiResponse) {
+        // The target Composio endpoint that handles OAuth callbacks
+        const composioEndpoint = 'https://backend.composio.dev/api/v3/toolkits/callback';
+
+      // Extract and preserve all query parameters
+      const queryParams = new URLSearchParams();
+      Object.entries(req.query).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+      queryParams.append(key, value);
+      }
+      });
+
+      // Redirect to Composio with all query parameters intact
+      const redirectUrl = `${composioEndpoint}?${queryParams.toString()}`;
+      res.redirect(302, redirectUrl);
+      }
+
+      ```
+    
+  
+
+  
+    Specify the your custom redirect URI in the auth config settings!
+
+    
+      
+    
+  
+
+
+With this setup, you can use `https://yourdomain.com/api/composio-redirect` as your OAuth redirect URI, which will create a better user experience by keeping users on your domain during the OAuth flow.
+
+
+  The custom OAuth config allows you to use your own domain in the OAuth consent screen instead of Composio's domain. Here's the core difference:
+
+  ```mermaid
+  flowchart TD
+      A[Your App initiates OAuth] --> B[User redirected to OAuth Provider]
+      B --> C{Redirect URI Configuration}
+
+      C -->|Direct Setup| D[Provider redirects to
+backend.composio.dev]
+      C -->|Custom Domain| E[Provider redirects to
+yourdomain.com/api/composio-redirect]
+
+      E --> F[Your endpoint forwards to
+backend.composio.dev]
+
+      D --> G[Composio exchanges code for token]
+      F --> G
+
+      G --> H[Connection established]
+
+      style E fill:#e1f5fe
+      style F fill:#e1f5fe
+      style C fill:#fff3e0
+  ```
+
+  **Key Benefits:**
+
+  * **Custom Domain**: Users see your domain in OAuth consent screens, not Composio's
+  * **Same Security**: Your domain just forwards the OAuth callback - no token handling
+  * **Better UX**: Maintains brand consistency throughout the auth flow
+
+  The custom redirect endpoint is a simple passthrough that preserves all OAuth parameters while keeping users on your domain.
+
+
+
+# Programmatic Auth Configs
+
+> Guide to creating auth configs programmatically
+
+Auth configs are created once and reused many times. However when dealing with many toolkits, you may want to create auth configs programmatically.
+
+* When creating and destroying auth configs multiple times in your app's lifecycle.
+* When creating auth configs for your users' users.
+
+## Using Composio Default Auth
+
+For certain apps, you can optionally use Composio's managed auth. This means you don't have to provide your own OAuth credentials, Bearer tokens, API keys, etc.
+
+
+  ```python Python maxLines=60  wordWrap
+  from composio import Composio
+
+  composio = Composio()
+
+  # Use composio managed auth
+  auth_config = composio.auth_configs.create(
+      toolkit="github",
+      options={
+          "type": "use_composio_managed_auth",
+      },
+  )
+  print(auth_config)
+  ```
+
+  ```typescript TypeScript maxLines=60  wordWrap {7}
+  import { Composio } from "@composio/core";
+
+  const composio = new Composio();
+
+  const authConfig = await composio.authConfigs.create("LINEAR", {
+    name: "Linear",
+    type: "use_composio_managed_auth",
+  });
+
+  console.log(authConfig);
+  ```
+
+
+The `auth_config_id` should be stored securely in your database for future use to be created and destroyed multiple times.
+
+You can also provide your own authentication details. The required `credentials` and `authScheme` depend on the auth type.
+
+## Using Custom Auth
+
+### Create the auth config
+
+If you know the required authentication fields for your toolkit, you can directly create the auth config. OAuth2 is the most common auth type for apps. When using your own OAuth developer app, you must ensure to set the **authorized redirect URI** in the OAuth configuration to `https://backend.composio.dev/api/v3/toolkits/callback`.
+
+This is the URI that captures the OAuth code that is returned to the app.
+
+In this case, we're using our own OAuth2 client ID and secret to create the auth config for Notion:
+
+
+  ```python Python maxLines=60  wordWrap
+  # Use custom auth
+  auth_config = composio.auth_configs.create(
+      toolkit="notion",
+      options={
+          "name": "Notion Auth",
+          "type": "use_custom_auth",
+          "auth_scheme": "OAUTH2",
+          "credentials": {
+              "client_id": "1234567890",
+              "client_secret": "1234567890",
+              "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/callback",
+          },
+      },
+  )
+  print(auth_config)
+  ```
+
+  ```typescript TypeScript maxLines=60  wordWrap
+  const authConfig = await composio.authConfigs.create("NOTION", {
+      name: "Notion",
+      type: "use_custom_auth",
+      credentials: {
+          client_id: "1234567890",
+          client_secret: "1234567890",
+          oauth_redirect_uri: "https://backend.composio.dev/api/v3/toolkits/callback",
+      },
+      authScheme: "OAUTH2",
+  });
+
+  console.log(authConfig);
+  ```
+
+
+### Fetching the fields
+
+For more complex cases where you need to dynamically discover the exact field names and handle different auth schemes programmatically, you can inspect the auth config details first.
+
+**Inspect the auth config details**
+
+
+  ```python Python maxLines=60  wordWrap
+  required_fields = composio.toolkits.get_auth_config_creation_fields(
+      toolkit="NOTION",
+      auth_scheme="OAUTH2",
+      required_only=True,
+  )
+  print(required_fields)
+  ```
+
+  ```typescript TypeScript maxLines=60
+  const toolkits = await composio.toolkits.get("NOTION");
+
+  // Extract field names from authConfigDetails
+  const authFields = await composio.toolkits.getAuthConfigCreationFields('NOTION', 'OAUTH2', {
+    requiredOnly: true,
+  });
+
+  console.log("Required auth config fields:", authFields);
+  ```
+
+
+
+  In this example, assuming you have the following environment variables set:
+
+  ```bash
+  NOTION_CLIENT_ID=your_client_id
+  NOTION_CLIENT_SECRET=your_client_secret
+  ```
+
+  This makes it easy to create the auth config programmatically by reading required fields from the environment variables.
+
+  
+    ```python Python maxLines=60  wordWrap
+    import os
+
+    from composio import Composio
+
+    composio = Composio()
+
+    # Get required fields
+    required_fields = [
+        field.name for field in toolkits.get_auth_config_creation_fields(
+            toolkit="NOTION",
+            auth_scheme="OAUTH2",
+            required_only=True,
+        )
+    ]
+
+    # Read required fields as environment variables
+    auth_config = composio.auth_configs.create(
+        toolkit="notion",
+        options={
+            "name": "Notion Auth",
+            "type": "use_custom_auth",
+            "auth_scheme": "OAUTH2",
+            "credentials": {
+                field: os.getenv(f"NOTION_{field.upper()}") for field in required_fields
+            },
+        },
+    )
+    ```
+
+    ```typescript TypeScript maxLines=60  wordWrap
+    import { Composio } from "@composio/core";
+
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+    });
+
+    const authConfigCreationFields = await composio.toolkits.getAuthConfigCreationFields('NOTION', 'OAUTH2', {
+      requiredOnly: true,
+    });
+
+    console.log("Required auth config fields:", requiredAuthFields);
+
+    const authConfig = await composio.authConfigs.create("NOTION", {
+      name: "Notion",
+      type: "use_custom_auth",
+      authScheme: "OAUTH2", // Replace with the correct scheme for your toolkit if different
+      credentials: Object.fromEntries(
+        requiredAuthFields.map(({ name }) => [
+          name,
+          process.env[`NOTION_${name.toUpperCase()}`] || "",
+        ])
+      ),
+    });
+    ```
+  
+
+
+
+# Custom Auth Parameters
+
+> Guide to injecting custom credentials in headers or parameters for a toolkit
+
+In case Composio is not being used for managing the auth but only for the tools. It is possible to use the `beforeExecute` hook to inject custom auth headers or parameters for a toolkit.
+
+## Setup and Initialization
+
+First, initialize the Composio SDK with your API key:
+
+
+  ```python Python maxLines=10
+  from composio import Composio
+
+  composio = Composio()
+  ```
+
+  ```typescript TypeScript maxLines=10
+  import { Composio } from "@composio/core";
+
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+  });
+  ```
+
+
+## Creating the Auth Modifier Function
+
+Define a function that modifies authentication parameters for specific toolkits. This function checks the toolkit name and adds custom authentication headers when needed.
+
+
+  Before Execute Modifiers are a way to modify the parameters of a tool before it is executed. In this case, they are useful for adding custom authentication headers or parameters to a tool.
+
+
+
+  ```python Python maxLines=25
+  from composio import before_execute
+  from composio.types import ToolExecuteParams
+
+
+  @before_execute(toolkits=["NOTION"])
+  def add_custom_auth(
+      tool: str,
+      toolkit: str,
+      params: ToolExecuteParams,
+  ) -> ToolExecuteParams:
+      if params["custom_auth_params"] is None:
+          params["custom_auth_params"] = {"parameters": []}
+
+      params["custom_auth_params"]["parameters"].append(
+          {
+              "name": "x-api-key",
+              "value": os.getenv("NOTION_API_KEY"),
+              "in": "header",
+          }
+      )
+      return params
+  ```
+
+  ```typescript TypeScript maxLines=25
+  const authModifier = (toolSlug: string, toolkitSlug: string, params: any) => {
+    // Add authentication parameters for specific toolkits
+    if (toolkitSlug === "NOTION") {
+      if (!params.customAuthParams) {
+        params.customAuthParams = {};
+      }
+
+      if (!params.customAuthParams.parameters) {
+        params.customAuthParams.parameters = [];
+      }
+
+      // Add an API key to the headers
+      params.customAuthParams.parameters.push({
+        in: "header",
+        name: "X-API-Key",
+        value: process.env.CUSTOM_API_KEY,
+      });
+    }
+    return params;
+  };
+  ```
+
+
+## Executing Tools with Custom Auth
+
+Execute the tool using the custom authentication modifier. The `beforeExecute` hook allows you to modify parameters before the tool runs.
+
+Following is an example of how to execute a tool with a custom authentication modifier for Completion Providers.
+
+For Agentic Providers, read about [Before Execution Modifiers](/docs/modifiers/before-execution).
+
+
+  ```python Python maxLines=20
+  result = composio.tools.execute(
+      slug="NOTION_GET_DATABASE_ITEMS",
+      user_id="default",
+      arguments={},
+      modifiers=[
+          add_custom_auth,
+      ],
+  )
+  print(result)
+  ```
+
+  ```typescript TypeScript maxLines=20
+  const result = await composio.tools.execute(
+    "NOTION_GET_DATABASE_ITEMS",
+    {
+      userId: "sid",
+      arguments: {
+        database_id: "1234567890",
+      },
+    },
+    {
+      beforeExecute: authModifier,
+    }
+  );
+
+  console.log(JSON.stringify(result, null, 2));
+  ```
+
+
+
+# Using Triggers
+
+> Send payloads to your system based on external events
+
+Triggers act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your integrations.
+
+When these events take place, triggers capture relevant information and deliver structured payloads directly to your system, facilitating timely and context-aware responses.
+
+
+  ![Triggers Overview](file:4c07e60d-1e51-461b-ba0a-d0dd92f667b3)
+
+
+
+  Before proceeding, ensure you've created an auth config and established a connection to your
+  external account (e.g., Slack, GitHub).
+
+
+## Creating a trigger
+
+Head to any app that supports triggers, such as [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
+
