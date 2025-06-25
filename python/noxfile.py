@@ -12,7 +12,24 @@ modules = [
     "scripts/",
 ]
 
-ruff = ["ruff", "--config", "config/ruff.toml"]
+type_stubs = [
+    "types-requests",
+    "types-protobuf",
+    "anthropic",
+    "crewai",
+    "semver",
+    "fastapi",
+    "langchain",
+    "openai-agents",
+    "langchain-openai",
+    "google-cloud-aiplatform",
+]
+
+ruff = [
+    "ruff",
+    "--config",
+    "config/ruff.toml",
+]
 
 
 @nox.session
@@ -26,7 +43,7 @@ def fmt(session: Session):
 @nox.session
 def chk(session: Session):
     """Check for linter and type issues"""
-    session.install(".", "ruff", "mypy==1.13.0", ".")
+    session.install(".", "ruff", "mypy==1.13.0", *type_stubs)
     session.run(*ruff, "check", *modules)
     for module in modules:
         session.run("mypy", "--config-file", "config/mypy.ini", module)
