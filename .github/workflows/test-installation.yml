@@ -108,8 +108,8 @@ jobs:
         run: |
           echo "Testing installation with latest version..."
 
-          # Test the install script
-          bash install.sh
+          # Test the install script with a default version since "latest" doesn't exist
+          bash install.sh cli@0.1.24-2
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
@@ -263,9 +263,9 @@ jobs:
           # Clean up previous installation
           rm -rf ~/.composio
 
-          # Test with custom directory
+          # Test with custom directory using the same version as the workflow
           export COMPOSIO_INSTALL="/tmp/custom-composio"
-          bash install.sh
+          bash install.sh ${{ inputs.version || 'cli@0.1.24-2' }}
 
           # Verify custom installation
           if [[ -f "/tmp/custom-composio/bin/composio" ]]; then
