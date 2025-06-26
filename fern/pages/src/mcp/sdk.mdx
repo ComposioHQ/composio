@@ -1,0 +1,204 @@
+---
+title: Composio MCP Servers
+subtitle: "Guide to working with Composio MCP servers"
+image: "https://og.composio.dev/api/og?title=Composio%20MCP%20Servers"   # image for socials
+keywords: ""
+hide-nav-links: true
+---
+
+## Introduction
+
+The Composio MCP SDK enables you to create and manage [Model Context Protocol](https://modelcontextprotocol.io) servers that expose Composio tools to LLM applications. With MCP servers, your AI agents can interact with external services through a standardized protocol supported by major AI frameworks.
+
+### What You Can Build
+
+- **Multi-tool Servers**: Combine tools from different services (Gmail, Slack, GitHub) into a single MCP server
+- **Provider-Agnostic Solutions**: Write once, deploy to any MCP-compatible client (Claude Desktop, Cursor, Windsurf etc.)
+
+### Quick Example
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+// Create an MCP server with Gmail and Slack tools
+const server = await composio.mcp.create(
+  "productivity-assistant",
+  [
+    {
+      toolkit: "gmail",
+      authConfigId: "<gmail_auth_config_id>", // Replace it with actual auth config id.
+      allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
+    },
+  ]
+);
+
+// Get server URL for your MCP client
+const url = await server.getServer({
+  connectedAccountIds: {
+    gmail: "<gmail_connected_account_id>",
+  }
+});
+```
+
+## SDK Reference
+
+### Key Concepts
+
+#### MCP Server
+A server instance that acts as a bridge between Composio tools and MCP clients. Each server can expose tools from multiple toolkits and manages authentication for connected accounts.
+
+**Key properties:**
+- `id`: Unique identifier for the server
+- `name`: Human-readable name
+- `toolkits`: Array of integrated toolkits
+- `useComposioManagedAuth`: Whether authentication is handled by Composio
+
+#### Toolkit Configuration
+Defines which tools from a specific service are exposed through the MCP server.
+
+```typescript
+{
+  toolkit: "gmail",              // Service identifier
+  authConfigId: "ac_xyz123",     // Links to authentication setup
+  allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]  // Specific tools to expose
+}
+```
+
+#### Authentication Flow
+MCP servers support two authentication patterns:
+
+1. **Composio-managed**: Authentication flows are handled entirely by Composio
+   ```typescript
+   { useComposioManagedAuth: true }
+   ```
+
+2. **External**: You provide connected account IDs
+   ```typescript
+   { useComposioManagedAuth: false }
+   ```
+
+#### Server URLs
+Generated URLs that MCP clients use to connect to your server. The format varies by provider:
+
+- **Standard format**: Single URL object with metadata
+- **Provider-specific**: Custom formats (e.g., Mastra uses toolkit-to-URL mapping)
+
+#### Connected Accounts
+User-specific authenticated connections to services. When getting server URLs, you map toolkits to their connected account IDs:
+
+```typescript
+{
+  connectedAccountIds: {
+    gmail: "<gmail_connected_account_id>",
+    github: "<github_connected_account_id>"
+  }
+}
+```
+
+### Creating MCP Servers
+
+```typescript
+const server = await composio.mcp.create(
+  "my-productivity-server",
+  [
+    {
+      toolkit: "gmail",
+      authConfigId: "<gmail_auth_config_id>", // Replace it with actual auth config id.
+      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+    },
+  ],
+  {
+    useComposioManagedAuth: true
+  }
+);
+```
+
+### Getting Server URLs
+
+You can get server URLs for your end users using either of these two approaches:
+
+```typescript
+// Option 1: Using the convenience method from create response
+const urls = await server.getServer({
+  connectedAccountIds: {
+    gmail: "<gmaiL_connected_account_id>",
+  }
+});
+
+// Option 2: Using the standalone method (useful for existing servers)
+const urls = await composio.mcp.getServer("server-uuid", {
+  connectedAccountIds: {
+    gmail: "<gmaiL_connected_account_id>",
+  }
+});
+```
+
+### Managing Servers
+
+#### List servers with filters
+```typescript
+const servers = await composio.mcp.list({
+  toolkits: ['gmail'],
+  authConfigs: ['auth_123', 'auth_456'],
+  page: 1,
+  limit: 10
+});
+```
+
+#### Get server details
+```typescript
+const details = await composio.mcp.get('server-uuid');
+```
+
+#### Update server configuration
+```typescript
+const updated = await composio.mcp.update(
+  "server-uuid",
+  "updated-server-name",
+  [
+    {
+      toolkit: "gmail",
+      authConfigId: "<gmail_auth_config_id>", // Replace it with actual auth config id.
+      allowedTools: ["GMAIL_FETCH_EMAILS"]
+    }
+  ]
+);
+```
+
+#### Delete a server
+```typescript
+await composio.mcp.delete('server-uuid');
+```
+
+### Provider-Specific Transformations
+
+Different MCP clients expect different response formats. The SDK automatically transforms responses based on your provider:
+
+#### Mastra Format
+Returns URLs as key-value pairs mapping toolkit names to URLs:
+```typescript
+{
+  gmail: "https://mcp.composio.dev/composio/server/<UUID>/mcp",
+  slack: "https://mcp.composio.dev/composio/server/<UUID>/mcp"
+}
+```
+
+#### OpenAI Format 
+Returns an array of MCP server objects:
+```typescript
+[
+  {
+    type: "mcp",
+    server_label: "my-server-gmail",
+    server_url: "https://mcp.composio.dev/composio/server/<UUID>/mcp",
+    require_approval: "never"
+  }
+]
+```
+## Next Steps
+
+Learn more about integrating MCP servers with specific providers in our [Providers documentation](/mcp-developers/mcp-providers).
+
+
