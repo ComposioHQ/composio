@@ -27,9 +27,6 @@ jobs:
       matrix:
         include:
           # Ubuntu x64 versions
-          - os: ubuntu-20.04
-            name: 'Ubuntu 20.04 x64'
-            shell: bash
           - os: ubuntu-22.04
             name: 'Ubuntu 22.04 x64'
             shell: bash
@@ -486,9 +483,9 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Test Matrix Coverage:**" >> $GITHUB_STEP_SUMMARY
-          echo "- **Linux x64**: Ubuntu 20.04, 22.04, Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linux x64**: Ubuntu 22.04, Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS x64**: macOS 12, 13, 14, Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS x64**: macOS 13, 14, Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS ARM64**: macOS Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
           echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
