@@ -88,11 +88,13 @@ jobs:
         working-directory: ts/packages/cli/dist/binaries
         run: |
           # Create subdirectory structure expected by install script
-          rm -rf ${{ matrix.artifact }}
-          mkdir -p ${{ matrix.artifact }}
-          cp ${{ matrix.artifact }} ${{ matrix.artifact }}/composio
-          zip -r ${{ matrix.artifact }}.zip ${{ matrix.artifact }}
-          rm -r ${{ matrix.artifact }}
+          # Use a temp directory name to avoid name collision with the binary file
+          temp_dir="archive-${{ matrix.artifact }}"
+          rm -rf "$temp_dir"
+          mkdir -p "$temp_dir/${{ matrix.artifact }}"
+          cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
+          cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
+          cd .. && rm -r "$temp_dir"
           ls -la
 
       - name: Upload binary artifact
