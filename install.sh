@@ -108,12 +108,31 @@ exe_name=composio
 
 # Determine version to install
 if [[ $# = 0 ]]; then
-    # Get latest version from GitHub API
-    version=$(curl -s https://api.github.com/repos/ComposioHQ/composio/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    if [[ -z "$version" ]]; then
-        error "Failed to get latest version from GitHub"
+    info "Finding latest CLI release..."
+    
+    # Get the last 20 releases and find the latest one with CLI binaries
+    releases_json=$(curl -s "https://api.github.com/repos/ComposioHQ/composio/releases?per_page=20")
+    if [[ -z "$releases_json" ]]; then
+        error "Failed to fetch releases from GitHub"
     fi
-    composio_uri="$github_repo/releases/latest/download/composio-$target.zip"
+    
+    version=""
+    # Extract tag names and check each release for CLI binaries
+    for tag in $(echo "$releases_json" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -20); do
+        # Check if this release has CLI binaries by testing download URL
+        test_url="$github_repo/releases/download/$tag/composio-$target.zip"
+        if curl -s --head "$test_url" | grep -qE "(200 OK|302)"; then
+            version="$tag"
+            info "Found CLI release: $version"
+            break
+        fi
+    done
+    
+    if [[ -z "$version" ]]; then
+        error "No CLI release found in the last 20 releases. Please specify a version manually."
+    fi
+    
+    composio_uri="$github_repo/releases/download/$version/composio-$target.zip"
 else
     version=$1
     composio_uri="$github_repo/releases/download/$version/composio-$target.zip"

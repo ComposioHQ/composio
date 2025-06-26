@@ -103,10 +103,10 @@ jobs:
         if: inputs.version == 'latest' || inputs.version == ''
         shell: bash
         run: |
-          echo "Testing installation with latest version..."
+          echo "Testing installation with auto-detected latest CLI version..."
 
-          # Test the install script with a default version since "latest" doesn't exist
-          bash install.sh cli@0.1.24-2
+          # Test the install script without version (it will auto-detect latest CLI release)
+          bash install.sh
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
