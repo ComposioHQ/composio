@@ -81,13 +81,13 @@
     },
     
     "preview": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build"],
       "cache": false,
       "env": ["FERN_TOKEN"]
     },
     
     "publish": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build"],
       "cache": false,
       "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
     },

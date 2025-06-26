@@ -40,12 +40,10 @@ jobs:
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-        run: |
-          pnpm turbo run preview -- --log-level debug \
-            | tee turbo.log \
-            | grep -oP 'Published docs to \K.*(?= \()' \
-            | head -n1 \
-            | tee preview_url.txt
+        run: pnpm turbo run preview
+          URL=$(pnpm turbo run preview | grep -oP 'Published docs to \K.*(?= \()')
+          echo "Preview URL: $URL"
+          echo "Preview your docs: $URL" > preview_url.txt
 
       - name: Comment URL in PR
         uses: thollander/actions-comment-pull-request@v2.4.3
