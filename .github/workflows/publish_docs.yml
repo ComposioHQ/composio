@@ -27,6 +27,7 @@ jobs:
         working-directory: ./fern
         run: |
           uv sync
+          uv pip install ../python 
 
       - name: Build documentation with Turbo
         working-directory: ./fern
