@@ -1,0 +1,13 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "dist/**/*.d.ts"]
+    },
+    "build:bin": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "dist/**/*.d.ts"]
+    }
+  }
+}
