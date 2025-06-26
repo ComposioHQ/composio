@@ -167,16 +167,45 @@ jobs:
         run: |
           echo "Testing PATH integration with ${{ matrix.shell }}..."
 
+          # Debug: Check what files exist and their contents
+          echo "=== DEBUGGING ==="
+          echo "Checking shell config files:"
+          ls -la ~/ | grep -E '\.(bash|zsh)' || echo "No shell config files found"
+
+          if [[ -f ~/.bashrc ]]; then
+            echo "=== ~/.bashrc contents ==="
+            cat ~/.bashrc
+          fi
+
+          if [[ -f ~/.zshrc ]]; then
+            echo "=== ~/.zshrc contents ==="
+            cat ~/.zshrc
+          fi
+
+          echo "=== Installation directory ==="
+          ls -la ~/.composio/bin/ || echo "~/.composio/bin/ not found"
+
+          echo "=== Current PATH before sourcing ==="
+          echo "$PATH"
+
           # Source the appropriate shell config
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
-            # Test with zsh config
             if [[ -f ~/.zshrc ]]; then
+              echo "Sourcing ~/.zshrc..."
               source ~/.zshrc
+              echo "PATH after sourcing .zshrc: $PATH"
+            else
+              echo "❌ ~/.zshrc not found - install script failed to create it"
+              exit 1
             fi
           else
-            # Test with bash config  
             if [[ -f ~/.bashrc ]]; then
+              echo "Sourcing ~/.bashrc..."
               source ~/.bashrc
+              echo "PATH after sourcing .bashrc: $PATH"
+            else
+              echo "❌ ~/.bashrc not found - install script failed to create it"
+              exit 1
             fi
           fi
 
@@ -184,29 +213,13 @@ jobs:
           if command -v composio &> /dev/null; then
             echo "✅ composio found in PATH"
             which composio
+            composio --version
+            composio --help | head -5
           else
             echo "❌ composio not found in PATH"
-            echo "PATH: $PATH"
+            echo "Final PATH: $PATH"
             exit 1
           fi
-
-          # Test basic commands
-          composio --version
-          composio --help | head -5
-
-          # Test if composio is in PATH
-          if command -v composio &> /dev/null; then
-            echo "✅ composio found in PATH"
-            which composio
-          else
-            echo "❌ composio not found in PATH"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          # Test basic commands
-          composio --version
-          composio --help | head -5
 
       - name: Test shell config updates
         run: |
