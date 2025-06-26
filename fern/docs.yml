@@ -239,7 +239,7 @@ navigation:
       slug: providers/custom/python
 - tab: tools
   layout:
-  - section: Tools
+  - section: Tool
     contents:
     - page: Introduction
       path: tools/introduction.mdx
