@@ -478,24 +478,19 @@ Composio continues to support listening to application events using triggers thr
 
 The process for creating triggers and specifying their configuration has been redesigned for improved clarity and intuitiveness.
 
-Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. You can view the configuration for a trigger as follows:
+Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. The process usually follows the pattern of fetching the trigger type and then creating the trigger with the appropriate configuration.
 
 <CodeGroup>
 <SnippetCode
-  src="fern/snippets/typescript/triggers.ts"
+  src="fern/snippets/migration/new_triggers.py"
   startLine={1}
-  endLine={27}
-  title="TypeScript (current)"
+  endLine={33}
+  title="Python (current)"
 />
-</CodeGroup>
-
-You can then create the trigger with the appropriate configuration:
-
-<CodeGroup>
 <SnippetCode
-  src="fern/snippets/typescript/triggers.ts"
-  startLine={28}
-  endLine={40}
+  src="fern/snippets/migration/new_triggers.ts"
+  startLine={1}
+  endLine={35}
   title="TypeScript (current)"
 />
 </CodeGroup>
@@ -507,12 +502,27 @@ You can enable or disable triggers through either the SDK or the dashboard. The 
 Managing triggers with the SDK:
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/typescript/triggers.ts"
-  startLine={55}
-  endLine={56}
-  title="TypeScript (current)"
-/>
+  ```python Python maxLines=60 wordWrap
+  # Disable a trigger instance 
+  disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+  print(disabled_instance) 
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.disable("ti_abcd123");
+  ```
+</CodeGroup>
+
+If needed, the trigger can be enabled again.
+
+<CodeGroup>
+  ```python Python maxLines=60 wordWrap
+  # Enable a trigger instance
+  enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+  print(enabled_instance)
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.enable("ti_abcd123");
+  ```
 </CodeGroup>
 
 #### Listening to triggers
@@ -523,12 +533,12 @@ For development, you can also [listen to triggers through the SDK](/docs/using-t
 
 <CodeGroup>
 <SnippetCode
-  src="fern/snippets/typescript/trigger-webhook.ts"
-  title="app/api/webhook/route.ts (Next.js)"
+  src="fern/snippets/triggers/python/trigger-webhook.py"
+  title="app/route.py (FastAPI)"
 />
 <SnippetCode
-  src="fern/snippets/python/trigger-webhook.py"
-  title="app/route.py (FastAPI)"
+  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
+  title="app/api/webhook/route.ts (Next.js)"
 />
 </CodeGroup>
 
