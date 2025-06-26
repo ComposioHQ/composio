@@ -87,10 +87,11 @@ jobs:
       - name: Create archive
         working-directory: ts/packages/cli/dist/binaries
         run: |
-          # Rename binary to 'composio' for the archive
-          cp ${{ matrix.artifact }} composio
-          zip ${{ matrix.artifact }}.zip composio
-          rm composio
+          # Create subdirectory structure expected by install script
+          mkdir -p ${{ matrix.artifact }}
+          cp ${{ matrix.artifact }} ${{ matrix.artifact }}/composio
+          zip -r ${{ matrix.artifact }}.zip ${{ matrix.artifact }}
+          rm -r ${{ matrix.artifact }}
           ls -la
 
       - name: Upload binary artifact
