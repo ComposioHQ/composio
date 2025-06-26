@@ -103,7 +103,7 @@ navigation:
       slug: quickstart
     - page: IDE and Agent Setup
       path: pages/dist/get-started/dev-setup.mdx
-      slug: ide-and-agent-setup
+      slug: dev-setup
     - page: Providers
       path: pages/dist/get-started/providers.mdx
       slug: providers
