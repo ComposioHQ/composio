@@ -44,7 +44,7 @@ jobs:
           pnpm turbo run preview -- --log-level debug \
             | tee turbo.log \
             | tee /dev/tty \
-            | rg -oP 'Published docs to \K.*(?= \()' \
+            | grep -oP 'Published docs to \K.*(?= \()' \
             | tee preview_url.txt
 
       - name: Comment URL in PR
