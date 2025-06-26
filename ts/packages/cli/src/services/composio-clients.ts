@@ -1,4 +1,5 @@
 import { pipe, Data, Effect, Option, Schema, Array, Order } from 'effect';
+import type { ConfigError } from 'effect/ConfigError';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
@@ -61,12 +62,14 @@ export type TriggerResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(
-  apiCall: () => Promise<T>,
+  clientSingleton: ComposioClientSingleton,
+  apiCall: (client: _RawComposioClient) => Promise<T>,
   responseSchema: S
-): Effect.Effect<Schema.Schema.Type<S>, HttpError> =>
-  pipe(
-    Effect.tryPromise({
-      try: apiCall,
+): Effect.Effect<Schema.Schema.Type<S>, HttpError | ConfigError> =>
+  Effect.gen(function* () {
+    const client = yield* clientSingleton.get();
+    const json = yield* Effect.tryPromise({
+      try: () => apiCall(client),
       catch: error => {
         const e = error as Error;
         return new HttpServerError({
@@ -74,51 +77,88 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
           message: e.message,
         });
       },
-    }),
-    Effect.flatMap(json => Schema.decodeUnknown(responseSchema)(json)),
-    Effect.catchTag('ParseError', e => {
-      return new HttpDecodingError({
-        cause: e,
-        message: e.message,
-      });
-    })
-  );
+    });
+
+    return yield* pipe(
+      Schema.decodeUnknown(responseSchema)(json),
+      Effect.catchTag('ParseError', e => {
+        return new HttpDecodingError({
+          cause: e,
+          message: e.message,
+        });
+      })
+    );
+  });
 
 /**
  * Services
  */
+
+/**
+ * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
+ * a raw (uneffectful, Promise-based) Composio client instance.
+ */
+class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
+  'services/ComposioClientSingleton',
+  {
+    accessors: true,
+    sync: () => {
+      let ref = Option.none<_RawComposioClient>();
+
+      return {
+        get: Effect.fn(function* () {
+          if (Option.isSome(ref)) {
+            return ref.value;
+          }
+
+          const apiKey = yield* APP_CONFIG['API_KEY'];
+          const baseURLOpt = yield* APP_CONFIG['BASE_URL'];
+          const baseURL = Option.getOrUndefined(baseURLOpt);
+
+          yield* Effect.logDebug('Creating raw Composio client...');
+          const client = new _RawComposioClient({ apiKey, baseURL });
+
+          ref = Option.some(client);
+          return client;
+        }) satisfies () => Effect.Effect<_RawComposioClient, ConfigError, never>,
+      };
+    },
+    dependencies: [],
+  }
+) {}
 
 // Service that wraps the raw Composio client, which is shared by all client services.
 class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
   'services/ComposioClientLive',
   {
     effect: Effect.gen(function* () {
-      const apiKey = yield* APP_CONFIG['API_KEY'];
-      const baseURLOpt = yield* APP_CONFIG['BASE_URL'];
-      const baseURL = Option.getOrUndefined(baseURLOpt);
-
-      yield* Effect.logDebug('Creating raw Composio client...');
-      const client = new _RawComposioClient({ apiKey, baseURL });
+      const clientSingleton = yield* ComposioClientSingleton;
 
       return {
         toolkits: {
           /**
            * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
            */
-          list: () => callClient(() => client.toolkits.list(), ToolkitsResponse),
+          list: () =>
+            callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse),
         },
         tools: {
           /**
            * Retrieve a list of all available tool enumeration values (tool slugs) for the project.
            */
-          retrieveEnum: () => callClient(() => client.tools.retrieveEnum(), ToolsResponse),
+          retrieveEnum: () =>
+            callClient(clientSingleton, client => client.tools.retrieveEnum(), ToolsResponse),
         },
         triggersTypes: {
           /**
            * Retrieves a list of all available trigger type enum values that can be used across the API.
            */
           retrieveEnum: () =>
-            callClient(() => client.triggersTypes.retrieveEnum(), TriggerTypesResponse),
+            callClient(
+              clientSingleton,
+              client => client.triggersTypes.retrieveEnum(),
+              TriggerTypesResponse
+            ),
         },
         v3: {
           cli: {
@@ -126,24 +166,36 @@ class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
              * Generates a new CLI session with a random 6-character code.
              */
             createSession: () =>
-              callClient(() => client.v3.cli.createSession(), CliCreateSessionResponse),
+              callClient(
+                clientSingleton,
+                client => client.v3.cli.createSession(),
+                CliCreateSessionResponse
+              ),
 
             /**
              * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
              */
             retrieveSession: (session: { id: string }) =>
-              callClient(() => client.v3.cli.retrieveSession(session), CliRetrieveSessionResponse),
+              callClient(
+                clientSingleton,
+                client => client.v3.cli.retrieveSession(session),
+                CliRetrieveSessionResponse
+              ),
 
             /**
              * Links a pending CLI session to the currently authenticated user.
              */
             linkSession: (session: { id: string }) =>
-              callClient(() => client.v3.cli.linkSession(session), CliLinkSessionResponse),
+              callClient(
+                clientSingleton,
+                client => client.v3.cli.linkSession(session),
+                CliLinkSessionResponse
+              ),
           },
         },
       };
     }),
-    dependencies: [],
+    dependencies: [ComposioClientSingleton.Default],
   }
 ) {}
 

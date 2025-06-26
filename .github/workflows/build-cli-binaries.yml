@@ -1,0 +1,196 @@
+name: Build CLI Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., v1.0.0)'
+        required: false
+        default: 'dev'
+
+permissions:
+  contents: write
+
+jobs:
+  build-binaries:
+    name: Build CLI Binaries
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-x64
+            artifact: composio-linux-x64
+          - runner: depot-ubuntu-24.04-arm
+            platform: linux-aarch64
+            artifact: composio-linux-aarch64
+          - runner: macos-13 # Intel Mac
+            platform: darwin-x64
+            artifact: composio-darwin-x64
+          - runner: macos-latest # Apple Silicon Mac
+            platform: darwin-aarch64
+            artifact: composio-darwin-aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Build CLI binary
+        working-directory: ts/packages/cli
+        run: |
+          # Use the existing build:bin script which builds for current platform
+          pnpm build:bin
+
+          # Create binaries directory and copy/rename the binary
+          mkdir -p dist/binaries
+          cp dist/composio dist/binaries/${{ matrix.artifact }}
+
+      - name: Verify binary
+        working-directory: ts/packages/cli
+        run: |
+          ls -la dist/binaries/${{ matrix.artifact }}
+          file dist/binaries/${{ matrix.artifact }}
+
+      - name: Test binary
+        working-directory: ts/packages/cli
+        env:
+          COMPOSIO_API_KEY: test-dummy-api-key-for-ci
+        run: |
+          ./dist/binaries/${{ matrix.artifact }} --version
+          ./dist/binaries/${{ matrix.artifact }} --help | head -5
+
+      - name: Create archive
+        working-directory: ts/packages/cli/dist/binaries
+        run: |
+          # Create subdirectory structure expected by install script
+          # Use a temp directory name to avoid name collision with the binary file
+          temp_dir="archive-${{ matrix.artifact }}"
+          rm -rf "$temp_dir"
+          mkdir -p "$temp_dir/${{ matrix.artifact }}"
+          cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
+          cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
+          cd .. && rm -r "$temp_dir"
+          ls -la
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ts/packages/cli/dist/binaries/${{ matrix.artifact }}
+            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+          retention-days: 7
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || github.ref_name }}
+          files: |
+            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+          draft: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          generate_release_notes: true
+          make_latest: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-installation:
+    name: Test Installation
+    needs: build-binaries
+    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/test-installation.yml
+    with:
+      version: ${{ inputs.version || github.ref_name }}
+
+  create-install-instructions:
+    name: Create Install Instructions
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create installation README
+        run: |
+          cat > INSTALL.md << 'EOF'
+          # Composio CLI Installation
+
+          ## Quick Install (Recommended)
+
+          ### Linux and macOS
+          ```bash
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
+          ```
+
+          ### Install specific version
+          ```bash
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- ${{ github.ref_name }}
+          ```
+
+          ## Manual Installation
+
+          1. Download the appropriate binary for your platform from the [releases page](https://github.com/ComposioHQ/composio/releases)
+          2. Extract the binary
+          3. Move it to a directory in your PATH (e.g., `/usr/local/bin`)
+          4. Make it executable: `chmod +x composio`
+
+          ## Alternative: npm/pnpm Installation
+
+          ```bash
+          npm install -g @composio/cli
+          # or
+          pnpm add -g @composio/cli
+          ```
+
+          ## Usage
+
+          ```bash
+          composio --help
+          composio login
+          composio generate
+          ```
+
+          ## Supported Platforms
+
+          - Linux x64
+          - Linux ARM64  
+          - macOS x64 (Intel)
+          - macOS ARM64 (Apple Silicon)
+
+          Windows support coming soon!
+          EOF
+
+      - name: Upload install instructions
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-instructions
+          path: INSTALL.md

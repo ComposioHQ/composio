@@ -36,7 +36,6 @@ const ConfigProviderLive = Effect.gen(function* () {
   const cacheDir = yield* setupCacheDir;
   const jsonUserConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
   const configProviderFromUserFile = yield* configProviderFromLazyJson(jsonUserConfigPath);
-  // const configProviderFromUserFile = yield* configProviderFromLazyJson('/tmp');
 
   // start by reading from env vars
   const configProvider = ConfigProvider.fromEnv()
