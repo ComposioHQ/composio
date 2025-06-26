@@ -1,0 +1,69 @@
+name: Check Broken Links
+
+on:
+  pull_request:
+    paths:
+      - 'fern/**'
+  push:
+    branches:
+      - master
+      - next
+
+jobs:
+  check-broken-links:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install git
+        run: |
+          apt-get update && apt-get install -y git
+
+      - name: Install Python Dependencies
+        working-directory: ./fern
+        run: |
+          uv sync
+          uv pip install ../python 
+
+      - name: Install Fern
+        run: npm install -g fern-api
+
+      - name: Build documentation with Turbo
+        working-directory: ./fern
+        run: pnpm turbo run build --filter=composio-docs
+
+      - name: Check for broken links
+        working-directory: ./fern
+        run: |
+          set +e
+          OUTPUT=$(fern docs broken-links 2>&1)
+          EXIT_CODE=$?
+          set -e
+          
+          echo "$OUTPUT"
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Found broken links in documentation"
+            
+            # Extract and format broken links for better visibility
+            echo ""
+            echo "## ❌ Broken Links Found"
+            echo ""
+            echo "$OUTPUT" | grep -E "(broken link to|fix here:)" | while read -r line; do
+              echo "- $line"
+            done
+            
+            exit 1
+          else
+            echo "✅ No broken links found"
+          fi
