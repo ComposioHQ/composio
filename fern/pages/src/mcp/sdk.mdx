@@ -69,12 +69,12 @@ Defines which tools from a specific service are exposed through the MCP server.
 #### Authentication Flow
 MCP servers support two authentication patterns:
 
-1. **Composio-managed**: Authentication flows are handled entirely by Composio
+1. **Composio-managed**: When enabled, Composio handles all authentication flows including connection management, token refresh. 
    ```typescript
    { useComposioManagedAuth: true }
    ```
 
-2. **External**: You provide connected account IDs
+2. **External**: You provide connected account IDs and manage authentication flows yourself
    ```typescript
    { useComposioManagedAuth: false }
    ```
