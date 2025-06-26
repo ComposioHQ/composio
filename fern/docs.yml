@@ -172,8 +172,8 @@ navigation:
       - page: Providers
         path: pages/dist/mcp/providers.mdx
         slug: providers
-    - page: Partners
-      path: pages/dist/mcp/partners.mdx
+    - page: Partner Program
+      path: pages/dist/mcp/partner-api.mdx
       slug: partners
   - section: Resources
     icon: book
