@@ -27,10 +27,10 @@ jobs:
           - runner: depot-ubuntu-24.04-arm
             platform: linux-aarch64
             artifact: composio-linux-aarch64
-          - runner: macos-13  # Intel Mac
+          - runner: macos-13 # Intel Mac
             platform: darwin-x64
             artifact: composio-darwin-x64
-          - runner: macos-latest  # Apple Silicon Mac
+          - runner: macos-latest # Apple Silicon Mac
             platform: darwin-aarch64
             artifact: composio-darwin-aarch64
 
@@ -65,7 +65,7 @@ jobs:
         run: |
           # Use the existing build:bin script which builds for current platform
           pnpm build:bin
-          
+
           # Create binaries directory and copy/rename the binary
           mkdir -p dist/binaries
           cp dist/composio dist/binaries/${{ matrix.artifact }}
@@ -78,6 +78,8 @@ jobs:
 
       - name: Test binary
         working-directory: ts/packages/cli
+        env:
+          COMPOSIO_API_KEY: test-dummy-api-key-for-ci
         run: |
           ./dist/binaries/${{ matrix.artifact }} --version
           ./dist/binaries/${{ matrix.artifact }} --help | head -5
