@@ -279,12 +279,28 @@ bash)
 
         # Check if file is writable OR if parent directory is writable (so we can create the file)
         if [[ -w "$bash_config" ]] || [[ ! -e "$bash_config" && -w "$(dirname "$bash_config")" ]]; then
-            {
-                echo -e '\n# Composio CLI'
-                for command in "${commands[@]}"; do
-                    echo "$command"
-                done
-            } >>"$bash_config"
+            # For .bashrc, prepend the exports before any interactive checks
+            if [[ "$bash_config" == *".bashrc" ]] && [[ -f "$bash_config" ]] && grep -q "case.*-.*in" "$bash_config"; then
+                # Create a temporary file with our exports at the top
+                temp_file=$(mktemp)
+                {
+                    echo '# Composio CLI'
+                    for command in "${commands[@]}"; do
+                        echo "$command"
+                    done
+                    echo
+                    cat "$bash_config"
+                } > "$temp_file"
+                mv "$temp_file" "$bash_config"
+            else
+                # For other configs or if no interactive check found, append as before
+                {
+                    echo -e '\n# Composio CLI'
+                    for command in "${commands[@]}"; do
+                        echo "$command"
+                    done
+                } >>"$bash_config"
+            fi
 
             info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_bash_config\""
             refresh_command="source $bash_config"

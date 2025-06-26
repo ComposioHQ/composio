@@ -233,7 +233,7 @@ jobs:
               exit 1
             fi
             
-            if grep -q "composio/bin" ~/.zshrc; then
+            if grep -q "COMPOSIO_INSTALL/bin" ~/.zshrc; then
               echo "✅ .zshrc updated with PATH"
             else
               echo "❌ .zshrc PATH not updated"
@@ -247,7 +247,7 @@ jobs:
               exit 1
             fi
             
-            if grep -q "composio/bin" ~/.bashrc; then
+            if grep -q "COMPOSIO_INSTALL/bin" ~/.bashrc; then
               echo "✅ .bashrc updated with PATH"
             else
               echo "❌ .bashrc PATH not updated"
