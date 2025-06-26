@@ -40,7 +40,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 lerna-debug.log*
 
 # fern
-fern/tools
+fern/tools/*
+!fern/tools/src/
+!fern/tools/src/**
 fern/apis/openapi.yml
 fern/apis/openapi-mcp.json
 fern/pages/dist/
