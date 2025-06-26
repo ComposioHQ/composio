@@ -123,7 +123,7 @@ info "Installing Composio CLI $version for $target"
 
 # Set up installation directory
 install_env=COMPOSIO_INSTALL
-bin_env=\$install_env/bin
+bin_env=\$COMPOSIO_INSTALL/bin
 
 install_dir=${!install_env:-$HOME/.composio}
 bin_dir=$install_dir/bin
