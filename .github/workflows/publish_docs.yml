@@ -29,10 +29,6 @@ jobs:
           uv sync
           uv pip install ../python 
 
-      - name: Build documentation with Turbo
-        working-directory: ./fern
-        run: pnpm turbo run build --filter=composio-docs
-
       - name: Publish Docs
         working-directory: ./fern
         env:

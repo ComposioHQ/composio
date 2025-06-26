@@ -678,21 +678,21 @@ class ToolDocGenerator:
 
                     # Add Important section if present
                     if important_tools:
-                        new_layout.append({"section": "Important", "contents": important_tools})
+                        new_layout.append({"section": "Important", "skip-slug": True, "contents": important_tools, })
 
 
                     # Add each category as its own section
                     for cat, tools_list in sorted_categories:
                         if tools_list:
-                            new_layout.append({"section": titleize(cat), "contents": tools_list})
+                            new_layout.append({"section": titleize(cat), "skip-slug": True, "contents": tools_list, })
 
                     # Add Proxy Apps section if present
                     if proxy_apps:
-                        new_layout.append({"section": "Proxy Apps", "contents": proxy_apps})
+                        new_layout.append({"section": "Proxy Apps", "skip-slug": True, "contents": proxy_apps, })
 
                     # Add No Auth section if present
                     if no_auth_tools:
-                        new_layout.append({"section": "No Auth", "contents": no_auth_tools})
+                        new_layout.append({"section": "No Auth", "skip-slug": True, "contents": no_auth_tools, })
 
                     logger.info("new_layout: %s", new_layout)
                     tab_section["layout"] = new_layout
