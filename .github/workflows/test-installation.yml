@@ -52,9 +52,6 @@ jobs:
             shell: zsh
 
           # macOS versions
-          - os: macos-12
-            name: 'macOS 12 (Monterey)'
-            shell: bash
           - os: macos-13
             name: 'macOS 13 (Ventura)'
             shell: bash
