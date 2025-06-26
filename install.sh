@@ -199,6 +199,12 @@ fish)
     fish_config=$HOME/.config/fish/config.fish
     tilde_fish_config=$(tildify "$fish_config")
 
+    # Create fish config directory and file if they don't exist
+    if [[ ! -f $fish_config && -w $(dirname "$(dirname "$fish_config")") ]]; then
+        mkdir -p "$(dirname "$fish_config")"
+        touch "$fish_config"
+    fi
+
     if [[ -w $fish_config ]]; then
         {
             echo -e '\n# Composio CLI'
@@ -224,6 +230,11 @@ zsh)
 
     zsh_config=$HOME/.zshrc
     tilde_zsh_config=$(tildify "$zsh_config")
+
+    # Create .zshrc if it doesn't exist and directory is writable
+    if [[ ! -f $zsh_config && -w $(dirname "$zsh_config") ]]; then
+        touch "$zsh_config"
+    fi
 
     if [[ -w $zsh_config ]]; then
         {
@@ -266,7 +277,8 @@ bash)
     for bash_config in "${bash_configs[@]}"; do
         tilde_bash_config=$(tildify "$bash_config")
 
-        if [[ -w $bash_config ]]; then
+        # Check if file is writable OR if parent directory is writable (so we can create the file)
+        if [[ -w "$bash_config" ]] || [[ ! -e "$bash_config" && -w "$(dirname "$bash_config")" ]]; then
             {
                 echo -e '\n# Composio CLI'
                 for command in "${commands[@]}"; do
