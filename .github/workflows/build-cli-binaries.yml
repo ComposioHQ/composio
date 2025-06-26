@@ -114,16 +114,16 @@ jobs:
   test-installation:
     name: Test Installation
     needs: build-binaries
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/test-installation.yml
     with:
-      version: ${{ github.ref_name }}
+      version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
   create-install-instructions:
     name: Create Install Instructions
     needs: build-binaries
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
