@@ -88,6 +88,7 @@ jobs:
         working-directory: ts/packages/cli/dist/binaries
         run: |
           # Create subdirectory structure expected by install script
+          rm -rf ${{ matrix.artifact }}
           mkdir -p ${{ matrix.artifact }}
           cp ${{ matrix.artifact }} ${{ matrix.artifact }}/composio
           zip -r ${{ matrix.artifact }}.zip ${{ matrix.artifact }}
