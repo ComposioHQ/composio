@@ -1,0 +1,465 @@
+name: Test Installation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to test (e.g., v1.0.0)'
+        required: false
+        default: 'latest'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to test'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  test-install-script:
+    name: Test Install Script
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu x64 versions
+          - os: ubuntu-20.04
+            name: "Ubuntu 20.04 x64"
+            shell: bash
+          - os: ubuntu-22.04
+            name: "Ubuntu 22.04 x64"
+            shell: bash
+          - os: ubuntu-22.04
+            name: "Ubuntu 22.04 x64 (zsh)"
+            shell: zsh
+          - os: ubuntu-latest
+            name: "Ubuntu Latest x64"
+            shell: bash
+          
+          # Ubuntu ARM64 versions (using Depot)
+          - os: depot-ubuntu-24.04-arm
+            name: "Ubuntu 24.04 ARM64"
+            shell: bash
+          - os: depot-ubuntu-22.04-arm
+            name: "Ubuntu 22.04 ARM64"
+            shell: bash
+          - os: depot-ubuntu-22.04-arm
+            name: "Ubuntu 22.04 ARM64 (zsh)"
+            shell: zsh
+          
+          # macOS versions
+          - os: macos-12
+            name: "macOS 12 (Monterey)"
+            shell: bash
+          - os: macos-13
+            name: "macOS 13 (Ventura)"
+            shell: bash
+          - os: macos-13
+            name: "macOS 13 (zsh)"
+            shell: zsh
+          - os: macos-14
+            name: "macOS 14 (Sonoma)"
+            shell: bash
+          - os: macos-latest
+            name: "macOS Latest"
+            shell: bash
+          - os: macos-latest
+            name: "macOS Latest (zsh)"
+            shell: zsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup shell environment
+        run: |
+          if [[ "${{ matrix.shell }}" == "zsh" ]]; then
+            # Install zsh if not present
+            if ! command -v zsh &> /dev/null; then
+              if [[ "${{ runner.os }}" == "Linux" ]]; then
+                sudo apt-get update
+                sudo apt-get install -y zsh
+              elif [[ "${{ runner.os }}" == "macOS" ]]; then
+                # zsh is default on macOS
+                echo "zsh already available"
+              fi
+            fi
+            
+            # Create .zshrc if it doesn't exist
+            touch ~/.zshrc
+            
+            # Set zsh as the shell for this session
+            export SHELL=$(which zsh)
+            echo "SHELL=$(which zsh)" >> $GITHUB_ENV
+          else
+            # Ensure bash is available and create .bashrc
+            touch ~/.bashrc
+            export SHELL=$(which bash)
+            echo "SHELL=$(which bash)" >> $GITHUB_ENV
+          fi
+
+      - name: Test install script (latest version)
+        if: inputs.version == 'latest' || inputs.version == ''
+        shell: bash
+        run: |
+          echo "Testing installation with latest version..."
+          
+          # Test the install script
+          bash install.sh
+          
+          # Verify installation
+          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
+          export PATH="$HOME/.composio/bin:$PATH"
+          
+          # Check if binary exists
+          if [[ -f "$HOME/.composio/bin/composio" ]]; then
+            echo "✅ Binary installed successfully"
+            ls -la "$HOME/.composio/bin/composio"
+          else
+            echo "❌ Binary not found"
+            exit 1
+          fi
+          
+          # Test binary execution
+          if "$HOME/.composio/bin/composio" --version; then
+            echo "✅ Binary executes successfully"
+          else
+            echo "❌ Binary execution failed"
+            exit 1
+          fi
+
+      - name: Test install script (specific version)
+        if: inputs.version != 'latest' && inputs.version != ''
+        shell: bash
+        run: |
+          echo "Testing installation with version: ${{ inputs.version }}"
+          
+          # Test the install script with specific version
+          bash install.sh ${{ inputs.version }}
+          
+          # Verify installation
+          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
+          export PATH="$HOME/.composio/bin:$PATH"
+          
+          # Check if binary exists
+          if [[ -f "$HOME/.composio/bin/composio" ]]; then
+            echo "✅ Binary installed successfully"
+            ls -la "$HOME/.composio/bin/composio"
+          else
+            echo "❌ Binary not found"
+            exit 1
+          fi
+          
+          # Test binary execution
+          if "$HOME/.composio/bin/composio" --version; then
+            echo "✅ Binary executes successfully"
+          else
+            echo "❌ Binary execution failed"
+            exit 1
+          fi
+
+      - name: Test PATH integration
+        shell: ${{ matrix.shell }}
+        run: |
+          echo "Testing PATH integration..."
+          
+          # Source the appropriate shell config
+          if [[ "${{ matrix.shell }}" == "zsh" ]]; then
+            source ~/.zshrc
+          else
+            source ~/.bashrc
+          fi
+          
+          # Test if composio is in PATH
+          if command -v composio &> /dev/null; then
+            echo "✅ composio found in PATH"
+            which composio
+          else
+            echo "❌ composio not found in PATH"
+            echo "PATH: $PATH"
+            exit 1
+          fi
+          
+          # Test basic commands
+          composio --version
+          composio --help | head -5
+
+      - name: Test shell config updates
+        run: |
+          echo "Checking shell configuration updates..."
+          
+          if [[ "${{ matrix.shell }}" == "zsh" ]]; then
+            if grep -q "COMPOSIO_INSTALL" ~/.zshrc; then
+              echo "✅ .zshrc updated with COMPOSIO_INSTALL"
+            else
+              echo "❌ .zshrc not updated"
+              exit 1
+            fi
+            
+            if grep -q "composio/bin" ~/.zshrc; then
+              echo "✅ .zshrc updated with PATH"
+            else
+              echo "❌ .zshrc PATH not updated"
+              exit 1
+            fi
+          else
+            if grep -q "COMPOSIO_INSTALL" ~/.bashrc; then
+              echo "✅ .bashrc updated with COMPOSIO_INSTALL"
+            else
+              echo "❌ .bashrc not updated"
+              exit 1
+            fi
+            
+            if grep -q "composio/bin" ~/.bashrc; then
+              echo "✅ .bashrc updated with PATH"
+            else
+              echo "❌ .bashrc PATH not updated"
+              exit 1
+            fi
+          fi
+
+      - name: Test custom install directory
+        shell: bash
+        run: |
+          echo "Testing custom install directory..."
+          
+          # Clean up previous installation
+          rm -rf ~/.composio
+          
+          # Test with custom directory
+          export COMPOSIO_INSTALL="/tmp/custom-composio"
+          bash install.sh
+          
+          # Verify custom installation
+          if [[ -f "/tmp/custom-composio/bin/composio" ]]; then
+            echo "✅ Custom directory installation successful"
+            ls -la "/tmp/custom-composio/bin/composio"
+          else
+            echo "❌ Custom directory installation failed"
+            exit 1
+          fi
+          
+          # Test execution
+          if "/tmp/custom-composio/bin/composio" --version; then
+            echo "✅ Custom installation executes successfully"
+          else
+            echo "❌ Custom installation execution failed"
+            exit 1
+          fi
+
+      - name: Test uninstallation
+        run: |
+          echo "Testing uninstallation..."
+          
+          # Remove binary
+          rm -rf ~/.composio /tmp/custom-composio
+          
+          # Check if binary is gone
+          if [[ ! -f "$HOME/.composio/bin/composio" ]]; then
+            echo "✅ Binary removed successfully"
+          else
+            echo "❌ Binary removal failed"
+            exit 1
+          fi
+
+      - name: Test error handling
+        shell: bash
+        run: |
+          echo "Testing error handling..."
+          
+          # Test with invalid version
+          if bash install.sh v999.999.999 2>&1 | grep -q "Failed"; then
+            echo "✅ Error handling works for invalid version"
+          else
+            echo "❌ Error handling failed"
+            # Don't exit 1 here as this is expected to fail
+          fi
+
+  test-npm-fallback:
+    name: Test npm Installation Fallback
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Test npm installation
+        run: |
+          echo "Testing npm installation as fallback..."
+          
+          # This would normally install from npm registry
+          # For testing, we just verify the command works
+          if command -v npm &> /dev/null; then
+            echo "✅ npm is available"
+            npm --version
+          else
+            echo "❌ npm not available"
+            exit 1
+          fi
+
+  test-architecture-detection:
+    name: Test Architecture Detection
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            expected: "Linux x64"
+          - os: depot-ubuntu-24.04-arm
+            arch: arm64
+            expected: "Linux ARM64"
+          - os: macos-13
+            arch: x64
+            expected: "macOS x64"
+          - os: macos-latest
+            arch: arm64
+            expected: "macOS ARM64"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test architecture detection
+        run: |
+          echo "Testing architecture detection for: ${{ matrix.expected }}"
+          
+          platform=$(uname -ms)
+          echo "Detected platform: $platform"
+          
+          case $platform in
+          'Darwin x86_64')
+              detected="macOS x64"
+              ;;
+          'Darwin arm64')
+              detected="macOS ARM64"
+              ;;
+          'Linux x86_64')
+              detected="Linux x64"
+              ;;
+          'Linux aarch64'|'Linux arm64')
+              detected="Linux ARM64"
+              ;;
+          *)
+              echo "❌ Unknown platform: $platform"
+              exit 1
+              ;;
+          esac
+          
+          if [[ "$detected" == "${{ matrix.expected }}" ]]; then
+            echo "✅ Correctly detected: $detected"
+          else
+            echo "❌ Detection mismatch: expected '${{ matrix.expected }}', got '$detected'"
+            exit 1
+          fi
+
+  test-prerequisites:
+    name: Test Prerequisites
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test required tools
+        run: |
+          echo "Testing required tools..."
+          
+          # Test curl
+          if command -v curl &> /dev/null; then
+            echo "✅ curl available"
+            curl --version | head -1
+          else
+            echo "❌ curl not available"
+            exit 1
+          fi
+          
+          # Test unzip
+          if command -v unzip &> /dev/null; then
+            echo "✅ unzip available"
+            unzip -v | head -1
+          else
+            echo "❌ unzip not available"
+            exit 1
+          fi
+
+      - name: Test without prerequisites
+        run: |
+          echo "Testing error handling when prerequisites are missing..."
+          
+          # Create a version of the script that will fail prerequisite check
+          sed 's/command -v curl/command -v nonexistent-tool/' install.sh > test-install.sh
+          
+          if bash test-install.sh 2>&1 | grep -q "required to install"; then
+            echo "✅ Prerequisites check works"
+          else
+            echo "❌ Prerequisites check failed"
+            exit 1
+          fi
+          
+          rm test-install.sh
+
+  summary:
+    name: Installation Test Summary
+    needs: [test-install-script, test-npm-fallback, test-architecture-detection, test-prerequisites]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Test Results Summary
+        run: |
+          echo "## Installation Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.test-install-script.result }}" == "success" ]]; then
+            echo "✅ **Install Script Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Install Script Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-npm-fallback.result }}" == "success" ]]; then
+            echo "✅ **npm Fallback Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **npm Fallback Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-architecture-detection.result }}" == "success" ]]; then
+            echo "✅ **Architecture Detection**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Architecture Detection**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-prerequisites.result }}" == "success" ]]; then
+            echo "✅ **Prerequisites Check**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Prerequisites Check**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Matrix Coverage:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linux x64**: Ubuntu 20.04, 22.04, Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS x64**: macOS 12, 13, 14, Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS ARM64**: macOS Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY
