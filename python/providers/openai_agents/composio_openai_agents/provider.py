@@ -1,16 +1,13 @@
-import json
 import asyncio
+import json
 import typing as t
-from inspect import Signature
-from typing import List, cast
 
 import pydantic
-import pydantic.error_wrappers
-from agents import FunctionTool, Tool
+from agents import FunctionTool
 
+from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
-from composio.core.provider import AgenticProvider
 from composio.utils.pydantic import parse_pydantic_error
 
 
@@ -21,9 +18,7 @@ def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
     schema, including nested ones. Also ensure that any 'items' object has a 'type' key.
     """
     # Handle properties directly
-    if "properties" in schema_obj and isinstance(
-        schema_obj["properties"], dict
-    ):
+    if "properties" in schema_obj and isinstance(schema_obj["properties"], dict):
         for _, prop_value in schema_obj["properties"].items():
             if isinstance(prop_value, dict):
                 # Remove examples, pattern, and default from this property
@@ -35,9 +30,7 @@ def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
                     del prop_value["default"]
 
                 # Ensure 'items' has a 'type' key
-                if "items" in prop_value and isinstance(
-                    prop_value["items"], dict
-                ):
+                if "items" in prop_value and isinstance(prop_value["items"], dict):
                     if "type" not in prop_value["items"]:
                         # Default to string type for items if not specified
                         prop_value["items"]["type"] = "string"
@@ -67,6 +60,7 @@ def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
                 if isinstance(item, dict):
                     _remove_examples_from_schema(item)
 
+
 class OpenAIAgentsProvider(
     AgenticProvider[FunctionTool, list[FunctionTool]],
     name="openai_agents",
@@ -81,6 +75,7 @@ class OpenAIAgentsProvider(
         execute_tool: AgenticProviderExecuteFn,
     ) -> FunctionTool:
         """Wrap a tool as a FunctionTool."""
+
         # Create a function that accepts explicit JSON string for parameters
         # This avoids the issue with **kwargs in schema validation
         async def execute_tool_wrapper(_ctx, payload):

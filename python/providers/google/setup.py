@@ -6,7 +6,6 @@ from pathlib import Path
 
 from setuptools import setup
 
-
 setup(
     name="composio_google",
     version="1.0.0-rc5",
@@ -22,8 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=[
-        "google-cloud-aiplatform>=1.38.0",
-    ],
+    install_requires=["google-cloud-aiplatform>=1.38.0", "vertexai"],
     include_package_data=True,
 )

@@ -23,4 +23,4 @@ def authorize_app(toolkit: str):
         user_id=user_id,
         auth_config_id=auth_config_id,
     )
-    return RedirectResponse(url=connection_request.redirect_url)
+    return RedirectResponse(url=connection_request.redirect_url)  # type: ignore

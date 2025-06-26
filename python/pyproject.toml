@@ -30,6 +30,3 @@ dev = [
     "click>=8.2.1",
     "semver>=3.0.4",
 ]
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"

@@ -1,5 +1,9 @@
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
+import { Effect, Stream, String } from 'effect';
+import { Command } from '@effect/platform';
 import ts from 'typescript';
+import { cwd } from 'node:process';
 
 interface AssertTypeScriptIsValidInput {
   files: {
@@ -57,6 +61,41 @@ export function assertTypeScriptIsValid({ files }: AssertTypeScriptIsValidInput)
 
   // Assert that there are no TypeScript errors
   expect(diagnostics).toEqual([]);
+}
+
+type AssertTranspiledTypeScriptIsValidInput = {
+  cwd: string;
+  testSourceCodePath: string;
+};
+
+export function assertTranspiledTypeScriptIsValid({
+  cwd,
+  testSourceCodePath,
+}: AssertTranspiledTypeScriptIsValidInput) {
+  return Effect.gen(function* () {
+    const installCmd = Command.make('node', testSourceCodePath);
+    const [exitCode, stdout, stderr] = yield* installCmd.pipe(
+      Command.workingDirectory(cwd),
+      Command.start,
+      Effect.andThen(process =>
+        Effect.all(
+          [
+            // Wait for exit code
+            process.exitCode,
+            // Get stdout as lines
+            process.stdout.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat)),
+            // Get stderr as lines
+            process.stderr.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat)),
+          ],
+          { concurrency: 3 }
+        )
+      )
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
+    return stdout;
+  });
 }
 
 if (import.meta.vitest) {

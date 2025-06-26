@@ -177,9 +177,12 @@ navigation:
     icon: server
     skip-slug: true
     contents:
-    - page: Introduction
-      path: pages/dist/mcp/introduction.mdx
-      slug: mcp-introduction
+    - page: Overview
+      path: pages/dist/mcp/overview.mdx
+      slug: mcp-overview
+    - page: Developers
+      path: pages/dist/mcp/developers.mdx
+      slug: mcp-developers
     - page: Partner Program
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api
@@ -257,7 +260,7 @@ navigation:
       slug: providers/custom/python
 - tab: tools
   layout:
-  - section: Tool
+  - section: Tools
     contents:
     - page: Introduction
       path: tools/introduction.mdx

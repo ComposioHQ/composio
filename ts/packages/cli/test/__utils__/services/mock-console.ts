@@ -4,6 +4,7 @@ import * as Array from 'effect/Array';
 import * as Console from 'effect/Console';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
 import * as Ref from 'effect/Ref';
 
 export interface MockConsole extends Console.Console {
@@ -49,8 +50,11 @@ export const make = Effect.gen(function* () {
     return Ref.update(lines, Array.appendAll(args));
   };
 
+  const clear: MockConsole['clear'] = Ref.update(lines, Array.empty);
+
   return MockConsole.of({
     [Console.TypeId]: Console.TypeId,
+    clear,
     getLines,
     log,
     info,
@@ -58,7 +62,6 @@ export const make = Effect.gen(function* () {
     error,
     unsafe: globalThis.console,
     assert: () => Effect.void,
-    clear: Effect.void,
     count: () => Effect.void,
     countReset: () => Effect.void,
     debug: () => Effect.void,
@@ -73,6 +76,13 @@ export const make = Effect.gen(function* () {
     trace: () => Effect.void,
   });
 });
+
+export const effect = Effect.gen(function* () {
+  yield* Effect.addFinalizer(() => Console.clear);
+  return yield* make;
+});
+
+export const layer = Layer.scoped(MockConsole, effect);
 
 export const getLines = (
   params?: Partial<{

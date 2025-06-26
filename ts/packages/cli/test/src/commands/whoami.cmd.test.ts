@@ -11,7 +11,7 @@ describe('CLI: composio whoami', () => {
   );
 
   layer(TestLive().pipe(Layer.provide(Layer.setConfigProvider(mockConfigProvider))))(it => {
-    it.effect('[Given] `COMPOSIO_API_KEY` env var [Then] prints it in stdout', () =>
+    it.scoped('[Given] `COMPOSIO_API_KEY` env var [Then] prints it in stdout', () =>
       Effect.gen(function* () {
         const args = ['whoami'];
         yield* cli(args);

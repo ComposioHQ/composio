@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.35",
+  "version": "0.1.36-next.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -14,11 +14,16 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs"
+    },
+    "./generated": {
+      "import": "./generated/index.js",
+      "types": "./generated/index.d.ts"
     }
   },
   "files": [
     "README.md",
-    "dist"
+    "dist",
+    "generated"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",

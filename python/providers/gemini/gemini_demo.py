@@ -1,9 +1,8 @@
-from composio import Composio
 from composio_gemini import GeminiProvider
-
 from google import genai
 from google.genai import types
 
+from composio import Composio
 
 # Create composio client
 composio = Composio(provider=GeminiProvider())

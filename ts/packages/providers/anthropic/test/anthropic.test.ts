@@ -380,4 +380,112 @@ describe('AnthropicProvider', () => {
       expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
     });
   });
+
+  describe('MCP functionality', () => {
+    describe('wrapMcpServerResponse', () => {
+      it('should transform McpUrlResponse to AnthropicMcpServerGetResponse format', () => {
+        const mcpResponse = [
+          { name: 'server-1', url: 'https://mcp1.example.com' },
+          { name: 'server-2', url: 'https://mcp2.example.com' },
+          { name: 'server-3', url: 'https://mcp3.example.com' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(3);
+        expect(result[0]).toEqual({
+          url: 'https://mcp1.example.com',
+          name: 'server-1',
+          type: 'url',
+        });
+        expect(result[1]).toEqual({
+          url: 'https://mcp2.example.com',
+          name: 'server-2',
+          type: 'url',
+        });
+        expect(result[2]).toEqual({
+          url: 'https://mcp3.example.com',
+          name: 'server-3',
+          type: 'url',
+        });
+      });
+
+      it('should handle empty array', () => {
+        const mcpResponse: Array<{ name: string; url: string }> = [];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(0);
+      });
+
+      it('should handle single item array', () => {
+        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual({
+          url: 'https://single.example.com',
+          name: 'single-server',
+          type: 'url',
+        });
+      });
+
+      it('should preserve URL strings exactly', () => {
+        const mcpResponse = [
+          { name: 'http-server', url: 'http://insecure.example.com' },
+          { name: 'https-server', url: 'https://secure.example.com' },
+          { name: 'port-server', url: 'https://example.com:8080/path' },
+          { name: 'query-server', url: 'https://example.com?param=value' },
+          { name: 'fragment-server', url: 'https://example.com#section' },
+        ];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        expect(result).toHaveLength(5);
+
+        // Verify URLs are preserved as strings exactly
+        expect(result[0].url).toBe('http://insecure.example.com');
+        expect(result[1].url).toBe('https://secure.example.com');
+        expect(result[2].url).toBe('https://example.com:8080/path');
+        expect(result[3].url).toBe('https://example.com?param=value');
+        expect(result[4].url).toBe('https://example.com#section');
+
+        // All should have type 'url'
+        result.forEach(item => {
+          expect(item.type).toBe('url');
+        });
+      });
+    });
+
+    describe('MCP integration with provider', () => {
+      it('should correctly type the MCP response transformation', () => {
+        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
+
+        const result = provider.wrapMcpServerResponse(mcpResponse);
+
+        // TypeScript should infer this as AnthropicMcpServerGetResponse
+        expect(result[0]).toHaveProperty('url');
+        expect(result[0]).toHaveProperty('name');
+        expect(result[0]).toHaveProperty('type');
+        expect(result[0].url).toBe('https://test.example.com');
+        expect(result[0].type).toBe('url');
+      });
+
+      it('should work with MCP provider instance', () => {
+        // Verify the provider can transform MCP responses
+        const newProvider = new AnthropicProvider();
+        const testResponse = [{ name: 'test', url: 'https://test.com' }];
+
+        const result = newProvider.wrapMcpServerResponse(testResponse);
+        expect(result).toHaveLength(1);
+        expect(result[0].name).toBe('test');
+        expect(result[0].url).toBe('https://test.com');
+        expect(result[0].type).toBe('url');
+      });
+    });
+  });
 });

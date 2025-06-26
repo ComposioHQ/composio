@@ -10,7 +10,6 @@ from vertexai.generative_models import (
     FunctionDeclaration,
     GenerationResponse,
     Part,
-    Tool,
 )
 
 from composio.core.provider import NonAgenticProvider
