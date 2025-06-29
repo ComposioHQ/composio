@@ -27,15 +27,11 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
       path: [...refs.path, 'properties', key],
     });
 
-    const hasDefault = typeof propJsonSchema === 'object' && propJsonSchema.default !== undefined;
     const required = Array.isArray(objectSchema.required)
       ? objectSchema.required.includes(key)
-      : typeof propJsonSchema === 'object' && propJsonSchema.required === true;
-
-    // If property has a default value, we should include it in the schema even if it's not required
-    const isOptional = !hasDefault && !required;
-
-    properties[key] = isOptional ? propZodSchema.optional() : propZodSchema;
+      : false;
+    // If property is required, we should include it in the schema even if it's not required
+    properties[key] = required ? propZodSchema : propZodSchema.optional();
   }
 
   return z.object(properties);
