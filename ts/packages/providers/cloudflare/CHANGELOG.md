@@ -1,5 +1,13 @@
 # @composio/cloudflare
 
+## 0.1.36-next.1
+
+### Patch Changes
+
+- Fix issues with json schema to zod parsing causing nested objects to be marked as required
+- Updated dependencies
+  - @composio/core@0.1.36-next.1
+
 ## 0.1.36-next.0
 
 ### Patch Changes

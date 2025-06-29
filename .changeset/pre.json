@@ -15,6 +15,7 @@
     "@composio/vercel": "0.1.35"
   },
   "changesets": [
+    "cold-badgers-drop",
     "cuddly-dragons-knock"
   ]
 }
