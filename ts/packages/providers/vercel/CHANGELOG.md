@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.1.36-next.2
+
+### Patch Changes
+
+- Fix issues with objects with default values being marked as required
+- Updated dependencies
+  - @composio/core@0.1.36-next.2
+
 ## 0.1.36-next.1
 
 ### Patch Changes
