@@ -32,16 +32,8 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
       ? objectSchema.required.includes(key)
       : typeof propJsonSchema === 'object' && propJsonSchema.required === true;
 
-    // If property has a default value or is an object with nested defaults,
-    // we should include it in the schema even if it's not required
-    const isOptional =
-      !hasDefault &&
-      !required &&
-      !(
-        typeof propJsonSchema === 'object' &&
-        propJsonSchema.type === 'object' &&
-        propJsonSchema.properties
-      );
+    // If property has a default value, we should include it in the schema even if it's not required
+    const isOptional = !hasDefault && !required;
 
     properties[key] = isOptional ? propZodSchema.optional() : propZodSchema;
   }
