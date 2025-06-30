@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the Composio SDK v3 repository containing both TypeScript and Python SDKs. The main development focus is on the TypeScript SDK located in `/ts/` directory. The project uses a monorepo structure with multiple packages and examples.
 
+## Memories and Notes
+
+- For documentation tasks, refer to `fern/CLAUDE.md`
+
 ## Common Development Commands
 
 ### Build and Development
@@ -206,3 +210,101 @@ const customTool = await composio.tools.createCustomTool({
 ```
 
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
+
+## Python SDK Development
+
+### Setup
+The Python SDK is located in the `/python/` directory and uses `uv` for dependency management and `nox` for automation.
+
+### Environment Setup
+```bash
+# Create and setup Python development environment
+cd python
+make env
+source .venv/bin/activate
+```
+
+### Python Development Commands
+```bash
+# Setup environment (creates virtual env with all dependencies)
+make env
+
+# Sync dependencies (when in an existing environment)
+make sync
+
+# Install provider packages
+make provider
+
+# Format code using ruff
+make fmt
+# Or directly: nox -s fmt
+
+# Check linting and type issues
+make chk
+# Or directly: nox -s chk
+
+# Fix linting issues
+nox -s fix
+
+# Run tests (requires implementing tst session)
+make tst
+# Or directly: nox -s tst
+
+# Run sanity tests (requires implementing snt session)  
+make snt
+# Or directly: nox -s snt
+
+# Clean build artifacts
+make clean-build
+
+# Bump version
+make bump
+
+# Build packages
+make build
+```
+
+### Python Project Structure
+```
+python/
+├── composio/           # Main SDK package
+├── providers/          # Provider implementations
+├── tests/             # Test suite
+├── examples/          # Usage examples
+├── scripts/           # Development scripts
+├── config/            # Configuration files
+│   ├── pytest.ini     # Pytest configuration
+│   ├── mypy.ini       # MyPy type checking config
+│   ├── ruff.toml     # Ruff linter/formatter config
+│   └── codecov.yml   # Code coverage config
+├── Makefile          # Development shortcuts
+├── noxfile.py        # Nox automation sessions
+└── pyproject.toml    # Project configuration
+```
+
+### Python Code Quality
+- **Formatter**: Ruff (Black-compatible, 88 char line length)
+- **Linter**: Ruff with custom configuration
+- **Type Checker**: mypy with strict optional typing
+- **Test Framework**: pytest with custom markers (core, openai, langchain, agno)
+- **Python Version**: >=3.10, <4
+- **Dependency Managers**: uv
+
+### Python Testing
+```bash
+# Run tests with pytest markers
+pytest -m core        # Run core tests only
+pytest -m openai      # Run OpenAI provider tests
+pytest -m langchain   # Run LangChain provider tests
+pytest -m agno       # Run Agno provider tests
+```
+
+### Python Package Dependencies
+- Core: `pysher`, `pydantic>=2.6.4`, `composio-client==1.4.0`, `typing-extensions>=4.0.0`, `openai`
+- Dev: `nox`, `pytest`, `ruff`, `langchain_openai`, `fastapi`, `twine`, `click`, `semver`
+
+### Python Environment Variables
+Same as TypeScript SDK, with additional:
+```bash
+OPENAI_API_KEY    # Required for OpenAI provider examples
+```
