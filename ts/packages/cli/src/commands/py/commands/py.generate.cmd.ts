@@ -38,15 +38,12 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
         onNone: () => pyFindComposioCoreGenerated(cwd),
 
         // If an output directory is specified, validate and create it
-        onSome: outputDir =>
-          pipe(
-            Effect.succeed(outputDir),
-            Effect.tap(fs.makeDirectory(outputDir, { recursive: true }))
-          ),
+        onSome: Effect.succeed,
       })
     );
 
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
+    yield* fs.makeDirectory(outputDir, { recursive: true });
 
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API...');
