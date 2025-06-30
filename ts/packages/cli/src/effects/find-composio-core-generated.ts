@@ -5,6 +5,7 @@ import {
   JsPackageManagerDetector,
   type PackageManager,
 } from 'src/services/js-package-manager-detector';
+import type { PlatformError } from '@effect/platform/Error';
 
 export class ComposioCorePkgNotFound extends Data.TaggedError('error/ComposioCorePkgNotFound')<{
   readonly message: string;
@@ -48,7 +49,6 @@ export function pyFindComposioCoreGenerated(cwd: string) {
     const [cmd, ...args] = [
       'uv',
       'run',
-      '--active',
       'python',
       '-c',
       'import composio; print(composio.__file__)',
@@ -61,11 +61,14 @@ export function pyFindComposioCoreGenerated(cwd: string) {
 
     yield* Effect.logDebug({ stdout, cmd: [cmd, ...args].join(' ') });
 
-    const composioCorePath = path.dirname(stdout);
+    const composioCorePath = `${path.dirname(stdout)}/generated`;
     yield* Effect.logDebug({ composioCorePath });
 
+    const fs = yield* FileSystem.FileSystem;
+    yield* fs.makeDirectory(composioCorePath, { recursive: true });
+
     return composioCorePath;
-  }) satisfies Effect.Effect<string, ComposioCorePkgNotFound, unknown>;
+  }) satisfies Effect.Effect<string, ComposioCorePkgNotFound | PlatformError, unknown>;
 }
 
 /**

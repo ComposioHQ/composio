@@ -86,7 +86,7 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
     yield* Option.isNone(outputOpt)
       ? Console.log(
           '✅ Type stubs generated successfully.\n' +
-            'You can now import generated types via `from composio.<toolkit_name> import <TOOLKIT_NAME>`.\n'
+            'You can now import generated types via `from composio.generated.<toolkit_name> import <TOOLKIT_NAME>`.\n'
         )
       : Console.log(
           `✅ Type stubs generated successfully.\n` +
