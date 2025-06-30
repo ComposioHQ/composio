@@ -16,7 +16,7 @@ You can find the demo live [here](https://chat.composio.dev/).
 
 ## Prerequisites
 
-Ensure you've followed the README.md in the [composiohq/chat](https://github.com/composiohq/chat) repository to set the project locally.
+Ensure you've followed the README.md in the [composiohq/chat](https://github.com/composiohq/chat) repository to set up the project locally.
 
 ## Creating auth configs
 
@@ -32,7 +32,7 @@ Once done, your auth configs will be available in the [Composio dashboard](https
 
 ### Save auth config IDs to environment variables
 
-For this project, the auth config IDs should be saved the the environment variables with the `NEXT_PUBLIC_` prefix.
+For this project, the auth config IDs should be saved to the environment variables with the `NEXT_PUBLIC_` prefix.
 
 ```bash .env.local
 NEXT_PUBLIC_GMAIL_AUTH_CONFIG_ID=ac_1234567890
@@ -41,7 +41,7 @@ NEXT_PUBLIC_GITHUB_AUTH_CONFIG_ID=ac_1234567890
 
 ## Create a Composio client instance
 
-We create a Composio client instance for server-side operations like, API routes, server components, etc.
+We create a Composio client instance for server-side operations like API routes, server components, etc.
 
 ```typescript lib/service/composio.ts
 import { Composio } from '@composio/core';

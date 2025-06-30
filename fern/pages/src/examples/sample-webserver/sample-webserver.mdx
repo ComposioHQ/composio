@@ -7,12 +7,12 @@ subtitle: ""
 hide-nav-links: true
 ---
 
-This tutorial shows you a minimal example of a web server that can use composio
+This tutorial shows you a minimal example of a web server that can use Composio.
 
 
 ### Install dependencies
 
-using `bun` for this example, it is super convenient for rapid prototyping.
+Using `bun` for this example, it is super convenient for rapid prototyping.
 
 ```bash
 bun install @composio/core@next openai hono
@@ -46,11 +46,11 @@ Basic scaffolding for the server.
 
 ### Auth Configs
 
-These are configurations for tools that control how they are authorized, the scopes and permissions they have. You can learn more about them [here](/authenticating-tools).
+These are configurations for tools that control how they are authorized, the scopes, and permissions they have. You can learn more about them [here](/authenticating-tools).
 
 For this example, we will create a basic GMAIL auth config.
 
-You are recommend to store these config ids, so that you can reuse them later.
+You are recommended to store these config IDs, so that you can reuse them later.
 
 <SnippetCode
   src="./index.ts"
@@ -64,7 +64,7 @@ You are recommend to store these config ids, so that you can reuse them later.
 
 Connections are your users authorizing your tools.
 
-Here we start the connection process, once your user uses the `redirectUrl` from the response, 
+Here we start the connection process. Once your user uses the `redirectUrl` from the response, 
 they will be redirected to the auth flow. 
 Once they have authorized the connection, you can use the `id` to get and execute the tools as the user.
 
@@ -114,19 +114,19 @@ You can see the full code [here](https://github.com/ComposioHQ/composio/blob/nex
 
 ### What just happened?
 
-Well first - we created an instance of our `gmail` tool with our default auth config, then our user authorized that tool with their account and some permissions.
+Well, first - we created an instance of our `gmail` tool with our default auth config, then our user authorized that tool with their account and some permissions.
 
-Then we used that `gmail` tool by giving it to OpenAI's `gpt-4o`. The model composed the email and sent it correctly formatted to the composio team.
+Then we used that `gmail` tool by giving it to OpenAI's `gpt-4o`. The model composed the email and sent it correctly formatted to the Composio team.
 
 ### What's next?
 
-This is a fairly basic example, but you can do a lot more with our sdk.
+This is a fairly basic example, but you can do a lot more with our SDK.
 
 Recommended further reading:
 
 - [Authenticating tools](/authenticating-tools) - understand how to control tool authorization
 - [Executing Tools](/executing-tools) - understand how tool execution works
-- [Providers](/providers) - want to use something other than OpenAI? we probably support it
+- [Providers](/providers) - want to use something other than OpenAI? We probably support it
 - [Tools](/tools) - understand what tools we have
 
 

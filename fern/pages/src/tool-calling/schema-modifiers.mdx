@@ -153,15 +153,15 @@ const tools = await composio.tools.get(
     tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
   },
   {
-    modifyToolSchema: (toolSlug, _, toolSchema) => {
+    modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
-        const { inputParameters } = toolSchema;
+        const { inputParameters } = schema;
         if (inputParameters?.properties) {
           delete inputParameters.properties['page'];
         }
         inputParameters.required = ['size'];
       }
-      return toolSchema;
+      return schema;
     },
   }
 );
