@@ -1,6 +1,6 @@
 [project]
 name = "composio-anthropic"
-version = "1.0.0-rc5"
+version = "1.0.0-rc6"
 description = "Use Composio to get an array of tools with your Anthropic LLMs."
 readme = "README.md"
 requires-python = ">=3.10,<4"
