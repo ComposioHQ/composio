@@ -1,14 +1,14 @@
 ---
 title: Custom Auth Configs
 image: "https://og.composio.dev/api/og?title=Custom%20Auth%20Configs"   # image for socials
-subtitle: 'Guide to using customising auth configs for a toolkit '
+subtitle: 'Guide to customizing auth configs for a toolkit'
 keywords: ''
 hide-nav-links: true
 ---
 
-Many toolkits support a level of customisation for the auth config, specifically OAuth applications.
+Many toolkits support a level of customization for the auth config, specifically OAuth applications.
 
-This guide will walk you through the process of customising the auth config for toolkits where you can configure the developer app.
+This guide will walk you through the process of customizing the auth config for toolkits where you can configure the developer app.
 
 ## Creating a custom auth config
 
@@ -26,7 +26,7 @@ You may change the subdomain for the PostHog toolkit to match your own instance.
 <Tab title="Example: Hubspot">
 For Hubspot you may customize everything here. For each auth scheme there is a different set of fields.
 
-If you choose to use your own developer app for OAuth2 scheme, you will have to provide the client ID and client secret.
+If you choose to use your own developer app for the OAuth2 scheme, you will have to provide the client ID and client secret.
 
 <Frame background="subtle" title="Hubspot Auth Config Settings">
 <img src="../../../assets/images/custom-auth-hubspot.png" />
@@ -37,9 +37,9 @@ If you choose to use your own developer app for OAuth2 scheme, you will have to 
 Toolkits that support OAuth2 allow using your own developer app. This is the recommended approach for most cases.
 
 <Tip title="Use your own developer app!" icon="exclamation">
-We recommend using your own developer app for OAuth2 scheme as it is suited more for production usage with many users and more granular control over scopes.
+We recommend using your own developer app for the OAuth2 scheme as it is more suited for production usage with many users and more granular control over scopes.
 
-However getting OAuth approvals takes time so Composio provides a default developer app!
+However, getting OAuth approvals takes time, so Composio provides a default developer app!
 
 </Tip>
 
@@ -130,7 +130,7 @@ By default the users will see an OAuth screen like the one below:
   <img src="../../../assets/images/oauth-branding.png" />
 </Frame>
 
-The OAuth redirect URL is surfaced in the some OAuth providers' consent screens. This may cause confusion for some users as that URL is not of the same domain as the application.
+The OAuth redirect URL is surfaced in some OAuth providers' consent screens. This may cause confusion for some users as that URL is not of the same domain as the application.
 
 To remediate this:
 
@@ -203,7 +203,7 @@ res.redirect(302, redirectUrl);
 </CodeGroup>
 </Step>
 <Step title="Create the auth config">
-Specify the your custom redirect URI in the auth config settings!
+Specify your custom redirect URI in the auth config settings!
 
 <Frame background="subtle" title="Auth Config Settings">
 <img src="../../../assets/images/custom-redirect-uri.png" />

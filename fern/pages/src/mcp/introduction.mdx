@@ -47,7 +47,7 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
     ```json
     {
       "id": "5bc757cc-7a8e-431c-8616-7f57cbed2423",
-      "name": "Gmail MCP Server"",
+      "name": "Gmail MCP Server",
       "auth_config_ids": ["ac_auth_12"],
       "allowed_tools": [
         "GMAIL_FETCH_EMAIL",
@@ -83,9 +83,9 @@ Interested in embedding Composio MCP servers into your MCP clients or applicatio
 </Tip>
 
 ### Configuring authentication
-You or your users need to authenticate against an app to use it's MCP server through Composio!
+You or your users need to authenticate against an app to use its MCP server through Composio!
 This can be done in two ways:
 
-* Authenticate users upfront via the Composio SDK/API. Follow [custom auth configs](/docs/custom-auth-configs) to learn how to connect users. This is recommended for most use cases
+* Authenticate users upfront via the Composio SDK/API. Follow [custom auth configs](/docs/custom-auth-configs) to learn how to connect users. This is recommended for most use cases.
 * Let the agent authenticate users on demand. Passing `include_composio_helper_actions=true` in the URL will include Composio's helper actions and the agent will guide the user through auth on demand.
 

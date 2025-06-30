@@ -6,7 +6,7 @@ subtitle: "Learn how to execute Composio's tools with different providers and fr
 hide-nav-links: false
 ---
 
-Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tools for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tool, for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
 
 ## Using Chat Completions
 For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
@@ -58,7 +58,7 @@ Each tool and tool action is scoped to a user. Hence, a `user_id` is required to
 The authentication state is checked and used while fetching and executing a tool.
 
 You need to authorize the user to execute tools.
-For more information on authentication, see [Authenticating Tools](./authenticating-tools). 
+For more information on authentication, see [Authenticating Tools](./authenticating-tools).
 
 ## For Humans (deterministic tool calling)
 In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.

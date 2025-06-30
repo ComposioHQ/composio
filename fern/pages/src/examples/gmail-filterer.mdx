@@ -21,7 +21,7 @@ The complete app is available in our [`filter-gmails-example`](https://github.co
   Explore the complete source code on GitHub
 </Card>
 
-In this guide, we'll focus on the Composio + OpenAI Agents part of the app
+In this guide, we'll focus on the Composio + OpenAI Agents part of the app.
 
 ## Prerequisites
 - Clone the [`filter-gmails-example`](https://github.com/ComposioHQ/filter-gmails-example) repository and set the project up locally.
@@ -31,7 +31,7 @@ In this guide, we'll focus on the Composio + OpenAI Agents part of the app
 ## Creating Triggers for users
 [Triggers](/docs/using-triggers) are a way to listen for events from apps. They act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your apps.
 
-In some cases, triggers require certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
+In some cases, triggers require certain configurations to set the correct events. You can inspect and add these properties while enabling the triggers.
 
 <SnippetCode
   githubUrl="https://github.com/ComposioHQ/filter-gmails-example/blob/master/apps/backend/email_processor.py#L135-L156"
@@ -68,7 +68,7 @@ This is the main webhook endpoint for processing Gmail new message events.
 
 Composio sends a POST request to the webhook endpoint `/composio/webhook` that contains the event data.
 
-It is parsed and then the labelling method `process_gmail_message` is called through a FastAPI Background task.
+It is parsed and then the labeling method `process_gmail_message` is called through a FastAPI Background task.
 
 ```python apps/backend/main.py {1-5, 29-33} maxLines=33
 @app.post("/composio/webhook")
@@ -126,7 +126,7 @@ The `process_gmail_message` method is responsible for processing the email using
   title="apps/backend/email_processor.py"
 />
 
-We read the first 10k characters of the email body to pass it to the agent. This is done to not overwhelm or surpass the token limits in case of really long emails.
+We read the first 10k characters of the email body to pass it to the agent. This is done to avoid overwhelming or surpassing the token limits in case of really long emails.
 
 <SnippetCode
   githubUrl="https://github.com/ComposioHQ/filter-gmails-example/blob/master/apps/backend/email_processor.py#L50-L60"
@@ -175,4 +175,4 @@ In the `/composio/webhook` endpoint, we verify the webhook signature and then pa
 ## Inspiration
 This example was inspired by an X/Twitter post by [@FarzaTV](https://x.com/FarzaTV/status/1905371012369350857).
 
-We encourage you to check out the [full app](https://github.com/ComposioHQ/filter-gmails-example), fork it, build it and make it your own! Reach out to [sid@composio.dev](mailto:sid@composio.dev) for free credits ;)
+We encourage you to check out the [full app](https://github.com/ComposioHQ/filter-gmails-example), fork it, build it, and make it your own! Reach out to [sid@composio.dev](mailto:sid@composio.dev) for free credits ;)
