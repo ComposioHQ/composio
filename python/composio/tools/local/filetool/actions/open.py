@@ -22,6 +22,10 @@ class OpenFileRequest(BaseFileRequest):
         default=0,
         description="If file-number is given, file will be opened from that line number",
     )
+    window_size: int = Field(
+        default=500,
+        description="Number of lines to display after the line number",
+    )
 
 
 class OpenFileResponse(BaseFileResponse):
@@ -49,7 +53,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
         """Open a file."""
         try:
             file = self.filemanagers.get(request.file_manager_id).open(
-                request.file_path, window=500
+                request.file_path, window=request.window_size
             )
             if request.line_number > 0:
                 file.goto(request.line_number)
