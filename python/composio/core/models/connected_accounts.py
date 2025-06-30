@@ -325,10 +325,10 @@ class ConnectedAccounts:
         """
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
-            connection["callback_url"] = connection
+            connection["callback_url"] = callback_url
 
         if config is not None:
-            connection["state"] = connection
+            connection["state"] = config
 
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
