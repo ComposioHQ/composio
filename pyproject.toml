@@ -14,14 +14,11 @@ members = [
 ]
 
 [tool.uv.sources]
-# Core composio packages
-composio = { workspace = true }
 
 # Provider packages
 composio-anthropic = { workspace = true }
 composio-crewai = { workspace = true }
 composio-langchain = { workspace = true }
-composio-gemini = { workspace = true }
 composio-google = { workspace = true }
 composio-google-adk = { workspace = true }
 composio-openai = { workspace = true }
@@ -29,3 +26,9 @@ composio-openai-agents = { workspace = true }
 
 # Fern packages
 fern = { workspace = true }
+composio = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "composio==1.0.0rc6",
+]
