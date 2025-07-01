@@ -224,132 +224,46 @@ export const BillcomAuthConnectionDataSchema = z.discriminatedUnion('status', [
   }).catchall(z.unknown()),
 ]);
 
-// BASIC_WITH_JWT
-const BasicWithJwtInitiatingSchema = BaseSchemeRaw.extend({
-  status: z.literal(ConnectionStatuses.ACTIVE),
-  username: z.string(),
-  password: z.string(),
-}).catchall(z.unknown());
-
-export const BasicWithJwtConnectionDataSchema = z.discriminatedUnion('status', [
-  BasicWithJwtInitiatingSchema,
-  BasicWithJwtInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  BasicWithJwtInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
-
 // BASIC
 const BasicInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
   username: z.string(),
   password: z.string(),
 }).catchall(z.unknown());
-const BasicConnectionDataSchema = z.discriminatedUnion('status', [
-  BasicInitiatingSchema,
-  BasicInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  BasicInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const BasicConnectionDataSchema = BasicInitiatingSchema;
 
 // API_KEY
 const ApiKeyInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
   api_key: z.string(),
 }).catchall(z.unknown());
-const ApiKeyConnectionDataSchema = z.discriminatedUnion('status', [
-  ApiKeyInitiatingSchema,
-  ApiKeyInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  ApiKeyInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const ApiKeyConnectionDataSchema = ApiKeyInitiatingSchema;
 
 // BEARER_TOKEN
 const BearerTokenInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
   token: z.string(),
 }).catchall(z.unknown());
-const BearerTokenConnectionDataSchema = z.discriminatedUnion('status', [
-  BearerTokenInitiatingSchema,
-  BearerTokenInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  BearerTokenInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const BearerTokenConnectionDataSchema = BearerTokenInitiatingSchema;
 
 // GOOGLE_SERVICE_ACCOUNT
 const GoogleServiceAccountInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
   credentials_json: z.string(),
 }).catchall(z.unknown());
-const GoogleServiceAccountConnectionDataSchema = z.discriminatedUnion('status', [
-  GoogleServiceAccountInitiatingSchema,
-  GoogleServiceAccountInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  GoogleServiceAccountInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const GoogleServiceAccountConnectionDataSchema = GoogleServiceAccountInitiatingSchema;
 
 // NO_AUTH
 const NoAuthInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
 }).catchall(z.unknown());
-const NoAuthConnectionDataSchema = z.discriminatedUnion('status', [
-  NoAuthInitiatingSchema,
-  NoAuthInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  NoAuthInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const NoAuthConnectionDataSchema = NoAuthInitiatingSchema;
 
 // CALCOM_AUTH
 const CalcomAuthInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
 }).catchall(z.unknown());
-const CalcomAuthConnectionDataSchema = z.discriminatedUnion('status', [
-  CalcomAuthInitiatingSchema,
-  CalcomAuthInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  CalcomAuthInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-]);
+const CalcomAuthConnectionDataSchema = CalcomAuthInitiatingSchema;
 
 // SNOWFLAKE
 // const SnowflakeInitiatingSchema = BaseSchemeRaw.extend({
@@ -367,6 +281,14 @@ const CalcomAuthConnectionDataSchema = z.discriminatedUnion('status', [
 //     expired_at: z.string().optional(),
 //   }).catchall(z.unknown()),
 // ]);
+
+// BASIC_WITH_JWT
+const BasicWithJwtInitiatingSchema = BaseSchemeRaw.extend({
+  status: z.literal(ConnectionStatuses.ACTIVE),
+  username: z.string(),
+  password: z.string(),
+}).catchall(z.unknown());
+const BasicWithJwtConnectionDataSchema = BasicWithJwtInitiatingSchema;
 
 export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
   z.object({
