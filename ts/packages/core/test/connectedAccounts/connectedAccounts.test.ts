@@ -8,6 +8,8 @@ import { ComposioConnectedAccountNotFoundError } from '../../src/errors';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ComposioMultipleConnectedAccountsError } from '../../src/errors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
+import { AuthScheme } from '../../src/models/AuthScheme';
+import { ConnectionStatuses } from '../../src/types/connectedAccountAuthStates.types';
 
 // Extend the mock client object for ConnectedAccounts testing
 const extendedMockClient = {
@@ -293,6 +295,55 @@ describe('ConnectedAccounts', () => {
           user_id: userId,
           callback_url: undefined,
           state: undefined,
+        },
+      });
+
+      expect(connectionRequest).toHaveProperty('id', 'conn_123');
+      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(typeof connectionRequest.waitForConnection).toBe('function');
+    });
+
+    it('should create a new connected account with config and return a ConnectionRequest', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+      const options = {
+        callbackUrl: 'https://example.com/callback',
+        config: AuthScheme.OAuth2({
+          status: ConnectionStatuses.ACTIVE,
+          access_token: 'test_token',
+          token_type: 'Bearer',
+        }),
+      };
+
+      // Mock list response to return empty list
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            status: ConnectionStatuses.INITIALIZING,
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
+
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
+        auth_config: {
+          id: authConfigId,
+        },
+        connection: {
+          user_id: userId,
+          callback_url: options.callbackUrl,
+          state: options.config,
         },
       });
 

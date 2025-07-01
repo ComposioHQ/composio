@@ -7,13 +7,12 @@ export const AuthConfigTypes = {
 export type AuthConfigType = (typeof AuthConfigTypes)[keyof typeof AuthConfigTypes];
 
 export const AuthSchemeTypes = {
-  OAUTH2: 'OAUTH2',
   OAUTH1: 'OAUTH1',
-  OAUTH1A: 'OAUTH1A',
+  OAUTH2: 'OAUTH2',
   API_KEY: 'API_KEY',
   BASIC: 'BASIC',
-  BILLCOM_AUTH: 'BILLCOM_AUTH',
   BEARER_TOKEN: 'BEARER_TOKEN',
+  BILLCOM_AUTH: 'BILLCOM_AUTH',
   GOOGLE_SERVICE_ACCOUNT: 'GOOGLE_SERVICE_ACCOUNT',
   NO_AUTH: 'NO_AUTH',
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
