@@ -585,8 +585,8 @@ importers:
         specifier: 0.1.0-alpha.25
         version: 0.1.0-alpha.25
       '@composio/json-schema-to-zod':
-        specifier: 0.1.9
-        version: 0.1.9
+        specifier: 0.1.10-next.1
+        version: 0.1.10-next.1
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1135,8 +1135,8 @@ packages:
   '@composio/client@0.1.0-alpha.25':
     resolution: {integrity: sha512-5zbqn3zxSoIs4MtfuEKZ3p+xE6Is/PPh77ldoIT9iBYvZrw9RsqA7Xlyw5PgbIiG3QPoeRSpEAnjwBoVwU8ehQ==}
 
-  '@composio/json-schema-to-zod@0.1.9':
-    resolution: {integrity: sha512-uDOAPPkaMWM2DJLCFCW6/rxTgair6EmQ4Ojo6RDayzIl2BRUro0wGkpof4Za8sJPrmdTfSqteRMDy46xPnOYhw==}
+  '@composio/json-schema-to-zod@0.1.10-next.1':
+    resolution: {integrity: sha512-z43S9sHq0A86bDh/zjpRiBQ4blIFOWX6HS1d4awEok2bGkoEVTnnByyH+DmpkmH52GNhvcZrEXkoAszBdW2XxA==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -6891,7 +6891,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.25': {}
 
-  '@composio/json-schema-to-zod@0.1.9':
+  '@composio/json-schema-to-zod@0.1.10-next.1':
     dependencies:
       '@types/json-schema': 7.0.15
       zod: 3.25.67
@@ -6981,7 +6981,7 @@ snapshots:
     dependencies:
       '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
       '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/platform-node-shared': 0.40.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
+      '@effect/platform-node-shared': 0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
       '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
       '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
       effect: 3.16.8

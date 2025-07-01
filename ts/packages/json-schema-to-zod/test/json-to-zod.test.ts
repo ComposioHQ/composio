@@ -401,7 +401,7 @@ describe('jsonSchemaToZod', () => {
       // Test property with type
       expect(zodSchema.parse({ withType: 'test' })).toEqual({
         withType: 'test',
-        withoutType: 'default value', // Default value is included
+        withoutType: 'default value',
       });
       expect(() => zodSchema.parse({ withType: 123 })).toThrow();
 
