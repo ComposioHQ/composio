@@ -46,7 +46,7 @@
     "@composio/client": "0.1.0-alpha.25",
     "@composio/json-schema-to-zod": "0.1.10-next.1",
     "@types/json-schema": "^7.0.15",
-    "chalk": "^5.4.1",
+    "chalk": "^4.1.2",
     "openai": "^4.94.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
