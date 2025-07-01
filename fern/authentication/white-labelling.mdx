@@ -9,9 +9,9 @@ When going to production, it's recommended to use your own developer credentials
 
 <Steps>
 <Step title="Set up a 301 redirect">
-The endpoint `https://backend.composio.dev/api/v1/auth-apps/add` is what captures the user's credentials to manage the auth. However, OAuth consent screens show the callback URL - and if it isn't the same as your application, that creates distrust.
+The endpoint `https://backend.composio.dev/api/v3/toolkits/auth/callback` is what captures the user's credentials to manage the auth. However, OAuth consent screens show the callback URL - and if it isn't the same as your application, that creates distrust.
 
-It's recommended to specify the redirect URL to your own domain and create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v1/auth-apps/add`
+It's recommended to specify the redirect URL to your own domain and create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v3/toolkits/auth/callback`
 
 <Accordion title="Setting up a redirect through DNS">
 - [Cloudflare URL Forwarding Guide](https://developers.cloudflare.com/rules/url-forwarding/single-redirects/create-dashboard/)
