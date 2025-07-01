@@ -20,6 +20,7 @@ type_stubs = [
     "semver",
     "fastapi",
     "langchain",
+    "langgraph",
     "openai-agents",
     "langchain-openai",
     "google-cloud-aiplatform",
