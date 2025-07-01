@@ -12,7 +12,7 @@ dependencies = [
     "typing-extensions>=4.13.0",
     "composio-client",
     "openai>=1.79.0",
-    "composio>=1.0.0-rc5",
+    "composio==1.0.0rc5",
     # Dependencies for SDK doc generation
     "tqdm>=4.62.0",
     "pyyaml>=6.0",

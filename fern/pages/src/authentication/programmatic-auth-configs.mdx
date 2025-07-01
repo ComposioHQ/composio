@@ -42,12 +42,35 @@ const authConfig = await composio.authConfigs.create("LINEAR", {
 
 console.log(authConfig);
 ```
-</CodeGroup>
-
 
 The `auth_config_id` should be stored securely in your database for future use to be created and destroyed multiple times.
 
 You can also provide your own authentication details. The required `credentials` and `authScheme` depend on the auth type.
+</CodeGroup>
+
+## Specifying scopes for OAuth2
+Composio requests a set of _good_ default OAuth2 scopes for each toolkit wherever possible. However, you can override or modify these scopes by passing a `scopes` field to the `credentials` object.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/define-scopes.py" 
+  title="Python"
+  startLine={1} 
+  endLine={17} 
+  highlightStart={11}
+  highlightEnd={13}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/define-scopes.ts" 
+  title="TypeScript"
+  startLine={1} 
+  endLine={17} 
+  highlightStart={8}
+  highlightEnd={10}
+/>
+</CodeGroup>
+
 
 ## Using Custom Auth
 ### Create the auth config
