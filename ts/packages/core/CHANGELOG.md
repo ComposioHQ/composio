@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.36-next.4
+
+### Patch Changes
+
+- FIx connected account initiation scripts
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.10-next.3
+
 ## 0.1.36-next.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10-next.3
+
+### Patch Changes
+
+- FIx connected account initiation scripts
+
 ## 0.1.10-next.2
 
 ### Patch Changes

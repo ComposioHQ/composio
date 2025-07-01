@@ -1,5 +1,13 @@
 # @composio/cloudflare
 
+## 0.1.36-next.4
+
+### Patch Changes
+
+- FIx connected account initiation scripts
+- Updated dependencies
+  - @composio/core@0.1.36-next.4
+
 ## 0.1.36-next.3
 
 ### Patch Changes
