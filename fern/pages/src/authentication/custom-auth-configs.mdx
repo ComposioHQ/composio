@@ -71,7 +71,7 @@ Examples for Google and GitHub:
 When creating your OAuth app, make sure to configure the Authorized Redirect URI to point to the Composio callback URL below:
 
 ```
-https://backend.composio.dev/api/v3/toolkits/callback
+https://backend.composio.dev/api/v3/toolkits/auth/callback
 ```
 
 </Step>
@@ -144,7 +144,7 @@ https://yourdomain.com/api/composio-redirect
 
 </Step>
 <Step title="Create a redirect logic">
-Create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v3/toolkits/callback`
+Create a redirect logic, either through your DNS or in your application to redirect that endpoint to `https://backend.composio.dev/api/v3/toolkits/auth/callback`
 
 **Example: API Route for OAuth Redirect**
 
@@ -183,7 +183,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // The target Composio endpoint that handles OAuth callbacks
-  const composioEndpoint = 'https://backend.composio.dev/api/v3/toolkits/callback';
+  const composioEndpoint = 'https://backend.composio.dev/api/v3/toolkits/auth/callback';
 
 // Extract and preserve all query parameters
 const queryParams = new URLSearchParams();
