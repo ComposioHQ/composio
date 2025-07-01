@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Fix: Gracefully handle connected account responses for missing fields
+
 ## 0.1.36-next.2
 
 ### Patch Changes
