@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Fix connected account initiation scripts
+- Updated dependencies
+  - @composio/core@0.1.36-next.3
+
 ## 0.1.36-next.2
 
 ### Patch Changes
