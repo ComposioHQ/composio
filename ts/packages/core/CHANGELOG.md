@@ -1,5 +1,24 @@
 # @composio/core
 
+## 0.1.36-next.5
+
+### Patch Changes
+
+- dd630fe: Bump packages
+- Bump packages
+
+## 0.1.36-next.4
+
+### Patch Changes
+
+- Update packages
+
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Fix: Gracefully handle connected account responses for missing fields
+
 ## 0.1.36-next.2
 
 ### Patch Changes
