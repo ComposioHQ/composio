@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.4
+
+### Patch Changes
+
+- Update packages
+
 ## 0.1.36-next.3
 
 ### Patch Changes
