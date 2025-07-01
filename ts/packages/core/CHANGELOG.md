@@ -1,5 +1,12 @@
 # @composio/core
 
+## 0.1.36-next.5
+
+### Patch Changes
+
+- dd630fe: Bump packages
+- Bump packages
+
 ## 0.1.36-next.4
 
 ### Patch Changes
