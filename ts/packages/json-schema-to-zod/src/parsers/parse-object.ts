@@ -38,7 +38,7 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
       typeof propJsonSchema === 'object' &&
       'default' in propJsonSchema
     ) {
-      properties[key] = propZodSchema.default(propJsonSchema.default).optional();
+      properties[key] = propZodSchema.optional().default(propJsonSchema.default);
     } else {
       properties[key] = required ? propZodSchema : propZodSchema.optional();
     }
