@@ -61,7 +61,7 @@ const tools = await composio.tools.get(
     tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
   },
   {
-    modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
         const { inputParameters } = schema;
         if (inputParameters?.properties) {
@@ -154,7 +154,7 @@ const tools = await composio.tools.get(
     tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
   },
   {
-    modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
         const { inputParameters } = schema;
         if (inputParameters?.properties) {
