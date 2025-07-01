@@ -87,7 +87,7 @@ cat > "$PROVIDER_PATH/$PACKAGE_NAME/__init__.py" << EOL
 ${CAPITAL_PROVIDER_NAME} Provider for composio SDK.
 """
 
-from .$PACKAGE_NAME.provider import ${CAPITAL_PROVIDER_NAME}Provider
+from .provider import ${CAPITAL_PROVIDER_NAME}Provider
 
 __all__ = ["${CAPITAL_PROVIDER_NAME}Provider"]
 EOL

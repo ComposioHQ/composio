@@ -5,7 +5,35 @@ keywords: ""
 hide-nav-links: false
 ---
 
-This guide provides a comprehensive walkthrough of creating custom providers for the Composio Python SDK, enabling integration with different AI frameworks and platforms.
+This guide shows how to create custom providers for the Composio Python SDK. Custom providers enable integration with different AI frameworks and platforms.
+
+## Provider architecture
+
+The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
+
+1. **Tool format transformation**: Converting Composio tools into formats compatible with specific AI platforms
+2. **Tool execution**: Managing the flow of tool execution and results
+3. **Platform-specific integration**: Providing helper methods for seamless integration
+
+## Types of providers
+
+There are two types of providers:
+
+1. **Non-agentic providers**: Transform tools for platforms that don't have their own agency (e.g., OpenAI, Anthropic)
+2. **Agentic providers**: Transform tools for platforms that have their own agency (e.g., LangChain, CrewAI)
+
+## Provider class hierarchy
+
+```
+BaseProvider (Abstract)
+├── NonAgenticProvider (Abstract)
+│   └── OpenAIProvider (Concrete)
+│   └── AnthropicProvider (Concrete)
+│   └── [Your Custom Non-Agentic Provider] (Concrete)
+└── AgenticProvider (Abstract)
+    └── LangchainProvider (Concrete)
+    └── [Your Custom Agentic Provider] (Concrete)
+```
 
 ## Quick start
 
@@ -51,34 +79,6 @@ After generation, you can:
 2. Install in development mode: `uv pip install -e .`
 3. Implement your provider logic in `composio_<provider-name>/provider.py`
 4. Test with the demo script: `python <provider-name>_demo.py`
-
-## Provider architecture
-
-The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
-
-1. **Tool format transformation**: Converting Composio tools into formats compatible with specific AI platforms
-2. **Tool execution**: Managing the flow of tool execution and results
-3. **Platform-specific integration**: Providing helper methods for seamless integration
-
-## Types of providers
-
-There are two types of providers:
-
-1. **Non-agentic providers**: Transform tools for platforms that don't have their own agency (e.g., OpenAI, Anthropic)
-2. **Agentic providers**: Transform tools for platforms that have their own agency (e.g., LangChain, CrewAI)
-
-## Provider class hierarchy
-
-```
-BaseProvider (Abstract)
-├── NonAgenticProvider (Abstract)
-│   └── OpenAIProvider (Concrete)
-│   └── AnthropicProvider (Concrete)
-│   └── [Your Custom Non-Agentic Provider] (Concrete)
-└── AgenticProvider (Abstract)
-    └── LangchainProvider (Concrete)
-    └── [Your Custom Agentic Provider] (Concrete)
-```
 
 ## Creating a non-agentic provider
 
@@ -283,6 +283,7 @@ class StatefulProvider(NonAgenticProvider[ProviderTool, ProviderToolCollection],
 You can compose functionality by extending existing providers:
 
 ```python
+import time
 from composio_openai import OpenAIProvider
 from typing import Optional
 from composio.types import Modifiers
