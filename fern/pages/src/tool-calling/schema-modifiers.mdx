@@ -16,6 +16,7 @@ Schema modifiers transform a tool's schema before the tool is seen by an agent.
   <img src="../../../assets/images/schema-modifier.png" alt="Schema Modifier" />
 </Frame>
 **Useful for:** 
+- Modifying or rewriting the tool description to better fit your use case.
 - Adding arguments to the tool. For example, adding a `thought` argument to the tool to prompt the agent to explain the reasoning.
 - Hiding arguments from the tool. In cases where the argument is irrelevant to the tool.
 - Adding extra arguments to the tool schema for custom use cases or execution.
@@ -60,7 +61,7 @@ const tools = await composio.tools.get(
     tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
   },
   {
-    modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
         const { inputParameters } = schema;
         if (inputParameters?.properties) {
@@ -153,7 +154,7 @@ const tools = await composio.tools.get(
     tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
   },
   {
-    modifyToolSchema: ({ toolSlug, toolkitSlug, schema }) => {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
         const { inputParameters } = schema;
         if (inputParameters?.properties) {
@@ -186,3 +187,37 @@ console.log(response.choices[0].message.tool_calls);
 
 </CodeGroup>
 </Accordion>
+
+
+## Example: Modifying the tool description
+
+Sometimes you need to provide additional context to help the agent understand how to use a tool correctly. This example demonstrates modifying the description of the `GITHUB_LIST_REPOSITORY_ISSUES` tool to specify a default repository when none is provided.
+
+<Note>
+This approach is particularly useful when you want to guide the agent's behavior without changing the tool's underlying functionality.
+</Note>
+
+In this example:
+- We append additional instructions to the tool's description
+- The modified description tells the agent to use `composiohq/composio` as the default repository
+- This helps prevent errors when the agent forgets to specify a repository parameter
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/modifiers/python/description.py" 
+  title="Python"
+  startLine={1} 
+  endLine={27} 
+  highlightStart={13}
+  highlightEnd={20}
+/>
+<SnippetCode 
+  src="fern/snippets/modifiers/typescript/description.ts" 
+  title="TypeScript"
+  startLine={1} 
+  endLine={31} 
+  highlightStart={13}
+  highlightEnd={18}
+/>
+
+</CodeGroup>
