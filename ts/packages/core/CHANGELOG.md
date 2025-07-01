@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Downgrade chalk to v4 to allow CJS as well
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.10-next.2
+
 ## 0.1.36-next.2
 
 ### Patch Changes

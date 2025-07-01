@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10-next.2
+
+### Patch Changes
+
+- Downgrade chalk to v4 to allow CJS as well
+
 ## 0.1.10-next.1
 
 ### Patch Changes

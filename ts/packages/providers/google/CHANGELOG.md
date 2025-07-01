@@ -1,5 +1,13 @@
 # @composio/google
 
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Downgrade chalk to v4 to allow CJS as well
+- Updated dependencies
+  - @composio/core@0.1.36-next.3
+
 ## 0.1.36-next.2
 
 ### Patch Changes
