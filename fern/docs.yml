@@ -7,7 +7,7 @@ instances:
       repo: composio
       branch: master
 title: Composio Docs
-default-language: typescript
+default-language: python
 logo:
   light: assets/logo.svg
   dark: assets/logo-dark.svg

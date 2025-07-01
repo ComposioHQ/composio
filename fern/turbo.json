@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
-      "outputs": ["pages/*.mdx", "tools/*.mdx", "pages/**"],
+      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
       "cache": true
     },
     
@@ -21,14 +21,13 @@
     
     "add-og": {
       "dependsOn": ["^build"],
-      "outputs": ["pages/**/*.mdx"],
       "inputs": ["scripts/add_og_imgs.py", "pages/**/*.mdx"],
-      "cache": true
+      "cache": false
     },
     
     "snippets:build": {
       "dependsOn": ["^build"],
-      "outputs": ["pages/**"],
+      "outputs": ["pages/dist/**"],
       "inputs": ["scripts/build-snippets.ts", "snippets/**", "docs/**"],
       "cache": true
     },
