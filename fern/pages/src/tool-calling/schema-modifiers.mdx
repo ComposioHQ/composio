@@ -191,6 +191,17 @@ console.log(response.choices[0].message.tool_calls);
 
 ## Example: Modifying the tool description
 
+Sometimes you need to provide additional context to help the agent understand how to use a tool correctly. This example demonstrates modifying the description of the `GITHUB_LIST_REPOSITORY_ISSUES` tool to specify a default repository when none is provided.
+
+<Note>
+This approach is particularly useful when you want to guide the agent's behavior without changing the tool's underlying functionality.
+</Note>
+
+In this example:
+- We append additional instructions to the tool's description
+- The modified description tells the agent to use `composiohq/composio` as the default repository
+- This helps prevent errors when the agent forgets to specify a repository parameter
+
 <CodeGroup>
 <SnippetCode 
   src="fern/snippets/modifiers/python/description.py" 
