@@ -30,8 +30,18 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
     const required = Array.isArray(objectSchema.required)
       ? objectSchema.required.includes(key)
       : false;
-    // If property is required, we should include it in the schema even if it's not required
-    properties[key] = required ? propZodSchema : propZodSchema.optional();
+
+    // Handle default values for optional properties
+    if (
+      !required &&
+      propJsonSchema &&
+      typeof propJsonSchema === 'object' &&
+      'default' in propJsonSchema
+    ) {
+      properties[key] = propZodSchema.default(propJsonSchema.default).optional();
+    } else {
+      properties[key] = required ? propZodSchema : propZodSchema.optional();
+    }
   }
 
   return z.object(properties);
