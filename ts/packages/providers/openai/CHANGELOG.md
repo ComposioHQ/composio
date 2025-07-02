@@ -1,10 +1,28 @@
 # @composio/openai
 
+## 0.1.36-next.5
+
+### Patch Changes
+
+- dd630fe: Bump packages
+- Bump packages
+- Updated dependencies [dd630fe]
+- Updated dependencies
+  - @composio/core@0.1.36-next.5
+
+## 0.1.36-next.4
+
+### Patch Changes
+
+- Update packages
+- Updated dependencies
+  - @composio/core@0.1.36-next.4
+
 ## 0.1.36-next.3
 
 ### Patch Changes
 
-- Downgrade chalk to v4 to allow CJS as well
+- Fix: Gracefully handle connected account responses for missing fields
 - Updated dependencies
   - @composio/core@0.1.36-next.3
 

@@ -21,6 +21,7 @@ dependencies = [
     "nbformat>=5.0.0",
     "composio-langchain",
     "composio-openai",
+    "composio-gemini",
 ]
 
 [tool.ruff]
@@ -48,7 +49,7 @@ composio = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "composio",
+    "composio==1.0.0rc6",
     "composio-gemini",
     "composio-langchain",
     "composio-openai-agents",

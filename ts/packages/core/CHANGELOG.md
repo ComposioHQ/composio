@@ -1,12 +1,23 @@
 # @composio/core
 
+## 0.1.36-next.5
+
+### Patch Changes
+
+- dd630fe: Bump packages
+- Bump packages
+
+## 0.1.36-next.4
+
+### Patch Changes
+
+- Update packages
+
 ## 0.1.36-next.3
 
 ### Patch Changes
 
-- Downgrade chalk to v4 to allow CJS as well
-- Updated dependencies
-  - @composio/json-schema-to-zod@0.1.10-next.2
+- Fix: Gracefully handle connected account responses for missing fields
 
 ## 0.1.36-next.2
 

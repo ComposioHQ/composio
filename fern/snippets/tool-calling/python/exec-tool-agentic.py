@@ -27,7 +27,7 @@ agent = Agent(
 async def main():
     result = await Runner.run(
         starting_agent=agent,
-        input=("Do a thorought DEEP research on Ilya Sutskever"),
+        input=("Do a thorough DEEP research on Ilya Sutskever"),
     )
     print(result.final_output)
 
