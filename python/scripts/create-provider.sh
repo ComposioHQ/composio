@@ -3,21 +3,40 @@
 # Check if provider name is provided
 if [ -z "$1" ]; then
     echo "Please provide a provider name"
-    echo "Usage: ./scripts/create-provider.sh <provider-name> [--agentic]"
+    echo "Usage: ./scripts/create-provider.sh <provider-name> [--agentic] [--output-dir <directory>]"
     exit 1
 fi
 
 PROVIDER_NAME=$1
-PROVIDER_PATH="python/providers/$PROVIDER_NAME"
+shift
+
+# Default output directory
+OUTPUT_DIR="python/providers"
+IS_AGENTIC=false
+
+# Parse optional arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --agentic)
+            IS_AGENTIC=true
+            shift
+            ;;
+        --output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: ./scripts/create-provider.sh <provider-name> [--agentic] [--output-dir <directory>]"
+            exit 1
+            ;;
+    esac
+done
+
+PROVIDER_PATH="$OUTPUT_DIR/$PROVIDER_NAME"
 # Convert to title case (e.g., myai -> Myai)
 CAPITAL_PROVIDER_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${PROVIDER_NAME:0:1})${PROVIDER_NAME:1}"
 PACKAGE_NAME="composio_$PROVIDER_NAME"
-
-# Check if provider should be agentic
-IS_AGENTIC=false
-if [ "$2" = "--agentic" ]; then
-    IS_AGENTIC=true
-fi
 
 # Check if provider directory already exists
 if [ -d "$PROVIDER_PATH" ]; then
@@ -73,7 +92,7 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -100,15 +119,19 @@ cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 ${CAPITAL_PROVIDER_NAME} Provider implementation.
 """
 
-from typing import Any, Callable, Dict, List, Sequence
-from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
+from __future__ import annotations
+
+import typing as t
+
+from composio.core.provider import AgenticProvider
+from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
 
 
 # Define your tool format
 class ${CAPITAL_PROVIDER_NAME}Tool:
     """${CAPITAL_PROVIDER_NAME} tool format"""
-    def __init__(self, name: str, description: str, execute: Callable, schema: dict):
+    def __init__(self, name: str, description: str, execute: t.Callable, schema: dict):
         self.name = name
         self.description = description
         self.execute = execute
@@ -116,7 +139,7 @@ class ${CAPITAL_PROVIDER_NAME}Tool:
 
 
 class ${CAPITAL_PROVIDER_NAME}Provider(
-    AgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, List[${CAPITAL_PROVIDER_NAME}Tool]],
+    AgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, t.List[${CAPITAL_PROVIDER_NAME}Tool]],
     name="${PROVIDER_NAME}"
 ):
     """
@@ -129,7 +152,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         execute_tool: AgenticProviderExecuteFn
     ) -> ${CAPITAL_PROVIDER_NAME}Tool:
         """Wrap a tool in the ${PROVIDER_NAME} format."""
-        def execute_wrapper(**kwargs) -> Dict:
+        def execute_wrapper(**kwargs) -> t.Dict:
             result = execute_tool(tool.slug, kwargs)
             if not result.get("successful", False):
                 raise Exception(result.get("error", "Tool execution failed"))
@@ -144,9 +167,9 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
 
     def wrap_tools(
         self,
-        tools: Sequence[Tool],
+        tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn
-    ) -> List[${CAPITAL_PROVIDER_NAME}Tool]:
+    ) -> t.List[${CAPITAL_PROVIDER_NAME}Tool]:
         """
         Get composio tools wrapped as a list of ${CAPITAL_PROVIDER_NAME} tools.
         """
@@ -158,7 +181,10 @@ cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 ${CAPITAL_PROVIDER_NAME} Provider implementation.
 """
 
-from typing import List, Optional, Sequence, TypeAlias, Dict
+from __future__ import annotations
+
+import typing as t
+
 from composio.core.provider import NonAgenticProvider
 from composio.types import Tool, Modifiers, ToolExecutionResponse
 
@@ -173,7 +199,7 @@ class ${CAPITAL_PROVIDER_NAME}Tool:
 
 
 # Define your tool collection format
-${CAPITAL_PROVIDER_NAME}ToolCollection: TypeAlias = List[${CAPITAL_PROVIDER_NAME}Tool]
+${CAPITAL_PROVIDER_NAME}ToolCollection: t.TypeAlias = t.List[${CAPITAL_PROVIDER_NAME}Tool]
 
 
 class ${CAPITAL_PROVIDER_NAME}Provider(
@@ -196,7 +222,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
             }
         )
 
-    def wrap_tools(self, tools: Sequence[Tool]) -> ${CAPITAL_PROVIDER_NAME}ToolCollection:
+    def wrap_tools(self, tools: t.Sequence[Tool]) -> ${CAPITAL_PROVIDER_NAME}ToolCollection:
         """Transform a collection of tools"""
         return [self.wrap_tool(tool) for tool in tools]
 
@@ -204,7 +230,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         self,
         user_id: str,
         tool_call: dict,
-        modifiers: Optional[Modifiers] = None
+        modifiers: t.Optional[Modifiers] = None
     ) -> ToolExecutionResponse:
         """
         Execute a tool call.
@@ -224,9 +250,9 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
     def handle_tool_calls(
         self,
         user_id: str,
-        response: Dict,
-        modifiers: Optional[Modifiers] = None
-    ) -> List[ToolExecutionResponse]:
+        response: t.Union[dict, t.Any],
+        modifiers: t.Optional[Modifiers] = None
+    ) -> t.List[ToolExecutionResponse]:
         """
         Handle tool calls from ${CAPITAL_PROVIDER_NAME} response.
 
@@ -236,6 +262,17 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         :return: A list of output objects from the tool calls.
         """
         # TODO: Implement based on ${CAPITAL_PROVIDER_NAME}'s response format
+        # Example:
+        # outputs = []
+        # for tool_call in response.tool_calls:
+        #     outputs.append(
+        #         self.execute_tool_call(
+        #             user_id=user_id,
+        #             tool_call=tool_call,
+        #             modifiers=modifiers,
+        #         )
+        #     )
+        # return outputs
         raise NotImplementedError("Tool call handling not implemented yet")
 EOL
 fi
@@ -253,7 +290,7 @@ ${CAPITAL_PROVIDER_NAME} demo.
 import asyncio
 
 # from ${PROVIDER_NAME}_framework import Agent, Runner  # Import your agent framework
-from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
 
 from composio import Composio
 
@@ -300,7 +337,7 @@ cat > "$PROVIDER_PATH/${PROVIDER_NAME}_demo.py" << EOL
 ${CAPITAL_PROVIDER_NAME} demo.
 """
 
-from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
 # from ${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}  # Import your AI client
 
 from composio import Composio
@@ -363,7 +400,7 @@ uv add $PACKAGE_NAME
 
 \`\`\`python
 from composio import Composio
-from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
 
 # Initialize Composio with ${CAPITAL_PROVIDER_NAME} provider
 composio = Composio(
@@ -387,7 +424,7 @@ tools = composio.tools.get(
 
 \`\`\`python
 from composio import Composio
-from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
 
 # Initialize provider
 provider = ${CAPITAL_PROVIDER_NAME}Provider()
@@ -472,7 +509,7 @@ We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING
 
 ## License
 
-ISC License
+Apache License 2.0
 
 ## Support
 

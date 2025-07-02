@@ -44,9 +44,15 @@ make create-provider name=myprovider
 
 # Create an agentic provider
 make create-provider name=myagent agentic=true
+
+# Create provider with custom output directory
+make create-provider name=myprovider output=/path/to/custom/dir
+
+# Combine options
+make create-provider name=myagent agentic=true output=/my/custom/path
 ```
 
-This will create a new provider in `python/providers/<provider-name>/` with:
+This will create a new provider in the specified directory (default: `python/providers/<provider-name>/`) with:
 - Complete package structure with `pyproject.toml`
 - Provider implementation template
 - Demo script
