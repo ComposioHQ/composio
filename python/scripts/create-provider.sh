@@ -9,6 +9,7 @@ fi
 
 PROVIDER_NAME=$1
 PROVIDER_PATH="python/providers/$PROVIDER_NAME"
+# Convert to title case (e.g., myai -> Myai)
 CAPITAL_PROVIDER_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${PROVIDER_NAME:0:1})${PROVIDER_NAME:1}"
 PACKAGE_NAME="composio_$PROVIDER_NAME"
 
@@ -29,26 +30,26 @@ mkdir -p "$PROVIDER_PATH/$PACKAGE_NAME"
 
 # Create pyproject.toml
 cat > "$PROVIDER_PATH/pyproject.toml" << EOL
-[tool.poetry]
+[project]
 name = "$PACKAGE_NAME"
 version = "0.1.0"
 description = "${IS_AGENTIC:+Agentic }Provider for ${CAPITAL_PROVIDER_NAME} in Composio SDK"
-authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-packages = [{include = "$PACKAGE_NAME"}]
+requires-python = ">=3.10,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "composio",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<4"
-composio = "*"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.2"
-ruff = "^0.5.7"
-mypy = "^1.11.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"
 EOL
 
 # Create setup.py for backwards compatibility
@@ -99,7 +100,7 @@ cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 ${CAPITAL_PROVIDER_NAME} Provider implementation.
 """
 
-from typing import List, Sequence, Dict, Any, Callable
+from typing import Any, Callable, Dict, List, Sequence
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 
@@ -114,20 +115,8 @@ class ${CAPITAL_PROVIDER_NAME}Tool:
         self.schema = schema
 
 
-# Define your tool collection format
-class ${CAPITAL_PROVIDER_NAME}Toolkit:
-    """${CAPITAL_PROVIDER_NAME} toolkit format"""
-    def __init__(self, tools: List[${CAPITAL_PROVIDER_NAME}Tool]):
-        self.tools = tools
-    
-    def create_agent(self, config: dict) -> Any:
-        """Create an agent using the tools"""
-        # TODO: Implement agent creation logic
-        raise NotImplementedError("Agent creation not implemented yet")
-
-
 class ${CAPITAL_PROVIDER_NAME}Provider(
-    AgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, ${CAPITAL_PROVIDER_NAME}Toolkit],
+    AgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, List[${CAPITAL_PROVIDER_NAME}Tool]],
     name="${PROVIDER_NAME}"
 ):
     """
@@ -157,12 +146,11 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         self,
         tools: Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn
-    ) -> ${CAPITAL_PROVIDER_NAME}Toolkit:
+    ) -> List[${CAPITAL_PROVIDER_NAME}Tool]:
         """
-        Get composio tools wrapped as ${CAPITAL_PROVIDER_NAME} toolkit.
+        Get composio tools wrapped as a list of ${CAPITAL_PROVIDER_NAME} tools.
         """
-        wrapped_tools = [self.wrap_tool(tool, execute_tool) for tool in tools]
-        return ${CAPITAL_PROVIDER_NAME}Toolkit(tools=wrapped_tools)
+        return [self.wrap_tool(tool, execute_tool) for tool in tools]
 EOL
 else
 cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
@@ -170,7 +158,7 @@ cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 ${CAPITAL_PROVIDER_NAME} Provider implementation.
 """
 
-from typing import List, Optional, Sequence, TypeAlias
+from typing import List, Optional, Sequence, TypeAlias, Dict
 from composio.core.provider import NonAgenticProvider
 from composio.types import Tool, Modifiers, ToolExecutionResponse
 
@@ -236,7 +224,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
     def handle_tool_calls(
         self,
         user_id: str,
-        response: Any,
+        response: Dict,
         modifiers: Optional[Modifiers] = None
     ) -> List[ToolExecutionResponse]:
         """
@@ -262,21 +250,49 @@ cat > "$PROVIDER_PATH/${PROVIDER_NAME}_demo.py" << EOL
 ${CAPITAL_PROVIDER_NAME} demo.
 """
 
+import asyncio
+
+# from ${PROVIDER_NAME}_framework import Agent, Runner  # Import your agent framework
 from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+
 from composio import Composio
 
-# Initialize tools.
+# Initialize Composio toolset
 composio = Composio(provider=${CAPITAL_PROVIDER_NAME}Provider())
 
-# Define task.
-task = "Star a repo composiohq/composio on GitHub"
+# Get all the tools
+tools = composio.tools.get(
+    user_id="default",
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+)
 
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+# TODO: Create an agent with the tools
+# agent = Agent(
+#     name="GitHub Agent",
+#     instructions="You are a helpful assistant that helps users with GitHub tasks.",
+#     tools=tools,
+# )
 
-# TODO: Implement agent execution with ${CAPITAL_PROVIDER_NAME}
-print(f"Got {len(tools)} tools for the task: {task}")
-print("Implement your ${CAPITAL_PROVIDER_NAME} agent logic here!")
+
+# Run the agent
+async def main():
+    # TODO: Implement your agent execution logic
+    # result = await Runner.run(
+    #     starting_agent=agent,
+    #     input=(
+    #         "Star the repository composiohq/composio on GitHub. If done "
+    #         "successfully, respond with 'Action executed successfully'"
+    #     ),
+    # )
+    # print(result.final_output)
+    
+    print("Implement your ${CAPITAL_PROVIDER_NAME} agent logic here!")
+    print(f"Got {len(tools)} tools:")
+    for tool in tools:
+        print(f"  - {tool.name}: {tool.description}")
+
+
+asyncio.run(main())
 EOL
 else
 cat > "$PROVIDER_PATH/${PROVIDER_NAME}_demo.py" << EOL
@@ -285,9 +301,12 @@ ${CAPITAL_PROVIDER_NAME} demo.
 """
 
 from $PACKAGE_NAME import ${CAPITAL_PROVIDER_NAME}Provider
+# from ${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}  # Import your AI client
+
 from composio import Composio
 
 # Initialize tools.
+# ${PROVIDER_NAME}_client = ${CAPITAL_PROVIDER_NAME}()  # Initialize your AI client
 composio = Composio(provider=${CAPITAL_PROVIDER_NAME}Provider())
 
 # Define task.
@@ -296,15 +315,25 @@ task = "Star a repo composiohq/composio on GitHub"
 # Get GitHub tools that are pre-configured
 tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
-# TODO: Create ${CAPITAL_PROVIDER_NAME} client and use the tools
-print(f"Got {len(tools)} tools for the task: {task}")
-
-# Example tool execution (implement based on ${CAPITAL_PROVIDER_NAME}'s API)
-# result = composio.provider.execute_tool_call(
-#     user_id="default",
-#     tool_call={"name": "GITHUB_STAR_REPO", "arguments": {...}}
+# TODO: Get response from the LLM
+# response = ${PROVIDER_NAME}_client.chat.completions.create(
+#     model="your-model",
+#     tools=tools,
+#     messages=[
+#         {"role": "system", "content": "You are a helpful assistant."},
+#         {"role": "user", "content": task},
+#     ],
 # )
+# print(response)
+
+# TODO: Execute the function calls.
+# result = composio.provider.handle_tool_calls(response=response, user_id="default")
 # print(result)
+
+print(f"Got {len(tools)} tools for the task: {task}")
+for tool in tools:
+    print(f"  - {tool.name}: {tool.description}")
+print("\nImplement your ${CAPITAL_PROVIDER_NAME} integration here!")
 EOL
 fi
 
@@ -326,8 +355,6 @@ ${IS_AGENTIC:+- **Full Tool Execution**: Execute tools with proper parameter han
 
 \`\`\`bash
 pip install $PACKAGE_NAME
-# or
-poetry add $PACKAGE_NAME
 # or
 uv add $PACKAGE_NAME
 \`\`\`
@@ -377,23 +404,22 @@ tools = composio.tools.get(
     toolkits=["github"]
 )
 
-${IS_AGENTIC:+# Create agent with tools
-agent = tools.create_agent({})
-
-# Run agent
-result = agent.run("Star the composiohq/composio repository")
-print(result)}${!IS_AGENTIC:+# Execute a tool
-result = provider.execute_tool_call(
-    user_id="default",
-    tool_call={
-        "name": "GITHUB_STAR_REPO",
-        "arguments": {
-            "owner": "composiohq",
-            "repo": "composio"
-        }
-    }
-)
-print(result)}
+${IS_AGENTIC:+# Use the tools with your agent framework
+# TODO: Implement your agent logic here
+for tool in tools:
+    print(f"Tool: {tool.name} - {tool.description}")}${!IS_AGENTIC:+# TODO: Get response from your AI platform (example)
+# response = ${PROVIDER_NAME}_client.chat.completions.create(
+#     model="your-model",
+#     tools=tools,
+#     messages=[
+#         {"role": "system", "content": "You are a helpful assistant."},
+#         {"role": "user", "content": "Star the composiohq/composio repository"},
+#     ],
+# )
+# 
+# # Execute the function calls
+# result = composio.provider.handle_tool_calls(response=response, user_id="default")
+# print(result)}
 \`\`\`
 
 ## API Reference
@@ -434,7 +460,7 @@ result = provider.execute_tool_call(
 ## Development
 
 1. Clone the repository
-2. Install dependencies: \`uv sync\` or \`poetry install\`
+2. Install dependencies: \`uv sync\`
 3. Make your changes
 4. Run tests: \`pytest\`
 5. Format code: \`ruff format\`

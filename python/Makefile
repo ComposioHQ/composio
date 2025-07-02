@@ -19,9 +19,9 @@ create-provider:
 		exit 1;\
 	fi
 	@if [ "$(agentic)" = "true" ]; then\
-		bash scripts/create-provider.sh $(name) --agentic;\
+		python scripts/create_provider.py $(name) --agentic;\
 	else\
-		bash scripts/create-provider.sh $(name);\
+		python scripts/create_provider.py $(name);\
 	fi
 
 env:
