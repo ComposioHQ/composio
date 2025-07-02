@@ -35,7 +35,7 @@ done
 
 PROVIDER_PATH="$OUTPUT_DIR/$PROVIDER_NAME"
 # Convert to title case (e.g., myai -> Myai)
-CAPITAL_PROVIDER_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${PROVIDER_NAME:0:1})${PROVIDER_NAME:1}"
+TITLE_CASE_PROVIDER_NAME="$(tr '[:lower:]' '[:upper:]' <<< ${PROVIDER_NAME:0:1})${PROVIDER_NAME:1}"
 PACKAGE_NAME="composio_$PROVIDER_NAME"
 
 # Check if provider directory already exists
@@ -52,7 +52,7 @@ cat > "$PROVIDER_PATH/pyproject.toml" << EOL
 [project]
 name = "$PACKAGE_NAME"
 version = "0.1.0"
-description = "${IS_AGENTIC:+Agentic }Provider for ${CAPITAL_PROVIDER_NAME} in Composio SDK"
+description = "${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK"
 readme = "README.md"
 requires-python = ">=3.10,<4"
 authors = [
@@ -85,7 +85,7 @@ setup(
     python_requires=">=3.10,<4",
     author="Your Name",
     author_email="you@example.com",
-    description="${IS_AGENTIC:+Agentic }Provider for ${CAPITAL_PROVIDER_NAME} in Composio SDK",
+    description="${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/composio/composio",
@@ -104,19 +104,19 @@ EOL
 # Create __init__.py
 cat > "$PROVIDER_PATH/$PACKAGE_NAME/__init__.py" << EOL
 """
-${CAPITAL_PROVIDER_NAME} Provider for composio SDK.
+${TITLE_CASE_PROVIDER_NAME} Provider for composio SDK.
 """
 
-from .provider import ${CAPITAL_PROVIDER_NAME}Provider
+from .provider import ${TITLE_CASE_PROVIDER_NAME}Provider
 
-__all__ = ["${CAPITAL_PROVIDER_NAME}Provider"]
+__all__ = ["${TITLE_CASE_PROVIDER_NAME}Provider"]
 EOL
 
 # Create provider.py
 if [ "$IS_AGENTIC" = true ]; then
 cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 """
-${CAPITAL_PROVIDER_NAME} Provider implementation.
+${TITLE_CASE_PROVIDER_NAME} Provider implementation.
 """
 
 from __future__ import annotations
@@ -129,8 +129,8 @@ from composio.types import Tool
 
 
 # Define your tool format
-class ${CAPITAL_PROVIDER_NAME}Tool:
-    """${CAPITAL_PROVIDER_NAME} tool format"""
+class ${TITLE_CASE_PROVIDER_NAME}Tool:
+    """${TITLE_CASE_PROVIDER_NAME} tool format"""
     def __init__(self, name: str, description: str, execute: t.Callable, schema: dict):
         self.name = name
         self.description = description
@@ -138,19 +138,19 @@ class ${CAPITAL_PROVIDER_NAME}Tool:
         self.schema = schema
 
 
-class ${CAPITAL_PROVIDER_NAME}Provider(
-    AgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, t.List[${CAPITAL_PROVIDER_NAME}Tool]],
+class ${TITLE_CASE_PROVIDER_NAME}Provider(
+    AgenticProvider[${TITLE_CASE_PROVIDER_NAME}Tool, t.List[${TITLE_CASE_PROVIDER_NAME}Tool]],
     name="${PROVIDER_NAME}"
 ):
     """
-    Composio toolset for ${CAPITAL_PROVIDER_NAME} framework.
+    Composio toolset for ${TITLE_CASE_PROVIDER_NAME} framework.
     """
 
     def wrap_tool(
         self, 
         tool: Tool, 
         execute_tool: AgenticProviderExecuteFn
-    ) -> ${CAPITAL_PROVIDER_NAME}Tool:
+    ) -> ${TITLE_CASE_PROVIDER_NAME}Tool:
         """Wrap a tool in the ${PROVIDER_NAME} format."""
         def execute_wrapper(**kwargs) -> t.Dict:
             result = execute_tool(tool.slug, kwargs)
@@ -158,7 +158,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
                 raise Exception(result.get("error", "Tool execution failed"))
             return result.get("data", {})
         
-        return ${CAPITAL_PROVIDER_NAME}Tool(
+        return ${TITLE_CASE_PROVIDER_NAME}Tool(
             name=tool.slug,
             description=tool.description or "",
             execute=execute_wrapper,
@@ -169,16 +169,16 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         self,
         tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn
-    ) -> t.List[${CAPITAL_PROVIDER_NAME}Tool]:
+    ) -> t.List[${TITLE_CASE_PROVIDER_NAME}Tool]:
         """
-        Get composio tools wrapped as a list of ${CAPITAL_PROVIDER_NAME} tools.
+        Get composio tools wrapped as a list of ${TITLE_CASE_PROVIDER_NAME} tools.
         """
         return [self.wrap_tool(tool, execute_tool) for tool in tools]
 EOL
 else
 cat > "$PROVIDER_PATH/$PACKAGE_NAME/provider.py" << EOL
 """
-${CAPITAL_PROVIDER_NAME} Provider implementation.
+${TITLE_CASE_PROVIDER_NAME} Provider implementation.
 """
 
 from __future__ import annotations
@@ -190,8 +190,8 @@ from composio.types import Tool, Modifiers, ToolExecutionResponse
 
 
 # Define your tool format
-class ${CAPITAL_PROVIDER_NAME}Tool:
-    """${CAPITAL_PROVIDER_NAME} tool format"""
+class ${TITLE_CASE_PROVIDER_NAME}Tool:
+    """${TITLE_CASE_PROVIDER_NAME} tool format"""
     def __init__(self, name: str, description: str, parameters: dict):
         self.name = name
         self.description = description
@@ -199,20 +199,20 @@ class ${CAPITAL_PROVIDER_NAME}Tool:
 
 
 # Define your tool collection format
-${CAPITAL_PROVIDER_NAME}ToolCollection: t.TypeAlias = t.List[${CAPITAL_PROVIDER_NAME}Tool]
+${TITLE_CASE_PROVIDER_NAME}ToolCollection: t.TypeAlias = t.List[${TITLE_CASE_PROVIDER_NAME}Tool]
 
 
-class ${CAPITAL_PROVIDER_NAME}Provider(
-    NonAgenticProvider[${CAPITAL_PROVIDER_NAME}Tool, ${CAPITAL_PROVIDER_NAME}ToolCollection],
+class ${TITLE_CASE_PROVIDER_NAME}Provider(
+    NonAgenticProvider[${TITLE_CASE_PROVIDER_NAME}Tool, ${TITLE_CASE_PROVIDER_NAME}ToolCollection],
     name="${PROVIDER_NAME}"
 ):
     """
-    Composio toolset for ${CAPITAL_PROVIDER_NAME} platform.
+    Composio toolset for ${TITLE_CASE_PROVIDER_NAME} platform.
     """
 
-    def wrap_tool(self, tool: Tool) -> ${CAPITAL_PROVIDER_NAME}Tool:
+    def wrap_tool(self, tool: Tool) -> ${TITLE_CASE_PROVIDER_NAME}Tool:
         """Transform a single tool to platform format"""
-        return ${CAPITAL_PROVIDER_NAME}Tool(
+        return ${TITLE_CASE_PROVIDER_NAME}Tool(
             name=tool.slug,
             description=tool.description or "",
             parameters={
@@ -222,7 +222,7 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
             }
         )
 
-    def wrap_tools(self, tools: t.Sequence[Tool]) -> ${CAPITAL_PROVIDER_NAME}ToolCollection:
+    def wrap_tools(self, tools: t.Sequence[Tool]) -> ${TITLE_CASE_PROVIDER_NAME}ToolCollection:
         """Transform a collection of tools"""
         return [self.wrap_tool(tool) for tool in tools]
 
@@ -254,14 +254,14 @@ class ${CAPITAL_PROVIDER_NAME}Provider(
         modifiers: t.Optional[Modifiers] = None
     ) -> t.List[ToolExecutionResponse]:
         """
-        Handle tool calls from ${CAPITAL_PROVIDER_NAME} response.
+        Handle tool calls from ${TITLE_CASE_PROVIDER_NAME} response.
 
-        :param response: Response object from ${CAPITAL_PROVIDER_NAME}
+        :param response: Response object from ${TITLE_CASE_PROVIDER_NAME}
         :param user_id: User ID to use for executing function calls.
         :param modifiers: Modifiers to use for executing function calls.
         :return: A list of output objects from the tool calls.
         """
-        # TODO: Implement based on ${CAPITAL_PROVIDER_NAME}'s response format
+        # TODO: Implement based on ${TITLE_CASE_PROVIDER_NAME}'s response format
         # Example:
         # outputs = []
         # for tool_call in response.tool_calls:
@@ -284,18 +284,18 @@ touch "$PROVIDER_PATH/$PACKAGE_NAME/py.typed"
 if [ "$IS_AGENTIC" = true ]; then
 cat > "$PROVIDER_PATH/${PROVIDER_NAME}_demo.py" << EOL
 """
-${CAPITAL_PROVIDER_NAME} demo.
+${TITLE_CASE_PROVIDER_NAME} demo.
 """
 
 import asyncio
 
 # from ${PROVIDER_NAME}_framework import Agent, Runner  # Import your agent framework
-from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${TITLE_CASE_PROVIDER_NAME}Provider
 
 from composio import Composio
 
 # Initialize Composio toolset
-composio = Composio(provider=${CAPITAL_PROVIDER_NAME}Provider())
+composio = Composio(provider=${TITLE_CASE_PROVIDER_NAME}Provider())
 
 # Get all the tools
 tools = composio.tools.get(
@@ -323,7 +323,7 @@ async def main():
     # )
     # print(result.final_output)
     
-    print("Implement your ${CAPITAL_PROVIDER_NAME} agent logic here!")
+    print("Implement your ${TITLE_CASE_PROVIDER_NAME} agent logic here!")
     print(f"Got {len(tools)} tools:")
     for tool in tools:
         print(f"  - {tool.name}: {tool.description}")
@@ -334,17 +334,17 @@ EOL
 else
 cat > "$PROVIDER_PATH/${PROVIDER_NAME}_demo.py" << EOL
 """
-${CAPITAL_PROVIDER_NAME} demo.
+${TITLE_CASE_PROVIDER_NAME} demo.
 """
 
-from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
-# from ${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}  # Import your AI client
+from composio_${PROVIDER_NAME} import ${TITLE_CASE_PROVIDER_NAME}Provider
+# from ${PROVIDER_NAME} import ${TITLE_CASE_PROVIDER_NAME}  # Import your AI client
 
 from composio import Composio
 
 # Initialize tools.
-# ${PROVIDER_NAME}_client = ${CAPITAL_PROVIDER_NAME}()  # Initialize your AI client
-composio = Composio(provider=${CAPITAL_PROVIDER_NAME}Provider())
+# ${PROVIDER_NAME}_client = ${TITLE_CASE_PROVIDER_NAME}()  # Initialize your AI client
+composio = Composio(provider=${TITLE_CASE_PROVIDER_NAME}Provider())
 
 # Define task.
 task = "Star a repo composiohq/composio on GitHub"
@@ -370,7 +370,7 @@ tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 print(f"Got {len(tools)} tools for the task: {task}")
 for tool in tools:
     print(f"  - {tool.name}: {tool.description}")
-print("\nImplement your ${CAPITAL_PROVIDER_NAME} integration here!")
+print("\nImplement your ${TITLE_CASE_PROVIDER_NAME} integration here!")
 EOL
 fi
 
@@ -378,13 +378,13 @@ fi
 cat > "$PROVIDER_PATH/README.md" << EOL
 # $PACKAGE_NAME
 
-${IS_AGENTIC:+Agentic }Provider for ${CAPITAL_PROVIDER_NAME} in Composio SDK.
+${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK.
 
 ## Features
 
 ${IS_AGENTIC:+- **Full Tool Execution**: Execute tools with proper parameter handling
 - **Agent Support**: Create agents with wrapped tools
-- **Type Safety**: Full type annotations for better IDE support}${!IS_AGENTIC:+- **Tool Transformation**: Convert Composio tools to ${CAPITAL_PROVIDER_NAME} format
+- **Type Safety**: Full type annotations for better IDE support}${!IS_AGENTIC:+- **Tool Transformation**: Convert Composio tools to ${TITLE_CASE_PROVIDER_NAME} format
 - **Tool Execution**: Execute tools with proper parameter handling
 - **Type Safety**: Full type annotations for better IDE support}
 
@@ -400,12 +400,12 @@ uv add $PACKAGE_NAME
 
 \`\`\`python
 from composio import Composio
-from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${TITLE_CASE_PROVIDER_NAME}Provider
 
-# Initialize Composio with ${CAPITAL_PROVIDER_NAME} provider
+# Initialize Composio with ${TITLE_CASE_PROVIDER_NAME} provider
 composio = Composio(
     api_key="your-composio-api-key",
-    provider=${CAPITAL_PROVIDER_NAME}Provider()
+    provider=${TITLE_CASE_PROVIDER_NAME}Provider()
 )
 
 # Get available tools
@@ -414,7 +414,7 @@ tools = composio.tools.get(
     toolkits=["github", "gmail"]
 )
 
-# Use tools with ${CAPITAL_PROVIDER_NAME}
+# Use tools with ${TITLE_CASE_PROVIDER_NAME}
 # TODO: Add your usage example here
 \`\`\`
 
@@ -424,10 +424,10 @@ tools = composio.tools.get(
 
 \`\`\`python
 from composio import Composio
-from composio_${PROVIDER_NAME} import ${CAPITAL_PROVIDER_NAME}Provider
+from composio_${PROVIDER_NAME} import ${TITLE_CASE_PROVIDER_NAME}Provider
 
 # Initialize provider
-provider = ${CAPITAL_PROVIDER_NAME}Provider()
+provider = ${TITLE_CASE_PROVIDER_NAME}Provider()
 
 # Initialize Composio
 composio = Composio(
@@ -461,13 +461,13 @@ for tool in tools:
 
 ## API Reference
 
-### ${CAPITAL_PROVIDER_NAME}Provider Class
+### ${TITLE_CASE_PROVIDER_NAME}Provider Class
 
-The \`${CAPITAL_PROVIDER_NAME}Provider\` class extends \`${IS_AGENTIC:+AgenticProvider}${!IS_AGENTIC:+NonAgenticProvider}\` and provides ${PROVIDER_NAME}-specific functionality.
+The \`${TITLE_CASE_PROVIDER_NAME}Provider\` class extends \`${IS_AGENTIC:+AgenticProvider}${!IS_AGENTIC:+NonAgenticProvider}\` and provides ${PROVIDER_NAME}-specific functionality.
 
 #### Methods
 
-##### \`wrap_tool(tool: Tool${IS_AGENTIC:+, execute_tool: AgenticProviderExecuteFn}) -> ${CAPITAL_PROVIDER_NAME}Tool\`
+##### \`wrap_tool(tool: Tool${IS_AGENTIC:+, execute_tool: AgenticProviderExecuteFn}) -> ${TITLE_CASE_PROVIDER_NAME}Tool\`
 
 Wraps a tool in the ${PROVIDER_NAME} format.
 
@@ -475,7 +475,7 @@ Wraps a tool in the ${PROVIDER_NAME} format.
 tool = provider.wrap_tool(composio_tool${IS_AGENTIC:+, execute_tool})
 \`\`\`
 
-##### \`wrap_tools(tools: Sequence[Tool]${IS_AGENTIC:+, execute_tool: AgenticProviderExecuteFn}) -> ${IS_AGENTIC:+${CAPITAL_PROVIDER_NAME}Toolkit}${!IS_AGENTIC:+${CAPITAL_PROVIDER_NAME}ToolCollection}\`
+##### \`wrap_tools(tools: Sequence[Tool]${IS_AGENTIC:+, execute_tool: AgenticProviderExecuteFn}) -> ${IS_AGENTIC:+${TITLE_CASE_PROVIDER_NAME}Toolkit}${!IS_AGENTIC:+${TITLE_CASE_PROVIDER_NAME}ToolCollection}\`
 
 Wraps multiple tools in the ${PROVIDER_NAME} format.
 
