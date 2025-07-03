@@ -1,6 +1,6 @@
 [project]
 name = "composio-google-adk"
-version = "1.0.0-rc8"
+version = "1.0.0-rc9"
 description = "Use Composio to get an array of tools with your Google AI Python Gemini model."
 readme = "README.md"
 requires-python = ">=3.9,<4"
