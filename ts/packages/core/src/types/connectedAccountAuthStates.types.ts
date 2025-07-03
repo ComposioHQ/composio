@@ -61,6 +61,10 @@ const BaseSchemeRaw = z
     server_location: z.string().optional(),
     // base_url only
     base_url: z.string().optional(),
+    // for api key
+    api_key: z.string().optional(),
+    // for generic api key
+    generic_api_key: z.string().optional(),
   })
   .catchall(z.unknown());
 
@@ -235,7 +239,8 @@ const BasicConnectionDataSchema = BasicInitiatingSchema;
 // API_KEY
 const ApiKeyInitiatingSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.ACTIVE),
-  api_key: z.string(),
+  api_key: z.string().optional(),
+  generic_api_key: z.string().optional(),
 }).catchall(z.unknown());
 const ApiKeyConnectionDataSchema = ApiKeyInitiatingSchema;
 
