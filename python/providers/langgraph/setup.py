@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_langgraph",
-    version="1.0.0-rc7",
+    version="1.0.0-rc8",
     author="composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of tools with LangGraph Agent Workflows",
