@@ -86,7 +86,9 @@ export class AuthScheme {
    * @param params The API key parameters
    * @returns ConnectionData object
    */
-  static APIKey(params: BaseConnectionFields & { api_key: string }): ConnectionData {
+  static APIKey(
+    params: BaseConnectionFields & { api_key?: string; generic_api_key?: string }
+  ): ConnectionData {
     return {
       authScheme: AuthSchemeTypes.API_KEY,
       val: {
