@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_openai",
-    version="0.7.19",
+    version="0.7.20",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your OpenAI Function Call.",
