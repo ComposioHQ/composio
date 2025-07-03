@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.36-next.5",
+  "version": "0.1.36-next.6",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@composio/client": "0.1.0-alpha.25",
-    "@composio/json-schema-to-zod": "0.1.10-next.2",
+    "@composio/json-schema-to-zod": "0.1.10-next.3",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
     "openai": "^4.94.0",

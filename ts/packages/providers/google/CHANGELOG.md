@@ -1,5 +1,15 @@
 # @composio/google
 
+## 0.1.36-next.6
+
+### Patch Changes
+
+- 06612f5: Downgrade chalk to v4 to allow CJS as well
+- Relax connected account schema parsing
+- Updated dependencies [06612f5]
+- Updated dependencies
+  - @composio/core@0.1.36-next.6
+
 ## 0.1.36-next.5
 
 ### Patch Changes
