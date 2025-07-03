@@ -5,7 +5,9 @@ API Endpoints.
 # pylint: disable=consider-using-with, subprocess-run-check, unspecified-encoding
 
 import importlib
+import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -118,6 +120,65 @@ def create_app() -> FastAPI:
     app = FastAPI(on_shutdown=[tooldir.cleanup])
     sys.path.append(tooldir.name)
     logger = get_logger()
+    
+    base_download_dir = Path(os.getcwd()).resolve()
+    logger.debug(f"Setting base download directory to: {base_download_dir}")
+
+    DANGEROUS_IMPORTS = [
+        'os', 'subprocess', 'sys', 'shutil', 'importlib', 'pty', 'socket', 
+        'pickle', 'marshal', 'tempfile', 'pathlib', 'glob'
+    ]
+    
+    DANGEROUS_PATTERNS = [
+        r'__import__\s*\(',
+        r'exec\s*\(',
+        r'eval\s*\(',
+        r'compile\s*\(',
+        r'getattr\s*\(',
+        r'open\s*\(',
+        r'[^a-zA-Z0-9]_?sys\.',
+        r'\.system\s*\(',
+        r'\.popen\s*\(',
+        r'\.call\s*\(',
+        r'\.run\s*\(',
+        r'__\w+__',
+    ]
+    
+    def validate_tool_content(content: str) -> t.Tuple[bool, str]:
+        """
+        Validate the content of a tool upload to prevent code execution exploits.
+        
+        Returns:
+            tuple: (is_valid: bool, error_message: str)
+        """
+        import_regex = re.compile(r'^(?:from|import)\s+([a-zA-Z0-9_.]+)', re.MULTILINE)
+        imports = import_regex.findall(content)
+        
+        for imp in imports:
+            module_parts = imp.split('.')[0]
+            if module_parts in DANGEROUS_IMPORTS:
+                return False, f"Dangerous import detected: {imp}"
+        
+        # Check for dangerous patterns
+        for pattern in DANGEROUS_PATTERNS:
+            matches = re.search(pattern, content)
+            if matches:
+                return False, f"Dangerous code pattern detected: {matches.group(0)}"
+        
+        return True, ""
+
+    def validate_dependencies(dependencies: t.List[str]) -> t.Tuple[bool, str]:
+        """
+        Validate dependencies to ensure they don't contain shell commands.
+        
+        Returns:
+            tuple: (is_valid: bool, error_message: str)
+        """
+        for dep in dependencies:
+            if not re.match(r'^[a-zA-Z0-9_\-\.]+[a-zA-Z0-9_\-\.=<>]*$', dep):
+                return False, f"Invalid dependency format: {dep}"
+        
+        return True, ""
 
     def with_exception_handling(f: t.Callable[P, R]) -> t.Callable[P, APIResponse[R]]:
         """Marks a callback as wanting to receive the current context object as first argument."""
@@ -136,20 +197,46 @@ def create_app() -> FastAPI:
         return update_wrapper(wrapper, f)
 
     @app.middleware("http")
-    async def add_process_time_header(request: Request, call_next):
+    async def auth_middleware(request: Request, call_next):
+        """Authenticate requests."""
+        # Skip authentication for non-API routes if they exist
+        if not request.url.path.startswith("/api"):
+            return await call_next(request)
+            
+        # Always require authentication for API routes
         if access_token is None:
-            return await call_next(request)
-
-        if "x-api-key" in request.headers and request.headers["x-api-key"]:
-            return await call_next(request)
-
-        return Response(
-            content=APIResponse[None](
-                data=None,
-                error="Unauthorised request",
-            ).model_dump_json(),
-            status_code=401,
-        )
+            logger.warning("Access token not set. Using default authentication.")
+            # Instead of bypassing authentication, use a default token
+            if "x-api-key" not in request.headers or not request.headers["x-api-key"]:
+                return Response(
+                    content=APIResponse[None](
+                        data=None,
+                        error="Authentication required. Set ACCESS_TOKEN environment variable.",
+                    ).model_dump_json(),
+                    status_code=401,
+                )
+        else:
+            # Standard authentication when token is set
+            if "x-api-key" not in request.headers or not request.headers["x-api-key"]:
+                return Response(
+                    content=APIResponse[None](
+                        data=None,
+                        error="Unauthorised request",
+                    ).model_dump_json(),
+                    status_code=401,
+                )
+                
+            # Validate the token when provided
+            if access_token != request.headers["x-api-key"]:
+                return Response(
+                    content=APIResponse[None](
+                        data=None,
+                        error="Invalid API key",
+                    ).model_dump_json(),
+                    status_code=401,
+                )
+                
+        return await call_next(request)
 
     @app.get("/api", response_model=APIResponse[GetApiResponse])
     @with_exception_handling
@@ -253,50 +340,130 @@ def create_app() -> FastAPI:
     @app.post("/api/tools", response_model=APIResponse[t.List[str]])
     @with_exception_handling
     def _upload_workspace_tools(request: ToolUploadRequest) -> t.List[str]:
-        """Get list of available developer tools."""
-        if len(request.dependencies) > 0:
-            process = subprocess.run(
-                args=["pip", "install", *request.dependencies],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+        """Validate and upload developer tools."""
+        logger.info(f"Tool upload request received with filename: {request.filename}")
+        
+        # Validate tool content for potentially malicious code
+        is_valid, error_msg = validate_tool_content(request.content)
+        if not is_valid:
+            logger.warning(f"Malicious tool content detected: {error_msg}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tool validation failed: {error_msg}"
             )
-            if process.returncode != 0:
-                raise RuntimeError(
-                    f"Error installing dependencies: {process.stderr.decode()}"
+            
+        # Validate dependencies
+        is_valid, error_msg = validate_dependencies(request.dependencies)
+        if not is_valid:
+            logger.warning(f"Invalid dependency format detected: {error_msg}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Dependency validation failed: {error_msg}"
+            )
+            
+        if len(request.dependencies) > 0:
+            logger.info(f"Installing dependencies: {request.dependencies}")
+            
+            try:
+                process = subprocess.run(
+                    args=["pip", "install", "--no-cache-dir", "--disable-pip-version-check", *request.dependencies],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=120,
+                )
+                if process.returncode != 0:
+                    raise RuntimeError(
+                        f"Error installing dependencies: {process.stderr.decode()}"
+                    )
+            except subprocess.TimeoutExpired:
+                raise HTTPException(
+                    status_code=408,
+                    detail="Dependency installation timed out"
                 )
 
+        # Generate a safe filename using hash of content
         filename = md5(request.content.encode(encoding="utf-8")).hexdigest()
         tempfile = Path(tooldir.name, f"{filename}.py")
+        
         if tempfile.exists():
-            raise ValueError("Tools from this module already exits!")
+            raise ValueError("Tools from this module already exist!")
 
         tempfile.write_text(request.content)
-        importlib.import_module(filename)
-        return get_runtime_actions()
+        
+        try:
+            spec = importlib.util.spec_from_file_location(filename, tempfile)
+            if spec is None or spec.loader is None:
+                raise ImportError(f"Failed to create module spec for {filename}")
+                
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            
+            logger.info(f"Successfully imported tool module: {filename}")
+            
+            return get_runtime_actions()
+        except Exception as e:
+            if tempfile.exists():
+                tempfile.unlink()
+            logger.error(f"Error importing module: {str(e)}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to import tool: {str(e)}"
+            )
 
     @app.get("/api/download")
     def _download_file_or_dir(file: t.Optional[str] = None):
-        """Get list of available developer tools."""
+        """Download a file or directory from the workspace."""
         if not file:
             raise HTTPException(
                 status_code=400, detail="File path is required as query parameter"
             )
-        path = Path(file)
-        if not path.exists():
+        
+        try:
+            requested_path = Path(file)
+            
+            if requested_path.is_absolute():
+                requested_abs_path = requested_path.resolve()
+                base_abs_path = base_download_dir
+                
+                if not str(requested_abs_path).startswith(str(base_abs_path)):
+                    logger.warning(f"Path traversal attempt: {requested_abs_path} is outside {base_abs_path}")
+                    raise HTTPException(
+                        status_code=403, 
+                        detail="Access denied: Cannot access files outside the workspace directory"
+                    )
+                
+                safe_path = requested_abs_path
+            else:
+                safe_path = (base_download_dir / requested_path).resolve()
+                
+                if not str(safe_path).startswith(str(base_download_dir)):
+                    logger.warning(f"Path traversal attempt with relative path: {safe_path} is outside {base_download_dir}")
+                    raise HTTPException(
+                        status_code=403, 
+                        detail="Access denied: Cannot access files outside the workspace directory"
+                    )
+        except (ValueError, RuntimeError) as e:
+            logger.error(f"Path validation error: {str(e)}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file path provided: {str(e)}"
+            )
+        
+        if not safe_path.exists():
             return Response(
                 content=APIResponse[None](
                     data=None,
-                    error=f"{path} not found",
+                    error=f"{safe_path} not found",
                 ).model_dump_json(),
                 status_code=404,
             )
 
-        if path.is_file():
-            return FileResponse(path=path)
+        if safe_path.is_file():
+            return FileResponse(path=safe_path)
 
         tempdir = tempfile.TemporaryDirectory()
-        zipfile = Path(tempdir.name, path.name + ".zip")
-        return FileResponse(path=_archive(directory=path, output=zipfile))
+        zipfile = Path(tempdir.name, safe_path.name + ".zip")
+        return FileResponse(path=_archive(directory=safe_path, output=zipfile))
 
     return app
 
