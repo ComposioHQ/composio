@@ -1,6 +1,6 @@
 [project]
 name = "composio-openai"
-version = "1.0.0-rc6"
+version = "1.0.0-rc7"
 description = "Use Composio to get an array of tools with your OpenAI Function Call."
 readme = "README.md"
 requires-python = ">=3.9,<4"
