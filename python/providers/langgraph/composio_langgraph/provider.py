@@ -68,7 +68,7 @@ class LanggraphProvider(
                 description=tool.description,
                 args_schema=json_schema_to_model(
                     json_schema=tool.input_parameters,
-                    skip_default=True,  # make configurable
+                    skip_default=self.skip_default,
                 ),
                 return_schema=True,
                 func=self._wrap_action(
