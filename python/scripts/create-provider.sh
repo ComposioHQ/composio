@@ -52,7 +52,7 @@ cat > "$PROVIDER_PATH/pyproject.toml" << EOL
 [project]
 name = "$PACKAGE_NAME"
 version = "0.1.0"
-description = "${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK"
+description = "${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in the Composio SDK"
 readme = "README.md"
 requires-python = ">=3.10,<4"
 authors = [
@@ -85,7 +85,7 @@ setup(
     python_requires=">=3.10,<4",
     author="Your Name",
     author_email="you@example.com",
-    description="${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK",
+    description="${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in the Composio SDK",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/composio/composio",
@@ -378,7 +378,7 @@ fi
 cat > "$PROVIDER_PATH/README.md" << EOL
 # $PACKAGE_NAME
 
-${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in Composio SDK.
+${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in the Composio SDK.
 
 ## Features
 

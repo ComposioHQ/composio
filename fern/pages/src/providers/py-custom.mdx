@@ -158,7 +158,8 @@ from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from my_provider import AgentTool
 
-# Import the Tool/Function class represents a callable tool for your framework. Optionally define your tool format
+# Import the Tool/Function class that represents a callable tool for your framework
+# Optionally define your custom tool format below
 # class AgentTool:
 #     def __init__(self, name: str, description: str, execute: Callable, schema: dict):
 #         self.name = name
@@ -170,7 +171,7 @@ from my_provider import AgentTool
 AgentToolCollection: TypeAlias = List[AgentTool]
 
 # Create your provider
-class MyAgentProvider(AgenticProvider[AgentTool, list[AgentTool]], name="my-agent-platform"):
+class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agent-platform"):
     """Custom provider for My Agent Platform"""
     
     def wrap_tool(self, tool: Tool, execute_tool: AgenticProviderExecuteFn) -> AgentTool:
