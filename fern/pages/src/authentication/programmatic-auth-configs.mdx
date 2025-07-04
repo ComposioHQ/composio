@@ -6,7 +6,7 @@ keywords: ""
 hide-nav-links: true
 ---
 
-Auth configs are created once and reused many times. However, when dealing with many toolkits, you may want to create auth configs programmatically.
+Auth configs are created once and reused many times. However, when managing multiple toolkits, you may want to create auth configs programmatically.
 
 - When creating and destroying auth configs multiple times in your app's lifecycle.
 - When creating auth configs for your users' users.
@@ -14,7 +14,7 @@ Auth configs are created once and reused many times. However, when dealing with 
 ## OAuth2 based apps
 
 ### Using Composio Default Auth
-Since OAuth2 is the most common auth type for apps, Composio provides managed auth for most OAuth2 based apps.
+Since OAuth2 is the most common authentication type for applications, Composio provides managed auth for most OAuth2 based applications.
 This is to speed up development and prototyping.
 This means you don't have to provide your own OAuth credentials.
 
@@ -39,8 +39,8 @@ import { Composio } from "@composio/core";
 
 const composio = new Composio();
 
-const authConfig = await composio.authConfigs.create("LINEAR", {
-  name: "Linear",
+const authConfig = await composio.authConfigs.create("GITHUB", {
+  name: "GitHub",
   type: "use_composio_managed_auth",
 });
 
@@ -48,7 +48,7 @@ console.log(authConfig);
 ```
 </CodeGroup>
 
-The `auth_config_id` should be stored securely in your database for future use to be created and destroyed multiple times.
+The returned `auth_config_id` should be stored securely in your database for future use to be created and destroyed multiple times.
 
 You can also provide your own authentication details. The required `credentials` and `authScheme` depend on the auth type.
 
@@ -96,7 +96,11 @@ The process of setting up your own OAuth2 credentials usually involves generatin
 The **authorized redirect URI** is the URI that captures the OAuth code that is returned to the app.
 </Tip>
 
-While doing so, you must ensure to set the **authorized redirect URI** in the OAuth configuration to: `https://backend.composio.dev/api/v3/toolkits/auth/callback`.
+While doing so, you must ensure to set the **authorized redirect URI** in the OAuth configuration to:
+
+```
+https://backend.composio.dev/api/v3/toolkits/auth/callback
+```
 <Tabs>
 <Tab title="Redirect URI for GitHub">
 <Frame>
@@ -111,7 +115,7 @@ While doing so, you must ensure to set the **authorized redirect URI** in the OA
 </Tabs>
 
 ### Specifying scopes
-Composio requests a set of _good_ default OAuth2 scopes for each toolkit wherever possible. However, you can override or modify these scopes by passing a `scopes` field to the `credentials` object.
+Composio requests a set of appropriate default OAuth2 scopes for each toolkit wherever possible. However, you can override or modify these scopes by passing a `scopes` field to the `credentials` object.
 
 <CodeGroup>
 <SnippetCode 
@@ -135,7 +139,7 @@ Composio requests a set of _good_ default OAuth2 scopes for each toolkit whereve
 
 
 ## Other auth types
-Composio has plenty of other applications that use different auth types like API keys, Bearer tokens, JWT and even no auth at all.
+Composio supports many applications that use different authentication types like API keys, Bearer tokens, JWT and even no authentication at all.
 
 Generating the auth config for other auth types only has minor differences.
 - `use_custom_auth` is used instead of `use_composio_managed_auth`

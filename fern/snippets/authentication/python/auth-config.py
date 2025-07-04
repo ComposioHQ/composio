@@ -8,7 +8,9 @@ auth_config = composio.auth_configs.create(
     options={
         "type": "use_custom_auth",
         "auth_scheme": "API_KEY",
-        "credentials": {}
+        "credentials": {
+            "api_key": "your_api_key_here"
+        }
     },
 )
 print(auth_config)
