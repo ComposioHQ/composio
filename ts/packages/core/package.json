@@ -43,7 +43,7 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.25",
+    "@composio/client": "0.1.0-alpha.26",
     "@composio/json-schema-to-zod": "0.1.10-next.3",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
