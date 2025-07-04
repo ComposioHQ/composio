@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.7
+
+### Patch Changes
+
+- Update composio api client to latest version
+
 ## 0.1.36-next.6
 
 ### Patch Changes
