@@ -154,7 +154,9 @@ class Tools(Resource, t.Generic[TProvider]):
                 for tool in tools_list
             ]
 
-        self._tool_schemas.update({tool.slug: tool for tool in tools_list})
+        self._tool_schemas.update(
+            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
+        )
         for tool in tools_list:
             tool.input_parameters = self._file_helper.process_schema_recursively(
                 schema=tool.input_parameters,

@@ -15,14 +15,17 @@ provider:
 
 create-provider:
 	@if [ -z "$(name)" ]; then\
-		echo "Please provide a provider name: make create-provider name=<provider-name> [agentic=true]";\
+		echo "Please provide a provider name: make create-provider name=<provider-name> [agentic=true] [output=<directory>]";\
 		exit 1;\
 	fi
-	@if [ "$(agentic)" = "true" ]; then\
-		bash scripts/create-provider.sh $(name) --agentic;\
-	else\
-		bash scripts/create-provider.sh $(name);\
-	fi
+	@ARGS="$(name)";\
+	if [ "$(agentic)" = "true" ]; then\
+		ARGS="$$ARGS --agentic";\
+	fi;\
+	if [ ! -z "$(output)" ]; then\
+		ARGS="$$ARGS --output-dir $(output)";\
+	fi;\
+	bash scripts/create-provider.sh $$ARGS
 
 env:
 	@echo "* creating new environment"

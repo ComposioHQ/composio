@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_langchain",
-    version="1.0.0-rc7",
+    version="1.0.0-rc9",
     author="composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Langchain agent.",

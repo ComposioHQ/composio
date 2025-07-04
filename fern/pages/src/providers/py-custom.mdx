@@ -12,8 +12,7 @@ This guide shows how to create custom providers for the Composio Python SDK. Cus
 The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
 
 1. **Tool format transformation**: Converting Composio tools into formats compatible with specific AI platforms
-2. **Tool execution**: Managing the flow of tool execution and results
-3. **Platform-specific integration**: Providing helper methods for seamless integration
+2. **Platform-specific integration**: Providing helper methods for seamless integration
 
 ## Types of providers
 
@@ -45,17 +44,23 @@ make create-provider name=myprovider
 
 # Create an agentic provider
 make create-provider name=myagent agentic=true
+
+# Create provider with custom output directory
+make create-provider name=myprovider output=/path/to/custom/dir
+
+# Combine options
+make create-provider name=myagent agentic=true output=/my/custom/path
 ```
 
-This will create a new provider in `python/providers/<provider-name>/` with:
-- Complete package structure with `pyproject.toml` and `setup.py`
+This will create a new provider in the specified directory (default: `python/providers/<provider-name>/`) with:
+- Complete package structure with `pyproject.toml`
 - Provider implementation template
 - Demo script
 - README with usage examples
 - Type annotations and proper inheritance
 
 <Tip>
-The scaffolding script creates a fully functional provider template. You just need to implement the tool transformation logic specific to your platform.
+The scaffolding script creates a fully functional provider template. You just need to implement the tool transformation logic specific to your platform. You can maintain your provider implementation in your own repository.
 </Tip>
 
 ### Generated structure
@@ -65,7 +70,7 @@ The create-provider script generates the following structure:
 ```
 python/providers/<provider-name>/
 ├── README.md                    # Documentation and usage examples
-├── pyproject.toml              # Poetry configuration
+├── pyproject.toml              # Project configuration
 ├── setup.py                    # Setup script for pip compatibility
 ├── <provider-name>_demo.py     # Demo script showing usage
 └── composio_<provider-name>/   # Package directory
@@ -126,7 +131,14 @@ class MyAIProvider(NonAgenticProvider[MyAITool, MyAIToolCollection], name="my-ai
         tool_call: dict,
         modifiers: Optional[Modifiers] = None
     ) -> ToolExecutionResponse:
-        """Execute a tool call in your platform's format"""
+        """Execute a tool call in your platform's format
+        
+        Example usage:
+        result = my_provider.execute_my_ai_tool_call(
+            user_id="default",
+            tool_call={"name": "GITHUB_STAR_REPO", "arguments": {"owner": "composiohq", "repo": "composio"}}
+        )
+        """
         # Use the built-in execute_tool method
         return self.execute_tool(
             slug=tool_call["name"],
@@ -144,27 +156,22 @@ Agentic providers inherit from the `AgenticProvider` abstract class:
 from typing import Callable, Dict, List, Sequence
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
+from my_provider import AgentTool
 
-# Define your tool format
-class AgentTool:
-    def __init__(self, name: str, description: str, execute: Callable, schema: dict):
-        self.name = name
-        self.description = description
-        self.execute = execute
-        self.schema = schema
+# Import the Tool/Function class that represents a callable tool for your framework
+# Optionally define your custom tool format below
+# class AgentTool:
+#     def __init__(self, name: str, description: str, execute: Callable, schema: dict):
+#         self.name = name
+#         self.description = description
+#         self.execute = execute
+#         self.schema = schema
 
-# Define your tool collection format
-class AgentToolkit:
-    def __init__(self, tools: List[AgentTool]):
-        self.tools = tools
-    
-    def create_agent(self, config: dict):
-        """Create an agent using the tools"""
-        # Implementation depends on your agent framework
-        pass
+# Define your tool collection format (typically a List)
+AgentToolCollection: TypeAlias = List[AgentTool]
 
 # Create your provider
-class MyAgentProvider(AgenticProvider[AgentTool, AgentToolkit], name="my-agent-platform"):
+class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agent-platform"):
     """Custom provider for My Agent Platform"""
     
     def wrap_tool(self, tool: Tool, execute_tool: AgenticProviderExecuteFn) -> AgentTool:
@@ -186,163 +193,86 @@ class MyAgentProvider(AgenticProvider[AgentTool, AgentToolkit], name="my-agent-p
         self, 
         tools: Sequence[Tool], 
         execute_tool: AgenticProviderExecuteFn
-    ) -> AgentToolkit:
+    ) -> AgentToolCollection:
         """Transform a collection of tools with execute function"""
-        agent_tools = [self.wrap_tool(tool, execute_tool) for tool in tools]
-        return AgentToolkit(tools=agent_tools)
-    
-    # Optional: Custom helper methods for your agent platform
-    def run_agent(self, toolkit: AgentToolkit, prompt: str, config: dict = None):
-        """Run the agent with a prompt"""
-        agent = toolkit.create_agent(config or {})
-        return agent.run(prompt)
+        return [self.wrap_tool(tool, execute_tool) for tool in tools]
 ```
 
 ## Using your custom provider
 
 After creating your provider, use it with the Composio SDK:
 
+### Non-agentic provider example
+
 ```python
 from composio import Composio
-from my_providers import MyAIProvider
+from composio_myai import MyAIProvider
+from myai import MyAIClient  # Your AI platform's client
 
-# Create your provider instance
-my_provider = MyAIProvider()
+# Initialize tools
+myai_client = MyAIClient()
+composio = Composio(provider=MyAIProvider())
 
-# Initialize Composio with your provider
-composio = Composio(
-    api_key="your-composio-api-key",
-    provider=my_provider
+# Define task
+task = "Star a repo composiohq/composio on GitHub"
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+# Get response from your AI platform (example)
+response = myai_client.chat.completions.create(
+    model="your-model",
+    tools=tools,  # These are in your platform's format
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
 )
+print(response)
 
-# Get tools - they will be transformed by your provider
+# Execute the function calls
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
+```
+
+### Agentic provider example
+
+```python
+import asyncio
+from agents import Agent, Runner
+from composio_myagent import MyAgentProvider
+from composio import Composio
+
+# Initialize Composio toolset
+composio = Composio(provider=MyAgentProvider())
+
+# Get all the tools
 tools = composio.tools.get(
     user_id="default",
-    toolkits=["github"]
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
 )
 
-# Use the tools with your AI platform
-print(tools)  # These will be in your custom format
-
-# For non-agentic providers, use helper methods
-response = my_provider.execute_my_ai_tool_call(
-    user_id="default",
-    tool_call={"name": "GITHUB_CREATE_REPO", "arguments": {...}}
+# Create an agent with the tools
+agent = Agent(
+    name="GitHub Agent",
+    instructions="You are a helpful assistant that helps users with GitHub tasks.",
+    tools=tools,
 )
+
+# Run the agent
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input=(
+            "Star the repository composiohq/composio on GitHub. If done "
+            "successfully, respond with 'Action executed successfully'"
+        ),
+    )
+    print(result.final_output)
+
+asyncio.run(main())
 ```
 
-## Provider state and context
-
-Your provider can maintain state and context:
-
-```python
-from typing import Dict, Optional
-from composio.core.provider import NonAgenticProvider
-
-class StatefulProvider(NonAgenticProvider[ProviderTool, ProviderToolCollection], name="stateful-provider"):
-    """Provider with state management"""
-    
-    def __init__(self, config: Dict):
-        # Provider state
-        self.request_count = 0
-        self.tool_cache: Dict[str, ProviderTool] = {}
-        self.config = config
-    
-    def wrap_tool(self, tool: Tool) -> ProviderTool:
-        """Transform tool with state tracking"""
-        self.request_count += 1
-        
-        # Use the provider state/config
-        enhanced_tool = ProviderTool(
-            name=tool.slug.upper() if self.config.get("use_uppercase") else tool.slug,
-            description=tool.description,
-            schema=tool.input_parameters
-        )
-        
-        # Cache the transformed tool
-        self.tool_cache[tool.slug] = enhanced_tool
-        
-        return enhanced_tool
-    
-    def wrap_tools(self, tools: Sequence[Tool]) -> ProviderToolCollection:
-        """Transform tools"""
-        return [self.wrap_tool(tool) for tool in tools]
-    
-    # Custom methods that use provider state
-    def get_request_count(self) -> int:
-        """Get the number of tool transformation requests"""
-        return self.request_count
-    
-    def get_cached_tool(self, slug: str) -> Optional[ProviderTool]:
-        """Retrieve a cached tool"""
-        return self.tool_cache.get(slug)
-```
-
-## Advanced: Provider composition
-
-You can compose functionality by extending existing providers:
-
-```python
-import time
-from composio_openai import OpenAIProvider
-from typing import Optional
-from composio.types import Modifiers
-
-# Extend the OpenAI provider with custom functionality
-class EnhancedOpenAIProvider(OpenAIProvider):
-    """OpenAI provider with analytics and retry logic"""
-    
-    def __init__(self):
-        super().__init__()
-        # Add properties
-        self.analytics = {
-            "tool_calls": 0,
-            "errors": 0
-        }
-    
-    def execute_tool_call(
-        self,
-        user_id: str,
-        tool_call,
-        modifiers: Optional[Modifiers] = None
-    ):
-        """Execute tool call with analytics"""
-        self.analytics["tool_calls"] += 1
-        
-        try:
-            # Call the parent implementation
-            result = super().execute_tool_call(user_id, tool_call, modifiers)
-            return result
-        except Exception as error:
-            self.analytics["errors"] += 1
-            raise error
-    
-    # Add new methods
-    def get_analytics(self) -> dict:
-        """Get provider analytics"""
-        return self.analytics.copy()
-    
-    def execute_with_retry(
-        self,
-        user_id: str,
-        tool_call,
-        modifiers: Optional[Modifiers] = None,
-        max_retries: int = 3
-    ):
-        """Execute tool call with retry logic"""
-        attempts = 0
-        last_error = None
-        
-        while attempts < max_retries:
-            try:
-                return self.execute_tool_call(user_id, tool_call, modifiers)
-            except Exception as error:
-                last_error = error
-                attempts += 1
-                time.sleep(1.0 * attempts)
-        
-        raise last_error
-```
 
 ## Example: Anthropic Claude provider
 
@@ -350,182 +280,158 @@ Here's a complete example for Anthropic's Claude:
 
 ```python
 import typing as t
-from anthropic import Anthropic
-from anthropic.types.message import Message
+
+from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
+from anthropic.types.message import Message as ToolsBetaMessage
 from anthropic.types.tool_param import ToolParam
 from anthropic.types.tool_use_block import ToolUseBlock
 
 from composio.core.provider import NonAgenticProvider
-from composio.types import Tool, Modifiers, ToolExecutionResponse
+from composio.types import Modifiers, Tool, ToolExecutionResponse
 
-class ClaudeProvider(NonAgenticProvider[ToolParam, list[ToolParam]], name="claude"):
-    """Provider for Anthropic Claude"""
-    
-    def __init__(self, api_key: str):
-        self.client = Anthropic(api_key=api_key)
-    
+
+class AnthropicProvider(
+    NonAgenticProvider[ToolParam, list[ToolParam]],
+    name="anthropic",
+):
+    """Composio toolset for Anthropic Claude platform."""
+
     def wrap_tool(self, tool: Tool) -> ToolParam:
-        """Convert Composio tool to Claude format"""
         return ToolParam(
+            input_schema=tool.input_parameters,
             name=tool.slug,
             description=tool.description,
-            input_schema=tool.input_parameters
         )
-    
+
     def wrap_tools(self, tools: t.Sequence[Tool]) -> list[ToolParam]:
-        """Convert multiple tools"""
         return [self.wrap_tool(tool) for tool in tools]
-    
+
     def execute_tool_call(
         self,
         user_id: str,
-        tool_use: ToolUseBlock,
-        modifiers: t.Optional[Modifiers] = None
+        tool_call: ToolUseBlock,
+        modifiers: t.Optional[Modifiers] = None,
     ) -> ToolExecutionResponse:
-        """Execute a Claude tool call"""
+        """Execute a tool call.
+        
+        :param user_id: User ID to use for executing function calls.
+        :param tool_call: Tool call metadata.
+        :param modifiers: Modifiers to use for executing function calls.
+        :return: Object containing output data from the tool call.
+        """
         return self.execute_tool(
-            slug=tool_use.name,
-            arguments=dict(tool_use.input),
+            slug=tool_call.name,
+            arguments=t.cast(t.Dict, tool_call.input),
             modifiers=modifiers,
-            user_id=user_id
+            user_id=user_id,
         )
-    
-    # Helper method to create a Claude message with tools
-    async def create_message(
+
+    def handle_tool_calls(
         self,
-        prompt: str,
-        tools: list[ToolParam],
-        user_id: str
-    ) -> Message:
-        """Create a message and handle tool calls"""
-        response = self.client.messages.create(
-            model="claude-3-opus-20240229",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-            tools=tools
-        )
+        user_id: str,
+        response: t.Union[dict, ToolsBetaMessage],
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> t.List[ToolExecutionResponse]:
+        """Handle tool calls from Anthropic Claude chat completion object.
         
-        # Process tool calls if any
-        tool_results = []
+        :param response: Chat completion object from
+            `anthropic.Anthropic.beta.tools.messages.create` function call.
+        :param user_id: User ID to use for executing function calls.
+        :param modifiers: Modifiers to use for executing function calls.
+        :return: A list of output objects from the tool calls.
+        """
+        if isinstance(response, dict):
+            response = ToolsBetaMessage(**response)
+
+        outputs = []
         for content in response.content:
-            if content.type == "tool_use":
-                result = self.execute_tool_call(
-                    user_id=user_id,
-                    tool_use=content,
+            if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
+                outputs.append(
+                    self.execute_tool_call(
+                        user_id=user_id,
+                        tool_call=content,
+                        modifiers=modifiers,
+                    )
                 )
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": content.id,
-                    "content": str(result.data)
-                })
-        
-        # Continue conversation with tool results if needed
-        if tool_results:
-            response = self.client.messages.create(
-                model="claude-3-opus-20240229",
-                max_tokens=1024,
-                messages=[
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": response.content},
-                    {"role": "user", "content": tool_results}
-                ],
-                tools=tools
-            )
-        
-        return response
+        return outputs
 ```
 
-## Example: LangChain provider
+## Example: OpenAI Agents provider
 
-Here's an example for LangChain:
+Here's an example for OpenAI Agents framework:
 
 ```python
-import types
-from typing import List, Sequence, Dict, Any
-from inspect import Signature
+import asyncio
+import json
+import typing as t
 
-from langchain_core.tools import StructuredTool
+import pydantic
+from agents import FunctionTool
+
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
-from composio.utils.shared import (
-    get_signature_format_from_schema_params,
-    json_schema_to_model
-)
+from composio.utils.pydantic import parse_pydantic_error
 
-class LangChainProvider(
-    AgenticProvider[StructuredTool, List[StructuredTool]], 
-    name="langchain"
+
+class OpenAIAgentsProvider(
+    AgenticProvider[FunctionTool, list[FunctionTool]],
+    name="openai_agents",
 ):
-    """Provider for LangChain framework"""
-    
-    def _create_tool_function(
-        self,
-        tool_slug: str,
-        description: str,
-        schema_params: Dict,
-        execute_tool: AgenticProviderExecuteFn
-    ):
-        """Create a wrapped function for the tool"""
-        def function(**kwargs: Any) -> Dict:
-            """Wrapper function for composio action"""
-            return execute_tool(tool_slug, kwargs)
-        
-        # Create a new function with proper metadata
-        action_func = types.FunctionType(
-            function.__code__,
-            globals=globals(),
-            name=tool_slug,
-            closure=function.__closure__
-        )
-        action_func.__signature__ = Signature(
-            parameters=get_signature_format_from_schema_params(
-                schema_params=schema_params
-            )
-        )
-        action_func.__doc__ = description
-        return action_func
+    """Provider for OpenAI Agents framework"""
     
     def wrap_tool(
-        self, 
-        tool: Tool, 
-        execute_tool: AgenticProviderExecuteFn
-    ) -> StructuredTool:
-        """Wrap tool as LangChain StructuredTool"""
-        return StructuredTool.from_function(
+        self,
+        tool: Tool,
+        execute_tool: AgenticProviderExecuteFn,
+    ) -> FunctionTool:
+        """Wrap a tool as a FunctionTool"""
+        
+        # Create an async wrapper for the tool execution
+        async def execute_tool_wrapper(_ctx, payload):
+            """Execute Composio action with the given arguments"""
+            try:
+                return json.dumps(
+                    obj=(
+                        await asyncio.to_thread(  # Running in thread since execute_tool is not async
+                            execute_tool,
+                            slug=tool.slug,
+                            arguments=json.loads(payload) if payload else {},
+                        )
+                    )
+                )
+            except pydantic.ValidationError as e:
+                return json.dumps({
+                    "successful": False,
+                    "error": parse_pydantic_error(e),
+                    "data": None,
+                })
+            except Exception as e:
+                return json.dumps({
+                    "successful": False,
+                    "error": str(e),
+                    "data": None,
+                })
+        
+        # Ensure the schema has additionalProperties set to false
+        modified_schema = tool.input_parameters.copy()
+        modified_schema["additionalProperties"] = False
+        
+        # Create a FunctionTool with the appropriate schema
+        return FunctionTool(
             name=tool.slug,
             description=tool.description,
-            args_schema=json_schema_to_model(
-                json_schema=tool.input_parameters,
-                skip_default=True
-            ),
-            func=self._create_tool_function(
-                tool_slug=tool.slug,
-                description=tool.description,
-                schema_params=tool.input_parameters,
-                execute_tool=execute_tool
-            ),
-            handle_tool_error=True
+            params_json_schema=modified_schema,
+            on_invoke_tool=execute_tool_wrapper,
+            strict_json_schema=False,  # Composio tools already have optimal schemas
         )
     
     def wrap_tools(
         self,
-        tools: Sequence[Tool],
-        execute_tool: AgenticProviderExecuteFn
-    ) -> List[StructuredTool]:
-        """Wrap multiple tools for LangChain"""
+        tools: t.Sequence[Tool],
+        execute_tool: AgenticProviderExecuteFn,
+    ) -> list[FunctionTool]:
+        """Wrap multiple tools for OpenAI Agents"""
         return [self.wrap_tool(tool, execute_tool) for tool in tools]
-    
-    # Helper method to create and run an agent
-    def create_agent_executor(self, tools: List[StructuredTool], llm):
-        """Create a LangChain agent with tools"""
-        from langchain.agents import initialize_agent, AgentType
-        
-        return initialize_agent(
-            tools=tools,
-            llm=llm,
-            agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=True
-        )
 ```
 
 ## Best practices
