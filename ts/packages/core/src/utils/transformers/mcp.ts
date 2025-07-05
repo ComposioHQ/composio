@@ -86,6 +86,7 @@ export function transformMcpRetrieveResponse(
     toolkits: response.toolkits,
     tools: (response as unknown as Record<string, unknown>).tools,
     managedAuthViaComposio: response.managed_auth_via_composio,
+    authConfigIds: response.auth_config_ids,
   });
 
   if (!result.success) {
