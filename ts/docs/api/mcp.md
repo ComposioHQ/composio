@@ -29,7 +29,7 @@ const server = await composio.mcp.create(
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAuth: true }
 );
 
 // Create an MCP server with multiple toolkits
@@ -63,7 +63,7 @@ const urls = await server.getServer({
   - `authConfigId`: The auth configuration ID to use
   - `allowedTools`: Array of specific tool IDs to expose
 - `authOptions` (MCPAuthOptions): Optional authentication options
-  - `useComposioManagedAuth`: Whether to use Composio-managed authentication
+  - `isChatAuth`: Whether to use Composio-managed authentication
 
 **Returns:** Promise<McpServerCreateResponse> - Created server details with convenience `getServer` method
 
@@ -91,7 +91,7 @@ const userUrls = await composio.mcp.getServer("server-uuid", {
 const customAuthUrls = await composio.mcp.getServer(
   "server-uuid",
   { userId: "user_123" },
-  { useComposioManagedAuth: false }
+  { isChatAuth: false }
 );
 ```
 
@@ -173,7 +173,7 @@ const updatedServer = await composio.mcp.update(
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL", "GMAIL_CREATE_DRAFT"]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAtuh: true }
 );
 ```
 
@@ -286,7 +286,7 @@ interface MCPToolkitConfig {
 
 ```typescript
 interface MCPAuthOptions {
-  useComposioManagedAuth?: boolean;  // Use Composio-managed authentication
+  isChatAuth?: boolean;  // Use Composio-managed authentication
 }
 ```
 
@@ -364,7 +364,7 @@ const mcpServer = await composio.mcp.create(
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAuth: true }
 );
 
 // Get server URLs for connected accounts

@@ -39,7 +39,7 @@ const mcpConfig = await composio.mcp.create(
       ]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAuth: true }
 );
 
 console.log(`✅ MCP server created: ${mcpConfig.id}`);

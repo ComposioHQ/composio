@@ -527,7 +527,7 @@ describe('MCP', () => {
       mockClient.mcp.update.mockResolvedValue(mockUpdateResponse);
 
       const result = await mcp.update('mcp_123', 'updated-server', updatedConfigs, {
-        useComposioManagedAuth: true,
+        isChatAuth: true,
       });
 
       expect(mockClient.mcp.update).toHaveBeenCalledWith('mcp_123', {

@@ -28,7 +28,7 @@ export const MCPToolkitConfigsArraySchema = z
   }, 'Duplicate toolkits are not allowed. Each toolkit must be unique.');
 
 export const MCPAuthOptionsSchema = z.object({
-  useComposioManagedAuth: z.boolean().optional(),
+  isChatAuth: z.boolean().optional(),
 });
 
 export type MCPAuthOptions = z.infer<typeof MCPAuthOptionsSchema>;
@@ -59,13 +59,13 @@ export type MCPInstanceParams = {
   serverId: string;
   userIds?: string[];
   connectedAccountIds?: string[];
-  useComposioManagedAuth?: boolean;
+  isChatAuth?: boolean;
 };
 
 export const MCPGenerateURLParamsSchema = z.object({
   userIds: z.array(z.string()).optional(),
   connectedAccountIds: z.array(z.string()).optional(),
-  useComposioManagedAuth: z.boolean().optional(),
+  isChatAuth: z.boolean().optional(),
 });
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 

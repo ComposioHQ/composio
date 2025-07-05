@@ -1,8 +1,6 @@
 /**
  * @fileoverview MCP class for Composio SDK, used to manage MCP servers.
  *
- * @author Apoorv Taneja <apoorv@composio.dev>
- * @date 2025-06-12
  * @module MCP
  */
 import ComposioClient from '@composio/client';
@@ -13,7 +11,6 @@ import {
   MCPGetServerParams,
   MCPToolkitConfigsArraySchema,
   MCPAuthOptionsSchema,
-  MCPGetServerParamsSchema,
   ComposioCustomCreateResponseSchema,
   ComposioMcpListResponseSchema,
   McpRetrieveResponseSchema,
@@ -35,10 +32,7 @@ import {
   McpUserConnectionStatus,
   ConnectionStatus,
 } from '../types/mcp.types';
-import {
-  CustomCreateResponse as CustomCreateResponseRaw,
-  GenerateURLParams as GenerateURLParamsRaw,
-} from '@composio/client/resources/mcp';
+import { CustomCreateResponse as CustomCreateResponseRaw } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import {
@@ -107,15 +101,13 @@ export class MCP<T = McpServerGetResponse> {
    *
    * @example
    * ```typescript
-   * const server = await composio.mcp.create({
-   *   serverConfig: [
+   * const server = await composio.mcp.create("personal-mcp-server", [
    *     {
    *       authConfigId: "ac_xyz",
    *       allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"]
    *     }
    *   ],
-   *   options: {
-   *     name: "personal-mcp-server",
+   *   {
    *     isChatAuth: true
    *   }
    * });
@@ -126,20 +118,16 @@ export class MCP<T = McpServerGetResponse> {
    * });
    * ```
    */
-  async create({
-    name,
-    serverConfig,
-    options,
-  }: {
-    name: string;
+  async create(
+    name: string,
     serverConfig: Array<{
       authConfigId: string;
       allowedTools: string[];
-    }>;
+    }>,
     options: {
       isChatAuth?: boolean;
-    };
-  }): Promise<McpServerCreateResponse<T>> {
+    }
+  ): Promise<McpServerCreateResponse<T>> {
     // Validate inputs using Zod schemas
     if (!serverConfig || serverConfig.length === 0) {
       throw new ValidationError('At least one auth config is required', {});
@@ -236,10 +224,7 @@ export class MCP<T = McpServerGetResponse> {
    * @example
    * ```typescript
    * // Check if user can access an MCP server with Gmail and Slack toolkits
-   * const connectionStatus = await composio.mcp.getUserConnectionStatus({
-   *   id: 'mcp-server-uuid',
-   *   userId: 'user123'
-   * });
+   * const connectionStatus = await composio.mcp.getUserConnectionStatus('user123', 'mcp-server-uuid');
    *
    * if (connectionStatus.connected) {
    *   console.log('User can access all required toolkits');
@@ -277,18 +262,15 @@ export class MCP<T = McpServerGetResponse> {
    * }
    * ```
    */
-  async getUserConnectionStatus({
-    id,
-    userId,
-  }: {
-    id: string;
-    userId: string;
-  }): Promise<McpUserConnectionStatus> {
-    const serverDetails = await this.get(id);
+  async getUserConnectionStatus(
+    userId: string,
+    serverId: string
+  ): Promise<McpUserConnectionStatus> {
+    const serverDetails = await this.get(serverId);
 
     if (!serverDetails.toolkits || serverDetails.toolkits.length === 0) {
       throw new ValidationError('MCP server has no toolkits configured', {
-        meta: { serverId: id },
+        meta: { serverId: serverId },
       });
     }
 
@@ -342,14 +324,14 @@ export class MCP<T = McpServerGetResponse> {
     }
   }
 
-  async getConnectionParams({
-    id,
-    toolkit,
-  }: {
-    id: string;
-    toolkit: string;
-  }): Promise<ToolkitAuthFieldsResponse> {
-    const mcpServerDetails = await this.get(id);
+  /**
+   * Get the connection parameters for a toolkit
+   * @param {string} serverId - The UUID of the MCP server
+   * @param {string} toolkit - The toolkit to get connection parameters for
+   * @returns {Promise<ToolkitAuthFieldsResponse>} Connection parameters for the toolkit
+   */
+  async getConnectionParams(serverId: string, toolkit: string): Promise<ToolkitAuthFieldsResponse> {
+    const mcpServerDetails = await this.get(serverId);
     const authConfigs = mcpServerDetails.authConfigIds
       ? await Promise.all(
           mcpServerDetails.authConfigIds.map(id => this.client.authConfigs.retrieve(id))
@@ -359,7 +341,7 @@ export class MCP<T = McpServerGetResponse> {
     const authConfig = authConfigs.find(config => config.toolkit.slug === toolkit);
     if (!authConfig) {
       throw new ValidationError('Auth config not found', {
-        meta: { serverId: id, toolkit },
+        meta: { serverId: serverId, toolkit },
       });
     }
 
@@ -370,63 +352,50 @@ export class MCP<T = McpServerGetResponse> {
     return connectionParams;
   }
 
-  async authorize({
-    id,
-    userId,
-    toolkit,
-  }: {
-    id: string;
-    userId: string;
-    toolkit: string;
-  }): Promise<ConnectionRequest> {
-    const mcpServerDetails = await this.get(id);
+  /**
+   * Authorize a user for a toolkit
+   * @param {string} serverId - The UUID of the MCP server
+   * @param {string} userId - The ID of the user to authorize
+   * @param {string} toolkit - The toolkit to authorize
+   * @returns {Promise<ConnectionRequest>} Connection request for the toolkit
+   */
+  async authorize(userId: string, serverId: string, toolkit: string): Promise<ConnectionRequest> {
+    const mcpServerDetails = await this.get(serverId);
     const authConfigId = mcpServerDetails.authConfigIds?.[0];
     return this.toolkits.authorize(userId, toolkit, authConfigId);
   }
 
   /**
    * Get server URLs for an existing MCP server
-   * @param {Object} params - Parameters for getting server URLs
-   * @param {string} params.id - Server UUID
-   * @param {string} params.userId - User ID to get server URLs for
-   * @param {Object} [params.options] - Additional options for server configuration
-   * @param {string[]} [params.options.limitTools] - Subset of tools to limit (from MCP config)
-   * @param {boolean} [params.options.isChatAuth] - Whether to use chat-based authentication
+   * @param {string} serverId - Server UUID
+   * @param {string} userId - User ID to get server URLs for
+   * @param {Object} [options] - Additional options for server configuration
+   * @param {string[]} [options.limitTools] - Subset of tools to limit (from MCP config)
+   * @param {boolean} [options.isChatAuth] - Whether to use chat-based authentication
    * @returns {Promise<T>} Transformed server URLs in provider-specific format
    *
    * @example
    * ```typescript
    * // Get URLs for an existing server with basic user ID
-   * const urls = await composio.mcp.getServer({
-   *   id: "mcp_xyz",
-   *   userId: "hey@example.com"
-   * });
+   * const urls = await composio.mcp.getServer("mcp_xyz", "hey@example.com");
    *
    * // Get URLs with additional options
-   * const urls = await composio.mcp.getServer({
-   *   id: "mcp_xyz",
-   *   userId: "hey@example.com",
-   *   options: {
-   *     limitTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
-   *     isChatAuth: true
-   *   }
+   * const urls = await composio.mcp.getServer("mcp_xyz", "hey@example.com", {
+   *   limitTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
+   *   isChatAuth: true
    * });
    * ```
    */
-  async getServer({
-    id,
-    userId,
-    options,
-  }: {
-    id: string;
-    userId: string;
+  async getServer(
+    serverId: string,
+    userId: string,
     options?: {
       limitTools?: string[];
       isChatAuth?: boolean;
-    };
-  }): Promise<T> {
+    }
+  ): Promise<T> {
     // Get server details first
-    const serverDetails = await this.get(id);
+    const serverDetails = await this.get(serverId);
 
     // Validate userId is provided
     if (!userId) {
@@ -550,7 +519,7 @@ export class MCP<T = McpServerGetResponse> {
 
   /**
    * Get details of a specific MCP server
-   * @param {string} id - Server UUID
+   * @param {string} serverId - Server UUID
    * @returns {Promise<McpRetrieveResponse>} Server details
    *
    * @example
@@ -558,11 +527,11 @@ export class MCP<T = McpServerGetResponse> {
    * const serverDetails = await composio.mcp.get('server-uuid');
    * ```
    */
-  async get(id: string): Promise<McpRetrieveResponse> {
+  async get(serverId: string): Promise<McpRetrieveResponse> {
     // Retrieve MCP server with error handling
     let retrieveResponse;
     try {
-      retrieveResponse = await this.client.mcp.retrieve(id);
+      retrieveResponse = await this.client.mcp.retrieve(serverId);
     } catch (error) {
       throw new ValidationError('Failed to retrieve MCP server', {
         cause: error,
@@ -583,7 +552,7 @@ export class MCP<T = McpServerGetResponse> {
 
   /**
    * Delete an MCP server
-   * @param {string} id - Server UUID
+   * @param {string} serverId - Server UUID
    * @returns {Promise<McpDeleteResponse>} Deletion response
    *
    * @example
@@ -591,11 +560,11 @@ export class MCP<T = McpServerGetResponse> {
    * const result = await composio.mcp.delete('server-uuid');
    * ```
    */
-  async delete(id: string): Promise<McpDeleteResponse> {
+  async delete(serverId: string): Promise<McpDeleteResponse> {
     // Delete MCP server with error handling
     let deleteResponse;
     try {
-      deleteResponse = await this.client.mcp.delete(id);
+      deleteResponse = await this.client.mcp.delete(serverId);
     } catch (error) {
       throw new ValidationError('Failed to delete MCP server', {
         cause: error,
@@ -635,13 +604,13 @@ export class MCP<T = McpServerGetResponse> {
    *     },
    *   ],
    *   {
-   *     useComposioManagedAuth: true,
+   *     isChatAuth: true,
    *   }
    * );
    * ```
    */
   async update(
-    id: string,
+    serverId: string,
     name: string,
     toolkitConfigs: MCPToolkitConfig[],
     authOptions?: MCPAuthOptions
@@ -654,11 +623,11 @@ export class MCP<T = McpServerGetResponse> {
     // Update MCP server with error handling
     let updateResponse;
     try {
-      updateResponse = await this.client.mcp.update(id, {
+      updateResponse = await this.client.mcp.update(serverId, {
         name,
         toolkits: toolkits,
         allowed_tools: toolkitConfigs.flatMap(config => config.allowedTools),
-        managed_auth_via_composio: authOptions?.useComposioManagedAuth || false,
+        managed_auth_via_composio: authOptions?.isChatAuth || false,
       });
     } catch (error) {
       throw new ValidationError('Failed to update MCP server', {
@@ -680,20 +649,20 @@ export class MCP<T = McpServerGetResponse> {
 
   /**
    * Generate URL for an MCP server
+   * @param {string} serverId - Server UUID
    * @param {GenerateURLParams} params - Parameters for URL generation
    * @returns {Promise<GenerateURLResponse>} Generated URL response
    *
    * @example
    * ```typescript
-   * const urlResponse = await composio.mcp.generateUrl({
+   * const urlResponse = await composio.mcp.generateUrl('server-uuid', {
    *   userIds: ['user123'],
    *   connectedAccountIds: ['account456'],
-   *   mcpServerId: 'server-uuid',
-   *   composioManagedAuth: true
+   *   isChatAuth: true
    * });
    * ```
    */
-  async generateUrl(params: GenerateURLParams): Promise<GenerateURLResponse> {
+  async generateUrl(serverId: string, params: GenerateURLParams): Promise<GenerateURLResponse> {
     // Validate parameters using Zod schema (snake_case)
     const paramsResult = GenerateURLParamsSchema.safeParse(params);
     if (paramsResult.error) {
@@ -706,7 +675,7 @@ export class MCP<T = McpServerGetResponse> {
     let urlResponse;
     try {
       urlResponse = await this.client.mcp.generate.url({
-        mcp_server_id: params.mcpServerId,
+        mcp_server_id: serverId,
         user_ids: params.userIds,
         connected_account_ids: params.connectedAccountIds,
         managed_auth_by_composio: params.composioManagedAuth,
@@ -806,8 +775,8 @@ export class MCP<T = McpServerGetResponse> {
    * const serverDetails = await composio.mcp.getByName('my-gmail-server');
    * ```
    */
-  async getByName(name: string): Promise<McpRetrieveResponse> {
-    if (!name) {
+  async getByName(serverName: string): Promise<McpRetrieveResponse> {
+    if (!serverName) {
       throw new ValidationError('Server name is required', {});
     }
 
@@ -815,7 +784,7 @@ export class MCP<T = McpServerGetResponse> {
     let listResponse;
     try {
       listResponse = await this.client.mcp.list({
-        name: name,
+        name: serverName,
         limit: 10,
       });
     } catch (error) {
@@ -835,8 +804,8 @@ export class MCP<T = McpServerGetResponse> {
     const servers = listResponse.items || [];
 
     if (servers.length === 0) {
-      throw new ValidationError(`MCP server with name '${name}' not found`, {
-        meta: { serverName: name },
+      throw new ValidationError(`MCP server with name '${serverName}' not found`, {
+        meta: { serverName: serverName },
       });
     }
 

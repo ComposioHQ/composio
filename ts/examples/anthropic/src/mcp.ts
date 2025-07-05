@@ -41,7 +41,7 @@ async function main() {
         ]
       }
     ],
-    { useComposioManagedAuth: true }
+    { isChatAuth: true }
   );
 
   console.log(`✅ MCP server created: ${mcpConfig.id}`);

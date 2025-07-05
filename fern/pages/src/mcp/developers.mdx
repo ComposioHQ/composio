@@ -155,7 +155,7 @@ const updatedServer = await composio.mcp.update(
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAuth: true }
 );
 ```
 
@@ -203,20 +203,18 @@ Pre-authentication is recommended for production applications as it provides bet
 
 ## Best Practices
 
-1. **Use meaningful server names** - This helps with organization and makes servers easier to find
-2. **Limit tools appropriately** - Only include the tools your users actually need
-3. **Check connection status** - Always verify user authentication before using server URLs
-4. **Handle authentication gracefully** - Provide clear instructions when users need to authenticate
-5. **Use the convenience methods** - The `getServer` method on create responses simplifies URL generation
+1. **Use meaningful server names** - This helps with organization and makes servers easier to find.
+2. **Limit tools appropriately** - Only include the tools your users actually need.
+3. **Check connection status** - Always verify user authentication before using server URLs.
+4. **Handle authentication gracefully** - Provide clear instructions when users need to authenticate.
+5. **Use the convenience methods** - The `getServer` method on create responses simplifies URL generation.
 
 <Warning>
 SSE support is deprecated. If you're using `/sse` endpoints or `transport=sse` query parameters, migrate to the standard `/mcp` endpoints.
 </Warning>
 
-### Configuring authentication
-You or your users need to authenticate against an app to use its MCP server through Composio!
-This can be done in two ways:
+### Configuring Authentication
+You or your users need to authenticate against an app to use its MCP server through Composio. This can be done in two ways:
 
 * Authenticate users upfront via the Composio SDK/API. Follow [custom auth configs](/docs/custom-auth-configs) to learn how to connect users. This is recommended for most use cases.
-* Let the agent authenticate users on demand. Passing `include_composio_helper_actions=true` in the URL will include Composio's helper actions and the agent will guide the user through auth on demand.
-
+* Let the agent authenticate users on demand. Passing `include_composio_helper_actions=true` in the URL will include Composio's helper actions, and the agent will guide the user through authentication on demand.
