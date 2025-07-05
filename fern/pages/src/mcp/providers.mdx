@@ -186,7 +186,103 @@ console.log("\n✅ Gmail MCP example completed successfully!");
 
 ---
 
-## 3. OpenAI SDK Provider
+## 3. Vercel AI SDK Provider
+
+The **Vercel AI SDK Provider** supports both traditional tool calling and Model Context Protocol (MCP) integration through `experimental_createMCPClient`. This provider transforms Composio MCP server URLs into the SSE format expected by Vercel AI SDK, enabling seamless integration with `generateText`, `streamText`, and other Vercel AI SDK functions.
+
+<CodeGroup>
+  <CodeGroupItem title="TypeScript">
+
+```typescript
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
+import { experimental_createMCPClient, generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Initialize Composio with the Vercel provider (includes MCP support)
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+// Create an MCP server with the Gmail toolkit
+const mcpConfig = await composio.mcp.create(
+"Gmail MCP Server",
+[
+  {
+    toolkit: "gmail",
+    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+    authConfigId: "<auth_config_id>"
+  },
+],
+{ useComposioManagedAuth: true }
+);
+
+console.log(`✅ MCP server created: ${mcpConfig.id}`);
+console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(", ")}`);
+
+// Get MCP server URLs for connected accounts
+const serverUrls = await mcpConfig.getServer({
+  userId: "utkarsh-dixit"
+});
+
+console.log("Server URLs for connected accounts:", serverUrls);
+
+// Create MCP clients for each server URL
+const clients = [];
+const toolSets = [];
+
+try {
+  for (const serverConfig of serverUrls) {
+    const client = await experimental_createMCPClient({
+      transport: {
+        type: serverConfig.type,
+        url: serverConfig.url,
+      },
+    });
+    
+    clients.push(client);
+    
+    // Get tools from this client
+    const tools = await client.tools();
+    toolSets.push(tools);
+  }
+
+  // Combine tools from all clients
+  const allTools = toolSets.reduce((acc, tools) => ({ ...acc, ...tools }), {});
+
+  console.log("\n=== Fetching and Summarizing Recent Emails ===");
+
+  // Use with Vercel AI SDK to fetch and summarize emails
+  const response = await generateText({
+    model: openai('gpt-4o'),
+    tools: allTools,
+    maxSteps: 3,
+    messages: [
+      {
+        role: 'user',
+        content: 'Fetch my latest 5 emails and provide a brief summary of each, including sender, subject, and main topic.',
+      },
+    ],
+  });
+
+  console.log("\n📧 Email Summary:");
+  console.log(response.text);
+
+  console.log("\n✅ Vercel MCP example completed successfully!");
+
+} finally {
+  // Important: Close all MCP clients to clean up resources
+  await Promise.all(clients.map(client => client.close()));
+}
+```
+
+  </CodeGroupItem>
+</CodeGroup>
+
+---
+
+## 4. OpenAI SDK Provider
 
 The **OpenAI SDK Provider** is designed for use with the OpenAI SDK and supports MCP tools through a streamlined client. This client provides a `getServer` method to obtain the Composio MCP Server URL, configured for your user.
 
@@ -241,4 +337,4 @@ console.log(`📍 Server ID for future reference: ${mcpConfig.id}`);
 
 ---
 
-By using Composio MCP Servers, you can quickly connect your agent framework to a wide range of external tools with minimal effort. This lets you streamline integration, reduce setup time, and focus more on building your AI agent.
+By using Composio MCP Servers with these specialized providers, you can quickly connect your agent framework to a wide range of external tools with minimal effort. Whether you're using Anthropic Claude, Mastra, Vercel AI SDK, or OpenAI, each provider is optimized for your specific framework, letting you streamline integration, reduce setup time, and focus more on building your AI agent.

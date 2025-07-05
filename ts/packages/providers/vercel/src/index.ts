@@ -22,7 +22,28 @@ import { jsonSchema, tool } from 'ai';
 import { z } from 'zod';
 
 export type VercelToolCollection = Record<string, VercelTool>;
-export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
+
+/**
+ * Vercel MCP server URL format
+ * Uses SSE transport format as expected by Vercel AI SDK
+ */
+export interface VercelMcpServerUrl {
+  type: 'sse';
+  url: string;
+  name?: string;
+}
+
+/**
+ * Vercel-specific MCP server response format
+ * Returns URLs that can be used with experimental_createMCPClient
+ */
+export type VercelMcpServerResponse = VercelMcpServerUrl[];
+
+export class VercelProvider extends BaseAgenticProvider<
+  VercelToolCollection,
+  VercelTool,
+  VercelMcpServerResponse
+> {
   readonly name = 'vercel';
 
   /**
@@ -30,13 +51,14 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    *
    * This provider enables integration with the Vercel AI SDK,
    * allowing Composio tools to be used with Vercel AI applications.
+   * It also supports Model Context Protocol (MCP) integration through experimental_createMCPClient.
    *
    * @example
    * ```typescript
    * // Initialize the Vercel provider
    * const provider = new VercelProvider();
    *
-   * // Use with Composio
+   * // Use with Composio for traditional tool calling
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
    *   provider: new VercelProvider()
@@ -44,6 +66,11 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    *
    * // Use the provider to wrap tools for Vercel AI SDK
    * const vercelTools = provider.wrapTools(composioTools, composio.tools.execute);
+   *
+   * // For MCP integration:
+   * const mcpConfig = await composio.mcp.create(...);
+   * const serverUrls = await mcpConfig.getServer({ userId: "user-id" });
+   * const client = await experimental_createMCPClient({ transport: serverUrls[0] });
    * ```
    */
   constructor() {
@@ -181,18 +208,17 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
   }
 
   /**
-   * Transform MCP URL response into Anthropic-specific format.
-   * By default, Anthropic uses the standard format (same as default),
-   * but this method is here to show providers can customize if needed.
+   * Transform MCP URL response into Vercel AI SDK-specific format.
+   * Returns URLs that can be used directly with experimental_createMCPClient.
    *
-   * @param data - The MCP URL response data
-   * @returns Standard MCP server response format
+   * @param data - The MCP URL response data from Composio
+   * @returns Vercel-specific MCP server response format with SSE transport URLs
    */
-  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
-    // Anthropic uses the standard format
+  wrapMcpServerResponse(data: McpUrlResponse): VercelMcpServerResponse {
     return data.map(item => ({
-      url: new URL(item.url),
+      type: 'sse',
+      url: item.url,
       name: item.name,
-    })) as McpServerGetResponse;
+    }));
   }
 }
