@@ -100,6 +100,15 @@ const createMockClient = () => ({
     delete: vi.fn(),
     update: vi.fn(),
   },
+  authConfigs: {
+    retrieve: vi.fn(),
+  },
+  connectedAccounts: {
+    list: vi.fn(),
+  },
+  toolkits: {
+    retrieve: vi.fn(),
+  },
 });
 
 // Mock response data
@@ -207,19 +216,31 @@ describe('MCP', () => {
   });
 
   describe('create', () => {
-    const toolkitConfigs = [
+    const serverConfig = [
       {
-        toolkit: 'gmail',
         authConfigId: 'ac_gmail123',
         allowedTools: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
       },
     ];
 
+    beforeEach(() => {
+      // Mock authConfigs.retrieve to return toolkit information
+      mockClient.authConfigs.retrieve.mockResolvedValue({
+        id: 'ac_gmail123',
+        toolkit: { slug: 'gmail' },
+        auth_scheme: 'OAUTH2',
+      });
+    });
+
     it('should create an MCP server successfully', async () => {
       mockClient.mcp.custom.create.mockResolvedValue(mockCreateResponse);
 
-      const result = await mcp.create('test-server', toolkitConfigs, {
-        useComposioManagedAuth: true,
+      const result = await mcp.create({
+        name: 'test-server',
+        serverConfig,
+        options: {
+          isChatAuth: true,
+        },
       });
 
       expect(mockClient.mcp.custom.create).toHaveBeenCalledWith({
@@ -240,53 +261,44 @@ describe('MCP', () => {
       expect(typeof result.getServer).toBe('function');
     });
 
-    it('should validate toolkit configurations', async () => {
-      const invalidConfigs = [
-        {
-          toolkit: '', // Empty toolkit
-          authConfigId: 'ac_123',
-          allowedTools: ['TOOL_1'],
-        },
-      ];
+    it('should validate server configuration', async () => {
+      const invalidConfigs: any[] = []; // Empty array
 
-      await expect(mcp.create('test-server', invalidConfigs)).rejects.toThrow(ValidationError);
+      await expect(
+        mcp.create({
+          name: 'test-server',
+          serverConfig: invalidConfigs,
+          options: {
+            isChatAuth: true,
+          },
+        })
+      ).rejects.toThrow('At least one auth config is required');
     });
 
-    it('should validate auth options', async () => {
-      const invalidAuthOptions = {
-        useComposioManagedAuth: 'true' as unknown as boolean, // Should be boolean
-      };
-
-      await expect(mcp.create('test-server', toolkitConfigs, invalidAuthOptions)).rejects.toThrow(
-        ValidationError
-      );
-    });
-
-    it('should throw ValidationError when duplicate toolkits are provided', async () => {
-      const duplicateConfigs = [
-        {
-          toolkit: 'gmail',
-          authConfigId: 'ac_gmail123',
-          allowedTools: ['GMAIL_FETCH_EMAILS'],
-        },
-        {
-          toolkit: 'gmail',
-          authConfigId: 'ac_gmail456',
-          allowedTools: ['GMAIL_SEND_EMAIL'],
-        },
-      ];
-
-      await expect(mcp.create('test-server', duplicateConfigs)).rejects.toThrow(
-        'Duplicate toolkits are not allowed'
-      );
+    it('should validate server name', async () => {
+      await expect(
+        mcp.create({
+          name: '',
+          serverConfig,
+          options: {
+            isChatAuth: true,
+          },
+        })
+      ).rejects.toThrow('Server name is required');
     });
 
     it('should handle server creation errors', async () => {
       mockClient.mcp.custom.create.mockRejectedValue(new Error('Server creation failed'));
 
-      await expect(mcp.create('test-server', toolkitConfigs)).rejects.toThrow(
-        'Failed to create MCP server'
-      );
+      await expect(
+        mcp.create({
+          name: 'test-server',
+          serverConfig,
+          options: {
+            isChatAuth: true,
+          },
+        })
+      ).rejects.toThrow('Failed to create MCP server');
     });
   });
 
@@ -303,20 +315,26 @@ describe('MCP', () => {
         tools: mockRetrieveResponse.tools,
         managedAuthViaComposio: mockRetrieveResponse.managed_auth_via_composio,
       });
+
+      // Mock connectedAccounts.list
+      mockClient.connectedAccounts.list.mockResolvedValue({
+        items: [
+          { id: 'account_123', toolkit: { slug: 'gmail' } },
+          { id: 'account_456', toolkit: { slug: 'github' } },
+        ],
+      });
     });
 
-    it('should get server URLs with connected account IDs', async () => {
+    it('should get server URLs with user ID', async () => {
       mockClient.mcp.generate.url.mockResolvedValue(mockGenerateUrlResponse);
 
-      const result = await mcp.getServer('mcp_123', {
-        connectedAccountIds: {
-          gmail: 'account_123',
-          github: 'account_456',
-        },
+      const result = await mcp.getServer({
+        id: 'mcp_123',
+        userId: 'user_123',
       });
 
       expect(mockClient.mcp.generate.url).toHaveBeenCalledWith({
-        user_ids: [],
+        user_ids: ['user_123'],
         connected_account_ids: ['account_123', 'account_456'],
         mcp_server_id: 'mcp_123',
         managed_auth_by_composio: true,
@@ -325,44 +343,33 @@ describe('MCP', () => {
       expect(result).toBeDefined();
     });
 
-    it('should get server URLs with user ID', async () => {
+    it('should get server URLs with options', async () => {
       mockClient.mcp.generate.url.mockResolvedValue(mockGenerateUrlResponse);
 
-      const result = await mcp.getServer('mcp_123', {
+      const result = await mcp.getServer({
+        id: 'mcp_123',
         userId: 'user_123',
+        options: {
+          limitTools: ['GMAIL_FETCH_EMAILS'],
+          isChatAuth: false,
+        },
       });
 
       expect(mockClient.mcp.generate.url).toHaveBeenCalledWith({
         user_ids: ['user_123'],
-        connected_account_ids: [],
+        connected_account_ids: ['account_123', 'account_456'],
         mcp_server_id: 'mcp_123',
-        managed_auth_by_composio: true,
+        managed_auth_by_composio: false,
       });
     });
 
-    it('should validate that either userId or connectedAccountIds is provided', async () => {
-      await expect(mcp.getServer('mcp_123', {})).rejects.toThrow(
-        'Must provide either userId or connectedAccountIds, but not both'
-      );
-    });
-
-    it('should validate that both userId and connectedAccountIds are not provided', async () => {
+    it('should validate that userId is provided', async () => {
       await expect(
-        mcp.getServer('mcp_123', {
-          userId: 'user_123',
-          connectedAccountIds: { gmail: 'account_123' },
+        mcp.getServer({
+          id: 'mcp_123',
+          userId: '',
         })
-      ).rejects.toThrow('Must provide either userId or connectedAccountIds, but not both');
-    });
-
-    it('should validate toolkit names in connectedAccountIds', async () => {
-      await expect(
-        mcp.getServer('mcp_123', {
-          connectedAccountIds: {
-            slack: 'account_123', // Not in server's toolkits
-          },
-        })
-      ).rejects.toThrow('Invalid toolkits provided: slack');
+      ).rejects.toThrow('User ID is required');
     });
 
     it('should use custom provider transformation', async () => {
@@ -386,7 +393,8 @@ describe('MCP', () => {
       };
       mockClient.mcp.generate.url.mockResolvedValue(singleUserResponse);
 
-      const result = await mcpWithProvider.getServer('mcp_123', {
+      const result = await mcpWithProvider.getServer({
+        id: 'mcp_123',
         userId: 'user_123',
       });
 
@@ -615,15 +623,20 @@ describe('MCP', () => {
       mockClient.mcp.retrieve.mockResolvedValue(mockRetrieveResponse);
       mockClient.mcp.generate.url.mockResolvedValue(mockGenerateUrlResponse);
 
-      const toolkitConfigs = [
+      const serverConfig = [
         {
-          toolkit: 'gmail',
           authConfigId: 'ac_gmail123',
           allowedTools: ['GMAIL_FETCH_EMAILS'],
         },
       ];
 
-      const server = await mcp.create('test-server', toolkitConfigs);
+      const server = await mcp.create({
+        name: 'test-server',
+        serverConfig,
+        options: {
+          isChatAuth: true,
+        },
+      });
 
       // Mock the internal get call
       vi.spyOn(mcp, 'get').mockResolvedValue({
@@ -637,8 +650,13 @@ describe('MCP', () => {
         managedAuthViaComposio: mockRetrieveResponse.managed_auth_via_composio,
       });
 
+      // Mock connectedAccounts.list for the convenience method
+      mockClient.connectedAccounts.list.mockResolvedValue({
+        items: [{ id: 'account_123', toolkit: { slug: 'gmail' } }],
+      });
+
       const urls = await server.getServer({
-        connectedAccountIds: { gmail: 'account_123' },
+        userId: 'user123',
       });
 
       expect(urls).toBeDefined();
@@ -647,32 +665,35 @@ describe('MCP', () => {
   });
 
   describe('validation error messages', () => {
-    it('should provide meaningful error messages for toolkit config validation', async () => {
-      const invalidConfigs = [
+    it('should provide meaningful error messages for empty auth config', async () => {
+      await expect(
+        mcp.create({
+          name: 'test-server',
+          serverConfig: [],
+          options: {
+            isChatAuth: true,
+          },
+        })
+      ).rejects.toThrow('At least one auth config is required');
+    });
+
+    it('should provide meaningful error messages for empty server name', async () => {
+      const serverConfig = [
         {
-          toolkit: 'gmail',
-          authConfigId: '', // Empty auth config ID
+          authConfigId: 'ac_123',
           allowedTools: ['GMAIL_FETCH_EMAILS'],
         },
       ];
 
-      await expect(mcp.create('test-server', invalidConfigs)).rejects.toThrow(
-        'Auth config ID cannot be empty'
-      );
-    });
-
-    it('should provide meaningful error messages for empty allowed tools', async () => {
-      const invalidConfigs = [
-        {
-          toolkit: 'gmail',
-          authConfigId: 'ac_123',
-          allowedTools: [], // Empty tools array
-        },
-      ];
-
-      await expect(mcp.create('test-server', invalidConfigs)).rejects.toThrow(
-        'At least one tool must be specified'
-      );
+      await expect(
+        mcp.create({
+          name: '',
+          serverConfig,
+          options: {
+            isChatAuth: true,
+          },
+        })
+      ).rejects.toThrow('Server name is required');
     });
   });
 });

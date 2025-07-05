@@ -374,15 +374,22 @@ export class Toolkits {
    * const connectionRequest = await composio.toolkits.authorize(userId, 'github');
    * ```
    */
-  async authorize(userId: string, toolkitSlug: string): Promise<ConnectionRequest> {
+  async authorize(
+    userId: string,
+    toolkitSlug: string,
+    authConfigId?: string
+  ): Promise<ConnectionRequest> {
     const toolkit = await this.getToolkitBySlug(toolkitSlug);
     const composioAuthConfig = new AuthConfigs(this.client);
-    let authConfigIdToUse: string;
-    const authConfig = await composioAuthConfig.list({
-      toolkit: toolkitSlug,
-    });
-    // pick the first auth config
-    authConfigIdToUse = authConfig.items[0]?.id;
+    let authConfigIdToUse: string | undefined = authConfigId;
+
+    if (!authConfigIdToUse) {
+      const authConfig = await composioAuthConfig.list({
+        toolkit: toolkitSlug,
+      });
+      // pick the first auth config if none is passed
+      authConfigIdToUse = authConfig.items[0]?.id;
+    }
 
     // if no auth config is found, create one for the toolkit
     if (!authConfigIdToUse) {

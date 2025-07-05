@@ -202,6 +202,36 @@ export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateRes
   getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
+export enum ConnectionStatus {
+  CONNECTED = 'CONNECTED',
+  DISCONNECTED = 'DISCONNECTED',
+}
+
+export type McpToolkitConnectionStatus =
+  | {
+      type: ConnectionStatus.CONNECTED;
+      connected: true;
+      toolkit: string;
+      connectedAccountId: string;
+    }
+  | {
+      type: ConnectionStatus.DISCONNECTED;
+      connected: false;
+      toolkit: string;
+    };
+
+export type McpUserConnectionStatus =
+  | {
+      type: ConnectionStatus.CONNECTED;
+      connected: true;
+      connectedToolkits: Record<string, McpToolkitConnectionStatus>;
+    }
+  | {
+      type: ConnectionStatus.DISCONNECTED;
+      connected: false;
+      connectedToolkits: Record<string, McpToolkitConnectionStatus>;
+    };
+
 // CamelCase create response schema
 export const CustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
@@ -263,6 +293,7 @@ export const McpRetrieveResponseSchema = z.object({
   toolkits: z.array(z.string()).optional(),
   tools: z.array(z.string()).optional(),
   managedAuthViaComposio: z.boolean().optional(),
+  authConfigIds: z.array(z.string()).optional(),
 });
 
 // Snake_case retrieve response schema (for API)
