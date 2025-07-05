@@ -28,6 +28,7 @@ import {
 } from '../types/authConfigs.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
+import logger from '../utils/logger';
 /**
  * AuthConfigs class
  *
@@ -66,7 +67,7 @@ export class AuthConfigs {
   private parseAuthConfigRetrieveResponse(
     authConfig: ComposioAuthConfigRetrieveResponse
   ): AuthConfigRetrieveResponse {
-    const result = AuthConfigRetrieveResponseSchema.safeParse({
+    const responseToParse = {
       id: authConfig.id,
       name: authConfig.name,
       noOfConnections: authConfig.no_of_connections,
@@ -84,11 +85,13 @@ export class AuthConfigs {
       createdAt: authConfig.created_at,
       lastUpdatedAt: authConfig.last_updated_at,
       restrictToFollowingTools: authConfig.restrict_to_following_tools,
-    });
+    };
+    const result = AuthConfigRetrieveResponseSchema.safeParse(responseToParse);
     if (result.error) {
-      throw new ValidationError('Failed to parse auth config response', {
+      logger.error('Failed to parse auth config response', {
         cause: result.error,
       });
+      return responseToParse as AuthConfigRetrieveResponse;
     }
     return result.data;
   }

@@ -101,11 +101,7 @@ export const ConnectedAccountListParamsSchema = z.object({
     .nullable()
     .optional()
     .describe('The auth config ids of the connected accounts'),
-  cursor: z
-    .number()
-    .nullable()
-    .optional()
-    .describe('The cursor to paginate through the connected accounts'),
+  cursor: z.string().nullish().describe('The cursor to paginate through the connected accounts'),
   labels: z
     .array(z.string())
     .nullable()
@@ -138,7 +134,7 @@ export const ConnectedAccountListResponseSchema = z.object({
   items: z.array(ConnectedAccountRetrieveResponseSchema).describe('The list of connected accounts'),
   nextCursor: z
     .string()
-    .nullable()
+    .nullish()
     .describe('The next cursor to paginate through the connected accounts'),
   totalPages: z.number().describe('The total number of pages of connected accounts'),
 });

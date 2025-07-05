@@ -398,9 +398,9 @@ export class Tools<
     }
 
     // if tools are provided, set the limit to 9999 so that all tools are fetched
-    let limit = 'limit' in queryParams.data ? queryParams.data.limit?.toString() : undefined;
+    let limit = 'limit' in queryParams.data ? queryParams.data.limit : undefined;
     if ('tools' in queryParams.data) {
-      limit = '9999';
+      limit = 9999;
     }
 
     const filters: ComposioToolListParams = {

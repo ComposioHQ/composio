@@ -167,7 +167,7 @@ export type TriggerType = z.infer<typeof TriggerTypeSchema>;
 
 export const TriggersTypeListResponseSchema = z.object({
   items: z.array(TriggerTypeSchema),
-  nextCursor: z.string().nullable(),
+  nextCursor: z.string().nullish(),
   totalPages: z.number(),
 });
 
