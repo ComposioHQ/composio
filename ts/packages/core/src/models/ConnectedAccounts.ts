@@ -12,6 +12,7 @@ import {
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
+  ConnectedAccountCreateParams as ConnectedAccountCreateParamsRaw,
 } from '@composio/client/resources/connected-accounts';
 import {
   CreateConnectedAccountOptions,
@@ -28,6 +29,13 @@ import { telemetry } from '../telemetry/Telemetry';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 import { ComposioMultipleConnectedAccountsError } from '../errors';
 import logger from '../utils/logger';
+import { AuthSchemeType } from '../types/authConfigs.types';
+import { AuthScheme } from './AuthScheme';
+import {
+  ConnectionData,
+  ConnectionDataSchema,
+  ConnectionStatuses,
+} from '../types/connectedAccountAuthStates.types';
 /**
  * ConnectedAccounts class
  *
@@ -174,6 +182,19 @@ export class ConnectedAccounts {
       );
     }
 
+    const state: ConnectionData | undefined = options?.config ?? undefined;
+    // @TODO: Commenting this out. This is a temporary fix to allow api_key to be optional, in future ideally we should fix this from API side
+
+    // if (options?.config) {
+    //   const connectionDataParsed = ConnectionDataSchema.safeParse(options.config);
+    //   if (!connectionDataParsed.success) {
+    //     throw new ValidationError('Failed to parse connection data', {
+    //       cause: connectionDataParsed.error,
+    //     });
+    //   }
+    //   state = connectionDataParsed.data;
+    // }
+
     const response = await this.client.connectedAccounts.create({
       auth_config: {
         id: authConfigId,
@@ -181,8 +202,11 @@ export class ConnectedAccounts {
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
+        state,
       },
-    });
+      // @TODO: This is a temporary fix to allow api_key to be optional, in future ideally we should fix this from API side
+    } as ConnectedAccountCreateParamsRaw);
+
     const redirectUrl =
       typeof response.connectionData?.val?.redirectUrl === 'string'
         ? response.connectionData.val.redirectUrl

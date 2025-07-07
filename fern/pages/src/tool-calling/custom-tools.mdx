@@ -75,14 +75,14 @@ const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
   name: 'Github star composio repositories',
   toolkitSlug: 'github',
-  description: 'Star any specificied repo of `composiohq` user',
+  description: 'Star any specified repo of `composiohq` user',
   inputParams: z.object({
     repository: z.string().describe('The repository to star'),
     page: z.number().optional().describe('Pagination page number'),
     customHeader: z.string().optional().describe('Custom header'),
   }),
   execute: async (input, connectionConfig, executeToolRequest) => {
-    // This method makes authenticated requests to relevant API
+    // This method makes authenticated requests to the relevant API
     // You can use relative paths!
     // Composio will automatically inject the baseURL
     const result = await executeToolRequest({

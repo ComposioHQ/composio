@@ -1,0 +1,23 @@
+[project]
+name = "composio-autogen"
+version = "1.0.0-rc9"
+description = "Use Composio to get an array of tools with your autogen agent."
+readme = "README.md"
+requires-python = ">=3.9,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyautogen>=0.2.19",
+    "flaml==2.2.0",
+    "autogen_core>=0.4.0",
+    "autogen_agentchat>=0.4.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"

@@ -4,6 +4,8 @@ import functools
 import time
 import typing as t
 
+import typing_extensions as te
+
 from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import (
@@ -66,6 +68,15 @@ class ConnectionRequest(Resource):
 
         raise exceptions.ComposioSDKTimeoutError(
             message=f"Timeout while waiting for connection {self.id} to be active",
+        )
+
+    @classmethod
+    def from_id(cls, id: str, client: HttpClient) -> te.Self:
+        return cls(
+            id=id,
+            status=client.connected_accounts.retrieve(nanoid=id).status,
+            redirect_url=None,
+            client=client,
         )
 
 
@@ -325,10 +336,10 @@ class ConnectedAccounts:
         """
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
-            connection["callback_url"] = connection
+            connection["callback_url"] = callback_url
 
         if config is not None:
-            connection["state"] = connection
+            connection["state"] = config
 
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
@@ -339,6 +350,20 @@ class ConnectedAccounts:
             status=response.connection_data.val.status,
             redirect_url=getattr(response.connection_data.val, "redirect_url", None),
             client=self._client,
+        )
+
+    def wait_for_connection(
+        self,
+        id: str,
+        timeout: t.Optional[float] = None,
+    ) -> connected_account_retrieve_response.ConnectedAccountRetrieveResponse:
+        """
+        Wait for connected account with given ID to be active
+        """
+        return ConnectionRequest.from_id(
+            id=id, client=self._client
+        ).wait_for_connection(
+            timeout=timeout,
         )
 
 

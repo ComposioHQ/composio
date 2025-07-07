@@ -1,5 +1,29 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10-next.3
+
+### Patch Changes
+
+- 06612f5: Downgrade chalk to v4 to allow CJS as well
+
+## 0.1.10-next.2
+
+### Patch Changes
+
+- Downgrade chalk to v4 to allow CJS as well
+
+## 0.1.10-next.1
+
+### Patch Changes
+
+- Fix issues with objects with default values being marked as required
+
+## 0.1.10-next.0
+
+### Patch Changes
+
+- Fix issues with json schema to zod parsing causing nested objects to be marked as required
+
 ## 0.1.9
 
 ### Patch Changes

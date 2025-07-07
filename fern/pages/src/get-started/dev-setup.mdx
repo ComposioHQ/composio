@@ -7,37 +7,51 @@ keywords: ''
 hide-nav-links: false
 ---
 
-This guide explains how to setup your IDE, and coding agents to help you ship faster with Composio.
+This comprehensive guide explains how to set up your IDE and coding agents to help you ship faster with Composio. We'll cover optimal configurations for popular editors and AI coding assistants.
 
-## Index docs
-Cursor can index docs which is a great way to ask questions about Composio and building with our SDKs.
+## Cursor
+Cursor is an AI-powered code editor that can significantly accelerate your development with Composio. Here's how to set it up optimally.
+
+### Index Documentation
+Cursor can index documentation, making it easy to ask questions about Composio and get contextual answers while coding.
 
 <Frame>
   <img src="../../../assets/images/index-docs.png" alt="Index docs" />
 </Frame>
 
-Once indexed, you can ask questions!
+### To index Composio documentation:
 
+1. Open Cursor Settings (Shift + Cmd/Ctrl + J)
+2. Navigate to "Features" → "Codebase indexing"
+3. Add the Composio documentation URLs:
+
+- https://v3.docs.composio.dev
+- https://github.com/ComposioHQ/composio (for source code reference)
+
+Once indexed, you can ask questions directly in the chat!
 <Frame>
   <img src="../../../assets/images/ask-index-docs.png" alt="Index docs question" />
 </Frame>
 
 
-## Optimise Cursor
-
-To optimize your experience building with Composio, you can add also instructions to Cursor's system settings. We recommend adding the below prompt to the project rules.
+### Optimize Cursor with Custom Rules
+To get the best experience building with Composio, add custom instructions to Cursor's AI system. This helps the AI understand Composio's patterns and best practices.
 
 <Frame>
   <img src="../../../assets/images/cursor-settings.png" alt="Cursor settings" />
 </Frame>
 
-You can add the following to your Cursor "Rules for AI" to help you build with Composio.
+**To add custom rules:**
+
+1. Open Cursor Settings (Shift + Cmd/Ctrl + J)
+2. Go to "General" → "Rules for AI"
+3. Add the appropriate prompt below based on your language
 
 <CodeGroup>
 ```md TypeScript
 You are the best TypeScript developer known for your high taste and usage of new and cutting-edge practices.
-You are building with Composio's TypeScript SDK. Composio is platform for building with authenticated tools for AI agents and workflows.
-It lets you build agents that that can work across a user's apps like Gmail, Notion, Slack.
+You are building with Composio's TypeScript SDK. Composio is a platform for building with authenticated tools for AI agents and workflows.
+It lets you build agents that can work across a user's apps like Gmail, Notion, Slack.
 
 Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
 [Composio Documentation](https://v3.docs.composio.dev)
@@ -47,12 +61,12 @@ Below is a list of Composio documentation. Use your web and fetch capabilities t
 - [Providers](https://v3.docs.composio.dev/docs/providers.mdx)
 - [Executing Tools](https://v3.docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
 - [Authenticating Tools](https://v3.docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
-- [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolsets
+- [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolkits
 - [Schema Modifiers](https://v3.docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
 - [Before Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
 - [After Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
 - [Creating custom tools](https://v3.docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
-- [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customising auth configs for a toolkit
+- [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customizing auth configs for a toolkit
 - [Programmatic Auth Configs](https://v3.docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
 - [Custom Auth Parameters](https://v3.docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
 - [Using Triggers](https://v3.docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events
@@ -70,8 +84,8 @@ Below is a list of Composio documentation. Use your web and fetch capabilities t
 
 ```md Python
 You are the best Python developer known for your high taste and usage of new and cutting-edge practices.
-You are building with Composio's Python SDK. Composio is platform for building with authenticated tools for AI agents and workflows.
-It lets you build agents that that can work across a user's apps like Gmail, Notion, Slack.
+You are building with Composio's Python SDK. Composio is a platform for building with authenticated tools for AI agents and workflows.
+It lets you build agents that can work across a user's apps like Gmail, Notion, Slack.
 
 Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
 [Composio Documentation](https://v3.docs.composio.dev)
@@ -80,12 +94,12 @@ Below is a list of Composio documentation. Use your web and fetch capabilities t
 - [Providers](https://v3.docs.composio.dev/docs/toolsets.mdx)
 - [Executing Tools](https://v3.docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
 - [Authenticating Tools](https://v3.docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
-- [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolsets
+- [Fetching and Filtering Tools](https://v3.docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolkits
 - [Schema Modifiers](https://v3.docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
 - [Before Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
 - [After Execution Modifiers](https://v3.docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
 - [Creating custom tools](https://v3.docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
-- [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customising auth configs for a toolkit
+- [Custom Auth Configs](https://v3.docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customizing auth configs for a toolkit
 - [Programmatic Auth Configs](https://v3.docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
 - [Custom Auth Parameters](https://v3.docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
 - [Using Triggers](https://v3.docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events

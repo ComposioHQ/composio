@@ -13,6 +13,8 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     Composio toolset for Google AI Python Gemini framework.
     """
 
+    __schema_skip_defaults__ = True
+
     def wrap_tool(
         self,
         tool: Tool,
@@ -40,7 +42,7 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         )
         parameters = function_signature_from_jsonschema(
             schema=tool.input_parameters,
-            skip_default=True,
+            skip_default=self.skip_default,
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
         setattr(

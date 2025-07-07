@@ -21,8 +21,7 @@ When these events take place, triggers capture relevant information and deliver 
 
 ## Creating a trigger
 
-Head to the any app that supports triggers, eg [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
-
+Head to any app that supports triggers, such as [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
 <Tabs>
 <Tab title="Dashboard">
 <video
@@ -55,7 +54,7 @@ The dashboard will show you the trigger configuration to fill in.
 
 </Tab>
 <Tab title="SDK">
-You create triggers through the SDK as well. 
+You can also create triggers programmatically using the SDK. To get started, first view the required configuration for creating a trigger:
 
 <CodeGroup>
 <SnippetCode
@@ -92,8 +91,8 @@ Most triggers require certain configuration to send the correct events. For exam
 
 <SnippetCode
   src="fern/snippets/triggers/typescript/triggers.ts"
-  startLine={14}
-  endLine={35}
+  startLine={5}
+  endLine={29}
   title="TypeScript"
 />
 </CodeGroup>
@@ -132,7 +131,7 @@ Below are some examples of how to listen in on trigger events for a FastAPI/Next
 </CodeGroup>
 
 ## Trigger payload types
-When subscribing to triggers, it is helpful to know the payload type recieved from the trigger. You can inspect the payload type by fetching the trigger type.
+When subscribing to triggers, it is helpful to know the payload type received from the trigger. You can inspect the payload type by fetching the trigger type.
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap
@@ -142,7 +141,7 @@ print(trigger.payload)
 ```
 
 ```typescript TypeScript maxLines=60 wordWrap
-const triggerType = await composio.triggers.getType("SLACK_RECEIVE_MESSAGE");
+const triggerType = await composio.triggers.getType("GITHUB_COMMIT_EVENT");
 
 console.log(triggerType.payload);
 ```
@@ -151,12 +150,11 @@ console.log(triggerType.payload);
 
 
 ## Prototyping triggers during development
-During prototyping you may not have a proper server setup -- so you can subscribe to triggers directly through the SDK for small scripts.
+During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
 
-You subscribe to multiple trigger events by configuring the filters.
-When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
+You subscribe to multiple trigger events by configuring the filters. When you specify multiple filters, ALL of them must match for the trigger to be subscribed to.
 
-This uses websockets to subscribe to the trigger. When you specify multiple multiple filters, _ALL_ of them must match for the trigger to be subscribed to.
+This method uses WebSocket to subscribe to the trigger.
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap

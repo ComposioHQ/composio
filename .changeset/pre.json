@@ -15,6 +15,14 @@
     "@composio/vercel": "0.1.35"
   },
   "changesets": [
-    "cuddly-dragons-knock"
+    "cold-badgers-drop",
+    "cuddly-dragons-knock",
+    "eighty-actors-smile",
+    "modern-parents-bake",
+    "sour-ravens-behave",
+    "tasty-suns-check",
+    "thick-keys-work",
+    "wide-mugs-add",
+    "young-waves-study"
   ]
 }

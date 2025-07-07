@@ -40,7 +40,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {}
+          export const Toolkits = {}
 
           /**
            * Type declarations
@@ -54,7 +54,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -105,7 +105,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             SLACK: SLACK,
           }
 
@@ -122,7 +122,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -175,7 +175,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             SLACK: SLACK,
           }
 
@@ -192,7 +192,7 @@ describe('generateTypeScriptSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);

@@ -31,7 +31,7 @@ describe('generateTypeScriptToolkitSources', () => {
           "/**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {}
+          export const Toolkits = {}
 
           /**
            * Type declarations
@@ -45,7 +45,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -74,7 +74,7 @@ describe('generateTypeScriptToolkitSources', () => {
           "/**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             SLACK: SLACK,
           }
 
@@ -91,7 +91,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -122,7 +122,7 @@ describe('generateTypeScriptToolkitSources', () => {
           "/**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             GMAIL: GMAIL,
             SLACK: SLACK,
           }
@@ -141,7 +141,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -179,7 +179,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {}
+          export const Toolkits = {}
 
           /**
            * Type declarations
@@ -193,7 +193,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -228,7 +228,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             SLACK: SLACK,
           }
 
@@ -245,7 +245,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);
@@ -283,7 +283,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Map of Composio toolkits to actions.
            */
-          export const composio = {
+          export const Toolkits = {
             GMAIL: GMAIL,
             SLACK: SLACK,
           }
@@ -302,7 +302,7 @@ describe('generateTypeScriptToolkitSources', () => {
           /**
            * Given a toolkit, returns the tools available for that toolkit.
            */
-          export type ToolsByToolkit<Toolkit extends keyof (typeof composio)> = typeof composio[Toolkit]
+          export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
 
           "
         `);

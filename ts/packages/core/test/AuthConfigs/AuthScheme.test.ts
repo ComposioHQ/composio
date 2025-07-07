@@ -104,7 +104,7 @@ describe('AuthScheme', () => {
 
   describe('ComposioLink', () => {
     it('should create ComposioLink connection data', () => {
-      const result = AuthScheme.ComposioLink();
+      const result = AuthScheme.ComposioLink({});
 
       expect(result).toEqual({
         authScheme: AuthSchemeTypes.COMPOSIO_LINK,
@@ -206,7 +206,7 @@ describe('AuthScheme', () => {
 
   describe('NoAuth', () => {
     it('should create NoAuth connection data', () => {
-      const result = AuthScheme.NoAuth();
+      const result = AuthScheme.NoAuth({});
 
       expect(result).toEqual({
         authScheme: AuthSchemeTypes.NO_AUTH,
@@ -245,7 +245,7 @@ describe('AuthScheme', () => {
 
   describe('CalcomAuth', () => {
     it('should create CalcomAuth connection data', () => {
-      const result = AuthScheme.CalcomAuth();
+      const result = AuthScheme.CalcomAuth({});
 
       expect(result).toEqual({
         authScheme: AuthSchemeTypes.CALCOM_AUTH,

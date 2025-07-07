@@ -9,8 +9,27 @@ const DOCS_SRC_DIR = path.join(import.meta.dir, '../pages/src');
 const PAGES_DIST_DIR = path.join(import.meta.dir, '../pages/dist');
 const PROJECT_ROOT = path.join(import.meta.dir, '../..');
 
+// Custom error class for SnippetCode errors
+class SnippetCodeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SnippetCodeError';
+  }
+}
+
+// Type for parsed GitHub URL
+interface ParsedGitHubUrl {
+  owner: string;
+  repo: string;
+  branch: string;
+  filePath: string;
+  startLine?: number;
+  endLine?: number;
+}
+
 interface SnippetCodeProps {
-  src: string;
+  src?: string;
+  githubUrl?: string;
   startLine?: number;
   endLine?: number;
   highlightStart?: number;
@@ -21,6 +40,99 @@ interface SnippetCodeProps {
   relativeHighlightStart?: number;
   relativeHighlightEnd?: number;
   path?: string;
+}
+
+// Parse GitHub URL and extract components
+function parseGitHubUrl(url: string): ParsedGitHubUrl {
+  try {
+    // Validate URL format
+    const githubRegex = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+?)(?:#L(\d+)(?:-L(\d+))?)?$/;
+    const match = url.match(githubRegex);
+    
+    if (!match) {
+      throw new SnippetCodeError(
+        `Invalid GitHub URL format. Expected: https://github.com/owner/repo/blob/branch/path/to/file.ext#L1-L10\nReceived: ${url}`
+      );
+    }
+    
+    const [, owner, repo, branch, filePath, startLineStr, endLineStr] = match;
+    
+    return {
+      owner,
+      repo,
+      branch,
+      filePath,
+      startLine: startLineStr ? parseInt(startLineStr, 10) : undefined,
+      endLine: endLineStr ? parseInt(endLineStr, 10) : startLineStr ? parseInt(startLineStr, 10) : undefined
+    };
+  } catch (error) {
+    if (error instanceof SnippetCodeError) {
+      throw error;
+    }
+    throw new SnippetCodeError(`Failed to parse GitHub URL: ${error.message}`);
+  }
+}
+
+// Cache for GitHub content to avoid repeated fetches
+const githubContentCache = new Map<string, { content?: string; error?: string }>();
+
+// Fetch content from GitHub with error handling
+async function fetchGitHubContent(parsedUrl: ParsedGitHubUrl): Promise<{ content?: string; error?: string }> {
+  const cacheKey = `${parsedUrl.owner}/${parsedUrl.repo}/${parsedUrl.branch}/${parsedUrl.filePath}`;
+  
+  // Check cache first
+  if (githubContentCache.has(cacheKey)) {
+    return githubContentCache.get(cacheKey)!;
+  }
+  
+  try {
+    const rawUrl = `https://raw.githubusercontent.com/${parsedUrl.owner}/${parsedUrl.repo}/${parsedUrl.branch}/${parsedUrl.filePath}`;
+    
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(rawUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      let error: string;
+      if (response.status === 404) {
+        error = `File not found: ${parsedUrl.filePath} in ${parsedUrl.owner}/${parsedUrl.repo}@${parsedUrl.branch}`;
+      } else {
+        error = `GitHub API error: ${response.status} ${response.statusText}`;
+      }
+      const result = { error };
+      githubContentCache.set(cacheKey, result);
+      return result;
+    }
+    
+    const content = await response.text();
+    const result = { content };
+    githubContentCache.set(cacheKey, result);
+    return result;
+  } catch (error: any) {
+    let errorMessage: string;
+    if (error.name === 'AbortError') {
+      errorMessage = `Timeout fetching from GitHub: ${parsedUrl.owner}/${parsedUrl.repo}/${parsedUrl.filePath}`;
+    } else if (error.message.includes('fetch')) {
+      errorMessage = `Network error fetching from GitHub: ${error.message}`;
+    } else {
+      errorMessage = `Error fetching from GitHub: ${error.message}`;
+    }
+    const result = { error: errorMessage };
+    githubContentCache.set(cacheKey, result);
+    return result;
+  }
+}
+
+// Extract lines from content
+function extractLinesFromContent(content: string, startLine?: number, endLine?: number): string {
+  const lines = content.split('\n');
+  const start = startLine ? startLine - 1 : 0;
+  const end = endLine ? endLine : Math.min(lines.length, 100); // Default to first 100 lines
+  
+  return lines.slice(start, end).join('\n');
 }
 
 function ensureDistDir() {
@@ -108,16 +220,29 @@ function generateHighlightString(
   return `{${relativeStart}-${relativeEnd}}`;
 }
 
-function parseSnippetCodeTags(content: string, contextDir: string): string {
+async function parseSnippetCodeTags(content: string, contextDir: string): Promise<string> {
   const exampleCodeRegex = /<SnippetCode\s+([^>]*?)(?:\s*\/?>|>\s*<\/SnippetCode>)/g;
-
-  return content.replace(exampleCodeRegex, (match, propsString) => {
+  const matches: Array<{ match: string; propsString: string }> = [];
+  
+  let match;
+  while ((match = exampleCodeRegex.exec(content)) !== null) {
+    matches.push({ match: match[0], propsString: match[1] });
+  }
+  
+  let result = content;
+  
+  for (const { match, propsString } of matches) {
+    const replacement = await (async () => {
     // Parse props from the tag
     const props: Partial<SnippetCodeProps> = {};
 
     // Extract src
     const srcMatch = propsString.match(/src=["']([^"']+)["']/);
     if (srcMatch) props.src = srcMatch[1];
+    
+    // Extract githubUrl
+    const githubUrlMatch = propsString.match(/githubUrl=["']([^"']+)["']/);
+    if (githubUrlMatch) props.githubUrl = githubUrlMatch[1];
 
     // Extract other numeric props (handle both JSX {1} and quoted "1" syntax)
     const startLineMatch = propsString.match(/startLine=(?:["'](\d+)["']|{(\d+)})/);
@@ -169,14 +294,49 @@ function parseSnippetCodeTags(content: string, contextDir: string): string {
       props.wordWrap = true;
     }
 
-    if (!props.src) {
-      console.warn('⚠️  SnippetCode tag missing src attribute:', match);
-      return '```\n// Error: SnippetCode tag missing src attribute\n```';
+    // Validate that either src or githubUrl is provided
+    if (!props.src && !props.githubUrl) {
+      const errorMessage = 'SnippetCode tag missing both src and githubUrl attributes';
+      console.warn(`⚠️  ${errorMessage}:`, match);
+      return `\`\`\`error\n${errorMessage}\n\nProps: ${JSON.stringify(props, null, 2)}\n\nFix the issue above and rebuild.\n\`\`\``;
     }
 
-    // Read the file content
-    const codeContent = readFileLines(props.src, contextDir, props.startLine, props.endLine);
-    const langInfo = getLanguageFromPath(props.src);
+    let codeContent: string;
+    let filePath: string;
+    let langInfo: { syntax: string; displayName: string };
+    
+    try {
+      if (props.githubUrl) {
+        // Handle GitHub URL
+        const parsedUrl = parseGitHubUrl(props.githubUrl);
+        
+        // Fetch content from GitHub
+        const fetchResult = await fetchGitHubContent(parsedUrl);
+        
+        if (fetchResult.error) {
+          console.error(`❌ SnippetCode Error: ${fetchResult.error}`);
+          return `\`\`\`error\nSnippetCode Error: ${fetchResult.error}\n\nProps: ${JSON.stringify(props, null, 2)}\n\nFix the issue above and rebuild.\n\`\`\``;
+        }
+        
+        // Extract lines based on URL or manual overrides
+        const startLine = props.startLine || parsedUrl.startLine || 1;
+        const endLine = props.endLine || parsedUrl.endLine || 100;
+        
+        codeContent = extractLinesFromContent(fetchResult.content!, startLine, endLine);
+        filePath = parsedUrl.filePath;
+        langInfo = getLanguageFromPath(filePath);
+      } else {
+        // Handle local file
+        codeContent = readFileLines(props.src!, contextDir, props.startLine, props.endLine);
+        filePath = props.src!;
+        langInfo = getLanguageFromPath(filePath);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof SnippetCodeError ? error.message : `Unexpected error: ${error.message}`;
+      console.error(`❌ SnippetCode Error: ${errorMessage}`);
+      return `\`\`\`error\nSnippetCode Error: ${errorMessage}\n\nProps: ${JSON.stringify(props, null, 2)}\n\nFix the issue above and rebuild.\n\`\`\``;
+    }
+    
     const syntax = props.language || langInfo.syntax;
     const displayName = langInfo.displayName;
 
@@ -206,14 +366,19 @@ function parseSnippetCodeTags(content: string, contextDir: string): string {
     const codeBlock = `\`\`\`${syntax} ${displayName}${highlightString ? ` ${highlightString}` : ''}${titleComment} maxLines=40 ${props.wordWrap ? 'wordWrap' : ''}\n${codeContent}\n\`\`\``;
 
     return codeBlock;
-  });
+    })();
+    
+    result = result.replace(match, replacement);
+  }
+  
+  return result;
 }
 
-function processFile(srcPath: string, distPath: string) {
+async function processFile(srcPath: string, distPath: string) {
   try {
     const content = fs.readFileSync(srcPath, 'utf8');
     const contextDir = path.dirname(srcPath);
-    const processedContent = parseSnippetCodeTags(content, contextDir);
+    const processedContent = await parseSnippetCodeTags(content, contextDir);
 
     // Ensure the directory exists
     const distDir = path.dirname(distPath);
@@ -234,11 +399,12 @@ function isMarkdownFile(filename: string): boolean {
   return filename.endsWith('.mdx') || filename.endsWith('.md');
 }
 
-function processAllFiles() {
+async function processAllFiles() {
   console.log('🔄 Processing all .mdx and .md files...');
 
-  function processDirectory(srcDir: string) {
+  async function processDirectory(srcDir: string) {
     const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+    const promises: Promise<void>[] = [];
 
     for (const entry of entries) {
       const srcPath = path.join(srcDir, entry.name);
@@ -246,7 +412,7 @@ function processAllFiles() {
       if (entry.isDirectory()) {
         // Skip dist directory to avoid infinite loops
         if (entry.name === 'dist') continue;
-        processDirectory(srcPath);
+        promises.push(processDirectory(srcPath));
       } else if (entry.isFile() && isMarkdownFile(entry.name)) {
         // Calculate the relative path from the source directory
         const relativePath = path.relative(DOCS_SRC_DIR, srcPath);
@@ -254,12 +420,14 @@ function processAllFiles() {
         // Always preserve directory structure
         const distPath = path.join(PAGES_DIST_DIR, relativePath);
 
-        processFile(srcPath, distPath);
+        promises.push(processFile(srcPath, distPath));
       }
     }
+    
+    await Promise.all(promises);
   }
 
-  processDirectory(DOCS_SRC_DIR);
+  await processDirectory(DOCS_SRC_DIR);
   console.log('✅ All files processed');
 }
 
@@ -278,7 +446,9 @@ function startWatchMode() {
 
     if (eventType === 'change' && fs.existsSync(srcPath)) {
       console.log(`🔄 File changed: ${filename}`);
-      processFile(srcPath, distPath);
+      processFile(srcPath, distPath).catch(error => {
+        console.error(`❌ Error processing ${filename}:`, error);
+      });
     }
   });
 
@@ -310,13 +480,13 @@ function startWatchMode() {
 }
 
 // Main function
-function main() {
+async function main() {
   console.log('🚀 Starting SnippetCode processor...');
   console.log(`Source: ${DOCS_SRC_DIR}`);
   console.log(`Dist:   ${PAGES_DIST_DIR}`);
 
   ensureDistDir();
-  processAllFiles();
+  await processAllFiles();
 
   // Check if we should run in watch mode
   const isWatchMode = process.argv.includes('--watch') || process.argv.includes('-w');
@@ -329,4 +499,7 @@ function main() {
 }
 
 // Run the main function directly
-main();
+main().catch(error => {
+  console.error('❌ Fatal error:', error);
+  process.exit(1);
+});

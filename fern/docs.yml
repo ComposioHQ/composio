@@ -7,7 +7,7 @@ instances:
       repo: composio
       branch: master
 title: Composio Docs
-default-language: typescript
+default-language: python
 logo:
   light: assets/logo.svg
   dark: assets/logo-dark.svg
@@ -198,7 +198,7 @@ navigation:
     icon: zap
     skip-slug: true
     contents:
-    - page: Gmail Reaper
+    - page: AI Gmail Labeller
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
   - section: Behind the curtain
@@ -245,6 +245,30 @@ navigation:
       path: tools/introduction.mdx
     - page: Premium Tools
       path: tools/src/premium-tools.mdx
+  - section: Important
+    skip-slug: true
+    contents:
+    - page: Github
+      slug: tools/github
+      path: tools/github.mdx
+    - page: Gmail
+      slug: tools/gmail
+      path: tools/gmail.mdx
+    - page: Notion
+      slug: tools/notion
+      path: tools/notion.mdx
+  - section: Scheduling & Booking
+    skip-slug: true
+    contents:
+    - page: Googlecalendar
+      slug: tools/googlecalendar
+      path: tools/googlecalendar.mdx
+  - section: No Auth
+    skip-slug: true
+    contents:
+    - page: Composio
+      slug: tools/composio
+      path: tools/composio.mdx
 - tab: sdk-reference
   layout:
   - section: Python

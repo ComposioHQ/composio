@@ -36,12 +36,17 @@ cd composio1/fern
 pnpm install
 ```
 
-### 3. Install UV (Python Package Manager)
+### 3. Install Python Dependencies
 
 UV is required for generating tool and Python documentation:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Install the Python SDK**
+```bash
+uv sync && uv pip install python/
 ```
 
 ### 4. Install and Setup Fern CLI
@@ -63,21 +68,6 @@ export COMPOSIO_API_KEY=your_api_key_here
 
 **Pro tip:** Add this to your shell profile (`.bashrc`, `.zshrc`, etc.) so you don't have to set it every time.
 
-### 6. Initial Content Generation
-
-Generate all the necessary documentation content:
-
-```bash
-# Download the latest OpenAPI specifications
-pnpm api:pull
-
-# Generate tool documentation
-pnpm run tools:generate
-
-# Generate SDK reference documentation
-pnpm run sdkdocs
-```
-
 ## Development Workflow
 
 Once you've completed the one-time setup, use this workflow for ongoing development:
@@ -85,7 +75,7 @@ Once you've completed the one-time setup, use this workflow for ongoing developm
 ### 1. Start the Development Server
 
 ```bash
-pnpm run dev
+pnpm turbo run dev
 ```
 
 This will:
@@ -96,7 +86,9 @@ This will:
 
 ### 2. Make Your Changes
 
-Edit the documentation files in the appropriate directories. The server will automatically reload when you make changes.
+- Edit the documentation files in the `fern/pages/src` directories.
+- If adding new docs, make sure to add them in `docs.yml`
+- Refer to [Fern docs](https://buildwithfern.com/learn/docs/getting-started/overview)
 
 ### 3. Check Your Work
 
@@ -104,10 +96,10 @@ Before submitting your changes, run these commands to ensure everything is worki
 
 ```bash
 # Check for broken links and other issues
-pnpm run links
+cd fern/ && pnpm run links
 
 # Or use the check command (faster, but comments out tool docs)
-pnpm run check
+cd fern/ && pnpm run check
 ```
 
 ### 4. Submit Your Changes
@@ -115,50 +107,4 @@ pnpm run check
 1. Commit your changes to a new branch
 2. Push to your fork
 3. Create a pull request
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-**Problem:** `uv: command not found`
-**Solution:** Make sure UV is installed and restart your terminal after installation.
-
-**Problem:** `fern: command not found`
-**Solution:** Install Fern globally with `npm install -g fern-api`
-
-**Problem:** Tool generation fails
-**Solution:** Make sure your `COMPOSIO_API_KEY` environment variable is set correctly.
-
-**Problem:** Development server won't start
-**Solution:**
-
-1. Make sure all dependencies are installed: `pnpm install`
-2. Try cleaning and rebuilding: `pnpm clean && pnpm install`
-
-**Problem:** Broken links in documentation
-**Solution:** Run `pnpm run links` to identify and fix broken links before submitting.
-
-### Development Commands Reference
-
-| Command                   | Purpose                                    |
-| ------------------------- | ------------------------------------------ |
-| `pnpm run dev`            | Start development server with fast preview |
-| `pnpm run links`          | Check for broken links (full build)        |
-| `pnpm run check`          | Quick validation (comments out tool docs)  |
-| `pnpm run tools:generate` | Generate tool documentation                |
-| `pnpm run sdkdocs`        | Generate SDK reference docs                |
-| `pnpm api:pull`           | Download latest OpenAPI specs              |
-| `pnpm run preview`        | Generate full preview build                |
-| `pnpm run publish`        | Publish docs (maintainers only)            |
-
-### File Structure
-
-```
-fern/
-├── docs/                 # Main documentation content
-├── assets/              # Images, CSS, and other assets
-├── pages/               # Documentation pages
-├── generators/          # Tool documentation generators
-├── scripts/             # Build and utility scripts
-└── package.json         # Dependencies and scripts
-```
+5. You will see preview links generated in the PR, use that to share.

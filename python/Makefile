@@ -13,6 +13,20 @@ provider:
 		uv pip install $$provider;\
 	done
 
+create-provider:
+	@if [ -z "$(name)" ]; then\
+		echo "Please provide a provider name: make create-provider name=<provider-name> [agentic=true] [output=<directory>]";\
+		exit 1;\
+	fi
+	@ARGS="$(name)";\
+	if [ "$(agentic)" = "true" ]; then\
+		ARGS="$$ARGS --agentic";\
+	fi;\
+	if [ ! -z "$(output)" ]; then\
+		ARGS="$$ARGS --output-dir $(output)";\
+	fi;\
+	bash scripts/create-provider.sh $$ARGS
+
 env:
 	@echo "* creating new environment"
 	@if [ -z "$$VIRTUAL_ENV" ];\

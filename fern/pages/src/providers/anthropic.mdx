@@ -7,14 +7,14 @@ hide-nav-links: false
 ---
 
 
-The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through it's Messages API.
+The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through its Messages API.
 
 ## Setup
-Anthropic provider can be installed for both the SDKs.
+The Anthropic provider can be installed for both SDKs.
 
 <CodeGroup>
 ```bash title="Python" for="python" maxLines=60  wordWrap
-pip install composio[anthropic]
+pip install composio_anthropic==1.0.0rc9
 ```
 
 ```bash title="TypeScript" for="typescript" maxLines=60  wordWrap
@@ -99,9 +99,6 @@ console.log(JSON.parse(res[0]).details);
 ```
 </CodeGroup>
 
-### Streaming
-
-- [ ] Pending on SDK
 
 ## Modifiers
 Modifiers are functions that can be used to intercept and optionally modify the schema, the tool call request and the response from the tool call.

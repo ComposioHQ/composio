@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import typing as t
 
 from composio.client.types import Tool
@@ -44,16 +43,16 @@ class NonAgenticProvider(BaseProvider, t.Generic[TTool, TToolCollection]):
     def set_execute_tool_fn(self, execute_tool_fn: NoneAgenticProviderExecuteFn):
         self.execute_tool = execute_tool_fn
 
-    @abc.abstractmethod
     def wrap_tool(
         self,
         tool: Tool,
     ) -> TTool:
         """Wrap a tool in the provider-specific format"""
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def wrap_tools(
         self,
         tools: t.Sequence[Tool],
     ) -> TToolCollection:
         """Wrap a list of tools in the provider-specific format"""
+        raise NotImplementedError

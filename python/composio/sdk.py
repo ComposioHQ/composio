@@ -37,7 +37,6 @@ class Composio(t.Generic[TProvider], WithLogger):
     """
 
     tools: Tools[TProvider]
-    provider: TProvider
 
     def __init__(
         self,

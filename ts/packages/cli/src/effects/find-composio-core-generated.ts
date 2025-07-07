@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { Command, FileSystem } from '@effect/platform';
-import { Data, Effect, Match, Option } from 'effect';
+import { Data, Effect, Match } from 'effect';
 import {
   JsPackageManagerDetector,
   type PackageManager,
@@ -48,7 +48,6 @@ export function pyFindComposioCoreGenerated(cwd: string) {
     const [cmd, ...args] = [
       'uv',
       'run',
-      '--active',
       'python',
       '-c',
       'import composio; print(composio.__file__)',
@@ -61,7 +60,7 @@ export function pyFindComposioCoreGenerated(cwd: string) {
 
     yield* Effect.logDebug({ stdout, cmd: [cmd, ...args].join(' ') });
 
-    const composioCorePath = path.dirname(stdout);
+    const composioCorePath = `${path.dirname(stdout)}/generated`;
     yield* Effect.logDebug({ composioCorePath });
 
     return composioCorePath;

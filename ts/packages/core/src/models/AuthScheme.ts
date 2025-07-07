@@ -71,12 +71,12 @@ export class AuthScheme {
    * Creates a ConnectionData object for Composio Link authentication
    * @returns ConnectionData object
    */
-  static ComposioLink(params: BaseConnectionFields): ConnectionData {
+  static ComposioLink(params?: BaseConnectionFields): ConnectionData {
     return {
       authScheme: AuthSchemeTypes.COMPOSIO_LINK,
       val: {
         status: ConnectionStatuses.INITIALIZING,
-        ...params,
+        ...(params ?? {}),
       },
     };
   }
@@ -86,7 +86,9 @@ export class AuthScheme {
    * @param params The API key parameters
    * @returns ConnectionData object
    */
-  static APIKey(params: BaseConnectionFields & { api_key: string }): ConnectionData {
+  static APIKey(
+    params: BaseConnectionFields & { api_key?: string; generic_api_key?: string }
+  ): ConnectionData {
     return {
       authScheme: AuthSchemeTypes.API_KEY,
       val: {
@@ -149,12 +151,12 @@ export class AuthScheme {
    * Creates a ConnectionData object for No Auth authentication
    * @returns ConnectionData object
    */
-  static NoAuth(params: BaseConnectionFields): ConnectionData {
+  static NoAuth(params?: BaseConnectionFields): ConnectionData {
     return {
       authScheme: AuthSchemeTypes.NO_AUTH,
       val: {
         status: ConnectionStatuses.ACTIVE,
-        ...params,
+        ...(params ?? {}),
       },
     };
   }
@@ -180,12 +182,12 @@ export class AuthScheme {
    * Creates a ConnectionData object for Cal.com authentication
    * @returns ConnectionData object
    */
-  static CalcomAuth(params: BaseConnectionFields): ConnectionData {
+  static CalcomAuth(params?: BaseConnectionFields): ConnectionData {
     return {
       authScheme: AuthSchemeTypes.CALCOM_AUTH,
       val: {
         status: ConnectionStatuses.ACTIVE,
-        ...params,
+        ...(params ?? {}),
       },
     };
   }

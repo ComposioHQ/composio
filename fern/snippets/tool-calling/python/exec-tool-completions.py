@@ -2,9 +2,8 @@ from composio import Composio
 from composio_gemini import GeminiProvider
 from google import genai
 from google.genai import types
-from uuid import uuid4
 
-user_id = uuid4()
+user_id = "0000-1111-2222"
 
 # Create composio client
 composio = Composio(provider=GeminiProvider())

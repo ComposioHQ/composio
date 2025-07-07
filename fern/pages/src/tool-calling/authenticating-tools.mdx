@@ -10,7 +10,7 @@ Different apps (like Slack, Notion, Shopify) have their own authentication flows
 
 ## Creating an auth config
 
-Each toolkit comes with it's own _auth config_.
+Each toolkit comes with its own _auth config_.
 This configuration is used to authenticate the users to the tools.
 
 The first step is to create an auth config for any toolkit that you want to use.
@@ -37,12 +37,12 @@ The dashboard offers a guided process for all app types.
     </Frame>
   </Step>
   <Step title="Configure Auth Config Settings">
-    Select between the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
+    Select among the supported auth schemes of OAuth2, API Key, Bearer Token, Basic Auth, depending on the toolkit.
     Switch between the auth schemes and configure the scopes, developer credentials, etc here.
 
     <Note title="Composio Managed Auth" icon="info">
     You may also choose to use Composio's managed auth for certain toolkits or use your own auth credentials.
-    It is recommended to use specify your own credentials for production workloads and ability to control scopes, etc.
+    It is recommended to specify your own credentials for production workloads and ability to control scopes, etc.
     </Note>
 
     <Frame background="subtle" title="Auth Config Settings">
@@ -50,7 +50,7 @@ The dashboard offers a guided process for all app types.
     </Frame>
   </Step>
   <Step title="Create and Get auth config ID">
-    Click **"Create Integration"**. After creation, **copy the displayed starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
+    Click **"Create Integration"**. After creation, **copy the displayed ID starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
     **This ID will be used to create connections to the toolkit for a given user.**
   </Step>
 </Steps>
@@ -105,7 +105,7 @@ If you know the required authentication fields for your toolkit (like `apiKey` f
 ## Specifying auth schemes
 Composio supports a wide range of auth schemes; OAuth2, API Key, HTTP Basic and many more.
 Each app (and toolkit) has different connection options required for each auth scheme. For example;
-- Shopify requires an *API key* from each user from each user for the API Key auth scheme.
+- Shopify requires an *API key* from each user for the API Key auth scheme.
 - Airtable requires the Bearer token from each user for the *Bearer* auth scheme.
 
 The auth scheme information is typed and can be configured as follows:

@@ -8,14 +8,14 @@ hide-nav-links: false
 
 ## CrewAI Provider
 
-The CrewAI Provider is a provider that formats the Composio tools into an object compatible with CrewAI's tool calling capabilities. Agents and LLM workflows built with this can call and execute the Composio tools.
+The CrewAI Provider formats the Composio tools into an object compatible with CrewAI's tool calling capabilities. Agents and LLM workflows built with this can call and execute the Composio tools.
 
 ## Setup
 
 The CrewAI provider is available for only the Python SDK.
 
 ```python Python maxLines=60 wordWrap
-pip install composio[crewai]
+pip install composio_crewai==1.0.0rc9
 ```
 
 ## Usage
@@ -40,7 +40,7 @@ crewai_agent = Agent(
     goal="""You take action on Github using Github APIs""",
     backstory=(
         "You are AI agent that is responsible for taking actions on Github "
-        "on users behalf. You need to take action on Github using Github APIs"
+        "on users' behalf. You need to take action on Github using Github APIs"
     ),
     verbose=True,
     tools=tools,

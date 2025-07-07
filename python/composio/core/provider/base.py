@@ -6,14 +6,23 @@ Defines the barebones provider metaclass that needs to be subclassed for every p
 
 from __future__ import annotations
 
-import abc
 import typing as t
+
+import typing_extensions as te
 
 TTool = t.TypeVar("TTool", covariant=True)
 TToolCollection = t.TypeVar("TToolCollection", covariant=True)
 
 
-class BaseProvider(abc.ABC, t.Generic[TTool, TToolCollection]):
+class SchemaConfig(te.TypedDict):
+    skip_defaults: te.NotRequired[bool]
+
+
+class BaseProviderConfig(te.TypedDict):
+    schema_config: te.NotRequired[SchemaConfig]
+
+
+class BaseProvider(t.Generic[TTool, TToolCollection]):
     """
     BaseProvider class
 
@@ -23,3 +32,10 @@ class BaseProvider(abc.ABC, t.Generic[TTool, TToolCollection]):
 
     name: str
     """Name of the provider"""
+
+    __schema_skip_defaults__ = False
+
+    def __init__(self, **kwargs: t.Unpack[BaseProviderConfig]) -> None:
+        self.skip_default = kwargs.get("schema_config", {}).get(
+            "skip_defaults", self.__schema_skip_defaults__
+        )

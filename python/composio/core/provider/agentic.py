@@ -1,4 +1,3 @@
-import abc
 import typing as t
 
 from composio.client.types import Tool
@@ -33,18 +32,18 @@ class AgenticProvider(BaseProvider, t.Generic[TTool, TToolCollection]):
     def __init_subclass__(cls, name: str) -> None:
         cls.name = name
 
-    @abc.abstractmethod
     def wrap_tool(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
     ) -> TTool:
         """Wrap a tool in the provider-specific format"""
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def wrap_tools(
         self,
         tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn,
     ) -> TToolCollection:
         """Wrap a list of tools in the provider-specific format"""
+        raise NotImplementedError

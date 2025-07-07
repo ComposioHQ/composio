@@ -1,5 +1,57 @@
 # @composio/vercel
 
+## 0.1.36-next.6
+
+### Patch Changes
+
+- 06612f5: Downgrade chalk to v4 to allow CJS as well
+- Relax connected account schema parsing
+- Updated dependencies [06612f5]
+- Updated dependencies
+  - @composio/core@0.1.36-next.6
+
+## 0.1.36-next.5
+
+### Patch Changes
+
+- dd630fe: Bump packages
+- Bump packages
+- Updated dependencies [dd630fe]
+- Updated dependencies
+  - @composio/core@0.1.36-next.5
+
+## 0.1.36-next.4
+
+### Patch Changes
+
+- Update packages
+- Updated dependencies
+  - @composio/core@0.1.36-next.4
+
+## 0.1.36-next.3
+
+### Patch Changes
+
+- Fix: Gracefully handle connected account responses for missing fields
+- Updated dependencies
+  - @composio/core@0.1.36-next.3
+
+## 0.1.36-next.2
+
+### Patch Changes
+
+- Fix issues with objects with default values being marked as required
+- Updated dependencies
+  - @composio/core@0.1.36-next.2
+
+## 0.1.36-next.1
+
+### Patch Changes
+
+- Fix issues with json schema to zod parsing causing nested objects to be marked as required
+- Updated dependencies
+  - @composio/core@0.1.36-next.1
+
 ## 0.1.36-next.0
 
 ### Patch Changes

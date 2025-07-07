@@ -5,27 +5,114 @@ keywords: ''
 hide-nav-links: false
 ---
 
-Every LLM framework and provider essentially does the same thing - **tool calling and giving agents skills** - but each has its own unique syntax and implementation. Whether you're using OpenAI, Anthropic, CrewAI, or LangGraph, you're solving the same problems with different APIs.
+Providers in Composio act as bridges between your AI models and external tools. They transform Composio's tools into formats that different AI frameworks can understand and use, making it possible to integrate with any AI framework seamlessly.
 
-<Frame>
-  <img
-    src="../../../assets/images/providers-and-toolsets.png"
-    alt="Providers and Toolsets"
-    width="400px"
-    height="auto"
-  />
-</Frame>
+## What are Providers?  
+Think of providers as translators. Different AI frameworks (like OpenAI, Anthropic Claude, or LangChain) expect tools to be formatted in their specific way. Instead of manually converting Composio tools for each framework, providers handle this transformation automatically.
 
-Composio standardizes this mess. Use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't support yet. No more rewriting tool integrations when you switch providers.
+For example:
+- OpenAI expects tools in a specific JSON schema format with type: "function"
+- Anthropic Claude expects tools with an input_schema structure
+- LangChain expects tools as callable functions with specific parameters
 
-Composio has two types of providers:
+Providers ensure that Composio tools work correctly with your chosen AI platform without you having to worry about the technical details.
 
-- **Completion Providers**: These frameworks are simply used to generate text, function calls. They don't have an automatic function execution step.
-- **Agentic Providers**: These providers are used to create agents. They have a function execution step and the tools are executed automatically.
 
-## Providers
-
+## Using Providers
 Here's how you can generate text with various providers using Composio SDK:
+
+### Default Provider (OpenAI)
+If you don't specify a provider, Composio uses the OpenAI provider by default:
+<CodeGroup>
+```python Python
+from openai import OpenAI
+from composio import Composio
+
+# Initialize tools.
+openai_client = OpenAI()
+composio = Composio(api_key="your-composio-api-key")
+
+# Define task.
+task = "Star a repo composiohq/composio on GitHub"
+
+# Get GitHub tools that are pre-configured
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(response=response, user_id="default")
+print(result)
+
+
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+// Uses OpenAI provider automatically
+const composio = new Composio({
+  apiKey: 'your-composio-api-key'
+});
+
+// Get tools formatted for OpenAI
+const tools = await composio.tools.get('default', {
+  toolkits: ['github']
+});
+
+// Use with OpenAI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Star the repo composiohq/composio on GitHub' },
+  ],
+  tools: tools // Already formatted for OpenAI
+});
+
+// Execute the function calls.
+const result = await composio.provider.handleToolCalls("user@example.com", completion)
+console.log(result)
+
+```
+</CodeGroup>
+
+### Using a Different Provider
+Different providers may require additional packages:
+
+
+<CodeGroup>
+```shell Python
+# Core SDK (includes OpenAI provider)
+pip install composio==1.0.0rc9
+
+# Additional providers
+pip install composio_anthropic==1.0.0rc9
+pip install composio_google==1.0.0rc9
+pip install composio_langchain==1.0.0rc9
+pip install composio_crewai==1.0.0rc9
+```
+```shell Typescript
+# Core SDK (includes OpenAI provider)
+npm install @composio/core
+
+# Additional providers
+npm install @composio/anthropic
+npm install @composio/google  
+npm install @composio/langchain
+npm install @composio/vercel
+```
+</CodeGroup>
+
+To use a different provider, specify it when initializing Composio:
 
 <Tabs>
 <Tab title="OpenAI (Default)">
@@ -103,38 +190,22 @@ from composio_openai_agents import OpenAIAgentsProvider
 
 # Initialize Composio toolset
 composio = Composio(provider=OpenAIAgentsProvider())
-
-# Get all the tools
-tools = composio.tools.get(
-    user_id="default",
-    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
-)
-
-# Create an agent with the tools
-agent = Agent(
-    name="GitHub Agent",
-    instructions="You are a helpful assistant.",
-    tools=tools,
-)
-
-# Run the agent
-async def main():
-    result = await Runner.run(
-        starting_agent=agent,
-        input=(
-            "Star the repository composiohq/composio on GitHub"
-        ),
-    )
-    print(result.final_output)
-
-asyncio.run(main())
 ```
 </Tab>
 </Tabs>
 
 
 ## Supported Providers
-### Chat Completions
+Composio supports two different types of providers based on the type of AI framework you are using:
+
+### Non-Agentic Providers
+These providers work with AI platforms that use chat completion APIs, where you control the tool execution flow. The AI model analyzes your conversation and suggests which tools to use, but your code decides when and how to execute them.
+With chat completion APIs, the typical flow is:
+
+1. You send a message to the AI model along with available tools
+2. The AI responds with either a text message or a request to use specific tools
+3. If tools are requested, you execute them and send the results back to continue the conversation
+
 <CardGroup cols={3}>
   <Card
     title="OpenAI Provider"
@@ -159,7 +230,9 @@ asyncio.run(main())
   </Card>
 </CardGroup>
 
-### Agentic Frameworks
+### Agentic Providers
+These providers work with AI frameworks that can execute tools autonomously. The AI agent can decide to run tools on its own without your direct intervention.
+
 <CardGroup cols={3}>
   <Card
     title="LangGraph Provider"
@@ -198,6 +271,6 @@ asyncio.run(main())
   </Card>
 </CardGroup>
 
-<Tip title="Custom Toolsets" icon="puzzle">
-Using a framework not supported? Create a [custom provider](/providers/custom)!
+<Tip title="Custom Providers" icon="puzzle">
+Using a framework not yet supported by Composio? Create a [custom provider](/providers/custom)!
 </Tip>

@@ -12,7 +12,7 @@ dependencies = [
     "typing-extensions>=4.13.0",
     "composio-client",
     "openai>=1.79.0",
-    "composio>=1.0.0-rc5",
+    "composio==1.0.0rc5",
     # Dependencies for SDK doc generation
     "tqdm>=4.62.0",
     "pyyaml>=6.0",
@@ -21,6 +21,7 @@ dependencies = [
     "nbformat>=5.0.0",
     "composio-langchain",
     "composio-openai",
+    "composio-gemini",
 ]
 
 [tool.ruff]
@@ -48,7 +49,7 @@ composio = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "composio",
+    "composio==1.0.0rc6",
     "composio-gemini",
     "composio-langchain",
     "composio-openai-agents",
