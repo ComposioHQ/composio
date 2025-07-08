@@ -2,6 +2,7 @@ import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const SDKErrorCodes = {
   NO_API_KEY_PROVIDED: 'NO_API_KEY_PROVIDED',
+  SERVER_UNREACHABLE: 'SERVER_UNREACHABLE',
 };
 
 export class ComposioNoAPIKeyError extends ComposioError {
