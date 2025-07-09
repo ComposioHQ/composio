@@ -192,12 +192,8 @@ export class MCP<T = McpServerGetResponse> {
       toolkits,
       getServer: async (params: MCPGetServerParams): Promise<T> => {
         // Delegate to the standalone getServer method
-        return this.getServer({
-          id: camelCaseResponse.id,
-          userId: params.userId || Object.keys(params.connectedAccountIds || {})[0] || '',
-          options: {
-            isChatAuth: options.isChatAuth,
-          },
+        return this.getServer(camelCaseResponse.id, params.userId || '', {
+          isChatAuth: options.isChatAuth,
         });
       },
     } as McpServerCreateResponse<T>;
