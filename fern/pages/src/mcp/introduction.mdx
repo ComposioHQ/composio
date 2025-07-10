@@ -10,6 +10,10 @@ hide-nav-links: true
 
 [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) is an open protocol that standardizes how LLM-powered applications provide tools and context to underlying models. Composio MCP servers make all [Composio tools](/tools) available through this standardized protocol, enabling seamless integration with MCP-compatible clients.
 
+<Note>
+The MCP SDK has been updated to use positional parameters instead of object parameters for better performance and simpler usage. All examples below reflect the latest API structure.
+</Note>
+
 ## Key Features
 
 - **🔧 1000+ Tools**: Access to all Composio tools through MCP
@@ -37,23 +41,24 @@ const composio = new Composio({
 });
 
 // Create an MCP server
-const mcpServer = await composio.mcp.create({
-  name: "My Gmail Server",
-  serverConfig: [
+const mcpServer = await composio.mcp.create(
+  "My Gmail Server",
+  [
     {
       authConfigId: "ac_your_auth_config_id",
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
     }
   ],
-  options: {
+  {
     isChatAuth: true
   }
-});
+);
 
 // Get server URLs for a user
-const serverUrls = await mcpServer.getServer({
-  userId: "user@example.com"
-});
+const serverUrls = await composio.mcp.getServer(
+  mcpServer.id,
+  "user@example.com"
+);
 
 console.log("MCP Server URLs:", serverUrls);
 ```
@@ -62,10 +67,10 @@ console.log("MCP Server URLs:", serverUrls);
 
 ### Creating MCP Servers
 
-The `create` method uses named object arguments for clear, readable configuration:
+The `create` method uses positional parameters for better performance:
 
 ```typescript
-const mcpServer = await composio.mcp.create({
+const mcpServer = await composio.mcp.create(
   name: string,                    // Unique server name
   serverConfig: Array<{           // Auth configurations
     authConfigId: string,         // Your auth config ID
@@ -74,15 +79,15 @@ const mcpServer = await composio.mcp.create({
   options: {
     isChatAuth?: boolean          // Enable chat-based auth (default: false)
   }
-});
+);
 ```
 
 **Complete Example:**
 
 ```typescript
-const mcpServer = await composio.mcp.create({
-  name: "Multi-Service Productivity Server",
-  serverConfig: [
+const mcpServer = await composio.mcp.create(
+  "Multi-Service Productivity Server",
+  [
     {
       authConfigId: "ac_gmail_config",
       allowedTools: [
@@ -99,10 +104,10 @@ const mcpServer = await composio.mcp.create({
       ]
     }
   ],
-  options: {
+  {
     isChatAuth: true
   }
-});
+);
 
 console.log(`✅ Server created: ${mcpServer.id}`);
 console.log(`📦 Toolkits: ${mcpServer.toolkits.join(", ")}`);
@@ -113,39 +118,26 @@ console.log(`📦 Toolkits: ${mcpServer.toolkits.join(", ")}`);
 The `getServer` method provides URLs for MCP clients to connect:
 
 ```typescript
-const serverUrls = await composio.mcp.getServer({
+const serverUrls = await composio.mcp.getServer(
   id: string,                     // Server ID
-  userId: string,                 // User identifier
-  options?: {
-    limitTools?: string[],        // Subset of tools to include
-    isChatAuth?: boolean          // Override chat auth setting
-  }
-});
+  userId: string                  // User identifier
+);
 ```
 
 **Examples:**
 
 ```typescript
 // Basic usage
-const basicUrls = await composio.mcp.getServer({
-  id: "mcp_server_id",
-  userId: "user123@example.com"
-});
+const basicUrls = await composio.mcp.getServer(
+  "mcp_server_id",
+  "user123@example.com"
+);
 
-// With tool limitations
-const limitedUrls = await composio.mcp.getServer({
-  id: "mcp_server_id", 
-  userId: "user123@example.com",
-  options: {
-    limitTools: ["GMAIL_FETCH_EMAILS"], // Only allow email fetching
-    isChatAuth: false
-  }
-});
-
-// Using convenience method (from create response)
-const convenientUrls = await mcpServer.getServer({
-  userId: "user123@example.com"
-});
+// Using server ID from create response
+const serverUrls = await composio.mcp.getServer(
+  mcpServer.id,
+  "user123@example.com"
+);
 ```
 
 ### Checking User Connection Status
@@ -153,10 +145,10 @@ const convenientUrls = await mcpServer.getServer({
 Before using an MCP server, check if users have the required connected accounts:
 
 ```typescript
-const connectionStatus = await composio.mcp.getUserConnectionStatus({
-  id: string,                     // Server ID
-  userId: string                  // User identifier
-});
+const connectionStatus = await composio.mcp.getUserConnectionStatus(
+  userId: string,                 // User identifier
+  id: string                      // Server ID
+);
 
 // Returns: McpUserConnectionStatus
 {
@@ -176,10 +168,10 @@ const connectionStatus = await composio.mcp.getUserConnectionStatus({
 **Complete Example:**
 
 ```typescript
-const status = await composio.mcp.getUserConnectionStatus({
-  id: mcpServer.id,
-  userId: "user123@example.com"
-});
+const status = await composio.mcp.getUserConnectionStatus(
+  "user123@example.com",
+  mcpServer.id
+);
 
 console.log(`Overall status: ${status.connected ? "✅ Ready" : "❌ Needs auth"}`);
 
@@ -190,17 +182,17 @@ if (!status.connected) {
       console.log(`❌ ${toolkit} requires authentication`);
       
       // Get authentication parameters
-      const authParams = await composio.mcp.getConnectionParams({
-        id: mcpServer.id,
+      const authParams = await composio.mcp.getConnectionParams(
+        mcpServer.id,
         toolkit
-      });
+      );
       
       // Initiate authentication
-      const authRequest = await composio.mcp.authorize({
-        id: mcpServer.id,
-        userId: "user123@example.com",
+      const authRequest = await composio.mcp.authorize(
+        "user123@example.com",
+        mcpServer.id,
         toolkit
-      });
+      );
       
       if (authRequest.redirectUrl) {
         console.log(`🔗 Authenticate here: ${authRequest.redirectUrl}`);
@@ -274,19 +266,19 @@ Authenticate users before they use the MCP server:
 
 ```typescript
 // 1. Check what's needed
-const authParams = await composio.mcp.getConnectionParams({
-  id: mcpServer.id,
-  toolkit: "gmail"
-});
+const authParams = await composio.mcp.getConnectionParams(
+  mcpServer.id,
+  "gmail"
+);
 
 console.log("Required fields:", authParams.required_fields);
 
 // 2. Initiate authentication
-const authRequest = await composio.mcp.authorize({
-  id: mcpServer.id,
-  userId: "user@example.com",
-  toolkit: "gmail"
-});
+const authRequest = await composio.mcp.authorize(
+  "user@example.com",
+  mcpServer.id,
+  "gmail"
+);
 
 // 3. Direct user to authentication URL
 if (authRequest.redirectUrl) {
@@ -294,10 +286,10 @@ if (authRequest.redirectUrl) {
 }
 
 // 4. Verify connection after user completes auth
-const finalStatus = await composio.mcp.getUserConnectionStatus({
-  id: mcpServer.id,
-  userId: "user@example.com"
-});
+const finalStatus = await composio.mcp.getUserConnectionStatus(
+  "user@example.com",
+  mcpServer.id
+);
 
 if (finalStatus.connected) {
   console.log("✅ All toolkits connected, ready to use!");
@@ -309,13 +301,10 @@ if (finalStatus.connected) {
 Let the agent handle authentication on-demand:
 
 ```typescript
-const serverUrls = await composio.mcp.getServer({
-  id: mcpServer.id,
-  userId: "user@example.com",
-  options: {
-    isChatAuth: true  // Include helper actions for authentication
-  }
-});
+const serverUrls = await composio.mcp.getServer(
+  mcpServer.id,
+  "user@example.com"
+);
 
 // The agent can now guide users through authentication as needed
 ```
@@ -338,9 +327,9 @@ async function setupGmailMCP(userId: string) {
   } catch (error) {
     // 2. Create new server if it doesn't exist
     console.log("📦 Creating new Gmail server...");
-    gmailServer = await composio.mcp.create({
-      name: "Production Gmail Server",
-      serverConfig: [
+    gmailServer = await composio.mcp.create(
+      "Production Gmail Server",
+      [
         {
           authConfigId: process.env.GMAIL_AUTH_CONFIG_ID!,
           allowedTools: [
@@ -351,27 +340,27 @@ async function setupGmailMCP(userId: string) {
           ]
         }
       ],
-      options: {
+      {
         isChatAuth: true
       }
-    });
+    );
   }
 
   // 3. Check user connection status
-  const connectionStatus = await composio.mcp.getUserConnectionStatus({
-    id: gmailServer.id,
-    userId
-  });
+  const connectionStatus = await composio.mcp.getUserConnectionStatus(
+    userId,
+    gmailServer.id
+  );
 
   // 4. Handle authentication if needed
   if (!connectionStatus.connected) {
     console.log("🔐 User needs to authenticate with Gmail");
     
-    const authRequest = await composio.mcp.authorize({
-      id: gmailServer.id,
+    const authRequest = await composio.mcp.authorize(
       userId,
-      toolkit: "gmail"
-    });
+      gmailServer.id,
+      "gmail"
+    );
 
     return {
       server: gmailServer,
@@ -381,12 +370,10 @@ async function setupGmailMCP(userId: string) {
   }
 
   // 5. Generate server URLs for MCP client
-  const serverUrls = await gmailServer.getServer({
-    userId,
-    options: {
-      limitTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
-    }
-  });
+  const serverUrls = await composio.mcp.getServer(
+    gmailServer.id,
+    userId
+  );
 
   return {
     server: gmailServer,
@@ -409,18 +396,18 @@ if (result.needsAuth) {
 
 ```typescript
 try {
-  const mcpServer = await composio.mcp.create({
-    name: "Test Server",
-    serverConfig: [
+  const mcpServer = await composio.mcp.create(
+    "Test Server",
+    [
       {
         authConfigId: "invalid_config",
         allowedTools: ["INVALID_TOOL"]
       }
     ],
-    options: {
+    {
       isChatAuth: true
     }
-  });
+  );
 } catch (error) {
   if (error instanceof ValidationError) {
     console.error("Configuration error:", error.message);
@@ -439,7 +426,7 @@ try {
 4. **Limit tools appropriately** - Only include tools your application actually needs
 5. **Cache server configurations** - Reuse existing servers when possible
 6. **Monitor connection health** - Regularly check and refresh user connections
-7. **Use the convenience methods** - The `getServer` method on create responses simplifies workflows
+7. **Store server IDs** - Keep track of server IDs from create responses for generating URLs
 
 ## Next Steps
 

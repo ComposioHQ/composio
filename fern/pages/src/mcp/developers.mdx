@@ -11,6 +11,10 @@ hide-nav-links: true
 Composio MCP lets you build custom MCP servers that your users can connect to and use to perform actions.
 You can manage these servers via our [Dashboard](https://app.composio.dev), or use the [SDK/API](/api-reference/mcp) for greater control and flexibility.
 
+<Note>
+The MCP SDK has been updated to use positional parameters instead of object parameters for better performance and simpler usage. All examples below reflect the latest API structure.
+</Note>
+
 ## Creating MCP Servers and Onboarding End Users
 <Steps>
   <Step title="Configure Authentication">
@@ -32,9 +36,9 @@ You can manage these servers via our [Dashboard](https://app.composio.dev), or u
     });
 
     // Create an MCP server with the new API structure
-    const mcpConfig = await composio.mcp.create({
-      name: "Gmail MCP Server",
-      serverConfig: [
+    const mcpConfig = await composio.mcp.create(
+      "Gmail MCP Server",
+      [
         {
           authConfigId: "ac_auth_12", // Your auth config ID
           allowedTools: [
@@ -44,10 +48,10 @@ You can manage these servers via our [Dashboard](https://app.composio.dev), or u
           ]
         }
       ],
-      options: {
+      {
         isChatAuth: true // Enable chat-based authentication
       }
-    });
+    );
 
     console.log(`✅ MCP server created: ${mcpConfig.id}`);
     console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(", ")}`);
@@ -57,24 +61,21 @@ You can manage these servers via our [Dashboard](https://app.composio.dev), or u
     **Using the SDK:**
     ```typescript
     // Get server URLs for a specific user
-    const serverUrls = await composio.mcp.getServer({
-      id: mcpConfig.id,
-      userId: "user123@example.com",
-      options: {
-        limitTools: ["GMAIL_FETCH_EMAILS"], // Optional: limit to specific tools
-        isChatAuth: true
-      }
-    });
+    const serverUrls = await composio.mcp.getServer(
+      mcpConfig.id,
+      "user123@example.com"
+    );
 
     console.log("Server URLs:", serverUrls);
     ```
 
-    **Using the convenience method (from create response):**
+    **Using the server ID (from create response):**
     ```typescript
-    // Use the convenience method on the created server
-    const serverUrls = await mcpConfig.getServer({
-      userId: "user123@example.com"
-    });
+    // Get server URLs using the created server ID
+    const serverUrls = await composio.mcp.getServer(
+      mcpConfig.id,
+      "user123@example.com"
+    );
     ```
   </Step>
   <Step title="Client applications connect to the server">
@@ -102,10 +103,10 @@ Before using an MCP server, you can check if a user has the necessary connected 
 
 ```typescript
 // Check if a user has connected accounts for all required toolkits
-const connectionStatus = await composio.mcp.getUserConnectionStatus({
-  id: mcpConfig.id,
-  userId: "user123@example.com"
-});
+const connectionStatus = await composio.mcp.getUserConnectionStatus(
+  "user123@example.com",
+  mcpConfig.id
+);
 
 console.log("Overall connection status:", connectionStatus.connected);
 console.log("Individual toolkit status:", connectionStatus.connectedToolkits);
@@ -169,17 +170,17 @@ Authenticate users upfront via the Composio SDK/API before they use the MCP serv
 
 ```typescript
 // Check what authentication is needed
-const authParams = await composio.mcp.getConnectionParams({
-  id: mcpConfig.id,
-  toolkit: "gmail"
-});
+const authParams = await composio.mcp.getConnectionParams(
+  mcpConfig.id,
+  "gmail"
+);
 
 // Initiate authentication for a user
-const authRequest = await composio.mcp.authorize({
-  id: mcpConfig.id,
-  userId: "user123@example.com",
-  toolkit: "gmail"
-});
+const authRequest = await composio.mcp.authorize(
+  "user123@example.com",
+  mcpConfig.id,
+  "gmail"
+);
 
 if (authRequest.redirectUrl) {
   console.log("Please complete authentication:", authRequest.redirectUrl);
@@ -191,10 +192,10 @@ if (authRequest.redirectUrl) {
 Let the agent authenticate users on-demand by including helper actions:
 
 ```typescript
-const serverUrls = await composio.mcp.getServer({
-  id: mcpConfig.id,
-  userId: "user123@example.com"
-});
+const serverUrls = await composio.mcp.getServer(
+  mcpConfig.id,
+  "user123@example.com"
+);
 
 // The server URLs will include helper actions that guide users through authentication
 ```
@@ -209,7 +210,7 @@ Pre-authentication is recommended for production applications as it provides bet
 2. **Limit tools appropriately** - Only include the tools your users actually need.
 3. **Check connection status** - Always verify user authentication before using server URLs.
 4. **Handle authentication gracefully** - Provide clear instructions when users need to authenticate.
-5. **Use the convenience methods** - The `getServer` method on create responses simplifies URL generation.
+5. **Use the server ID** - Store the server ID from the create response for generating URLs.
 
 <Warning>
 SSE support is deprecated. If you're using `/sse` endpoints or `transport=sse` query parameters, migrate to the standard `/mcp` endpoints.
