@@ -1,5 +1,16 @@
 # @composio/anthropic
 
+## 1.0.0-next.7
+
+### Minor Changes
+
+- 8bba19c: add auth config ids support
+
+### Patch Changes
+
+- Updated dependencies [8bba19c]
+  - @composio/core@0.2.0-next.7
+
 ## 0.1.36-next.6
 
 ### Patch Changes

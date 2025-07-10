@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.0-next.7
+
+### Minor Changes
+
+- 8bba19c: add auth config ids support
+
 ## 0.1.36-next.6
 
 ### Patch Changes
