@@ -66,7 +66,7 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
-        limit: '9999',
+        limit: 9999,
         search: undefined,
         toolkit_slug: undefined,
       });
@@ -89,7 +89,7 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: undefined,
         toolkit_slug: 'github',
-        limit: '10',
+        limit: 10,
         search: undefined,
       });
     });
@@ -112,7 +112,7 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: undefined,
         toolkit_slug: 'github',
-        limit: '10',
+        limit: 10,
         search: 'test',
       });
     });
@@ -135,7 +135,7 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: undefined,
         toolkit_slug: 'todoist',
-        limit: '10',
+        limit: 10,
         search: undefined,
         scopes: ['task:add', 'task:read'],
       });
@@ -160,7 +160,7 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: undefined,
         toolkit_slug: 'todoist',
-        limit: '10',
+        limit: 10,
         search: 'add task',
         scopes: ['task:add'],
       });

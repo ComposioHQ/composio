@@ -398,9 +398,9 @@ export class Tools<
     }
 
     // if tools are provided, set the limit to 9999 so that all tools are fetched
-    let limit = 'limit' in queryParams.data ? queryParams.data.limit?.toString() : undefined;
+    let limit = 'limit' in queryParams.data ? queryParams.data.limit : undefined;
     if ('tools' in queryParams.data) {
-      limit = '9999';
+      limit = 9999;
     }
 
     const filters: ComposioToolListParams = {
@@ -412,6 +412,9 @@ export class Tools<
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      ...('authConfigIds' in queryParams.data
+        ? { auth_config_ids: queryParams.data.authConfigIds }
+        : {}),
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
