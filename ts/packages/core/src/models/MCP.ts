@@ -139,11 +139,57 @@ export class MCP<T = McpServerGetResponse> {
 
     // Check if server with this name already exists
     try {
-      await this.getByName(name);
+      const mcpServer = await this.getByName(name);
+      const authConfigs = mcpServer.authConfigIds?.sort()!;
+      const sortedCurrentAuthConfigs = serverConfig.map(config => config.authConfigId).sort();
+      if (
+        authConfigs.length > 0 &&
+        !authConfigs.every((config, index) => config === sortedCurrentAuthConfigs[index])
+      ) {
+        throw new ValidationError(
+          'MCP server with this name already exists with different auth configs',
+          {
+            meta: { serverName: name },
+          }
+        );
+      }
       // If we reach here, server exists
-      throw new ValidationError('MCP server with this name already exists', {
-        meta: { serverName: name },
+      const tools = mcpServer.tools?.sort()!;
+      const sortedCurrentTools = serverConfig.flatMap(config => config.allowedTools).sort();
+      console.log(tools, sortedCurrentTools, 'tools');
+      if (tools?.length > 0 && !tools.every((tool, index) => tool === sortedCurrentTools[index])) {
+        throw new ValidationError('MCP server with this name already exists with different tools', {
+          meta: { serverName: name },
+        });
+      }
+
+      // Get toolkits from auth configs
+      const authConfigDetails = await Promise.all(
+        serverConfig.map(config => this.client.authConfigs.retrieve(config.authConfigId))
+      );
+      const toolkits = authConfigDetails.map(config => config.toolkit.slug);
+
+      const camelCaseResponse = transformMcpCreateResponse({
+        id: mcpServer.id,
+        name: mcpServer.name,
+        auth_config_ids: serverConfig.map(config => config.authConfigId),
+        allowed_tools: serverConfig.flatMap(config => config.allowedTools),
+        managed_auth_via_composio: options.isChatAuth || false,
+        commands: mcpServer.commands!,
+        created_at: mcpServer.createdAt!,
+        updated_at: mcpServer.updatedAt!,
+        mcp_url: mcpServer.mcpUrl!,
       });
+
+      return {
+        ...camelCaseResponse,
+        toolkits,
+        getServer: async (params: MCPGetServerParams): Promise<T> => {
+          return this.getServer(camelCaseResponse.id, params.userId || '', {
+            isChatAuth: options.isChatAuth,
+          });
+        },
+      } as McpServerCreateResponse<T>;
     } catch (error) {
       // If error is not about server not found, re-throw it
       if (error instanceof ValidationError && !error.message.includes('not found')) {
@@ -420,8 +466,9 @@ export class MCP<T = McpServerGetResponse> {
     try {
       data = await this.client.mcp.generate.url({
         user_ids: [userId],
-        connected_account_ids: connectedAccountIds,
-        mcp_server_id: id,
+        // @TODO(utkarsh-dixit): Add support for this later
+        connected_account_ids: [],
+        mcp_server_id: serverId,
         managed_auth_by_composio:
           options?.isChatAuth ?? serverDetails.managedAuthViaComposio ?? false,
       });
@@ -535,7 +582,10 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Validate the retrieve response
-    const retrieveResponseResult = McpRetrieveResponseSchema.safeParse(retrieveResponse);
+    const retrieveResponseResult = McpRetrieveResponseSchema.safeParse({
+      ...retrieveResponse,
+      mcpUrl: retrieveResponse.mcp_url,
+    });
     if (retrieveResponseResult.error) {
       throw new ValidationError('Failed to parse MCP server retrieve response', {
         cause: retrieveResponseResult.error,
@@ -784,6 +834,7 @@ export class MCP<T = McpServerGetResponse> {
         limit: 10,
       });
     } catch (error) {
+      console.error(error);
       throw new ValidationError('Failed to search MCP servers by name', {
         cause: error,
       });

@@ -294,6 +294,12 @@ export const McpRetrieveResponseSchema = z.object({
   tools: z.array(z.string()).optional(),
   managedAuthViaComposio: z.boolean().optional(),
   authConfigIds: z.array(z.string()).optional(),
+  mcpUrl: z.string(),
+  commands: z.object({
+    claude: z.string(),
+    cursor: z.string(),
+    windsurf: z.string(),
+  }),
 });
 
 // Snake_case retrieve response schema (for API)
