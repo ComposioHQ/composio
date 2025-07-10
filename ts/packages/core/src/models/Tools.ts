@@ -412,6 +412,9 @@ export class Tools<
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      ...('authConfigIds' in queryParams.data
+        ? { auth_config_ids: queryParams.data.authConfigIds }
+        : {}),
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
