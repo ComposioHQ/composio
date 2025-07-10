@@ -133,8 +133,14 @@ describe('MCP Transformers', () => {
         updated_at: '2024-01-02T00:00:00Z',
         status: 'active',
         toolkits: ['gmail', 'github'],
-        tools: ['GMAIL_FETCH_EMAILS', 'GITHUB_GET_REPO'],
+        tools: undefined,
         managed_auth_via_composio: true,
+        mcp_url: 'https://mcp.example.com/server',
+        commands: {
+          claude: 'claude-command',
+          cursor: 'cursor-command',
+          windsurf: 'windsurf-command',
+        },
       } as any;
 
       const result = transformMcpRetrieveResponse(snakeCaseResponse);
@@ -146,8 +152,14 @@ describe('MCP Transformers', () => {
         updatedAt: '2024-01-02T00:00:00Z',
         status: 'active',
         toolkits: ['gmail', 'github'],
-        tools: ['GMAIL_FETCH_EMAILS', 'GITHUB_GET_REPO'],
+        tools: undefined,
         managedAuthViaComposio: true,
+        mcpUrl: 'https://mcp.example.com/server',
+        commands: {
+          claude: 'claude-command',
+          cursor: 'cursor-command',
+          windsurf: 'windsurf-command',
+        },
       });
     });
 
@@ -155,6 +167,12 @@ describe('MCP Transformers', () => {
       const minimalResponse = {
         id: 'mcp_123',
         name: 'test-server',
+        mcp_url: 'https://mcp.example.com/server',
+        commands: {
+          claude: 'claude-command',
+          cursor: 'cursor-command',
+          windsurf: 'windsurf-command',
+        },
       } as any;
 
       const result = transformMcpRetrieveResponse(minimalResponse);
@@ -162,6 +180,12 @@ describe('MCP Transformers', () => {
       expect(result).toEqual({
         id: 'mcp_123',
         name: 'test-server',
+        mcpUrl: 'https://mcp.example.com/server',
+        commands: {
+          claude: 'claude-command',
+          cursor: 'cursor-command',
+          windsurf: 'windsurf-command',
+        },
       });
     });
 
