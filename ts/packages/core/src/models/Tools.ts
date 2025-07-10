@@ -384,16 +384,18 @@ export class Tools<
         cause: queryParams.error,
       });
     }
-    // check if the query params contains atleast one of the following: tools, toolkits, search
+
+    // check if the query params contains atleast one of the following: tools, toolkits, search, authConfigIds
     if (
       !(
         'tools' in queryParams.data ||
         'toolkits' in queryParams.data ||
-        'search' in queryParams.data
+        'search' in queryParams.data ||
+        'authConfigIds' in queryParams.data
       )
     ) {
       throw new ValidationError(
-        'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search'
+        'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search, authConfigIds'
       );
     }
 
