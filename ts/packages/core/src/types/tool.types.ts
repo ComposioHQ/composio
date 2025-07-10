@@ -138,7 +138,7 @@ export const ToolListParamsSchema = z.object({
   toolkits: z.array(z.string()).optional(),
   scopes: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
-  limit: z.number().optional(),
+  limit: z.coerce.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
 });
