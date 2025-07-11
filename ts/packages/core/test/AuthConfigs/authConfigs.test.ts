@@ -106,17 +106,18 @@ describe('AuthConfigs', () => {
       expect(result).toEqual(mockTransformedAuthConfigResponse);
     });
 
-    it('should throw ValidationError for invalid response data', () => {
-      const invalidResponse = {
-        ...mockComposioAuthConfigResponse,
-        id: null, // Invalid: id should be string
-      } as unknown as ComposioAuthConfigRetrieveResponse;
+    // We have relaxed the validation for the response data, so we don't expect a ValidationError to be thrown
+    // it('should throw ValidationError for invalid response data', () => {
+    //   const invalidResponse = {
+    //     ...mockComposioAuthConfigResponse,
+    //     id: null, // Invalid: id should be string
+    //   } as unknown as ComposioAuthConfigRetrieveResponse;
 
-      expect(() => {
-        // @ts-expect-error - Accessing private method for testing
-        authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
-      }).toThrow(ValidationError);
-    });
+    //   expect(() => {
+    //     // @ts-expect-error - Accessing private method for testing
+    //     authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
+    //   }).toThrow(ValidationError);
+    // });
 
     it('should handle optional fields correctly', () => {
       const responseWithOptionalFields = {
@@ -618,39 +619,40 @@ describe('AuthConfigs', () => {
   });
 
   describe('error handling', () => {
-    it('should preserve ValidationError details when parsing fails', async () => {
-      const invalidResponse = {
-        id: null, // Invalid: id should be string
-        name: 'Test Config',
-        no_of_connections: 5,
-        status: 'ENABLED',
-        deprecated_params: {
-          default_connector_id: null,
-        },
-        type: 'custom',
-        toolkit: {
-          logo: 'valid_logo',
-          slug: 'valid_slug',
-        },
-        uuid: 'uuid-123',
-      } as unknown as ComposioAuthConfigRetrieveResponse;
+    // We have relaxed the validation for auth config response, so we don't throw an error when parsing fails
+    // it('should preserve ValidationError details when parsing fails', async () => {
+    //   const invalidResponse = {
+    //     id: null, // Invalid: id should be string
+    //     name: 'Test Config',
+    //     no_of_connections: 5,
+    //     status: 'ENABLED',
+    //     deprecated_params: {
+    //       default_connector_id: null,
+    //     },
+    //     type: 'custom',
+    //     toolkit: {
+    //       logo: 'valid_logo',
+    //       slug: 'valid_slug',
+    //     },
+    //     uuid: 'uuid-123',
+    //   } as unknown as ComposioAuthConfigRetrieveResponse;
 
-      expect(() => {
-        // @ts-expect-error - Accessing private method for testing
-        authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
-      }).toThrow(ValidationError);
+    //   expect(() => {
+    //     // @ts-expect-error - Accessing private method for testing
+    //     authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
+    //   }).toThrow(ValidationError);
 
-      try {
-        // @ts-expect-error - Accessing private method for testing
-        authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError);
-        expect((error as ValidationError).message).toContain(
-          'Failed to parse auth config response'
-        );
-        expect((error as ValidationError).cause).toBeInstanceOf(ZodError);
-      }
-    });
+    //   try {
+    //     // @ts-expect-error - Accessing private method for testing
+    //     authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
+    //   } catch (error) {
+    //     expect(error).toBeInstanceOf(ValidationError);
+    //     expect((error as ValidationError).message).toContain(
+    //       'Failed to parse auth config response'
+    //     );
+    //     expect((error as ValidationError).cause).toBeInstanceOf(ZodError);
+    //   }
+    // });
 
     it('should handle network errors gracefully', async () => {
       const networkError = new Error('Network error');
