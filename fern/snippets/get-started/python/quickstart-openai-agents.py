@@ -10,7 +10,7 @@ user_id = "user@email.com"
 composio = Composio(provider=OpenAIAgentsProvider())
 
 # Initialize connection request
-connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="gmail")
+connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="github")
 print(f"🔗 Visit the URL to authorize:\n👉 {connection_request.redirect_url}")
 
 # wait for the connection to be active
