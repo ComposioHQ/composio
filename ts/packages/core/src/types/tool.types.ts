@@ -140,6 +140,7 @@ export const ToolListParamsSchema = z.object({
   tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
   search: z.string().optional(),
+  authConfigIds: z.array(z.string()).optional(),
 });
 
 type BaseParams = {
@@ -190,6 +191,12 @@ type SearchOnlyParams = {
   tags?: never;
 };
 
+// tools by auth config ids only
+type AuthConfigIdsOnlyParams = {
+  authConfigIds: string[];
+  tools?: never;
+  toolkit?: never;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
@@ -199,7 +206,8 @@ export type ToolListParams =
   | ToolkitsOnlyParams
   | ToolkitScopeOnlyParams
   | SearchOnlyParams
-  | TagsOnlyParams;
+  | TagsOnlyParams
+  | AuthConfigIdsOnlyParams;
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.

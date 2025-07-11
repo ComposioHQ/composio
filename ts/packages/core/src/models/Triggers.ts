@@ -341,7 +341,7 @@ export class Triggers {
       .with(TriggersTypeListResponseSchema)
       .using(raw => ({
         items: raw.items,
-        nextCursor: raw.next_cursor,
+        nextCursor: raw.next_cursor ?? null,
         totalPages: raw.total_pages,
       }));
 

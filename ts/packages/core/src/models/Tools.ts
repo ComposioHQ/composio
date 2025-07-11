@@ -384,16 +384,18 @@ export class Tools<
         cause: queryParams.error,
       });
     }
-    // check if the query params contains atleast one of the following: tools, toolkits, search
+
+    // check if the query params contains atleast one of the following: tools, toolkits, search, authConfigIds
     if (
       !(
         'tools' in queryParams.data ||
         'toolkits' in queryParams.data ||
-        'search' in queryParams.data
+        'search' in queryParams.data ||
+        'authConfigIds' in queryParams.data
       )
     ) {
       throw new ValidationError(
-        'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search'
+        'Invalid tool list parameters, atleast one of the following parameters is required: tools, toolkits, search, authConfigIds'
       );
     }
 
@@ -412,6 +414,9 @@ export class Tools<
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
       ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      ...('authConfigIds' in queryParams.data
+        ? { auth_config_ids: queryParams.data.authConfigIds }
+        : {}),
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
