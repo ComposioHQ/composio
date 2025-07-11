@@ -18,6 +18,7 @@ export const ConnectedAccountStatusSchema = z.enum([
   ConnectedAccountStatuses.ACTIVE,
   ConnectedAccountStatuses.FAILED,
   ConnectedAccountStatuses.EXPIRED,
+  ConnectedAccountStatuses.INACTIVE,
 ]);
 export type ConnectedAccountStatus =
   (typeof ConnectedAccountStatuses)[keyof typeof ConnectedAccountStatuses];
@@ -72,7 +73,7 @@ export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConf
 export const ConnectedAccountRetrieveResponseSchema = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
-  data: z.record(z.string(), z.unknown()),
+  data: z.record(z.string(), z.unknown()).optional(),
   params: z.record(z.string(), z.unknown()).optional(),
   status: ConnectedAccountStatusSchema,
   statusReason: z.string().nullable(),

@@ -29,6 +29,11 @@ import {
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import logger from '../utils/logger';
+import {
+  transformAuthConfigListResponse,
+  transformAuthConfigRetrieveResponse,
+  transformCreateAuthConfigResponse,
+} from '../utils/transformers/authConfigs';
 /**
  * AuthConfigs class
  *
@@ -50,50 +55,6 @@ export class AuthConfigs {
    */
   protected getClient(): ComposioClient {
     return this.client;
-  }
-
-  /**
-   * Transforms an auth config response from API format to SDK format.
-   *
-   * This method converts property names from snake_case to camelCase and reorganizes
-   * the data structure to match the SDK's standardized format for auth configurations.
-   *
-   * @param {ComposioAuthConfigRetrieveResponse} authConfig - The raw API response to transform
-   * @returns {AuthConfigRetrieveResponse} The transformed auth config data
-   * @throws {ValidationError} If the response fails validation against the expected schema
-   *
-   * @private
-   */
-  private parseAuthConfigRetrieveResponse(
-    authConfig: ComposioAuthConfigRetrieveResponse
-  ): AuthConfigRetrieveResponse {
-    const responseToParse = {
-      id: authConfig.id,
-      name: authConfig.name,
-      noOfConnections: authConfig.no_of_connections,
-      status: authConfig.status,
-      toolkit: {
-        logo: authConfig.toolkit.logo,
-        slug: authConfig.toolkit.slug,
-      },
-      uuid: authConfig.uuid,
-      authScheme: authConfig.auth_scheme,
-      credentials: authConfig.credentials,
-      expectedInputFields: authConfig.expected_input_fields,
-      isComposioManaged: authConfig.is_composio_managed,
-      createdBy: authConfig.created_by,
-      createdAt: authConfig.created_at,
-      lastUpdatedAt: authConfig.last_updated_at,
-      restrictToFollowingTools: authConfig.restrict_to_following_tools,
-    };
-    const result = AuthConfigRetrieveResponseSchema.safeParse(responseToParse);
-    if (result.error) {
-      logger.error('Failed to parse auth config response', {
-        cause: result.error,
-      });
-      return responseToParse as AuthConfigRetrieveResponse;
-    }
-    return result.data;
   }
 
   /**
@@ -130,17 +91,7 @@ export class AuthConfigs {
       limit: parsedQuery?.limit,
       toolkit_slug: parsedQuery?.toolkit,
     });
-    const parsedResult = AuthConfigListResponseSchema.safeParse({
-      items: result.items.map(item => this.parseAuthConfigRetrieveResponse(item)),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    });
-    if (parsedResult.error) {
-      throw new ValidationError('Failed to parse auth config list response', {
-        cause: parsedResult.error,
-      });
-    }
-    return parsedResult.data;
+    return transformAuthConfigListResponse(result);
   }
 
   /**
@@ -191,18 +142,7 @@ export class AuthConfigs {
               restrict_to_following_tools: parsedOptions.data.restrictToFollowingTools,
             },
     });
-    const parsedResult = CreateAuthConfigResponseSchema.safeParse({
-      id: result.auth_config.id,
-      authScheme: result.auth_config.auth_scheme,
-      isComposioManaged: result.auth_config.is_composio_managed,
-      toolkit: result.toolkit.slug,
-    });
-    if (parsedResult.error) {
-      throw new ValidationError('Failed to parse auth config create response', {
-        cause: parsedResult.error,
-      });
-    }
-    return parsedResult.data;
+    return transformCreateAuthConfigResponse(result);
   }
 
   /**
@@ -226,7 +166,7 @@ export class AuthConfigs {
    */
   async get(nanoid: string): Promise<AuthConfigRetrieveResponse> {
     const result = await this.client.authConfigs.retrieve(nanoid);
-    return this.parseAuthConfigRetrieveResponse(result);
+    return transformAuthConfigRetrieveResponse(result);
   }
 
   /**

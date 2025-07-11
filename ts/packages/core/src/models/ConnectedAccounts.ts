@@ -26,16 +26,13 @@ import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
-import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
+import {
+  transformConnectedAccountListResponse,
+  transformConnectedAccountResponse,
+} from '../utils/transformers/connectedAccounts';
 import { ComposioMultipleConnectedAccountsError } from '../errors';
 import logger from '../utils/logger';
-import { AuthSchemeType } from '../types/authConfigs.types';
-import { AuthScheme } from './AuthScheme';
-import {
-  ConnectionData,
-  ConnectionDataSchema,
-  ConnectionStatuses,
-} from '../types/connectedAccountAuthStates.types';
+import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 /**
  * ConnectedAccounts class
  *
@@ -97,18 +94,7 @@ export class ConnectedAccounts {
     }
 
     const result = await this.client.connectedAccounts.list(rawQuery);
-
-    const parsedResponse = ConnectedAccountListResponseSchema.safeParse({
-      items: result.items.map(transformConnectedAccountResponse),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    });
-    if (!parsedResponse.success) {
-      throw new ValidationError('Failed to parse connected account list response', {
-        cause: parsedResponse.error,
-      });
-    }
-    return parsedResponse.data;
+    return transformConnectedAccountListResponse(result);
   }
 
   /**
