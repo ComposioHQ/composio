@@ -1,5 +1,14 @@
 # @composio/core
 
+## 0.1.36-next.9
+
+### Patch Changes
+
+- 9fa49ec: Update composio api client to latest version
+- Bump packages for authconfig fixes
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.10-next.4
+
 ## 0.1.36-next.8
 
 ### Patch Changes

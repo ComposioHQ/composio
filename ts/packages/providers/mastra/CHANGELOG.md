@@ -1,5 +1,15 @@
 # @composio/mastra
 
+## 0.1.36-next.9
+
+### Patch Changes
+
+- 9fa49ec: Update composio api client to latest version
+- Bump packages for authconfig fixes
+- Updated dependencies [9fa49ec]
+- Updated dependencies
+  - @composio/core@0.1.36-next.9
+
 ## 0.1.36-next.8
 
 ### Patch Changes

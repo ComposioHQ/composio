@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10-next.4
+
+### Patch Changes
+
+- Bump packages for authconfig fixes
+
 ## 0.1.10-next.3
 
 ### Patch Changes
