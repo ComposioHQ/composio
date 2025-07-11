@@ -1,5 +1,21 @@
 # @composio/mastra
 
+## 0.1.36-next.8
+
+### Patch Changes
+
+- Fix package bumps
+- Updated dependencies
+  - @composio/core@0.1.36-next.8
+
+## 0.1.36-next.7
+
+### Patch Changes
+
+- da57771: dont't validate if authConfigIds is provided
+- Updated dependencies [da57771]
+  - @composio/core@0.1.36-next.7
+
 ## 0.1.36-next.6
 
 ### Patch Changes
