@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.10
+
+### Patch Changes
+
+- Fix: Relax strict type/schema validations on API responses
+
 ## 0.1.36-next.9
 
 ### Patch Changes
