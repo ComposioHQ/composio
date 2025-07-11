@@ -11,8 +11,9 @@
  *   .using((raw) => ({ ... }))
  * ```
  */
-import { ZodType, ZodTypeAny, z } from 'zod';
+import { ZodTypeAny, z } from 'zod';
 import { ValidationError } from '../errors';
+import { logger } from '..';
 
 export function transform<RawInput>(raw: RawInput) {
   return {
@@ -26,12 +27,15 @@ export function transform<RawInput>(raw: RawInput) {
           const result = schema.safeParse(transformed);
 
           if (!result.success) {
-            throw new ValidationError(
-              `Failed to transform${options?.label ? ` ${options.label}` : ''}`,
-              {
-                cause: result.error,
-              }
-            );
+            // @TODO:send telemetry here
+            // throw new ValidationError(
+            //   `Failed to transform${options?.label ? ` ${options.label}` : ''}`,
+            //   {
+            //     cause: result.error,
+            //   }
+            // );
+            logger.error(result.error);
+            return transformed;
           }
 
           return result.data;

@@ -9,6 +9,7 @@ import {
   AuthConfigUpdateResponse,
   AuthConfigUpdateStatusResponse,
 } from '@composio/client/resources/auth-configs';
+import { transformAuthConfigRetrieveResponse } from '../../src/utils/transformers/authConfigs';
 
 // Mock data for testing
 const mockComposioAuthConfigResponse: ComposioAuthConfigRetrieveResponse = {
@@ -101,8 +102,7 @@ describe('AuthConfigs', () => {
 
   describe('parseAuthConfigRetrieveResponse', () => {
     it('should transform API response to SDK format correctly', () => {
-      // @ts-expect-error - Accessing private method for testing
-      const result = authConfigs.parseAuthConfigRetrieveResponse(mockComposioAuthConfigResponse);
+      const result = transformAuthConfigRetrieveResponse(mockComposioAuthConfigResponse);
       expect(result).toEqual(mockTransformedAuthConfigResponse);
     });
 
@@ -137,8 +137,7 @@ describe('AuthConfigs', () => {
         // Optional fields omitted
       } as ComposioAuthConfigRetrieveResponse;
 
-      // @ts-expect-error - Accessing private method for testing
-      const result = authConfigs.parseAuthConfigRetrieveResponse(responseWithOptionalFields);
+      const result = transformAuthConfigRetrieveResponse(responseWithOptionalFields);
       expect(result).toMatchObject({
         id: 'auth_12345',
         name: 'Test Auth Config',
@@ -214,23 +213,6 @@ describe('AuthConfigs', () => {
         // @ts-expect-error - Testing invalid input
         authConfigs.list(invalidQuery)
       ).rejects.toThrow(); // Just expect any error since Zod throws ZodError directly
-    });
-
-    it('should throw ValidationError when API response is invalid', async () => {
-      const invalidResponse = {
-        items: [
-          {
-            ...mockComposioAuthConfigResponse,
-            id: null, // Invalid response structure
-          },
-        ],
-        next_cursor: 'next_cursor_123',
-        total_pages: 1,
-      };
-
-      mockClient.authConfigs.list.mockResolvedValueOnce(invalidResponse);
-
-      await expect(authConfigs.list()).rejects.toThrow(ValidationError);
     });
 
     it('should handle empty list response', async () => {
@@ -363,23 +345,6 @@ describe('AuthConfigs', () => {
         // @ts-expect-error - Testing invalid input
         authConfigs.create('github', invalidOptions)
       ).rejects.toThrow(ValidationError);
-    });
-
-    it('should throw ValidationError when API response is invalid', async () => {
-      const invalidResponse = {
-        auth_config: {
-          id: null, // Invalid response structure
-          auth_scheme: 'OAUTH2',
-          is_composio_managed: true,
-        },
-        toolkit: {
-          slug: 'github',
-        },
-      };
-
-      mockClient.authConfigs.create.mockResolvedValueOnce(invalidResponse);
-
-      await expect(authConfigs.create('github')).rejects.toThrow(ValidationError);
     });
   });
 
@@ -660,35 +625,6 @@ describe('AuthConfigs', () => {
 
       await expect(authConfigs.list()).rejects.toThrow('Network error');
     });
-
-    it('should handle malformed API responses', async () => {
-      // Response missing required fields
-      const malformedResponse = {
-        items: [
-          {
-            id: 'test_id',
-            name: null, // Invalid: name should be string
-            no_of_connections: 5,
-            status: 'ENABLED',
-            deprecated_params: {
-              default_connector_id: null,
-            },
-            type: 'custom',
-            toolkit: {
-              logo: 'logo',
-              slug: 'slug',
-            },
-            uuid: 'uuid-123',
-          },
-        ],
-        next_cursor: 'cursor',
-        total_pages: 1,
-      };
-
-      mockClient.authConfigs.list.mockResolvedValueOnce(malformedResponse);
-
-      await expect(authConfigs.list()).rejects.toThrow(ValidationError);
-    });
   });
 
   describe('edge cases', () => {
@@ -709,8 +645,7 @@ describe('AuthConfigs', () => {
         uuid: 'uuid-minimal',
       } as ComposioAuthConfigRetrieveResponse;
 
-      // @ts-expect-error - Accessing private method for testing
-      const result = authConfigs.parseAuthConfigRetrieveResponse(minimalResponse);
+      const result = transformAuthConfigRetrieveResponse(minimalResponse);
 
       expect(result).toMatchObject({
         id: 'auth_minimal',

@@ -1,36 +1,23 @@
 import ComposioClient, { APIError } from '@composio/client';
+import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/index';
 import {
-  TriggerInstanceListActiveResponse as TriggerInstanceListActiveResponseComposio,
-  TriggersTypeListParams as TriggersTypeListParamsRaw,
-  TriggersTypeListResponse as TriggersTypeListResponseRaw,
-  TriggersTypeRetrieveEnumResponse,
-  TriggersTypeRetrieveResponse as TriggersTypeRetrieveResponseRaw,
-} from '@composio/client/resources/index';
-import {
-  TriggerInstanceUpsertResponseSchema,
   TriggerInstanceUpsertResponse,
   TriggerInstanceUpsertParamsSchema,
   TriggerInstanceUpsertParams,
   TriggerInstanceListActiveParams,
   TriggerInstanceListActiveParamsSchema,
   TriggerInstanceListActiveResponse,
-  TriggerInstanceListActiveResponseItemSchema,
-  TriggerInstanceListActiveResponseSchema,
   TriggerSubscribeParams,
   TriggerInstanceManageUpdateParams,
   TriggerInstanceManageUpdateResponse,
   TriggerInstanceManageDeleteResponse,
-  TriggerInstanceManageDeleteResponseSchema,
   TriggerSubscribeParamSchema,
-  IncomingTriggerPayloadSchema,
   IncomingTriggerPayload,
   TriggerData,
   TriggersTypeListParams,
   TriggersTypeListResponse,
-  TriggersTypeListResponseSchema,
   TriggersTypeListParamsSchema,
   TriggersTypeRetrieveResponse,
-  TriggerTypeSchema,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
@@ -38,6 +25,12 @@ import { ComposioConnectedAccountNotFoundError, ValidationError } from '../error
 import { PusherService } from '../services/pusher/Pusher';
 import { ComposioTriggerTypeNotFoundError } from '../errors/TriggerErrors';
 import { transform } from '../utils/transform';
+import {
+  transformIncomingTriggerPayload,
+  transformTriggerInstanceListActiveResponse,
+  transformTriggerTypeListResponse,
+  transformTriggerTypeRetrieveResponse,
+} from '../utils/transformers/triggers';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -51,34 +44,6 @@ export class Triggers {
     this.client = client;
     this.pusherService = new PusherService(client);
     telemetry.instrument(this);
-  }
-
-  /**
-   * Parse the trigger instance list active item
-   *
-   * @param response - The response from the composio client
-   * @returns The parsed trigger instance list active item
-   */
-  private parseTriggerInstanceListActiveItem(
-    response: TriggerInstanceListActiveResponseComposio['items'][0]
-  ) {
-    const parsed = TriggerInstanceListActiveResponseItemSchema.safeParse({
-      id: response.id,
-      connectedAccountId: response.connected_account_id,
-      disabledAt: response.disabled_at,
-      state: response.state,
-      triggerConfig: response.trigger_config,
-      triggerName: response.trigger_name,
-      updatedAt: response.updated_at,
-      triggerData: response.trigger_data,
-      uuid: response.uuid,
-    });
-    if (!parsed.success) {
-      throw new ValidationError(`Invalid trigger instance list active item`, {
-        cause: parsed.error,
-      });
-    }
-    return parsed.data;
   }
 
   /**
@@ -124,20 +89,7 @@ export class Triggers {
           }
         : undefined
     );
-
-    const parsedResult = TriggerInstanceListActiveResponseSchema.safeParse({
-      items: result.items.map(item => this.parseTriggerInstanceListActiveItem(item)),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    } as TriggerInstanceListActiveResponse);
-
-    if (!parsedResult.success) {
-      throw new ValidationError(`Invalid trigger instance list active response`, {
-        cause: parsedResult.error,
-      });
-    }
-
-    return parsedResult.data;
+    return transformTriggerInstanceListActiveResponse(result);
   }
 
   /**
@@ -244,17 +196,9 @@ export class Triggers {
       trigger_config: parsedBody.data.triggerConfig,
     });
 
-    const parsedResult = TriggerInstanceUpsertResponseSchema.safeParse({
+    return {
       triggerId: result.trigger_id,
-    } as TriggerInstanceUpsertResponse);
-
-    if (!parsedResult.success) {
-      throw new ValidationError(`Invalid trigger instance upsert response`, {
-        cause: parsedResult.error,
-      });
-    }
-
-    return parsedResult.data;
+    };
   }
 
   /**
@@ -279,17 +223,9 @@ export class Triggers {
    */
   async delete(triggerId: string): Promise<TriggerInstanceManageDeleteResponse> {
     const result = await this.client.triggerInstances.manage.delete(triggerId);
-    const parsedResult = TriggerInstanceManageDeleteResponseSchema.safeParse({
+    return {
       triggerId: result.trigger_id,
-    });
-
-    if (!parsedResult.success) {
-      throw new ValidationError(`Invalid trigger instance manage delete response`, {
-        cause: parsedResult.error,
-      });
-    }
-
-    return parsedResult.data;
+    };
   }
 
   /**
@@ -337,15 +273,7 @@ export class Triggers {
       toolkit_slugs: parsedQuery.toolkits,
     });
 
-    const parsedResult = transform(result)
-      .with(TriggersTypeListResponseSchema)
-      .using(raw => ({
-        items: raw.items,
-        nextCursor: raw.next_cursor ?? null,
-        totalPages: raw.total_pages,
-      }));
-
-    return parsedResult;
+    return transformTriggerTypeListResponse(result);
   }
 
   /**
@@ -357,23 +285,7 @@ export class Triggers {
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
     const result = await this.client.triggersTypes.retrieve(slug);
-    const parsedResult = transform(result)
-      .with(TriggerTypeSchema)
-      .using(raw => ({
-        slug: raw.slug,
-        name: raw.name,
-        description: raw.description,
-        instructions: raw.instructions,
-        toolkit: {
-          logo: raw.toolkit.logo,
-          slug: raw.toolkit.slug,
-          name: raw.toolkit.name,
-        },
-        payload: raw.payload,
-        config: raw.config,
-      }));
-
-    return parsedResult;
+    return transformTriggerTypeRetrieveResponse(result);
   }
 
   /**
@@ -499,42 +411,11 @@ export class Triggers {
       // @TODO: This is a temporary fix to get the trigger data
       // ideally we should have a type for the trigger data
       const data = _data as TriggerData;
-      const parsedData = IncomingTriggerPayloadSchema.safeParse({
-        id: data.metadata.nanoId,
-        uuid: data.metadata.id,
-        triggerSlug: data.metadata.triggerName,
-        toolkitSlug: data.appName,
-        userId: data.metadata.connection?.clientUniqueUserId,
-        payload: data.payload,
-        originalPayload: data.originalPayload,
-        metadata: {
-          id: data.metadata.nanoId,
-          uuid: data.metadata.id,
-          triggerConfig: data.metadata.triggerConfig,
-          triggerSlug: data.metadata.triggerName,
-          toolkitSlug: data.appName,
-          triggerData: data.metadata.triggerData,
-          connectedAccount: {
-            id: data.metadata.connection?.connectedAccountNanoId,
-            uuid: data.metadata.connection?.id,
-            authConfigId: data.metadata.connection?.authConfigNanoId,
-            authConfigUUID: data.metadata.connection?.integrationId,
-            userId: data.metadata.connection?.clientUniqueUserId,
-            status: data.metadata.connection?.status,
-          },
-        },
-      });
+      const parsedData = transformIncomingTriggerPayload(data);
 
-      logger.debug('Parsed trigger data', JSON.stringify(parsedData.data, null, 2));
-
-      if (parsedData.error) {
-        throw new ValidationError(`Invalid trigger payload`, {
-          cause: parsedData.error,
-        });
-      }
-      if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData.data)) {
+      if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
         try {
-          fn(parsedData.data);
+          fn(parsedData);
         } catch (error) {
           logger.error('❌ Error in trigger callback:', error);
         }

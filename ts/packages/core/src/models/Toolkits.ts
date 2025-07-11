@@ -1,15 +1,10 @@
 import ComposioClient from '@composio/client';
 import {
-  ToolKitItemSchema,
   ToolkitListParams,
   ToolKitListResponse,
-  ToolKitListResponseSchema,
   ToolkitRetrieveResponse,
-  ToolkitRetrieveResponseSchema,
   ToolkitsListParamsSchema,
   ToolkitRetrieveCategoriesResponse,
-  ToolkitRetrieveCategoriesResponseSchema,
-  ToolkitCategorySchema,
   ToolkitAuthFieldsResponse,
 } from '../types/toolkit.types';
 import { ComposioToolkitFetchError, ComposioToolkitNotFoundError } from '../errors';
@@ -22,6 +17,11 @@ import { telemetry } from '../telemetry/Telemetry';
 import { AuthSchemeType } from '../types/authConfigs.types';
 import logger from '../utils/logger';
 import { APIError } from 'openai';
+import {
+  transformToolkitListResponse,
+  transformToolkitRetrieveCategoriesResponse,
+  transformToolkitRetrieveResponse,
+} from '../utils/transformers/toolkits';
 /**
  * Toolkits class
  *
@@ -62,42 +62,7 @@ export class Toolkits {
         sort_by: parsedQuery.data.sortBy,
       });
 
-      const parsedResult = ToolKitListResponseSchema.safeParse(
-        result.items.map(item => {
-          const parsedItem = ToolKitItemSchema.safeParse({
-            name: item.name,
-            slug: item.slug,
-            meta: {
-              ...item.meta,
-              createdAt: item.meta.created_at,
-              updatedAt: item.meta.updated_at,
-              toolsCount: item.meta.tools_count,
-              triggersCount: item.meta.triggers_count,
-              categories: item.meta.categories,
-              appUrl: item.meta.app_url,
-              logo: item.meta.logo,
-            },
-            isLocalToolkit: item.is_local_toolkit,
-            authSchemes: item.auth_schemes,
-            composioManagedAuthSchemes: item.composio_managed_auth_schemes,
-            noAuth: item.no_auth,
-          });
-          if (!parsedItem.success) {
-            throw new ValidationError('Failed to parse toolkit response', {
-              cause: parsedItem.error,
-            });
-          }
-          return parsedItem.data;
-        })
-      );
-
-      if (!parsedResult.success) {
-        throw new ValidationError('Failed to parse toolkit list response', {
-          cause: parsedResult.error,
-        });
-      }
-
-      return parsedResult.data;
+      return transformToolkitListResponse(result);
     } catch (error) {
       throw new ComposioToolkitFetchError('Failed to fetch toolkits', {
         cause: error,
@@ -120,37 +85,7 @@ export class Toolkits {
   protected async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
     try {
       const result = await this.client.toolkits.retrieve(slug);
-      const parsedResult = ToolkitRetrieveResponseSchema.safeParse({
-        name: result.name,
-        slug: result.slug,
-        meta: {
-          ...result.meta,
-          createdAt: result.meta.created_at,
-          updatedAt: result.meta.updated_at,
-          toolsCount: result.meta.tools_count,
-          triggersCount: result.meta.triggers_count,
-          // appUrl: result.meta.app_url, @TODO Update the client type to include this
-        },
-        isLocalToolkit: result.is_local_toolkit,
-        composioManagedAuthSchemes: result.composio_managed_auth_schemes,
-        authConfigDetails: result.auth_config_details?.map(authConfig => ({
-          name: authConfig.name,
-          mode: authConfig.mode,
-          fields: {
-            authConfigCreation: authConfig.fields.auth_config_creation,
-            connectedAccountInitiation: authConfig.fields.connected_account_initiation,
-          },
-          proxy: {
-            baseUrl: authConfig.proxy?.base_url,
-          },
-        })),
-      });
-      if (!parsedResult.success) {
-        throw new ValidationError('Failed to parse toolkit response', {
-          cause: parsedResult.error,
-        });
-      }
-      return parsedResult.data;
+      return transformToolkitRetrieveResponse(result);
     } catch (error) {
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
         throw new ComposioToolkitNotFoundError(`Toolkit with slug ${slug} not found`, {
@@ -208,7 +143,7 @@ export class Toolkits {
    * });
    * ```
    */
-  async get(query: ToolkitListParams): Promise<ToolKitListResponse>;
+  async get(query?: ToolkitListParams): Promise<ToolKitListResponse>;
 
   /**
    * Implementation method that handles both overloads for retrieving toolkits.
@@ -217,12 +152,12 @@ export class Toolkits {
    * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit or list of toolkits
    */
   async get(
-    arg: string | ToolkitListParams
+    arg?: string | ToolkitListParams
   ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
     if (typeof arg === 'string') {
       return this.getToolkitBySlug(arg);
     }
-    return this.getToolkits(arg);
+    return this.getToolkits(arg ?? {});
   }
 
   private async getAuthConfigFields(
@@ -343,23 +278,7 @@ export class Toolkits {
    */
   async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
     const result = await this.client.toolkits.retrieveCategories();
-    const parsedResult = ToolkitRetrieveCategoriesResponseSchema.safeParse({
-      items: result.items.map(item => {
-        const parsedItem = ToolkitCategorySchema.parse({
-          id: item.id,
-          name: item.name,
-        });
-        return parsedItem;
-      }),
-      nextCursor: result.next_cursor,
-      totalPages: result.total_pages,
-    });
-    if (!parsedResult.success) {
-      throw new ValidationError('Failed to parse toolkit categories response', {
-        cause: parsedResult.error,
-      });
-    }
-    return parsedResult.data;
+    return transformToolkitRetrieveCategoriesResponse(result);
   }
 
   /**

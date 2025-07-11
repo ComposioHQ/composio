@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.36-next.10
+
+### Patch Changes
+
+- Fix: Relax strict type/schema validations on API responses
+- Updated dependencies
+  - @composio/core@0.1.36-next.10
+
 ## 0.1.36-next.9
 
 ### Patch Changes

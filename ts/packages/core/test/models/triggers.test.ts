@@ -260,14 +260,6 @@ describe('Triggers', () => {
       });
     });
 
-    it('should throw validation error for invalid response', async () => {
-      mockClient.triggerInstances.listActive.mockResolvedValue({
-        items: [{ invalid: 'data' }],
-      });
-
-      await expect(triggers.listActive()).rejects.toThrow(ValidationError);
-    });
-
     it('should list active trigger instances with query parameters', async () => {
       const query = {
         authConfigIds: ['auth-1'],
@@ -402,17 +394,6 @@ describe('Triggers', () => {
       );
       expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
     });
-
-    it('should throw validation error for invalid upsert response', async () => {
-      mockClient.connectedAccounts.list.mockResolvedValue({
-        items: [{ id: 'conn-123' }],
-      });
-      mockClient.triggerInstances.upsert.mockResolvedValue({
-        invalid_field: 'value',
-      });
-
-      await expect(triggers.create(userId, slug, body)).rejects.toThrow(ValidationError);
-    });
   });
 
   describe('update', () => {
@@ -437,13 +418,6 @@ describe('Triggers', () => {
 
       expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId);
       expect(result).toEqual({ triggerId: mockTriggerDeleteResponse.trigger_id });
-    });
-
-    it('should throw validation error for invalid response', async () => {
-      const triggerId = 'trigger-123';
-      mockClient.triggerInstances.manage.delete.mockResolvedValue({ invalid: 'response' });
-
-      await expect(triggers.delete(triggerId)).rejects.toThrow(ValidationError);
     });
   });
 
@@ -702,26 +676,6 @@ describe('Triggers', () => {
       );
     });
 
-    it('should handle invalid trigger data format', async () => {
-      const invalidTriggerData = {
-        appName: 'github',
-        clientId: 123,
-        payload: { action: 'push' },
-        originalPayload: { action: 'push' },
-        metadata: {
-          triggerName: 'github_webhook',
-        },
-      };
-
-      await triggers.subscribe(mockCallback);
-
-      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const filterCallback = subscribeCall[0];
-
-      expect(() => filterCallback(invalidTriggerData)).toThrow(ValidationError);
-      expect(mockCallback).not.toHaveBeenCalled();
-    });
-
     it('should handle partial trigger data with missing optional fields', async () => {
       const partialTriggerData = {
         appName: 'github',
@@ -941,26 +895,6 @@ describe('Triggers', () => {
         '❌ Error in trigger callback:',
         Error('Error in user callback')
       );
-    });
-
-    it('should handle invalid trigger data format', async () => {
-      const invalidTriggerData = {
-        appName: 'github',
-        clientId: 123,
-        payload: { action: 'push' },
-        originalPayload: { action: 'push' },
-        metadata: {
-          triggerName: 'github_webhook',
-        },
-      };
-
-      await triggers.subscribe(mockCallback);
-
-      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const filterCallback = subscribeCall[0];
-
-      expect(() => filterCallback(invalidTriggerData)).toThrow(ValidationError);
-      expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle multiple callbacks with different filters', async () => {

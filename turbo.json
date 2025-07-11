@@ -12,6 +12,10 @@
     "clean": {
       "cache": false
     },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "//#clean": {
       "cache": false
     }
