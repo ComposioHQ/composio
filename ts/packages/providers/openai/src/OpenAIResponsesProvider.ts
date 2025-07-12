@@ -86,6 +86,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @returns OpenAI-specific MCP server response format
    */
   wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
+    console.log('Wrapping MCP server response', data);
     return data.map(item => ({
       type: 'mcp',
       server_label: item.name,

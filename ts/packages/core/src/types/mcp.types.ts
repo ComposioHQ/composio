@@ -28,7 +28,7 @@ export const MCPToolkitConfigsArraySchema = z
   }, 'Duplicate toolkits are not allowed. Each toolkit must be unique.');
 
 export const MCPAuthOptionsSchema = z.object({
-  useComposioManagedAuth: z.boolean().optional(),
+  isChatAuth: z.boolean().optional(),
 });
 
 export type MCPAuthOptions = z.infer<typeof MCPAuthOptionsSchema>;
@@ -59,13 +59,13 @@ export type MCPInstanceParams = {
   serverId: string;
   userIds?: string[];
   connectedAccountIds?: string[];
-  useComposioManagedAuth?: boolean;
+  isChatAuth?: boolean;
 };
 
 export const MCPGenerateURLParamsSchema = z.object({
   userIds: z.array(z.string()).optional(),
   connectedAccountIds: z.array(z.string()).optional(),
-  useComposioManagedAuth: z.boolean().optional(),
+  isChatAuth: z.boolean().optional(),
 });
 export type MCPGenerateURLParams = z.infer<typeof MCPGenerateURLParamsSchema>;
 
@@ -202,6 +202,36 @@ export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateRes
   getServer: (params: MCPGetServerParams) => Promise<T>;
 };
 
+export enum ConnectionStatus {
+  CONNECTED = 'CONNECTED',
+  DISCONNECTED = 'DISCONNECTED',
+}
+
+export type McpToolkitConnectionStatus =
+  | {
+      type: ConnectionStatus.CONNECTED;
+      connected: true;
+      toolkit: string;
+      connectedAccountId: string;
+    }
+  | {
+      type: ConnectionStatus.DISCONNECTED;
+      connected: false;
+      toolkit: string;
+    };
+
+export type McpUserConnectionStatus =
+  | {
+      type: ConnectionStatus.CONNECTED;
+      connected: true;
+      connectedToolkits: Record<string, McpToolkitConnectionStatus>;
+    }
+  | {
+      type: ConnectionStatus.DISCONNECTED;
+      connected: false;
+      connectedToolkits: Record<string, McpToolkitConnectionStatus>;
+    };
+
 // CamelCase create response schema
 export const CustomCreateResponseSchema = z.object({
   id: z.string().min(1, 'Server ID cannot be empty'),
@@ -263,6 +293,13 @@ export const McpRetrieveResponseSchema = z.object({
   toolkits: z.array(z.string()).optional(),
   tools: z.array(z.string()).optional(),
   managedAuthViaComposio: z.boolean().optional(),
+  authConfigIds: z.array(z.string()).optional(),
+  mcpUrl: z.string(),
+  commands: z.object({
+    claude: z.string(),
+    cursor: z.string(),
+    windsurf: z.string(),
+  }),
 });
 
 // Snake_case retrieve response schema (for API)

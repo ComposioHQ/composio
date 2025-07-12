@@ -84,8 +84,11 @@ export function transformMcpRetrieveResponse(
     updatedAt: response.updated_at,
     status: (response as unknown as Record<string, unknown>).status,
     toolkits: response.toolkits,
-    tools: (response as unknown as Record<string, unknown>).tools,
+    tools: response.allowed_tools,
     managedAuthViaComposio: response.managed_auth_via_composio,
+    authConfigIds: response.auth_config_ids,
+    mcpUrl: response.mcp_url,
+    commands: response.commands,
   });
 
   if (!result.success) {
