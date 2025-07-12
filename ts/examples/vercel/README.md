@@ -1,12 +1,15 @@
 # Vercel Example with Composio SDK
 
-This example demonstrates how to use the Composio SDK with Vercel's AI SDK to create an AI-powered application that can interact with HackerNews data.
+This example demonstrates how to use the Composio SDK with Vercel's AI SDK to create AI-powered applications that can interact with external services through both traditional tool calling and Model Context Protocol (MCP).
 
 ## Features
 
 - Integration with Composio SDK and Vercel AI SDK
 - HackerNews front page summarization using GPT-4
+- **NEW:** MCP (Model Context Protocol) support in `VercelProvider`
+- **NEW:** Gmail integration via MCP servers
 - Streaming AI responses
+- Multi-step tool calling workflows
 - TypeScript support
 
 ## Prerequisites
@@ -41,22 +44,55 @@ cp .env.example .env
 ```env
 COMPOSIO_API_KEY=your_composio_api_key
 OPENAI_API_KEY=your_openai_api_key
+# Optional: For MCP example
+COMPOSIO_USER_ID=your_user_id
+COMPOSIO_AUTH_CONFIG_ID=your_auth_config_id
 ```
 
-5. Start the development server:
+5. Run the examples:
 
 ```bash
+# Run the standard HackerNews example
 pnpm start
+
+# Run the new MCP example (requires additional setup)
+bun src/vercel-mcp-example.ts
 ```
 
 ## How It Works
 
+### Standard Tool Calling (`src/index.ts`)
+
 This example showcases how to:
 
 1. Initialize the Composio SDK with the Vercel provider
-2. Use the HackerNews tool to fetch front page data
+2. Use the HackerNews tool to fetch front page data  
 3. Generate AI responses using OpenAI's GPT-4
 4. Handle tool calls and results in a chat-like interface
+
+### MCP Integration (`src/vercel-mcp-example.ts`)
+
+The new MCP example demonstrates:
+
+1. **Initialize with VercelProvider**: Use the unified provider with MCP support for Vercel AI SDK
+2. **Create MCP Servers**: Set up Composio MCP servers with Gmail toolkit
+3. **Connect via experimental_createMCPClient**: Use Vercel AI SDK's MCP client
+4. **Multi-step Operations**: Complex workflows with multiple tool calls
+5. **Resource Management**: Proper cleanup of MCP connections
+
+```typescript
+import { VercelProvider } from '@composio/vercel';
+import { experimental_createMCPClient } from 'ai';
+
+const composio = new Composio({
+  provider: new VercelProvider(),
+});
+
+// Create and connect to MCP servers
+const mcpConfig = await composio.mcp.create(...);
+const serverUrls = await mcpConfig.getServer({ userId: "user-id" });
+const client = await experimental_createMCPClient({ transport: serverUrls[0] });
+```
 
 ## Dependencies
 
