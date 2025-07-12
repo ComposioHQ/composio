@@ -1,6 +1,6 @@
 instances:
 - url: v3composio.docs.buildwithfern.com
-  custom-domain: v3.docs.composio.dev
+  custom-domain: docs.composio.dev
   edit-this-page:
     github:
       owner: ComposioHQ
