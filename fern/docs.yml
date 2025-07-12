@@ -2,7 +2,7 @@
 
 instances:
   - url: composio.docs.buildwithfern.com
-    custom-domain: docs.composio.dev
+    custom-domain: v1.docs.composio.dev
     edit-this-page:
       github:
         owner: ComposioHQ
