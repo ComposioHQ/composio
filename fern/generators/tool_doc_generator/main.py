@@ -516,7 +516,7 @@ class ToolDocGenerator:
         """
         # Get toolkit model and tools
         toolkit_model = self.composio.toolkits.get(slug=toolkit.slug)
-        tools = self.composio.tools.get_raw_composio_tools(toolkits=[toolkit.slug], limit=0)
+        tools = self.composio.tools.get_raw_composio_tools(toolkits=[toolkit.slug], limit=99999)
         logger.info(f"Toolkit tools: {toolkit}")
        
         
