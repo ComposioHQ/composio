@@ -5,9 +5,14 @@ import pathModule from "path";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
 
-const readFileContent = async (
+export const readFileContent = async (
   path: string
 ): Promise<{ content: string; mimeType: string }> => {
+  // Add validation for empty paths
+  if (!path || path.trim() === '') {
+    throw new Error('File path cannot be empty');
+  }
+
   try {
     const content = require("fs").readFileSync(path);
     return {
@@ -91,6 +96,11 @@ export const getFileDataAfterUploadingToS3 = async (
   mimetype: string;
   s3key: string;
 }> => {
+  // Add validation for empty paths
+  if (!path || path.trim() === '') {
+    throw new Error('File path cannot be empty');
+  }
+
   const isURL = path.startsWith("http");
   const fileData = isURL
     ? await readFileContentFromURL(path)
