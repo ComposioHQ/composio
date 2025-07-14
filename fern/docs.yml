@@ -40,7 +40,7 @@ typography:
 navbar-links:
 - type: primary
   text: V1 Docs
-  url: https://docs.composio.dev
+  url: https://v1.docs.composio.dev
 - type: filled
   text: LOG IN
   url: https://app.composio.dev/login
@@ -217,6 +217,8 @@ navigation:
       path: pages/dist/providers/openai.mdx
     - page: Anthropic Provider
       path: pages/dist/providers/anthropic.mdx
+    - page: Google Provider
+      path: pages/dist/providers/google.mdx
     - page: LangChain Provider
       path: pages/dist/providers/langchain.mdx
     - page: CrewAI Provider

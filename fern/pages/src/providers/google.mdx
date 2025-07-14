@@ -1,0 +1,35 @@
+---
+title: Google Gen AI Provider
+slug: /providers/google
+image: "https://og.composio.dev/api/og?title=Google%20Provider"   # image for socials
+keywords: ""
+hide-nav-links: false
+---
+The Google provider transforms Composio tools into a format compatible with Gemini's function calling capabilities through it's API
+
+## Setup
+The Google Gen AI SDK and theprovider can only be installed for the Python SDK.
+
+```bash title="pip" for="python"
+pip install google-genai composio_google
+```
+<SnippetCode
+  src="fern/snippets/providers/python/google.py"
+  startLine={1}
+  endLine={9}
+/>
+
+## Usage
+<SnippetCode
+  src="fern/snippets/providers/python/google.py"
+  startLine={10}
+  endLine={21}
+/>
+
+
+## Modifiers
+Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
+
+OpenAI provider modifiers are the standard framework modifiers.
+Read more here: [Framework Modifiers](/docs/modifiers/schema-modifiers)
+
