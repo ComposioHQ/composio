@@ -349,7 +349,6 @@ describe('ToolExecution', () => {
    ```
 
 ## Questions and Support
-
 - Join our [Discord Community](https://discord.com/invite/cNruWaAhQk)
 - Check our [Documentation](https://docs.composio.dev)
 - File issues on [GitHub](https://github.com/ComposioHQ/sdk-v3/issues)
