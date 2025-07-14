@@ -116,21 +116,27 @@ class _V1(Endpoint):
 
 class _V2(Endpoint):
     """
-    Endpoint: /v1
+    Endpoint: /v2
     """
+
+    class _Integrations(Endpoint):
+        """
+        Endpoint /v2/integrations
+        """
 
     class _Actions(Endpoint):
         """
-        Endpoint /v1/actions
+        Endpoint /v2/actions
         """
 
     class _Triggers(Endpoint):
         """
-        Endpoint /v1/triggers
+        Endpoint /v2/triggers
         """
 
     triggers: _Triggers
     actions: _Actions
+    integrations: _Integrations
 
 
 v1 = _V1(endpoint="v1")
