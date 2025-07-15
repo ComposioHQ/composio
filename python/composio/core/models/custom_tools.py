@@ -163,7 +163,7 @@ class CustomTools:
             return None
 
     @t.overload
-    def register(self, f: t.Optional[CustomToolProtocol] = None) -> t.Callable: ...
+    def register(self, f: CustomToolProtocol) -> CustomTool: ...
 
     @t.overload
     def register(

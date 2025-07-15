@@ -355,6 +355,10 @@ class Tools(Resource, t.Generic[TProvider]):
         """
         tool = self._tool_schemas.get(slug)
         if tool is None:
+            tool = self._custom_tools[slug].info
+            self._tool_schemas[slug] = tool
+
+        if tool is None:
             tool = t.cast(Tool, self._client.tools.retrieve(tool_slug=slug))
             self._tool_schemas[slug] = tool
 
