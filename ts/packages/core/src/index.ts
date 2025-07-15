@@ -25,3 +25,15 @@ export * as constants from './utils/constants';
 export { default as logger } from './utils/logger';
 // Error handling exports
 export * from './errors';
+// MCP-specific error classes
+export {
+  McpInvalidInputError,
+  McpServerExistsError,
+  McpServerNotFoundError,
+  McpOperationFailedError,
+  McpParsingFailedError,
+  McpConfigNotFoundError,
+  McpUnauthorizedError,
+  MCP_ERROR_CODES,
+  type McpError,
+} from './errors/McpErrors';

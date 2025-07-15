@@ -36,6 +36,15 @@ import { CustomCreateResponse as CustomCreateResponseRaw } from '@composio/clien
 import { ValidationError } from '../errors/ValidationErrors';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import {
+  McpInvalidInputError,
+  McpServerExistsError,
+  McpServerNotFoundError,
+  McpOperationFailedError,
+  McpParsingFailedError,
+  McpConfigNotFoundError,
+  McpUnauthorizedError,
+} from '../errors/McpErrors';
+import {
   transformMcpCreateResponse,
   transformMcpListResponse,
   transformMcpRetrieveResponse,
@@ -46,6 +55,9 @@ import {
 import { Toolkits } from './Toolkits';
 import { ToolkitAuthFieldsResponse } from '../types/toolkit.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
+
+// MCP Error Messages are now replaced with custom error classes
+// Import and use McpInvalidInputError, McpServerExistsError, etc. from '../errors/McpErrors'
 
 /**
  * MCP (Model Control Protocol) class
@@ -74,7 +86,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate toolkit configurations
     const toolkitConfigsResult = MCPToolkitConfigsArraySchema.safeParse(toolkitConfigs);
     if (toolkitConfigsResult.error) {
-      throw new ValidationError('Failed to parse toolkit configurations', {
+      throw new McpInvalidInputError('Failed to parse toolkit configurations', {
         cause: toolkitConfigsResult.error,
       });
     }
@@ -83,7 +95,7 @@ export class MCP<T = McpServerGetResponse> {
     if (authOptions !== undefined) {
       const authOptionsResult = MCPAuthOptionsSchema.safeParse(authOptions);
       if (authOptionsResult.error) {
-        throw new ValidationError('Failed to parse auth options', {
+        throw new McpInvalidInputError('Failed to parse auth options', {
           cause: authOptionsResult.error,
         });
       }
@@ -130,11 +142,11 @@ export class MCP<T = McpServerGetResponse> {
   ): Promise<McpServerCreateResponse<T>> {
     // Validate inputs using Zod schemas
     if (!serverConfig || serverConfig.length === 0) {
-      throw new ValidationError('At least one auth config is required', {});
+      throw new McpInvalidInputError('At least one auth config is required');
     }
 
     if (!name) {
-      throw new ValidationError('Server name is required', {});
+      throw new McpInvalidInputError('Server name is required');
     }
 
     // Check if server with this name already exists
@@ -146,7 +158,7 @@ export class MCP<T = McpServerGetResponse> {
         authConfigs.length > 0 &&
         !authConfigs.every((config, index) => config === sortedCurrentAuthConfigs[index])
       ) {
-        throw new ValidationError(
+        throw new McpServerExistsError(
           'MCP server with this name already exists with different auth configs',
           {
             meta: { serverName: name },
@@ -158,9 +170,12 @@ export class MCP<T = McpServerGetResponse> {
       const sortedCurrentTools = serverConfig.flatMap(config => config.allowedTools).sort();
       console.log(tools, sortedCurrentTools, 'tools');
       if (tools?.length > 0 && !tools.every((tool, index) => tool === sortedCurrentTools[index])) {
-        throw new ValidationError('MCP server with this name already exists with different tools', {
-          meta: { serverName: name },
-        });
+        throw new McpServerExistsError(
+          'MCP server with this name already exists with different tools',
+          {
+            meta: { serverName: name },
+          }
+        );
       }
 
       // Get toolkits from auth configs
@@ -215,7 +230,7 @@ export class MCP<T = McpServerGetResponse> {
         auth_config_ids: serverConfig.map(config => config.authConfigId),
       });
     } catch (error) {
-      throw new ValidationError('Failed to create MCP server', {
+      throw new McpOperationFailedError('Failed to create MCP server', {
         cause: error,
       });
     }
@@ -224,7 +239,7 @@ export class MCP<T = McpServerGetResponse> {
     const serverResponseResult =
       ComposioCustomCreateResponseSchema.safeParse(mcpServerCreatedResponse);
     if (serverResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server creation response', {
+      throw new McpParsingFailedError('Failed to parse MCP server creation response', {
         cause: serverResponseResult.error,
       });
     }
@@ -311,7 +326,7 @@ export class MCP<T = McpServerGetResponse> {
     const serverDetails = await this.get(serverId);
 
     if (!serverDetails.toolkits || serverDetails.toolkits.length === 0) {
-      throw new ValidationError('MCP server has no toolkits configured', {
+      throw new McpConfigNotFoundError('MCP server has no toolkits configured', {
         meta: { serverId: serverId },
       });
     }
@@ -382,7 +397,7 @@ export class MCP<T = McpServerGetResponse> {
 
     const authConfig = authConfigs.find(config => config.toolkit.slug === toolkit);
     if (!authConfig) {
-      throw new ValidationError('Auth config not found', {
+      throw new McpConfigNotFoundError('Auth config not found', {
         meta: { serverId: serverId, toolkit },
       });
     }
@@ -441,7 +456,7 @@ export class MCP<T = McpServerGetResponse> {
 
     // Validate userId is provided
     if (!userId) {
-      throw new ValidationError('User ID is required', {});
+      throw new McpInvalidInputError('User ID is required');
     }
 
     // Extract toolkits from server details
@@ -473,7 +488,7 @@ export class MCP<T = McpServerGetResponse> {
           options?.isChatAuth ?? serverDetails.managedAuthViaComposio ?? false,
       });
     } catch (error) {
-      throw new ValidationError('Failed to generate MCP server URL', {
+      throw new McpOperationFailedError('Failed to generate MCP server URL', {
         cause: error,
       });
     }
@@ -481,7 +496,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the URL generation response
     const urlResponseResult = ComposioGenerateURLResponseSchema.safeParse(data);
     if (urlResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP URL generation response', {
+      throw new McpParsingFailedError('Failed to parse MCP URL generation response', {
         cause: urlResponseResult.error,
       });
     }
@@ -543,7 +558,7 @@ export class MCP<T = McpServerGetResponse> {
         name: options?.name,
       });
     } catch (error) {
-      throw new ValidationError('Failed to list MCP servers', {
+      throw new McpOperationFailedError('Failed to list MCP servers', {
         cause: error,
       });
     }
@@ -551,7 +566,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the list response
     const listResponseResult = ComposioMcpListResponseSchema.safeParse(listResponse);
     if (listResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server list response', {
+      throw new McpParsingFailedError('Failed to parse MCP server list response', {
         cause: listResponseResult.error,
       });
     }
@@ -576,7 +591,7 @@ export class MCP<T = McpServerGetResponse> {
     try {
       retrieveResponse = await this.client.mcp.retrieve(serverId);
     } catch (error) {
-      throw new ValidationError('Failed to retrieve MCP server', {
+      throw new McpOperationFailedError('Failed to retrieve MCP server', {
         cause: error,
       });
     }
@@ -587,7 +602,7 @@ export class MCP<T = McpServerGetResponse> {
       mcpUrl: retrieveResponse.mcp_url,
     });
     if (retrieveResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server retrieve response', {
+      throw new McpParsingFailedError('Failed to parse MCP server retrieve response', {
         cause: retrieveResponseResult.error,
       });
     }
@@ -612,7 +627,7 @@ export class MCP<T = McpServerGetResponse> {
     try {
       deleteResponse = await this.client.mcp.delete(serverId);
     } catch (error) {
-      throw new ValidationError('Failed to delete MCP server', {
+      throw new McpOperationFailedError('Failed to delete MCP server', {
         cause: error,
       });
     }
@@ -620,7 +635,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the delete response
     const deleteResponseResult = ComposioMcpDeleteResponseSchema.safeParse(deleteResponse);
     if (deleteResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server delete response', {
+      throw new McpParsingFailedError('Failed to parse MCP server delete response', {
         cause: deleteResponseResult.error,
       });
     }
@@ -676,7 +691,7 @@ export class MCP<T = McpServerGetResponse> {
         managed_auth_via_composio: authOptions?.isChatAuth || false,
       });
     } catch (error) {
-      throw new ValidationError('Failed to update MCP server', {
+      throw new McpOperationFailedError('Failed to update MCP server', {
         cause: error,
       });
     }
@@ -684,7 +699,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the update response
     const updateResponseResult = ComposioMcpUpdateResponseSchema.safeParse(updateResponse);
     if (updateResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server update response', {
+      throw new McpParsingFailedError('Failed to parse MCP server update response', {
         cause: updateResponseResult.error,
       });
     }
@@ -712,7 +727,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate parameters using Zod schema (snake_case)
     const paramsResult = GenerateURLParamsSchema.safeParse(params);
     if (paramsResult.error) {
-      throw new ValidationError('Failed to parse generateUrl parameters', {
+      throw new McpInvalidInputError('Failed to parse generateUrl parameters', {
         cause: paramsResult.error,
       });
     }
@@ -727,7 +742,7 @@ export class MCP<T = McpServerGetResponse> {
         managed_auth_by_composio: params.composioManagedAuth,
       });
     } catch (error) {
-      throw new ValidationError('Failed to generate MCP URL', {
+      throw new McpOperationFailedError('Failed to generate MCP URL', {
         cause: error,
       });
     }
@@ -735,7 +750,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the response
     const responseResult = ComposioGenerateURLResponseSchema.safeParse(urlResponse);
     if (responseResult.error) {
-      throw new ValidationError('Failed to parse MCP URL generation response', {
+      throw new McpParsingFailedError('Failed to parse MCP URL generation response', {
         cause: responseResult.error,
       });
     }
@@ -823,7 +838,7 @@ export class MCP<T = McpServerGetResponse> {
    */
   async getByName(serverName: string): Promise<McpRetrieveResponse> {
     if (!serverName) {
-      throw new ValidationError('Server name is required', {});
+      throw new McpInvalidInputError('Server name is required');
     }
 
     // List MCP servers filtered by name
@@ -835,7 +850,7 @@ export class MCP<T = McpServerGetResponse> {
       });
     } catch (error) {
       console.error(error);
-      throw new ValidationError('Failed to search MCP servers by name', {
+      throw new McpOperationFailedError('Failed to search MCP servers by name', {
         cause: error,
       });
     }
@@ -843,7 +858,7 @@ export class MCP<T = McpServerGetResponse> {
     // Validate the list response
     const listResponseResult = ComposioMcpListResponseSchema.safeParse(listResponse);
     if (listResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server list response', {
+      throw new McpParsingFailedError('Failed to parse MCP server list response', {
         cause: listResponseResult.error,
       });
     }
@@ -851,7 +866,7 @@ export class MCP<T = McpServerGetResponse> {
     const servers = listResponse.items || [];
 
     if (servers.length === 0) {
-      throw new ValidationError(`MCP server with name '${serverName}' not found`, {
+      throw new McpServerNotFoundError(`MCP server with name '${serverName}' not found`, {
         meta: { serverName: serverName },
       });
     }
