@@ -14,7 +14,7 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
   // Handle anyOf pattern first
   if (its.an.anyOf(jsonSchema)) {
     const types = new Set<string>();
-    let items: JsonSchema | undefined;
+    const itemsSchemas: JsonSchema[] = [];
 
     // Collect all types and items from anyOf array
     jsonSchema.anyOf.forEach(option => {
@@ -24,15 +24,25 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
       if (typeof option === 'object' && option.items) {
         const optionItems = option.items;
         if (!Array.isArray(optionItems) && typeof optionItems === 'object') {
-          items = optionItems;
+          itemsSchemas.push(optionItems);
         }
       }
     });
 
+    // If we have multiple item schemas, create a union
+    let finalItems: JsonSchema | undefined;
+    if (itemsSchemas.length === 1) {
+      finalItems = itemsSchemas[0];
+    } else if (itemsSchemas.length > 1) {
+      finalItems = { anyOf: itemsSchemas };
+    }
+
     // Create new schema with combined types
     const newSchema: JsonSchemaObject = {
-      type: Array.from(types) as JSONSchema7TypeName[],
-      ...(items && { items }),
+      ...(types.size > 0
+        ? { type: Array.from(types) as JSONSchema7TypeName[] }
+        : { type: 'array' }),
+      ...(finalItems && { items: finalItems }),
     };
 
     // Copy over metadata fields

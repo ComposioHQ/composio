@@ -204,6 +204,99 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse([])).toThrow();
       expect(() => zodSchema.parse(['one', 'two', 'three', 'four'])).toThrow();
     });
+
+    it('should handle arrays with anyOf patterns', () => {
+      const schema: JsonSchema = {
+        type: 'array',
+        anyOf: [
+          {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should accept string arrays
+      expect(zodSchema.parse(['hello', 'world'])).toEqual(['hello', 'world']);
+
+      // Should accept number arrays
+      expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
+
+      // Should accept mixed arrays (union of item types)
+      expect(zodSchema.parse(['hello', 123])).toEqual(['hello', 123]);
+    });
+
+    it('should handle arrays with anyOf at top level without explicit types', () => {
+      const schema: JsonSchema = {
+        type: 'array',
+        anyOf: [
+          {
+            items: { type: 'string' },
+          },
+          {
+            items: { type: 'number' },
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should accept string arrays
+      expect(zodSchema.parse(['hello', 'world'])).toEqual(['hello', 'world']);
+
+      // Should accept number arrays
+      expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
+    });
+
+    it('should handle arrays with object items having default null', () => {
+      const schema: JsonSchema = {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            status: { type: 'string', default: null },
+          },
+          required: ['name'],
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should apply default null for missing status
+      expect(zodSchema.parse([{ name: 'test1' }, { name: 'test2', status: 'active' }])).toEqual([
+        { name: 'test1', status: null },
+        { name: 'test2', status: 'active' },
+      ]);
+
+      // Should fail for missing required field
+      expect(() => zodSchema.parse([{ status: 'active' }])).toThrow();
+    });
+
+    it('should handle nested arrays', () => {
+      const schema: JsonSchema = {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: { type: 'number' },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(
+        zodSchema.parse([
+          [1, 2],
+          [3, 4, 5],
+        ])
+      ).toEqual([
+        [1, 2],
+        [3, 4, 5],
+      ]);
+      expect(() => zodSchema.parse([['string', 2]])).toThrow();
+    });
   });
 
   describe('Enum Schemas', () => {
@@ -484,6 +577,51 @@ describe('jsonSchemaToZod', () => {
       });
     });
 
+    it('should handle default null values', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'The name field',
+          },
+          status: {
+            type: 'string',
+            default: null,
+            description: 'A field with default null',
+          },
+          age: {
+            type: 'number',
+            description: 'Age field without default',
+          },
+        },
+        required: ['name'],
+      };
+
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Test with required field only - should include null default
+      expect(zodSchema.parse({ name: 'John' })).toEqual({
+        name: 'John',
+        status: null,
+      });
+
+      // Test with status explicitly set to null
+      expect(zodSchema.parse({ name: 'John', status: null })).toEqual({
+        name: 'John',
+        status: null,
+      });
+
+      // Test with status set to a string value
+      expect(zodSchema.parse({ name: 'John', status: 'active' })).toEqual({
+        name: 'John',
+        status: 'active',
+      });
+
+      // Test that required field validation still works
+      expect(() => zodSchema.parse({})).toThrow();
+    });
+
     it('should transform GetUserRequest schema correctly', () => {
       const schema: JsonSchema = {
         type: 'object',
@@ -513,7 +651,7 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test property description
-      const shape = zodSchema._def.shape();
+      const shape = (zodSchema as any)._def.shape();
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
   });
