@@ -1,5 +1,13 @@
 # @composio/anthropic
 
+## 0.1.36-next.13
+
+### Patch Changes
+
+- 77e96e4: Fix JSON Schema to Zod Parsing
+- Updated dependencies [77e96e4]
+  - @composio/core@0.1.36-next.13
+
 ## 0.1.36-next.12
 
 ### Patch Changes
