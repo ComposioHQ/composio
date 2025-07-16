@@ -8,10 +8,10 @@ from composio.tools.env.factory import (
     DockerWorkspace,
     E2BWorkspace,
     FlyIOWorkspace,
+    DaytonaWorkspace,
     HostWorkspace,
     WorkspaceFactory,
     WorkspaceType,
-    DaytonaWorkspace,
 )
 
 from tests.conftest import E2E
@@ -81,4 +81,4 @@ class TestFlyIO(BaseFactoryTest):
 
 class TestDaytona(BaseFactoryTest):
     type = DaytonaWorkspace
-    config = WorkspaceType.Daytona(image="composio/composio:dev")
+    config = WorkspaceType.Daytona(snapshot="daytona-composio")

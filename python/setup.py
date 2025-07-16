@@ -71,7 +71,7 @@ flyio_workspace_requirements = [
 ]
 
 daytona_workspace_requirements = [
-    "daytona>=0.21.0",  # Daytona workspace
+    "daytona>=0.22.1",  # Daytona workspace
 ]
 
 tools_requirements = [

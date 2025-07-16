@@ -10,7 +10,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 ## Key Features
 
 - **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like OpenAI, Langchain, and more.
-- **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, and FlyIO for security and isolation.
+- **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, FlyIO and Daytona for security and isolation.
 - **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
 - **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
 
