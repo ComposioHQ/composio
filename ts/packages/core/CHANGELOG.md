@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.12
+
+### Patch Changes
+
+- Update deps
+
 ## 0.1.36-next.11
 
 ### Patch Changes
