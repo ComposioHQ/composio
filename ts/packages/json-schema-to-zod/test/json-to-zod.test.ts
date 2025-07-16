@@ -484,6 +484,51 @@ describe('jsonSchemaToZod', () => {
       });
     });
 
+    it('should handle default null values', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'The name field',
+          },
+          status: {
+            type: 'string',
+            default: null,
+            description: 'A field with default null',
+          },
+          age: {
+            type: 'number',
+            description: 'Age field without default',
+          },
+        },
+        required: ['name'],
+      };
+
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Test with required field only - should include null default
+      expect(zodSchema.parse({ name: 'John' })).toEqual({
+        name: 'John',
+        status: null,
+      });
+
+      // Test with status explicitly set to null
+      expect(zodSchema.parse({ name: 'John', status: null })).toEqual({
+        name: 'John',
+        status: null,
+      });
+
+      // Test with status set to a string value
+      expect(zodSchema.parse({ name: 'John', status: 'active' })).toEqual({
+        name: 'John',
+        status: 'active',
+      });
+
+      // Test that required field validation still works
+      expect(() => zodSchema.parse({})).toThrow();
+    });
+
     it('should transform GetUserRequest schema correctly', () => {
       const schema: JsonSchema = {
         type: 'object',
@@ -513,7 +558,7 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test property description
-      const shape = zodSchema._def.shape();
+      const shape = (zodSchema as any)._def.shape();
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
   });
