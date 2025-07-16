@@ -446,4 +446,270 @@ describe('Tools', () => {
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
   });
+
+  describe('proxyExecute', () => {
+    it('should handle proxy request with headers and query parameters correctly', async () => {
+      const proxyParams = {
+        endpoint: '/api/test',
+        method: 'POST' as const,
+        body: { data: 'test' },
+        parameters: [
+          {
+            in: 'header' as const,
+            name: 'Authorization',
+            value: 'Bearer token123',
+          },
+          {
+            in: 'header' as const,
+            name: 'Content-Type',
+            value: 'application/json',
+          },
+          {
+            in: 'query' as const,
+            name: 'page',
+            value: 1,
+          },
+          {
+            in: 'query' as const,
+            name: 'limit',
+            value: 10,
+          },
+        ],
+        connectedAccountId: 'test-account-id',
+      };
+
+      const expectedProxyResponse = {
+        data: { success: true },
+        successful: true,
+      };
+
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      const result = await context.tools.proxyExecute(proxyParams);
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
+        endpoint: '/api/test',
+        method: 'POST',
+        body: { data: 'test' },
+        connected_account_id: 'test-account-id',
+        parameters: [
+          {
+            name: 'Authorization',
+            type: 'header',
+            value: 'Bearer token123',
+          },
+          {
+            name: 'Content-Type',
+            type: 'header',
+            value: 'application/json',
+          },
+          {
+            name: 'page',
+            type: 'query',
+            value: '1',
+          },
+          {
+            name: 'limit',
+            type: 'query',
+            value: '10',
+          },
+        ],
+      });
+
+      expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should handle proxy request with only header parameters', async () => {
+      const proxyParams = {
+        endpoint: '/api/headers-only',
+        method: 'GET' as const,
+        parameters: [
+          {
+            in: 'header' as const,
+            name: 'Authorization',
+            value: 'Bearer token123',
+          },
+          {
+            in: 'header' as const,
+            name: 'Accept',
+            value: 'application/json',
+          },
+        ],
+      };
+
+      const expectedProxyResponse = {
+        data: { result: 'success' },
+        successful: true,
+      };
+
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      const result = await context.tools.proxyExecute(proxyParams);
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
+        endpoint: '/api/headers-only',
+        method: 'GET',
+        body: undefined,
+        connected_account_id: undefined,
+        parameters: [
+          {
+            name: 'Authorization',
+            type: 'header',
+            value: 'Bearer token123',
+          },
+          {
+            name: 'Accept',
+            type: 'header',
+            value: 'application/json',
+          },
+        ],
+      });
+
+      expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should handle proxy request with only query parameters', async () => {
+      const proxyParams = {
+        endpoint: '/api/search',
+        method: 'GET' as const,
+        parameters: [
+          {
+            in: 'query' as const,
+            name: 'q',
+            value: 'test search',
+          },
+          {
+            in: 'query' as const,
+            name: 'page',
+            value: 2,
+          },
+        ],
+      };
+
+      const expectedProxyResponse = {
+        data: { results: ['item1', 'item2'] },
+        successful: true,
+      };
+
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      const result = await context.tools.proxyExecute(proxyParams);
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
+        endpoint: '/api/search',
+        method: 'GET',
+        body: undefined,
+        connected_account_id: undefined,
+        parameters: [
+          {
+            name: 'q',
+            type: 'query',
+            value: 'test search',
+          },
+          {
+            name: 'page',
+            type: 'query',
+            value: '2',
+          },
+        ],
+      });
+
+      expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should handle proxy request without parameters', async () => {
+      const proxyParams = {
+        endpoint: '/api/no-params',
+        method: 'PUT' as const,
+        body: { update: 'data' },
+        connectedAccountId: 'test-account-id',
+      };
+
+      const expectedProxyResponse = {
+        data: { updated: true },
+        successful: true,
+      };
+
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      const result = await context.tools.proxyExecute(proxyParams);
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
+        endpoint: '/api/no-params',
+        method: 'PUT',
+        body: { update: 'data' },
+        connected_account_id: 'test-account-id',
+        parameters: [],
+      });
+
+      expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should convert numeric parameter values to strings', async () => {
+      const proxyParams = {
+        endpoint: '/api/numeric',
+        method: 'GET' as const,
+        parameters: [
+          {
+            in: 'query' as const,
+            name: 'count',
+            value: 42,
+          },
+          {
+            in: 'header' as const,
+            name: 'Version',
+            value: 1.5,
+          },
+        ],
+      };
+
+      const expectedProxyResponse = {
+        data: { result: 'ok' },
+        successful: true,
+      };
+
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      const result = await context.tools.proxyExecute(proxyParams);
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
+        endpoint: '/api/numeric',
+        method: 'GET',
+        body: undefined,
+        connected_account_id: undefined,
+        parameters: [
+          {
+            name: 'count',
+            type: 'query',
+            value: '42',
+          },
+          {
+            name: 'Version',
+            type: 'header',
+            value: '1.5',
+          },
+        ],
+      });
+
+      expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should throw validation error for invalid parameters', async () => {
+      const invalidProxyParams = {
+        endpoint: '/api/test',
+        method: 'INVALID_METHOD' as any,
+        parameters: [
+          {
+            in: 'header' as const,
+            name: 'Authorization',
+            value: 'Bearer token123',
+          },
+        ],
+      };
+
+      await expect(context.tools.proxyExecute(invalidProxyParams)).rejects.toThrow(
+        'Invalid tool proxy parameters'
+      );
+    });
+  });
 });
