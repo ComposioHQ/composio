@@ -579,53 +579,53 @@ The following table lists important API endpoints that have changed. You can use
 
 | Previous Endpoint | Current Endpoint |
 | :--- | :--- |
-| [`GET /api/v1/apps`](https://docs.composio.dev/api-reference/api-reference/apps/get-apps) | [`GET /api/v3/toolkits`](https://v3.docs.composio.dev/api-reference/toolkits/get-toolkits) |
-| [`GET /api/v1/apps/list/categories`](https://docs.composio.dev/api-reference/api-reference/apps/list-app-categories) | [`GET /api/v3/toolkits/categories`](https://v3.docs.composio.dev/api-reference/toolkits/get-toolkits-categories) |
-| [`GET /api/v1/apps/{appName}`](https://docs.composio.dev/api-reference/api-reference/apps/get-app) | [`GET /api/v3/toolkits/{slug}`](https://v3.docs.composio.dev/api-reference/toolkits/get-toolkits-by-slug) |
+| [`GET /api/v1/apps`](https://docs.composio.dev/api-reference/api-reference/apps/get-apps) | [`GET /api/v3/toolkits`](https://docs.composio.dev/api-reference/toolkits/get-toolkits) |
+| [`GET /api/v1/apps/list/categories`](https://docs.composio.dev/api-reference/api-reference/apps/list-app-categories) | [`GET /api/v3/toolkits/categories`](https://docs.composio.dev/api-reference/toolkits/get-toolkits-categories) |
+| [`GET /api/v1/apps/{appName}`](https://docs.composio.dev/api-reference/api-reference/apps/get-app) | [`GET /api/v3/toolkits/{slug}`](https://docs.composio.dev/api-reference/toolkits/get-toolkits-by-slug) |
 
 ### Tools (formerly Actions)
 
 | Previous Endpoint | Current Endpoint |
 | :--- | :--- |
-| [`GET /api/v2/actions`](https://docs.composio.dev/api-reference/api-reference/actions/list-actions-minimal-v-2) | [`GET /api/v3/tools`](https://v3.docs.composio.dev/api-reference/tools/get-tools) |
-| [`GET /api/v2/actions/list/enums`](https://docs.composio.dev/api-reference/api-reference/actions/list-action-enums) | [`GET /api/v3/tools/enum`](https://v3.docs.composio.dev/api-reference/tools/get-tools-enum) |
-| [`GET /api/v2/actions/{actionId}`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-v-2) | [`GET /api/v3/tools/{tool_slug}`](https://v3.docs.composio.dev/api-reference/tools/get-tools-by-tool-slug) |
-| [`POST /api/v2/actions/{actionId}/execute`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-v-2) | [`POST /api/v3/tools/execute/{tool_slug}`](https://v3.docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug)|
-| [`POST /api/v2/actions/{actionId}/execute/get.inputs`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-inputs-v-2)| [`POST /api/v3/tools/execute/{tool_slug}/input`](https://v3.docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug-input)|
-| [`POST /api/v2/actions/proxy`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-proxy-v-2) | [`POST /api/v3/tools/execute/proxy`](https://v3.docs.composio.dev/api-reference/tools/post-tools-execute-proxy)|
+| [`GET /api/v2/actions`](https://docs.composio.dev/api-reference/api-reference/actions/list-actions-minimal-v-2) | [`GET /api/v3/tools`](https://docs.composio.dev/api-reference/tools/get-tools) |
+| [`GET /api/v2/actions/list/enums`](https://docs.composio.dev/api-reference/api-reference/actions/list-action-enums) | [`GET /api/v3/tools/enum`](https://docs.composio.dev/api-reference/tools/get-tools-enum) |
+| [`GET /api/v2/actions/{actionId}`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-v-2) | [`GET /api/v3/tools/{tool_slug}`](https://docs.composio.dev/api-reference/tools/get-tools-by-tool-slug) |
+| [`POST /api/v2/actions/{actionId}/execute`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-v-2) | [`POST /api/v3/tools/execute/{tool_slug}`](https://docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug)|
+| [`POST /api/v2/actions/{actionId}/execute/get.inputs`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-inputs-v-2)| [`POST /api/v3/tools/execute/{tool_slug}/input`](https://docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug-input)|
+| [`POST /api/v2/actions/proxy`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-proxy-v-2) | [`POST /api/v3/tools/execute/proxy`](https://docs.composio.dev/api-reference/tools/post-tools-execute-proxy)|
 
 ### Auth Configs (formerly Integrations/Connectors)
 
 | Previous Endpoint | Current Endpoint |
 | :--- | :--- |
-| [`GET /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/list-all-connectors) | [`GET /api/v3/auth_configs`](https://v3.docs.composio.dev/api-reference/auth-configs/get-auth-configs) |
-| [`POST /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/create-connector) | [`POST /api/v3/auth_configs`](https://v3.docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
-| [`GET /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/get-connector-info) | [`GET /api/v3/auth_configs/{nanoid}`](https://v3.docs.composio.dev/api-reference/auth-configs/get-auth-configs-by-nanoid) |
-| [`PATCH /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/modify-connector) | [`PATCH /api/v3/auth_configs/{nanoid}`](https://v3.docs.composio.dev/api-reference/auth-configs/patch-auth-configs-by-nanoid) |
-| [`DELETE /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/delete-connector) | [`DELETE /api/v3/auth_configs/{nanoid}`](https://v3.docs.composio.dev/api-reference/auth-configs/delete-auth-configs-by-nanoid) |
-| [`POST /api/v2/integrations/create`](https://docs.composio.dev/api-reference/api-reference/integrations-v-2/create-connector-v-2) | [`POST /api/v3/auth_configs`](https://v3.docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
+| [`GET /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/list-all-connectors) | [`GET /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/get-auth-configs) |
+| [`POST /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/create-connector) | [`POST /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
+| [`GET /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/get-connector-info) | [`GET /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/get-auth-configs-by-nanoid) |
+| [`PATCH /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/modify-connector) | [`PATCH /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/patch-auth-configs-by-nanoid) |
+| [`DELETE /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/delete-connector) | [`DELETE /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/delete-auth-configs-by-nanoid) |
+| [`POST /api/v2/integrations/create`](https://docs.composio.dev/api-reference/api-reference/integrations-v-2/create-connector-v-2) | [`POST /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
 
 ### Connected Accounts (formerly Connections)
 
 | Previous Endpoint | Current Endpoint |
 | :--- | :--- |
-| [`GET /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/get-connections) | [`GET /api/v3/connected_accounts`](https://v3.docs.composio.dev/api-reference/connected-accounts/get-connected-accounts) |
-| [`POST /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/initiate-connection) | [`POST /api/v3/connected_accounts`](https://v3.docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
-| [`POST /api/v2/connectedAccounts/initiateConnection`](https://docs.composio.dev/api-reference/api-reference/connectionsv-2/initiate-connection-v-2)| [`POST /api/v3/connected_accounts`](https://v3.docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
-| [`GET /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/get-connection)| [`GET /api/v3/connected_accounts/{nanoid}`](https://v3.docs.composio.dev/api-reference/connected-accounts/get-connected-accounts-by-nanoid)|
-| [`DELETE /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/delete-connection)| [`DELETE /api/v3/connected_accounts/{nanoid}`](https://v3.docs.composio.dev/api-reference/connected-accounts/delete-connected-accounts-by-nanoid) |
-| [`POST /api/v1/connectedAccounts/{connectedAccountId}/disable`](https://docs.composio.dev/api-reference/api-reference/connections/disable-connection)| [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://v3.docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
-| [`POST /api/v1/connectedAccounts/{connectedAccountId}/enable`](https://docs.composio.dev/api-reference/api-reference/connections/enable-connection) | [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://v3.docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
-| [`POST /api/v1/connectedAccounts/{connectedAccountId}/reinitiate`](https://docs.composio.dev/api-reference/api-reference/connections/reinitiate-connection)| [`POST /api/v3/connected_accounts/{nanoid}/refresh`](https://v3.docs.composio.dev/api-reference/connected-accounts/post-connected-accounts-by-nanoid-refresh)|
+| [`GET /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/get-connections) | [`GET /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/get-connected-accounts) |
+| [`POST /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/initiate-connection) | [`POST /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
+| [`POST /api/v2/connectedAccounts/initiateConnection`](https://docs.composio.dev/api-reference/api-reference/connectionsv-2/initiate-connection-v-2)| [`POST /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
+| [`GET /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/get-connection)| [`GET /api/v3/connected_accounts/{nanoid}`](https://docs.composio.dev/api-reference/connected-accounts/get-connected-accounts-by-nanoid)|
+| [`DELETE /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/delete-connection)| [`DELETE /api/v3/connected_accounts/{nanoid}`](https://docs.composio.dev/api-reference/connected-accounts/delete-connected-accounts-by-nanoid) |
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/disable`](https://docs.composio.dev/api-reference/api-reference/connections/disable-connection)| [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/enable`](https://docs.composio.dev/api-reference/api-reference/connections/enable-connection) | [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/reinitiate`](https://docs.composio.dev/api-reference/api-reference/connections/reinitiate-connection)| [`POST /api/v3/connected_accounts/{nanoid}/refresh`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts-by-nanoid-refresh)|
 
 ### Triggers
 
 | Previous Endpoint | Current Endpoint |
 | :--- | :--- |
-| [`GET /api/v1/triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/list-triggers) | [`GET /api/v3/triggers_types`](https://v3.docs.composio.dev/api-reference/triggers/get-triggers-types) |
-| [`GET /api/v1/triggers/list/enums`](https://docs.composio.dev/api-reference/api-reference/triggers/list-trigger-enums) | [`GET /api/v3/triggers_types/list/enum`](https://v3.docs.composio.dev/api-reference/triggers/get-triggers-types-list-enum)|
-| [`GET /api/v2/triggers/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/get-trigger-info-v-2) | [`GET /api/v3/triggers_types/{slug}`](https://v3.docs.composio.dev/api-reference/triggers/get-triggers-types-by-slug)|
-| [`GET /api/v1/triggers/active_triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/get-active-triggers)| [`GET /api/v3/trigger_instances/active`](https://v3.docs.composio.dev/api-reference/triggers/get-trigger-instances-active)|
-| [`POST /api/v1/triggers/enable/{connectedAccountId}/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/enable-trigger)| [`POST /api/v3/trigger_instances/{slug}/upsert`](https://v3.docs.composio.dev/api-reference/triggers/post-trigger-instances-by-slug-upsert)|
-| [`DELETE /api/v1/triggers/instance/{triggerInstanceId}`](https://docs.composio.dev/api-reference/api-reference/triggers/delete-trigger)| [`DELETE /api/v3/trigger_instances/manage/{triggerId}`](https://v3.docs.composio.dev/api-reference/triggers/delete-trigger-instances-manage-by-trigger-id)|
-| [`PATCH /api/v1/triggers/instance/{triggerId}/status`](https://docs.composio.dev/api-reference/api-reference/triggers/switch-trigger-instance-status)| [`PATCH /api/v3/trigger_instances/manage/{triggerId}`](https://v3.docs.composio.dev/api-reference/triggers/patch-trigger-instances-manage-by-trigger-id)|
+| [`GET /api/v1/triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/list-triggers) | [`GET /api/v3/triggers_types`](https://docs.composio.dev/api-reference/triggers/get-triggers-types) |
+| [`GET /api/v1/triggers/list/enums`](https://docs.composio.dev/api-reference/api-reference/triggers/list-trigger-enums) | [`GET /api/v3/triggers_types/list/enum`](https://docs.composio.dev/api-reference/triggers/get-triggers-types-list-enum)|
+| [`GET /api/v2/triggers/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/get-trigger-info-v-2) | [`GET /api/v3/triggers_types/{slug}`](https://docs.composio.dev/api-reference/triggers/get-triggers-types-by-slug)|
+| [`GET /api/v1/triggers/active_triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/get-active-triggers)| [`GET /api/v3/trigger_instances/active`](https://docs.composio.dev/api-reference/triggers/get-trigger-instances-active)|
+| [`POST /api/v1/triggers/enable/{connectedAccountId}/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/enable-trigger)| [`POST /api/v3/trigger_instances/{slug}/upsert`](https://docs.composio.dev/api-reference/triggers/post-trigger-instances-by-slug-upsert)|
+| [`DELETE /api/v1/triggers/instance/{triggerInstanceId}`](https://docs.composio.dev/api-reference/api-reference/triggers/delete-trigger)| [`DELETE /api/v3/trigger_instances/manage/{triggerId}`](https://docs.composio.dev/api-reference/triggers/delete-trigger-instances-manage-by-trigger-id)|
+| [`PATCH /api/v1/triggers/instance/{triggerId}/status`](https://docs.composio.dev/api-reference/api-reference/triggers/switch-trigger-instance-status)| [`PATCH /api/v3/trigger_instances/manage/{triggerId}`](https://docs.composio.dev/api-reference/triggers/patch-trigger-instances-manage-by-trigger-id)|

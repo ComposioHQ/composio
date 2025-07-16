@@ -349,7 +349,7 @@ const mcpServer = await composio.mcp.create(
       allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
     }
   ],
-  { useComposioManagedAuth: true }
+  { isChatAuth: true }
 );
 
 // Get server URLs for AI agent to connect

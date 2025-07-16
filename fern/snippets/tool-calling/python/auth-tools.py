@@ -1,4 +1,5 @@
 from composio import Composio
+from composio.types import auth_scheme
 
 linear_auth_config_id = "ac_dqYN9oElNVlg"
 user_id = "0000-1111-2222"
@@ -19,7 +20,7 @@ connected_account = composio.connected_accounts.wait_for_connection(connection_r
 # Recommended for when connection_request object is destroyed
 
 # API key based toolkit
-from composio.types import auth_scheme
+# from composio.types import auth_scheme
 serp_auth_config_id = "ac_VWmFEC55Zgv6"
 
 # Retrieved from the user
@@ -30,7 +31,7 @@ connection_request = composio.connected_accounts.initiate(
 )
 
 # Auth scheme config for Airtable Bearer
-from composio.types import auth_scheme
+# from composio.types import auth_scheme
 airtable_auth_config_id = "ac_1234567"
 
 # Retrieved from user
