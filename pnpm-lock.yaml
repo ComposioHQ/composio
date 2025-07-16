@@ -454,24 +454,12 @@ importers:
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@composio/json-schema-to-zod':
-        specifier: workspace:0.1.10-next.4
-        version: link:../../packages/json-schema-to-zod
-      '@composio/langchain':
-        specifier: workspace:*
-        version: link:../../packages/providers/langchain
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
       openai:
         specifier: ^4.94.0
         version: 4.104.0(ws@8.18.2)(zod@3.25.67)
-      zod:
-        specifier: ^3.24.2
-        version: 3.25.67
-      zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.5(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -597,8 +585,8 @@ importers:
         specifier: 0.1.0-alpha.27
         version: 0.1.0-alpha.27
       '@composio/json-schema-to-zod':
-        specifier: workspace:0.1.10-next.4
-        version: link:../json-schema-to-zod
+        specifier: 0.1.10-next.4
+        version: 0.1.10-next.4
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1146,6 +1134,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.27':
     resolution: {integrity: sha512-IMjiJg8P9OVILmm0zDbshxvwCTzQg7Unxy4ighYp91z1BELakO9lBNSFWU4kRhSS9Tow/RiuBO63bNhPAT00cA==}
+
+  '@composio/json-schema-to-zod@0.1.10-next.4':
+    resolution: {integrity: sha512-RGHBviDYx/5c6pb2GrWnfaKLYH/32PWzoA9oWJELQD/qpx/dyqWhTQ9zEAr6L3lh6iYxr98EJndAnfY43ybTHg==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -6918,6 +6909,11 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.27': {}
 
+  '@composio/json-schema-to-zod@0.1.10-next.4':
+    dependencies:
+      '@types/json-schema': 7.0.15
+      zod: 3.25.67
+
   '@composio/mcp@1.0.3-0': {}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -9354,14 +9350,6 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
-
   '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -9369,14 +9357,6 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
-
-  '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -9407,7 +9387,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.4(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -12238,7 +12218,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -12322,7 +12302,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
