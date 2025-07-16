@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.36-next.11
+
+### Patch Changes
+
+- Fix proxy execute params and bump langchain packages
+
 ## 0.1.36-next.10
 
 ### Patch Changes
