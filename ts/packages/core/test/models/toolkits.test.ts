@@ -270,6 +270,9 @@ describe('Toolkits', () => {
           is_composio_managed: true,
           is_disabled: false,
           name: 'Test Toolkit Auth Config',
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
           no_of_connections: 0,
           status: 'ENABLED',
           uuid: 'uuid-1',
