@@ -42,6 +42,9 @@ const mockComposioAuthConfigResponse: ComposioAuthConfigRetrieveResponse = {
   created_by: 'user_123',
   created_at: '2023-01-01T00:00:00Z',
   last_updated_at: '2023-01-01T00:00:00Z',
+  tool_access_config: {
+    tools_for_connected_account_creation: undefined,
+  },
 };
 
 const mockTransformedAuthConfigResponse = {
@@ -255,6 +258,9 @@ describe('AuthConfigs', () => {
         toolkit: {
           slug: 'github',
         },
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
         auth_config: {
           type: 'use_composio_managed_auth',
         },
@@ -280,6 +286,9 @@ describe('AuthConfigs', () => {
       const options = {
         type: 'use_custom_auth' as const,
         name: 'Custom GitHub Auth',
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
         authScheme: 'OAUTH2' as const,
         credentials: {
           client_id: 'test_client_id',
@@ -310,6 +319,9 @@ describe('AuthConfigs', () => {
       const options = {
         type: 'use_composio_managed_auth' as const,
         name: 'My GitHub Config',
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
         credentials: {
           custom_field: 'value',
         },
@@ -381,7 +393,9 @@ describe('AuthConfigs', () => {
           client_id: 'new_client_id',
           client_secret: 'new_client_secret',
         },
-        restrictToFollowingTools: ['repo', 'user'],
+        tool_access_config: {
+          tools_for_connected_account_creation: ['repo', 'user'],
+        },
       };
 
       const result = await authConfigs.update('auth_12345', updateData);
@@ -392,7 +406,9 @@ describe('AuthConfigs', () => {
           client_id: 'new_client_id',
           client_secret: 'new_client_secret',
         },
-        restrict_to_following_tools: ['repo', 'user'],
+        tool_access_config: {
+          tools_for_connected_account_creation: ['repo', 'user'],
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -404,7 +420,9 @@ describe('AuthConfigs', () => {
       const updateData = {
         type: 'default' as const,
         scopes: 'read:user,repo',
-        restrictToFollowingTools: ['repo'],
+        tool_access_config: {
+          tools_for_connected_account_creation: ['repo'],
+        },
       };
 
       const result = await authConfigs.update('auth_12345', updateData);
@@ -412,7 +430,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: 'read:user,repo',
-        restrict_to_following_tools: ['repo'],
+        tool_access_config: {
+          tools_for_connected_account_creation: ['repo'],
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -435,7 +455,9 @@ describe('AuthConfigs', () => {
         credentials: {
           api_key: 'new_api_key',
         },
-        restrict_to_following_tools: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -687,7 +709,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'custom',
         credentials: largeCredentials,
-        restrict_to_following_tools: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -713,7 +737,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: longScopes,
-        restrict_to_following_tools: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
