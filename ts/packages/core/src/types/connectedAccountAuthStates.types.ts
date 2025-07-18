@@ -129,6 +129,13 @@ export const Oauth2ConnectionDataSchema = z.discriminatedUnion('status', [
   Oauth2InactiveConnectionDataSchema,
 ]);
 
+export const CustomOauth2ConnectionDataSchema = Oauth2ActiveConnectionDataSchema.omit({
+  status: true,
+  access_token: true,
+}).extend({
+  access_token: z.string(),
+});
+
 export type Oauth2InitiatingConnectionData = z.infer<typeof Oauth2InitiatingConnectionDataSchema>;
 export type Oauth2InitiatedConnectionData = z.infer<typeof Oauth2InitiatedConnectionDataSchema>;
 export type Oauth2ActiveConnectionData = z.infer<typeof Oauth2ActiveConnectionDataSchema>;
@@ -136,6 +143,7 @@ export type Oauth2FailedConnectionData = z.infer<typeof Oauth2FailedConnectionDa
 export type Oauth2ExpiredConnectionData = z.infer<typeof Oauth2ExpiredConnectionDataSchema>;
 export type Oauth2InactiveConnectionData = z.infer<typeof Oauth2InactiveConnectionDataSchema>;
 export type Oauth2ConnectionData = z.infer<typeof Oauth2ConnectionDataSchema>;
+export type CustomOauth2ConnectionData = z.infer<typeof CustomOauth2ConnectionDataSchema>;
 
 // OAUTH1
 export const Oauth1InitiatingConnectionDataSchema = BaseSchemeRaw.extend({
@@ -183,6 +191,14 @@ export const Oauth1ConnectionDataSchema = z.discriminatedUnion('status', [
   Oauth1InactiveConnectionDataSchema,
 ]);
 
+export const CustomOauth1ConnectionDataSchema = Oauth1ActiveConnectionDataSchema.omit({
+  status: true,
+  oauth_token: true,
+}).extend({
+  oauth_token_secret: z.string(),
+  oauth_token: z.string(),
+});
+
 export type Oauth1InitiatingConnectionData = z.infer<typeof Oauth1InitiatingConnectionDataSchema>;
 export type Oauth1InitiatedConnectionData = z.infer<typeof Oauth1InitiatedConnectionDataSchema>;
 export type Oauth1ActiveConnectionData = z.infer<typeof Oauth1ActiveConnectionDataSchema>;
@@ -190,6 +206,7 @@ export type Oauth1FailedConnectionData = z.infer<typeof Oauth1FailedConnectionDa
 export type Oauth1ExpiredConnectionData = z.infer<typeof Oauth1ExpiredConnectionDataSchema>;
 export type Oauth1InactiveConnectionData = z.infer<typeof Oauth1InactiveConnectionDataSchema>;
 export type Oauth1ConnectionData = z.infer<typeof Oauth1ConnectionDataSchema>;
+export type CustomOauth1ConnectionData = z.infer<typeof CustomOauth1ConnectionDataSchema>;
 
 // COMPOSIO_LINK_AUTH
 const ComposioLinkInitiatingSchema = BaseSchemeRaw.extend({
@@ -268,6 +285,9 @@ const BasicConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
+const CustomBasicConnectionDataSchema = BasicInitiatingSchema.omit({
+  status: true,
+});
 
 // API_KEY
 const ApiKeyInitiatingSchema = BaseSchemeRaw.extend({
@@ -290,6 +310,9 @@ const ApiKeyConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
+const CustomApiKeyConnectionDataSchema = ApiKeyInitiatingSchema.omit({
+  status: true,
+});
 
 // BEARER_TOKEN
 const BearerTokenInitiatingSchema = BaseSchemeRaw.extend({
@@ -311,6 +334,9 @@ const BearerTokenConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
+const CustomBearerTokenConnectionDataSchema = BearerTokenInitiatingSchema.omit({
+  status: true,
+});
 
 // GOOGLE_SERVICE_ACCOUNT
 const GoogleServiceAccountInitiatingSchema = BaseSchemeRaw.extend({
@@ -352,6 +378,9 @@ const NoAuthConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
+const CustomNoAuthConnectionDataSchema = NoAuthInitiatingSchema.omit({
+  status: true,
+});
 
 // CALCOM_AUTH
 const CalcomAuthInitiatingSchema = BaseSchemeRaw.extend({
@@ -411,6 +440,9 @@ const BasicWithJwtConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
+const CustomBasicWithJwtConnectionDataSchema = BasicWithJwtInitiatingSchema.omit({
+  status: true,
+});
 
 export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
   z.object({
@@ -500,3 +532,43 @@ export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
 ]);
 
 export type ConnectionData = z.infer<typeof ConnectionDataSchema>;
+
+export const CustomConnectionDataSchema = z.discriminatedUnion('authScheme', [
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.OAUTH2),
+    toolkitSlug: z.string(),
+    val: CustomOauth2ConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.API_KEY),
+    toolkitSlug: z.string(),
+    val: CustomApiKeyConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.BASIC_WITH_JWT),
+    toolkitSlug: z.string(),
+    val: CustomBasicWithJwtConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.BASIC),
+    toolkitSlug: z.string(),
+    val: CustomBasicConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.BEARER_TOKEN),
+    toolkitSlug: z.string(),
+    val: CustomBearerTokenConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.OAUTH1),
+    toolkitSlug: z.string(),
+    val: CustomOauth1ConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.NO_AUTH),
+    toolkitSlug: z.string(),
+    val: CustomNoAuthConnectionDataSchema,
+  }),
+]);
+
+export type CustomConnectionData = z.infer<typeof CustomConnectionDataSchema>;

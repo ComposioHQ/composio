@@ -229,6 +229,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
       arguments: JSON.parse(tool.arguments),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
+      customConnectionData: options?.customConnectionData,
       userId: userId,
     };
     const result = await this.executeTool(tool.name, payload, modifiers);

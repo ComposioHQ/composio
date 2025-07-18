@@ -301,6 +301,7 @@ class Tools(Resource, t.Generic[TProvider]):
         arguments: t.Dict,
         connected_account_id: t.Optional[str] = None,
         custom_auth_params: t.Optional[tool_execute_params.CustomAuthParams] = None,
+        custom_connection_data: t.Optional[tool_execute_params.CustomConnectionData] = None,
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
@@ -313,6 +314,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 arguments=arguments,
                 connected_account_id=connected_account_id or self._client.not_given,
                 custom_auth_params=custom_auth_params or self._client.not_given,
+                custom_connection_data=custom_connection_data or self._client.not_given,
                 user_id=user_id or self._client.not_given,
                 text=text or self._client.not_given,
                 version=version or self._client.not_given,
@@ -331,6 +333,7 @@ class Tools(Resource, t.Generic[TProvider]):
         *,
         connected_account_id: t.Optional[str] = None,
         custom_auth_params: t.Optional[tool_execute_params.CustomAuthParams] = None,
+        custom_connection_data: t.Optional[tool_execute_params.CustomConnectionData] = None,
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
@@ -347,6 +350,7 @@ class Tools(Resource, t.Generic[TProvider]):
         :param arguments: The arguments to pass to the tool.
         :param connected_account_id: The ID of the connected account to use for the tool.
         :param custom_auth_params: The custom auth params to use for the tool.
+        :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
         :param user_id: The ID of the user to execute the tool for.
         :param text: The text to pass to the tool.
         :param version: The version of the tool to execute.
@@ -371,6 +375,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 request={
                     "connected_account_id": connected_account_id,
                     "custom_auth_params": custom_auth_params,
+                    "custom_connection_data": custom_connection_data,
                     "version": version,
                     "text": text,
                     "user_id": user_id,
@@ -379,6 +384,7 @@ class Tools(Resource, t.Generic[TProvider]):
             )
             connected_account_id = processed_params["connected_account_id"]
             custom_auth_params = processed_params["custom_auth_params"]
+            custom_connection_data = processed_params["custom_connection_data"]
             text = processed_params["text"]
             version = processed_params["version"]
             user_id = processed_params["user_id"]
@@ -396,6 +402,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 arguments=arguments,
                 connected_account_id=connected_account_id,
                 custom_auth_params=custom_auth_params,
+                custom_connection_data=custom_connection_data,
                 user_id=user_id,
                 text=text,
                 version=version,
@@ -427,6 +434,9 @@ class Tools(Resource, t.Generic[TProvider]):
                 "connected_account_id", self._client.not_given
             ),
             parameters=options.get("parameters", self._client.not_given),
+            custom_connection_data=options.get(
+                "custom_connection_data", self._client.not_given
+            ),
         )
 
 

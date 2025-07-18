@@ -704,6 +704,7 @@ export class Tools<
       allow_tracing: body.allowTracing,
       connected_account_id: body.connectedAccountId,
       custom_auth_params: body.customAuthParams,
+      custom_connection_data: body.customConnectionData,
       arguments: body.arguments,
       user_id: body.userId,
       version: body.version,
@@ -890,6 +891,7 @@ export class Tools<
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
       parameters: parameters,
+      custom_connection_data: toolProxyParams.data.customConnectionData,
     });
   }
 
