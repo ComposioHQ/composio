@@ -133,13 +133,17 @@ export class AuthConfigs {
               name: parsedOptions.data.name,
               authScheme: parsedOptions.data.authScheme,
               credentials: parsedOptions.data.credentials,
-              restrict_to_following_tools: parsedOptions.data.restrictToFollowingTools,
+              tool_access_config: {
+                tools_for_connected_account_creation: parsedOptions.data.restrictToFollowingTools,
+              },
             }
           : {
               type: parsedOptions.data.type,
               credentials: parsedOptions.data.credentials,
               name: parsedOptions.data.name,
-              restrict_to_following_tools: parsedOptions.data.restrictToFollowingTools,
+              tool_access_config: {
+                tools_for_connected_account_creation: parsedOptions.data.restrictToFollowingTools,
+              },
             },
     });
     return transformCreateAuthConfigResponse(result);
@@ -212,12 +216,16 @@ export class AuthConfigs {
         ? {
             type: 'custom',
             credentials: parsedData.data.credentials,
-            restrict_to_following_tools: parsedData.data.restrictToFollowingTools,
+            tool_access_config: {
+              tools_for_connected_account_creation: parsedData.data.restrictToFollowingTools,
+            },
           }
         : {
             type: 'default',
             scopes: parsedData.data.scopes,
-            restrict_to_following_tools: parsedData.data.restrictToFollowingTools,
+            tool_access_config: {
+              tools_for_connected_account_creation: parsedData.data.restrictToFollowingTools,
+            },
           }
     );
   }
