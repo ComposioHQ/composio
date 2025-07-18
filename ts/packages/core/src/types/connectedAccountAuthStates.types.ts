@@ -91,7 +91,7 @@ export const Oauth2ActiveConnectionDataSchema = Oauth2InitiatingConnectionDataSc
   access_token: z.string().optional(),
   id_token: z.string().optional(),
   token_type: z.string().optional(),
-  refresh_token: z.string().optional(),
+  refresh_token: z.string().nullish(),
   expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
   scope: z.union([z.string(), z.array(z.string())]).optional(),
   // previously verification_token, will be sent as verification_token to slack
