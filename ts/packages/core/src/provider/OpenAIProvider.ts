@@ -183,6 +183,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
       arguments: JSON.parse(tool.function.arguments),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
+      customConnectionData: options?.customConnectionData,
       userId: userId,
     };
     const result = await this.executeTool(tool.function.name, payload, modifiers);

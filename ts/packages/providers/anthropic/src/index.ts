@@ -214,6 +214,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       arguments: toolUse.input,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
+      customConnectionData: options?.customConnectionData,
       userId: userId,
     };
     const result = await this.executeTool(toolUse.name, payload, modifiers);

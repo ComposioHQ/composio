@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
 
 /**
  * Toolkit is the collection of tools,
@@ -232,6 +233,7 @@ export const ToolExecuteParamsSchema = z.object({
   allowTracing: z.boolean().optional(),
   connectedAccountId: z.string().optional(),
   customAuthParams: CustomAuthParamsSchema.optional(),
+  customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
   userId: z.string(),
   version: z.string().optional(),
@@ -265,5 +267,6 @@ export const ToolProxyParamsSchema = z.object({
     )
     .optional(),
   connectedAccountId: z.string().optional(),
+  customConnectionData: CustomConnectionDataSchema.optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;

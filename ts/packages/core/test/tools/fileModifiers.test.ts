@@ -416,6 +416,7 @@ describe('Tools with autoUploadDownloadFiles', () => {
         allow_tracing: undefined,
         connected_account_id: undefined,
         custom_auth_params: undefined,
+        custom_connection_data: undefined,
         text: undefined,
         user_id: 'test-user',
         version: undefined,
