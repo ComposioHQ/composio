@@ -8,8 +8,13 @@
       "cache": true
     },
     
+    "dev:deps": {
+      "dependsOn": ["api:pull", "add-og", "sdkdocs", "tools:generate:dev", "snippets:build"],
+      "cache": false
+    },
+    
     "dev": {
-      "dependsOn": ["api:pull", "sdkdocs", "tools:generate:dev", "snippets:build"],
+      "dependsOn": ["dev:deps"],
       "persistent": true,
       "cache": false
     },
@@ -20,7 +25,6 @@
     },
     
     "add-og": {
-      "dependsOn": ["^build"],
       "inputs": ["scripts/add_og_imgs.py", "pages/**/*.mdx"],
       "cache": false
     },
@@ -39,13 +43,13 @@
     
     "tools:generate": {
       "outputs": ["tools/**"],
-      "inputs": ["generators/tool_doc_generator/**/*.py"],
+      "inputs": ["generators/tool_doc_generator/**/*.py", "generators/tool_doc_generator/templates/**/*"],
       "cache": true,
       "env": ["COMPOSIO_API_KEY"]
     },
     "tools:generate:dev": {
       "cache": false,
-      "inputs": ["generators/tool_doc_generator/**/*.py"],
+      "inputs": ["generators/tool_doc_generator/**/*.py", "generators/tool_doc_generator/templates/**/*"],
       "env": ["COMPOSIO_API_KEY", "LIMIT"]
     },
     
