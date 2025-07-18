@@ -18,7 +18,7 @@
 		"snippets:dev": "bun watch scripts/build-snippets.ts --watch",
 		"add-og": "uv run scripts/add_og_imgs.py",
 		"check": "fern check",
-		"dev": "bun run scripts/build-snippets.ts --watch & fern docs dev",
+		"dev": "fern docs dev",
 		"links": "fern docs broken-links",
 		"build": "echo 'Build orchestrated by Turbo'",
 		"preview": "fern generate --docs --preview --log-level debug",
