@@ -317,6 +317,9 @@ describe('Toolkits', () => {
         auth_config: {
           type: 'use_composio_managed_auth',
           name: 'Test Toolkit Auth Config',
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
       });
       expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith({
