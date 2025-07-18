@@ -258,11 +258,11 @@ describe('AuthConfigs', () => {
         toolkit: {
           slug: 'github',
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
         auth_config: {
           type: 'use_composio_managed_auth',
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
       });
 
@@ -393,9 +393,6 @@ describe('AuthConfigs', () => {
           client_id: 'new_client_id',
           client_secret: 'new_client_secret',
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: ['repo', 'user'],
-        },
       };
 
       const result = await authConfigs.update('auth_12345', updateData);
@@ -407,7 +404,7 @@ describe('AuthConfigs', () => {
           client_secret: 'new_client_secret',
         },
         tool_access_config: {
-          tools_for_connected_account_creation: ['repo', 'user'],
+          tools_for_connected_account_creation: undefined,
         },
       });
 
@@ -420,9 +417,6 @@ describe('AuthConfigs', () => {
       const updateData = {
         type: 'default' as const,
         scopes: 'read:user,repo',
-        tool_access_config: {
-          tools_for_connected_account_creation: ['repo'],
-        },
       };
 
       const result = await authConfigs.update('auth_12345', updateData);
@@ -431,7 +425,7 @@ describe('AuthConfigs', () => {
         type: 'default',
         scopes: 'read:user,repo',
         tool_access_config: {
-          tools_for_connected_account_creation: ['repo'],
+          tools_for_connected_account_creation: undefined,
         },
       });
 
