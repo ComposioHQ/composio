@@ -252,6 +252,7 @@ interface ToolExecuteParams {
   allowTracing?: boolean; // Enable/disable tracing
   connectedAccountId?: string; // Connected account ID
   customAuthParams?: CustomAuthParams; // Custom auth parameters
+  customConnectionData?: CustomConnectionData; // Custom connection data
   arguments?: Record<string, unknown>; // Tool arguments
   userId: string; // User ID
   version?: string; // Tool version

@@ -14,6 +14,7 @@ class ToolExecuteParams(te.TypedDict):
     arguments: t.Dict
     connected_account_id: t.Optional[str]
     custom_auth_params: t.Optional["tool_execute_params.CustomAuthParams"]
+    custom_connection_data: t.Optional["tool_execute_params.CustomConnectionData"]
     user_id: t.Optional[str]
     text: t.Optional[str]
     version: t.Optional[str]

@@ -232,6 +232,7 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
       arguments: typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments,
       connectedAccountId: options.connectedAccountId,
       customAuthParams: options.customAuthParams,
+      customConnectionData: options.customConnectionData,
       userId: userId,
     };
 

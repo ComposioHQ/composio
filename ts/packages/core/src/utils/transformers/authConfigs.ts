@@ -48,7 +48,7 @@ export function transformAuthConfigRetrieveResponse(
       createdBy: authConfig.created_by,
       createdAt: authConfig.created_at,
       lastUpdatedAt: authConfig.last_updated_at,
-      restrictToFollowingTools: authConfig.restrict_to_following_tools,
+      restrictToFollowingTools: authConfig.tool_access_config?.tools_for_connected_account_creation,
     }));
 }
 
