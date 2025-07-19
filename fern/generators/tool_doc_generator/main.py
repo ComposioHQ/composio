@@ -411,6 +411,7 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
         if not any("## Tools" in block for block in self._blocks):
             self._blocks.append("## Tools")
             self._blocks.append("### Executing tools")
+            self._blocks.append(f"""To prototype you can execute some tools to see the responses and working on the [{app_name} toolkit's playground](https://app.composio.dev/app/{app_name})""")
             
             # Prepare template variables
             template_vars = {
