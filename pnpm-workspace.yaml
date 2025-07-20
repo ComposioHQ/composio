@@ -4,7 +4,7 @@ packages:
 - "ts/packages/json-schema-to-zod"
 - "ts/packages/providers/*"
 - "ts/packages/ts-builders"
-- "ts/packages/wrappers/*"
+# - "ts/packages/wrappers/*"
 - "ts/examples/*"
 - "fern"
 - "fern/pages/examples/*"

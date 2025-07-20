@@ -40,6 +40,7 @@
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
     "@effect/eslint-plugin": "^0.3.2",
+    "@effect/language-service": "^0.27.1",
     "@effect/platform": "^0.85.2",
     "@effect/vitest": "^0.23.8",
     "@types/bun": "^1.2.16",
@@ -51,14 +52,14 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.17",
+    "@composio/client": "0.1.0-alpha.29",
     "@composio/core": "workspace:*",
     "@composio/ts-builders": "workspace:*",
     "@effect/cli": "^0.64.2",
     "@effect/platform-bun": "^0.70.4",
     "@effect/platform-node-shared": "^0.40.4",
     "chalk": "^5.4.1",
-    "effect": "^3.16.8",
+    "effect": "^3.16.16",
     "effect-errors": "^1.10.11",
     "indent-string": "^5.0.0",
     "semver": "^7.7.2",

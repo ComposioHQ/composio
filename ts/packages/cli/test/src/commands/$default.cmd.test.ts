@@ -64,6 +64,8 @@ describe('CLI: composio', () => {
 
             - login                                                                  Log in to the Composio SDK.
 
+            - logout                                                                 Log out from the Composio SDK.
+
             - generate [(-o, --output-dir directory)]                                Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
 
             - py                                                                     Handle Python projects.

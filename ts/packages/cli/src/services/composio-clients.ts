@@ -1,11 +1,11 @@
 import { pipe, Data, Effect, Option, Schema, Array, Order } from 'effect';
-import type { ConfigError } from 'effect/ConfigError';
-import { APP_CONFIG } from 'src/effects/app-config';
 import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
 import { LinkedSession, Session, RetrievedSession } from 'src/models/session';
 import { TriggerType } from 'src/models/trigger-types';
+import { ComposioUserContext, ComposioUserContextLive } from './user-context';
+import type { NoSuchElementException } from 'effect/Cause';
 
 /**
  * Error types
@@ -39,8 +39,8 @@ export type CliCreateSessionResponse = Schema.Schema.Type<typeof CliCreateSessio
 export const CliLinkSessionResponse = LinkedSession;
 export type CliLinkSessionResponse = Schema.Schema.Type<typeof CliLinkSessionResponse>;
 
-export const CliRetrieveSessionResponse = RetrievedSession;
-export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliRetrieveSessionResponse>;
+export const CliGetSessionResponse = RetrievedSession;
+export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliGetSessionResponse>;
 
 export const ToolkitsResponse = Schema.Struct({
   items: Toolkits,
@@ -65,7 +65,7 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
   clientSingleton: ComposioClientSingleton,
   apiCall: (client: _RawComposioClient) => Promise<T>,
   responseSchema: S
-): Effect.Effect<Schema.Schema.Type<S>, HttpError | ConfigError> =>
+): Effect.Effect<Schema.Schema.Type<S>, HttpError | NoSuchElementException> =>
   Effect.gen(function* () {
     const client = yield* clientSingleton.get();
     const json = yield* Effect.tryPromise({
@@ -102,7 +102,8 @@ class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
   'services/ComposioClientSingleton',
   {
     accessors: true,
-    sync: () => {
+    effect: Effect.gen(function* () {
+      const ctx = yield* ComposioUserContext;
       let ref = Option.none<_RawComposioClient>();
 
       return {
@@ -111,24 +112,24 @@ class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
             return ref.value;
           }
 
-          const apiKey = yield* APP_CONFIG['API_KEY'];
-          const baseURLOpt = yield* APP_CONFIG['BASE_URL'];
-          const baseURL = Option.getOrUndefined(baseURLOpt);
+          // Note: `api_key` is not required in every API request.
+          const apiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
+          const baseURL = ctx.data.baseURL.pipe(Option.getOrUndefined);
 
           yield* Effect.logDebug('Creating raw Composio client...');
           const client = new _RawComposioClient({ apiKey, baseURL });
 
           ref = Option.some(client);
           return client;
-        }) satisfies () => Effect.Effect<_RawComposioClient, ConfigError, never>,
+        }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
       };
-    },
-    dependencies: [],
+    }),
+    dependencies: [ComposioUserContextLive],
   }
 ) {}
 
 // Service that wraps the raw Composio client, which is shared by all client services.
-class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
+export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
   'services/ComposioClientLive',
   {
     effect: Effect.gen(function* () {
@@ -160,38 +161,36 @@ class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               TriggerTypesResponse
             ),
         },
-        v3: {
-          cli: {
-            /**
-             * Generates a new CLI session with a random 6-character code.
-             */
-            createSession: () =>
-              callClient(
-                clientSingleton,
-                client => client.v3.cli.createSession(),
-                CliCreateSessionResponse
-              ),
+        cli: {
+          /**
+           * Generates a new CLI session with a random 6-character code.
+           */
+          createSession: () =>
+            callClient(
+              clientSingleton,
+              client => client.cli.createSession(),
+              CliCreateSessionResponse
+            ),
 
-            /**
-             * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
-             */
-            retrieveSession: (session: { id: string }) =>
-              callClient(
-                clientSingleton,
-                client => client.v3.cli.retrieveSession(session),
-                CliRetrieveSessionResponse
-              ),
+          /**
+           * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+           */
+          getSession: (session: { id: string }) =>
+            callClient(
+              clientSingleton,
+              client => client.cli.getSession(session),
+              CliGetSessionResponse
+            ),
 
-            /**
-             * Links a pending CLI session to the currently authenticated user.
-             */
-            linkSession: (session: { id: string }) =>
-              callClient(
-                clientSingleton,
-                client => client.v3.cli.linkSession(session),
-                CliLinkSessionResponse
-              ),
-          },
+          /**
+           * Links a pending CLI session to the currently authenticated user.
+           */
+          linkSession: (session: { id: string }) =>
+            callClient(
+              clientSingleton,
+              client => client.cli.linkSession(session),
+              CliLinkSessionResponse
+            ),
         },
       };
     }),
@@ -207,12 +206,6 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
 
       return {
         getToolkits: () =>
-          // Effect.succeed([
-          //   {
-          //     slug: 'gmail',
-          //     name: 'GMAIL',
-          //   } as unknown as Toolkit,
-          // ]),
           client.toolkits.list().pipe(
             Effect.map(response => response.items),
             Effect.flatMap(toolkits =>
@@ -238,10 +231,9 @@ export class ComposioSessionRepository extends Effect.Service<ComposioSessionRep
       const client = yield* ComposioClientLive;
 
       return {
-        createSession: () => client.v3.cli.createSession(),
-        retrieveSession: (session: { id: string }) =>
-          client.v3.cli.retrieveSession({ id: session.id }),
-        linkSession: (session: { id: string }) => client.v3.cli.linkSession({ id: session.id }),
+        createSession: () => client.cli.createSession(),
+        getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+        linkSession: (session: { id: string }) => client.cli.linkSession({ id: session.id }),
       };
     }),
     dependencies: [ComposioClientLive.Default],

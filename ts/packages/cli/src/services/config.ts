@@ -1,10 +1,7 @@
-import path from 'node:path';
-import { Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
+import { Option, Effect, ConfigProvider, Layer, Logger, LogLevel } from 'effect';
 import * as constants from 'src/constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
-import { configProviderFromLazyJson } from 'src/effects/from-lazy-json';
 import { APP_CONFIG } from 'src/effects/app-config';
-import { setupCacheDir } from 'src/effects/setup-cache-dir';
 
 /**
  * Define where `effect/Config` reads config values from.
@@ -31,34 +28,19 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  *
  * Read via `yield* Config.string('API_KEY')`.
  */
-const ConfigProviderLive = Effect.gen(function* () {
-  // TODO: fix this to avoid `API_KEY` errors when using commands that don't need it.
-  const cacheDir = yield* setupCacheDir;
-  const jsonUserConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
-  const configProviderFromUserFile = yield* configProviderFromLazyJson(jsonUserConfigPath);
 
-  // start by reading from env vars
-  const configProvider = ConfigProvider.fromEnv()
-    // prefix env var keys
-    .pipe(
-      ConfigProvider.mapInputPath(key => {
-        if (key.startsWith('DEBUG_OVERRIDE_') || key.startsWith('FORCE_')) {
-          return key;
-        }
+export const BaseConfigProviderLive = ConfigProvider.fromEnv();
 
-        return `${constants.APP_ENV_CONFIG_KEY_PREFIX}${key}`;
-      })
-    )
-    // fall back to user config file, which is lazily loaded
-    .pipe(
-      ConfigProvider.orElse(() => {
-        // e.g., read `json['api_key']` as `Config.string('COMPOSIO_API_KEY')`
-        return configProviderFromUserFile.pipe(ConfigProvider.snakeCase);
-      })
-    );
-
-  return Layer.setConfigProvider(configProvider);
-}).pipe(Layer.unwrapEffect);
+export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
+  return baseConfigProvider.pipe(
+    ConfigProvider.mapInputPath(key => {
+      if (key.startsWith('DEBUG_OVERRIDE_') || key.startsWith('FORCE_')) {
+        return key;
+      }
+      return `${constants.APP_ENV_CONFIG_KEY_PREFIX}${key}`;
+    })
+  );
+}
 
 /**
  * Tentatively set the minimum log level if found in the config.
@@ -89,6 +71,7 @@ const logDebugOverride = Effect.gen(function* () {
   }
 });
 
-export const UserConfigLive = Layer.provide(LoggerFromConfigLive, ConfigProviderLive).pipe(
-  Layer.tap(() => logDebugOverride)
+export const ConfigLive = LoggerFromConfigLive.pipe(
+  Layer.tap(() => logDebugOverride),
+  Layer.tap(() => Effect.logDebug('ConfigLive layer initialized'))
 );

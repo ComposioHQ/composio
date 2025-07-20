@@ -92,10 +92,10 @@ importers:
         version: link:../ts/packages/providers/vercel
       '@langchain/langgraph':
         specifier: ^0.2.72
-        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
+        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
       '@langchain/openai':
         specifier: ^0.5.10
-        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
+        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)
       '@types/convict':
         specifier: ^6.1.6
         version: 6.1.6
@@ -116,7 +116,7 @@ importers:
         version: 4.3.16(react@18.3.1)(zod@3.25.67)
       composio-core:
         specifier: ^0.5.39
-        version: 0.5.39(@ai-sdk/openai@1.3.22(zod@3.25.67))(@cloudflare/workers-types@4.20250619.0)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2))(ai@4.3.16(react@18.3.1)(zod@3.25.67))(langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(axios@1.10.0)(openai@4.104.0(ws@8.18.2)(zod@3.25.67))(ws@8.18.2))(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+        version: 0.5.39(@ai-sdk/openai@1.3.22(zod@3.25.67))(@cloudflare/workers-types@4.20250619.0)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3))(ai@4.3.16(react@18.3.1)(zod@3.25.67))(langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(axios@1.10.0)(openai@4.104.0(ws@8.18.3)(zod@3.25.67))(ws@8.18.3))(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       hono:
         specifier: ^4.7.11
         version: 4.8.0
@@ -131,7 +131,7 @@ importers:
         version: 1.2.1
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.67)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -192,7 +192,7 @@ importers:
         version: 4.8.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.8.19
@@ -214,7 +214,7 @@ importers:
         version: link:../../packages/core
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -290,7 +290,7 @@ importers:
         version: 16.5.0
       zod-to-json-schema:
         specifier: ^3.24.5
-        version: 3.24.5(zod@3.25.67)
+        version: 3.24.5(zod@3.25.76)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -309,19 +309,19 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^0.3.56
-        version: 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+        version: 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       '@langchain/langgraph':
         specifier: ^0.2.72
-        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
+        version: 0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))
       '@langchain/openai':
         specifier: ^0.5.10
-        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
+        version: 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -334,7 +334,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.16
-        version: 1.3.22(zod@3.25.67)
+        version: 1.3.22(zod@3.25.76)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -343,10 +343,10 @@ importers:
         version: link:../../packages/providers/mastra
       '@mastra/core':
         specifier: ^0.10.0
-        version: 0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67)
+        version: 0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76)
       '@mastra/mcp':
         specifier: ^0.10.3
-        version: 0.10.4(@mastra/core@0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67))(zod@3.25.67)
+        version: 0.10.4(@mastra/core@0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76))(zod@3.25.76)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
@@ -362,7 +362,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.16
-        version: 1.3.22(zod@3.25.67)
+        version: 1.3.22(zod@3.25.76)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -371,7 +371,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
+        version: 4.3.16(react@18.3.1)(zod@3.25.76)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -393,13 +393,13 @@ importers:
         version: link:../../packages/providers/openai-agents
       '@openai/agents':
         specifier: ^0.0.7
-        version: 0.0.7(ws@8.18.2)(zod@3.25.67)
+        version: 0.0.7(ws@8.18.3)(zod@3.25.67)
       dotenv:
         specifier: ^16.4.1
         version: 16.5.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.67)
       zod:
         specifier: ^3.24.2
         version: 3.25.67
@@ -431,7 +431,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.16
-        version: 1.3.22(zod@3.25.67)
+        version: 1.3.22(zod@3.25.76)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -440,7 +440,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
+        version: 4.3.16(react@18.3.1)(zod@3.25.76)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -459,7 +459,7 @@ importers:
         version: 16.5.0
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -488,7 +488,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: ^1.3.16
-        version: 1.3.22(zod@3.25.67)
+        version: 1.3.22(zod@3.25.76)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -497,7 +497,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
+        version: 4.3.16(react@18.3.1)(zod@3.25.76)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -512,8 +512,8 @@ importers:
   ts/packages/cli:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.17
-        version: 0.1.0-alpha.17
+        specifier: 0.1.0-alpha.29
+        version: 0.1.0-alpha.29
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -522,22 +522,22 @@ importers:
         version: link:../ts-builders
       '@effect/cli':
         specifier: ^0.64.2
-        version: 0.64.2(@effect/platform@0.85.2(effect@3.16.8))(@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8))(@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
+        version: 0.64.2(@effect/platform@0.85.2(effect@3.16.16))(@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16))(@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
       '@effect/platform-bun':
         specifier: ^0.70.4
-        version: 0.70.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
+        version: 0.70.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
       '@effect/platform-node-shared':
         specifier: ^0.40.4
-        version: 0.40.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
+        version: 0.40.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
       effect:
-        specifier: ^3.16.8
-        version: 3.16.8
+        specifier: ^3.16.16
+        version: 3.16.16
       effect-errors:
         specifier: ^1.10.11
-        version: 1.10.11(aee16c6ba0d05f0cbe9c66fcd0455e75)
+        version: 1.10.11(aea1fe99f240c5dd77146c654a1423dd)
       indent-string:
         specifier: ^5.0.0
         version: 5.0.0
@@ -551,12 +551,15 @@ importers:
       '@effect/eslint-plugin':
         specifier: ^0.3.2
         version: 0.3.2
+      '@effect/language-service':
+        specifier: ^0.27.1
+        version: 0.27.1
       '@effect/platform':
         specifier: ^0.85.2
-        version: 0.85.2(effect@3.16.8)
+        version: 0.85.2(effect@3.16.16)
       '@effect/vitest':
         specifier: ^0.23.8
-        version: 0.23.8(effect@3.16.8)(vitest@3.2.4)
+        version: 0.23.8(effect@3.16.16)(vitest@3.2.4)
       '@types/bun':
         specifier: ^1.2.16
         version: 1.2.16
@@ -595,7 +598,7 @@ importers:
         version: 4.1.2
       openai:
         specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.67)
       pusher-js:
         specifier: ^8.4.0
         version: 8.4.0
@@ -708,7 +711,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.44
-        version: 0.3.58(openai@5.5.1(ws@8.18.2)(zod@3.25.67))
+        version: 0.3.58(openai@5.9.2(ws@8.18.3)(zod@3.25.67))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -727,7 +730,7 @@ importers:
     dependencies:
       '@mastra/core':
         specifier: ^0.10.0
-        version: 0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67)
+        version: 0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -746,7 +749,7 @@ importers:
     dependencies:
       openai:
         specifier: ^4.3.8
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -765,7 +768,7 @@ importers:
     dependencies:
       '@openai/agents':
         specifier: ^0.0.7
-        version: 0.0.7(ws@8.18.2)(zod@3.25.67)
+        version: 0.0.7(ws@8.18.3)(zod@3.25.76)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -784,7 +787,7 @@ importers:
     dependencies:
       ai:
         specifier: ^4.3.8
-        version: 4.3.16(react@18.3.1)(zod@3.25.67)
+        version: 4.3.16(react@18.3.1)(zod@3.25.76)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1129,11 +1132,11 @@ packages:
   '@cloudflare/workers-types@4.20250619.0':
     resolution: {integrity: sha512-OYmVTA45rEEsOmchtltDnrG6BBaOPB7LUGKoyE8AwkfanUOc3/wwuMZ50i1jq6NKrV1TZLsKUKzrwe1NtVGOzQ==}
 
-  '@composio/client@0.1.0-alpha.17':
-    resolution: {integrity: sha512-iNCDSgdwfFVsjbbyZIMknMPy4uO8Xw5+MP2aI+yoQo34VXF17Fi6ZHYirrJPf8RbdoRROZTDJjC/rU18mMzC2Q==}
-
   '@composio/client@0.1.0-alpha.27':
     resolution: {integrity: sha512-IMjiJg8P9OVILmm0zDbshxvwCTzQg7Unxy4ighYp91z1BELakO9lBNSFWU4kRhSS9Tow/RiuBO63bNhPAT00cA==}
+
+  '@composio/client@0.1.0-alpha.29':
+    resolution: {integrity: sha512-0oI38Kl8LVEK/fFF7rTdvO11uwSWHzavTTUWE/ExnhIoik3wmHse1CRKywb06M+hkLO4+Vdkh46sXbNFs7YZyQ==}
 
   '@composio/json-schema-to-zod@0.1.10-next.4':
     resolution: {integrity: sha512-RGHBviDYx/5c6pb2GrWnfaKLYH/32PWzoA9oWJELQD/qpx/dyqWhTQ9zEAr6L3lh6iYxr98EJndAnfY43ybTHg==}
@@ -1184,6 +1187,10 @@ packages:
         optional: true
       lmdb:
         optional: true
+
+  '@effect/language-service@0.27.1':
+    resolution: {integrity: sha512-BTOiDMdHdEQhvt5LTTeLZUbpUoHSsH4Jy5MEUDJLPEOMMN6vVgi3AZteYHLBhmT9Rv+aTxeICdgRT+hGgCoQXw==}
+    hasBin: true
 
   '@effect/platform-bun@0.70.5':
     resolution: {integrity: sha512-3nvR+RFo0apkwL1HgbuyVCDFqTtgkubiHSN8T0zC+nYJWvghR75VaU2ajbDLECUltpef53g5iNisnXpwUC92bQ==}
@@ -2018,6 +2025,12 @@ packages:
     peerDependencies:
       '@langchain/core': '>=0.3.58 <0.4.0'
 
+  '@langchain/openai@0.5.18':
+    resolution: {integrity: sha512-CX1kOTbT5xVFNdtLjnM0GIYNf+P7oMSu+dGCFxxWRa3dZwWiuyuBXCm+dToUGxDLnsHuV1bKBtIzrY1mLq/A1Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.3.58 <0.4.0'
+
   '@langchain/textsplitters@0.1.0':
     resolution: {integrity: sha512-djI4uw9rlkAb5iMhtLED+xJebDdAG935AdP4eRTB02R7OB/act55Bj9wsskhZsvuyQRpO4O1wQOp85s6T6GWmw==}
     engines: {node: '>=18'}
@@ -2615,6 +2628,10 @@ packages:
 
   '@opentelemetry/semantic-conventions@1.34.0':
     resolution: {integrity: sha512-aKcOkyrorBGlajjRdVoJWHTxfxO1vCNHLJVlSDaRHDIdjU+pX8IYQPvPDkYiujKLbRnWU+1TBwEt0QRgSm4SGA==}
+    engines: {node: '>=14'}
+
+  '@opentelemetry/semantic-conventions@1.36.0':
+    resolution: {integrity: sha512-TtxJSRD8Ohxp6bKkhrm27JRHAxPczQA7idtcTOMYI+wQRRrfgqxHv1cFbCApcSnNjtXkmzFozn6jQtFrOmbjPQ==}
     engines: {node: '>=14'}
 
   '@opentelemetry/sql-common@0.41.0':
@@ -3648,6 +3665,9 @@ packages:
   console-table-printer@2.14.3:
     resolution: {integrity: sha512-X5OCFnjYlXzRuC8ac5hPA2QflRjJvNKJocMhlnqK/Ap7q3DHXr0NJ0TGzwmEKOiOdJrjsSwEd0m+a32JAYPrKQ==}
 
+  console-table-printer@2.14.6:
+    resolution: {integrity: sha512-MCBl5HNVaFuuHW6FGbL/4fB7N/ormCy+tQ+sxTrF6QtSbSNETvPuOVbkJBhzDgYhvjWGrTma4eYJa37ZuoQsPw==}
+
   content-disposition@0.5.4:
     resolution: {integrity: sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==}
     engines: {node: '>= 0.6'}
@@ -3826,8 +3846,8 @@ packages:
       '@effect/sql': 0.x
       effect: 3.x
 
-  effect@3.16.8:
-    resolution: {integrity: sha512-E4U0MZFBun99myxOogy9ZZ1c3IYR47L/A5GqCP9Lp+6ORag0YLmGHOrYxQ3agN1FOMTrElgtJmciicwnHdE+Ug==}
+  effect@3.16.16:
+    resolution: {integrity: sha512-q8jsuAJykQJJ9jDkR9VaAR1JeHnEDn49g6+LkveIcfW3nIPUJw6BrC9ZPaVCJWmU23vKoVj9XqJmC/EW8kiI8g==}
 
   emoji-regex@10.4.0:
     resolution: {integrity: sha512-EC+0oUMY1Rqm4O6LLrgjtYDvcVYTy7chDnM4Q7030tP4Kwj3u/pR6gP9ygnp2CJMK5Gq+9Q2oqmrFJAz01DXjw==}
@@ -4639,6 +4659,23 @@ packages:
       openai:
         optional: true
 
+  langsmith@0.3.46:
+    resolution: {integrity: sha512-Hhi4/cMjhWIGpu0DW5eQrXBbeeKQWPYYQyJCYzhFjod+xinMry4i8QR0gxrrgjGOgfMuU6nyK79YqjGTEPVbDA==}
+    peerDependencies:
+      '@opentelemetry/api': '*'
+      '@opentelemetry/exporter-trace-otlp-proto': '*'
+      '@opentelemetry/sdk-trace-base': '*'
+      openai: '*'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      '@opentelemetry/exporter-trace-otlp-proto':
+        optional: true
+      '@opentelemetry/sdk-trace-base':
+        optional: true
+      openai:
+        optional: true
+
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
@@ -4969,6 +5006,18 @@ packages:
 
   openai@5.5.1:
     resolution: {integrity: sha512-5i19097mGotHA1eFsM6Tjd/tJ8uo9sa5Ysv4Q6bKJ2vtN6rc0MzMrUefXnLXYAJcmMQrC1Efhj0AvfIkXrQamw==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.23.8
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
+  openai@5.9.2:
+    resolution: {integrity: sha512-d7t/lRkwZpSwIk7GW3EHRSGAlsuoi1WL6VhCO02raEzZO2ahEVAbWn3WmOcpeh9zF6xF9weJXoVeDkWJRz+SHA==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -5527,6 +5576,9 @@ packages:
   simple-wcswidth@1.1.1:
     resolution: {integrity: sha512-R3q3/eoeNBp24CNTASEUrffXi0j9TwPIEvSStlvSrsFimM17sV5EHcMOc86j3K+UWZyLYvH0hRmYGCpCoaJ4vw==}
 
+  simple-wcswidth@1.1.2:
+    resolution: {integrity: sha512-j7piyCjAeTDSjzTSQ7DokZtMNwNlEAyxqSZeCS+CXH7fJ4jx3FuJ/mTW3mE+6JLs4VJBbcll0Kjn+KXI5t21Iw==}
+
   sirv@3.0.1:
     resolution: {integrity: sha512-FoqMu0NCGBLCcAkS1qA+XJIQTR6/JHfQXl+uGteNCQ76T91DMUjPa9xfmeqMY3z80nLSg9yQmNjK0Px6RWsH/A==}
     engines: {node: '>=18'}
@@ -5912,8 +5964,8 @@ packages:
     resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
     engines: {node: '>=14.0'}
 
-  undici@7.10.0:
-    resolution: {integrity: sha512-u5otvFBOBZvmdjWLVW+5DAc9Nkq8f24g0O9oY7qw2JVIF1VocIFoyz9JFkuVOS2j41AufeO0xnlweJ2RLT8nGw==}
+  undici@7.11.0:
+    resolution: {integrity: sha512-heTSIac3iLhsmZhUCjyS3JQEkZELateufzZuBaVM5RHXdSBMb1LPMQf5x+FH7qjsZYDP0ttAc3nnVpUB+wYbOg==}
     engines: {node: '>=20.18.1'}
 
   unenv@2.0.0-rc.17:
@@ -6130,6 +6182,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xstate@5.19.4:
     resolution: {integrity: sha512-h1UMSYOB564NXqAI+VpXrxwaBdOJUh6LOStooQ+Rn/+gqJWtGBfjZn265BwFI8Mp4ZoOyoLDNf8X1yp3faBUZQ==}
 
@@ -6186,6 +6250,9 @@ packages:
   zod@3.25.67:
     resolution: {integrity: sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@ai-sdk/anthropic@1.2.12(zod@3.25.67)':
@@ -6200,12 +6267,25 @@ snapshots:
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       zod: 3.25.67
 
+  '@ai-sdk/openai@1.3.22(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      zod: 3.25.76
+
   '@ai-sdk/provider-utils@2.2.8(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
       zod: 3.25.67
+
+  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      nanoid: 3.3.11
+      secure-json-parse: 2.7.0
+      zod: 3.25.76
 
   '@ai-sdk/provider@1.1.3':
     dependencies:
@@ -6221,12 +6301,29 @@ snapshots:
     optionalDependencies:
       zod: 3.25.67
 
+  '@ai-sdk/react@1.2.12(react@18.3.1)(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.76)
+      react: 18.3.1
+      swr: 2.3.3(react@18.3.1)
+      throttleit: 2.1.0
+    optionalDependencies:
+      zod: 3.25.76
+
   '@ai-sdk/ui-utils@1.2.11(zod@3.25.67)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
       zod: 3.25.67
       zod-to-json-schema: 3.24.5(zod@3.25.67)
+
+  '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.5(zod@3.25.76)
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -6887,9 +6984,9 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250619.0': {}
 
-  '@composio/client@0.1.0-alpha.17': {}
-
   '@composio/client@0.1.0-alpha.27': {}
+
+  '@composio/client@0.1.0-alpha.29': {}
 
   '@composio/json-schema-to-zod@0.1.10-next.4':
     dependencies:
@@ -6906,23 +7003,23 @@ snapshots:
 
   '@dprint/typescript@0.91.8': {}
 
-  '@effect/cli@0.64.2(@effect/platform@0.85.2(effect@3.16.8))(@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8))(@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/cli@0.64.2(@effect/platform@0.85.2(effect@3.16.16))(@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16))(@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/printer': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8)
-      '@effect/printer-ansi': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/printer': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16)
+      '@effect/printer-ansi': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16)
+      effect: 3.16.16
       ini: 4.1.3
       toml: 3.0.0
       yaml: 2.8.0
 
-  '@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/workflow': 0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/workflow': 0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      effect: 3.16.16
 
   '@effect/eslint-plugin@0.3.2':
     dependencies:
@@ -6930,113 +7027,115 @@ snapshots:
       '@dprint/typescript': 0.91.8
       prettier-linter-helpers: 1.0.0
 
-  '@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)':
+  '@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      effect: 3.16.16
       uuid: 11.1.0
 
-  '@effect/platform-bun@0.70.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/language-service@0.27.1': {}
+
+  '@effect/platform-bun@0.70.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/platform-node-shared': 0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/platform-node-shared': 0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      effect: 3.16.16
       multipasta: 0.2.5
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node-shared@0.40.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/platform-node-shared@0.40.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
+      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
       '@parcel/watcher': 2.5.1
-      effect: 3.16.8
+      effect: 3.16.16
       multipasta: 0.2.5
       ws: 8.18.2
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node-shared@0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/platform-node-shared@0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
+      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
       '@parcel/watcher': 2.5.1
-      effect: 3.16.8
+      effect: 3.16.16
       multipasta: 0.2.5
       ws: 8.18.2
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@0.86.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/platform-node@0.86.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/platform-node-shared': 0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/platform-node-shared': 0.40.5(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      effect: 3.16.16
       mime: 3.0.0
-      undici: 7.10.0
-      ws: 8.18.2
+      undici: 7.11.0
+      ws: 8.18.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.85.2(effect@3.16.8)':
+  '@effect/platform@0.85.2(effect@3.16.16)':
     dependencies:
-      effect: 3.16.8
+      effect: 3.16.16
       find-my-way-ts: 0.1.5
       msgpackr: 1.11.4
       multipasta: 0.2.5
 
-  '@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8)':
+  '@effect/printer-ansi@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/printer': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8)
-      '@effect/typeclass': 0.35.8(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/printer': 0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16)
+      '@effect/typeclass': 0.35.8(effect@3.16.16)
+      effect: 3.16.16
 
-  '@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.8))(effect@3.16.8)':
+  '@effect/printer@0.44.8(@effect/typeclass@0.35.8(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/typeclass': 0.35.8(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/typeclass': 0.35.8(effect@3.16.16)
+      effect: 3.16.16
 
-  '@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)':
+  '@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      effect: 3.16.16
 
-  '@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)':
+  '@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/experimental': 0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@opentelemetry/semantic-conventions': 1.34.0
-      effect: 3.16.8
+      '@effect/experimental': 0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@opentelemetry/semantic-conventions': 1.36.0
+      effect: 3.16.16
       uuid: 11.1.0
 
-  '@effect/typeclass@0.35.8(effect@3.16.8)':
+  '@effect/typeclass@0.35.8(effect@3.16.16)':
     dependencies:
-      effect: 3.16.8
+      effect: 3.16.16
 
-  '@effect/vitest@0.23.8(effect@3.16.8)(vitest@3.2.4)':
+  '@effect/vitest@0.23.8(effect@3.16.16)(vitest@3.2.4)':
     dependencies:
-      effect: 3.16.8
+      effect: 3.16.16
       vitest: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
-  '@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)':
+  '@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)':
     dependencies:
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      effect: 3.16.8
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      effect: 3.16.16
 
   '@emnapi/runtime@1.4.3':
     dependencies:
@@ -7585,14 +7684,14 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/core@0.3.58(openai@5.5.1(ws@8.18.2)(zod@3.25.67))':
+  '@langchain/core@0.3.58(openai@5.9.2(ws@8.18.3)(zod@3.25.67))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.31(openai@5.5.1(ws@8.18.2)(zod@3.25.67))
+      langsmith: 0.3.31(openai@5.9.2(ws@8.18.3)(zod@3.25.67))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -7602,14 +7701,14 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))':
+  '@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      langsmith: 0.3.33(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -7619,26 +7718,26 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))':
+  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       uuid: 10.0.0
 
-  '@langchain/langgraph-sdk@0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)':
+  '@langchain/langgraph-sdk@0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(react@18.3.1)':
     dependencies:
       '@types/json-schema': 7.0.15
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       react: 18.3.1
 
-  '@langchain/langgraph@0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))':
+  '@langchain/langgraph@0.2.74(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(react@18.3.1)(zod-to-json-schema@3.24.5(zod@3.25.67))':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
-      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))
-      '@langchain/langgraph-sdk': 0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(react@18.3.1)
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
+      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))
+      '@langchain/langgraph-sdk': 0.0.84(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(react@18.3.1)
       uuid: 10.0.0
       zod: 3.25.67
     optionalDependencies:
@@ -7646,19 +7745,28 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)':
+  '@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       js-tiktoken: 1.0.20
-      openai: 4.104.0(ws@8.18.2)(zod@3.25.32)
+      openai: 4.104.0(ws@8.18.3)(zod@3.25.32)
       zod: 3.25.32
     transitivePeerDependencies:
       - encoding
       - ws
 
-  '@langchain/textsplitters@0.1.0(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))':
+  '@langchain/openai@0.5.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)':
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
+      js-tiktoken: 1.0.20
+      openai: 5.9.2(ws@8.18.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - ws
+
+  '@langchain/textsplitters@0.1.0(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))':
+    dependencies:
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       js-tiktoken: 1.0.20
 
   '@manypkg/find-root@1.1.0':
@@ -7677,12 +7785,12 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@mastra/core@0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67)':
+  '@mastra/core@0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.67)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.67)
-      '@mastra/schema-compat': 0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.76)
+      '@mastra/schema-compat': 0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.76))(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/auto-instrumentations-node': 0.59.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))
       '@opentelemetry/core': 2.0.1(@opentelemetry/api@1.9.0)
@@ -7697,12 +7805,12 @@ snapshots:
       '@opentelemetry/sdk-trace-node': 2.0.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.34.0
       '@sindresorhus/slugify': 2.2.1
-      ai: 4.3.16(react@18.3.1)(zod@3.25.67)
+      ai: 4.3.16(react@18.3.1)(zod@3.25.76)
       cohere-ai: 7.17.1
       date-fns: 3.6.0
       dotenv: 16.5.0
       hono: 4.8.0
-      hono-openapi: 0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67)
+      hono-openapi: 0.4.8(effect@3.16.16)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.76)
       json-schema: 0.4.0
       json-schema-to-zod: 2.6.1
       pino: 9.7.0
@@ -7710,7 +7818,7 @@ snapshots:
       radash: 12.1.1
       sift: 17.1.3
       xstate: 5.19.4
-      zod: 3.25.67
+      zod: 3.25.76
     transitivePeerDependencies:
       - '@hono/arktype-validator'
       - '@hono/effect-validator'
@@ -7729,27 +7837,27 @@ snapshots:
       - valibot
       - zod-openapi
 
-  '@mastra/mcp@0.10.4(@mastra/core@0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67))(zod@3.25.67)':
+  '@mastra/mcp@0.10.4(@mastra/core@0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 0.10.6(effect@3.16.8)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.67)
+      '@mastra/core': 0.10.6(effect@3.16.16)(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.13.0
       date-fns: 4.1.0
       exit-hook: 4.0.0
       fast-deep-equal: 3.1.3
       hono: 4.8.0
       uuid: 11.1.0
-      zod: 3.25.67
+      zod: 3.25.76
       zod-from-json-schema: 0.0.5
     transitivePeerDependencies:
       - supports-color
 
-  '@mastra/schema-compat@0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.67))(zod@3.25.67)':
+  '@mastra/schema-compat@0.10.2(ai@4.3.16(react@18.3.1)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      ai: 4.3.16(react@18.3.1)(zod@3.25.67)
+      ai: 4.3.16(react@18.3.1)(zod@3.25.76)
       json-schema: 0.4.0
-      zod: 3.25.67
+      zod: 3.25.76
       zod-from-json-schema: 0.0.5
-      zod-to-json-schema: 3.24.5(zod@3.25.67)
+      zod-to-json-schema: 3.24.5(zod@3.25.76)
 
   '@modelcontextprotocol/sdk@1.13.0':
     dependencies:
@@ -7825,7 +7933,7 @@ snapshots:
 
   '@openai/agents-core@0.0.7(ws@8.18.2)(zod@3.25.67)':
     dependencies:
-      '@openai/zod': zod@3.25.67
+      '@openai/zod': zod@3.25.76
       debug: 4.4.1
       openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
     optionalDependencies:
@@ -7835,12 +7943,59 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-openai@0.0.7(ws@8.18.2)(zod@3.25.67)':
+  '@openai/agents-core@0.0.7(ws@8.18.2)(zod@3.25.76)':
     dependencies:
-      '@openai/agents-core': 0.0.7(ws@8.18.2)(zod@3.25.67)
-      '@openai/zod': zod@3.25.67
+      '@openai/zod': zod@3.25.76
       debug: 4.4.1
-      openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
+      openai: 5.5.1(ws@8.18.2)(zod@3.25.76)
+    optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.13.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+
+  '@openai/agents-core@0.0.7(ws@8.18.3)(zod@3.25.67)':
+    dependencies:
+      '@openai/zod': zod@3.25.76
+      debug: 4.4.1
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.67)
+    optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.13.0
+      zod: 3.25.67
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+
+  '@openai/agents-core@0.0.7(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      '@openai/zod': zod@3.25.76
+      debug: 4.4.1
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.76)
+    optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.13.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+
+  '@openai/agents-openai@0.0.7(ws@8.18.3)(zod@3.25.67)':
+    dependencies:
+      '@openai/agents-core': 0.0.7(ws@8.18.3)(zod@3.25.67)
+      '@openai/zod': zod@3.25.76
+      debug: 4.4.1
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.67)
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+      - zod
+
+  '@openai/agents-openai@0.0.7(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      '@openai/agents-core': 0.0.7(ws@8.18.3)(zod@3.25.76)
+      '@openai/zod': zod@3.25.76
+      debug: 4.4.1
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
       - ws
@@ -7849,7 +8004,7 @@ snapshots:
   '@openai/agents-realtime@0.0.7(zod@3.25.67)':
     dependencies:
       '@openai/agents-core': 0.0.7(ws@8.18.2)(zod@3.25.67)
-      '@openai/zod': zod@3.25.67
+      '@openai/zod': zod@3.25.76
       '@types/ws': 8.18.1
       debug: 4.4.1
       ws: 8.18.2
@@ -7859,13 +8014,40 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@openai/agents@0.0.7(ws@8.18.2)(zod@3.25.67)':
+  '@openai/agents-realtime@0.0.7(zod@3.25.76)':
     dependencies:
-      '@openai/agents-core': 0.0.7(ws@8.18.2)(zod@3.25.67)
-      '@openai/agents-openai': 0.0.7(ws@8.18.2)(zod@3.25.67)
+      '@openai/agents-core': 0.0.7(ws@8.18.2)(zod@3.25.76)
+      '@openai/zod': zod@3.25.76
+      '@types/ws': 8.18.1
+      debug: 4.4.1
+      ws: 8.18.2
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - zod
+
+  '@openai/agents@0.0.7(ws@8.18.3)(zod@3.25.67)':
+    dependencies:
+      '@openai/agents-core': 0.0.7(ws@8.18.3)(zod@3.25.67)
+      '@openai/agents-openai': 0.0.7(ws@8.18.3)(zod@3.25.67)
       '@openai/agents-realtime': 0.0.7(zod@3.25.67)
       debug: 4.4.1
-      openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.67)
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - ws
+      - zod
+
+  '@openai/agents@0.0.7(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      '@openai/agents-core': 0.0.7(ws@8.18.3)(zod@3.25.76)
+      '@openai/agents-openai': 0.0.7(ws@8.18.3)(zod@3.25.76)
+      '@openai/agents-realtime': 0.0.7(zod@3.25.76)
+      debug: 4.4.1
+      openai: 5.5.1(ws@8.18.3)(zod@3.25.76)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -8553,6 +8735,8 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
 
   '@opentelemetry/semantic-conventions@1.34.0': {}
+
+  '@opentelemetry/semantic-conventions@1.36.0': {}
 
   '@opentelemetry/sql-common@0.41.0(@opentelemetry/api@1.9.0)':
     dependencies:
@@ -9299,14 +9483,6 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
-
   '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -9314,14 +9490,6 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
-
-  '@vitest/mocker@3.2.4(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -9352,7 +9520,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.4(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -9403,6 +9571,18 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       jsondiffpatch: 0.6.0
       zod: 3.25.67
+    optionalDependencies:
+      react: 18.3.1
+
+  ai@4.3.16(react@18.3.1)(zod@3.25.76):
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
+      '@ai-sdk/react': 1.2.12(react@18.3.1)(zod@3.25.76)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.76)
+      '@opentelemetry/api': 1.9.0
+      jsondiffpatch: 0.6.0
+      zod: 3.25.76
     optionalDependencies:
       react: 18.3.1
 
@@ -9697,23 +9877,23 @@ snapshots:
       has-own-prop: 2.0.0
       repeat-string: 1.6.1
 
-  composio-core@0.5.39(@ai-sdk/openai@1.3.22(zod@3.25.67))(@cloudflare/workers-types@4.20250619.0)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2))(ai@4.3.16(react@18.3.1)(zod@3.25.67))(langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(axios@1.10.0)(openai@4.104.0(ws@8.18.2)(zod@3.25.67))(ws@8.18.2))(openai@4.104.0(ws@8.18.2)(zod@3.25.67)):
+  composio-core@0.5.39(@ai-sdk/openai@1.3.22(zod@3.25.67))(@cloudflare/workers-types@4.20250619.0)(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@langchain/openai@0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3))(ai@4.3.16(react@18.3.1)(zod@3.25.67))(langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(axios@1.10.0)(openai@4.104.0(ws@8.18.3)(zod@3.25.67))(ws@8.18.3))(openai@4.104.0(ws@8.18.3)(zod@3.25.67)):
     dependencies:
       '@ai-sdk/openai': 1.3.22(zod@3.25.67)
       '@cloudflare/workers-types': 4.20250619.0
       '@composio/mcp': 1.0.3-0
       '@hey-api/client-axios': 0.2.12(axios@1.10.0)
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
-      '@langchain/openai': 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
+      '@langchain/openai': 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)
       ai: 4.3.16(react@18.3.1)(zod@3.25.67)
       axios: 1.10.0
       chalk: 4.1.2
       cli-progress: 3.12.0
       commander: 12.1.0
       inquirer: 10.2.2
-      langchain: 0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(axios@1.10.0)(openai@4.104.0(ws@8.18.2)(zod@3.25.67))(ws@8.18.2)
+      langchain: 0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(axios@1.10.0)(openai@4.104.0(ws@8.18.3)(zod@3.25.67))(ws@8.18.3)
       open: 8.4.2
-      openai: 4.104.0(ws@8.18.2)(zod@3.25.67)
+      openai: 4.104.0(ws@8.18.3)(zod@3.25.67)
       pusher-js: 8.4.0-rc2
       resolve-package-path: 4.0.3
       uuid: 10.0.0
@@ -9731,6 +9911,10 @@ snapshots:
   console-table-printer@2.14.3:
     dependencies:
       simple-wcswidth: 1.1.1
+
+  console-table-printer@2.14.6:
+    dependencies:
+      simple-wcswidth: 1.1.2
 
   content-disposition@0.5.4:
     dependencies:
@@ -9848,19 +10032,19 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect-errors@1.10.11(aee16c6ba0d05f0cbe9c66fcd0455e75):
+  effect-errors@1.10.11(aea1fe99f240c5dd77146c654a1423dd):
     dependencies:
-      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/platform': 0.85.2(effect@3.16.8)
-      '@effect/platform-node': 0.86.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(effect@3.16.8)
-      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
-      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8))(@effect/platform@0.85.2(effect@3.16.8))(effect@3.16.8)
+      '@effect/cluster': 0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/platform': 0.85.2(effect@3.16.16)
+      '@effect/platform-node': 0.86.4(@effect/cluster@0.39.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/workflow@0.2.4(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(@effect/rpc@0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/sql@0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(effect@3.16.16)
+      '@effect/rpc': 0.62.4(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
+      '@effect/sql': 0.38.2(@effect/experimental@0.49.2(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16))(@effect/platform@0.85.2(effect@3.16.16))(effect@3.16.16)
       comment-json: 4.2.5
-      effect: 3.16.8
+      effect: 3.16.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  effect@3.16.8:
+  effect@3.16.16:
     dependencies:
       '@standard-schema/spec': 1.0.0
       fast-check: 3.23.2
@@ -10451,14 +10635,14 @@ snapshots:
 
   help-me@5.0.0: {}
 
-  hono-openapi@0.4.8(effect@3.16.8)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.67):
+  hono-openapi@0.4.8(effect@3.16.16)(hono@4.8.0)(openapi-types@12.1.3)(zod@3.25.76):
     dependencies:
       json-schema-walker: 2.0.0
       openapi-types: 12.1.3
     optionalDependencies:
-      effect: 3.16.8
+      effect: 3.16.16
       hono: 4.8.0
-      zod: 3.25.67
+      zod: 3.25.76
 
   hono@4.8.0: {}
 
@@ -10661,28 +10845,30 @@ snapshots:
 
   kind-of@6.0.3: {}
 
-  langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(axios@1.10.0)(openai@4.104.0(ws@8.18.2)(zod@3.25.67))(ws@8.18.2):
+  langchain@0.3.28(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(axios@1.10.0)(openai@4.104.0(ws@8.18.3)(zod@3.25.67))(ws@8.18.3):
     dependencies:
-      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
-      '@langchain/openai': 0.5.13(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))(ws@8.18.2)
-      '@langchain/textsplitters': 0.1.0(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.2)(zod@3.25.67)))
+      '@langchain/core': 0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
+      '@langchain/openai': 0.5.18(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))(ws@8.18.3)
+      '@langchain/textsplitters': 0.1.0(@langchain/core@0.3.59(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))
       js-tiktoken: 1.0.20
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
-      langsmith: 0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
+      langsmith: 0.3.46(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(openai@4.104.0(ws@8.18.3)(zod@3.25.67))
       openapi-types: 12.1.3
       p-retry: 4.6.2
       uuid: 10.0.0
       yaml: 2.8.0
-      zod: 3.25.67
+      zod: 3.25.76
     optionalDependencies:
       axios: 1.10.0
     transitivePeerDependencies:
-      - encoding
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
       - openai
       - ws
 
-  langsmith@0.3.31(openai@5.5.1(ws@8.18.2)(zod@3.25.67)):
+  langsmith@0.3.31(openai@5.9.2(ws@8.18.3)(zod@3.25.67)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -10692,9 +10878,9 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
+      openai: 5.9.2(ws@8.18.3)(zod@3.25.67)
 
-  langsmith@0.3.33(openai@4.104.0(ws@8.18.2)(zod@3.25.67)):
+  langsmith@0.3.33(openai@4.104.0(ws@8.18.3)(zod@3.25.67)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -10704,7 +10890,22 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.104.0(ws@8.18.2)(zod@3.25.67)
+      openai: 4.104.0(ws@8.18.3)(zod@3.25.67)
+
+  langsmith@0.3.46(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.201.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(openai@4.104.0(ws@8.18.3)(zod@3.25.67)):
+    dependencies:
+      '@types/uuid': 10.0.0
+      chalk: 4.1.2
+      console-table-printer: 2.14.6
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      semver: 7.7.2
+      uuid: 10.0.0
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/exporter-trace-otlp-proto': 0.201.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
+      openai: 4.104.0(ws@8.18.3)(zod@3.25.67)
 
   levn@0.4.1:
     dependencies:
@@ -11003,7 +11204,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@8.18.2)(zod@3.25.32):
+  openai@4.104.0(ws@8.18.3)(zod@3.25.32):
     dependencies:
       '@types/node': 18.19.112
       '@types/node-fetch': 2.6.12
@@ -11013,12 +11214,12 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.2
+      ws: 8.18.3
       zod: 3.25.32
     transitivePeerDependencies:
       - encoding
 
-  openai@4.104.0(ws@8.18.2)(zod@3.25.67):
+  openai@4.104.0(ws@8.18.3)(zod@3.25.67):
     dependencies:
       '@types/node': 18.19.112
       '@types/node-fetch': 2.6.12
@@ -11028,8 +11229,23 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.2
+      ws: 8.18.3
       zod: 3.25.67
+    transitivePeerDependencies:
+      - encoding
+
+  openai@4.104.0(ws@8.18.3)(zod@3.25.76):
+    dependencies:
+      '@types/node': 18.19.112
+      '@types/node-fetch': 2.6.12
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.76
     transitivePeerDependencies:
       - encoding
 
@@ -11037,6 +11253,32 @@ snapshots:
     optionalDependencies:
       ws: 8.18.2
       zod: 3.25.67
+
+  openai@5.5.1(ws@8.18.2)(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.2
+      zod: 3.25.76
+
+  openai@5.5.1(ws@8.18.3)(zod@3.25.67):
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.67
+
+  openai@5.5.1(ws@8.18.3)(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.76
+
+  openai@5.9.2(ws@8.18.3)(zod@3.25.67):
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.67
+    optional: true
+
+  openai@5.9.2(ws@8.18.3)(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.76
 
   openapi-types@12.1.3: {}
 
@@ -11656,6 +11898,8 @@ snapshots:
 
   simple-wcswidth@1.1.1: {}
 
+  simple-wcswidth@1.1.2: {}
+
   sirv@3.0.1:
     dependencies:
       '@polka/url': 1.0.0-next.29
@@ -12031,7 +12275,7 @@ snapshots:
     dependencies:
       '@fastify/busboy': 2.1.1
 
-  undici@7.10.0: {}
+  undici@7.11.0: {}
 
   unenv@2.0.0-rc.17:
     dependencies:
@@ -12183,7 +12427,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -12267,7 +12511,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@6.3.5(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -12390,6 +12634,8 @@ snapshots:
 
   ws@8.18.2: {}
 
+  ws@8.18.3: {}
+
   xstate@5.19.4: {}
 
   xtend@4.0.2: {}
@@ -12430,8 +12676,14 @@ snapshots:
     dependencies:
       zod: 3.25.67
 
+  zod-to-json-schema@3.24.5(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
+
   zod@3.22.3: {}
 
   zod@3.25.32: {}
 
   zod@3.25.67: {}
+
+  zod@3.25.76: {}
