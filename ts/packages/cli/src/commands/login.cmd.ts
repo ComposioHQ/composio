@@ -15,7 +15,7 @@ export const loginCmd = Command.make('login', {}, () =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
 
-    if (!ctx.isLoggedIn) {
+    if (ctx.isLoggedIn()) {
       yield* Console.log(`✔ You're already logged in!.`);
       yield* Console.log(
         `✔ If you want to log in with a different account, please run \`composio logout\` first.`
