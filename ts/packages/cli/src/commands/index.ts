@@ -6,12 +6,13 @@ import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { logoutCmd } from './logout.cmd';
 import { pyCmd } from './py/py.cmd';
 import { tsCmd } from './ts/ts.cmd';
 import { generateCmd } from './generate.cmd';
 
 const $cmd = $defaultCmd.pipe(
-  Command.withSubcommands([versionCmd, whoamiCmd, loginCmd, generateCmd, pyCmd, tsCmd])
+  Command.withSubcommands([versionCmd, whoamiCmd, loginCmd, logoutCmd, generateCmd, pyCmd, tsCmd])
 );
 
 export const runWithConfig = Effect.gen(function* () {
