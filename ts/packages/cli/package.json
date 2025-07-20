@@ -58,10 +58,11 @@
     "@effect/cli": "^0.64.2",
     "@effect/platform-bun": "^0.70.4",
     "@effect/platform-node-shared": "^0.40.4",
-    "chalk": "^5.4.1",
+    "ansis": "^4.1.0",
     "effect": "^3.16.16",
     "effect-errors": "^1.10.11",
     "indent-string": "^5.0.0",
+    "open": "^10.2.0",
     "semver": "^7.7.2",
     "superjson": "^2.2.2"
   },
