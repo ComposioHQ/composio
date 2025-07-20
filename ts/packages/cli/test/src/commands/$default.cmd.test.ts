@@ -62,7 +62,7 @@ describe('CLI: composio', () => {
 
             - whoami                                                                 Display your account information.
 
-            - login                                                                  Log in to the Composio SDK.
+            - login [--no-browser]                                                   Log in to the Composio SDK.
 
             - logout                                                                 Log out from the Composio SDK.
 
