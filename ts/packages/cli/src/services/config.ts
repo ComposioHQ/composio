@@ -7,23 +7,15 @@ import { APP_CONFIG } from 'src/effects/app-config';
  * Define where `effect/Config` reads config values from.
  * Lookup priority:
  * 1. Environment variables
- * 2. JSON user file (lazily loaded only when absolutely needed)
  *
  * Environment variables' keys are in upper snake case.
- * They are prefixed with `COMPOSIO_`, with the only exception of `DEBUG_*` variables.
+ * They are prefixed with `COMPOSIO_`, with the only exception of `DEBUG_OVERRIDE_*` and `FORCE_*` variables.
  * The prefix is stripped when reading the environment variables from `effect/Config`.
  *
  * @example
  * ```sh
  * # Environment variable
  * COMPOSIO_API_KEY=your_api_key
- * ```
- *
- * ```jsonc
- * // JSON User config file
- * {
- *   "api_key": "your_api_key"
- * }
  * ```
  *
  * Read via `yield* Config.string('API_KEY')`.
