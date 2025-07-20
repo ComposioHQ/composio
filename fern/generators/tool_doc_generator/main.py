@@ -49,8 +49,6 @@ IMPORTANT_TOOL_SLUGS = [
 ]
 
 
-
-
 try:
     from ruamel.yaml import YAML
 
@@ -66,15 +64,13 @@ except ImportError:
     )
 
 
-
-
 # Configure logging
 logger = logging.getLogger(__name__)
 
 
 class TelemetryFilter(logging.Filter):
     """Filter out telemetry-related log messages"""
-    
+
     def filter(self, record):
         # Filter out telemetry-related messages
         message = record.getMessage()
@@ -83,18 +79,18 @@ class TelemetryFilter(logging.Filter):
             "telemetry",
             "TELEMETRY",
             "metrics/invocations",
-            "errors"
+            "errors",
         ]
-        
+
         # Also filter by logger name
         if "telemetry" in record.name.lower():
             return False
-            
+
         # Filter by message content
         for keyword in telemetry_keywords:
             if keyword in message:
                 return False
-                
+
         return True
 
 
@@ -204,7 +200,7 @@ class DocumentContent:
         self._blocks.extend(
             [
                 "## Overview",
-                f"### SLUG\n`{app_id.upper()}`",
+                f"**SLUG**: `{app_id.upper()}`",
                 f"### Description\n{sanitize_html(description)}",
             ]
         )
@@ -221,81 +217,192 @@ class DocumentContent:
 
         return self
 
-    def _add_auth_schemes(self, auth_schemes: t.List[toolkit_retrieve_response.AuthConfigDetail]) -> None:
+    def add_connection_section(
+        self,
+        app_name: str,
+        app_slug: str,
+        auth_schemes: t.Optional[t.List[toolkit_retrieve_response.AuthConfigDetail]] = None,
+    ) -> None:
+        schemes = ", ".join(
+            self._get_auth_type(s) for s in (auth_schemes or []) if self._extract_auth_fields(s)
+        )
+        self._blocks.extend(
+            [
+                f"""## Connecting to {app_name}
+### Create an auth config
+Use the dashboard to create an auth config for the {app_name} toolkit. This allows you to connect multiple {app_name} accounts to Composio for agents to use.
+
+<Steps>
+  <Step title="Select App">
+    Navigate to the [{app_name} toolkit page](https://app.composio.dev/apps/{app_name}) and click **"Setup Integration"**.
+  </Step>
+  <Step title="Configure Auth Config Settings">
+    Select among the supported auth schemes of and configure them here.
+  </Step>
+  <Step title="Create and Get auth config ID">
+    Click **"Create Integration"**. After creation, **copy the displayed ID starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
+    **This ID will be used to create connections to the toolkit for a given user.**
+  </Step>
+</Steps>
+"""
+            ],
+        )
+
+        # Add auth code snippets
+        self._add_auth_section(app_name, app_slug, auth_schemes)
+
+    def _add_auth_section(
+        self,
+        app_name: str,
+        app_slug: str,
+        auth_schemes: t.List[toolkit_retrieve_response.AuthConfigDetail] = None,
+    ) -> None:
+        """Add code snippets for each auth scheme using direct template processing"""
+        if not auth_schemes:
+            return
+        
+        self._blocks.append("### Connect Your Account")
+        
+        # Group auth schemes by type to avoid duplicates
+        seen_auth_types = set()
+        
+        for scheme in auth_schemes:
+            # Get normalized auth type
+            auth_type_display = self._get_auth_type(scheme)
+            auth_type_key = auth_type_display.lower().replace(" ", "_")
+            
+            # Skip if we've already shown this auth type or if it's no_auth
+            if auth_type_key in seen_auth_types or auth_type_key == "no_auth":
+                continue
+            seen_auth_types.add(auth_type_key)
+
+            # Add section for this auth type
+            self._blocks.append(f"#### Using {auth_type_display}")
+            
+            # Prepare variables for template replacement
+            template_vars = {
+                "toolkit_name": app_name,
+                "toolkit_slug": app_slug.lower(),
+                "auth_config_id": f"ac_YOUR_{app_slug.upper()}_CONFIG_ID",
+                "user_id": "user@example.com",
+                "api_key_placeholder": f"your_{app_slug.lower()}_api_key",
+                "username_placeholder": f"your_{app_slug.lower()}_username",
+                "password_placeholder": f"your_{app_slug.lower()}_password",
+                "bearer_token_placeholder": f"your_{app_slug.lower()}_bearer_token"
+            }
+            
+            try:
+                # Create code blocks using the new template method
+                python_block = MDX.as_code_block_from_template(
+                    f"templates/python/{auth_type_key}.py",
+                    template_vars=template_vars,
+                    title="Python",
+                    max_lines=40,
+                    word_wrap=True
+                )
+                
+                typescript_block = MDX.as_code_block_from_template(
+                    f"templates/typescript/{auth_type_key}.ts",
+                    template_vars=template_vars,
+                    title="TypeScript",
+                    max_lines=40,
+                    word_wrap=True
+                )
+                
+                # Add code blocks wrapped in CodeGroup
+                self._blocks.append(MDX.as_code_group(python_block, typescript_block))
+                
+            except Exception as e:
+                logger.warning(f"Failed to process auth template for {auth_type_key}: {e}")
+                # Fallback to a simple message if template processing fails
+                self._blocks.append(f"*Authentication template for {auth_type_display} coming soon*")
+
+    def _add_auth_schemes(
+        self, auth_schemes: t.List[toolkit_retrieve_response.AuthConfigDetail]
+    ) -> None:
         """Add authentication schemes section."""
         self._blocks.append("### Authentication Details")
-        
+
         for scheme in auth_schemes:
             fields = self._extract_auth_fields(scheme)
             if fields:
                 auth_type = self._get_auth_type(scheme)
                 self._blocks.append(MDX.as_accordion(auth_type, "\n".join(fields)))
 
-    def _extract_auth_fields(self, scheme: toolkit_retrieve_response.AuthConfigDetail) -> t.List[str]:
+    def _extract_auth_fields(
+        self, scheme: toolkit_retrieve_response.AuthConfigDetail
+    ) -> t.List[str]:
         """Extract authentication fields from scheme."""
         fields = []
-        
-        if hasattr(scheme, 'fields') and scheme.fields:
+
+        if hasattr(scheme, "fields") and scheme.fields:
             for field in scheme.fields:
                 fields.extend(self._process_tuple_field(field))
-               
-        
+
         return fields
 
     def _process_tuple_field(self, field: tuple) -> t.List[str]:
         """Process tuple-style authentication field."""
         fields = []
         _, field_config = field
-        
-        for field_list, required in [(getattr(field_config, 'required', []), True),
-                                      (getattr(field_config, 'optional', []), False)]:
+
+        for field_list, required in [
+            (getattr(field_config, "required", []), True),
+            (getattr(field_config, "optional", []), False),
+        ]:
             for f in field_list:
-                if hasattr(f, 'name'):
+                if hasattr(f, "name"):
                     fields.append(self._create_param_from_field(f, required))
-        
+
         return fields
 
-    def _create_param_from_field(self, field: toolkit_retrieve_response.AuthConfigDetail, required: t.Optional[bool] = None) -> str:
+    def _create_param_from_field(
+        self, field: toolkit_retrieve_response.AuthConfigDetail, required: t.Optional[bool] = None
+    ) -> str:
         """Create parameter string from field object."""
         return MDX.as_param(
             name=str(field.name).replace('"', '\\"'),
-            required=required if required is not None else getattr(field, 'required', False),
-            typ=str(getattr(field, 'type', '')).replace('"', '\\"'),
-            default=str(getattr(field, 'default', '')).replace('"', '\\"') if getattr(field, 'default', None) else "",
-            doc=str(getattr(field, 'description', '')).replace('"', '\\"')
+            required=required if required is not None else getattr(field, "required", False),
+            typ=str(getattr(field, "type", "")).replace('"', '\\"'),
+            default=str(getattr(field, "default", "")).replace('"', '\\"')
+            if getattr(field, "default", None)
+            else "",
+            doc=str(getattr(field, "description", "")).replace('"', '\\"'),
         )
 
     def _get_auth_type(self, scheme: toolkit_retrieve_response.AuthConfigDetail) -> str:
         """Get authentication type from scheme."""
         auth_type = (
-            getattr(scheme, 'mode', None) or 
-            getattr(scheme, 'type', None) or 
-            getattr(scheme, 'auth_type', None) or 
-            getattr(scheme, 'auth_mode', None) or 
-            'Authentication'
+            getattr(scheme, "mode", None)
+            or getattr(scheme, "type", None)
+            or getattr(scheme, "auth_type", None)
+            or getattr(scheme, "auth_mode", None)
+            or "Authentication"
         )
-        
-        auth_type_mapping = {
-            'oauth2': 'OAuth2',
-            'OAUTH2': 'OAuth2',
-            'api_key': 'API Key',
-            'API_KEY': 'API Key',
-            'bearer_token': 'Bearer Token',
-            'BEARER_TOKEN': 'Bearer Token',
-            'basic': 'Basic Auth',
-            'BASIC': 'Basic Auth',
-            'no_auth': 'No Authentication',
-            'NO_AUTH': 'No Authentication'
-        }
-        
-        return auth_type_mapping.get(auth_type, auth_type.replace('_', ' ').title())
 
-    def add_actions(self, actions: t.List[Tool]) -> "DocumentContent":
+        auth_type_mapping = {
+            "oauth2": "OAuth2",
+            "OAUTH2": "OAuth2",
+            "api_key": "API Key",
+            "API_KEY": "API Key",
+            "bearer_token": "Bearer Token",
+            "BEARER_TOKEN": "Bearer Token",
+            "basic": "Basic Auth",
+            "BASIC": "Basic Auth",
+            "no_auth": "No Authentication",
+            "NO_AUTH": "No Authentication",
+        }
+
+        return auth_type_mapping.get(auth_type, auth_type.replace("_", " ").title())
+
+    def add_actions(self, actions: t.List[Tool], app_name: str, app_slug: str) -> "DocumentContent":
         """
         Add actions section to the document.
 
         Args:
             actions: List of tool models to document
+            app_name: The name of the application
+            app_slug: The application slug
 
         Returns:
             Self reference for method chaining
@@ -303,6 +410,67 @@ class DocumentContent:
         # If this is the first action, add the Actions header
         if not any("## Tools" in block for block in self._blocks):
             self._blocks.append("## Tools")
+            self._blocks.append("### Executing tools")
+            self._blocks.append(f"""To prototype you can execute some tools to see the responses and working on the [{app_name} toolkit's playground](https://app.composio.dev/app/{app_name})""")
+            
+            # Prepare template variables
+            template_vars = {
+                "toolkit_name": app_name,
+                "toolkit_slug": app_slug.lower(),
+                "user_id": "user@example.com"
+            }
+            
+            # Generate code blocks from templates
+            openai_block = MDX.as_code_block_from_template(
+                "templates/python/openai_tools.py",
+                template_vars=template_vars,
+                title="Python",
+                max_lines=40,
+                word_wrap=True
+            )
+            
+            anthropic_block = MDX.as_code_block_from_template(
+                "templates/typescript/anthropic_tools.ts",
+                template_vars=template_vars,
+                title="TypeScript",
+                max_lines=40,
+                word_wrap=True
+            )
+            
+            google_block = MDX.as_code_block_from_template(
+                "templates/python/google_tools.py",
+                template_vars=template_vars,
+                title="Python",
+                max_lines=40,
+                word_wrap=True
+            )
+            
+            vercel_block = MDX.as_code_block_from_template(
+                "templates/typescript/vercel_tools.ts",
+                template_vars=template_vars,
+                title="TypeScript",
+                max_lines=40,
+                word_wrap=True
+            )
+            
+            # Build the tabs with populated code blocks
+            self._blocks.append(
+                f"""<Tabs>
+<Tab title="OpenAI (Python)">
+{openai_block}
+</Tab>
+<Tab title="Anthropic (TypeScript)">
+{anthropic_block}
+</Tab>
+<Tab title="Google (Python)">
+{google_block}
+</Tab>
+<Tab title="Vercel (TypeScript)">
+{vercel_block}
+</Tab>
+</Tabs>"""
+            )
+            self._blocks.append("### Tool List")
 
         action_contents = []
 
@@ -325,66 +493,70 @@ class DocumentContent:
     def _process_tool(self, tool: Tool) -> t.Optional[str]:
         """Process a single tool and return accordion content."""
         tool_data = self._extract_tool_data(tool)
-        if not tool_data['name']:
+        if not tool_data["name"]:
             return None
-        
+
         content = [
-            f"**SLUG:** `{tool_data['slug']}`\n",
-            MDX.as_code_block(tool_data['description'], "text")
+            f"**Tool Name:** {self._sanitize_action_name(tool_data['name'])}\n\n**Description**\n",
+            MDX.as_code_block(tool_data["description"], "text"),
         ]
-        
+
         # Add parameters
         content.append("\n**Action Parameters**\n")
-        content.append("\n".join(self._process_parameters(tool_data['params'])))
-        
+        content.append("\n".join(self._process_parameters(tool_data["params"])))
+
         # Add responses
         content.append("\n**Action Response**\n")
-        content.append("\n".join(self._process_parameters(tool_data['response'])))
-        
-        safe_name = self._sanitize_action_name(tool_data['name'])
-        return MDX.as_accordion(safe_name, "\n".join(content))
+        content.append("\n".join(self._process_parameters(tool_data["response"])))
+
+        # safe_name = self._sanitize_action_name(tool_data['name'])
+        return MDX.as_accordion(tool_data["slug"], "\n".join(content))
 
     def _extract_tool_data(self, tool: Tool) -> t.Dict[str, t.Any]:
         """Extract data from tool object or dict."""
 
         return {
-            'name': tool.name or tool.slug,
-            'description': tool.description,
+            "name": tool.name or tool.slug,
+            "description": tool.description,
             "slug": tool.slug,
-            'params': tool.input_parameters,
-            'response': tool.output_parameters
+            "params": tool.input_parameters,
+            "response": tool.output_parameters,
         }
 
     def _process_parameters(self, params: t.Any) -> t.List[str]:
         """Process parameters from various formats."""
         if not params or not isinstance(params, dict):
             return []
-        
+
         param_list = []
-        
-        if 'properties' in params:
-            properties = params.get('properties', {})
-            required = params.get('required', [])
-            
+
+        if "properties" in params:
+            properties = params.get("properties", {})
+            required = params.get("required", [])
+
             for name, schema in properties.items():
-                param_list.append(MDX.as_param(
-                    name=name,
-                    typ=str(schema.get("type", "")),
-                    doc=sanitize_html(schema.get("description", "")),
-                    default=schema.get("default", ""),
-                    required=name in required
-                ))
-        else:
-            for name, schema in params.items():
-                if isinstance(schema, dict):
-                    param_list.append(MDX.as_param(
+                param_list.append(
+                    MDX.as_param(
                         name=name,
                         typ=str(schema.get("type", "")),
                         doc=sanitize_html(schema.get("description", "")),
                         default=schema.get("default", ""),
-                        required=schema.get("required", False)
-                    ))
-        
+                        required=name in required,
+                    )
+                )
+        else:
+            for name, schema in params.items():
+                if isinstance(schema, dict):
+                    param_list.append(
+                        MDX.as_param(
+                            name=name,
+                            typ=str(schema.get("type", "")),
+                            doc=sanitize_html(schema.get("description", "")),
+                            default=schema.get("default", ""),
+                            required=schema.get("required", False),
+                        )
+                    )
+
         return param_list
 
     def _sanitize_action_name(self, name: str) -> str:
@@ -394,12 +566,12 @@ class DocumentContent:
                 (r"<(\d+)", r"less than \1"),
                 (r">(\d+)", r"greater than \1"),
                 (r"<=(\d+)", r"less than or equal to \1"),
-                (r">=(\d+)", r"greater than or equal to \1")
+                (r">=(\d+)", r"greater than or equal to \1"),
             ]
             for pattern, replacement in replacements:
                 name = re.sub(pattern, replacement, name)
             name = name.replace("<", "&lt;").replace(">", "&gt;")
-        
+
         return name
 
     def __str__(self) -> str:
@@ -432,7 +604,9 @@ class ToolDocGenerator:
         self.generated_tools = []
         self.problematic_actions = []
 
-    def generate_docs(self, output_path: Path, max_workers: int | None = None, limit: int | None = None) -> None:
+    def generate_docs(
+        self, output_path: Path, max_workers: int | None = None, limit: int | None = None
+    ) -> None:
         """
         Generate documentation for all apps in parallel.
 
@@ -446,12 +620,12 @@ class ToolDocGenerator:
 
         # Get all apps
         toolkits = self.composio.toolkits.get()
-        
+
         # Apply limit if specified
         if limit is not None:
             toolkits = toolkits[:limit]
             logger.info(f"Limited to first {limit} toolkits")
-        
+
         logger.info(f"Starting documentation generation for {len(toolkits)} toolkits")
 
         # Track failures with a synchronized list
@@ -501,7 +675,9 @@ class ToolDocGenerator:
         else:
             logger.info(f"\nSuccessfully generated docs for all {len(toolkits)} toolkits!")
 
-        logger.info(f"Generated {success_count} toolkit docs in parallel using {max_workers} workers")
+        logger.info(
+            f"Generated {success_count} toolkit docs in parallel using {max_workers} workers"
+        )
 
         # Update docs.yml with the generated tools
         self.update_docs_yml(output_path.parent / "docs.yml")
@@ -518,12 +694,11 @@ class ToolDocGenerator:
         toolkit_model = self.composio.toolkits.get(slug=toolkit.slug)
         tools = self.composio.tools.get_raw_composio_tools(toolkits=[toolkit.slug], limit=99999)
         logger.info(f"Toolkit tools: {toolkit}")
-       
-        
+
         logger.info(f"Retrieved {len(tools)} tools for {toolkit.name}")
         if tools:
             logger.debug(f"First tool type: {type(tools[0])}")
-            if hasattr(tools[0], '__dict__'):
+            if hasattr(tools[0], "__dict__"):
                 logger.debug(f"First tool attributes: {list(tools[0].__dict__.keys())}")
             elif isinstance(tools[0], dict):
                 logger.debug(f"First tool dict keys: {list(tools[0].keys())}")
@@ -536,10 +711,14 @@ class ToolDocGenerator:
         category = None
         if toolkit_model.meta.categories:
             # Use the first category if multiple exist
-            category = toolkit_model.meta.categories[0].get('name') if isinstance(toolkit_model.meta.categories[0], dict) else getattr(toolkit_model.meta.categories[0], 'name', None)
-        
+            category = (
+                toolkit_model.meta.categories[0].get("name")
+                if isinstance(toolkit_model.meta.categories[0], dict)
+                else getattr(toolkit_model.meta.categories[0], "name", None)
+            )
+
         # Add frontmatter
-        content.add_frontmatter(titleize(toolkit.name), category)
+        content.add_frontmatter(toolkit.name, category)
 
         # Handle auth schemes safely
         auth_schemes = None
@@ -549,42 +728,46 @@ class ToolDocGenerator:
             logger.info(f"Could not process auth schemes for {toolkit.name}: {e}")
             # Continue without auth schemes
 
-
         no_auth = "NO_AUTH" in (toolkit.auth_schemes or [])
 
         logger.info(f"No auth: {no_auth}")
 
-
-
         # Add overview section
+        # For no-auth tools, don't pass auth_schemes to avoid showing authentication details
         content.add_overview_section(
             app_name=toolkit.name,
             app_id=toolkit.slug,
             description=toolkit.meta.description,
-            auth_schemes=auth_schemes,
+            auth_schemes=None if no_auth else auth_schemes,
         )
+
+        # Only add connection section if authentication is required
+        if not no_auth:
+            content.add_connection_section(
+                app_name=toolkit.name, app_slug=toolkit.slug, auth_schemes=auth_schemes
+            )
 
         # Filter out problematic actions
         filtered_tools = []
         for tool in tools:
             # Extract tool slug for filtering
             if isinstance(tool, dict):
-                if 'function' in tool:
-                    tool_slug = tool['function'].get('name', '')
+                if "function" in tool:
+                    tool_slug = tool["function"].get("name", "")
                 else:
-                    tool_slug = tool.get('slug', '')
+                    tool_slug = tool.get("slug", "")
             else:
-                tool_slug = getattr(tool, 'slug', '')
-                
+                tool_slug = getattr(tool, "slug", "")
+
             if tool_slug not in self.problematic_actions:
                 filtered_tools.append(tool)
             else:
                 logger.info(f"Filtered out problematic tool: {tool_slug}")
-        
+
         logger.info(f"After filtering: {len(filtered_tools)} tools remaining out of {len(tools)}")
-        
+
         # Add actions section (only the filtered ones)
-        content.add_actions(filtered_tools)
+        content.add_actions(filtered_tools, app_name=toolkit.name, app_slug=toolkit.slug)
 
         # Write to file
         filename = f"{toolkit.slug.lower()}.mdx"
@@ -630,10 +813,13 @@ class ToolDocGenerator:
             proxy_apps = []
             no_auth_tools = []
             categories: dict[str, list] = {}
-        
 
             for tool in sorted_tools:
-                entry = {"page": tool["display_name"], "slug": "tools/" + tool["name"], "path": tool["path"]}
+                entry = {
+                    "page": tool["display_name"],
+                    "slug": "tools/" + tool["name"],
+                    "path": tool["path"],
+                }
                 name = tool["name"]
                 category = tool.get("category", "").strip()
 
@@ -659,13 +845,11 @@ class ToolDocGenerator:
 
             # Sort categories by number of elements (descending), then by name
             sorted_categories = sorted(
-                categories.items(),
-                key=lambda item: (-len(item[1]), item[0])
+                categories.items(), key=lambda item: (-len(item[1]), item[0])
             )
 
             logger.info(f"Category keys: {list(categories.keys())}")
             logger.info(f"Sorted categories keys: {[cat for cat, _ in sorted_categories]}")
-
 
             # Find the "tools" tab section in the navigation structure
             for tab_section in docs_data.get("navigation", []):
@@ -678,21 +862,44 @@ class ToolDocGenerator:
 
                     # Add Important section if present
                     if important_tools:
-                        new_layout.append({"section": "Important", "skip-slug": True, "contents": important_tools, })
-
+                        new_layout.append(
+                            {
+                                "section": "Important",
+                                "skip-slug": True,
+                                "contents": important_tools,
+                            }
+                        )
 
                     # Add each category as its own section
                     for cat, tools_list in sorted_categories:
                         if tools_list:
-                            new_layout.append({"section": titleize(cat), "skip-slug": True, "contents": tools_list, })
+                            new_layout.append(
+                                {
+                                    "section": titleize(cat),
+                                    "skip-slug": True,
+                                    "contents": tools_list,
+                                }
+                            )
 
                     # Add Proxy Apps section if present
                     if proxy_apps:
-                        new_layout.append({"section": "Proxy Apps", "skip-slug": True, "contents": proxy_apps, })
+                        new_layout.append(
+                            {
+                                "section": "Proxy Apps",
+                                "skip-slug": True,
+                                "contents": proxy_apps,
+                            }
+                        )
 
                     # Add No Auth section if present
                     if no_auth_tools:
-                        new_layout.append({"section": "No Auth", "skip-slug": True, "contents": no_auth_tools, })
+                        new_layout.append(
+                            {
+                                "section": "No Auth",
+                                "skip-slug": True,
+                                "contents": no_auth_tools,
+                            }
+                        )
 
                     logger.info("new_layout: %s", new_layout)
                     tab_section["layout"] = new_layout
@@ -726,11 +933,11 @@ def configure_logging(log_level: str) -> None:
         format="%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    
+
     # Add telemetry filter to root logger to filter out telemetry requests
     telemetry_filter = TelemetryFilter()
     logging.getLogger().addFilter(telemetry_filter)
-    
+
     # Also add filter to specific loggers that might handle HTTP requests
     for logger_name in ["httpx", "urllib3", "requests"]:
         logging.getLogger(logger_name).addFilter(telemetry_filter)
@@ -812,43 +1019,6 @@ def cli_main() -> int:
         if logger.isEnabledFor(logging.DEBUG):
             logger.info(traceback.format_exc())
         return 1
-
-
-def generate_tool_docs(
-    output_dir, 
-    config=None, 
-    include_local=False, 
-    log_level="info", 
-    workers=None, 
-    lint_only=False, 
-    no_lint=False,
-    limit=None
-):
-    """
-    Generate tool documentation
-    
-    Args:
-        output_dir: Path to output directory
-        config: Optional path to config file
-        include_local: Whether to include local development tools
-        log_level: Logging level (debug, info, warning, error, critical)
-        workers: Number of parallel worker threads
-        lint_only: Only lint existing MDX files without generating new ones
-        no_lint: Skip the linting step when generating documentation
-        limit: Limit processing to first N toolkits (for debugging)
-    """
-    # Configure logging
-    configure_logging(log_level)
-    
-    # Create generator
-    generator = ToolDocGenerator(include_local=include_local)
-    
-    # Generate docs with specified number of workers
-    generator.generate_docs(output_dir, max_workers=workers, limit=limit)
-    
-    # Force exit immediately without waiting for background telemetry
-    logger.info("Documentation generation complete. Exiting immediately.")
-    os._exit(0)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,7 @@ interface SnippetCodeProps {
   relativeHighlightStart?: number;
   relativeHighlightEnd?: number;
   path?: string;
+  vars?: Record<string, string>;
 }
 
 // Parse GitHub URL and extract components
@@ -142,6 +143,40 @@ function ensureDistDir() {
   fs.mkdirSync(PAGES_DIST_DIR, { recursive: true });
 }
 
+// Replace template variables in content
+function replaceTemplateVariables(content: string, vars: Record<string, string> = {}): string {
+  // Replace {{variable}} patterns with their values
+  return content.replace(/\{\{(\w+)(?:\|(\w+)(?::([^}]+))?)?\}\}/g, (match, varName, transform, defaultValue) => {
+    let value = vars[varName];
+    
+    // Use default value if variable not found
+    if (value === undefined || value === null) {
+      if (defaultValue !== undefined) {
+        value = defaultValue.replace(/^["']|["']$/g, ''); // Remove quotes from default value
+      } else {
+        return match; // Keep original placeholder if no value and no default
+      }
+    }
+    
+    // Apply transformations
+    if (transform) {
+      switch (transform.toLowerCase()) {
+        case 'lower':
+          value = value.toLowerCase();
+          break;
+        case 'upper':
+          value = value.toUpperCase();
+          break;
+        case 'title':
+          value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+          break;
+      }
+    }
+    
+    return value;
+  });
+}
+
 function getLanguageFromPath(filePath: string): { syntax: string; displayName: string } {
   const extension = filePath.split('.').pop()?.toLowerCase();
   const languageMap: Record<string, { syntax: string; displayName: string }> = {
@@ -185,6 +220,30 @@ function readFileLines(
     // If the path starts with './' or '../', resolve it relative to the context directory
     if (filePath.startsWith('./') || filePath.startsWith('../')) {
       fullPath = path.resolve(contextDir, filePath);
+    } else if (filePath.startsWith('fern/')) {
+      // For paths starting with 'fern/', we need to find the actual fern directory
+      // The MDX file might be in tools/, pages/dist/, etc., but we want to resolve
+      // relative to the actual fern directory
+      
+      // Try multiple possible locations for the fern directory
+      const possiblePaths = [
+        path.resolve(PROJECT_ROOT, '..', filePath), // composio1/fern/...
+        path.resolve(PROJECT_ROOT, filePath), // Already in fern/...
+        path.resolve(contextDir, '..', '..', filePath), // Relative to context
+      ];
+      
+      // Find the first path that exists
+      for (const possiblePath of possiblePaths) {
+        if (fs.existsSync(possiblePath)) {
+          fullPath = possiblePath;
+          break;
+        }
+      }
+      
+      if (!fullPath) {
+        // If none found, use the most likely path
+        fullPath = path.resolve(PROJECT_ROOT, '..', filePath);
+      }
     } else {
       // Otherwise, resolve it relative to the project root
       fullPath = path.resolve(PROJECT_ROOT, filePath);
@@ -198,7 +257,7 @@ function readFileLines(
 
     return lines.slice(start, end).join('\n');
   } catch (error) {
-    console.warn(`⚠️  Failed to read file: ${filePath}`, error);
+    console.warn(`⚠️  Failed to read file: ${filePath} (resolved to: ${fullPath})`, error);
     return `// File not found: ${filePath}`;
   }
 }
@@ -285,6 +344,23 @@ async function parseSnippetCodeTags(content: string, contextDir: string): Promis
         relativeHighlightEndMatch[1] || relativeHighlightEndMatch[2]
       );
 
+    // Extract vars object prop
+    const varsMatch = propsString.match(/vars=\{({[^}]*})\}/);
+    if (varsMatch) {
+      try {
+        // Parse the vars object - need to handle JSX syntax
+        const varsString = varsMatch[1];
+        // Convert JSX object syntax to JSON
+        const jsonString = varsString
+          .replace(/(\w+):/g, '"$1":') // Add quotes around keys
+          .replace(/:\s*"([^"]+)"/g, ':"$1"') // Ensure values are quoted
+          .replace(/:\s*'([^']+)'/g, ':"$1"'); // Convert single quotes to double
+        props.vars = JSON.parse(`{${jsonString}}`);
+      } catch (error) {
+        console.warn(`⚠️  Failed to parse vars prop: ${varsMatch[1]}`);
+      }
+    }
+
     // Extract wordWrap boolean prop
     const wordWrapMatch = propsString.match(/wordWrap=(?:["']?(true|false)["']?|{(true|false)})/);
     if (wordWrapMatch) {
@@ -330,6 +406,11 @@ async function parseSnippetCodeTags(content: string, contextDir: string): Promis
         codeContent = readFileLines(props.src!, contextDir, props.startLine, props.endLine);
         filePath = props.src!;
         langInfo = getLanguageFromPath(filePath);
+      }
+      
+      // Apply variable replacements if vars are provided
+      if (props.vars && Object.keys(props.vars).length > 0) {
+        codeContent = replaceTemplateVariables(codeContent, props.vars);
       }
     } catch (error) {
       const errorMessage = error instanceof SnippetCodeError ? error.message : `Unexpected error: ${error.message}`;

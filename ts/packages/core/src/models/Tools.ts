@@ -876,8 +876,8 @@ export class Tools<
 
     if (toolProxyParams.data.parameters) {
       parameters.push(
-        ...Object.entries(toolProxyParams.data.parameters).map(([key, value]) => ({
-          name: key,
+        ...(toolProxyParams.data.parameters ?? []).map(value => ({
+          name: value.name,
           type: value.in === 'header' ? parameterTypes.header : parameterTypes.query,
           value: value.value.toString(),
         }))

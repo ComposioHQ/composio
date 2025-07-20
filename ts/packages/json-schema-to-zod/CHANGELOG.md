@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10-next.5
+
+### Patch Changes
+
+- 77e96e4: Fix JSON Schema to Zod Parsing
+
 ## 0.1.10-next.4
 
 ### Patch Changes

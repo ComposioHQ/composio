@@ -7,6 +7,10 @@ This module provides utilities for formatting MDX content for Composio tool docu
 import re
 import typing as t
 from dataclasses import dataclass
+from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MDX:
@@ -34,6 +38,7 @@ class MDX:
             frontmatter += f'\nsubtitle: "Learn how to use {app_name} with Composio"'
         if category is not None:
             frontmatter += f'\ncategory: "{category}"'
+        frontmatter += f'\nimage: "https://og.composio.dev/api/og?title=Using%20{app_name}%20with%20Composio"'
         return "---\n" + frontmatter + "\n---\n"
 
     @staticmethod
@@ -201,18 +206,236 @@ class MDX:
         return f'<AccordionGroup>\n{content}\n</AccordionGroup>\n'
 
     @staticmethod
-    def as_code_block(content: str, language: str = "python") -> str:
+    def as_code_block(
+        content: str, 
+        language: str = "python",
+        display_name: str = None,
+        highlight_lines: str = None,  # e.g., "25-30" or "5"
+        title: str = None,
+        max_lines: int = None,
+        word_wrap: bool = True
+    ) -> str:
         """
-        Format content as a code block using backticks.
+        Format content as a code block using backticks with full formatting support.
         
         Args:
             content: The code to be displayed
-            language: The programming language for syntax highlighting
+            language: The programming language for syntax highlighting (e.g., "python", "typescript")
+            display_name: Display name for the language tab (deprecated - use title instead)
+            highlight_lines: Lines to highlight (e.g., "25-30" or "5")
+            title: Title for the code block (e.g., "Python", "TypeScript")
+            max_lines: Maximum number of lines to display
+            word_wrap: Whether to wrap long lines
+            
+        Returns:
+            Formatted code block MDX string with all attributes
+        """
+        # Build the code fence header
+        header_parts = [language]
+        
+        # Add line highlighting if provided
+        if highlight_lines:
+            header_parts.append(f"{{{highlight_lines}}}")
+        
+        # Add title if provided (use display_name as fallback)
+        title_to_use = title or display_name
+        if title_to_use:
+            # Escape quotes in title
+            safe_title = title_to_use.replace('"', '\\"')
+            header_parts.append(f'title="{safe_title}"')
+        
+        # Add max lines if provided
+        if max_lines:
+            header_parts.append(f"maxLines={max_lines}")
+        
+        # Add word wrap if enabled (default is True)
+        if word_wrap:
+            header_parts.append("wordWrap")
+        
+        # Join all parts with spaces
+        header = " ".join(header_parts)
+        
+        return f"```{header}\n{content}\n```\n"
+    
+    @staticmethod
+    def as_code_group(*code_blocks: str) -> str:
+        """
+        Wrap multiple code blocks in a CodeGroup component.
+        
+        Args:
+            *code_blocks: Variable number of code block strings
+            
+        Returns:
+            Formatted CodeGroup MDX string containing all code blocks
+        """
+        return f"<CodeGroup>\n{''.join(code_blocks)}</CodeGroup>\n"
+    
+    @staticmethod
+    def _replace_template_variables(content: str, variables: dict) -> str:
+        """
+        Replace {{variable}} patterns with their values, supporting transformations.
+        
+        Supports patterns like:
+        - {{variable}}
+        - {{variable|upper}}
+        - {{variable|lower}}
+        - {{variable|title}}
+        - {{variable|default:'fallback value'}}
+        
+        Args:
+            content: Template content with {{variable}} placeholders
+            variables: Dictionary of variable names to values
+            
+        Returns:
+            Content with variables replaced
+        """
+        def replace_var(match):
+            var_name = match.group(1)
+            transform = match.group(2)
+            default = match.group(3)
+            
+            # Get the value or use default
+            value = variables.get(var_name)
+            if value is None:
+                value = default.strip("'\"") if default else match.group(0)
+            else:
+                value = str(value)
+            
+            # Apply transformation if specified
+            if transform:
+                if transform == 'upper':
+                    value = value.upper()
+                elif transform == 'lower':
+                    value = value.lower()
+                elif transform == 'title':
+                    value = value.capitalize()
+            
+            return value
+        
+        # Pattern matches: {{var_name|transform|default:'value'}}
+        pattern = r'\{\{(\w+)(?:\|(\w+))?(?:\|default:[\'"]([^\'"]*)[\'"])?\}\}'
+        return re.sub(pattern, replace_var, content)
+    
+    @staticmethod
+    def _read_template_file(template_path: str, base_path: t.Optional[Path] = None) -> str:
+        """
+        Read a template file.
+        
+        Args:
+            template_path: Path to template file (can be relative)
+            base_path: Base path to resolve relative paths from (defaults to current file's parent)
+            
+        Returns:
+            Template content as string
+        """
+        if base_path is None:
+            # Default to the directory containing this file's parent (tool_doc_generator)
+            base_path = Path(__file__).parent
+        
+        # Resolve the full path
+        if Path(template_path).is_absolute():
+            full_path = Path(template_path)
+        else:
+            full_path = base_path / template_path
+        
+        try:
+            with open(full_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            logger.warning(f"Template not found: {full_path}")
+            return f"# Template not found: {template_path}"
+    
+    @staticmethod
+    def _detect_language_from_path(file_path: str) -> str:
+        """
+        Detect programming language from file extension.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            Language identifier for syntax highlighting
+        """
+        extension_map = {
+            '.py': 'python',
+            '.js': 'javascript',
+            '.ts': 'typescript',
+            '.tsx': 'typescript',
+            '.jsx': 'javascript',
+            '.java': 'java',
+            '.cpp': 'cpp',
+            '.c': 'c',
+            '.go': 'go',
+            '.rs': 'rust',
+            '.php': 'php',
+            '.rb': 'ruby',
+            '.swift': 'swift',
+            '.kt': 'kotlin',
+            '.scala': 'scala',
+            '.sh': 'bash',
+            '.yml': 'yaml',
+            '.yaml': 'yaml',
+            '.json': 'json',
+            '.xml': 'xml',
+            '.html': 'html',
+            '.css': 'css',
+            '.scss': 'scss',
+            '.sql': 'sql',
+        }
+        
+        suffix = Path(file_path).suffix.lower()
+        return extension_map.get(suffix, 'text')
+    
+    @staticmethod
+    def as_code_block_from_template(
+        template_path: str,
+        template_vars: dict = None,
+        language: str = None,
+        display_name: str = None,
+        highlight_lines: str = None,
+        title: str = None,
+        max_lines: int = None,
+        word_wrap: bool = True,
+        base_path: t.Optional[Path] = None
+    ) -> str:
+        """
+        Create a code block from a template file with variable replacement.
+        
+        Args:
+            template_path: Path to template file (relative to base_path)
+            template_vars: Dictionary of variables to replace in template
+            language: Override auto-detected language (e.g., "python", "typescript")
+            display_name: Display name for the language tab (deprecated - use title instead)
+            highlight_lines: Lines to highlight (e.g., "25-30" or "5")
+            title: Title for the code block (e.g., "Python", "TypeScript")
+            max_lines: Maximum number of lines to display
+            word_wrap: Whether to wrap long lines
+            base_path: Base path for resolving template_path
             
         Returns:
             Formatted code block MDX string
         """
-        return f"```{language} wordWrap\n{content}\n```\n"
+        # Read template file
+        content = MDX._read_template_file(template_path, base_path)
+        
+        # Replace variables if provided
+        if template_vars:
+            content = MDX._replace_template_variables(content, template_vars)
+        
+        # Auto-detect language from file extension if not provided
+        if not language:
+            language = MDX._detect_language_from_path(template_path)
+        
+        # Use existing as_code_block with all formatting
+        return MDX.as_code_block(
+            content=content,
+            language=language,
+            display_name=display_name,
+            highlight_lines=highlight_lines,
+            title=title,
+            max_lines=max_lines,
+            word_wrap=word_wrap
+        )
     
     @staticmethod
     def as_markdown_table(headers: list, rows: list) -> str:
