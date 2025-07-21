@@ -51,17 +51,23 @@ class Tools(Resource, t.Generic[TProvider]):
 
     provider: TProvider
 
-    def __init__(self, client: HttpClient, provider: TProvider):
+    def __init__(
+        self,
+        client: HttpClient,
+        provider: TProvider,
+        file_download_dir: t.Optional[str] = None,
+    ):
         """
         Initialize the tools resource.
 
         :param client: The client to use for the tools resource.
         :param provider: The provider to use for the tools resource.
+        :param file_download_dir: Output directory for downloadable files
         """
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
-        self._file_helper = FileHelper(client=self._client)
+        self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider

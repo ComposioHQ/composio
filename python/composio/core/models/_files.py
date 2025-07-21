@@ -157,9 +157,10 @@ class FileDownloadable(BaseModel):
 
 
 class FileHelper(WithLogger):
-    def __init__(self, client: HttpClient):
+    def __init__(self, client: HttpClient, outdir: t.Optional[str] = None):
         super().__init__()
         self._client = client
+        self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
 
     def _file_uploadable(self, schema: t.Dict):
         if "allOf" in schema:
