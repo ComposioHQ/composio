@@ -1469,8 +1469,8 @@ class ComposioToolSet(_IntegrationMixin):
         :param output_in_file: Whether to output the result to a file.
         :param entity_id: The ID of the entity to execute the action on.
             Defaults to "default".
-        :param workspace_env: Environment where actions should be executed,
-            you can choose from `host`, `docker`, `flyio` and `e2b`.
+        :param workspace_config: Environment where actions should be executed,
+            you can choose from `host`, `docker`, `flyio`, `e2b` and `daytona`.
         :param workspace_id: Workspace ID for loading an existing workspace
         :param metadata: Additional metadata for executing an action or an
             action which belongs to a specific app. The additional metadata

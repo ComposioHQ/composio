@@ -8,6 +8,7 @@ from composio.tools.env.factory import (
     DockerWorkspace,
     E2BWorkspace,
     FlyIOWorkspace,
+    DaytonaWorkspace,
     HostWorkspace,
     WorkspaceFactory,
     WorkspaceType,
@@ -76,3 +77,8 @@ class TestFlyIO(BaseFactoryTest):
     # If this test is failing make sure `Dockerfile.dev` is up to date and run `make publish-dev`
     type = FlyIOWorkspace
     config = WorkspaceType.FlyIO(image="composio/composio:dev")
+
+
+class TestDaytona(BaseFactoryTest):
+    type = DaytonaWorkspace
+    config = WorkspaceType.Daytona(snapshot="daytona-composio")
