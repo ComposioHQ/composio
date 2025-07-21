@@ -29,6 +29,7 @@ class SDKConfig(te.TypedDict):
     timeout: te.NotRequired[int]
     max_retries: te.NotRequired[int]
     allow_tracking: te.NotRequired[bool]
+    file_download_dir: te.NotRequired[str]
 
 
 class Composio(t.Generic[TProvider], WithLogger):
@@ -68,7 +69,11 @@ class Composio(t.Generic[TProvider], WithLogger):
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),
         )
         self.provider = provider
-        self.tools = Tools(client=self._client, provider=self.provider)
+        self.tools = Tools(
+            client=self._client,
+            provider=self.provider,
+            file_download_dir=kwargs.get("file_download_dir"),
+        )
         self.toolkits = Toolkits(client=self._client)
         self.triggers = Triggers(client=self._client)
         self.auth_configs = AuthConfigs(client=self._client)
