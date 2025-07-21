@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_autogen",
-    version="1.0.0-rc10",
+    version="0.8.0-rc1",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Autogen agent.",
