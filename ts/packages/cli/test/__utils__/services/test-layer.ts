@@ -1,7 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import { CliApp } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { CliApp, CliConfig } from '@effect/cli';
+import { FetchHttpClient, FileSystem } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -13,7 +13,7 @@ import {
   LogLevel,
   Schedule,
 } from 'effect';
-import { CliConfigLive } from 'src/bin';
+import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import type { Toolkits } from 'src/models/toolkits';
@@ -27,6 +27,7 @@ import { JsPackageManagerDetector } from 'src/services/js-package-manager-detect
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import { ComposioUserContextLive } from 'src/services/user-context';
+import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 
 interface TestLiveInput {
@@ -99,6 +100,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeOs,
       new NodeOs({
         homedir: cwd,
+        arch: 'arm64',
+        platform: 'darwin',
       })
     );
 
@@ -117,12 +120,20 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.merge(BunFileSystem.layer, NodeOsTest)
     );
 
+    const UpgradeBinaryTest = Layer.provide(
+      UpgradeBinary.Default,
+      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+    );
+
+    const CliConfigLive = CliConfig.layer(ComposioCliConfig);
+
     const _console = yield* MockConsole.effect;
 
     const layers = Layer.mergeAll(
       Console.setConsole(_console),
       CliConfigLive,
       NodeProcessTest,
+      UpgradeBinaryTest,
       ComposioUserContextTest,
       ComposioSessionRepositoryTest,
       ComposioToolkitsRepositoryTest,

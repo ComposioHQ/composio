@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli",
-  "version": "0.1.24",
+  "version": "0.1.23",
   "description": "Composio CLI",
   "main": "dist/bin.js",
   "bin": {
@@ -25,6 +25,7 @@
     "clean": "git clean -xdf node_modules",
     "cli": "bun run src/bin.ts",
     "build:bin": "bun run ./scripts/build-binary.ts",
+    "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
     "build": "tsup",
     "bin": "./dist/composio",
     "test": "vitest run",
@@ -44,6 +45,7 @@
     "@effect/platform": "^0.85.2",
     "@effect/vitest": "^0.23.8",
     "@types/bun": "^1.2.16",
+    "@types/decompress": "^4.2.7",
     "@types/semver": "^7.7.0",
     "tempy": "^3.1.0",
     "tsup": "^8.5.0",
@@ -59,6 +61,7 @@
     "@effect/platform-bun": "^0.70.4",
     "@effect/platform-node-shared": "^0.40.4",
     "ansis": "^4.1.0",
+    "decompress": "^4.2.1",
     "effect": "^3.16.16",
     "effect-errors": "^1.10.11",
     "indent-string": "^5.0.0",
