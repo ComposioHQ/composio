@@ -195,7 +195,7 @@ type SearchOnlyParams = {
 type AuthConfigIdsOnlyParams = {
   authConfigIds: string[];
   tools?: never;
-  toolkit?: never;
+  toolkits?: never;
 } & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 /**
  * ToolListParams is the parameters for the list of tools.
