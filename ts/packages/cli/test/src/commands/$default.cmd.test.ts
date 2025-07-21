@@ -60,6 +60,8 @@ describe('CLI: composio', () => {
 
             - version                                                                Display your account information.
 
+            - upgrade                                                                Upgrade your Composio CLI to the latest available version.
+
             - whoami                                                                 Display your account information.
 
             - login [--no-browser]                                                   Log in to the Composio SDK.

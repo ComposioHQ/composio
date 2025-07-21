@@ -5,6 +5,11 @@ import { Effect } from 'effect';
 export class NodeOs extends Effect.Service<NodeOs>()('services/NodeOs', {
   sync: () => ({
     homedir: os.homedir(),
+    platform: os.platform(),
+    arch: os.arch(),
   }),
   dependencies: [],
 }) {}
+
+export const defaultNodeOs = ({ homedir }: { homedir: string }) =>
+  new NodeOs({ homedir, platform: os.platform(), arch: os.arch() });

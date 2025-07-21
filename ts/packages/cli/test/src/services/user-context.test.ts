@@ -5,7 +5,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioUserContext, ComposioUserContextLive } from 'src/services/user-context';
-import { NodeOs } from 'src/services/node-os';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
 import path from 'node:path';
@@ -20,7 +20,7 @@ describe('ComposioUserContext', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([]) satisfies Map<string, string>;
 
-        const NodeOsTest = Layer.succeed(NodeOs, new NodeOs({ homedir: cwd }));
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
           Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
@@ -47,7 +47,7 @@ describe('ComposioUserContext', () => {
           ['COMPOSIO_BASE_URL', 'https://test.composio.localhost'],
         ]) satisfies Map<string, string>;
 
-        const NodeOsTest = Layer.succeed(NodeOs, new NodeOs({ homedir: cwd }));
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
           Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
@@ -74,7 +74,7 @@ describe('ComposioUserContext', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([]) satisfies Map<string, string>;
 
-        const NodeOsTest = Layer.succeed(NodeOs, new NodeOs({ homedir: cwd }));
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
           Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
@@ -103,7 +103,7 @@ describe('ComposioUserContext', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([['COMPOSIO_API_KEY', 'api_key']]) satisfies Map<string, string>;
 
-        const NodeOsTest = Layer.succeed(NodeOs, new NodeOs({ homedir: cwd }));
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
           Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
