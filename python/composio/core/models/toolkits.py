@@ -84,7 +84,9 @@ class Toolkits(Resource):
             toolkit={"slug": toolkit},
             auth_config={
                 "type": "use_composio_managed_auth",
-                "restrict_to_following_tools": [toolkit],
+                "tool_access_config": {
+                    "tools_for_connected_account_creation": [toolkit],
+                },
             },
         ).auth_config.id
 
