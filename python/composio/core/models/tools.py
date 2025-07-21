@@ -119,7 +119,7 @@ class Tools(Resource, t.Generic[TProvider]):
                     ),
                     search=search if search else self._client.not_given,
                     scopes=scopes,
-                    limit=str(limit) if limit is not None else self._client.not_given,
+                    limit=limit,
                 ).items
             )
         return tools_list
