@@ -1,5 +1,47 @@
 # @composio/mastra
 
+## 0.1.36
+
+### Patch Changes
+
+- 7276d1e: Fix issues with json schema to zod parsing causing nested objects to be marked as required
+- c223e54: Fix file upload handlers
+- 7276d1e: Fix issues with objects with default values being marked as required
+- 9a10986: Fix: Relax strict type/schema validations on API responses
+- 06612f5: Downgrade chalk to v4 to allow CJS as well
+- cb1b401: Update composio api client to latest version
+- da57771: dont't validate if authConfigIds is provided
+- 91c3647: Update deps
+- b001330: Fix package bumps
+- 77e96e4: Fix JSON Schema to Zod Parsing
+- ea79c18: Bump packages
+- cb1b401: Bump packages for authconfig fixes
+- ea79c18: Update packages
+- a79dfac: Relax connected account schema parsing
+- Create stable release
+- ea79c18: Fix: Gracefully handle connected account responses for missing fields
+- 91c3647: Fix proxy execute params and bump langchain packages
+- ea79c18: Bump packages
+- Updated dependencies [7276d1e]
+- Updated dependencies [c223e54]
+- Updated dependencies [7276d1e]
+- Updated dependencies [9a10986]
+- Updated dependencies [06612f5]
+- Updated dependencies [cb1b401]
+- Updated dependencies [da57771]
+- Updated dependencies [91c3647]
+- Updated dependencies [b001330]
+- Updated dependencies [77e96e4]
+- Updated dependencies [ea79c18]
+- Updated dependencies [cb1b401]
+- Updated dependencies [ea79c18]
+- Updated dependencies [a79dfac]
+- Updated dependencies
+- Updated dependencies [ea79c18]
+- Updated dependencies [91c3647]
+- Updated dependencies [ea79c18]
+  - @composio/core@0.1.36
+
 ## 0.1.36-next.13
 
 ### Patch Changes

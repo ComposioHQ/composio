@@ -1,5 +1,16 @@
 # @composio/json-schema-to-zod
 
+## 0.1.10
+
+### Patch Changes
+
+- 7276d1e: Fix issues with json schema to zod parsing causing nested objects to be marked as required
+- 7276d1e: Fix issues with objects with default values being marked as required
+- 06612f5: Downgrade chalk to v4 to allow CJS as well
+- 77e96e4: Fix JSON Schema to Zod Parsing
+- cb1b401: Bump packages for authconfig fixes
+- Create stable release
+
 ## 0.1.10-next.5
 
 ### Patch Changes
