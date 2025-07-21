@@ -36,7 +36,7 @@ export function installBinary() {
 
     yield* Effect.tryPromise(() => $`cp ${binaryPath} ${installDir}/composio`.quiet());
 
-    yield* Console.log('Binary installed successfully');
+    yield* Console.log('Binary successfully installed in', installDir);
   });
 }
 
