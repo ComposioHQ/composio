@@ -19,6 +19,12 @@
       "cache": false
     },
     
+    "dev:all": {
+      "dependsOn": ["dev:deps"],
+      "persistent": true,
+      "cache": false
+    },
+    
     "api:pull": {
       "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json"],
       "cache": true

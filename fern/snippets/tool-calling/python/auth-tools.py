@@ -27,7 +27,9 @@ serp_auth_config_id = "ac_VWmFEC55Zgv6"
 user_api_key = "sk_1234567890"
 
 connection_request = composio.connected_accounts.initiate(
-    user_id=user_id, auth_config_id=serp_auth_config_id, config=auth_scheme.api_key(user_api_key)
+    user_id=user_id,
+    auth_config_id=serp_auth_config_id,
+    config={"auth_scheme": "API_KEY", "val": user_api_key},
 )
 
 # Auth scheme config for Airtable Bearer
@@ -40,5 +42,5 @@ user_bearer_token = "1234567890"
 airtable_connection_req = composio.connected_accounts.initiate(
     user_id=user_id,
     auth_config_id=airtable_auth_config_id,
-    config=auth_scheme.bearer_token()
+    config={"auth_scheme": "BEARER_TOKEN", "val": user_bearer_token},
 )

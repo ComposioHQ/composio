@@ -25,7 +25,7 @@ auth_config = composio.auth_configs.create(
         "credentials": {
             "client_id": "1234567890",
             "client_secret": "1234567890",
-            "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
         },
     },
 )
