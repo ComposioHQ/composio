@@ -149,6 +149,25 @@ def get_issue_info(
 2. Using `connectionConfig` - For making direct API calls when needed:
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+import requests
+
+@composio.tools.custom_tool(toolkit="github")
+def get_issue_info_direct(
+    request: GetIssueInfoInput,
+    execute_request: ExecuteRequestFn,
+    auth_credentials: dict,
+) -> dict:
+    """Get information about a GitHub issue."""
+    response = requests.get(
+        f"https://api.github.com/repos/composiohq/composio/issues/{request.issue_number}",
+        headers={
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"Bearer {auth_credentials['access_token']}",
+        },
+    )
+    return {"data": response.json()}
+```
 ```typescript TypeScript maxLines=60 wordWrap
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_DIRECT_API',
@@ -176,26 +195,6 @@ const tool = await composio.tools.createCustomTool({
 });
 
 ```
-```python Python maxLines=60 wordWrap
-import requests
-
-@composio.tools.custom_tool(toolkit="github")
-def get_issue_info_direct(
-    request: GetIssueInfoInput,
-    execute_request: ExecuteRequestFn,
-    auth_credentials: dict,
-) -> dict:
-    """Get information about a GitHub issue."""
-    response = requests.get(
-        f"https://api.github.com/repos/composiohq/composio/issues/{request.issue_number}",
-        headers={
-            "Accept": "application/vnd.github.v3+json",
-            "Authorization": f"Bearer {auth_credentials['access_token']}",
-        },
-    )
-    return {"data": response.json()}
-```
-
 </CodeGroup>
 
 ### Using Custom Headers and Query Parameters
