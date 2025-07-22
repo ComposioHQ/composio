@@ -6,6 +6,7 @@ import {
   ToolExecuteResponse,
   ToolListParams,
 } from './tool.types';
+import { CustomConnectionData } from './connectedAccountAuthStates.types';
 
 /**
  * Base provider implementation, which needs to be implemented by the extended class.
@@ -20,6 +21,7 @@ export interface Provider<TTool, TToolCollection> {
 export type ExecuteToolFnOptions = {
   connectedAccountId?: string;
   customAuthParams?: CustomAuthParams;
+  customConnectionData?: CustomConnectionData;
 };
 
 /**

@@ -95,8 +95,8 @@ class AuthConfigs(Resource):
                 nanoid=nanoid,
                 type=options["type"],  # type: ignore
                 credentials=options.get("credentials", self._client.not_given),
-                restrict_to_following_tools=options.get(
-                    "restrict_to_following_tools", self._client.not_given
+                tool_access_config=options.get(
+                    "tool_access_config", self._client.not_given
                 ),
             ),
         )

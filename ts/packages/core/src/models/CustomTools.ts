@@ -303,6 +303,7 @@ export class CustomTools {
         parameters: parameters,
         body: data.body,
         connected_account_id: data.connectedAccountId ?? connectedAccountId,
+        custom_connection_data: data.customConnectionData,
       });
 
       return {

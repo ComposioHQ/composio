@@ -241,6 +241,7 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
       arguments: tool.args,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
+      customConnectionData: options?.customConnectionData,
       userId: userId,
     };
 
