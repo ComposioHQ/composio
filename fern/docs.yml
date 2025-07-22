@@ -19,19 +19,19 @@ js:
   strategy: afterInteractive
 typography:
   bodyFont:
-    name: Roobert
+    name: Inter
     paths:
-    - path: assets/Roobert-Medium.woff2
+    - path: assets/Inter-Medium.woff2
       weight: '500'
-    - path: assets/Roobert-Regular.woff2
-      weight: '400'
+    # - path: assets/Roobert-Regular.woff2
+    #   weight: '400'
   headingsFont:
-    name: Roobert
+    name: Inter
     paths:
-    - path: assets/Roobert-Medium.woff2
+    - path: assets/Inter-Medium.woff2
       weight: '500'
-    - path: assets/Roobert-Regular.woff2
-      weight: '400'
+    # - path: assets/Roobert-Regular.woff2
+    #   weight: '400'
   codeFont:
     name: IBM Plex Mono
     paths:
@@ -52,11 +52,17 @@ layout:
   sidebar-width: 298px
 colors:
   accent-primary:
-    light: '#4762DA'
-    dark: '#9EB6FF'
+    light: '#FF782F'
+    dark: '#FF782F'
   background:
     light: '#F7F4F0'
-    dark: '#0A0C12'
+    dark: '#0F0602'
+  sidebar-background:
+    light: '#F3EFEB'
+    dark: '#160F0C'
+  header-background:
+    light: '#F3EFEB'
+    dark: '#160F0C'
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}

@@ -50,6 +50,7 @@ def after_execute_modifier(
         },
     }
 
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
 # Get response from the LLM
 response = openai_client.chat.completions.create(
     model="gpt-4o-mini",

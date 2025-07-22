@@ -266,12 +266,33 @@ The following example demonstrates schema modifier usage, applicable across all 
 
 <CodeGroup>
 ```python Python (current)
+from composio import Composio, schema_modifier
+from composio.types import Tool
 
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
   startLine={1}
-  endLine={20}
+  endLine={26}
   title="TypeScript (current)"
 />
 </CodeGroup>
@@ -281,14 +302,24 @@ The following example demonstrates schema modifier usage, applicable across all 
 The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifiers/before-execution):
 
 <CodeGroup>
-
 ```python Python (current)
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
 
+
+# Get tools
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
-  startLine={54}
-  endLine={70}
+  startLine={53}
+  endLine={68}
   title="TypeScript (current)"
 />
 </CodeGroup>
@@ -300,12 +331,25 @@ The following example shows creating and using an after modifier for a Chat Comp
 <CodeGroup>
 
 ```python Python (current)
+@after_execute(tools=["HACKERNEWS_GET_USER"])
+def after_execute_modifier(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    return {
+        **response,
+        "data": {
+            "karma": response["data"]["karma"],
+        },
+    }
 
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
 ```
 <SnippetCode
   src="fern/snippets/migration/tool_modifiers.ts"
-  startLine={71}
-  endLine={89}
+  startLine={69}
+  endLine={90}
   title="TypeScript (current)"
 />
 </CodeGroup>
