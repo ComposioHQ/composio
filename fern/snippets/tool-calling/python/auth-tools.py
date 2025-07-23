@@ -7,7 +7,7 @@ composio = Composio()
 
 # Create a new connected account
 connection_request = composio.connected_accounts.initiate(
-    user_id=user_id, auth_config_id=linear_auth_config_id, config=auth_scheme.oauth2()
+    user_id=user_id, auth_config_id=linear_auth_config_id, config={"auth_scheme": "OAUTH2"}
 )
 print(connection_request.redirect_url)
 
