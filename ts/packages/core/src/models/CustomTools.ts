@@ -32,6 +32,7 @@ import { ConnectedAccountRetrieveResponse } from '../types/connectedAccounts.typ
 import { ValidationError } from '../errors';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
+import { AuthSchemeTypes } from '../types/authConfigs.types';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -189,9 +190,17 @@ export class CustomTools {
     toolkitSlug: string,
     userId: string,
     connectedAccountId?: string
-  ): Promise<ConnectedAccountRetrieveResponse> {
+  ): Promise<ConnectedAccountRetrieveResponse | null> {
     try {
       await this.client.toolkits.retrieve(toolkitSlug);
+      // check if the toolkit is a no auth toolkit
+      const toolkit = await this.client.toolkits.retrieve(toolkitSlug);
+      const isNoAuthToolkit = toolkit.auth_config_details?.some(
+        details => details.mode === AuthSchemeTypes.NO_AUTH
+      );
+      if (isNoAuthToolkit) {
+        return null;
+      }
     } catch (error) {
       throw new ComposioToolNotFoundError(`Toolkit with slug ${toolkitSlug} not found`, {
         cause: error,
@@ -243,8 +252,8 @@ export class CustomTools {
     const { toolkitSlug, execute, inputParams } = tool.options;
     // if a toolkit is used, get the connected account, and auth credentials
     let connectedAccountId: string | undefined = body.connectedAccountId;
-
-    if (toolkitSlug && toolkitSlug !== 'custom') {
+    // if a toolkit is used, and a userId is provided, get the connected account
+    if (toolkitSlug && toolkitSlug !== 'custom' && body.userId) {
       const connectedAccount = await this.getConnectedAccountForToolkit(
         toolkitSlug,
         body.userId,
@@ -278,6 +287,7 @@ export class CustomTools {
     }
     // create a tool proxy request for users to execute in case of a toolkit being used
     const executeToolRequest = async (data: ToolProxyParams): Promise<ToolExecuteResponse> => {
+      // if the toolkit is custom, throw an error while trying to execute the tool by user
       if (toolkitSlug && toolkitSlug === 'custom') {
         throw new ComposioInvalidExecuteFunctionError(
           'Custom tools without a toolkit cannot be executed using the executeToolRequest function',
@@ -302,7 +312,7 @@ export class CustomTools {
         method: data.method,
         parameters: parameters,
         body: data.body,
-        connected_account_id: data.connectedAccountId ?? connectedAccountId,
+        connected_account_id: connectedAccountId,
         custom_connection_data: data.customConnectionData,
       });
 
