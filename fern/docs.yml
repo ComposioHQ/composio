@@ -23,15 +23,11 @@ typography:
     paths:
     - path: assets/Inter-Medium.woff2
       weight: '500'
-    # - path: assets/Roobert-Regular.woff2
-    #   weight: '400'
   headingsFont:
     name: Inter
     paths:
     - path: assets/Inter-Medium.woff2
       weight: '500'
-    # - path: assets/Roobert-Regular.woff2
-    #   weight: '400'
   codeFont:
     name: IBM Plex Mono
     paths:
