@@ -1,6 +1,6 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, Layer, Logger } from 'effect';
-import { prettyPrint } from 'effect-errors';
+import { Cause, Console, Effect, Exit, Layer, Logger } from 'effect';
+import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors';
 import { CliConfig } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
@@ -91,9 +91,6 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
  * - collects and displays errors
  */
 runWithArgs.pipe(
-  Effect.provide(layers),
-  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  Effect.provide(BunContext.layer),
   Effect.scoped,
   Effect.withSpan('composio-cli', {
     attributes: {
@@ -102,7 +99,22 @@ runWithArgs.pipe(
     },
   }),
   Effect.sandbox,
-  Effect.catchAll(e => Effect.fail(prettyPrint(e))),
+  Effect.catchAll(
+    Effect.fn(function* (cause) {
+      const captured = yield* captureErrors(cause, {
+        stripCwd: true,
+      });
+      const message = prettyPrintFromCapturedErrors(captured, {
+        hideStackTrace: true,
+        stripCwd: true,
+        enabled: true,
+      });
+
+      yield* Console.error(message);
+    })
+  ),
+  Effect.provide(layers),
+  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
   BunRuntime.runMain({
     teardown,
   })
