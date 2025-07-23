@@ -1,10 +1,17 @@
 import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
+import { extractActual } from './utils/extract-actual';
 
-export const Tool = Schema.String;
+export const Tool = Schema.String.annotations({ identifier: 'Tool' });
 export type Tool = Schema.Schema.Type<typeof Tool>;
 
-export const Tools = Schema.Array(Tool);
+export const Tools = Schema.Array(Tool).annotations({
+  identifier: 'Array<Tool>',
+  message: issue => ({
+    message: `Expected an array of strings, got ${extractActual(issue)}`,
+    override: true,
+  }),
+});
 export type Tools = Schema.Schema.Type<typeof Tools>;
 
 export const ToolsJSON = JSONTransformSchema(Tools);

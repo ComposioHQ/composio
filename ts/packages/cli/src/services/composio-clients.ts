@@ -1,11 +1,12 @@
-import { pipe, Data, Effect, Option, Schema, Array, Order } from 'effect';
+import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult } from 'effect';
 import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
 import { LinkedSession, Session, RetrievedSession } from 'src/models/session';
-import { TriggerType } from 'src/models/trigger-types';
+import { TriggerTypes } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import type { NoSuchElementException } from 'effect/Cause';
+import { renderPrettyError } from './utils/pretty-error';
 
 /**
  * Error types
@@ -15,16 +16,14 @@ import type { NoSuchElementException } from 'effect/Cause';
  * Error thrown when a HTTP request fails.
  */
 export class HttpServerError extends Data.TaggedError('services/HttpServerError')<{
-  readonly cause: Error;
-  readonly message: string;
+  readonly cause?: unknown;
 }> {}
 
 /**
  * Error thrown when a HTTP response doesn't match the expected response schema.
  */
 export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingError')<{
-  readonly cause: Error;
-  readonly message: string;
+  readonly cause?: unknown;
 }> {}
 
 export type HttpError = HttpServerError | HttpDecodingError;
@@ -52,8 +51,23 @@ export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 export const ToolsResponse = Tools;
 export type ToolsResponse = Schema.Schema.Type<typeof ToolsResponse>;
 
-export const TriggerTypesResponse = Schema.Array(TriggerType);
+export const TriggerTypesResponse = TriggerTypes;
 export type TriggerResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
+
+/**
+ * Error response schemas
+ */
+export const HttpErrorResponse = Schema.Struct({
+  status: Schema.Int,
+  error: Schema.Struct({
+    error: Schema.Struct({
+      message: Schema.NonEmptyString,
+      suggested_fix: Schema.String,
+      code: Schema.Int,
+    }),
+  }),
+}).annotations({ identifier: 'HttpErrorResponse' });
+export type HttpErrorResponse = Schema.Schema.Type<typeof HttpErrorResponse>;
 
 /**
  * Utilities
@@ -70,11 +84,27 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     const client = yield* clientSingleton.get();
     const json = yield* Effect.tryPromise({
       try: () => apiCall(client),
-      catch: error => {
-        const e = error as Error;
+      catch: e => {
+        const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
+
+        if (Option.isNone(decodedOpt)) {
+          return new HttpServerError({
+            cause: e,
+          });
+        }
+
+        const {
+          status,
+          error: { error },
+        } = decodedOpt.value;
+        const pretty = renderPrettyError([
+          ['code', error.code],
+          ['message', error.message],
+          ['suggested fix', error.suggested_fix],
+        ]);
+
         return new HttpServerError({
-          cause: e,
-          message: e.message,
+          cause: `HTTP ${status}\n${pretty}`,
         });
       },
     });
@@ -82,9 +112,10 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     return yield* pipe(
       Schema.decodeUnknown(responseSchema)(json),
       Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+
         return new HttpDecodingError({
-          cause: e,
-          message: e.message,
+          cause: `ParseError\n   ${message}`,
         });
       })
     );

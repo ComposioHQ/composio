@@ -1,10 +1,18 @@
 import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
+import { extractActual } from './utils/extract-actual';
 
-export const TriggerType = Schema.String;
+export const TriggerType = Schema.String.annotations({ identifier: 'TriggerType' });
 export type TriggerType = Schema.Schema.Type<typeof TriggerType>;
 
-export const TriggerTypes = Schema.Array(TriggerType);
+export const TriggerTypes = Schema.Array(TriggerType).annotations({
+  identifier: 'Array<TriggerType>',
+  title: 'TriggerTypes',
+  message: issue => ({
+    message: `Expected an array of strings, got ${extractActual(issue)}`,
+    override: true,
+  }),
+});
 export type TriggerTypes = Schema.Schema.Type<typeof TriggerTypes>;
 
 export const TriggerTypesJSON = JSONTransformSchema(TriggerTypes);

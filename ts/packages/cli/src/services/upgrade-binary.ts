@@ -10,10 +10,11 @@ import { CompareSemverError, semverComparator } from 'src/effects/compare-semver
 // Note: `node:zlib` does not support Github's zip files
 import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
+import { renderPrettyError } from './utils/pretty-error';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
-  readonly cause: Error;
-  readonly message: string;
+  readonly cause?: unknown;
+  readonly message?: string;
 }> {}
 
 /**
@@ -62,10 +63,13 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const response = yield* Effect.gen(function* () {
           const resp = yield* httpClient.get(url);
           if (resp.status < 200 || resp.status >= 300) {
+            const json = yield* resp.json;
+            const keyValues = Object.entries(json as object);
+            const pretty = renderPrettyError(keyValues);
+
             return yield* Effect.fail(
               new UpgradeBinaryError({
-                cause: new Error(`HTTP ${resp.status}`),
-                message: `Failed to fetch ${urlSuffix} release from GitHub`,
+                cause: `HTTP ${resp.status}\n${pretty}`,
               })
             );
           }
@@ -74,7 +78,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           Effect.catchAll(error =>
             Effect.fail(
               new UpgradeBinaryError({
-                cause: new Error(String(error)),
+                cause: error,
                 message: `Failed to fetch ${urlSuffix} release from GitHub`,
               })
             )
@@ -87,7 +91,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           Effect.catchAll(error =>
             Effect.fail(
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause: error,
                 message: 'Failed to parse GitHub release JSON response',
               })
             )
