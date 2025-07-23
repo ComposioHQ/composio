@@ -1,7 +1,7 @@
 import { Config, LogLevel, Option } from 'effect';
 
 type APP_CONFIG = Config.Config.Wrap<{
-  API_KEY: string;
+  API_KEY: Option.Option<string>;
   BASE_URL: Option.Option<string>;
   CACHE_DIR: Option.Option<string>;
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
@@ -9,12 +9,11 @@ type APP_CONFIG = Config.Config.Wrap<{
 
 /**
  * Describe every configuration key used at runtime.
- * Keys are read from environment variables (with the `${APP_ENV_CONFIG_KEY_PREFIX}_<key>` format),
- * or from the user config file (in JSON format).
+ * Keys are read from environment variables (with the `${APP_ENV_CONFIG_KEY_PREFIX}<key>` format).
  */
 export const APP_CONFIG = {
   // The API key for the Composio API
-  API_KEY: Config.string('API_KEY'),
+  API_KEY: Config.option(Config.string('API_KEY')),
 
   // The base URL for the Composio API
   BASE_URL: Config.option(Config.string('BASE_URL')),

@@ -1,20 +1,24 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, Layer } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger } from 'effect';
 import { prettyPrint } from 'effect-errors';
 import { CliConfig } from '@effect/cli';
+import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
-import { UserConfigLive } from 'src/services/user-config';
+import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
+import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { EnvLangDetector } from './services/env-lang-detector';
-import { JsPackageManagerDetector } from './services/js-package-manager-detector';
+import { EnvLangDetector } from 'src/services/env-lang-detector';
+import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
+import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
+import { UpgradeBinary } from 'src/services/upgrade-binary';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -26,27 +30,48 @@ import { JsPackageManagerDetector } from './services/js-package-manager-detector
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-/**
- * Service layer that reads the user config.
- */
-export const UserConfigProviderLiveFromFs = Layer.provide(UserConfigLive, BunFileSystem.layer);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RequiredLayer = Layer.Layer<any, any, never>;
 
 /**
  * Service layer that configures the CLI appearance and default command options.
  */
-export const CliConfigLive = CliConfig.layer(ComposioCliConfig);
+export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
+
+export const ComposioUserContextLive = Layer.provide(
+  _ComposioUserContextLive,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const ComposioSessionRepositoryLive = Layer.provide(
+  ComposioSessionRepository.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const ComposioToolkitsRepositoryLive = Layer.provide(
+  ComposioToolkitsRepository.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+) satisfies RequiredLayer;
+
+export const UpgradeBinaryLive = Layer.provide(
+  UpgradeBinary.Default,
+  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+) satisfies RequiredLayer;
 
 const layers = Layer.mergeAll(
-  UserConfigProviderLiveFromFs,
-  CliConfigLive.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
+  CliConfigLive.pipe(Layer.provide(ConfigLive)),
+  NodeOs.Default,
   NodeProcess.Default,
-  ComposioSessionRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
-  ComposioToolkitsRepository.Default.pipe(Layer.provide(UserConfigProviderLiveFromFs)),
+  UpgradeBinaryLive,
+  ComposioUserContextLive,
+  ComposioSessionRepositoryLive,
+  ComposioToolkitsRepositoryLive,
   EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
   BunContext.layer,
-  BunFileSystem.layer
-);
+  BunFileSystem.layer,
+  Logger.pretty
+) satisfies RequiredLayer;
 
 export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
   const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
@@ -54,30 +79,31 @@ export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: n
   onExit(shouldFail ? errorCode : 0);
 };
 
+const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) satisfies Effect.Effect<
+  void,
+  unknown,
+  unknown
+>;
+
 /**
  * CLI entrypoint, which:
  * - runs the Effect runtime and sets up its runtime environment
  * - collects and displays errors
  */
-if (require.main === module) {
-  const runWithArgs = Effect.flatMap(runWithConfig, run =>
-    run(process.argv)
-  ) satisfies Effect.Effect<void, unknown, unknown>;
-
-  runWithArgs.pipe(
-    Effect.provide(layers),
-    Effect.provide(BunContext.layer),
-    Effect.scoped,
-    Effect.withSpan('composio-cli', {
-      attributes: {
-        name: constants.APP_NAME,
-        filename: 'src/bin.ts',
-      },
-    }),
-    Effect.sandbox,
-    Effect.catchAll(e => Effect.fail(prettyPrint(e))),
-    BunRuntime.runMain({
-      teardown,
-    })
-  );
-}
+runWithArgs.pipe(
+  Effect.provide(layers),
+  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+  Effect.provide(BunContext.layer),
+  Effect.scoped,
+  Effect.withSpan('composio-cli', {
+    attributes: {
+      name: constants.APP_NAME,
+      filename: 'src/bin.ts',
+    },
+  }),
+  Effect.sandbox,
+  Effect.catchAll(e => Effect.fail(prettyPrint(e))),
+  BunRuntime.runMain({
+    teardown,
+  })
+);

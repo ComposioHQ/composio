@@ -15,6 +15,9 @@ import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 
+/**
+ * Usage: `bun scripts/build-binary.ts`
+ */
 export function buildBinary() {
   return Effect.gen(function* () {
     const cwd = process.cwd();

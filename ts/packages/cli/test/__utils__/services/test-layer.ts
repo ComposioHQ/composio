@@ -1,10 +1,19 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
-import { CliApp } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { CliApp, CliConfig } from '@effect/cli';
+import { FetchHttpClient, FileSystem } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
-import { Console, DateTime, Effect, Layer, Logger, LogLevel, Schedule } from 'effect';
-import { CliConfigLive } from 'src/bin';
+import {
+  ConfigProvider,
+  Console,
+  DateTime,
+  Effect,
+  Layer,
+  Logger,
+  LogLevel,
+  Schedule,
+} from 'effect';
+import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import type { Toolkits } from 'src/models/toolkits';
@@ -17,10 +26,20 @@ import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes } from 'src/models/trigger-types';
+import { ComposioUserContextLive } from 'src/services/user-context';
+import { UpgradeBinary } from 'src/services/upgrade-binary';
+import { NodeOs } from 'src/services/node-os';
 
 interface TestLiveInput {
   /**
+   * Base config provider to use in test.
+   * If not provided, the default `ConfigProvider.fromMap(new Map([]))` is used.
+   */
+  baseConfigProvider?: ConfigProvider.ConfigProvider;
+
+  /**
    * Fixture to use in test.
+   * TODO: consider extracting `fixture` into another `Effect`.
    */
   fixture?: string;
 
@@ -33,6 +52,18 @@ interface TestLiveInput {
     triggerTypes?: TriggerTypes;
   };
 }
+
+/**
+ * Concrete Effect layer compositions for the Composio test suites.
+ *
+ *         ┌─── The service to be created
+ *         │                ┌─── The possible error
+ *         │                │      ┌─── The required dependencies
+ *         ▼                ▼      ▼
+ * Layer<RequirementsOut, Error, RequirementsIn>
+ */
+
+type RequiredLayer = Layer.Layer<any, any, never>;
 
 /**
  * Effect layer that injects all the services needed for tests, using mocks to avoid
@@ -53,32 +84,57 @@ export const TestLayer = (input?: TestLiveInput) =>
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
 
-    const composioToolkitsRepositoryTest = new ComposioToolkitsRepository({
-      getToolkits: () => Effect.succeed(toolkitsData.toolkits),
-      getTools: () => Effect.succeed(toolkitsData.tools),
-      getTriggerTypes: () => Effect.succeed(toolkitsData.triggerTypes),
-    });
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
-      composioToolkitsRepositoryTest
+      new ComposioToolkitsRepository({
+        getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getTools: () => Effect.succeed(toolkitsData.tools),
+        getTriggerTypes: () => Effect.succeed(toolkitsData.triggerTypes),
+      })
     );
 
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
 
+    // Mock `node:os`
+    const NodeOsTest = Layer.succeed(
+      NodeOs,
+      new NodeOs({
+        homedir: cwd,
+        arch: 'arm64',
+        platform: 'darwin',
+      })
+    );
+
     // Mock `node:process`
-    const nodeProcessTest = new NodeProcess({
-      cwd,
-      platform: 'darwin',
-      arch: 'arm64',
-    });
-    const NodeProcessTest = Layer.succeed(NodeProcess, nodeProcessTest);
+    const NodeProcessTest = Layer.succeed(
+      NodeProcess,
+      new NodeProcess({
+        cwd,
+        platform: 'darwin',
+        arch: 'arm64',
+      })
+    );
+
+    const ComposioUserContextTest = Layer.provideMerge(
+      ComposioUserContextLive,
+      Layer.merge(BunFileSystem.layer, NodeOsTest)
+    );
+
+    const UpgradeBinaryTest = Layer.provide(
+      UpgradeBinary.Default,
+      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+    );
+
+    const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
     const _console = yield* MockConsole.effect;
 
     const layers = Layer.mergeAll(
       Console.setConsole(_console),
-      NodeProcessTest,
       CliConfigLive,
+      NodeProcessTest,
+      UpgradeBinaryTest,
+      ComposioUserContextTest,
       ComposioSessionRepositoryTest,
       ComposioToolkitsRepositoryTest,
       EnvLangDetector.Default,
@@ -87,16 +143,23 @@ export const TestLayer = (input?: TestLiveInput) =>
       BunContext.layer,
       MockTerminal.layer,
       BunPath.layer
-    );
+    ) satisfies RequiredLayer;
 
     return layers;
-  }).pipe(Logger.withMinimumLogLevel(LogLevel.Info), Effect.scoped, Layer.unwrapEffect);
+  }).pipe(
+    Logger.withMinimumLogLevel(LogLevel.Debug),
+    Effect.scoped,
+    Layer.unwrapEffect,
+    Layer.provide(
+      Layer.setConfigProvider(input?.baseConfigProvider ?? ConfigProvider.fromMap(new Map([])))
+    )
+  );
 
 // Run @effect/vitest suite with TestLive layer
-// export const runEffect =
-//   (input?: TestLiveInput) =>
-//   <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
-//     Effect.provide(self, TestLayer(input)).pipe(Effect.scoped, Effect.runPromise);
+export const runEffect =
+  (input?: TestLiveInput) =>
+  <E, A>(self: Effect.Effect<A, E, CliApp.CliApp.Environment>): Promise<A> =>
+    Effect.provide(self, TestLayer(input)).pipe(Effect.scoped, Effect.runPromise);
 
 function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
   return Effect.gen(function* () {
@@ -163,7 +226,7 @@ function setupComposioSessionRepository() {
           expiresAt,
           status: 'pending',
         }),
-      retrieveSession: () =>
+      getSession: () =>
         Effect.succeed({
           id: sessionId,
           code: sessionCode,

@@ -60,9 +60,13 @@ describe('CLI: composio', () => {
 
             - version                                                                Display your account information.
 
+            - upgrade                                                                Upgrade your Composio CLI to the latest available version.
+
             - whoami                                                                 Display your account information.
 
-            - login                                                                  Log in to the Composio SDK.
+            - login [--no-browser]                                                   Log in to the Composio SDK.
+
+            - logout                                                                 Log out from the Composio SDK.
 
             - generate [(-o, --output-dir directory)]                                Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
 

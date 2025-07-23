@@ -30,26 +30,38 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 | `composio version`                                                    | Display the current CLI version.                                                                | ✅                                                                                        |
 | `composio whoami`                                                     | Show the currently logged-in user/account.                                                      | ✅ It displays the local API_KEY, or shows a message if no API_KEY is found.              |
 | `composio login`                                                      | Log in to the Composio SDK.                                                                     | ⏰ The session client is defined, but the authentication workflow is currently incomplete |
+| `composio logout`                                                     | Log out from the Composio SDK.                                                                  | ✅                                                                                        |
 | `composio generate [-o, --output-dir <directory>]`                    | Auto-detect the project language (Python or TypeScript) and generate the latest app type stubs. | ✅                                                                                        |
 | `composio py`                                                         | Python project-specific commands.                                                               |
 | `composio py generate [-o, --output-dir <directory>]`                 | Generate updated Python stubs with the latest app data.                                         | ✅                                                                                        |
 | `composio ts`                                                         | TypeScript project-specific commands.                                                           | ✅                                                                                        |
 | `composio ts generate [-o, --output-dir <directory>] [--single-file]` | Generate updated TypeScript stubs, optionally as a single file.                                 | ✅                                                                                        |
-| `composio upgrade`                                                    | Self-update the Composio CLI if a new release is out.                                           | 🛑 Not implemented yet                                                                    |
+| `composio upgrade`                                                    | Self-update the Composio CLI if a new release is out.                                           | ✅ yet                                                                                    |
 
 ## Configuration
 
-The Composio CLI supports configuration via environment variables and a JSON configuration file.
+The Composio CLI supports configuration via environment variables.
+Additionally, for storing and retrieving user session context, a `user_data.json` JSON configuration file is used.
 
-The Composio CLI also supports a JSON configuration file. The default location is `~/.composio/user_data.json`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
+By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
-| Environment Variable   | User JSON config | Description                                                        | Default |
-| ---------------------- | ---------------- | ------------------------------------------------------------------ | ------- |
-| COMPOSIO_API_KEY       | `api_key`        | Your Composio API key                                              | None    |
-| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | None    |
-| COMPOSIO_CACHE_DIR     | `cache_dir`      | The directory where the Composio CLI stores cache files            | None    |
-| COMPOSIO_LOG_LEVEL     | `log_level`      | The log level for the Composio CLI                                 | None    |
-| DEBUG_OVERRIDE_VERSION | `version`        | The version to use when upgrading the Composio CLI (for debugging) | None    |
+| Environment Variable   | User JSON config | Description                                                        | Default     |
+| ---------------------- | ---------------- | ------------------------------------------------------------------ | ----------- |
+| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None        |
+| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | None        |
+| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio |
+| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None        |
+| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None        |
+
+Additionally, `composio upgrade` supports the following environment variables:
+
+| Environment Variable         | Description                                                                                            | Default                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------- |
+| COMPOSIO_GITHUB_API_BASE_URL | The base URL for the GitHub API                                                                        | https://api.github.com |
+| COMPOSIO_GITHUB_OWNER        | The owner of the Composio repository on GitHub                                                         | ComposioHQ             |
+| COMPOSIO_GITHUB_REPO         | The repository name for the Composio CLI                                                               | composio               |
+| COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
+| COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
 
 ## Development
 
@@ -62,13 +74,13 @@ pnpm install
 ### Build TypeScript code
 
 ```bash
-pnpm build
+bun run build
 ```
 
 ### Build self-contained executable
 
 ```bash
-pnpm build:bin
+bun build:bin
 ```
 
 or
@@ -77,20 +89,35 @@ or
 bun run ./scripts/build-binary.ts
 ```
 
+### Install self-contained executable
+
+```bash
+bun install:bin
+```
+
+or
+
+```bash
+bun run ./scripts/install-binary.ts ./dist/composio
+```
+
+By default, the executable will be installed in `~/.composio/composio`.
+You can customize the installation directory by setting the `COMPOSIO_INSTALL_DIR` environment variable.
+
 ### Run interactively
 
 ```bash
-pnpm cli
+bun cli
 ```
 
 For instance, to generate type stubs for a TypeScript project, you can run:
 
 ```bash
-pnpm cli ts generate
+bun cli ts generate
 ```
 
 ### Test
 
 ```bash
-pnpm test
+bun run test
 ```

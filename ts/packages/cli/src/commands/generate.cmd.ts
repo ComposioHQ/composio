@@ -34,7 +34,7 @@ export const generateCmd = Command.make('generate', { outputOpt }).pipe(
       // Redirect to either `ts generate` or `py generate` commands
       yield* Match.value(envLang).pipe(
         Match.when('TypeScript', () =>
-          generateTypescriptTypeStubs({ outputOpt, singleFile: false })
+          generateTypescriptTypeStubs({ outputOpt, compact: false, transpiled: false })
         ),
         Match.when('Python', () => generatePythonTypeStubs({ outputOpt })),
         Match.exhaustive
