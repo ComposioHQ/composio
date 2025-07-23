@@ -44,6 +44,8 @@ import {
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
+import { CustomConnectionDataSchema } from '../types/connectedAccountAuthStates.types';
+import { AuthSchemeTypes } from '../types/authConfigs.types';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -204,7 +206,7 @@ export class Tools<
 
     // check if the toolkit is a no auth app
     const isNoAuthApp = toolkit.auth_config_details?.some(
-      authConfigDetails => authConfigDetails.mode === 'NO_AUTH'
+      authConfigDetails => authConfigDetails.mode === AuthSchemeTypes.NO_AUTH
     );
     // if the toolkit is not a no auth app, fetch connected accounts
     if (!isNoAuthApp) {
@@ -693,9 +695,9 @@ export class Tools<
       modifiers?.beforeExecute
     );
 
-    // fetch connected accounts if doesn't exist
+    // fetch connected accounts if exists
     let connectedAccountId = body.connectedAccountId;
-    if (!connectedAccountId) {
+    if (!connectedAccountId && body.userId) {
       connectedAccountId =
         (await this.getConnectedAccountIdForTool(body.userId, tool.slug)) || undefined;
     }

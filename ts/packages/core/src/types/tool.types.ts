@@ -235,7 +235,7 @@ export const ToolExecuteParamsSchema = z.object({
   customAuthParams: CustomAuthParamsSchema.optional(),
   customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
-  userId: z.string(),
+  userId: z.string().optional(), //
   version: z.string().optional(),
   text: z.string().optional(),
 });
