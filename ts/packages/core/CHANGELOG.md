@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.37
+
+### Patch Changes
+
+- 09c4a26: Fix issues with tools.execute requiring userId for no auth apps
+
 ## 0.1.36
 
 ### Patch Changes
