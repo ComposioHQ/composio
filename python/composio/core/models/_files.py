@@ -294,7 +294,7 @@ class FileHelper(WithLogger):
             if self._is_file_downloadable(schema=params[_param]):
                 request[_param] = str(
                     FileDownloadable(**request[_param]).download(
-                        LOCAL_OUTPUT_FILE_DIRECTORY / tool.toolkit.slug / tool.slug
+                        self._outdir / tool.toolkit.slug / tool.slug
                     )
                 )
                 continue
