@@ -84,7 +84,7 @@ class CustomTool:
         return Tool(
             name=self.name,
             description=self.description,
-            input_parameters={},
+            input_parameters=self.request_model.model_json_schema(),
             output_parameters={},
             available_versions=[],
             version="1.0.0",

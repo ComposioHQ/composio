@@ -71,7 +71,7 @@ class ResourceMeta(type):
 
     def __init__(cls, name, bases, attrs):
         for attr in attrs:
-            if "__" in attr or not callable(getattr(cls, attr)):
+            if attr.startswith("_") or not callable(getattr(cls, attr)):
                 continue
             setattr(cls, attr, trace_method(getattr(cls, attr), f"{name}.{attr}"))
 

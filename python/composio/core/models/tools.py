@@ -80,7 +80,7 @@ class Tools(Resource, t.Generic[TProvider]):
         _custom_tools = []
         for tool in tools:
             try:
-                _custom_tools.append(t.cast(Tool, self._custom_tools[tool]))
+                _custom_tools.append(self._custom_tools[tool].info)
             except KeyError:
                 _tools.append(tool)
         return _tools, _custom_tools
@@ -307,7 +307,9 @@ class Tools(Resource, t.Generic[TProvider]):
         arguments: t.Dict,
         connected_account_id: t.Optional[str] = None,
         custom_auth_params: t.Optional[tool_execute_params.CustomAuthParams] = None,
-        custom_connection_data: t.Optional[tool_execute_params.CustomConnectionData] = None,
+        custom_connection_data: t.Optional[
+            tool_execute_params.CustomConnectionData
+        ] = None,
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
@@ -339,7 +341,9 @@ class Tools(Resource, t.Generic[TProvider]):
         *,
         connected_account_id: t.Optional[str] = None,
         custom_auth_params: t.Optional[tool_execute_params.CustomAuthParams] = None,
-        custom_connection_data: t.Optional[tool_execute_params.CustomConnectionData] = None,
+        custom_connection_data: t.Optional[
+            tool_execute_params.CustomConnectionData
+        ] = None,
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
