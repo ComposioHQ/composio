@@ -94,13 +94,10 @@ class LangchainProvider(
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
-            print(kwargs)
             kwargs = _reinstate_reserved_python_keywords(
                 request=kwargs,
                 keywords=keywords,
             )
-            print(kwargs)
-            exit()
             return execute_tool(tool.slug, kwargs)
 
         action_func = types.FunctionType(
