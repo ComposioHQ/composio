@@ -368,7 +368,7 @@ class Tools(Resource, t.Generic[TProvider]):
         :return: The response from the tool.
         """
         tool = self._tool_schemas.get(slug)
-        if tool is None:
+        if tool is None and self._custom_tools.get(slug=slug) is not None:
             tool = self._custom_tools[slug].info
             self._tool_schemas[slug] = tool
 
