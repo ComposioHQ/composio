@@ -173,3 +173,23 @@ export const TriggersTypeListResponseSchema = z.object({
 
 export type TriggersTypeListResponse = z.infer<typeof TriggersTypeListResponseSchema>;
 export type TriggersTypeRetrieveResponse = z.infer<typeof TriggerTypeSchema>;
+
+/**
+ * Generic trigger event type that can be used with generated trigger payload types
+ * @template TPayload - The specific trigger payload type (e.g., GITHUB_COMMIT_EVENT_PAYLOAD)
+ */
+export interface TriggerEvent<TPayload = unknown> {
+  type: string;
+  timestamp: string;
+  data: TriggerEventData<TPayload>;
+}
+
+/**
+ * Generic trigger event data type that contains the payload and metadata
+ * @template TPayload - The specific trigger payload type
+ */
+export type TriggerEventData<TPayload = unknown> = TPayload & {
+  connection_nano_id: string;
+  trigger_nano_id: string;
+  user_id: string;
+};
