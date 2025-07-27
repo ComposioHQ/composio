@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.38
+
+### Patch Changes
+
+- 6c980ad: Add generics for CLI trigger type generation
+- Updated dependencies [6c980ad]
+  - @composio/core@0.1.38
+
 ## 0.1.37
 
 ### Patch Changes
