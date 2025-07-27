@@ -13,6 +13,7 @@ export * from './FunctionType';
 export * from './GenericParameter';
 export * from './helpers';
 export * from './Import';
+export * from './IndexSignature';
 export * from './Interface';
 export * from './KeyofType';
 export * from './KeyType';

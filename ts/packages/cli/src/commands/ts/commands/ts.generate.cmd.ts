@@ -127,15 +127,56 @@ export function generateTypescriptTypeStubs({
       { concurrency: 'unbounded' }
     );
 
+    // Fetch individual trigger payload types in parallel
+    yield* Console.log('Fetching trigger payload types...');
+    const triggerPayloadTypes = new Map<string, Record<string, unknown>>();
+
+    const triggerTypeDetailsResults = yield* Effect.all(
+      triggerTypes.map(triggerType =>
+        client.getTriggerType(triggerType).pipe(
+          Effect.map(details => [triggerType, details] as const),
+          Effect.catchAll(error =>
+            Effect.gen(function* () {
+              yield* Effect.logWarning(
+                `Failed to fetch payload type for trigger ${triggerType}: ${error}`
+              );
+              return [triggerType, null] as const;
+            })
+          )
+        )
+      ),
+      { concurrency: 10 } // Limit concurrent requests to avoid overwhelming the API
+    );
+
+    // Process the results and populate the map
+    let successCount = 0;
+    for (const [triggerType, triggerTypeDetails] of triggerTypeDetailsResults) {
+      if (
+        triggerTypeDetails?.payload &&
+        typeof triggerTypeDetails.payload === 'object' &&
+        triggerTypeDetails.payload !== null
+      ) {
+        triggerPayloadTypes.set(triggerType, triggerTypeDetails.payload);
+        successCount++;
+      }
+    }
+
+    yield* Console.log(
+      `Successfully fetched ${successCount}/${triggerTypes.length} trigger payload types`
+    );
+
     const index = createToolkitIndex({ toolkits, tools, triggerTypes });
 
     // Generate TypeScript sources
-    const sources = generateTypeScriptSources({
-      outputDir,
-      emitSingleFile: Boolean(compact), // Ensure boolean type
-      banner: BANNER,
-      importExtension: 'js',
-    })(index);
+    const sources = yield* Effect.tryPromise(() =>
+      generateTypeScriptSources({
+        outputDir,
+        emitSingleFile: Boolean(compact), // Ensure boolean type
+        banner: BANNER,
+        importExtension: 'js',
+        triggerPayloadTypes,
+      })(index)
+    );
 
     // Write all generated files
     yield* pipe(

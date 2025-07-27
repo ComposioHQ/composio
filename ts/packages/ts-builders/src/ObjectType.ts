@@ -1,10 +1,11 @@
+import { IndexSignature } from './IndexSignature';
 import { Method } from './Method';
 import { Property } from './Property';
 import { TypeBuilder } from './TypeBuilder';
 import { Writer } from './Writer';
 import { OperatorPrecedence } from './OperatorPrecedence';
 
-type ObjectTypeItem = Method | Property;
+type ObjectTypeItem = Method | Property | IndexSignature;
 
 export class ObjectType extends TypeBuilder {
   readonly precedence = OperatorPrecedence.ObjectType;

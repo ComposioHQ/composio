@@ -1,0 +1,47 @@
+{
+  "name": "@composio/json-schema-to-ts-builders",
+  "version": "0.1.0",
+  "description": "Convert JSON Schema to TypeScript types using ts-builders",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/json-schema-to-ts-builders"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "json-schema",
+    "typescript",
+    "ts-builders",
+    "composio"
+  ],
+  "author": "Composio Team",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.0",
+  "devDependencies": {
+    "@types/json-schema": "^7.0.15",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@composio/ts-builders": "link:../ts-builders",
+    "json-schema": "^0.4.0"
+  },
+  "peerDependencies": {
+    "@types/json-schema": "^7.0.0"
+  }
+}

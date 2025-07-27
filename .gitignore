@@ -61,3 +61,4 @@ __pycache__/
 # VS Code
 .vscode
 temp/
+ts/packages/cli/test-output/

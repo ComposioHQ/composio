@@ -11,11 +11,15 @@ type GenerateTypeScriptSourcesParams = {
   emitSingleFile: boolean;
   outputDir: string;
   importExtension: 'ts' | 'js';
+  triggerPayloadTypes: Map<string, Record<string, unknown>>;
 };
 
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
-  return (index: ToolkitIndex): Array<SourceFile> => {
-    const toolkiteSources = generateTypeScriptToolkitSources(params.banner)(index);
+  return async (index: ToolkitIndex): Promise<Array<SourceFile>> => {
+    const toolkiteSources = await generateTypeScriptToolkitSources(
+      params.banner,
+      params.triggerPayloadTypes
+    )(index);
 
     const indexSource = generateIndexSource(params)(index);
     const indexFilename = path.join(params.outputDir, 'index.ts');

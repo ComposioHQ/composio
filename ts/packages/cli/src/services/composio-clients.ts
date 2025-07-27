@@ -191,6 +191,33 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               client => client.triggersTypes.retrieveEnum(),
               TriggerTypesResponse
             ),
+          /**
+           * Retrieves a specific trigger type with its payload schema.
+           */
+          retrieve: (slug: string) =>
+            callClient(
+              clientSingleton,
+              client => client.triggersTypes.retrieve(slug),
+              Schema.Struct({
+                slug: Schema.String,
+                name: Schema.String,
+                description: Schema.String,
+                instructions: Schema.optional(Schema.String),
+                toolkit: Schema.Struct({
+                  logo: Schema.String,
+                  slug: Schema.String,
+                  name: Schema.String,
+                }),
+                payload: Schema.Record({
+                  key: Schema.String,
+                  value: Schema.Unknown,
+                }),
+                config: Schema.Record({
+                  key: Schema.String,
+                  value: Schema.Unknown,
+                }),
+              })
+            ),
         },
         cli: {
           /**
@@ -249,6 +276,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           ),
         getTools: () => client.tools.retrieveEnum(),
         getTriggerTypes: () => client.triggersTypes.retrieveEnum(),
+        getTriggerType: (slug: string) => client.triggersTypes.retrieve(slug),
       };
     }),
     dependencies: [ComposioClientLive.Default],
