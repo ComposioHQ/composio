@@ -26,14 +26,14 @@
     "cli": "bun run src/bin.ts",
     "build:bin": "bun run ./scripts/build-binary.ts",
     "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
-    "prebuild": "bun run typecheck",
+    "prebuild": "pnpm run typecheck",
     "build": "tsup",
     "bin": "./dist/composio",
     "test": "vitest run",
-    "prepublishOnly": "bun run build && bun run build:bin",
+    "prepublishOnly": "pnpm run build && pnpm run build:bin",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck": "bun run typecheck:src && bun run typecheck:test"
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
   },
   "keywords": [
     "composio",
