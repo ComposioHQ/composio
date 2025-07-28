@@ -16,6 +16,7 @@ import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { McpServerGetResponse } from './types/mcp.types';
 import { Files } from './models/Files';
+import { getDefaultHeaders, getSessionHeaders } from './utils/session';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -149,17 +150,6 @@ export class Composio<
     }
 
     /**
-     * Initialize the Composio SDK client.
-     * The client is used to make API calls to the Composio API.
-     */
-    this.client = new ComposioClient({
-      apiKey: apiKeyParsed,
-      baseURL: baseURLParsed,
-      defaultHeaders: config?.defaultHeaders,
-      logLevel: COMPOSIO_LOG_LEVEL,
-    });
-
-    /**
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
@@ -172,6 +162,20 @@ export class Composio<
      * Set the default provider, if not provided by the user.
      */
     this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
+
+    const defaultHeaders = getDefaultHeaders(this.config.defaultHeaders, this.provider);
+
+    /**
+     * Initialize the Composio SDK client.
+     * The client is used to make API calls to the Composio API.
+     */
+    this.client = new ComposioClient({
+      apiKey: apiKeyParsed,
+      baseURL: baseURLParsed,
+      defaultHeaders: defaultHeaders,
+      logLevel: COMPOSIO_LOG_LEVEL,
+    });
+
     this.tools = new Tools(this.client, this.provider, {
       autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
     });
@@ -253,9 +257,10 @@ export class Composio<
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
+    const sessionHeaders = getDefaultHeaders(options?.headers, this.provider);
     return new Composio({
       ...this.config,
-      defaultHeaders: options?.headers,
+      defaultHeaders: sessionHeaders,
     });
   }
 }
