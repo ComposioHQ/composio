@@ -606,8 +606,8 @@ importers:
         specifier: 0.1.0-alpha.29
         version: 0.1.0-alpha.29
       '@composio/json-schema-to-zod':
-        specifier: 0.1.10
-        version: 0.1.10
+        specifier: 0.1.11
+        version: 0.1.11
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1159,8 +1159,8 @@ packages:
   '@composio/client@0.1.0-alpha.29':
     resolution: {integrity: sha512-0oI38Kl8LVEK/fFF7rTdvO11uwSWHzavTTUWE/ExnhIoik3wmHse1CRKywb06M+hkLO4+Vdkh46sXbNFs7YZyQ==}
 
-  '@composio/json-schema-to-zod@0.1.10':
-    resolution: {integrity: sha512-U+sdd+/+C6TDXeljXEN7pJ4YjH2Tda8U1S7S0ceXyZt5lF2YQIxE6YYKAdcV0ojUUfL7Mwsmbe8va3rDOud1pA==}
+  '@composio/json-schema-to-zod@0.1.11':
+    resolution: {integrity: sha512-6gcCof9xqLhmmHSCvWLW/E16PKr5C1dWJ9AOk4FJU8JA7gSt8JEdFHBwx80dyprBJdwPF6R54nlkmpXrEwApzg==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7172,7 +7172,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.29': {}
 
-  '@composio/json-schema-to-zod@0.1.10':
+  '@composio/json-schema-to-zod@0.1.11':
     dependencies:
       '@types/json-schema': 7.0.15
       zod: 3.25.67
