@@ -7,6 +7,7 @@ import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 import { TestLiveInput } from 'test/__utils__/services/test-layer';
+import { assertPythonIsValid } from 'test/__utils__/python-compiler';
 
 describe('CLI: composio py generate', () => {
   const appClientData = {
@@ -89,6 +90,15 @@ describe('CLI: composio py generate', () => {
                       pass
               "
             `);
+
+            assertPythonIsValid({ files: { 'gmail.py': gmailSourceCode } });
+            assertPythonIsValid({ files: { 'slack.py': slackSourceCode } });
+            assertPythonIsValid({
+              files: {
+                'gmail.py': gmailSourceCode,
+                'slack.py': slackSourceCode,
+              },
+            });
           })
       );
 
@@ -275,6 +285,15 @@ describe('CLI: composio py generate', () => {
                       pass
               "
             `);
+
+          assertPythonIsValid({ files: { 'gmail.py': gmailSourceCode } });
+          assertPythonIsValid({ files: { 'slack.py': slackSourceCode } });
+          assertPythonIsValid({
+            files: {
+              'gmail.py': gmailSourceCode,
+              'slack.py': slackSourceCode,
+            },
+          });
         })
       );
     });

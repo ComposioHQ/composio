@@ -3,6 +3,7 @@ import { generatePythonToolkitSources } from 'src/generation/python/generate-too
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { BANNER } from 'src/generation/constants';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
+import { assertPythonIsValid } from 'test/__utils__/python-compiler';
 import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 
 describe('generatePythonToolkitSources', () => {
@@ -51,6 +52,8 @@ describe('generatePythonToolkitSources', () => {
               pass
       "
     `);
+
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
   });
 
   it('[Given] toolkits with tools and triggerTypes [Then] it returns a Python source file for each toolkit', () => {
@@ -247,5 +250,7 @@ describe('generatePythonToolkitSources', () => {
               pass
       "
     `);
+
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
   });
 });

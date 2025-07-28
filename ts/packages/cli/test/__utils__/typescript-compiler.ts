@@ -1,9 +1,7 @@
-import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { Effect, Stream, String } from 'effect';
 import { Command } from '@effect/platform';
 import ts from 'typescript';
-import { cwd } from 'node:process';
 
 interface AssertTypeScriptIsValidInput {
   files: {
