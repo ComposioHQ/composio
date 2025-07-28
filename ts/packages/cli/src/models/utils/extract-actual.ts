@@ -1,13 +1,15 @@
 import type { ParseIssue } from 'effect/ParseResult';
+import { inspect } from 'node:util';
 
 export function extractActual({ actual }: ParseIssue, cap = 50) {
-  // Cap the length of the actual value to 30 characters
-  let str = undefined;
+  // Cap the length of the actual value to 50 characters
+  let str: string;
 
   if (typeof actual === 'object') {
-    str = JSON.stringify(actual);
+    str = inspect(actual, { depth: 2 });
+  } else {
+    str = String(actual);
   }
 
-  str = String(actual);
   return str.slice(0, cap) + (str.length > cap ? '...' : '');
 }
