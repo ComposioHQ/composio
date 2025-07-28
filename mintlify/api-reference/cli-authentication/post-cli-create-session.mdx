@@ -1,0 +1,110 @@
+---
+title: "Create a new CLI session with auth code"
+api: POST https://backend.composio.dev/api/v3/cli/create-session
+description: "Generates a new CLI session with a random 6-character code. This endpoint is the first step in the CLI authentication flow, creating a session that can later be linked to a user account. The generated code is displayed to the user in the CLI and should be entered in the web interface to complete authentication."
+contentType: "application/json"
+---
+
+
+### Headers
+
+<ParamField header="x-api-key" type="string" required />
+
+### Response
+
+CLI session created successfully with a unique ID and temporary authentication code
+
+<ResponseField name="id" type="string">
+Unique identifier for the CLI session. UUID v4 format used for tracking and retrieval.
+</ResponseField>
+
+<ResponseField name="code" type="string">
+The 6-character hexadecimal code used for CLI login
+
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+The ISO timestamp when the session expires
+</ResponseField>
+
+<ResponseField name="status" type="enum">
+The current status of the session
+
+Allowed values: `pending` `linked`
+</ResponseField>
+
+### Errors
+
+<AccordionGroup>
+
+  <Accordion title="400" description="Post CLI Create Session Request Bad Request Error" color="red">
+
+    Bad request - Invalid parameters or malformed request
+
+    <ResponseField name="error" type="object">
+      <Expandable title="6 properties">
+
+      <ResponseField name="message" type="string"/>
+
+      <ResponseField name="code" type="double"/>
+
+      <ResponseField name="status" type="double"/>
+
+      <ResponseField name="request_id" type="string"  />
+
+      <ResponseField name="suggested_fix" type="string"  />
+
+      <ResponseField name="errors" type="string[]"  />
+      </Expandable>
+    </ResponseField>
+  </Accordion>
+<Accordion title="500" description="Post CLI Create Session Request Internal Server Error">
+Internal server error - Failed to create CLI session due to server-side issue
+
+<ResponseField name="error" type="object">
+<Expandable title="6 properties">
+
+<ResponseField name="message" type="string"/>
+
+<ResponseField name="code" type="double"/>
+
+<ResponseField name="status" type="double"/>
+
+<ResponseField name="request_id" type="string"  />
+
+<ResponseField name="suggested_fix" type="string"  />
+
+<ResponseField name="errors" type="string[]"  />
+</Expandable>
+</ResponseField>
+</Accordion>
+</AccordionGroup>
+
+<ResponseExample>
+```json 201 created
+{
+  "id": "id",
+  "code": "ABC123",
+  "expiresAt": "2023-01-01T12:00:00.000Z",
+  "status": "pending"
+}
+```
+```json 400 Post CLI Create Session Request Bad Request Error
+{
+  "error": {
+    "message": "message",
+    "code": 1.1,
+    "status": 1.1
+  }
+}
+```
+```json 500 Post CLI Create Session Request Internal Server Error
+{
+  "error": {
+    "message": "message",
+    "code": 1.1,
+    "status": 1.1
+  }
+}
+```
+</ResponseExample>

@@ -1,0 +1,83 @@
+---
+title: "Introduction"
+---
+
+<Card title="Our next generation of SDK are now available in preview. Try them out now!" icon="sparkles" href="https://v3.docs.composio.dev" iconType="solid">
+  🎉 Our next generation of SDK are now available in preview. Try them out now!
+</Card>
+
+Composio is an integration and tooling platform built for AI agents and LLM applications that lets you:
+
+* Add tool-use capabilities to your AI agent from [300+ apps](https://v1.docs.composio.dev/tools/).
+* Give agents [authenticated access to tools](https://v1.docs.composio.dev/auth/introduction).
+* [Listen and trigger](https://v1.docs.composio.dev/triggers/using-triggers) agents and workflows from external events (e.g., new Slack message, GitHub issue).
+* [Customize tools](https://v1.docs.composio.dev/tool-calling/customizing-tools) for proprietary APIs or specific functions.
+* Seamlessly integrate tool-calling into frameworks like OpenAI Agents, Vercel AI, LangChain, etc.
+* Refine tool interactions with [input/output processing](https://v1.docs.composio.dev/tool-calling/processing-tools) for greater reliability.
+
+You get to connect your AI agents faster without wrestling with individual API integrations and managing their authentication or converting them into LLM tool calls.
+
+We also optimise the tool calls for you for maximum accuracy, free of cost! 😉
+
+## Getting started
+
+The fastest way to give your agent tools is with Composio â€” often with **zero setup** needed on your part. Just:
+
+<Steps>
+<Step title="Install the core SDK (and a framework helper if needed):">
+
+   <CodeGroup>
+     ```bash Python
+     pip install composio_core composio_openai # Example for OpenAI
+     ```
+
+     ```bash TypeScript
+     npm install composio-core
+     ```
+   </CodeGroup>
+</Step>
+
+<Step title="Login and get your API key">
+   ```bash
+   composio login
+   ```
+   *(Ensure `COMPOSIO_API_KEY` is set as an environment variable)*
+</Step>
+
+<Step title="Connect your first app (e.g., GitHub):">
+   ```bash
+   composio add github
+   ```
+
+...and you're ready to integrate tools. Here's what you can do next:
+</Step>
+</Steps>
+
+* Head to the [quickstart](/v1/getting-started/quickstart) guide to learn more.
+* Browse our [tools](https://v1.docs.composio.dev/tools) to see what you can integrate with.
+
+## Framework Integrations
+
+Here are some popular frameworks that Composio supports:
+
+<CardGroup cols={2}>
+  <Card title="OpenAI" icon="sparkles" href="/v1/getting-started/model-providers/openai">
+    Add 250+ tools to your Assistants API with automatic authentication handling and real-time function execution.
+  </Card>
+
+  <Card title="Vercel AI SDK" icon="code-branch" href="https://v1.docs.composio.dev/frameworks/vercel">
+    Turn your Vercel AI SDK agents into powerful workflows that interact with external services without managing API connections.
+  </Card>
+
+  <Card title="LangChain" icon="link-simple" href="https://v1.docs.composio.dev/frameworks/langchain">
+    Turn your LangChain agents into powerful workflows that interact with external services without managing API connections.
+  </Card>
+
+  <Card title="CrewAI" icon="users" href="https://v1.docs.composio.dev/frameworks/crewai">
+    Build specialized CrewAI agent teams that collaborate using external tools and data sources to accomplish complex tasks.
+  </Card>
+</CardGroup>
+
+<Card title="All Frameworks" icon="code-branch" href="https://v1.docs.composio.dev/frameworks">
+  Check out all the frameworks.
+</Card>

@@ -1,0 +1,98 @@
+---
+title: "OpenAI Providers"
+description: "The OpenAI Provider is the default provider for the Composio SDK. It transforms Composio tools into a format compatible with OpenAI's function calling capabilities through both the Responses and Chat Completion APIs."
+---
+
+
+## Setup
+
+By default, the OpenAI Provider is installed when you install the Composio SDK. You can also install it manually:
+
+<CodeGroup>
+  ```bash title="Python" for="python"
+  pip install composio_openai==0.8.0
+  ```
+
+  ```bash title="TypeScript" for="typescript"
+  npm install @composio/openai
+  ```
+</CodeGroup>
+
+The OpenAI Provider is used by default when you initialize the Composio SDK but you can explicitly specify it.
+
+<CodeGroup>
+  ```python Python lines
+  from openai import OpenAI
+  from composio import Composio
+  from composio_openai import OpenAIProvider
+
+  # Initialize Composio client with OpenAI Provider
+  composio = Composio(provider=OpenAIProvider())
+  openai = OpenAI()
+
+  ```
+
+  ```typescript TypeScript lines
+  import { Composio } from '@composio/core';
+  import { OpenAIResponsesProvider, OpenAIProvider } from '@composio/openai';
+  import { OpenAI } from 'openai';
+
+  // Initialise Composio client with the OpenAI provider.
+  const composioForResponses = new Composio({ provider: new OpenAIResponsesProvider() });
+  const openai = new OpenAI();
+  ```
+</CodeGroup>
+
+## Chat Completion API
+
+Chat Completion API is the industry standard for building LLM-powered applications. Chat completions are also adopted and used by many other LLM providers apart from OpenAI.
+
+<CodeGroup>
+  ```python Python lines
+  user_id = "user@acme.org"
+  tools = composio.tools.get(user_id=user_id, toolkits=["HACKERNEWS"])
+
+  response = openai.chat.completions.create(
+      model="gpt-4.1",
+      tools=tools,
+      messages=[
+          {"role": "user", "content": "What's the latest Hackernews post about?"},
+      ],
+  )
+
+  # Execute the function calls.
+  result = composio.provider.handle_tool_calls(response=response, user_id=user_id)
+  print(result)
+  # will return the raw response from the HACKERNEWS API.
+  ```
+
+  ```typescript TypeScript lines
+  const composioForCompletions = new Composio({ provider: new OpenAIProvider() });
+  const toolsForCompletions = await composioForCompletions.tools.get(userId, {
+    toolkits: ['HACKERNEWS'],
+  });
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'user',
+        content: 'What is the latest hackernews post about?',
+      },
+    ],
+    tools: toolsForCompletions,
+  });
+
+  const newResult = await composioForCompletions.provider.handleToolCalls(userId, completion);
+
+  console.log(JSON.stringify(newResult, null, 2));
+  // will return the raw response from the HACKERNEWS API.
+  ```
+</CodeGroup>
+
+## Modifiers
+
+Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
+
+OpenAI provider modifiers are the standard framework modifiers.
+Read more here: [Framework Modifiers](/docs/modifiers/schema-modifiers)

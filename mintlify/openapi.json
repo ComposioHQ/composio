@@ -1,0 +1,804 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MCP Server API",
+    "version": "0.1.0",
+    "description": "API documentation for the MCP Server"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current environment"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    },
+    {
+      "CookieAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key authentication"
+      },
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "authToken",
+        "description": "Cookie based authentication"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "number"
+              },
+              "status": {
+                "type": "number"
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "suggested_fix": {
+                "type": "string"
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "message",
+              "code",
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "description": "Returns the health status of the MCP Server",
+        "tags": [
+          "MCP"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful health check response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The status of the service"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "The current timestamp"
+                    },
+                    "version": {
+                      "type": "string",
+                      "description": "The version of the service"
+                    },
+                    "service": {
+                      "type": "string",
+                      "description": "The name of the service"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "version",
+                    "service"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps/{appKey}/install": {
+      "post": {
+        "operationId": "installApp",
+        "description": "Install an app with the specified app key",
+        "tags": [
+          "MCP"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The app key"
+            },
+            "required": true,
+            "description": "The app key",
+            "name": "appKey",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "framework": {
+                    "type": "string",
+                    "description": "The framework being used as MCP Client."
+                  },
+                  "partner": {
+                    "type": "string",
+                    "default": "composio",
+                    "description": "The partner initiating the installation."
+                  }
+                },
+                "required": [
+                  "framework"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful installation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "installs": {
+                      "type": "number",
+                      "description": "Number of installations"
+                    }
+                  },
+                  "required": [
+                    "installs"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps": {
+      "get": {
+        "operationId": "getApps",
+        "description": "Returns a list of all available apps",
+        "tags": [
+          "MCP"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of apps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "App ID"
+                      },
+                      "key": {
+                        "type": "string",
+                        "description": "App key"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "App name"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "App description"
+                      },
+                      "category": {
+                        "type": "string",
+                        "description": "App category"
+                      },
+                      "icon": {
+                        "type": "string",
+                        "description": "App icon URL"
+                      },
+                      "isActive": {
+                        "type": "boolean",
+                        "description": "Whether the app is active"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "App status"
+                      },
+                      "usageCount": {
+                        "type": "number",
+                        "description": "Number of times the app has been used"
+                      },
+                      "integrations": {
+                        "type": "array",
+                        "items": {
+                          "nullable": true
+                        },
+                        "description": "App integrations"
+                      },
+                      "platform": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Platforms the app is available on"
+                      },
+                      "popular": {
+                        "type": "boolean",
+                        "description": "Whether the app is popular"
+                      },
+                      "popularityMetric": {
+                        "type": "number",
+                        "description": "App popularity metric"
+                      },
+                      "enabled": {
+                        "type": "boolean",
+                        "description": "Whether the app is enabled"
+                      },
+                      "meta": {
+                        "type": "object",
+                        "properties": {
+                          "description": {
+                            "type": "string",
+                            "description": "App description"
+                          },
+                          "categories": {
+                            "type": "array",
+                            "items": {
+                              "nullable": true
+                            },
+                            "description": "App categories"
+                          },
+                          "logo": {
+                            "type": "string",
+                            "description": "App logo URL"
+                          }
+                        },
+                        "required": [
+                          "description",
+                          "categories",
+                          "logo"
+                        ],
+                        "description": "App metadata"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "key",
+                      "name",
+                      "description",
+                      "category",
+                      "icon",
+                      "isActive",
+                      "status",
+                      "usageCount",
+                      "integrations",
+                      "platform",
+                      "popular",
+                      "popularityMetric",
+                      "enabled",
+                      "meta"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/partner/:partnerSlug/apps/list": {
+      "get": {
+        "operationId": "listPartnerApps",
+        "description": "Returns the list of apps available for a partner",
+        "parameters": [
+          {
+            "name": "partnerSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The partner slug"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "default": 1,
+              "description": "Page number (starts from 1)"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "description": "Number of items per page"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Filter by category name"
+            }
+          },
+          {
+            "name": "search_term",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Search term to filter apps by name or description"
+            }
+          }
+        ],
+        "tags": [
+          "MCP"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of apps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string",
+                            "description": "The app slug"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The app name"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "The app description"
+                          },
+                          "category": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The app category"
+                          },
+                          "logo": {
+                            "type": "string",
+                            "description": "The app logo"
+                          },
+                          "mcp_url": {
+                            "type": "string",
+                            "description": "The app MCP URL"
+                          },
+                          "tool_count": {
+                            "type": "number",
+                            "description": "The number of tools available for the app"
+                          }
+                        },
+                        "required": [
+                          "slug",
+                          "name",
+                          "category",
+                          "mcp_url",
+                          "tool_count"
+                        ]
+                      }
+                    },
+                    "page": {
+                      "type": "number",
+                      "description": "Current page number"
+                    },
+                    "limit": {
+                      "type": "number",
+                      "description": "Number of items per page"
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total number of items"
+                    },
+                    "totalPages": {
+                      "type": "number",
+                      "description": "Total number of pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "page",
+                    "limit",
+                    "total",
+                    "totalPages"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The query parameters may be invalid or in an incorrect format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error. An unexpected error occurred while processing the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps/{appKey}/tools/list": {
+      "get": {
+        "operationId": "getToolsForApp",
+        "description": "Returns the list of tools for a specific app",
+        "query": {
+          "_def": {
+            "unknownKeys": "strip",
+            "catchall": {
+              "_def": {
+                "typeName": "ZodNever"
+              },
+              "~standard": {
+                "version": 1,
+                "vendor": "zod"
+              }
+            },
+            "typeName": "ZodObject"
+          },
+          "~standard": {
+            "version": 1,
+            "vendor": "zod"
+          },
+          "_cached": null
+        },
+        "tags": [
+          "MCP"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "appKey",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful tools list response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps/{appKey}": {
+      "get": {
+        "operationId": "getSingleApp",
+        "description": "Returns details for a specific app",
+        "query": {
+          "_def": {
+            "unknownKeys": "strip",
+            "catchall": {
+              "_def": {
+                "typeName": "ZodNever"
+              },
+              "~standard": {
+                "version": 1,
+                "vendor": "zod"
+              }
+            },
+            "typeName": "ZodObject"
+          },
+          "~standard": {
+            "version": 1,
+            "vendor": "zod"
+          },
+          "_cached": null
+        },
+        "tags": [
+          "MCP"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The app key"
+            },
+            "required": true,
+            "description": "The app key",
+            "name": "appKey",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Single app details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "description"
+                            ]
+                          }
+                        },
+                        "sseUrl": {
+                          "type": "string"
+                        },
+                        "typescriptCode": {
+                          "type": "string"
+                        },
+                        "pythonCode": {
+                          "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "totalDownloads": {
+                              "type": "string"
+                            },
+                            "activeUsers": {
+                              "type": "string"
+                            },
+                            "latestVersion": {
+                              "type": "string"
+                            },
+                            "lastUpdated": {
+                              "type": "string"
+                            },
+                            "tempDisabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "totalDownloads",
+                            "activeUsers",
+                            "latestVersion",
+                            "lastUpdated"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "slug",
+                        "actions",
+                        "sseUrl",
+                        "typescriptCode",
+                        "pythonCode",
+                        "metadata"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "App not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

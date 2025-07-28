@@ -1,0 +1,13 @@
+<svg width="100%" height="100%" viewBox="0 0 7680 4320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E6E4F9" />
+      <stop offset="25%" stop-color="#C4B5F7" />
+      <stop offset="50%" stop-color="#9C8CE2" />
+      <stop offset="75%" stop-color="#6549C5" />
+      <stop offset="90%" stop-color="#3D2791" />
+      <stop offset="100%" stop-color="#1A0B4A" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#purpleGradient)" />
+</svg>

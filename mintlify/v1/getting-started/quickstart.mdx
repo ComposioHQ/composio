@@ -1,0 +1,174 @@
+---
+title: "Quickstart"
+description: "Execute your first tool from Composio"
+---
+
+This guide demonstrates a core Composio feature, executing authenticated tool calls without wrapping complex API calls into LLM tools yourself.
+
+We'll connect to GitHub and fetch your username using a simple script.
+
+## Setup
+
+First, let's get your environment ready. You only need to do this once.
+
+This command will open a browser window for you to authenticate and generate your API key.
+
+
+```bash
+composio login
+```
+
+
+<Tip>
+  Make sure to set the retrieved `COMPOSIO_API_KEY` as an environment variable in your development environment (e.g., in a `.env` file or by exporting it). Also, if you can't run the `composio login` command, you can set the `COMPOSIO_API_KEY` environment variable manually.
+</Tip>
+
+Composio handles the OAuth flow. This command links your GitHub account to your default Composio Entity (user profile).
+
+
+  ```bash
+  composio add github
+  ```
+
+
+Follow the prompts in your terminal and browser to authorize Composio.
+
+<CodeGroup>
+  ```python Python lines
+  from composio_openai import ComposioToolSet, Action
+  from openai import OpenAI
+
+  # Initialize Composio ToolSet
+  # It automatically picks up COMPOSIO_API_KEY from env vars
+  # Uses the 'default' entity_id if not specified
+  toolset = ComposioToolSet()
+  client = OpenAI()
+  ```
+
+  ```typescript TypeScript lines
+  import { OpenAIToolSet } from "composio-core";
+  import { OpenAI } from "openai";
+
+  // Initialize Composio ToolSet
+  // It automatically picks up COMPOSIO_API_KEY from env vars
+  // Uses the 'default' entity_id if not specified
+  const toolset = new OpenAIToolSet();
+  const client = new OpenAI();
+  ```
+</CodeGroup>
+
+With setup done, let's write the code.
+
+## Tool-calling with Composio
+
+The code below shows how to give tools to an LLM and letting Composio handle the execution when the LLM decides to use a tool.
+
+<CodeGroup>
+  ```python Python lines
+  # Directly execute the action to get the authenticated user's info
+  # Composio uses the connection linked via 'composio add github'
+  tools = toolset.get_tools(actions=[Action.GITHUB_GET_THE_AUTHENTICATED_USER])
+
+  task = "Get my GitHub username."
+  messages = [
+      {"role": "system", "content": "You are a helpful assistant that can use tools."},
+      {"role": "user", "content": task},
+  ]
+
+  response = client.chat.completions.create(
+      model="gpt-4o-mini", # Or another capable model
+      messages=messages,
+      tools=tools,    # The tools we prepared earlier
+      tool_choice="auto", # Let the LLM decide whether to use a tool
+  )
+
+  result = toolset.handle_tool_calls(response)
+
+  print(result)
+  ```
+
+  ```typescript TypeScript lines
+  const tools = await toolset.getTools({ actions: ["GITHUB_GET_THE_AUTHENTICATED_USER"]})
+  const task = "Get my GitHub username."
+  const messages = [
+      {"role": "system", "content": "You are a helpful assistant that can use tools."},
+      {"role": "user", "content": task},
+  ]
+
+  const response = await client.chat.completions.create({
+      model: "gpt-4o-mini", // Or another capable model
+      messages: messages,
+      tools: tools,   // The tools we prepared earlier
+      tool_choice: "auto", // Let the LLM decide whether to use a tool
+  });
+
+
+  const result = await toolset.handleToolCall(response);
+
+  console.log(result);
+  ```
+</CodeGroup>
+
+After running the script, you should see your GitHub username printed!
+
+## What just happened?
+
+1. **Tool Discovery**: You asked Composio for tools (toolset.get\_tools). Composio provided LLM-ready definitions for GitHub actions.
+2. **LLM Reasoning**: The LLM received your task ("Get my GitHub username") and the available tools. It determined the `GITHUB_GET_THE_AUTHENTICATED_USER` tool was appropriate.
+3. **Tool Request**: The LLM responded asking to call that specific tool.
+4. **Composio Execution**: `toolset.handle_tool_calls` intercepted this request. It found your linked GitHub credentials, made the actual API call, and returned the result.
+
+You focused on the prompt and handling the final outcome, while Composio managed the tool schemas, authentication, and API interaction.
+
+<Accordion title="Full Code">
+  <CodeGroup>
+    ```python Python lines
+    from composio_openai import ComposioToolSet, Action
+    from openai import OpenAI
+
+    toolset = ComposioToolSet()
+    client = OpenAI()
+
+    tools = toolset.get_tools(actions=[Action.GITHUB_GET_THE_AUTHENTICATED_USER])
+    task = "Get my GitHub username."
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that can use tools."},
+        {"role": "user", "content": task},
+    ]
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        tools=tools,
+        tool_choice="auto",
+    )
+    result = toolset.handle_tool_calls(response)
+    print(result)
+    ```
+
+    ```typescript TypeScript lines
+    import { OpenAIToolSet } from "composio-core";
+    import { OpenAI } from "openai";
+
+    // Initialize Composio ToolSet
+    // It automatically picks up COMPOSIO_API_KEY from env vars
+    // Uses the 'default' entity_id if not specified
+    const toolset = new OpenAIToolSet();
+    const client = new OpenAI();
+
+    const tools = await toolset.getTools({ actions: ["GITHUB_GET_THE_AUTHENTICATED_USER"]})
+    const task = "Get my GitHub username."
+    const messages = [
+        {"role": "system", "content": "You are a helpful assistant that can use tools."},
+        {"role": "user", "content": task},
+    ]
+    const response = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: messages,
+        tools: tools,
+        tool_choice: "auto",
+    });
+    const result = await toolset.handleToolCall(response);
+    console.log(result);
+    ```
+  </CodeGroup>
+</Accordion>

@@ -1,0 +1,321 @@
+---
+title: "Using Triggers"
+description: "Send payloads to your AI agents or systems based on events in apps."
+---
+
+Triggers act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your apps.
+
+When these events take place, triggers capture relevant information and deliver structured payloads directly to your system, letting you build agents that respond proactively.
+
+<Frame caption="Triggers through Composio">
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Ftriggers.png&w=2048&q=75" alt="Triggers Overview" />
+</Frame>
+
+<Tip>
+  ### Prerequisites
+
+  Before proceeding, ensure you've created an [auth config](/docs/authenticating-tools#creating-an-auth-config) and [established a connection](/docs/authenticating-tools#connecting-to-an-oauth-toolkit) to an app (e.g., Slack, GitHub).
+</Tip>
+
+## Creating a trigger
+
+Head to any app that supports triggers, such as [Slack](https://app.composio.dev/app/slack) in the dashboard and enable the trigger of choice.
+
+<Tabs>
+  <Tab title="Dashboard">
+    <Frame className="mb-4">
+    <video
+      controls
+      className="w-full h-auto"
+      src="https://files.buildwithfern.com/v3composio.docs.buildwithfern.com/2025-07-24T17:44:39.023Z/assets/videos/enabling-triggers.mp4"
+    >
+      Your browser does not support the video tag.
+    </video>
+    </Frame>
+    <br/>
+    <Frame caption="Triggers page" className="mb-4">
+      <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Fmanage-triggers.png&w=3840&q=75" />
+    </Frame>
+
+    In some cases, triggers require certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
+
+    The dashboard will show you the trigger configuration to fill in.
+
+    <Frame caption="Trigger configuration">
+      <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Ftrigger-config.png&w=640&q=75" />
+    </Frame>
+  </Tab>
+
+  <Tab title="SDK">
+    You can also create triggers programmatically using the SDK. To get started, first view the required configuration for creating a trigger:
+
+    <CodeGroup>
+      ```python Python highlight={10} lines
+      from composio import Composio
+
+      composio = Composio()
+
+      user_id = "user@example.com"
+
+      trigger = composio.triggers.create(
+          slug="GITHUB_COMMIT_EVENT",
+          user_id=user_id,
+          trigger_config={"repo": "composiohq", "owner": "composio"},
+      )
+      print(trigger)
+      ```
+
+      ```typescript TypeScript highlight={8-11} lines
+      import { Composio } from '@composio/core';
+
+      const composio = new Composio();
+      const userId = 'user@acme.com';
+
+      // Create the trigger
+      const createResponse = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+        triggerConfig: {
+          owner: 'composiohq',
+          repo: 'composio',
+        },
+      });
+      console.log(createResponse);
+      ```
+    </CodeGroup>
+
+    Most triggers require certain configuration to send the correct events. For example, `GITHUB_COMMIT_EVENT` requires you to specify the repository and owner.
+
+    **Fetch required trigger configuration**
+
+    <CodeGroup>
+      ```python Python expandable lines
+
+      trigger_config = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+      print(trigger_config.config)
+      ### Trigger Config
+      # {
+      #     "properties": {
+      #         "owner": {
+      #             "description": "Owner of the repository",
+      #             "title": "Owner",
+      #             "type": "string"
+      #         },
+      #         "repo": {
+      #             "description": "Repository name",
+      #             "title": "Repo",
+      #             "type": "string"
+      #         }
+      #     },
+      #     "required": ["owner", "repo"],
+      #     "title": "WebhookConfigSchema",
+      #     "type": "object"
+      ```
+
+    ```typescript TypeScript title="TypeScript" maxLines=40
+
+    // Create the trigger
+    const createResponse = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+      triggerConfig: {
+        owner: 'composiohq',
+        repo: 'composio',
+      },
+    });
+    console.log(createResponse);
+
+
+    // Fetch the trigger details
+    const triggerType = await composio.triggers.getType("GITHUB_STAR_ADDED_EVENT");
+    console.log(triggerType.config)
+    /*--- Trigger config ---
+    {
+        "properties": {
+          "owner": {
+            "description": "Owner of the repository",
+            "title": "Owner",
+            "type": "string"
+          },
+          "repo": {
+            "description": "Repository name",
+            "title": "Repo",
+    ```
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+The [triggers page](https://app.composio.dev/active_triggers?page=1) will show you all the triggers that are enabled for your account.
+
+## Subscribing to triggers
+
+The typical and recommended way to subscribe to triggers is through webhooks.
+
+To receive trigger events via webhooks, you need to configure a publicly accessible URL where Composio can send the event payloads. This URL should point to an endpoint in your application that can process incoming webhook requests.
+
+<Tip>
+  ### Use ngrok/webhook.site for local dev!
+
+  During development, you can use ngrok/webhook.site or other services to expose your local server to the internet.
+</Tip>
+
+<Frame caption="Webhook setup">
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Fsetup-webhook.png&w=3840&q=75" alt="Webhook setup" />
+</Frame>
+
+Below are some examples of how to listen in on trigger events for a FastAPI/Next.js application.
+
+<CodeGroup>
+  ```python Python expandable lines
+  from fastapi import FastAPI, Request
+  from typing import Dict, Any
+  import uvicorn
+  import json
+
+  app = FastAPI(title="Webhook Demo")
+
+  @app.post("/webhook")
+  async def webhook_handler(request: Request):
+      # Get the raw payload
+      payload = await request.json()
+
+      # Log the received webhook data
+      print("Received webhook payload:")
+      print(json.dumps(payload, indent=2))
+
+      # Return a success response
+      return {"status": "success", "message": "Webhook received"}
+
+  if __name__ == "__main__":
+      uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+  ```
+
+  ```typescript TypeScript expandable lines
+  import type { NextApiRequest, NextApiResponse } from 'next';
+
+  export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+      // Only allow POST requests
+      if (req.method !== 'POST') {
+          return res.status(405).json({
+              status: 'error',
+              message: 'Method not allowed. Only POST requests are accepted.'
+          });
+      }
+
+      try {
+          const payload = req.body;
+
+          console.log('Received webhook payload:');
+          console.log(JSON.stringify(payload, null, 2));
+
+          // Process your webhook payload here
+          // Add your webhook handling logic
+
+          res.status(200).json({
+              status: 'success',
+              message: 'Webhook received and processed successfully'
+          });
+      } catch (error) {
+          console.error('Error processing webhook:', error);
+          res.status(500).json({
+              status: 'error',
+              message: 'Internal server error while processing webhook'
+          });
+      }
+  }
+
+  ```
+</CodeGroup>
+
+## Trigger payload types
+
+When subscribing to triggers, it is helpful to know the payload type received from the trigger. You can inspect the payload type by fetching the trigger type.
+
+<CodeGroup>
+  ```python Python lines
+  # Get a trigger by id
+  trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+  print(trigger.payload)
+  ```
+
+  ```typescript TypeScript lines
+  const triggerType = await composio.triggers.getType("GITHUB_COMMIT_EVENT");
+
+  console.log(triggerType.payload);
+  ```
+</CodeGroup>
+
+## Prototyping triggers during development
+
+During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
+
+You subscribe to multiple trigger events by configuring the filters. When you specify multiple filters, ALL of them must match for the trigger to be subscribed to.
+
+This method uses WebSocket to subscribe to the trigger.
+
+<CodeGroup>
+  ```python Python lines wrap
+  user_id = "user@email.com"
+
+  # Subscribe to a trigger
+  subscription = composio.triggers.subscribe()
+
+  # Define a handler
+  @subscription.handle(toolkit="GITHUB", user_id=user_id)
+  def handle_github_event(data):
+      print(data)
+  ```
+
+  ```typescript TypeScript lines wrap
+  await composio.triggers.subscribe(
+    triggerData => {
+      console.log('Received trigger:', triggerData);
+    },
+    {
+      triggerId: 'ti_So9EQf8XnAcy',
+      // userId: 'user@acme.com',
+      // toolkits: ['github', 'slack'],
+      // triggerSlug: ["GITHUB_STAR_ADDED_EVENT"]
+      // authConfigId: "ac_1234567890"
+    }
+  )
+  ```
+</CodeGroup>
+
+## Enabling/Disabling triggers
+
+In cases where the trigger isn't required for the system, it can be disabled.
+
+<CodeGroup>
+  ```python Python lines wrap
+  # Disable a trigger instance
+  disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+  print(disabled_instance)
+  ```
+
+  ```typescript TypeScript lines
+  await composio.triggers.disable("ti_abcd123");
+  ```
+</CodeGroup>
+
+If needed, the trigger can be enabled again.
+
+<CodeGroup>
+  ```python Python lines wrap
+  # Enable a trigger instance
+  enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+  print(enabled_instance)
+  ```
+
+  ```typescript TypeScript lines
+  await composio.triggers.enable("ti_abcd123");
+  ```
+</CodeGroup>
+
+## Troubleshooting
+
+If you encounter issues with triggers or webhook listeners, you can use the Composio dashboard to inspect detailed trigger logs. The dashboard allows you to review event payloads, identify errors, and manually resend events for testing purposes.
+
+Access the trigger logs [here](https://app.composio.dev/trigger_logs).
+
+<Frame caption="Trigger logs">
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Ftrigger-debug.png&w=3840&q=75" alt="Trigger logs" />
+</Frame>

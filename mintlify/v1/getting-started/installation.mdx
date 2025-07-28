@@ -1,0 +1,80 @@
+---
+title: "Installation"
+description: "Composio provides Python and TypeScript SDKs as well as plugins with other LLM frameworks like CrewAI, LangChain, AutoGen."
+---
+
+## Install the SDK
+
+<Tabs>
+  <Tab title="Python">
+    Before installing the SDK, ensure you have Python 3.8+.
+
+    <Steps>
+      <Step title="Install Composio">
+        <CodeGroup>
+          ```pip pip
+          pip install composio_core composio_openai
+          ```
+
+          ```uv uv
+          uv add composio_core composio_openai
+          ```
+        </CodeGroup>
+      </Step>
+
+      <Step title="Install the relevant plugin">
+        Depending on what LLM framework you're using, you'll need to install the relevant plugin.
+
+        <CodeGroup>
+          ```pip pip
+          pip install composio_crewai      # For CrewAI
+          pip install composio_langchain   # For LangChain
+          ```
+
+          ```uv uv
+          uv add composio_crewai      # For CrewAI
+          uv add composio_langchain   # For LangChain
+          ```
+        </CodeGroup>
+      </Step>
+
+      <Step title="Post Installation">
+        On new installations, you'll need to generate the SDK types. If you encounter errors related to missing "metadata," it likely means you need to update your types.
+
+        ```bash
+        composio apps generate-types
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="TypeScript">
+    Before installing the SDK, ensure you have NodeJS 16+.
+
+    <Steps>
+      <Step title="Install Composio">
+        <CodeGroup>
+          ```npm npm
+          npm install composio-core
+          ```
+
+          ```pnpm pnpm
+          pnpm add composio-core
+          ```
+
+          ```bun bun
+          bun add composio-core
+          ```
+        </CodeGroup>
+      </Step>
+
+      <Step title="Plugins">
+        The TS package comes installed with support for frameworks like:
+
+        * [OpenAI](https://docs.composio.dev/docs/model-providers/openai)
+        * [Vercel AI SDK](https://docs.composio.dev/docs/frameworks/vercel)
+        * [LangGraph](https://docs.composio.dev/docs/frameworks/langgraph)
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>

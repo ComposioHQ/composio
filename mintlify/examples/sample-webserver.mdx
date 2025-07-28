@@ -1,0 +1,166 @@
+---
+title: "A basic web server"
+description: "This tutorial shows you a minimal example of a web server that can use Composio."
+sidebarTitle: "Basic Hono Server"
+---
+
+
+
+### Install dependencies
+
+Using `bun` for this example, it is super convenient for rapid prototyping.
+
+```bash
+bun install @composio/core openai hono
+```
+
+Please set the following environment variables:
+
+```bash
+# .env
+COMPOSIO_API_KEY=your_api_key
+OPENAI_API_KEY=your_api_key
+```
+
+The full source code is available [here](https://github.com/ComposioHQ/composio/blob/next/fern/pages/examples/src/sample-webserver/index.ts).
+
+In this tutorial, we will create an auth config, initiate a connection, and send an email.
+
+### Setup
+
+Basic scaffolding for the server.
+
+```typescript Setup lines highlight={9}
+import { Hono } from 'hono';
+import { Composio } from '@composio/core';
+import OpenAI from 'openai';
+
+const app = new Hono();
+
+// reads COMPOSIO_API_KEY from the environment variables
+// uses OpenAI by default
+const composio = new Composio();
+```
+
+### Auth Configs
+
+These are configurations for tools that control how they are authorized, the scopes, and permissions they have. You can learn more about them [here](/docs/authenticating-tools).
+
+For this example, we will create a basic GMAIL auth config.
+
+You are recommended to store these config IDs, so that you can reuse them later.
+
+```typescript Auth Configs lines
+
+// this should be made once and stored in a database
+// const authConfigId = (await composio.authConfigs.create('GMAIL')).id;
+const authConfigId = 'ac_DUMMY';
+
+```
+
+### Initiating a connection
+
+Connections are your users authorizing your tools.
+
+Here we start the connection process. Once your user uses the `redirectUrl` from the response,
+they will be redirected to the auth flow.
+Once they have authorized the connection, you can use the `id` to get and execute the tools as the user.
+
+```typescript Initiating a connection lines highlight={4}
+app.post('/create-connection', async c => {
+  const { userId } = await c.req.json();
+
+  const connection = await composio.connectedAccounts.initiate(userId, authConfigId);
+
+  return c.json({
+    id: connection.id,
+    // for the user to authorize the connection
+    redirectUrl: connection.redirectUrl,
+  });
+});
+```
+
+You can test your server by running `bun run index.ts` and then running the following command:
+
+```bash
+curl -X POST http://localhost:3000/create-connection \
+-H "Content-Type: application/json" \
+-d '{"userId": "123"}'
+```
+
+### Sending an email
+
+Now let's send that email.
+
+```typescript Sending an email lines highlight={28}
+app.post('/send-email', async c => {
+  const { userId, feedback, overwrite_email } = await c.req.json();
+
+  const tools = await composio.tools.get(userId, {
+    toolkits: ['GMAIL'],
+  });
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Send the composio team feedback about their product at feedback@composio.dev, parse the user feedback and send an email from their account, if they provide an email address, use that, otherwise sent it to feedback@composio.dev',
+      },
+      {
+        role: 'user',
+        content: `
+        User feedback: ${feedback}
+        Overwrite email: ${overwrite_email}
+        `,
+      },
+    ],
+    tools,
+    tool_choice: 'auto',
+  });
+
+  const result = await composio.provider.handleToolCalls(userId, completion);
+
+  return c.json({ completion, result });
+});
+```
+
+Using the `id` from the connection, we can now send an email.
+
+```bash
+curl -X POST http://localhost:3000/send-email \
+-H "Content-Type: application/json" \
+-d '{"userId": "123", "feedback": "These docs are great!"}'
+```
+
+### Full Code
+
+You can see the full code [here](https://github.com/ComposioHQ/composio/blob/next/fern/pages/src/examples/sample-webserver/index.ts).
+
+### What just happened?
+
+Well, first - we created an instance of our `gmail` tool with our default auth config, then our user authorized that tool with their account and some permissions.
+
+Then we used that `gmail` tool by giving it to OpenAI's `gpt-4o`. The model composed the email and sent it correctly formatted to the Composio team.
+
+### What's next?
+
+This is a fairly basic example, but you can do a lot more with our SDK.
+
+Recommended further reading:
+
+<CardGroup cols={2}>
+  <Card title="Authenticating tools" icon="key" href="/docs/authenticating-tools">
+    Understand how to control tool authorization
+  </Card>
+  <Card title="Executing Tools" icon="screwdriver-wrench" href="/docs/executing-tools">
+    Understand how tool execution works
+  </Card>
+  <Card title="Providers" icon="plug" href="/docs/providers">
+    Want to use something other than OpenAI? We probably support it
+  </Card>
+  <Card title="Tools" icon="toolbox" href="https://docs.composio.dev/docs/tools">
+    Understand what tools we have
+  </Card>
+</CardGroup>
