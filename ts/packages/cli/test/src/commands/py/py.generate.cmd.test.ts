@@ -5,6 +5,7 @@ import { FileSystem } from '@effect/platform';
 import { cli, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
+import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 
 describe('CLI: composio py generate', () => {
   const appClientData = {
@@ -19,7 +20,7 @@ describe('CLI: composio py generate', () => {
       },
     ]),
     tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-    triggerTypes: ['GMAIL_NEW_GMAIL_MESSAGE'],
+    triggerTypes: [TRIGGER_TYPE_GMAIL],
   };
 
   layer(
