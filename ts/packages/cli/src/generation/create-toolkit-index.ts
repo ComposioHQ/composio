@@ -18,7 +18,7 @@ interface CreateToolkitIndexInput {
 export type ToolkitIndexData = Simplify<{
   slug: string;
   tools: Record<`${ToolkitName}_${string}`, string>;
-  triggerTypes: Record<`${ToolkitName}_${string}`, string>;
+  triggerTypes: Record<`${ToolkitName}_${string}`, TriggerType>;
 }>;
 
 export type ToolkitIndex = Record<ToolkitName, ToolkitIndexData>;
@@ -39,7 +39,7 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
       const { slug } = value.toolkit;
       const tools = value.tools.map(tool => [stripPrefix(tool), tool] as const);
       const triggerTypes = value.triggerTypes.map(
-        triggerType => [stripPrefix(triggerType.slug), triggerType.slug] as const
+        triggerType => [stripPrefix(triggerType.slug), triggerType] as const
       );
 
       return [
@@ -59,8 +59,7 @@ type GroupByToolkitOutput<T extends ToolkitName> = [
   {
     toolkit: Toolkit;
     tools: Array<`${Uppercase<T>}_${string}`>;
-    // triggerTypes: Array<TriggerTypeWithUppercaseSlug<T>>;
-    triggerTypes: TriggerTypes;
+    triggerTypes: Array<TriggerTypeWithUppercaseSlug<T>>;
   },
 ];
 
@@ -79,10 +78,9 @@ const groupByToolkit =
       {
         toolkit,
         tools: tools.filter(startsWith(`${toolkitName}_`)),
-        triggerTypes: triggerTypes.filter(triggerType => {
-          console.log('Checking trigger type slug', triggerType?.slug);
-          return startsWith(`${toolkitName}_`)(triggerType.slug);
-        }), // as Array<TriggerTypeWithUppercaseSlug<T & ToolkitName>>,
+        triggerTypes: triggerTypes.filter(triggerType =>
+          startsWith(`${toolkitName}_`)(triggerType.slug)
+        ) as Array<TriggerTypeWithUppercaseSlug<T & ToolkitName>>,
       },
     ];
   };

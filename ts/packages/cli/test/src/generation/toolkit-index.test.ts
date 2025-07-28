@@ -76,7 +76,7 @@ describe('createToolkitIndex', () => {
           FETCH_EMAILS: 'GMAIL_FETCH_EMAILS',
         },
         triggerTypes: {
-          NEW_GMAIL_MESSAGE: 'GMAIL_NEW_GMAIL_MESSAGE',
+          NEW_GMAIL_MESSAGE: TRIGGER_TYPE_GMAIL,
         },
       },
       SLACK: {

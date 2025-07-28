@@ -1,5 +1,6 @@
 export * from './AnyDeclarationBuilder';
 export * from './ArraySpread';
+export * from './ArrayValue';
 export * from './ArrayType';
 export * from './BasicBuilder';
 export * from './Class';

@@ -28,6 +28,70 @@ import { pipe, Record } from 'effect';
 import type { ToolkitName } from 'src/models/toolkits';
 import type { ToolkitIndex, ToolkitIndexData } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
+import type { TriggerType } from 'src/models/trigger-types';
+
+function jsValueToTsValue(value: unknown): ts.ValueBuilder {
+  if (value === null) {
+    return ts.namedValue('null');
+  }
+
+  if (value === undefined) {
+    return ts.namedValue('undefined');
+  }
+
+  if (typeof value === 'string') {
+    return ts.stringLiteral(value).asValue();
+  }
+
+  if (typeof value === 'number') {
+    return ts.namedValue(value.toString());
+  }
+
+  if (typeof value === 'boolean') {
+    return ts.namedValue(value.toString());
+  }
+
+  if (Array.isArray(value)) {
+    const array = new ts.ArrayValue();
+    for (const item of value) {
+      array.add(jsValueToTsValue(item));
+    }
+    return array;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const objectValue = ts.objectValue();
+    for (const [key, val] of Object.entries(value)) {
+      objectValue.add(ts.propertyValue(key, jsValueToTsValue(val)));
+    }
+    return objectValue;
+  }
+
+  // Fallback for unknown types
+  return ts.stringLiteral(JSON.stringify(value)).asValue();
+}
+
+/**
+ * Generates a TypeScript object literal for a trigger type
+ */
+function generateTriggerTypeObjectValue(triggerType: TriggerType): ts.ValueBuilder {
+  return ts
+    .objectValue()
+    .add(ts.propertyValue('slug', ts.stringLiteral(triggerType.slug).asValue()))
+    .add(ts.propertyValue('name', ts.stringLiteral(triggerType.name).asValue()))
+    .add(ts.propertyValue('description', ts.stringLiteral(triggerType.description).asValue()))
+    .add(
+      ts.propertyValue(
+        'instructions',
+        triggerType.instructions
+          ? ts.stringLiteral(triggerType.instructions).asValue()
+          : ts.namedValue('undefined')
+      )
+    )
+    .add(ts.propertyValue('config', jsValueToTsValue(triggerType.config)))
+    .add(ts.propertyValue('payload', jsValueToTsValue(triggerType.payload)))
+    .add(ts.propertyValue('type', ts.stringLiteral(triggerType.type).asValue()));
+}
 
 /**
  * Generates a list of TypeScript source files that should be written to disk by the caller.
@@ -77,7 +141,7 @@ function generateTypeScriptToolkitSource(_banner: string) {
               .objectValue()
               .addMultiple(
                 Object.entries(triggerTypes).map(([triggerTypeSlug, triggerType]) =>
-                  ts.propertyValue(triggerTypeSlug, ts.stringLiteral(triggerType).asValue())
+                  ts.propertyValue(triggerTypeSlug, generateTriggerTypeObjectValue(triggerType))
                 )
               )
           )
