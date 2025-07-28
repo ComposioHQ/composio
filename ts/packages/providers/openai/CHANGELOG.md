@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.39
+
+### Patch Changes
+
+- Fix jsonSchema to zod parsing which used to eliminate min/max and examples proeperties
+- Updated dependencies
+  - @composio/core@0.1.39
+
 ## 0.1.38
 
 ### Patch Changes
