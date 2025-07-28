@@ -1,12 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.options.json",
+  "references": [
+    {
+      "path": "../core"
+    }
+  ],
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
       "src/*": ["./src/*"],
       "test/*": ["./test/*"]
-    }
+    },
+    "types": ["@types/bun", "vitest/importMeta"]
   },
-  "include": ["test"]
+  "include": ["src/**/*", "test/**/*", "package.json"],
+  "exclude": ["node_modules", "../../../node_modules", "**/dist", "test/__fixtures__/**"]
 }

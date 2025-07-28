@@ -11,7 +11,6 @@
     "moduleResolution": "node",
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "verbatimModuleSyntax": true,
     "pretty": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -23,6 +22,5 @@
       }
     ]
   },
-  "include": ["src"],
-  "exclude": ["**/dist", "test/__fixtures__/**"]
+  "exclude": ["node_modules", "**/dist"]
 }

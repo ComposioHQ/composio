@@ -29,7 +29,7 @@ import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 
 const BARREL_OBJECT_NAME = 'Toolkits';
 
-type GenerateTypeScriptIndexMapSourceParams = {
+export type GenerateTypeScriptIndexMapSourceParams = {
   banner: string;
   emitSingleFile: boolean;
   importExtension: 'ts' | 'js';
