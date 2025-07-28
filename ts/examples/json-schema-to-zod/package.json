@@ -20,6 +20,7 @@
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
     "@composio/core": "workspace:*",
+    "@composio/vercel": "workspace:^",
     "dotenv": "^16.4.1",
     "zod-to-json-schema": "^3.24.5"
   },

@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.11
+
+### Patch Changes
+
+- Fix jsonSchema to zod parsing which used to eliminate min/max and examples proeperties
+
 ## 0.1.10
 
 ### Patch Changes
