@@ -1,4 +1,4 @@
-import color from 'picocolors';
+import * as color from 'src/ui/colors';
 
 import { stripCwdPath } from 'effect-errors/logic/path';
 import {
@@ -15,7 +15,7 @@ export const maybePrintSpansTimeline = (
   { stripCwd }: PrettyPrintOptions
 ): string[] => {
   if (spans === undefined) {
-    return isPlainString === false ? ['', missingSpansWarning, ''] : [];
+    return isPlainString === false ? [' ', missingSpansWarning, ' '] : [];
   }
 
   return spans.reduce<string[]>((output, { name, durationInMilliseconds, attributes }, index) => {

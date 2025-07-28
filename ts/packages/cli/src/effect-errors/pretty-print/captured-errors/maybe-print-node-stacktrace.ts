@@ -1,4 +1,4 @@
-import color from 'picocolors';
+import * as color from 'src/ui/colors';
 
 import { stripCwdPath } from 'effect-errors/logic/path';
 import type { PrettyPrintOptions } from 'effect-errors/types';
@@ -17,16 +17,16 @@ export const maybePrintNodeStacktrace = (
     const nodes = stack.map(el => `│ ${stripCwd ? stripCwdPath(el) : el}`).join('\r\n');
 
     return [
-      '',
+      ' ',
       `${color.bold(color.red('◯'))} ${color.redBright(color.underline('Node Stacktrace 🚨'))}`,
-      color.red(nodes),
-      color.red('┴'),
+      color.redBright(nodes),
+      color.redBright('┴'),
     ];
   }
 
   if (!isPlainString) {
     return [
-      '',
+      ' ',
       color.gray(
         'ℹ️  Consider using a yieldable error such as Data.TaggedError and Schema.TaggedError to get a stacktrace.'
       ),

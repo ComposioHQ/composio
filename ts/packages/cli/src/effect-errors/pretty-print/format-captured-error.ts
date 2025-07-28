@@ -29,5 +29,5 @@ export const formatCapturedError =
       ...effectStacktrace,
       ...nodeStacktrace,
       '',
-    ].join('\r\n');
+    ].join(' \r\n');
   };

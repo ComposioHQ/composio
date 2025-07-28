@@ -1,4 +1,4 @@
-import color from 'picocolors';
+import * as color from 'src/ui/colors';
 
 export const formatErrorTitle = (
   errorType: unknown,

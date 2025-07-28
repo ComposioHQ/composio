@@ -1,3 +1,4 @@
+import * as color from 'src/ui/colors';
 import { formatCapturedError, formatTitle, interruptedMessage } from 'effect-errors/pretty-print';
 import { type PrettyPrintOptions, prettyPrintOptionsDefault } from 'effect-errors/types';
 
@@ -14,5 +15,6 @@ export const prettyPrintFromCapturedErrors = (
   const title = formatTitle(errors.length);
   const formattedFailures = errors.map(formatCapturedError(errors.length, options));
 
-  return [...title, ...formattedFailures].join('\r\n');
+  const message = [...title, ...formattedFailures].join('\r\n');
+  return color.bgBlack(message);
 };
