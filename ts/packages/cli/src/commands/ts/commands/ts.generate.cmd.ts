@@ -120,7 +120,7 @@ export function generateTypescriptTypeStubs({
       Effect.flatMap(() => client.getTriggerTypesAsEnums())
     );
 
-    const [toolkits, tools, _triggerTypes] = yield* Effect.all(
+    const [toolkits, tools, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
         Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getTools())),
@@ -131,7 +131,7 @@ export function generateTypescriptTypeStubs({
       { concurrency: 'unbounded' }
     );
 
-    const index = createToolkitIndex({ toolkits, tools, triggerTypes: triggerTypesAsEnums });
+    const index = createToolkitIndex({ toolkits, tools, triggerTypes });
 
     // Generate TypeScript sources
     const sources = generateTypeScriptSources({

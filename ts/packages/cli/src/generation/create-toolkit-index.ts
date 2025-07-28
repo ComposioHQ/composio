@@ -2,7 +2,7 @@ import { pipe, String, Record } from 'effect';
 import type { Simplify } from 'effect/Types';
 import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
-import { TriggerTypesAsEnums } from 'src/models/trigger-types';
+import { TriggerType, TriggerTypes } from 'src/models/trigger-types';
 
 const startsWith =
   <const P extends string>(prefix: P) =>
@@ -10,9 +10,9 @@ const startsWith =
     str.startsWith(prefix);
 
 interface CreateToolkitIndexInput {
-  toolkits: Toolkits; // e.g., [ { slug: 'gmail',  }]
+  toolkits: Toolkits; // e.g., [ { slug: 'gmail', ... }]
   tools: Tools; // e.g., [ 'GMAIL_SEND_EMAIL' ]
-  triggerTypes: TriggerTypesAsEnums; // e.g., [ 'GMAIL_NEW_EMAIL' ]
+  triggerTypes: TriggerTypes; // e.g., [ { slug: 'GMAIL_NEW_EMAIL', ... } ]
 }
 
 export type ToolkitIndexData = Simplify<{
@@ -39,7 +39,7 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
       const { slug } = value.toolkit;
       const tools = value.tools.map(tool => [stripPrefix(tool), tool] as const);
       const triggerTypes = value.triggerTypes.map(
-        triggerType => [stripPrefix(triggerType), triggerType] as const
+        triggerType => [stripPrefix(triggerType.slug), triggerType.slug] as const
       );
 
       return [
@@ -50,12 +50,17 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
   );
 }
 
+type TriggerTypeWithUppercaseSlug<T extends ToolkitName> = Omit<TriggerType, 'slug'> & {
+  slug: `${Uppercase<T>}_${string}`;
+};
+
 type GroupByToolkitOutput<T extends ToolkitName> = [
   Uppercase<T>,
   {
     toolkit: Toolkit;
     tools: Array<`${Uppercase<T>}_${string}`>;
-    triggerTypes: Array<`${Uppercase<T>}_${string}`>;
+    // triggerTypes: Array<TriggerTypeWithUppercaseSlug<T>>;
+    triggerTypes: TriggerTypes;
   },
 ];
 
@@ -74,7 +79,10 @@ const groupByToolkit =
       {
         toolkit,
         tools: tools.filter(startsWith(`${toolkitName}_`)),
-        triggerTypes: triggerTypes.filter(startsWith(`${toolkitName}_`)),
+        triggerTypes: triggerTypes.filter(triggerType => {
+          console.log('Checking trigger type slug', triggerType?.slug);
+          return startsWith(`${toolkitName}_`)(triggerType.slug);
+        }), // as Array<TriggerTypeWithUppercaseSlug<T & ToolkitName>>,
       },
     ];
   };

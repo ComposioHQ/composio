@@ -3,6 +3,7 @@ import { generatePythonToolkitSources } from 'src/generation/python/generate-too
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { BANNER } from 'src/generation/constants';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
+import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 
 describe('generatePythonToolkitSources', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty array', () => {
@@ -67,7 +68,7 @@ describe('generatePythonToolkitSources', () => {
     const index = createToolkitIndex({
       toolkits,
       tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-      triggerTypes: ['GMAIL_NEW_GMAIL_MESSAGE'],
+      triggerTypes: [TRIGGER_TYPE_GMAIL],
     });
 
     const sources = generatePythonToolkitSources(BANNER)(index);

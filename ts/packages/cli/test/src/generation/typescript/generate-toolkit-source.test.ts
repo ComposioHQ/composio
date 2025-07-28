@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateTypeScriptToolkitSources } from 'src/generation/typescript/generate-toolkit-sources';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
+import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
@@ -66,7 +67,7 @@ describe('generateTypeScriptToolkitSources', () => {
         const index = createToolkitIndex({
           toolkits,
           tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-          triggerTypes: ['GMAIL_NEW_GMAIL_MESSAGE'],
+          triggerTypes: [TRIGGER_TYPE_GMAIL],
         });
 
         const sources = generateTypeScriptToolkitSources(banner)(index);
