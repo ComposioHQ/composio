@@ -2,7 +2,7 @@ import { pipe, String, Record } from 'effect';
 import type { Simplify } from 'effect/Types';
 import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
-import { TriggerTypes } from 'src/models/trigger-types';
+import { TriggerTypesAsEnums } from 'src/models/trigger-types';
 
 const startsWith =
   <const P extends string>(prefix: P) =>
@@ -12,7 +12,7 @@ const startsWith =
 interface CreateToolkitIndexInput {
   toolkits: Toolkits; // e.g., [ { slug: 'gmail',  }]
   tools: Tools; // e.g., [ 'GMAIL_SEND_EMAIL' ]
-  triggerTypes: TriggerTypes; // e.g., [ 'GMAIL_NEW_EMAIL' ]
+  triggerTypes: TriggerTypesAsEnums; // e.g., [ 'GMAIL_NEW_EMAIL' ]
 }
 
 export type ToolkitIndexData = Simplify<{
