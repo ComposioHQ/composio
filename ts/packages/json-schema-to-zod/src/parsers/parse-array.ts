@@ -83,5 +83,31 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
     (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
   );
 
+  // Handle generic 'min' property as alias for 'minItems'
+  if (
+    typeof (jsonSchema as unknown as { min?: number }).min === 'number' &&
+    typeof jsonSchema.minItems !== 'number'
+  ) {
+    zodSchema = extendSchemaWithMessage(
+      zodSchema,
+      { ...jsonSchema, minItems: (jsonSchema as unknown as { min?: number }).min },
+      'minItems',
+      (zs, minItems, errorMessage) => zs.min(minItems, errorMessage)
+    );
+  }
+
+  // Handle generic 'max' property as alias for 'maxItems'
+  if (
+    typeof (jsonSchema as unknown as { max?: number }).max === 'number' &&
+    typeof jsonSchema.maxItems !== 'number'
+  ) {
+    zodSchema = extendSchemaWithMessage(
+      zodSchema,
+      { ...jsonSchema, maxItems: (jsonSchema as unknown as { max?: number }).max },
+      'maxItems',
+      (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
+    );
+  }
+
   return zodSchema;
 };

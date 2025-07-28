@@ -20,10 +20,34 @@ import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../type
 import { its } from '../utils/its';
 
 const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+  let description = '';
+
   if (jsonSchema.description) {
-    zodSchema = zodSchema.describe(jsonSchema.description);
+    description = jsonSchema.description;
   } else if (jsonSchema.title) {
-    zodSchema = zodSchema.describe(jsonSchema.title);
+    description = jsonSchema.title;
+  }
+
+  // Append example(s) if they exist
+  if ((jsonSchema as unknown as { example?: unknown }).example !== undefined) {
+    const exampleText = `Example: ${JSON.stringify((jsonSchema as unknown as { example?: unknown }).example)}`;
+    description = description ? `${description}\n${exampleText}` : exampleText;
+  } else if (
+    (jsonSchema as unknown as { examples?: unknown[] }).examples !== undefined &&
+    Array.isArray((jsonSchema as unknown as { examples?: unknown[] }).examples)
+  ) {
+    const examples = (jsonSchema as unknown as { examples?: unknown[] }).examples;
+    if (examples && examples.length && examples.length > 0) {
+      const exampleText =
+        examples.length === 1
+          ? `Example: ${JSON.stringify(examples[0])}`
+          : `Examples:\n${examples.map((ex: unknown) => `  ${JSON.stringify(ex)}`).join('\n')}`;
+      description = description ? `${description}\n${exampleText}` : exampleText;
+    }
+  }
+
+  if (description) {
+    zodSchema = zodSchema.describe(description);
   }
 
   return zodSchema;
