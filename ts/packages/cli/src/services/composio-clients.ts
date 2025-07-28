@@ -197,7 +197,11 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
            * Generates a new CLI session with a random 6-character code.
            */
           createSession: () =>
-            callClient(clientSingleton, client => client.cli.createSession(), TriggerTypesResponse),
+            callClient(
+              clientSingleton,
+              client => client.cli.createSession(),
+              CliCreateSessionResponse
+            ),
 
           /**
            * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
