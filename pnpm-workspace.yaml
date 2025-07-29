@@ -7,6 +7,6 @@ packages:
 - "ts/packages/wrappers/*"
 - "ts/examples/*"
 - "fern"
-- "fern/llms-txt"
+- "fern/llms-txt-worker"
 - "fern/pages/examples/*"
 - "fern/snippets/*"
