@@ -31,7 +31,7 @@
 		"doc:new": "bun run scripts/doc-new.ts",
 		"llms:build": "bun run scripts/build-llms-txt.ts",
 		"llms:dev": "bun run scripts/build-llms-txt.ts --watch",
-		"llms:deploy": "cd llms-txt && npx wrangler deploy"
+		"llms:deploy": "cd llms-txt && pnpm run deploy"
 	},
 	"dependencies": {
 		"fern-api": "^0.51.39",
