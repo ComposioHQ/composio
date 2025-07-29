@@ -3,8 +3,8 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs", "llms:build"],
-      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**", "llms-txt/public/llms.txt"],
+      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
+      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
       "cache": true
     },
     
@@ -80,6 +80,7 @@
     },
     
     "llms:build": {
+      "dependsOn": ["build"],
       "outputs": ["llms-txt/public/llms.txt"],
       "inputs": ["docs.yml", "pages/**/*.mdx", "pages/**/*.md", "tools/**/*.mdx", "scripts/build-llms-txt.ts"],
       "cache": true
