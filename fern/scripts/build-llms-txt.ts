@@ -145,6 +145,10 @@ function processContentItems(items: ContentItem[], tabSlug: string, entries: Llm
         // Use explicit slug if provided
         const slugParts = [tabSlug, item.slug].filter(Boolean);
         url = `https://docs.composio.dev/${slugParts.join('/')}`;
+        // Add .mdx extension if not already present
+        if (!url.endsWith('.mdx') && !url.endsWith('.md')) {
+          url = url + '.mdx';
+        }
       } else if (item.path) {
         // For SDK reference pages without explicit slugs, construct from path
         const pathMatch = item.path.match(/pages\/dist\/(.+)$/);
