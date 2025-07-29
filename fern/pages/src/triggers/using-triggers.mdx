@@ -148,6 +148,32 @@ console.log(triggerType.payload);
 
 </CodeGroup>
 
+### Type-safe trigger handling (TypeScript)
+
+For better type safety and developer experience in TypeScript, you can define specific payload types and use the `TriggerEvent<T>` interface:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/triggers/typescript/trigger-types.ts"
+  title="Type-safe trigger subscription"
+  startLine={3}
+  endLine={26}
+/>
+
+<SnippetCode
+  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
+  title="Type-safe webhook handling"
+  startLine={3}
+  endLine={18}
+/>
+</CodeGroup>
+
+This approach provides:
+- **IntelliSense support** for trigger payload fields
+- **Compile-time error checking** for typos and invalid field access
+- **Better documentation** through TypeScript types
+- **Improved maintainability** of trigger handling code
+
 
 ## Prototyping triggers during development
 During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
