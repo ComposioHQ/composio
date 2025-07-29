@@ -6,7 +6,8 @@
     "paths": {
       "src/*": ["./src/*"],
       "test/*": ["./test/*"],
-      "~/*": ["./*"]
+      "~/*": ["./*"],
+      "effect-errors/*": ["./src/effect-errors/*"]
     },
     "types": ["@types/bun", "vitest/importMeta"]
   },

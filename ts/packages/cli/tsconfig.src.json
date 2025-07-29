@@ -9,8 +9,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
-      "src/*": ["./src/*"]
+      "src/*": ["./src/*"],
+      "effect-errors/*": ["./src/effect-errors/*"]
     },
     "types": ["@types/bun"]
   },

@@ -52,6 +52,7 @@ By default, this file is stored in `~/.composio`, but you can specify a custom l
 | COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio |
 | COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None        |
 | DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None        |
+| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None        |
 
 Additionally, `composio upgrade` supports the following environment variables:
 

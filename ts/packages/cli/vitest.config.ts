@@ -9,6 +9,7 @@ export default defineConfig({
       '~': path.resolve(__dirname, './'),
       src: path.resolve(__dirname, './src'),
       test: path.resolve(__dirname, './test'),
+      'effect-errors/*': path.resolve(__dirname, './src/effect-errors'),
     },
   },
   test: {
