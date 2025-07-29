@@ -1,0 +1,57 @@
+# Composio Docs
+
+## Docs
+
+- [Welcome](https://docs.composio.dev/docs/welcome)
+- [Quickstart](https://docs.composio.dev/docs/quickstart): Add authenticated tool-calling to any LLM agent in three steps.
+- [IDE and Agent Setup](https://docs.composio.dev/docs/dev-setup): Cursor is an AI-powered code editor that can significantly accelerate your development with Composio. Here's how to set it up optimally.
+- [Providers](https://docs.composio.dev/docs/providers): Think of providers as translators. Different AI frameworks (like OpenAI, Anthropic Claude, or LangChain) expect tools to be formatted in their spec...
+- [Executing Tools](https://docs.composio.dev/docs/executing-tools): For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
+- [Authenticating Tools](https://docs.composio.dev/docs/authenticating-tools): Each toolkit comes with its own _auth config_.
+- [Fetch and Filter Tools](https://docs.composio.dev/docs/fetching-tools): Toolkits are collections of tools from a specific app!
+- [Schema Modifiers](https://docs.composio.dev/docs/schema-modifiers): Schema modifiers transform a tool's schema before the tool is seen by an agent.
+- [Before Tool Execution](https://docs.composio.dev/docs/before-execution): These modifiers are called before the tool is executed by the LLM. This allows you to modify the _arguments_ called by the LLM before they are exec...
+- [After Tool Execution](https://docs.composio.dev/docs/after-execution): These modifiers are called after the tool is executed by the LLM. This allows you to modify the _result_ of the tool before it is returned to the a...
+- [Custom tools](https://docs.composio.dev/docs/custom-tools): A standalone tool is the simplest form of custom tool. It only requires input parameters and an execute function:
+- [Custom Auth Configs](https://docs.composio.dev/docs/custom-auth-configs): Some apps, like PostHog, Hubspot, Linear, etc. allow customizing the auth config for your usage.
+- [Programmatic Auth Configs](https://docs.composio.dev/docs/programmatic-auth-configs): Since OAuth2 is the most common authentication type for applications, Composio provides managed auth for most OAuth2 based applications.
+- [Custom Auth Parameters](https://docs.composio.dev/docs/custom-auth-params): First, initialize the Composio SDK with your API key:
+- [Using Triggers](https://docs.composio.dev/docs/using-triggers): Head to any app that supports triggers, such as Slack in the dashboard and enable the trigger of choice.
+- [Composio MCP Servers](https://docs.composio.dev/docs/mcp-overview): Our MCP SDK features an intuitive, powerful, and developer-friendly API:
+- [Developers](https://docs.composio.dev/docs/mcp-developers): - Create and Configure Toolkit permissions:
+- [Partner Program](https://docs.composio.dev/docs/mcp-partner-api): As a partner, you receive:
+- [Providers](https://docs.composio.dev/docs/mcp-providers): The Mastra Provider is tailored for the Mastra TypeScript-native agent framework. This client provides a getServer method to obtain the Composio MC...
+- [Migration Guide](https://docs.composio.dev/docs/migration): A lot of the changes are on the infra side, but from the SDK point of view, here is what you can expect:
+- [Basic Hono Server](https://docs.composio.dev/examples/sample-webserver): A simple example of a web server that uses the Composio SDK to call tools.
+- [Full Stack Chat App](https://docs.composio.dev/examples/chat-app): Ensure you've followed the README.md in the composiohq/chat repository to set up the project locally.
+- [AI Gmail Labeller](https://docs.composio.dev/examples/gmail-reaper): - Clone the filter-gmails-example repository and set the project up locally.
+- [Tool Generator](https://docs.composio.dev/examples/tool-generator): An example that show you how to showcase auth scheme and action params for tools
+- [OpenAI Provider](https://docs.composio.dev/providers/openai.mdx): By default, the OpenAI Provider is installed when you install the Composio SDK. You can also install it manually:
+- [Anthropic Provider](https://docs.composio.dev/providers/anthropic.mdx): The Anthropic provider can be installed for both SDKs.
+- [Google Provider](https://docs.composio.dev/providers/google.mdx): The Google Gen AI SDK and theprovider can only be installed for the Python SDK.
+- [LangChain Provider](https://docs.composio.dev/providers/langchain.mdx): pip install composio_langchain==0.8.0 langchain
+- [CrewAI Provider](https://docs.composio.dev/providers/crewai.mdx): The CrewAI Provider formats the Composio tools into an object compatible with CrewAI's tool calling capabilities. Agents and LLM workflows built wi...
+- [Vercel AI SDK Provider](https://docs.composio.dev/providers/vercel.mdx): Vercel AI SDK and the provider are only available for the TypeScript SDK.
+- [OpenAI Agents Provider](https://docs.composio.dev/providers/openai-agents.mdx): The OpenAI Agents Provider is a provider that formats the Composio tools into an object compatible with OpenAI's Agents API.
+- [Mastra Provider](https://docs.composio.dev/providers/mastra.mdx): npm install @composio/mastra
+- [TypeScript](https://docs.composio.dev/providers/custom/typescript): The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
+- [Python](https://docs.composio.dev/providers/custom/python): The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
+- [Introduction](https://docs.composio.dev/tools/introduction.mdx)
+- [Premium Tools](https://docs.composio.dev/tools/src/premium-tools.mdx): Premium tools are essential tool calls that cost us more to run, normally paying for more premium services or longer running tasks.
+- [Github](https://docs.composio.dev/tools/github): GitHub is a code hosting platform for version control and collaboration, offering Git-based repository management, issue tracking, and continuous i...
+- [Gmail](https://docs.composio.dev/tools/gmail): Gmail is Google’s email service, featuring spam protection, search functions, and seamless integration with other G Suite apps for productivity
+- [Notion](https://docs.composio.dev/tools/notion): Notion centralizes notes, docs, wikis, and tasks in a unified workspace, letting teams build custom workflows for collaboration and knowledge manag...
+- [Googlecalendar](https://docs.composio.dev/tools/googlecalendar): SLUG: GOOGLECALENDAR
+- [Composio](https://docs.composio.dev/tools/composio): Composio enables AI Agents and LLMs to authenticate and integrate with various tools via function calling.
+- [Python SDK Reference](https://docs.composio.dev/sdk-reference/python/sdk-reference.md): This is the comprehensive SDK reference for the Composio Python SDK.
+- [Composio](https://docs.composio.dev/sdk-reference/type-script/composio/classes/Composio.mdx): Defined in: ts/packages/core/src/composio.ts:82
+- [ComposioProvider](https://docs.composio.dev/sdk-reference/type-script/provider/ComposioProvider/classes/ComposioProvider.mdx): Defined in: ts/packages/core/src/provider/ComposioProvider.ts:14
+- [OpenAIProvider](https://docs.composio.dev/sdk-reference/type-script/provider/OpenAIProvider/classes/OpenAIProvider.mdx): Defined in: ts/packages/core/src/provider/OpenAIProvider.ts:22
+- [BaseAgenticProvider](https://docs.composio.dev/sdk-reference/type-script/provider/BaseProvider/classes/BaseAgenticProvider.mdx): Defined in: ts/packages/core/src/provider/BaseProvider.ts:106
+- [BaseNonAgenticProvider](https://docs.composio.dev/sdk-reference/type-script/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx): Defined in: ts/packages/core/src/provider/BaseProvider.ts:80
+- [Tools](https://docs.composio.dev/sdk-reference/type-script/models/Tools/classes/Tools.mdx): Defined in: ts/packages/core/src/models/Tools.ts:53
+- [Toolkits](https://docs.composio.dev/sdk-reference/type-script/models/Toolkits/classes/Toolkits.mdx): Defined in: ts/packages/core/src/models/Toolkits.ts:31
+- [Triggers](https://docs.composio.dev/sdk-reference/type-script/models/Triggers/classes/Triggers.mdx): Defined in: ts/packages/core/src/models/Triggers.ts:39
+- [AuthConfigs](https://docs.composio.dev/sdk-reference/type-script/AuthConfigs/classes/AuthConfigs.mdx): Defined in: ts/packages/core/src/models/AuthConfigs.ts:43
+- [ConnectedAccounts](https://docs.composio.dev/sdk-reference/type-script/ConnectedAccounts/classes/ConnectedAccounts.mdx): Defined in: ts/packages/core/src/models/ConnectedAccounts.ts:42
+- [CustomTools](https://docs.composio.dev/sdk-reference/type-script/CustomTools/classes/CustomTools.mdx): Defined in: ts/packages/core/src/models/CustomTools.ts:37

@@ -3,8 +3,8 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
-      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
+      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs", "llms:build"],
+      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**", "llms-txt/public/llms.txt"],
       "cache": true
     },
     
@@ -79,6 +79,23 @@
       "cache": true
     },
     
+    "llms:build": {
+      "outputs": ["llms-txt/public/llms.txt"],
+      "inputs": ["docs.yml", "pages/**/*.mdx", "pages/**/*.md", "tools/**/*.mdx", "scripts/build-llms-txt.ts"],
+      "cache": true
+    },
+    
+    "llms:dev": {
+      "persistent": true,
+      "cache": false
+    },
+    
+    "llms:deploy": {
+      "dependsOn": ["llms:build"],
+      "cache": false,
+      "env": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+    },
+    
     "check": {
       "dependsOn": ["snippets:build"],
       "cache": false
@@ -96,9 +113,9 @@
     },
     
     "publish": {
-      "dependsOn": ["build"],
+      "dependsOn": ["build", "llms:deploy"],
       "cache": false,
-      "env": ["FERN_TOKEN", "POSTHOG_API_KEY"]
+      "env": ["FERN_TOKEN", "POSTHOG_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
     },
     
     "clean": {
