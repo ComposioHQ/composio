@@ -1,6 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.options.json",
+  "references": [
+    {
+      "path": "../core"
+    }
+  ],
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
@@ -9,5 +14,6 @@
     },
     "types": ["@types/bun"]
   },
-  "include": ["src"]
+  "include": ["src/**/*", "package.json"],
+  "exclude": ["node_modules", "../../../node_modules", "**/dist", "test/__fixtures__/**"]
 }

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generateIndexSource } from 'src/generation/typescript/generate-index-source';
+import {
+  generateIndexSource,
+  type GenerateTypeScriptIndexMapSourceParams,
+} from 'src/generation/typescript/generate-index-source';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
@@ -7,9 +10,10 @@ import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
     const _params = {
-      outputDir: '<cwd>',
       emitSingleFile: true,
-    };
+      banner: '<BANNER>',
+      importExtension: 'ts' as const,
+    } satisfies GenerateTypeScriptIndexMapSourceParams;
 
     describe('with banner', () => {
       const params = {
@@ -151,8 +155,9 @@ describe('generateTypeScriptToolkitSources', () => {
 
   describe('with multiple emitted files', () => {
     const _params = {
-      outputDir: '<cwd>',
       emitSingleFile: false,
+      banner: '<BANNER>',
+      importExtension: 'ts' as const,
     };
 
     describe('with banner', () => {
@@ -223,7 +228,7 @@ describe('generateTypeScriptToolkitSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { SLACK } from "./slack.undefined"
+          import { SLACK } from "./slack.ts"
 
           /**
            * Map of Composio toolkits to actions.
@@ -277,8 +282,8 @@ describe('generateTypeScriptToolkitSources', () => {
            * Some banner that will appear in a comment
            */
 
-          import { GMAIL } from "./gmail.undefined"
-          import { SLACK } from "./slack.undefined"
+          import { GMAIL } from "./gmail.ts"
+          import { SLACK } from "./slack.ts"
 
           /**
            * Map of Composio toolkits to actions.
