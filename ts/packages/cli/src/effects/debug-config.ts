@@ -7,8 +7,7 @@ type DEBUG_CONFIG = Config.Config.Wrap<{
 
 /**
  * Describe debug configuration keys used at runtime.
- * Keys are read from environment variables (with the `DEBUG_OVERRIDE_<key>` format),
- * or from the user config file (in JSON format).
+ * Keys are read from environment variables (with the `DEBUG_OVERRIDE_<key>` format).
  */
 export const DEBUG_OVERRIDE_CONFIG = {
   // The local binary used when upgrading the Composio CLI (for debugging).

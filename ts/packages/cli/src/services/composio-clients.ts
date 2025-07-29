@@ -261,7 +261,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
                 // Sort apps by slug.
                 // TODO: make sure this happens on the server-side.
                 const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-                return Array.sort(toolkits, orderBySlug);
+                return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
               })
             )
           ),
@@ -277,7 +277,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
                 // Sort apps by slug.
                 // TODO: make sure this happens on the server-side.
                 const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
-                return Array.sort(triggerTypes, orderBySlug);
+                return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
               })
             )
           ),

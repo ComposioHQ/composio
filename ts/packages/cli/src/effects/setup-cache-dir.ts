@@ -15,7 +15,8 @@ export const setupCacheDir = Effect.gen(function* () {
     Effect.map(Option.getOrElse(() => path.join(os.homedir, constants.USER_COMPOSIO_DIR)))
   );
 
-  yield* fs.makeDirectory(cacheDir, { recursive: true });
+  // Ensure cache directory exists
+  yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
 
   return cacheDir;
 });
