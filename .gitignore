@@ -62,3 +62,4 @@ __pycache__/
 .vscode
 temp/
 fern/llms-txt-worker/public/*
+!fern/llms-txt-worker/public/.keepFolder
