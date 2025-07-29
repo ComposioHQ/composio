@@ -1,0 +1,13 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "composio-docs-proxy",
+	"main": "src/index.js",
+	"compatibility_date": "2025-07-26",
+	"assets": {
+	  "directory": "./public/",
+	  "binding": "ASSETS"
+	},
+	"routes": [
+	  { "pattern": "docs.composio.dev/*", "zone_name": "composio.dev" }
+	]
+  }
