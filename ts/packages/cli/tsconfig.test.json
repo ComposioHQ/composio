@@ -8,8 +8,10 @@
   ],
   "compilerOptions": {
     "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"],
+      "effect-errors/*": ["./src/effect-errors/*"],
       "test/*": ["./test/*"]
     },
     "types": ["@types/bun", "vitest/importMeta"]

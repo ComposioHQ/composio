@@ -15,18 +15,18 @@ function* renderPrettyErrorGen(
     yield '';
   } else if (errorLines.length <= 2) {
     for (const [key, value] of errorLines) {
-      yield `${colors.gray(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
+      yield `${colors.inverse(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
     }
   } else if (errorLines.length > 2) {
     for (let i = 0; i < errorLines.length; i++) {
       const [key, value] = errorLines[i];
 
       if (i === 0) {
-        yield `${colors.gray(`${S_CORNER_TOP_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
+        yield `${colors.inverse(`${S_CORNER_TOP_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
       } else if (i === errorLines.length - 1) {
-        yield `${colors.gray(`${S_CORNER_BOTTOM_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
+        yield `${colors.inverse(`${S_CORNER_BOTTOM_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
       } else {
-        yield `${colors.gray(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
+        yield `${colors.inverse(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
       }
     }
   }

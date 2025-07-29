@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Cause, Console, Effect, Exit, Layer, Logger } from 'effect';
-import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors';
+import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
