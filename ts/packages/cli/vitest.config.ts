@@ -18,7 +18,7 @@ export default defineConfig({
     },
     include: ['test/**/*.test.ts'],
     // When defined, Vitest will run all matched files with import.meta.vitest inside.
-    includeSource: ['src/**/*.ts'],
+    includeSource: ['src/**/*.ts', 'test/__utils__/*-compiler.ts'],
     unstubEnvs: true,
     globalSetup: './test/__utils__/vitest.global-setup.ts',
   },

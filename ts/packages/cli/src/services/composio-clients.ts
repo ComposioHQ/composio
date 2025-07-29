@@ -3,7 +3,7 @@ import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
 import { LinkedSession, Session, RetrievedSession } from 'src/models/session';
-import { TriggerTypes } from 'src/models/trigger-types';
+import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
@@ -51,8 +51,14 @@ export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 export const ToolsResponse = Tools;
 export type ToolsResponse = Schema.Schema.Type<typeof ToolsResponse>;
 
-export const TriggerTypesResponse = TriggerTypes;
-export type TriggerResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
+export const TriggerTypesAsEnumsResponse = TriggerTypesAsEnums;
+export type TriggerTypesAsEnumsResponse = Schema.Schema.Type<typeof TriggerTypesAsEnumsResponse>;
+
+export const TriggerTypesResponse = Schema.Struct({
+  items: TriggerTypes,
+  total_pages: Schema.Int,
+  next_cursor: Schema.NullOr(Schema.Int),
+}).annotations({ identifier: 'TriggerTypesResponse' });
 
 /**
  * Error response schemas
@@ -189,6 +195,16 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
             callClient(
               clientSingleton,
               client => client.triggersTypes.retrieveEnum(),
+              TriggerTypesAsEnumsResponse
+            ),
+          /**
+           * Retrieve a list of $limit trigger types, containing their payload.
+           * Usually, you would call this with a limit matching the length of the list returned by `retrieveEnum`.
+           */
+          list: (params: { limit: number }) =>
+            callClient(
+              clientSingleton,
+              client => client.triggersTypes.list(params),
               TriggerTypesResponse
             ),
         },
@@ -239,16 +255,32 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getToolkits: () =>
           client.toolkits.list().pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(toolkits =>
-              Effect.gen(function* () {
-                // Sort apps by slug
+            Effect.tap(Effect.logDebug),
+            Effect.flatMap(
+              Effect.fn(function* (toolkits) {
+                // Sort apps by slug.
+                // TODO: make sure this happens on the server-side.
                 const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-                return Array.sort(toolkits, orderBySlug);
+                return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
               })
             )
           ),
-        getTools: () => client.tools.retrieveEnum(),
-        getTriggerTypes: () => client.triggersTypes.retrieveEnum(),
+        getTools: () => client.tools.retrieveEnum().pipe(Effect.tap(Effect.logDebug)),
+        getTriggerTypesAsEnums: () =>
+          client.triggersTypes.retrieveEnum().pipe(Effect.tap(Effect.logDebug)),
+        getTriggerTypes: (limit: number) =>
+          client.triggersTypes.list({ limit }).pipe(
+            Effect.map(response => response.items),
+            Effect.tap(Effect.logDebug),
+            Effect.flatMap(
+              Effect.fn(function* (triggerTypes) {
+                // Sort apps by slug.
+                // TODO: make sure this happens on the server-side.
+                const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
+                return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
+              })
+            )
+          ),
       };
     }),
     dependencies: [ComposioClientLive.Default],

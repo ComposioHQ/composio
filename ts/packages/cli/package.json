@@ -26,6 +26,7 @@
     "cli": "bun run src/bin.ts",
     "build:bin": "bun run ./scripts/build-binary.ts",
     "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
+    "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
     "build": "tsup",
     "bin": "./dist/composio",

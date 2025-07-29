@@ -106,7 +106,7 @@ if (require.main === module) {
     Effect.provide(Logger.pretty),
     Effect.provide(BunContext.layer),
     Effect.scoped,
-    Effect.map(() => ({ message: 'Build process completed successfully.' })),
+    Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({
       teardown,
     })

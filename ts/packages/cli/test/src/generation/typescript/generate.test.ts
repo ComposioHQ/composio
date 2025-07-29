@@ -4,6 +4,7 @@ import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import path from 'path';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
+import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
 
 describe('generateTypeScriptSources', () => {
   describe('with multiple emitted files', () => {
@@ -143,7 +144,7 @@ describe('generateTypeScriptSources', () => {
         const index = createToolkitIndex({
           toolkits,
           tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-          triggerTypes: ['GMAIL_NEW_GMAIL_MESSAGE'],
+          triggerTypes: [TRIGGER_TYPE_GMAIL],
         });
 
         const sources = generateTypeScriptSources(params)(index);

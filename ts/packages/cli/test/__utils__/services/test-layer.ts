@@ -25,12 +25,12 @@ import {
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
-import type { TriggerTypes } from 'src/models/trigger-types';
+import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 
-interface TestLiveInput {
+export interface TestLiveInput {
   /**
    * Base config provider to use in test.
    * If not provided, the default `ConfigProvider.fromMap(new Map([]))` is used.
@@ -49,6 +49,7 @@ interface TestLiveInput {
   toolkitsData?: {
     toolkits?: Toolkits;
     tools?: Tools;
+    triggerTypesAsEnums?: TriggerTypesAsEnums;
     triggerTypes?: TriggerTypes;
   };
 }
@@ -74,6 +75,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const defaultAppClientData = {
       toolkits: [],
       tools: [],
+      triggerTypesAsEnums: [],
       triggerTypes: [],
     } satisfies TestLiveInput['toolkitsData'];
     const { fixture, toolkitsData } = Object.assign(
@@ -89,7 +91,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
         getTools: () => Effect.succeed(toolkitsData.tools),
-        getTriggerTypes: () => Effect.succeed(toolkitsData.triggerTypes),
+        getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
+        getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
       })
     );
 
