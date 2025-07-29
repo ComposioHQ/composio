@@ -52,6 +52,7 @@ By default, this file is stored in `~/.composio`, but you can specify a custom l
 | COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio |
 | COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None        |
 | DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None        |
+| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | false       |
 
 Additionally, `composio upgrade` supports the following environment variables:
 
@@ -62,6 +63,31 @@ Additionally, `composio upgrade` supports the following environment variables:
 | COMPOSIO_GITHUB_REPO         | The repository name for the Composio CLI                                                               | composio               |
 | COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
 | COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
+
+## Caching
+
+The CLI implements a file-based caching system for improved performance and offline capabilities.
+
+### Cache Features
+
+- **Cache-first reads**: When `FORCE_USE_CACHE=true`, the CLI first checks for cached data before making API calls
+- **Best-effort writes**: All successful API responses are automatically cached to disk for future use
+- **Graceful fallback**: If cache files are corrupted or missing, the CLI falls back to making API calls
+- **Parameter-aware caching**: Methods with parameters include those parameters in the cache key
+
+### Cache Structure
+
+Cache files are stored in the directory specified by:
+
+1. `COMPOSIO_CACHE_DIR` environment variable (if set)
+2. `~/.composio/` directory (default)
+
+The following files are cached:
+
+- `toolkits.json` - Results from toolkit listings
+- `tools.json` - Results from tool listings
+- `trigger-types-as-enums.json` - Results from trigger type enumerations
+- `trigger-types.json` - Results from paginated trigger types payloads
 
 ## Development
 
