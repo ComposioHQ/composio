@@ -1,5 +1,4 @@
 from composio import Composio
-from composio.types import auth_scheme
 
 # Replace these with your actual values
 {{toolkit_slug}}_auth_config_id = "{{auth_config_id|default:'ac_YOUR_AUTH_CONFIG_ID'}}" # Auth config ID created above

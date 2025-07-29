@@ -18,24 +18,6 @@ Custom tools allow you to create your own tools that can be used with Composio.
 A standalone tool is the simplest form of custom tool. It only requires input parameters and an execute function:
 
 <CodeGroup>
-```typescript TypeScript maxLines=60 wordWrap
-const tool = await composio.tools.createCustomTool({
-  slug: 'CALCULATE_SQUARE',
-  name: 'Calculate Square',
-  description: 'Calculates the square of a number',
-  inputParams: z.object({
-    number: z.number().describe('The number to calculate the square of'),
-  }),
-  execute: async input => {
-    const { number } = input;
-    return {
-      data: { result: number * number },
-      error: null,
-      successful: true,
-    };
-  },
-});
-```
 ```python Python maxLines=60 wordWrap
 from pydantic import BaseModel, Field
 
@@ -61,6 +43,24 @@ def add_two_numbers(request: AddTwoNumbersInput) -> int:
     """Add two numbers."""
     return request.a + request.b
 ```
+```typescript TypeScript maxLines=60 wordWrap
+const tool = await composio.tools.createCustomTool({
+  slug: 'CALCULATE_SQUARE',
+  name: 'Calculate Square',
+  description: 'Calculates the square of a number',
+  inputParams: z.object({
+    number: z.number().describe('The number to calculate the square of'),
+  }),
+  execute: async input => {
+    const { number } = input;
+    return {
+      data: { result: number * number },
+      error: null,
+      successful: true,
+    };
+  },
+});
+```
 </CodeGroup>
 
 ### Toolkit-based Tool
@@ -70,6 +70,39 @@ A toolkit-based tool has access to two ways of making authenticated requests:
 1. Using `executeToolRequest` - The recommended way to make authenticated requests to the toolkit's API endpoints. Composio automatically handles credential injection and baseURL resolution:
 
 <CodeGroup>
+```python Python maxLines=60 wordWrap
+class GetIssueInfoInput(BaseModel):
+    issue_number: int = Field(
+        ...,
+        description="The number of the issue to get information about",
+    )
+
+# function name will be used as slug
+@composio.tools.custom_tool(toolkit="github")
+def get_issue_info(
+    request: GetIssueInfoInput,
+    execute_request: ExecuteRequestFn,
+    auth_credentials: dict,
+) -> dict:
+    """Get information about a GitHub issue."""
+    response = execute_request(
+        endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+        method="GET",
+        parameters=[
+            {
+                "name": "Accept",
+                "value": "application/vnd.github.v3+json",
+                "type": "header",
+            },
+            {
+                "name": "Authorization",
+                "value": f"Bearer {auth_credentials['access_token']}",
+                "type": "header",
+            },
+        ],
+    )
+    return {"data": response.data}
+```
 ```typescript TypeScript maxLines=60 wordWrap
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
@@ -108,40 +141,6 @@ const tool = await composio.tools.createCustomTool({
     return result;
   },
 });
-```
-
-```python Python maxLines=60 wordWrap
-class GetIssueInfoInput(BaseModel):
-    issue_number: int = Field(
-        ...,
-        description="The number of the issue to get information about",
-    )
-
-# function name will be used as slug
-@composio.tools.custom_tool(toolkit="github")
-def get_issue_info(
-    request: GetIssueInfoInput,
-    execute_request: ExecuteRequestFn,
-    auth_credentials: dict,
-) -> dict:
-    """Get information about a GitHub issue."""
-    response = execute_request(
-        endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
-        method="GET",
-        parameters=[
-            {
-                "name": "Accept",
-                "value": "application/vnd.github.v3+json",
-                "type": "header",
-            },
-            {
-                "name": "Authorization",
-                "value": f"Bearer {auth_credentials['access_token']}",
-                "type": "header",
-            },
-        ],
-    )
-    return {"data": response.data}
 ```
 
 </CodeGroup>
