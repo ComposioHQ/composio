@@ -38,7 +38,7 @@ def main():
             source_dir=source_dir,
             output_dir=output_dir,
             package_name="composio",
-            version="main",
+            version="next",
             clean=False  # Don't clean to preserve other files
         )
         

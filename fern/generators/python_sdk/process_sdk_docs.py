@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 from tqdm import tqdm
 
-from autodoc_core.autodoc import autodoc, resolve_links_in_text
-from markdown_formatter import convert_xml_to_markdown
+from .autodoc_core.autodoc import autodoc, resolve_links_in_text
+from .markdown_formatter import convert_xml_to_markdown
 
 # Pattern to find [[autodoc]] markers
 _re_autodoc = re.compile(r"^\s*\[\[autodoc\]\]\s+(\S+)\s*$")
@@ -27,7 +27,7 @@ def process_autodoc_file(
     file_path: Path,
     package,
     page_info: Dict[str, str],
-    version_tag_suffix: str = "src/"
+    version_tag_suffix: str = "python/"
 ) -> Tuple[str, Dict[str, str]]:
     """
     Process a single file containing autodoc markers.
@@ -170,29 +170,3 @@ def build_sdk_docs(
     
     logger.info(f"Documentation built successfully in {output_dir}")
     return all_anchors
-
-
-def main():
-    """CLI entry point for SDK documentation builder."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Build SDK documentation with autodoc markers")
-    parser.add_argument("source", help="Source directory containing markdown files")
-    parser.add_argument("output", help="Output directory for processed files")
-    parser.add_argument("--package", required=True, help="Python package name to document")
-    parser.add_argument("--version", default="main", help="Documentation version")
-    parser.add_argument("--no-clean", action="store_true", help="Don't clean output directory")
-    
-    args = parser.parse_args()
-    
-    build_sdk_docs(
-        source_dir=Path(args.source),
-        output_dir=Path(args.output),
-        package_name=args.package,
-        version=args.version,
-        clean=not args.no_clean
-    )
-
-
-if __name__ == "__main__":
-    main()

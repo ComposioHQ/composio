@@ -1,18 +1,3 @@
-# coding=utf-8
-# Copyright 2021 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import importlib
 import inspect
 import json
@@ -331,8 +316,8 @@ def get_source_link(obj, page_info, version_tag_suffix="src/"):
     """
     # Repo name defaults to package_name, but if provided in page_info, it will be used instead.
     repo_name = page_info.get("repo_name", page_info.get("package_name"))
-    version_tag = page_info.get("version_tag", "main")
-    repo_owner = page_info.get("repo_owner", "huggingface")
+    version_tag = page_info.get("version_tag", "next")
+    repo_owner = page_info.get("repo_owner", "composiohq")
     base_link = f"https://github.com/{repo_owner}/{repo_name}/blob/{version_tag}/{version_tag_suffix}"
     module = obj.__module__.replace(".", "/")
     line_number = inspect.getsourcelines(obj)[1]
@@ -446,7 +431,7 @@ def find_documented_methods(clas):
 docstring_css_classes = "docstring border-l-2 border-t-2 pl-4 pt-3.5 border-gray-100 rounded-tl-xl mb-6 mt-8"
 
 
-def autodoc(object_name, package, methods=None, return_anchors=False, page_info=None, version_tag_suffix="src/"):
+def autodoc(object_name, package, methods=None, return_anchors=False, page_info=None, version_tag_suffix="python/"):
     """
     Generates the documentation of an object, with a potential filtering on the methods for a class.
 
@@ -460,7 +445,7 @@ def autodoc(object_name, package, methods=None, return_anchors=False, page_info=
         return_anchors (`bool`, *optional*, defaults to `False`):
             Whether or not to return the list of anchors generated.
         page_info (`Dict[str, str]`, *optional*): Some information about the page.
-        version_tag_suffix (`str`, *optional*, defaults to `"src/"`):
+        version_tag_suffix (`str`, *optional*, defaults to `"python/"`):
             Suffix to add after the version tag (e.g. 1.3.0 or main) in the documentation links.
             For example, the default `"src/"` suffix will result in a base link as `https://github.com/{repo_owner}/{package_name}/blob/{version_tag}/src/`.
             For example, `version_tag_suffix=""` will result in a base link as `https://github.com/{repo_owner}/{package_name}/blob/{version_tag}/`.
