@@ -186,7 +186,7 @@ navigation:
     icon: rocket
     skip-slug: true
     contents:
-    - page: Basic Hono Server
+    - page: Basic Hono Server (JS)
       path: pages/dist/examples/sample-webserver/sample-webserver.mdx
       slug: examples/sample-webserver
   - section: Full Stack Applications
