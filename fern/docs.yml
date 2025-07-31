@@ -242,6 +242,8 @@ navigation:
         contents:
           - page: Using Triggers
             path: triggers/triggers.mdx
+          - page: Verifying Triggers
+            path: triggers/verifying-triggers.mdx
 
       - section: MCP
         icon: plug
