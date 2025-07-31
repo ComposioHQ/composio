@@ -296,12 +296,6 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Docmosis
-            path: tools/docmosis.mdx
-          - page: Dropbox
-            path: tools/dropbox.mdx
-          - page: Dropbox Sign
-            path: tools/dropbox_sign.mdx
           - page: Dynamics365
             path: tools/dynamics365.mdx
           - page: Echtpost
