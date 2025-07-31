@@ -1,323 +1,298 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+
 instances:
-- url: v3composio.docs.buildwithfern.com
-  custom-domain: docs.composio.dev
-  edit-this-page:
-    github:
-      owner: ComposioHQ
-      repo: composio
-      branch: master
-title: Composio Docs
-default-language: python
-logo:
-  light: assets/logo.svg
-  dark: assets/logo-dark.svg
-  height: 16
-  href: /
-favicon: assets/favicon.png
-js:
-- path: js/search.js
-  strategy: afterInteractive
-typography:
-  bodyFont:
-    name: Inter
-    paths:
-    - path: assets/Inter-Medium.woff2
-      weight: '500'
-  headingsFont:
-    name: Inter
-    paths:
-    - path: assets/Inter-Medium.woff2
-      weight: '500'
-  codeFont:
-    name: IBM Plex Mono
-    paths:
-    - path: assets/IBMPlexMono-Light.ttf
-      weight: '400'
-navbar-links:
-- type: primary
-  text: V1 Docs
-  url: https://v1.docs.composio.dev
-- type: filled
-  text: LOG IN
-  url: https://app.composio.dev/login
-layout:
-  page-width: full
-  tabs-placement: header
-  searchbar-placement: header-tabs
-  header-height: 50px
-  sidebar-width: 298px
-colors:
-  accent-primary:
-    light: '#FF782F'
-    dark: '#FF782F'
-  background:
-    light: '#F7F4F0'
-    dark: '#0F0602'
-  sidebar-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
-  header-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
+  - url: composio.docs.buildwithfern.com
+    custom-domain: v1.docs.composio.dev
+    edit-this-page:
+      github:
+        owner: ComposioHQ
+        repo: composio
+        branch: master
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
+
+experimental:
+  openapi-parser-v3: true
+
+title: Composio
+favicon: favicon.png
+logo:
+  light: logo/logo.svg
+  dark: logo/logo.svg
+  height: 30
+  href: /
+colors:
+  accent-primary:
+    light: "#6366F1"
+    dark: "#818CF8"
+  background:
+    light: "#F8F9FF"
+    dark: "#0F172A"
+typography:
+  bodyFont:
+    name: Inter-Regular
+    paths:
+      - path: fonts/Inter Regular.woff2
+        weight: 500
+        style: normal
+      - path: fonts/Inter Bold.woff2
+        weight: 600
+        style: normal
+announcement:
+  message: '🎉 Our next generation of SDK are now available in preview. <a href="https://v3.docs.composio.dev">Try them out now</a>!'
+
+layout:
+  tabs-placement: header
+  searchbar-placement: header
+  disable-header: false
+  content-width: 50rem
+navbar-links:
+  - type: minimal
+    text: Discord
+    href: https://dub.composio.dev/discord
+  - type: filled
+    text: Get your API Key
+    href: https://app.composio.dev/developers
+css: dist/output.css
+redirects:
+  - source: /introduction/intro/overview
+    destination: /getting-started/welcome
+  - source: /introduction/intro/basic
+    destination: /getting-started/quickstart
+  - source: /introduction/intro/quickstart
+    destination: /getting-started/quickstart
+  - source: /introduction/intro/quickstart-tools
+    destination: /getting-started/quickstart
+  - source: /introduction/intro/quickstart-triggers
+    destination: /getting-started/quickstart
+  - source: /patterns/tools/what-are-tools
+    destination: /concepts/tool-calling/overview
+  - source: /patterns/tools/use-tools/:slug
+    destination: /concepts/tool-calling/overview
+  - source: /patterns/Auth/:slug
+    destination: /concepts/authentication/overview
+  - source: /patterns/triggers/:slug
+    destination: /concepts/triggers
+  - source: /framework/:slug
+    destination: /frameworks/:slug
+  - source: /cryptokit/:slug
+    destination: /
+  - source: /swe-kit/:slug
+    destination: /
+  - source: /sdrkit/:slug
+    destination: /
+  - source: /javascript/cloudflare
+    destination: /frameworks/javascript/cloudflare
+  - source: /javascript/vercel
+    destination: /frameworks/javascript/vercel
+  - source: /javascript/langchain
+    destination: /frameworks/javascript/langchain-js
+  - source: /javascript/openai
+    destination: /frameworks/javascript/openai-js
+  - source: /examples/combined/calendar-agent-javascript
+    destination: /examples/calendar-agent
+  - source: /examples/combined/calendar-agent-python
+    destination: /examples/calendar-agent
+  - source: /examples/combined/code-execution-agent-javascript
+    destination: /examples/code-execution-agent
+  - source: /examples/combined/code-execution-agent-python
+    destination: /examples/code-execution-agent
+  - source: /examples/combined/newsletter-summarizer-javascript
+    destination: /examples/newsletter-summarizer
+  - source: /examples/combined/newsletter-summarizer-python
+    destination: /examples/newsletter-summarizer
+  - source: /examples/combined/rag-agent-javascript
+    destination: /examples/rag-agent
+  - source: /examples/combined/rag-agent-python
+    destination: /examples/rag-agent
+  - source: /examples/combined/research-agent-javascript
+    destination: /examples/research-agent
+  - source: /examples/combined/research-agent-python
+    destination: /examples/research-agent
+  - source: /examples/combined/sql-agent-javascript
+    destination: /examples/sql-agent
+  - source: /examples/combined/sql-agent-python
+    destination: /examples/sql-agent
+  - source: /faq/api_key/api_key
+    destination: /getting-started/installation
+  - source: /faq/api_key/cli
+    destination: /getting-started/installation
+  - source: /faq/integrations_and_connections/list_of_tools
+    destination: /concepts/tool-calling/overview
+  - source: /faq/supported_llms/supported_llm
+    destination: /frameworks/
+  - source: /apps/gitlab
+    destination: https://app.composio.dev/apps
+  - source: /apps/bitbucket
+    destination: https://app.composio.dev/apps
+  - source: /apps/usecases/langchain_blogs/
+    destination: https://app.composio.dev/apps/
+  - source: /apps/usecases/crewai/:slug2*
+    destination: https://app.composio.dev/apps/:slug2*
+  - source: /apps/usecases/autogen_blogs/:slug2*
+    destination: https://app.composio.dev/apps/:slug2*
+  - source: /apps/:slug2*
+    destination: https://app.composio.dev/apps/:slug2*
+  - source: /apps
+    destination: https://app.composio.dev/apps
+  - source: /changelog
+    destination: https://github.com/ComposioHQ/composio/releases
+  - source: /introduction/foundations/howtos/get_api_key
+    destination: /getting-started/installation
+  - source: /sdk/cli/trigger
+    destination: /concepts/triggers
+  - source: /guides/:slug1*
+    destination: /examples/:slug1*
+  - source: /python/local_tools
+    destination: /concepts/tool-calling/overview
+  - source: /introduction/foundations/components/local_tools
+    destination: /concepts/tool-calling/overview
+  - source: /integrations/:slug
+    destination: /concepts/authentication/overview
+  - source: /introduction/foundations/components/workspace
+    destination: /concepts/workspaces/workspaces
+  - source: /swekit-examples/:slug
+    destination: /
+  - source: /swekit-js/:slug
+    destination: /
+  - source: /swekit-tools/:slug
+    destination: /
+  - source: /swekit/:slug
+    destination: /
+js:
+  - ./custom.js
 tabs:
   docs:
-    display-name: Guides
+    display-name: Docs
+    skip-slug: true
     icon: book
-    slug: docs
+  guides:
+    display-name: Guides
+    slug: guides
+    icon: map
   sdk-reference:
     display-name: SDK Reference
+    href: https://deepwiki.com/ComposioHQ/composio
     icon: code
   api-reference:
     display-name: API Reference
+    slug: api-reference
     icon: server
+  frameworks:
+    display-name: Frameworks
+    slug: frameworks
     skip-slug: true
+    icon: file
   tools:
     display-name: Tools
-    icon: tools
+    slug: tools
     skip-slug: true
-  providers:
-    display-name: Providers
-    icon: code
-    skip-slug: true
-  examples:
-    display-name: Examples
-    icon: running
-    skip-slug: true
-  changelog:
-    display-name: Changelog
-    icon: history
-    changelog: ./pages/changelog
+    icon: puzzle
 navigation:
-- tab: docs
-  layout:
-  - section: Get Started
-    icon: rocket
-    skip-slug: true
-    contents:
-    - page: Welcome
-      path: pages/dist/get-started/welcome.mdx
-      slug: welcome
-    - page: Quickstart
-      path: pages/dist/get-started/quickstart.mdx
-      slug: quickstart
-    - page: IDE and Agent Setup
-      path: pages/dist/get-started/dev-setup.mdx
-      slug: dev-setup
-    - page: Providers
-      path: pages/dist/get-started/providers.mdx
-      slug: providers
-  - section: Tools
-    icon: tools
-    skip-slug: true
-    contents:
-    - page: Executing Tools
-      path: pages/dist/tool-calling/executing-tools.mdx
-      slug: executing-tools
-    - page: Authenticating Tools
-      path: pages/dist/tool-calling/authenticating-tools.mdx
-      slug: authenticating-tools
-    - page: Fetch and Filter Tools
-      path: pages/dist/tool-calling/fetching-tools.mdx
-      slug: fetching-tools
-    - section: Modifiers
-      slug: modifiers
-      contents:
-      - page: Schema Modifiers
-        path: pages/dist/tool-calling/schema-modifiers.mdx
-        slug: schema-modifiers
-      - page: Before Tool Execution
-        path: pages/dist/tool-calling/before-execution-modifiers.mdx
-        slug: before-execution
-      - page: After Tool Execution
-        path: pages/dist/tool-calling/after-execution-modifiers.mdx
-        slug: after-execution
-    - page: Custom tools
-      path: pages/dist/tool-calling/custom-tools.mdx
-      slug: custom-tools
-  - section: Authentication
-    icon: lock
-    skip-slug: true
-    contents:
-    - page: Custom Auth Configs
-      path: pages/dist/authentication/custom-auth-configs.mdx
-      slug: custom-auth-configs
-    - page: Programmatic Auth Configs
-      path: pages/dist/authentication/programmatic-auth-configs.mdx
-      slug: programmatic-auth-configs
-    - page: Custom Auth Parameters
-      path: pages/dist/authentication/custom-auth-params.mdx
-      slug: custom-auth-params
-  - section: Triggers
-    icon: bolt
-    skip-slug: true
-    contents:
-    - page: Using Triggers
-      path: pages/dist/triggers/using-triggers.mdx
-      slug: using-triggers
-  - section: MCP
-    icon: server
-    skip-slug: true
-    contents:
-    - page: Overview
-      path: pages/dist/mcp/overview.mdx
-      slug: mcp-overview
-    - page: Developers
-      path: pages/dist/mcp/developers.mdx
-      slug: mcp-developers
-    - page: Partner Program
-      path: pages/dist/mcp/partner-api.mdx
-      slug: mcp-partner-api
-    - page: Providers
-      path: pages/dist/mcp/providers.mdx
-      slug: mcp-providers
-  - section: Resources
-    icon: book
-    skip-slug: true
-    contents:
-    - page: Migration Guide
-      path: pages/dist/migration-guide.mdx
-      slug: migration
-- tab: examples
-  layout:
-  - section: Getting Started
-    icon: rocket
-    skip-slug: true
-    contents:
-    - page: Basic Hono Server
-      path: pages/dist/examples/sample-webserver/sample-webserver.mdx
-      slug: examples/sample-webserver
-  - section: Full Stack Applications
-    icon: globe
-    skip-slug: true
-    contents:
-    - page: Full Stack Chat App
-      path: pages/dist/examples/vercel-composio.mdx
-      slug: examples/chat-app
-  - section: Productivity & Automation
-    icon: zap
-    skip-slug: true
-    contents:
-    - page: AI Gmail Labeller
-      path: pages/dist/examples/gmail-filterer.mdx
-      slug: examples/gmail-reaper
-  - section: Behind the curtain
-    icon: person-booth
-    skip-slug: true
-    contents:
-    - page: Tool Generator
-      path: pages/dist/examples/tool-generator/tool-generator.mdx
-      slug: examples/tool-generator
-- tab: providers
-  layout:
-  - section: Supported Providers
-    icon: code
-    contents:
-    - page: OpenAI Provider
-      path: pages/dist/providers/openai.mdx
-    - page: Anthropic Provider
-      path: pages/dist/providers/anthropic.mdx
-    - page: Google Provider
-      path: pages/dist/providers/google.mdx
-    - page: LangChain Provider
-      path: pages/dist/providers/langchain.mdx
-    - page: CrewAI Provider
-      path: pages/dist/providers/crewai.mdx
-    - page: Vercel AI SDK Provider
-      path: pages/dist/providers/vercel.mdx
-    - page: OpenAI Agents Provider
-      path: pages/dist/providers/openai-agents.mdx
-    - page: Mastra Provider
-      path: pages/dist/providers/mastra.mdx
-  - section: Writing your own provider
-    skip-slug: true
-    icon: code
-    contents:
-    - page: TypeScript
-      path: pages/dist/providers/ts-custom.mdx
-      slug: providers/custom/typescript
-    - page: Python
-      path: pages/dist/providers/py-custom.mdx
-      slug: providers/custom/python
-- tab: tools
-  layout:
-  - section: Tool
-    contents:
-    - page: Introduction
-      path: tools/introduction.mdx
-    - page: Premium Tools
-      path: tools/src/premium-tools.mdx
-  - section: Important
-    skip-slug: true
-    contents:
-    - page: Github
-      slug: tools/github
-      path: tools/github.mdx
-    - page: Gmail
-      slug: tools/gmail
-      path: tools/gmail.mdx
-    - page: Notion
-      slug: tools/notion
-      path: tools/notion.mdx
-  - section: Scheduling & Booking
-    skip-slug: true
-    contents:
-    - page: Googlecalendar
-      slug: tools/googlecalendar
-      path: tools/googlecalendar.mdx
-  - section: No Auth
-    skip-slug: true
-    contents:
-    - page: Composio
-      slug: tools/composio
-      path: tools/composio.mdx
-- tab: sdk-reference
-  layout:
-  - section: Python
-    icon: python
-    contents:
-    - page: Python SDK Reference
-      path: pages/dist/sdk/python/sdk-reference.md
-  - section: TypeScript
-    icon: typescript
-    contents:
-    - section: Core Classes
-      slug: core-classes
-      contents:
-      - page: Composio
-        path: pages/dist/sdk/typescript/composio/classes/Composio.mdx
-      - page: ComposioProvider
-        path: pages/dist/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
-      - page: OpenAIProvider
-        path: pages/dist/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
-      - page: BaseAgenticProvider
-        path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
-      - page: BaseNonAgenticProvider
-        path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
-    - section: Models
-      slug: models
-      contents:
-      - page: Tools
-        path: pages/dist/sdk/typescript/models/Tools/classes/Tools.mdx
-      - page: Toolkits
-        path: pages/dist/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
-      - page: Triggers
-        path: pages/dist/sdk/typescript/models/Triggers/classes/Triggers.mdx
-      - page: AuthConfigs
-        path: pages/dist/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
-      - page: ConnectedAccounts
-        path: pages/dist/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
-      - page: CustomTools
-        path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
-- tab: api-reference
-  layout:
-  - section: API Reference
-    contents:
-    - api: v3
-      api-name: v3
-      skip-slug: true
-      paginated: false
-      flattened: true
-- tab: changelog
+  - tab: docs
+    layout:
+      - section: Getting Started
+        icon: rocket
+        contents:
+          - page: Welcome
+            path: pages/dist/get-started/welcome.mdx
+          - page: Dev Setup
+            path: pages/dist/get-started/dev-setup.mdx
+          - page: Quickstart
+            path: pages/dist/get-started/quickstart.mdx
+          - page: Providers
+            path: pages/dist/get-started/providers.mdx
+      - section: Tool Calling
+        icon: wrench
+        contents:
+          - page: Fetching Tools
+            path: pages/dist/tool-calling/fetching-tools.mdx
+          - page: Executing Tools
+            path: pages/dist/tool-calling/executing-tools.mdx
+          - page: Customizing Tools
+            path: pages/dist/tool-calling/custom-tools.mdx
+          - page: Authenticating Tools
+            path: pages/dist/tool-calling/authenticating-tools.mdx
+          - page: Schema Modifiers
+            path: pages/dist/tool-calling/schema-modifiers.mdx
+          - page: Before Execution Modifiers
+            path: pages/dist/tool-calling/before-execution-modifiers.mdx
+          - page: After Execution Modifiers
+            path: pages/dist/tool-calling/after-execution-modifiers.mdx
+      - section: Auth
+        icon: lock
+        contents:
+          - page: Custom Auth Configs
+            path: pages/dist/authentication/custom-auth-configs.mdx
+          - page: Custom Auth Params
+            path: pages/dist/authentication/custom-auth-params.mdx
+          - page: Programmatic Auth Configs
+            path: pages/dist/authentication/programmatic-auth-configs.mdx
+      - section: Triggers
+        icon: bolt
+        contents:
+          - page: Using Triggers
+            path: triggers/triggers.mdx
+          - page: Verifying Triggers
+            path: triggers/verifying-triggers.mdx
+
+      - section: MCP
+        icon: plug
+        contents:
+          - page: Introduction
+            path: pages/dist/mcp/introduction.mdx
+          - page: Overview
+            path: pages/dist/mcp/overview.mdx
+          - page: Developers
+            path: pages/dist/mcp/developers.mdx
+          - page: Providers
+            path: pages/dist/mcp/providers.mdx
+          - page: Partner API
+            path: pages/dist/mcp/partner-api.mdx
+
+
+
+
+
+
+  - tab: api-reference
+    layout:
+      - section: API Reference
+        contents:
+          - api: v3
+            api-name: v3
+            flattened: false
+            paginated: true
+            slug: v3
+          - api: v1
+            api-name: v1
+            paginated: true
+            skip-slug: true
+            flattened: false
+          - api: MCP Partner
+            api-name: mcp
+            slug: mcp
+            flattened: false
+            paginated: true
+
+  - tab: sdk-reference
+  - tab: api-reference
+    layout:
+      - section: API Reference
+        contents:
+          - api: v3
+            api-name: v3
+            flattened: false
+            paginated: true
+            slug: v3
+          - api: v1
+            api-name: v1
+            paginated: true
+            skip-slug: true
+            flattened: false
+          - api: MCP Partner
+            api-name: mcp
+            slug: mcp
+            flattened: false
+            paginated: true
