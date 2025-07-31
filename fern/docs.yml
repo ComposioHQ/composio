@@ -196,47 +196,39 @@ navigation:
         icon: rocket
         contents:
           - page: Welcome
-            path: getting-started/welcome.mdx
-          - page: Installation
-            path: getting-started/installation.mdx
+            path: pages/dist/get-started/welcome.mdx
+          - page: Dev Setup
+            path: pages/dist/get-started/dev-setup.mdx
           - page: Quickstart
-            path: getting-started/quickstart.mdx
+            path: pages/dist/get-started/quickstart.mdx
+          - page: Providers
+            path: pages/dist/get-started/providers.mdx
       - section: Tool Calling
         icon: wrench
         contents:
-          - page: Introduction
-            path: tool-calling/introduction.mdx
           - page: Fetching Tools
-            path: tool-calling/fetching-tools.mdx
+            path: pages/dist/tool-calling/fetching-tools.mdx
           - page: Executing Tools
-            path: tool-calling/executing-tools.mdx
+            path: pages/dist/tool-calling/executing-tools.mdx
           - page: Customizing Tools
-            path: tool-calling/custom-tools.mdx
-          - page: Processing Tools
-            path: tool-calling/processing-tools.mdx
-          - page: Adding Your Own App
-            path: tool-calling/add-your-app.mdx
+            path: pages/dist/tool-calling/custom-tools.mdx
+          - page: Authenticating Tools
+            path: pages/dist/tool-calling/authenticating-tools.mdx
+          - page: Schema Modifiers
+            path: pages/dist/tool-calling/schema-modifiers.mdx
+          - page: Before Execution Modifiers
+            path: pages/dist/tool-calling/before-execution-modifiers.mdx
+          - page: After Execution Modifiers
+            path: pages/dist/tool-calling/after-execution-modifiers.mdx
       - section: Auth
         icon: lock
         contents:
-          - page: Introduction
-            path: authentication/introduction.mdx
-          - page: Set up Integrations
-            path: authentication/integration.mdx
-          - section: Connecting Users
-            slug: connection
-            path: authentication/connection.mdx
-            contents:
-              - page: To OAuth Apps
-                path: authentication/oauth.mdx
-                slug: oauth
-              - page: To Token Apps
-                path: authentication/non-oauth.mdx
-                slug: non-oauth
-          - page: White-labelling
-            path: authentication/white-labelling.mdx
-          - page: Injecting Custom Credentials
-            path: authentication/injecting-credentials.mdx
+          - page: Custom Auth Configs
+            path: pages/dist/authentication/custom-auth-configs.mdx
+          - page: Custom Auth Params
+            path: pages/dist/authentication/custom-auth-params.mdx
+          - page: Programmatic Auth Configs
+            path: pages/dist/authentication/programmatic-auth-configs.mdx
       - section: Triggers
         icon: bolt
         contents:
@@ -249,114 +241,20 @@ navigation:
         icon: plug
         contents:
           - page: Introduction
-            path: mcp/introduction.mdx
-          - section: MCP Clients
-            slug: clients
-            contents:
-              - page: Cursor
-                path: mcp/cursor.mdx
-              - page: Claude
-                path: mcp/claude.mdx
-              - page: Windsurf
-                path: mcp/windsurf.mdx
-
-      - section: Changelog
-        icon: calendar
-        contents:
-          - page: API V3 Migration
-            path: changelogs/overview.mdx
+            path: pages/dist/mcp/introduction.mdx
+          - page: Overview
+            path: pages/dist/mcp/overview.mdx
+          - page: Developers
+            path: pages/dist/mcp/developers.mdx
+          - page: Providers
+            path: pages/dist/mcp/providers.mdx
+          - page: Partner API
+            path: pages/dist/mcp/partner-api.mdx
 
 
-      - section: Errors
-        icon: bug
-        contents:
-          - page: Error Handling
-            path: api/errors.mdx
 
 
-  - tab: frameworks
-    layout:
-      - section: Model Providers
-        contents:
-          - page: OpenAI
-            path: frameworks/openai.mdx
-            slug: openai
-          - page: Gemini
-            path: frameworks/gemini.mdx
-            slug: gemini
-      - section: Frameworks
-        contents:
-          - page: LangChain
-            path: frameworks/langchain.mdx
-            slug: langchain
-          - page: LangGraph
-            path: frameworks/langgraph.mdx
-            slug: langgraph
-          - page: CrewAI
-            path: frameworks/crewai.mdx
-            slug: crewai
-          - page: Vercel AI
-            path: frameworks/vercel.mdx
-            slug: vercel
-          - page: Autogen
-            path: frameworks/autogen.mdx
-            slug: autogen
-      - section: Creating Frameworks
-        contents:
-          - page: Python SDK
-            path: frameworks/guides/python-sdk.mdx
-            icon: fa-brands fa-python
-      - section: Other Frameworks
-        slug: frameworks
-        contents:
-          - page: LlamaIndex
-            path: frameworks/llamaindex.mdx
-            slug: llamaindex
-          - page: SmolAgents
-            path: frameworks/smolagents.mdx
-            slug: smolagents
-          - page: Cloudflare Worker AI
-            path: frameworks/cloudflare.mdx
-            slug: cloudflare
-          - page: CamelAI
-            path: frameworks/camelai.mdx
-            slug: camelai
-          - page: Google
-            path: frameworks/google.mdx
-            slug: google
-          - page: Griptape
-            path: frameworks/griptape.mdx
-            slug: griptape
-          - page: Groq
-            path: frameworks/groq.mdx
-          - page: IBM
-            path: frameworks/ibm.mdx
-            slug: ibm
-          - page: Julep
-            path: frameworks/julep.mdx
-            slug: julep
-          - page: Letta
-            path: frameworks/letta.mdx
-          - page: LiteLLM
-            path: frameworks/litellm.mdx
-            slug: litellm
-          - page: Lyzr
-            path: frameworks/lyzr.mdx
-            slug: lyzr
-          - page: PraisonAI
-            path: frameworks/praisonai.mdx
-          - page: Agno
-            path: frameworks/agno.mdx
-            slug: agno
-          - page: Together
-            path: frameworks/together.mdx
-            slug: together
-          - page: Mastra
-            path: frameworks/mastra.mdx
-            slug: mastra
-          - page: Livekit
-            path: frameworks/livekit.mdx
-            slug: livekit
+
 
   - tab: api-reference
     layout:
