@@ -296,34 +296,6 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Chmeetings
-            path: tools/chmeetings.mdx
-          - page: Clickup
-            path: tools/clickup.mdx
-          - page: Clockify
-            path: tools/clockify.mdx
-          - page: Close
-            path: tools/close.mdx
-          - page: Cloudflare
-            path: tools/cloudflare.mdx
-          - page: Coda
-            path: tools/coda.mdx
-          - page: Codeinterpreter
-            path: tools/codeinterpreter.mdx
-          - page: Coinbase
-            path: tools/coinbase.mdx
-          - page: Coinmarketcal
-            path: tools/coinmarketcal.mdx
-          - page: Composio
-            path: tools/composio.mdx
-          - page: Composio Search
-            path: tools/composio_search.mdx
-          - page: Confluence
-            path: tools/confluence.mdx
-          - page: Contentful
-            path: tools/contentful.mdx
-          - page: Crustdata
-            path: tools/crustdata.mdx
           - page: Customer Io
             path: tools/customer_io.mdx
           - page: Cutt Ly
