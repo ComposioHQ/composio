@@ -427,8 +427,8 @@ const port = 1000;
 
 app.use(express.json());
 
-// Get this from dashboard
-const COMPOSIO_WEBHOOK_SECRET = "090789c8-041c-4412-8c0a-f7175a6594be";
+// Get this from dashboard - store securely as environment variable
+const COMPOSIO_WEBHOOK_SECRET = process.env.COMPOSIO_WEBHOOK_SECRET || "your-webhook-secret-here";
 
 function verifyWebhook(payload: unknown, headers: Request['headers']): boolean {
     const { 
