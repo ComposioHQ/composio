@@ -296,36 +296,8 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Customer Io
-            path: tools/customer_io.mdx
-          - page: Cutt Ly
-            path: tools/cutt_ly.mdx
-          - page: D2Lbrightspace
-            path: tools/d2lbrightspace.mdx
-          - page: Dailybot
-            path: tools/dailybot.mdx
-          - page: Datadog
-            path: tools/datadog.mdx
-          - page: Datagma
-            path: tools/datagma.mdx
-          - page: Datarobot
-            path: tools/datarobot.mdx
-          - page: Deel
-            path: tools/deel.mdx
-          - page: Demio
-            path: tools/demio.mdx
-          - page: Dialpad
-            path: tools/dialpad.mdx
-          - page: Digicert
-            path: tools/digicert.mdx
-          - page: Discord
-            path: tools/discord.mdx
-          - page: Discordbot
-            path: tools/discordbot.mdx
           - page: Docmosis
             path: tools/docmosis.mdx
-          - page: Docusign
-            path: tools/docusign.mdx
           - page: Dropbox
             path: tools/dropbox.mdx
           - page: Dropbox Sign
