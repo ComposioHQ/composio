@@ -296,24 +296,6 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Dynamics365
-            path: tools/dynamics365.mdx
-          - page: Echtpost
-            path: tools/echtpost.mdx
-          - page: Elevenlabs
-            path: tools/elevenlabs.mdx
-          - page: Emailoctopus
-            path: tools/emailoctopus.mdx
-          - page: Enigma
-            path: tools/enigma.mdx
-          - page: Entelligence
-            path: tools/entelligence.mdx
-          - page: Epic Games
-            path: tools/epic_games.mdx
-          - page: Eventbrite
-            path: tools/eventbrite.mdx
-          - page: Exa
-            path: tools/exa.mdx
           - page: Excel
             path: tools/excel.mdx
           - page: Exist
