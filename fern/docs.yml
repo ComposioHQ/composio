@@ -296,26 +296,6 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Brex
-            path: tools/brex.mdx
-          - page: Brex Staging
-            path: tools/brex_staging.mdx
-          - page: Brightpearl
-            path: tools/brightpearl.mdx
-          - page: Brilliant Directories
-            path: tools/brilliant_directories.mdx
-          - page: Browseai
-            path: tools/browseai.mdx
-          - page: Browserbase Tool
-            path: tools/browserbase_tool.mdx
-          - page: Browserhub
-            path: tools/browserhub.mdx
-          - page: Browserless
-            path: tools/browserless.mdx
-          - page: Bubble
-            path: tools/bubble.mdx
-          - page: Bugbug
-            path: tools/bugbug.mdx
           - page: Cal
             path: tools/cal.mdx
           - page: Calendly
