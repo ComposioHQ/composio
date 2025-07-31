@@ -54,7 +54,7 @@ navbar-links:
   - type: filled
     text: Get your API Key
     href: https://app.composio.dev/developers
-css: styles.css
+css: dist/output.css
 redirects:
   - source: /introduction/intro/overview
     destination: /getting-started/welcome
