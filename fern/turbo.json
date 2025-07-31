@@ -3,8 +3,8 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
-      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
+      "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs", "compile"],
+      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**", "dist/output.css"],
       "cache": true
     },
     
