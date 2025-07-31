@@ -277,100 +277,25 @@ navigation:
             paginated: true
 
   - tab: sdk-reference
-  - tab: tools
+  - tab: api-reference
     layout:
-      - section: Tools
+      - section: API Reference
         contents:
-          - page: Introduction
-            path: tools/introduction.mdx
-          - page: Ably
-            path: tools/ably.mdx
-          - page: Accelo
-            path: tools/accelo.mdx
-          - page: Acculynx
-            path: tools/acculynx.mdx
-          - page: Active Campaign
-            path: tools/active_campaign.mdx
-          - page: Adobe
-            path: tools/adobe.mdx
-          - page: Aero Workflow
-            path: tools/aero_workflow.mdx
-          - page: Affinity
-            path: tools/affinity.mdx
-          - page: Agencyzoom
-            path: tools/agencyzoom.mdx
-          - page: Ahrefs
-            path: tools/ahrefs.mdx
-          - page: Airtable
-            path: tools/airtable.mdx
-          - page: Alchemy
-            path: tools/alchemy.mdx
-          - page: Altoviz
-            path: tools/altoviz.mdx
-          - page: Amazon
-            path: tools/amazon.mdx
-          - page: Amcards
-            path: tools/amcards.mdx
-          - page: Amplitude
-            path: tools/amplitude.mdx
-          - page: Apaleo
-            path: tools/apaleo.mdx
-          - page: Apollo
-            path: tools/apollo.mdx
-          - page: Appdrag
-            path: tools/appdrag.mdx
-          - page: Appsflyer
-            path: tools/appsflyer.mdx
-          - page: Asana
-            path: tools/asana.mdx
-          - page: Ashby
-            path: tools/ashby.mdx
-          - page: Atlassian
-            path: tools/atlassian.mdx
-          - page: Attio
-            path: tools/attio.mdx
-          - page: Auth0
-            path: tools/auth0.mdx
-          - page: Axonaut
-            path: tools/axonaut.mdx
-          - page: Bamboohr
-            path: tools/bamboohr.mdx
-          - page: Bannerbear
-            path: tools/bannerbear.mdx
-          - page: Baserow
-            path: tools/baserow.mdx
-          - page: Battlenet
-            path: tools/battlenet.mdx
-          - page: Beeminder
-            path: tools/beeminder.mdx
-          - page: Bigmailer
-            path: tools/bigmailer.mdx
-          - page: Bitbucket
-            path: tools/bitbucket.mdx
-          - page: Bitwarden
-            path: tools/bitwarden.mdx
-          - page: Blackbaud
-            path: tools/blackbaud.mdx
-          - page: Blackboard
-            path: tools/blackboard.mdx
-          - page: Boldsign
-            path: tools/boldsign.mdx
-          - page: Bolna
-            path: tools/bolna.mdx
-          - page: Borneo
-            path: tools/borneo.mdx
-          - page: Botbaba
-            path: tools/botbaba.mdx
-          - page: Box
-            path: tools/box.mdx
-          - page: Braintree
-            path: tools/braintree.mdx
-          - page: Brandfetch
-            path: tools/brandfetch.mdx
-          - page: Breezy Hr
-            path: tools/breezy_hr.mdx
-          - page: Brevo
-            path: tools/brevo.mdx
+          - api: v3
+            api-name: v3
+            flattened: false
+            paginated: true
+            slug: v3
+          - api: v1
+            api-name: v1
+            paginated: true
+            skip-slug: true
+            flattened: false
+          - api: MCP Partner
+            api-name: mcp
+            slug: mcp
+            flattened: false
+            paginated: true
           - page: Brex
             path: tools/brex.mdx
           - page: Brex Staging
