@@ -296,30 +296,10 @@ navigation:
             slug: mcp
             flattened: false
             paginated: true
-          - page: Figma
-            path: tools/figma.mdx
-          - page: Finage
-            path: tools/finage.mdx
-          - page: Firecrawl
-            path: tools/firecrawl.mdx
-          - page: Fireflies
-            path: tools/fireflies.mdx
-          - page: Fitbit
-            path: tools/fitbit.mdx
-          - page: Flutterwave
-            path: tools/flutterwave.mdx
           - page: Fomo
             path: tools/fomo.mdx
           - page: Formcarry
             path: tools/formcarry.mdx
-          - page: Formsite
-            path: tools/formsite.mdx
-          - page: Foursquare
-            path: tools/foursquare.mdx
-          - page: Freshbooks
-            path: tools/freshbooks.mdx
-          - page: Freshdesk
-            path: tools/freshdesk.mdx
           - page: Front
             path: tools/front.mdx
           - page: Github
