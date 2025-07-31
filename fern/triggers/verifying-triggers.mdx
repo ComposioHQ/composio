@@ -1,0 +1,104 @@
+---
+title: Verifying Triggers
+description: Learn how to securely verify webhook signatures from Composio using HMAC-SHA256
+---
+
+# Webhook Security & Verification
+
+When receiving webhooks in production, it's crucial to verify that the requests are actually coming from Composio and haven't been tampered with. Composio signs all webhook payloads using HMAC-SHA256 signatures.
+
+## Verifying Webhook Signatures
+
+Here's how to implement proper webhook verification with signature validation and timestamp checking:
+
+<CodeGroup>
+```typescript TypeScript
+/**
+ * Standard webhook server with HMAC-SHA256 signature verification.
+ * 
+ * Validates incoming webhooks by:
+ * - Checking timestamp freshness (5min window) to prevent replay attacks
+ * - Computing HMAC signature from webhook-id, timestamp, and payload
+ * - Timing-safe comparison against provided signature(s)
+ */
+
+import express, { Request, Response } from 'express';
+import crypto from 'crypto';
+
+const app = express();
+const port = 1000;
+
+app.use(express.json());
+
+// Get this from dashboard - store securely as environment variable
+const COMPOSIO_WEBHOOK_SECRET = process.env.COMPOSIO_WEBHOOK_SECRET || "your-webhook-secret-here";
+
+function verifyWebhook(payload: unknown, headers: Request['headers']): boolean {
+    const { 
+        'webhook-id': msgId, 
+        'webhook-signature': msgSignature, 
+        'webhook-timestamp': msgTimestamp 
+    } = headers;
+
+    if (!msgSignature || !msgId || !msgTimestamp) {
+        throw new Error("Missing required headers");
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const timestamp = parseInt(msgTimestamp, 10);
+    
+    if (isNaN(timestamp) || Math.abs(now - timestamp) > 300) {
+        throw new Error("Invalid or expired timestamp");
+    }
+
+    const baseSecret = Buffer.from(COMPOSIO_WEBHOOK_SECRET).toString('base64');
+    const key = Buffer.from(baseSecret, 'base64');
+    const signaturePayload = `${msgId}.${timestamp}.${JSON.stringify(payload)}`;
+    
+    const hmac = crypto.createHmac('sha256', key);
+    hmac.update(Buffer.from(signaturePayload));
+    const computedSignature = `v1,${hmac.digest('base64')}`;
+    
+    const [computedVersion, computedHash] = computedSignature.split(',');
+    const providedSignatures = msgSignature.split(' ');
+    
+    return providedSignatures.some(signature => {
+        const [version, hash] = signature.split(',');
+        return version === computedVersion && 
+               crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(computedHash));
+    });
+}
+
+app.post('/', (req: Request, res: Response): void => {
+    try {
+        const isVerified = verifyWebhook(req.body, req.headers);
+        
+        if (!isVerified) {
+            res.status(401).send('Invalid signature');
+            return;
+        }
+
+        res.status(200).send('Webhook verified successfully');
+    } catch (error) {
+        console.error('Webhook verification error:', error);
+        res.status(400).send('Webhook verification failed');
+    }
+});
+
+app.listen(port, (): void => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
+```
+</CodeGroup>
+
+## Security Best Practices
+
+- **Always verify signatures**: Never process webhook payloads without signature verification in production
+- **Check timestamps**: Implement timestamp validation to prevent replay attacks (5-minute window recommended)
+- **Use timing-safe comparison**: Use `crypto.timingSafeEqual()` to prevent timing attacks
+- **Store secrets securely**: Keep your webhook secret in environment variables, not in code
+- **Handle errors gracefully**: Return appropriate HTTP status codes for verification failures
+
+<Tip>
+You can find your webhook secret in the Composio dashboard under your project settings. Make sure to store it securely as an environment variable.
+</Tip>
