@@ -1,14 +1,17 @@
 base_layout = [
     {
-        "section": "Tool",
+        "section": "Toolkits",
+        "skip-slug": True,
         "contents": [
             {
                 "page": "Introduction",
-                "path": "tools/introduction.mdx"
+                "path": "toolkits/src/introduction.mdx",
+                "slug": "toolkits/introduction"
             },
             {
                 "page": "Premium Tools",
-                "path": "tools/src/premium-tools.mdx"
+                "path": "toolkits/src/premium-tools.mdx",
+                "slug": "toolkits/premium-tools"
             }
         ]
     }
