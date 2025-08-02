@@ -62,6 +62,9 @@ colors:
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
+redirects:
+- source: /tools/*
+  destination: /toolkits/*
 tabs:
   docs:
     display-name: Guides
@@ -74,8 +77,8 @@ tabs:
     display-name: API Reference
     icon: server
     skip-slug: true
-  tools:
-    display-name: Tools
+  toolkits:
+    display-name: Toolkits
     icon: tools
     skip-slug: true
   providers:
@@ -241,38 +244,41 @@ navigation:
     - page: Python
       path: pages/dist/providers/py-custom.mdx
       slug: providers/custom/python
-- tab: tools
+- tab: toolkits
   layout:
-  - section: Tool
+  - section: Toolkits
+    skip-slug: true
     contents:
     - page: Introduction
-      path: tools/introduction.mdx
+      path: toolkits/src/introduction.mdx
+      slug: toolkits/introduction
     - page: Premium Tools
-      path: tools/src/premium-tools.mdx
+      path: toolkits/src/premium-tools.mdx
+      slug: toolkits/premium-tools
   - section: Important
     skip-slug: true
     contents:
     - page: Github
-      slug: tools/github
-      path: tools/github.mdx
+      slug: toolkits/github
+      path: toolkits/github.mdx
     - page: Gmail
-      slug: tools/gmail
-      path: tools/gmail.mdx
+      slug: toolkits/gmail
+      path: toolkits/gmail.mdx
     - page: Notion
-      slug: tools/notion
-      path: tools/notion.mdx
+      slug: toolkits/notion
+      path: toolkits/notion.mdx
   - section: Scheduling & Booking
     skip-slug: true
     contents:
     - page: Googlecalendar
-      slug: tools/googlecalendar
-      path: tools/googlecalendar.mdx
+      slug: toolkits/googlecalendar
+      path: toolkits/googlecalendar.mdx
   - section: No Auth
     skip-slug: true
     contents:
     - page: Composio
-      slug: tools/composio
-      path: tools/composio.mdx
+      slug: toolkits/composio
+      path: toolkits/composio.mdx
 - tab: sdk-reference
   layout:
   - section: Python

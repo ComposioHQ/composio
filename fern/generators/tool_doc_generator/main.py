@@ -234,13 +234,13 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
 
 <Steps>
   <Step title="Select App">
-    Navigate to the [{app_name} toolkit page](https://app.composio.dev/apps/{app_name}) and click **"Setup Integration"**.
+    Navigate to [platform.composio.dev](https://platform.composio.dev), click **"All Toolkits" and head to the {app_name}**.
   </Step>
   <Step title="Configure Auth Config Settings">
     Select among the supported auth schemes of and configure them here.
   </Step>
   <Step title="Create and Get auth config ID">
-    Click **"Create Integration"**. After creation, **copy the displayed ID starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
+    Click **"Create {app_name} Auth Config"**. After creation, **copy the displayed ID starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
     **This ID will be used to create connections to the toolkit for a given user.**
   </Step>
 </Steps>
@@ -782,7 +782,7 @@ class ToolDocGenerator:
                 {
                     "name": toolkit.slug.lower(),
                     "display_name": titleize(toolkit.name.lower()),
-                    "path": f"tools/{filename}",
+                    "path": f"toolkits/{filename}",
                     "category": category,
                     "tool_count": len(tools),
                     "no_auth": no_auth,
@@ -817,7 +817,7 @@ class ToolDocGenerator:
             for tool in sorted_tools:
                 entry = {
                     "page": tool["display_name"],
-                    "slug": "tools/" + tool["name"],
+                    "slug": "toolkits/" + tool["name"],
                     "path": tool["path"],
                 }
                 name = tool["name"]
@@ -956,7 +956,7 @@ def cli_main() -> int:
         "-o",
         type=str,
         help="Path for documentation output (default: ./tools)",
-        default="./tools",
+        default="./toolkits",
     )
     parser.add_argument(
         "--include-local",

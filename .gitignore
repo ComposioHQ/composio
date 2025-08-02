@@ -41,6 +41,9 @@ lerna-debug.log*
 
 # fern
 fern/tools/*
+fern/toolkits/*
+!fern/toolkits/src/
+!fern/toolkits/src/**
 !fern/tools/src/
 !fern/tools/src/**
 fern/apis/openapi.yml
