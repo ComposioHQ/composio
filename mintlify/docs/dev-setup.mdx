@@ -1,0 +1,133 @@
+---
+title: "IDE and Agent Setup"
+description: "Setup your AI IDE and agent to help you ship faster with Composio"
+sidebarTitle: "IDE & Agent Setup"
+---
+
+This comprehensive guide explains how to set up your IDE and coding agents to help you ship faster with Composio. We'll cover optimal configurations for popular editors and AI coding assistants.
+
+## Cursor
+
+Cursor is an AI-powered code editor that can significantly accelerate your development with Composio. Here's how to set it up optimally.
+
+### Index Documentation
+
+Cursor can index documentation, making it easy to ask questions about Composio and get contextual answers while coding.
+
+<Frame>
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Findex-docs.png&w=3840&q=75" alt="Index docs" />
+</Frame>
+
+### To index Composio documentation:
+
+<Steps>
+  <Step>
+  Open Cursor Settings (Shift + Cmd/Ctrl + J)
+  </Step>
+  <Step>
+  Navigate to "Features" â†’ "Codebase indexing"
+  </Step>
+  <Step>
+  Add the Composio documentation URLs:
+
+* [https://docs.composio.dev](https://docs.composio.dev)
+* [https://github.com/ComposioHQ/composio](https://github.com/ComposioHQ/composio) (for source code reference)
+
+Once indexed, you can ask questions directly in the chat!
+
+<Frame>
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Fask-index-docs.png&w=1080&q=75" alt="Index docs question" />
+</Frame>
+</Step>
+</Steps>
+
+### Optimize Cursor with Custom Rules
+
+To get the best experience building with Composio, add custom instructions to Cursor's AI system. This helps the AI understand Composio's patterns and best practices.
+
+<Frame>
+  <img src="https://prod.ferndocs.com/_next/image?url=https%3A%2F%2Ffiles.buildwithfern.com%2Fv3composio.docs.buildwithfern.com%2F2025-07-24T17%3A44%3A39.023Z%2Fassets%2Fimages%2Fcursor-settings.png&w=3840&q=75" alt="Cursor settings" />
+</Frame>
+
+**To add custom rules:**
+
+<Steps>
+  <Step>
+  Open Cursor Settings (Shift + Cmd/Ctrl + J)
+  </Step>
+  <Step>
+  Go to "General" â†’ "Rules for AI"
+  </Step>
+  <Step>
+  Add the appropriate prompt below based on your language
+
+
+<CodeGroup>
+  ```ts TypeScript expandable lines
+  You are the best TypeScript developer known for your high taste and usage of new and cutting-edge practices.
+  You are building with Composio's TypeScript SDK. Composio is a platform for building with authenticated tools for AI agents and workflows.
+  It lets you build agents that can work across a user's apps like Gmail, Notion, Slack.
+
+  Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
+  [Composio Documentation](https://docs.composio.dev)
+
+  - [Quickstart](https://docs.composio.dev/docs/quickstart.mdx): Add authenticated tool-calling to any LLM agent in three steps.
+  - [Configuration](https://docs.composio.dev/docs/configuration.mdx)
+  - [Providers](https://docs.composio.dev/docs/providers.mdx)
+  - [Executing Tools](https://docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
+  - [Authenticating Tools](https://docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
+  - [Fetching and Filtering Tools](https://docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolkits
+  - [Schema Modifiers](https://docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
+  - [Before Execution Modifiers](https://docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
+  - [After Execution Modifiers](https://docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
+  - [Creating custom tools](https://docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
+  - [Custom Auth Configs](https://docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customizing auth configs for a toolkit
+  - [Programmatic Auth Configs](https://docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
+  - [Custom Auth Parameters](https://docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
+  - [Using Triggers](https://docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events
+  - [OpenAI Providers](https://docs.composio.dev/providers/openai.mdx)
+  - [Anthropic Provider](https://docs.composio.dev/providers/anthropic.mdx)
+  - [LangGraph Provider](https://docs.composio.dev/providers/langgraph.mdx)
+  - [CrewAI Provider](https://docs.composio.dev/providers/crewai.mdx)
+  - [Vercel AI SDK Provider](https://docs.composio.dev/providers/vercel.mdx)
+  - [Google ADK Provider](https://docs.composio.dev/providers/google-adk.mdx)
+  - [OpenAI Agents Provider](https://docs.composio.dev/providers/openai-agents.mdx)
+  - [Mastra Provider](https://docs.composio.dev/providers/mastra.mdx)
+  - [Custom Providers](https://docs.composio.dev/toolsets/custom.mdx)
+
+  ```
+
+  ```py Python expandable lines
+  You are the best Python developer known for your high taste and usage of new and cutting-edge practices.
+  You are building with Composio's Python SDK. Composio is a platform for building with authenticated tools for AI agents and workflows.
+  It lets you build agents that can work across a user's apps like Gmail, Notion, Slack.
+
+  Below is a list of Composio documentation. Use your web and fetch capabilities to read the documentation you need.
+  [Composio Documentation](https://docs.composio.dev)
+  - [Quickstart](https://docs.composio.dev/docs/quickstart.mdx): Add authenticated tool-calling to any LLM agent in three steps.
+  - [Configuration](https://docs.composio.dev/docs/configuration.mdx)
+  - [Providers](https://docs.composio.dev/docs/toolsets.mdx)
+  - [Executing Tools](https://docs.composio.dev/docs/executing-tools.mdx): Learn how to execute Composio's tools with different providers and frameworks
+  - [Authenticating Tools](https://docs.composio.dev/docs/authenticating-tools.mdx): Learn how to authenticate tools
+  - [Fetching and Filtering Tools](https://docs.composio.dev/docs/fetching-tools.mdx): Learn how to fetch and filter Composio's tools and toolkits
+  - [Schema Modifiers](https://docs.composio.dev/docs/modifiers/schema-modifiers.mdx): Learn how to use schema modifiers to transform tool schemas before they are seen by agents.
+  - [Before Execution Modifiers](https://docs.composio.dev/docs/modifiers/before-execution.mdx): Learn how to use before execution modifiers to modify tool arguments before execution.
+  - [After Execution Modifiers](https://docs.composio.dev/docs/modifiers/after-execution.mdx): Learn how to use after execution modifiers to transform tool results after execution.
+  - [Creating custom tools](https://docs.composio.dev/docs/custom-tools.mdx): Learn how to extend Composio's toolkits with your own tools
+  - [Custom Auth Configs](https://docs.composio.dev/docs/custom-auth-configs.mdx): Guide to using customizing auth configs for a toolkit
+  - [Programmatic Auth Configs](https://docs.composio.dev/docs/programmatic-auth-configs.mdx): Guide to creating auth configs programmatically
+  - [Custom Auth Parameters](https://docs.composio.dev/docs/custom-auth-params.mdx): Guide to injecting custom credentials in headers or parameters for a toolkit
+  - [Using Triggers](https://docs.composio.dev/docs/using-triggers.mdx): Send payloads to your system based on external events
+  - [OpenAI Providers](https://docs.composio.dev/providers/openai.mdx)
+  - [Anthropic Provider](https://docs.composio.dev/providers/anthropic.mdx)
+  - [LangGraph Provider](https://docs.composio.dev/providers/langgraph.mdx)
+  - [CrewAI Provider](https://docs.composio.dev/providers/crewai.mdx)
+  - [Vercel AI SDK Provider](https://docs.composio.dev/providers/vercel.mdx)
+  - [Google ADK Provider](https://docs.composio.dev/providers/google-adk.mdx)
+  - [OpenAI Agents Provider](https://docs.composio.dev/providers/openai-agents.mdx)
+  - [Mastra Provider](https://docs.composio.dev/providers/mastra.mdx)
+  - [Custom Providers](https://docs.composio.dev/toolsets/custom.mdx)
+  ```
+</CodeGroup>
+</Step>
+</Steps>

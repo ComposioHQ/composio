@@ -1,0 +1,210 @@
+---
+title: "Composio"
+description: "[**@composio/core**](https://docs.composio.dev/sdk-reference/README.mdx)"
+sidebarTitle: "Composio"
+---
+
+
+
+[@composio/core](https://docs.composio.dev/sdk-reference/README.mdx) / [composio](https://docs.composio.dev/sdk-reference/README.mdx) / Composio
+
+# Class: `Composio\<TProvider>`
+
+Defined in: `ts/packages/core/src/composio.ts:81`
+
+This is the core class for Composio.
+It is used to initialize the Composio SDK and provide a global configuration.
+
+## Type Parameters
+<ParamField path="TProvider" >
+
+`TProvider` *extends* [`BaseComposioProvider`](https://docs.composio.dev/sdk-reference/provider/BaseProvider/type-aliases/BaseComposioProvider.mdx)\<`unknown`, `unknown`, `unknown`> = [`OpenAIProvider`](https://docs.composio.dev/sdk-reference/type-script/core-classes/open-ai-provider)
+</ParamField>
+
+## Constructors
+
+<ParamField path="new Composio" >
+
+> **new Composio**\<`TProvider`>(`config?`): `Composio`\<`TProvider`>
+
+Defined in: `ts/packages/core/src/composio.ts:141`
+
+Creates a new instance of the Composio SDK.
+
+The constructor initializes the SDK with the provided configuration options,
+sets up the API client, and initializes all core models (tools, toolkits, etc.).
+
+</ParamField>
+
+
+#### Parameters
+
+<ParamField path="config?" >
+
+[`ComposioConfig`](https://docs.composio.dev/sdk-reference/type-script/type-aliases/ComposioConfig.mdx)\<`TProvider`>
+
+Configuration options for the Composio SDK
+</ParamField>
+
+#### Returns
+
+`Composio`\<`TProvider`>
+
+#### Example
+
+```typescript lines
+// Initialize with default configuration
+const composio = new Composio();
+
+// Initialize with custom API key and base URL
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  baseURL: 'https://api.composio.dev'
+});
+
+// Initialize with custom provider
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  provider: new CustomProvider()
+});
+```
+
+## Properties
+
+<ParamField path="authConfigs" >
+
+> **authConfigs**: [`AuthConfigs`](https://docs.composio.dev/sdk-reference/type-script/models/auth-configs)
+
+Defined in: ts/packages/core/src/composio.ts:105
+
+</ParamField>  
+
+<ParamField path="connectedAccounts" >
+
+> **connectedAccounts**: [`ConnectedAccounts`](https://docs.composio.dev/sdk-reference/type-script/models/connected-accounts)
+
+Defined in: ts/packages/core/src/composio.ts:107
+
+</ParamField>
+
+<ParamField path="files" >
+
+> **files**: `Files`
+
+Defined in: ts/packages/core/src/composio.ts:103
+
+</ParamField>
+
+<ParamField path="mcp" >
+
+> **mcp**: `MCP`\<`ExtractMcpResponseType`\<`TProvider`>>
+
+Defined in: ts/packages/core/src/composio.ts:109
+
+</ParamField>
+
+<ParamField path="provider" >
+
+> **provider**: `TProvider`
+
+Defined in: ts/packages/core/src/composio.ts:102
+
+</ParamField>
+
+<ParamField path="toolkits" >
+
+> **toolkits**: [`Toolkits`](https://docs.composio.dev/sdk-reference/type-script/models/toolkits)
+
+Defined in: ts/packages/core/src/composio.ts:100
+
+</ParamField>
+
+<ParamField path="tools" >
+
+> **tools**: [`Tools`](https://docs.composio.dev/sdk-reference/type-script/models/tools)\<`unknown`, `unknown`, `TProvider`>
+
+Defined in: ts/packages/core/src/composio.ts:99
+
+Core models for Composio.
+
+</ParamField>  
+
+<ParamField path="triggers" >
+
+> **triggers**: [`Triggers`](https://docs.composio.dev/sdk-reference/type-script/models/triggers)
+
+Defined in: ts/packages/core/src/composio.ts:101
+
+</ParamField>
+
+## Methods
+
+<ParamField path="createSession" >
+
+> **createSession**(`options?`): `Composio`\<`TProvider`>
+
+Defined in: ts/packages/core/src/composio.ts:255
+
+Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
+This method is particularly useful when you need to:
+
+* Add custom headers for specific requests
+* Track request contexts with unique identifiers
+* Override default request behavior for a subset of operations
+
+The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
+but allows you to specify custom request options that will be used for all API calls made through this session.
+
+</ParamField>
+
+#### Parameters
+
+<ParamField path="options?" />
+
+<ParamField path="headers?" />
+
+`ComposioRequestHeaders`
+
+#### Returns
+
+`Composio`\<`TProvider`>
+
+A new Composio instance with the custom request options applied.
+
+#### Example
+
+```typescript lines
+// Create a base Composio instance
+const composio = new Composio({
+  apiKey: 'your-api-key'
+});
+
+// Create a session with request tracking headers
+const composioWithCustomHeaders = composio.createSession({
+  headers: {
+    'x-request-id': '1234567890',
+    'x-correlation-id': 'session-abc-123',
+    'x-custom-header': 'custom-value'
+  }
+});
+
+// Use the session for making API calls with the custom headers
+await composioWithCustomHeaders.tools.list();
+```
+
+
+
+<ParamField path="getClient" >
+
+> **getClient**(): `Composio`
+
+Defined in: ts/packages/core/src/composio.ts:214
+
+Get the Composio SDK client.
+
+#### Returns
+
+`Composio`
+
+The Composio API client.
+</ParamField>
