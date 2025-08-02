@@ -189,28 +189,28 @@ navigation:
     icon: rocket
     skip-slug: true
     contents:
-    - page: Basic Hono Server
+    - page: Basic Hono Server (JS)
       path: pages/dist/examples/sample-webserver/sample-webserver.mdx
       slug: examples/sample-webserver
   - section: Full Stack Applications
     icon: globe
     skip-slug: true
     contents:
-    - page: Full Stack Chat App
+    - page: Full Stack Chat App (TypeScript)
       path: pages/dist/examples/vercel-composio.mdx
       slug: examples/chat-app
   - section: Productivity & Automation
     icon: zap
     skip-slug: true
     contents:
-    - page: AI Gmail Labeller
+    - page: AI Gmail Labeller (Python)
       path: pages/dist/examples/gmail-filterer.mdx
       slug: examples/gmail-reaper
   - section: Behind the curtain
     icon: person-booth
     skip-slug: true
     contents:
-    - page: Tool Generator
+    - page: Tool Generator (Python)
       path: pages/dist/examples/tool-generator/tool-generator.mdx
       slug: examples/tool-generator
 - tab: providers
