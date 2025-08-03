@@ -234,7 +234,7 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
 
 <Steps>
   <Step title="Select App">
-    Navigate to [platform.composio.dev](https://platform.composio.dev), click **"All Toolkits" and head to the {app_name}**.
+    Navigate to **[{app_name}](https://platform.composio.dev/marketplace/{app_name})**.
   </Step>
   <Step title="Configure Auth Config Settings">
     Select among the supported auth schemes of and configure them here.
@@ -853,7 +853,7 @@ class ToolDocGenerator:
 
             # Find the "tools" tab section in the navigation structure
             for tab_section in docs_data.get("navigation", []):
-                if tab_section.get("tab") == "tools":
+                if tab_section.get("tab") == "toolkits":
                     logger.info(f"Tab section: {tab_section}")
                     new_layout = []
 
