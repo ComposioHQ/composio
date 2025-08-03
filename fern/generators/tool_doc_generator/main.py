@@ -234,7 +234,7 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
 
 <Steps>
   <Step title="Select App">
-    Navigate to [{app_name}](https://platform.composio.dev/marketplace/{app_name}]**.
+    Navigate to [{app_name}](https://platform.composio.dev/marketplace/{app_name})**.
   </Step>
   <Step title="Configure Auth Config Settings">
     Select among the supported auth schemes of and configure them here.
