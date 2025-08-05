@@ -25,6 +25,11 @@ export const AuthConfigCreationToolAccessConfigSchema = z.object({
   toolsForConnectedAccountCreation: z.array(z.string()).optional(),
 });
 
+export const AuthConfigToolAccessConfigSchema = z.object({
+  toolsAvailableForExecution: z.array(z.string()).optional(),
+  toolsForConnectedAccountCreation: z.array(z.string()).optional(),
+});
+
 export const AuthSchemeEnum = z.enum([
   'OAUTH2',
   'OAUTH1',
@@ -90,11 +95,15 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   authScheme: AuthSchemeEnum.optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   expectedInputFields: z.array(z.unknown()).optional(),
+  /**
+   * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
+   */
   restrictToFollowingTools: z.array(z.string()).optional(),
   isComposioManaged: z.boolean().optional(),
   createdBy: z.string().optional(),
   createdAt: z.string().optional(),
   lastUpdatedAt: z.string().optional(),
+  toolAccessConfig: AuthConfigToolAccessConfigSchema.optional(),
 });
 export type AuthConfigRetrieveResponse = z.infer<typeof AuthConfigRetrieveResponseSchema>;
 
@@ -112,11 +121,6 @@ export const AuthConfigListResponseSchema = z.object({
   totalPages: z.number(),
 });
 export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema>;
-
-export const AuthConfigToolAccessConfigSchema = z.object({
-  toolsAvailableForExecution: z.array(z.string()).optional(),
-  toolsForConnectedAccountCreation: z.array(z.string()).optional(),
-});
 
 export const AuthCustomConfigUpdateParamsSchema = z.object({
   credentials: z.record(z.string(), z.union([z.string(), z.unknown()])),

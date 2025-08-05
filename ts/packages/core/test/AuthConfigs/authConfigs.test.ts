@@ -70,6 +70,11 @@ const mockTransformedAuthConfigResponse = {
   createdBy: 'user_123',
   createdAt: '2023-01-01T00:00:00Z',
   lastUpdatedAt: '2023-01-01T00:00:00Z',
+  restrictToFollowingTools: undefined,
+  toolAccessConfig: {
+    toolsAvailableForExecution: undefined,
+    toolsForConnectedAccountCreation: undefined,
+  },
 };
 
 // Extended mock client with all AuthConfigs methods

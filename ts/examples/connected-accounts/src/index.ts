@@ -38,3 +38,7 @@ const tools = await composio.tools.get('default', {
 });
 
 console.log(tools);
+
+const authConfigDetails = await composio.authConfigs.get(authConfig.id);
+
+console.log({ authConfigDetails });
