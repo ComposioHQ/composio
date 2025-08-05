@@ -133,17 +133,29 @@ export class AuthConfigs {
               name: parsedOptions.data.name,
               authScheme: parsedOptions.data.authScheme,
               credentials: parsedOptions.data.credentials,
-              tool_access_config: {
-                tools_for_connected_account_creation: parsedOptions.data.restrictToFollowingTools,
-              },
+              proxy_config: parsedOptions.data.proxyConfig
+                ? {
+                    proxy_url: parsedOptions.data.proxyConfig.proxyUrl,
+                    proxy_auth_key: parsedOptions.data.proxyConfig.proxyAuthKey,
+                  }
+                : undefined,
+              tool_access_config: parsedOptions.data.toolAccessConfig
+                ? {
+                    tools_for_connected_account_creation:
+                      parsedOptions.data.toolAccessConfig.toolsForConnectedAccountCreation,
+                  }
+                : undefined,
             }
           : {
               type: parsedOptions.data.type,
               credentials: parsedOptions.data.credentials,
               name: parsedOptions.data.name,
-              tool_access_config: {
-                tools_for_connected_account_creation: parsedOptions.data.restrictToFollowingTools,
-              },
+              tool_access_config: parsedOptions.data.toolAccessConfig
+                ? {
+                    tools_for_connected_account_creation:
+                      parsedOptions.data.toolAccessConfig.toolsForConnectedAccountCreation,
+                  }
+                : undefined,
             },
     });
     return transformCreateAuthConfigResponse(result);
@@ -217,14 +229,22 @@ export class AuthConfigs {
             type: 'custom',
             credentials: parsedData.data.credentials,
             tool_access_config: {
-              tools_for_connected_account_creation: parsedData.data.restrictToFollowingTools,
+              tools_for_connected_account_creation:
+                parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,
+              tools_available_for_execution:
+                parsedData.data.toolAccessConfig?.toolsAvailableForExecution ??
+                parsedData.data.restrictToFollowingTools,
             },
           }
         : {
             type: 'default',
             scopes: parsedData.data.scopes,
             tool_access_config: {
-              tools_for_connected_account_creation: parsedData.data.restrictToFollowingTools,
+              tools_for_connected_account_creation:
+                parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,
+              tools_available_for_execution:
+                parsedData.data.toolAccessConfig?.toolsAvailableForExecution ??
+                parsedData.data.restrictToFollowingTools,
             },
           }
     );
