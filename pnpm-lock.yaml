@@ -208,7 +208,7 @@ importers:
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.8.19
-        version: 0.8.44(@cloudflare/workers-types@4.20250619.0)(@vitest/runner@3.2.4)(@vitest/snapshot@3.2.4)(vitest@3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+        version: 0.8.44(@cloudflare/workers-types@4.20250619.0)(@vitest/runner@3.2.4)(@vitest/snapshot@3.2.4)(vitest@3.2.4)
       typescript:
         specifier: ^5.5.2
         version: 5.8.3
@@ -589,7 +589,7 @@ importers:
         version: 0.85.2(effect@3.16.16)
       '@effect/vitest':
         specifier: ^0.23.8
-        version: 0.23.8(effect@3.16.16)(vitest@3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))
+        version: 0.23.8(effect@3.16.16)(vitest@3.2.4)
       '@types/bun':
         specifier: ^1.2.16
         version: 1.2.16
@@ -618,8 +618,8 @@ importers:
   ts/packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.29
-        version: 0.1.0-alpha.29
+        specifier: 0.1.0-alpha.30
+        version: 0.1.0-alpha.30
       '@composio/json-schema-to-zod':
         specifier: 0.1.11
         version: 0.1.11
@@ -744,7 +744,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.63
-        version: 0.3.63(openai@5.5.1(zod@3.25.67))
+        version: 0.3.63(openai@5.5.1(ws@8.18.2)(zod@3.25.67))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1212,6 +1212,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.29':
     resolution: {integrity: sha512-0oI38Kl8LVEK/fFF7rTdvO11uwSWHzavTTUWE/ExnhIoik3wmHse1CRKywb06M+hkLO4+Vdkh46sXbNFs7YZyQ==}
+
+  '@composio/client@0.1.0-alpha.30':
+    resolution: {integrity: sha512-Vx8jrNdbNCY7072gW46HykR2Llr00XIwMF+Ys/A69+DViHGWeTpI5zlH9fycjmU3E1GnKpbIbhsF+gP41F2m+Q==}
 
   '@composio/json-schema-to-zod@0.1.11':
     resolution: {integrity: sha512-6gcCof9xqLhmmHSCvWLW/E16PKr5C1dWJ9AOk4FJU8JA7gSt8JEdFHBwx80dyprBJdwPF6R54nlkmpXrEwApzg==}
@@ -7236,7 +7239,7 @@ snapshots:
     optionalDependencies:
       workerd: 1.20250726.0
 
-  '@cloudflare/vitest-pool-workers@0.8.44(@cloudflare/workers-types@4.20250619.0)(@vitest/runner@3.2.4)(@vitest/snapshot@3.2.4)(vitest@3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
+  '@cloudflare/vitest-pool-workers@0.8.44(@cloudflare/workers-types@4.20250619.0)(@vitest/runner@3.2.4)(@vitest/snapshot@3.2.4)(vitest@3.2.4)':
     dependencies:
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -7286,6 +7289,8 @@ snapshots:
   '@cloudflare/workers-types@4.20250619.0': {}
 
   '@composio/client@0.1.0-alpha.29': {}
+
+  '@composio/client@0.1.0-alpha.30': {}
 
   '@composio/json-schema-to-zod@0.1.11':
     dependencies:
@@ -7410,7 +7415,7 @@ snapshots:
     dependencies:
       effect: 3.16.16
 
-  '@effect/vitest@0.23.8(effect@3.16.16)(vitest@3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0))':
+  '@effect/vitest@0.23.8(effect@3.16.16)(vitest@3.2.4)':
     dependencies:
       effect: 3.16.16
       vitest: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
@@ -7985,14 +7990,14 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/core@0.3.63(openai@5.5.1(zod@3.25.67))':
+  '@langchain/core@0.3.63(openai@5.5.1(ws@8.18.2)(zod@3.25.67))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.33(openai@5.5.1(zod@3.25.67))
+      langsmith: 0.3.33(openai@5.5.1(ws@8.18.2)(zod@3.25.67))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -9788,7 +9793,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      vitest: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -11266,7 +11271,7 @@ snapshots:
     optionalDependencies:
       openai: 4.104.0(ws@8.18.2)(zod@3.25.67)
 
-  langsmith@0.3.33(openai@5.5.1(zod@3.25.67)):
+  langsmith@0.3.33(openai@5.5.1(ws@8.18.2)(zod@3.25.67)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2

@@ -66,6 +66,8 @@ const BaseSchemeRaw = z
     api_key: z.string().optional(),
     // for generic api key
     generic_api_key: z.string().optional(),
+    // for bearer token
+    bearer_token: z.string().optional(),
   })
   .catchall(z.unknown());
 
@@ -93,7 +95,7 @@ export const Oauth2ActiveConnectionDataSchema = Oauth2InitiatingConnectionDataSc
   token_type: z.string().optional(),
   refresh_token: z.string().nullish(),
   expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
-  scope: z.union([z.string(), z.array(z.string())]).optional(),
+  scope: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
   // previously verification_token, will be sent as verification_token to slack
   webhook_signature: z.string().optional(),
   authed_user: z
