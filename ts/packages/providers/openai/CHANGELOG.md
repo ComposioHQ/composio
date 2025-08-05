@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.40
+
+### Patch Changes
+
+- 1664c34: Fix auth config creation/updation methods to accept tool access configs
+- Updated dependencies [1664c34]
+  - @composio/core@0.1.40
+
 ## 0.1.39
 
 ### Patch Changes
