@@ -77,6 +77,8 @@ export const transformToolkitRetrieveResponse = (
           baseUrl: authConfig.proxy?.base_url,
         },
       })),
+      baseUrl: response.base_url,
+      getCurrentUserEndpoint: response.get_current_user_endpoint,
     }));
 };
 

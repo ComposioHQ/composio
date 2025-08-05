@@ -49,6 +49,13 @@ export function transformAuthConfigRetrieveResponse(
       createdAt: authConfig.created_at,
       lastUpdatedAt: authConfig.last_updated_at,
       restrictToFollowingTools: authConfig.tool_access_config?.tools_for_connected_account_creation,
+      toolAccessConfig: authConfig.tool_access_config
+        ? {
+            toolsAvailableForExecution: authConfig.tool_access_config.tools_available_for_execution,
+            toolsForConnectedAccountCreation:
+              authConfig.tool_access_config.tools_for_connected_account_creation,
+          }
+        : undefined,
     }));
 }
 

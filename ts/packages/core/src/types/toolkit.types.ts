@@ -90,6 +90,8 @@ export const ToolkitRetrieveResponseSchema = z.object({
   isLocalToolkit: z.boolean(),
   composioManagedAuthSchemes: z.array(z.string()).optional(),
   authConfigDetails: z.array(ToolkitAuthConfigDetailsSchema).optional(),
+  baseUrl: z.string().optional(),
+  getCurrentUserEndpoint: z.string().optional(),
 });
 
 export type ToolkitAuthField = z.infer<typeof ToolkitAuthFieldSchema>;

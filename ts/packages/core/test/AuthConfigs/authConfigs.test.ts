@@ -70,6 +70,11 @@ const mockTransformedAuthConfigResponse = {
   createdBy: 'user_123',
   createdAt: '2023-01-01T00:00:00Z',
   lastUpdatedAt: '2023-01-01T00:00:00Z',
+  restrictToFollowingTools: undefined,
+  toolAccessConfig: {
+    toolsAvailableForExecution: undefined,
+    toolsForConnectedAccountCreation: undefined,
+  },
 };
 
 // Extended mock client with all AuthConfigs methods
@@ -260,9 +265,9 @@ describe('AuthConfigs', () => {
         },
         auth_config: {
           type: 'use_composio_managed_auth',
-          tool_access_config: {
-            tools_for_connected_account_creation: undefined,
-          },
+          credentials: undefined,
+          name: undefined,
+          tool_access_config: undefined,
         },
       });
 
@@ -302,7 +307,17 @@ describe('AuthConfigs', () => {
         toolkit: {
           slug: 'github',
         },
-        auth_config: options,
+        auth_config: {
+          type: 'use_custom_auth',
+          name: 'Custom GitHub Auth',
+          authScheme: 'OAUTH2',
+          credentials: {
+            client_id: 'test_client_id',
+            client_secret: 'test_client_secret',
+          },
+          proxy_config: undefined,
+          tool_access_config: undefined,
+        },
       });
 
       expect(result).toEqual({
@@ -333,7 +348,14 @@ describe('AuthConfigs', () => {
         toolkit: {
           slug: 'github',
         },
-        auth_config: options,
+        auth_config: {
+          type: 'use_composio_managed_auth',
+          credentials: {
+            custom_field: 'value',
+          },
+          name: 'My GitHub Config',
+          tool_access_config: undefined,
+        },
       });
 
       expect(result).toEqual({

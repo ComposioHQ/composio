@@ -21,6 +21,15 @@ export const AuthSchemeTypes = {
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
+export const AuthConfigCreationToolAccessConfigSchema = z.object({
+  toolsForConnectedAccountCreation: z.array(z.string()).optional(),
+});
+
+export const AuthConfigToolAccessConfigSchema = z.object({
+  toolsAvailableForExecution: z.array(z.string()).optional(),
+  toolsForConnectedAccountCreation: z.array(z.string()).optional(),
+});
+
 export const AuthSchemeEnum = z.enum([
   'OAUTH2',
   'OAUTH1',
@@ -39,14 +48,20 @@ export const CreateCustomAuthConfigParamsSchema = z.object({
   name: z.string().optional(),
   credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   authScheme: AuthSchemeEnum,
-  restrictToFollowingTools: z.array(z.string()).optional(),
+  proxyConfig: z
+    .object({
+      proxyUrl: z.string(),
+      proxyAuthKey: z.string().optional(),
+    })
+    .optional(),
+  toolAccessConfig: AuthConfigCreationToolAccessConfigSchema.optional(),
 });
 
 export const CreateComposioManagedAuthConfigParamsSchema = z.object({
   type: z.literal('use_composio_managed_auth'),
   name: z.string().optional(),
   credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
-  restrictToFollowingTools: z.array(z.string()).optional(),
+  toolAccessConfig: AuthConfigCreationToolAccessConfigSchema.optional(),
 });
 
 /**
@@ -80,11 +95,15 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   authScheme: AuthSchemeEnum.optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   expectedInputFields: z.array(z.unknown()).optional(),
+  /**
+   * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
+   */
   restrictToFollowingTools: z.array(z.string()).optional(),
   isComposioManaged: z.boolean().optional(),
   createdBy: z.string().optional(),
   createdAt: z.string().optional(),
   lastUpdatedAt: z.string().optional(),
+  toolAccessConfig: AuthConfigToolAccessConfigSchema.optional(),
 });
 export type AuthConfigRetrieveResponse = z.infer<typeof AuthConfigRetrieveResponseSchema>;
 
@@ -106,13 +125,21 @@ export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema
 export const AuthCustomConfigUpdateParamsSchema = z.object({
   credentials: z.record(z.string(), z.union([z.string(), z.unknown()])),
   type: z.literal('custom'),
+  /**
+   * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
+   */
   restrictToFollowingTools: z.array(z.string()).optional(),
+  toolAccessConfig: AuthConfigToolAccessConfigSchema.optional(),
 });
 
 export const AuthDefaultConfigUpdateParamsSchema = z.object({
   scopes: z.string(),
   type: z.literal('default'),
+  /**
+   * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
+   */
   restrictToFollowingTools: z.array(z.string()).optional(),
+  toolAccessConfig: AuthConfigToolAccessConfigSchema.optional(),
 });
 
 export const AuthConfigUpdateParamsSchema = z.discriminatedUnion('type', [
