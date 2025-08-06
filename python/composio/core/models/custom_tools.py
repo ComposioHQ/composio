@@ -25,8 +25,9 @@ class ExecuteRequestFn(t.Protocol):
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
         body: t.Dict | NotGiven = HttpClient.not_given,
         connected_account_id: str | NotGiven = HttpClient.not_given,
-        parameters: t.Iterable[tool_proxy_params.Parameter]
-        | NotGiven = HttpClient.not_given,
+        parameters: (
+            t.Iterable[tool_proxy_params.Parameter] | NotGiven
+        ) = HttpClient.not_given,
     ) -> tool_proxy_response.ToolProxyResponse: ...
 
 
@@ -70,10 +71,10 @@ class CustomTool:
         self.description = t.cast(str, f.__doc__)
         self.toolkit = toolkit
         self.client = client
-        self.info = self.__parse_info()
         if self.toolkit is not None:
             self.name = f"{self.toolkit.lower()}_{self.name}"
             self.slug = f"{self.toolkit.upper()}_{self.slug}"
+        self.info = self.__parse_info()
 
     def __parse_info(self) -> Tool:
         """Parse the parameters of the custom tool."""

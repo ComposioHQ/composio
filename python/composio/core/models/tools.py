@@ -114,7 +114,10 @@ class Tools(Resource, t.Generic[TProvider]):
         if tools is not None:
             tools, custom_tools = self._filter_custom_tools(tools=tools)
             tools_list.extend(custom_tools)
-            tools_list.extend(self._client.tools.list(tool_slugs=",".join(tools)).items)
+            if len(tools):
+                tools_list.extend(
+                    self._client.tools.list(tool_slugs=",".join(tools)).items
+                )
 
         # Search tools by toolkit slugs and search term
         if toolkits is not None or search is not None:
