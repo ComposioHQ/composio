@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.1.41
+
+### Patch Changes
+
+- 025600f: Bump composio client version to 0.1.0-alpha.31
+- Updated dependencies [025600f]
+  - @composio/core@0.1.41
+
 ## 0.1.40
 
 ### Patch Changes
