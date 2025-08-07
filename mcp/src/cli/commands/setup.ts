@@ -91,7 +91,7 @@ const command: CommandModule<{}, MCPArgs> = {
 function saveMcpConfig(url: string, clientType: string, name: string, mcpUrl: string, command: string): void {
   const config: MCPConfig = {
     command: 'npx',
-    args: ['@composio/mcp@latest', 'start', '--url', mcpUrl],
+    args: ["-y", 'mcp-remote', mcpUrl],
     env: {
       npm_config_yes: 'true',
     },
