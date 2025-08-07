@@ -4,7 +4,8 @@ import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { BANNER } from 'src/generation/constants';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
-import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
+import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
 
 describe('generatePythonToolkitSources', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty array', () => {
@@ -70,8 +71,8 @@ describe('generatePythonToolkitSources', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-      triggerTypes: [TRIGGER_TYPE_GMAIL],
+      tools: [...TOOLS_GMAIL.slice(0, 3)],
+      triggerTypes: [...TRIGGER_TYPES_GMAIL],
     });
 
     const sources = generatePythonToolkitSources(BANNER)(index);
@@ -88,9 +89,9 @@ describe('generatePythonToolkitSources', () => {
           slug: str = "gmail"
 
           class tools:
+              ADD_LABEL_TO_EMAIL = "GMAIL_ADD_LABEL_TO_EMAIL"
               CREATE_EMAIL_DRAFT = "GMAIL_CREATE_EMAIL_DRAFT"
-              DELETE_MESSAGE = "GMAIL_DELETE_MESSAGE"
-              FETCH_EMAILS = "GMAIL_FETCH_EMAILS"
+              CREATE_LABEL = "GMAIL_CREATE_LABEL"
 
           class triggers:
               NEW_GMAIL_MESSAGE = {

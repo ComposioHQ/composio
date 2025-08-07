@@ -10,7 +10,7 @@ export class TypeDeclaration<InnerType extends TypeBuilder = TypeBuilder> implem
 
   constructor(
     public name: string,
-    readonly type: InnerType
+    private type: InnerType | string
   ) {}
 
   addGenericParameter(param: GenericParameter): this {
@@ -23,6 +23,10 @@ export class TypeDeclaration<InnerType extends TypeBuilder = TypeBuilder> implem
     return this;
   }
 
+  setValue(typeDecl: string) {
+    this.type = typeDecl;
+  }
+
   setDocComment(docComment: DocComment): this {
     this.docComment = docComment;
     return this;
@@ -32,6 +36,12 @@ export class TypeDeclaration<InnerType extends TypeBuilder = TypeBuilder> implem
     if (this.docComment) {
       writer.write(this.docComment);
     }
+
+    if (typeof this.type === 'string') {
+      writer.write(this.type);
+      return;
+    }
+
     writer.write('type ').write(this.name);
     if (this.genericParameters.length > 0) {
       writer.write('<').writeJoined(', ', this.genericParameters).write('>');
@@ -42,7 +52,7 @@ export class TypeDeclaration<InnerType extends TypeBuilder = TypeBuilder> implem
 
 export function typeDeclaration<InnerType extends TypeBuilder = TypeBuilder>(
   name: string,
-  type: InnerType
+  type: InnerType | string
 ) {
   return new TypeDeclaration(name, type);
 }

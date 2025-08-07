@@ -134,7 +134,7 @@ export function generateTypescriptTypeStubs({
     const index = createToolkitIndex({ toolkits, tools, triggerTypes });
 
     // Generate TypeScript sources
-    const sources = generateTypeScriptSources({
+    const sources = yield* generateTypeScriptSources({
       outputDir,
       emitSingleFile: Boolean(compact), // Ensure boolean type
       banner: BANNER,

@@ -11,7 +11,8 @@ import {
 } from 'test/__utils__/typescript-compiler';
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
+import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
 
 describe('CLI: composio ts generate', () => {
   const appClientData = {
@@ -25,9 +26,9 @@ describe('CLI: composio ts generate', () => {
         slug: 'slack',
       },
     ]),
-    tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-    triggerTypesAsEnums: ['GMAIL_NEW_GMAIL_MESSAGE'],
-    triggerTypes: [TRIGGER_TYPE_GMAIL],
+    tools: [...TOOLS_GMAIL.slice(0, 3)],
+    triggerTypes: [...TRIGGER_TYPES_GMAIL.slice(0, 3)],
+    triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
   } satisfies TestLiveInput['toolkitsData'];
 
   describe('[Given] valid fetched app data', () => {
@@ -61,15 +62,74 @@ describe('CLI: composio ts generate', () => {
               const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
 
               expect(gmailSourceCode).toMatchInlineSnapshot(`
-                "/**
+                "import { type TriggerEvent } from "@composio/core"
+
+                type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = {
+                  /**
+                   * Attachment List
+                   * @description The list of attachments in the message
+                   * @default null
+                   */
+                  attachment_list: unknown[] | null;
+                  /**
+                   * Message ID
+                   * @description The message ID of the message
+                   * @default null
+                   */
+                  message_id: string | null;
+                  /**
+                   * Message Text
+                   * @description The text of the message
+                   * @default null
+                   */
+                  message_text: string | null;
+                  /**
+                   * Message Timestamp
+                   * @description The timestamp of the message
+                   * @default null
+                   */
+                  message_timestamp: string | null;
+                  /**
+                   * Payload
+                   * @description The payload of the message
+                   * @default null
+                   */
+                  payload: Record<string, never> | null;
+                  /**
+                   * Sender
+                   * @description The sender of the message
+                   * @default null
+                   */
+                  sender: string | null;
+                  /**
+                   * Subject
+                   * @description The subject of the message
+                   * @default null
+                   */
+                  subject: string | null;
+                  /**
+                   * Thread ID
+                   * @description The thread ID of the message
+                   * @default null
+                   */
+                  thread_id: string | null;
+                  /**
+                   * To
+                   * @description The recipient of the message
+                   * @default null
+                   */
+                  to: string | null;
+                };
+
+                /**
                  * Map of Composio's GMAIL toolkit.
                  */
                 export const GMAIL = {
                   slug: "gmail",
                   tools: {
+                    ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
                     CREATE_EMAIL_DRAFT: "GMAIL_CREATE_EMAIL_DRAFT",
-                    DELETE_MESSAGE: "GMAIL_DELETE_MESSAGE",
-                    FETCH_EMAILS: "GMAIL_FETCH_EMAILS",
+                    CREATE_LABEL: "GMAIL_CREATE_LABEL",
                   },
                   triggerTypes: {
                     NEW_GMAIL_MESSAGE: {
@@ -211,19 +271,43 @@ describe('CLI: composio ts generate', () => {
                     },
                   },
                 }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_PAYLOADS = {
+                  NEW_GMAIL_MESSAGE: GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD
+                }
+
+                /**
+                 * Type map of all available trigger events for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_EVENTS = {
+                  NEW_GMAIL_MESSAGE: TriggerEvent<GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD>
+                }
                 "
               `);
               expect(slackSourceCode).toMatchInlineSnapshot(`
-              "/**
-               * Map of Composio's SLACK toolkit.
-               */
-              export const SLACK = {
-                slug: "slack",
-                tools: {},
-                triggerTypes: {},
-              }
-              "
-            `);
+                "/**
+                 * Map of Composio's SLACK toolkit.
+                 */
+                export const SLACK = {
+                  slug: "slack",
+                  tools: {},
+                  triggerTypes: {},
+                }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_PAYLOADS = {}
+
+                /**
+                 * Type map of all available trigger events for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_EVENTS = {}
+                "
+              `);
               expect(indexSourceCode).toMatchInlineSnapshot(`
                 "/**
                  * Auto-generated by Composio CLI. Do not modify manually.
@@ -306,15 +390,74 @@ describe('CLI: composio ts generate', () => {
               const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
 
               expect(gmailSourceCode).toMatchInlineSnapshot(`
-                "/**
+                "import { type TriggerEvent } from "@composio/core"
+
+                type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = {
+                  /**
+                   * Attachment List
+                   * @description The list of attachments in the message
+                   * @default null
+                   */
+                  attachment_list: unknown[] | null;
+                  /**
+                   * Message ID
+                   * @description The message ID of the message
+                   * @default null
+                   */
+                  message_id: string | null;
+                  /**
+                   * Message Text
+                   * @description The text of the message
+                   * @default null
+                   */
+                  message_text: string | null;
+                  /**
+                   * Message Timestamp
+                   * @description The timestamp of the message
+                   * @default null
+                   */
+                  message_timestamp: string | null;
+                  /**
+                   * Payload
+                   * @description The payload of the message
+                   * @default null
+                   */
+                  payload: Record<string, never> | null;
+                  /**
+                   * Sender
+                   * @description The sender of the message
+                   * @default null
+                   */
+                  sender: string | null;
+                  /**
+                   * Subject
+                   * @description The subject of the message
+                   * @default null
+                   */
+                  subject: string | null;
+                  /**
+                   * Thread ID
+                   * @description The thread ID of the message
+                   * @default null
+                   */
+                  thread_id: string | null;
+                  /**
+                   * To
+                   * @description The recipient of the message
+                   * @default null
+                   */
+                  to: string | null;
+                };
+
+                /**
                  * Map of Composio's GMAIL toolkit.
                  */
                 export const GMAIL = {
                   slug: "gmail",
                   tools: {
+                    ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
                     CREATE_EMAIL_DRAFT: "GMAIL_CREATE_EMAIL_DRAFT",
-                    DELETE_MESSAGE: "GMAIL_DELETE_MESSAGE",
-                    FETCH_EMAILS: "GMAIL_FETCH_EMAILS",
+                    CREATE_LABEL: "GMAIL_CREATE_LABEL",
                   },
                   triggerTypes: {
                     NEW_GMAIL_MESSAGE: {
@@ -456,19 +599,43 @@ describe('CLI: composio ts generate', () => {
                     },
                   },
                 }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_PAYLOADS = {
+                  NEW_GMAIL_MESSAGE: GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD
+                }
+
+                /**
+                 * Type map of all available trigger events for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_EVENTS = {
+                  NEW_GMAIL_MESSAGE: TriggerEvent<GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD>
+                }
                 "
               `);
               expect(slackSourceCode).toMatchInlineSnapshot(`
-              "/**
-               * Map of Composio's SLACK toolkit.
-               */
-              export const SLACK = {
-                slug: "slack",
-                tools: {},
-                triggerTypes: {},
-              }
-              "
-            `);
+                "/**
+                 * Map of Composio's SLACK toolkit.
+                 */
+                export const SLACK = {
+                  slug: "slack",
+                  tools: {},
+                  triggerTypes: {},
+                }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_PAYLOADS = {}
+
+                /**
+                 * Type map of all available trigger events for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_EVENTS = {}
+                "
+              `);
               expect(indexSourceCode).toMatchInlineSnapshot(`
                 "/**
                  * Auto-generated by Composio CLI. Do not modify manually.

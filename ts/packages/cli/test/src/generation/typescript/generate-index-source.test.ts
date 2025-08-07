@@ -6,7 +6,10 @@ import {
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
-import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
+import { TOOLS_GITHUB } from 'test/__mocks__/tools_github';
+import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
+import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
@@ -116,8 +119,8 @@ describe('generateTypeScriptToolkitSources', () => {
 
         const index = createToolkitIndex({
           toolkits,
-          tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-          triggerTypes: [TRIGGER_TYPE_GMAIL],
+          tools: [...TOOLS_GMAIL.slice(0, 3), ...TOOLS_GITHUB.slice(0, 3)],
+          triggerTypes: [...TRIGGER_TYPES_GITHUB, ...TRIGGER_TYPES_GMAIL],
         });
 
         const source = generateIndexSource(params)(index);
@@ -272,7 +275,7 @@ describe('generateTypeScriptToolkitSources', () => {
         const index = createToolkitIndex({
           toolkits,
           tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-          triggerTypes: [TRIGGER_TYPE_GMAIL],
+          triggerTypes: [...TRIGGER_TYPES_GMAIL],
         });
 
         const source = generateIndexSource(params)(index);

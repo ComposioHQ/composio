@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
-import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
+import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 
 describe('createToolkitIndex', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty index', () => {
@@ -58,8 +58,12 @@ describe('createToolkitIndex', () => {
       },
     ]);
 
+    const GMAIL_NEW_GMAIL_MESSAGE = TRIGGER_TYPES_GMAIL.find(
+      triggerType => triggerType.slug === 'GMAIL_NEW_GMAIL_MESSAGE'
+    )!;
+
     const tools = ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'];
-    const triggerTypes = [TRIGGER_TYPE_GMAIL];
+    const triggerTypes = [GMAIL_NEW_GMAIL_MESSAGE];
 
     const index = createToolkitIndex({
       toolkits,
@@ -76,7 +80,7 @@ describe('createToolkitIndex', () => {
           FETCH_EMAILS: 'GMAIL_FETCH_EMAILS',
         },
         triggerTypes: {
-          NEW_GMAIL_MESSAGE: TRIGGER_TYPE_GMAIL,
+          NEW_GMAIL_MESSAGE: GMAIL_NEW_GMAIL_MESSAGE,
         },
       },
       SLACK: {

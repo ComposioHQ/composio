@@ -5,9 +5,10 @@ import { FileSystem } from '@effect/platform';
 import { cli, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
-import { TRIGGER_TYPE_GMAIL } from 'test/__mocks__/trigger-type-gmail';
+import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
 
 describe('CLI: composio py generate', () => {
   const appClientData = {
@@ -21,9 +22,9 @@ describe('CLI: composio py generate', () => {
         slug: 'slack',
       },
     ]),
-    tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
-    triggerTypesAsEnums: ['GMAIL_NEW_GMAIL_MESSAGE'],
-    triggerTypes: [TRIGGER_TYPE_GMAIL],
+    tools: [...TOOLS_GMAIL.slice(0, 3)],
+    triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
+    triggerTypes: [...TRIGGER_TYPES_GMAIL.slice(0, 3)],
   } satisfies TestLiveInput['toolkitsData'];
 
   layer(
@@ -126,9 +127,9 @@ describe('CLI: composio py generate', () => {
                 slug: str = "gmail"
 
                 class tools:
+                    ADD_LABEL_TO_EMAIL = "GMAIL_ADD_LABEL_TO_EMAIL"
                     CREATE_EMAIL_DRAFT = "GMAIL_CREATE_EMAIL_DRAFT"
-                    DELETE_MESSAGE = "GMAIL_DELETE_MESSAGE"
-                    FETCH_EMAILS = "GMAIL_FETCH_EMAILS"
+                    CREATE_LABEL = "GMAIL_CREATE_LABEL"
 
                 class triggers:
                     NEW_GMAIL_MESSAGE = {

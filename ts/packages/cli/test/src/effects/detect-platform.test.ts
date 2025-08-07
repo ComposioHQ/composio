@@ -364,7 +364,7 @@ describe('detect-platform.ts', () => {
   });
 
   describe('Type Tests', () => {
-    it('should return correct PlatformArch type for supported combinations', () => {
+    it('should return correct PlatformArch type for supported combinations', async () => {
       // This test verifies TypeScript types at runtime
       const testType = async (platform: string, arch: string): Promise<PlatformArch> => {
         return await Effect.runPromise(
@@ -373,9 +373,15 @@ describe('detect-platform.ts', () => {
       };
 
       // These calls should compile without TypeScript errors
-      expect(testType('darwin', 'x64')).resolves.toEqual({ platform: 'darwin', arch: 'x64' });
-      expect(testType('darwin', 'arm64')).resolves.toEqual({ platform: 'darwin', arch: 'aarch64' });
-      expect(testType('linux', 'aarch64')).resolves.toEqual({ platform: 'linux', arch: 'aarch64' });
+      await expect(testType('darwin', 'x64')).resolves.toEqual({ platform: 'darwin', arch: 'x64' });
+      await expect(testType('darwin', 'arm64')).resolves.toEqual({
+        platform: 'darwin',
+        arch: 'aarch64',
+      });
+      await expect(testType('linux', 'aarch64')).resolves.toEqual({
+        platform: 'linux',
+        arch: 'aarch64',
+      });
     });
   });
 });
