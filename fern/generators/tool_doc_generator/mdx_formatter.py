@@ -31,6 +31,8 @@ class MDX:
         frontmatter = f'title: "{app_name}"'
         if app_name is not None:
             frontmatter += f'\nsubtitle: "Learn how to use {app_name} with Composio"'
+        # Add noindex and nofollow as required
+        frontmatter += "\nnoindex: true\nnofollow: true"
         return "---\n" + frontmatter + "\n---\n"
 
     @staticmethod
@@ -45,7 +47,6 @@ class MDX:
             Formatted MDX Card string
         """
         return f"<Card>\n{content}\n</Card>\n"
-
     @staticmethod
     def escape_mdx_content(content: str) -> str:
         """

@@ -5,13 +5,13 @@ description = "Documentation generators for Composio"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "composio-openai>=0.7.11",
+    "composio-openai==0.7.13",
     "python-dotenv>=1.1.0",
     "inflection>=0.5.1",
     "click>=8.1.7",
     "ruamel-yaml>=0.18.10",
     "typing-extensions>=4.13.0",
-    "composio-core>=0.7.11",
+    "composio-core==0.7.13",
 ]
 
 [tool.ruff]
