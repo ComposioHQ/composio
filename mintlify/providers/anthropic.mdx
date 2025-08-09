@@ -1,0 +1,102 @@
+---
+title: "Anthropic Providers"
+description: "The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through its Messages API."
+---
+
+
+## Setup
+
+The Anthropic provider can be installed for both SDKs.
+
+<CodeGroup>
+  ```bash Python lines wrap
+  pip install composio_anthropic==0.8.0
+  ```
+
+  ```bash TypeScript lines wrap
+  npm install @composio/anthropic @anthropic-ai/sdk
+  ```
+</CodeGroup>
+
+You can specify the provider in the constructor. The constructor also takes in an optional `cacheTools` parameter.
+
+<CodeGroup>
+  ```python Python lines wrap
+  import anthropic
+
+  from composio import Composio
+  from composio_anthropic import AnthropicProvider
+
+  # Initialize tools.
+  anthropic_client = anthropic.Anthropic()
+  composio = Composio(provider=AnthropicProvider())
+  ```
+
+  ```typescript TypeScript lines wrap
+  import { Composio } from "@composio/core";
+  import { AnthropicProvider } from "@composio/anthropic";
+
+  const composio = new Composio({
+    provider: new AnthropicProvider({
+      cacheTools: false,  // default
+    }),
+  });
+
+  const anthropic = new Anthropic();
+  ```
+</CodeGroup>
+
+## Usage
+
+<CodeGroup>
+  ```python Python lines wrap
+  # Define your user ID
+  user_id = "default"
+
+  # Get GitHub tools that are pre-configured
+  tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
+
+  # Get response from the LLM
+  response = anthropic_client.messages.create(
+      model="claude-3-5-sonnet-20240620",
+      max_tokens=1024,
+      tools=tools,
+      messages=[
+          {"role": "user", "content": "Star me composiohq/composio repo in github."},
+      ],
+  )
+
+  # Execute the function calls.
+  result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
+  print(result)
+  ```
+
+  ```typescript TypeScript lines wrap
+  const userId = "user@acme.com";
+  const tools = await composio.tools.get(userId, {
+    tools: ["GITHUB_GET_OCTOCAT", "GITHUB_GET_THE_ZEN_OF_GITHUB"]
+  })
+
+  const msg = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20240620",
+    messages: [
+      {
+        role: "user",
+        content: "Get me the GitHub Octocat",
+      },
+    ],
+    tools: tools,
+    max_tokens: 1000,
+  });
+
+  const res = await composio.provider.handleToolCalls(userId, msg);
+
+  console.log(JSON.parse(res[0]).details);
+  ```
+</CodeGroup>
+
+## Modifiers
+
+Modifiers are functions that can be used to intercept and optionally modify the schema, the tool call request and the response from the tool call.
+
+Anthropic provider modifiers are the standard framework modifiers. Read more here: [Framework Modifiers](/docs/modifiers/schema-modifiers).

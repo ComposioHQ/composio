@@ -1,0 +1,168 @@
+---
+title: "Get CLI session details by ID or code"
+api: GET https://backend.composio.dev/api/v3/cli/get-session
+description: "Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code. This endpoint is used by both the CLI client to check if the session has been linked, and by the web interface to display session details before linking."
+contentType: "application/json"
+---
+
+### Headers
+
+<ParamField header="x-api-key" type="string" required />
+
+### Query parameters
+
+<ParamField query="id" type="string" required >
+
+CLI session ID (UUID format) or 6-character code to check. Both formats are supported for flexibility in client implementations.
+</ParamField>
+
+### Response
+
+CLI session retrieved successfully. Returns full session details including linked account information if available.
+
+<ResponseField name="id" type="string">
+The unique identifier for the CLI session
+</ResponseField>
+
+<ResponseField name="code" type="string">
+The 6-character hexadecimal code used for CLI login
+</ResponseField>
+<ResponseField name="status" type="enum">
+The current status of the session
+
+Allowed values: `pending` `linked`
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+The ISO timestamp when the session expires
+</ResponseField>
+
+<ResponseField name="account" type="object" >
+Information about the linked account, if any. Null if the session status is "pending".
+</ResponseField>
+
+<ResponseField name="id" type="string">
+The ID of the linked account
+</ResponseField>
+
+<ResponseField name="email" type="string" format="email">
+The email address of the linked account
+</ResponseField>
+
+<ResponseField name="name" type="string">
+The display name of the linked account
+</ResponseField>
+
+### Errors
+
+<AccordionGroup>
+  <Accordion title="400" description="Get CLI Get Session Request Bad Request Error" color="red">
+
+  Invalid session ID or code format. The ID must be either a valid UUID or a 6-character hexadecimal code.
+
+
+    <ResponseField name="error" type="object">
+      <Expandable title="6 properties">
+
+        <ResponseField name="message" type="string"/>
+
+        <ResponseField name="code" type="double"/>
+
+        <ResponseField name="status" type="double"/>
+
+        <ResponseField name="request_id" type="string"  />
+
+        <ResponseField name="suggested_fix" type="string"  />
+
+        <ResponseField name="errors" type="string[]"  />
+      </Expandable>
+    </ResponseField>
+  </Accordion>
+
+  <Accordion title="404" description="Get CLI Get Session Request Not Found Error">
+
+  CLI session not found or expired. Sessions expire after 10 minutes from creation.
+
+  <ResponseField name="error" type="object">
+    <Expandable title="6 properties">
+
+      <ResponseField name="message" type="string"/>
+
+      <ResponseField name="code" type="double"/>
+
+      <ResponseField name="status" type="double"/>
+
+      <ResponseField name="request_id" type="string"  />
+
+      <ResponseField name="suggested_fix" type="string"  />
+
+      <ResponseField name="errors" type="string[]"  />
+  </Expandable>
+  </ResponseField>
+</Accordion>
+
+<Accordion title="500" description="Get CLI Get Session Request Internal Server Error">
+
+  Internal server error. An unexpected error occurred while processing the request.
+
+    <ResponseField name="error" type="object">
+      <Expandable title="6 properties">
+
+        <ResponseField name="message" type="string"/>
+
+        <ResponseField name="code" type="double"/>
+
+        <ResponseField name="status" type="double"/>
+
+        <ResponseField name="request_id" type="string"  />
+
+        <ResponseField name="suggested_fix" type="string"  />
+
+        <ResponseField name="errors" type="string[]"  />
+      </Expandable>
+    </ResponseField>
+</Accordion>
+</AccordionGroup>
+
+<ResponseExample>
+```json 200 Retrieved
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "code": "ABC123",
+  "status": "pending",
+  "expiresAt": "2023-01-01T12:00:00.000Z",
+  "account": {
+    "id": "user_12345",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+```json 400 Get CLI Get Session Request Bad Request Error
+{
+  "error": {
+    "message": "message",
+    "code": 1.1,
+    "status": 1.1
+  }
+}
+```
+```json 404 Get CLI Get Session Request Not Found Error
+{
+  "error": {
+    "message": "message",
+    "code": 1.1,
+    "status": 1.1
+  }
+}
+```
+```json 500 Get CLI Get Session Request Internal Server Error
+{
+  "error": {
+    "message": "message",
+    "code": 1.1,
+    "status": 1.1
+  }
+}
+```
+</ResponseExample>

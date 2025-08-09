@@ -1,0 +1,244 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "linden",
+  "name": "Composio",
+  "colors": {
+    "primary": "#F36D22",
+    "light": "#F36D22",
+    "dark": "#F36D22"
+  },
+  "favicon": "/favicon.png",
+  "background": {
+    "decoration": "gradient"
+  },
+  "appearance": {
+    "default": "light"
+  },
+  "fonts": {
+    "body": {
+      "family": "Roobert",
+      "source": "https://mintlify-assets.b-cdn.net/HWrX7NeZdXhGcI9vFloFbTFvio0.woff2",
+      "format": "woff2"
+    },
+    "heading": {
+      "family": "Code",
+      "source": "https://mintlify-assets.b-cdn.net/HWrX7NeZdXhGcI9vFloFbTFvio0.woff2",
+      "format": "woff2"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "navigation": {
+    "versions": [
+      {
+        "version": "latest",
+        "tabs": [
+          {
+            "tab": "GUIDES",
+            "groups": [
+              {
+                "group": "GET STARTED",
+                "icon": "rocket",
+                "pages": [
+                  "docs/index",
+                  "docs/quickstart",
+                  "docs/dev-setup",
+                  "docs/providers"
+                ]
+              },
+              {
+                "group": "TOOLS",
+                "icon": "screwdriver-wrench",
+                "pages": [
+                  "docs/executing-tools",
+                  "docs/authenticating-tools",
+                  {
+                    "group": "Modifiers",
+                    "pages": [
+                      "docs/modifiers/schema-modifiers"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "TRIGGERS",
+                "icon": "bolt",
+                "pages": [
+                  "docs/using-triggers"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "EXAMPLES",
+            "groups": [
+              {
+                "group": "GETTING STARTED",
+                "icon": "rocket",
+                "pages": [
+                  "examples/sample-webserver"
+                ]
+              },
+              {
+                "group": "FULL STACK APPLICATIONS",
+                "icon": "globe",
+                "pages": [
+                  "examples/chat-app"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "PROVIDERS",
+            "groups": [
+              {
+                "group": "SUPPORTED PROVIDERS ",
+                "icon": "code",
+                "pages": [
+                  "providers/openai",
+                  "providers/anthropic"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "TOOLS",
+            "groups": [
+              {
+                "group": "TOOL",
+                "icon": "screwdriver-wrench",
+                "pages": [
+                  "tools/introduction",
+                  "tools/premium-tools"
+                ]
+              },
+              {
+                "group": "IMPORTANT",
+                "icon": "star",
+                "pages": [
+                  "tools/github"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "SDK REFERENCE",
+            "groups": [
+              {
+                "group": "TypeScript",
+                "pages": [
+                  {
+                    "group": "CORE CLASSES",
+                    "pages": [
+                      "sdk-reference/type-script/core-classes/composio"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API REFERENCE",
+            "groups": [
+              {
+                "group": " ",
+                "openapi": "/openapi.documented.yml"
+              },
+              {
+                "group": " ",
+                "openapi": "/openapi.yaml"
+              }
+            ]
+          },
+          {
+            "tab": "CHANGELOG",
+            "pages": [
+              "changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "version": "v1",
+        "tabs": [
+          {
+            "tab": "DOCS",
+            "groups": [
+              {
+                "group": "GETTING STARTED",
+                "icon": "rocket",
+                "pages": [
+                  "v1/getting-started/welcome",
+                  "v1/getting-started/installation",
+                  "v1/getting-started/quickstart"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "FRAMEWORKS",
+            "groups": [
+              {
+                "group": "MODEL PROVIDERS",
+                "icon": "code",
+                "pages": [
+                  "v1/getting-started/model-providers/openai"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API REFERENCE",
+            "openapi": "/openapi.documented.yml"
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "COMMUNITY",
+          "href": "https://dub.composio.dev/discord?_gl=1*qvsyas*_ga*ODUwNzQ3MDY1LjE3NTM0Mjk2NzI.*_ga_YKMWVQS9W0*czE3NTM0Mjk2NzEkbzEkZzEkdDE3NTM0Mjk3NTEkajYwJGwwJGgxMDg1NjAyNDc4*_gcl_au*NTQ1MTk2MDA2LjE3NTM0Mjk2NzI.",
+          "icon": "discord"
+        },
+        {
+          "anchor": "BLOG",
+          "href": "https://composio.dev/blog",
+          "icon": "newspaper"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "SUPPORT",
+        "href": "mailto:support@composio.dev"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "SIGN IN",
+      "href": "https://app.composio.dev/?_gl=1*ebbbnz*_ga*ODUwNzQ3MDY1LjE3NTM0Mjk2NzI.*_ga_YKMWVQS9W0*czE3NTM0Mjk2NzEkbzEkZzEkdDE3NTM0Mjk3NTEkajYwJGwwJGgxMDg1NjAyNDc4*_gcl_au*NTQ1MTk2MDA2LjE3NTM0Mjk2NzI."
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/composiohq",
+      "github": "https://github.com/composiohq/composio/",
+      "linkedin": "https://www.linkedin.com/company/composiohq/",
+      "discord": "https://dub.composio.dev/discord?_gl=1*qvsyas*_ga*ODUwNzQ3MDY1LjE3NTM0Mjk2NzI.*_ga_YKMWVQS9W0*czE3NTM0Mjk2NzEkbzEkZzEkdDE3NTM0Mjk3NTEkajYwJGwwJGgxMDg1NjAyNDc4*_gcl_au*NTQ1MTk2MDA2LjE3NTM0Mjk2NzI.",
+      "youtube": "https://www.youtube.com/@Composio"
+    }
+  }
+}
