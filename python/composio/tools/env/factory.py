@@ -4,6 +4,8 @@ import typing as t
 
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace, WorkspaceConfigType
+from composio.tools.env.daytona.workspace import Config as DaytonaWorkspaceConfig
+from composio.tools.env.daytona.workspace import DaytonaWorkspace
 from composio.tools.env.docker.workspace import Config as DockerWorkspaceConfig
 from composio.tools.env.docker.workspace import DockerWorkspace
 from composio.tools.env.e2b.workspace import Config as E2BWorkspaceConfig
@@ -25,6 +27,7 @@ class WorkspaceType:
     Docker = DockerWorkspaceConfig
     FlyIO = FlyIOWorkspaceConfig
     E2B = E2BWorkspaceConfig
+    Daytona = DaytonaWorkspaceConfig
 
 
 class WorkspaceTemplate:
@@ -96,6 +99,9 @@ class WorkspaceFactory:
 
         if isinstance(config, FlyIOWorkspaceConfig):
             return FlyIOWorkspace(config=config)
+
+        if isinstance(config, DaytonaWorkspaceConfig):
+            return DaytonaWorkspace(config=config)
 
         raise ValueError(f"Invalid workspace config: {config}")
 

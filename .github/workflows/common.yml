@@ -100,6 +100,7 @@ jobs:
           export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
           export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
           export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+          export DAYTONA_API_KEY=${{ secrets.DAYTONA_API_KEY_STAGING }}
 
           tox -e test -- -m 'not e2e and not swe'
       - name: Plugin tests
@@ -157,6 +158,7 @@ jobs:
           export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
           export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
           export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+          export DAYTONA_API_KEY=${{ secrets.DAYTONA_API_KEY_STAGING }}
 
           tox -e test -- -m 'swe'
       - name: Upload test results to Codecov
@@ -208,5 +210,6 @@ jobs:
           export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
           export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
           export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
-
+          export DAYTONA_API_KEY=${{ secrets.DAYTONA_API_KEY_STAGING }}
+          
           tox -e test -- -m 'e2e'
