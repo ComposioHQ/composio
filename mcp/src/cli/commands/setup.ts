@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import yaml from 'js-yaml';
+import { execFileSync } from 'child_process';
 
 interface MCPArgs {
   url: string;
@@ -35,6 +37,10 @@ interface CursorConfig {
   };
 }
 
+interface ClientConfig extends MCPConfig {
+  [key: string]: any;
+}
+
 type ErrorWithMessage = {
   message: string;
 };
@@ -51,9 +57,9 @@ const command: CommandModule<{}, MCPArgs> = {
       })
       .option('client', {
         type: 'string',
-        describe: 'Client to use (claude, windsurf, cursor)',
+        describe: 'Client to use (claude, cline, roocode, windsurf, witsy, enconvo, cursor, vscode, vscode-insiders, boltai, amazon-bedrock, amazonq, librechat, gemini-cli)',
         default: 'claude',
-        choices: ['claude', 'windsurf', 'cursor'],
+        choices: ['claude', 'cline', 'roocode', 'windsurf', 'witsy', 'enconvo', 'cursor', 'vscode', 'vscode-insiders', 'boltai', 'amazon-bedrock', 'amazonq', 'librechat', 'gemini-cli'],
       })
       .option('name', {
         type: 'string',
@@ -128,21 +134,67 @@ function saveMcpConfig(url: string, clientType: string, name: string, mcpUrl: st
 
   const { baseDir } = platformPaths[platform];
 
+  const defaultClaudePath = path.join(baseDir, 'Claude', 'claude_desktop_config.json');
+
   // Define client paths using the platform-specific base directories
   const clientPaths: {
-    [key: string]: { configDir: string; configPath: string };
+    [key: string]: { type: 'file' | 'command' | 'yaml'; path?: string; command?: string };
   } = {
-    claude: {
-      configDir: path.join(baseDir, 'Claude'),
-      configPath: path.join(baseDir, 'Claude', 'claude_desktop_config.json'),
+    claude: { 
+      type: 'file', 
+      path: defaultClaudePath 
+    },
+    cline: {
+      type: 'file',
+      path: path.join(baseDir, platformPaths[platform].vscodePath, 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json'),
+    },
+    roocode: {
+      type: 'file',
+      path: path.join(baseDir, platformPaths[platform].vscodePath, 'rooveterinaryinc.roo-cline', 'settings', 'mcp_settings.json'),
     },
     windsurf: {
-      configDir: path.join(homeDir, '.codeium', 'windsurf'),
-      configPath: path.join(homeDir, '.codeium', 'windsurf', 'mcp_config.json'),
+      type: 'file',
+      path: path.join(homeDir, '.codeium', 'windsurf', 'mcp_config.json'),
     },
-    cursor: {
-      configDir: path.join(homeDir, '.cursor'),
-      configPath: path.join(homeDir, '.cursor', 'mcp.json'),
+    witsy: { 
+      type: 'file', 
+      path: path.join(baseDir, 'Witsy', 'settings.json') 
+    },
+    enconvo: {
+      type: 'file',
+      path: path.join(homeDir, '.config', 'enconvo', 'mcp_config.json'),
+    },
+    cursor: { 
+      type: 'file', 
+      path: path.join(homeDir, '.cursor', 'mcp.json') 
+    },
+    vscode: {
+      type: 'command',
+      command: process.platform === 'win32' ? 'code.cmd' : 'code',
+    },
+    'vscode-insiders': {
+      type: 'command',
+      command: process.platform === 'win32' ? 'code-insiders.cmd' : 'code-insiders',
+    },
+    boltai: { 
+      type: 'file', 
+      path: path.join(homeDir, '.boltai', 'mcp.json') 
+    },
+    'amazon-bedrock': {
+      type: 'file',
+      path: path.join(homeDir, 'Amazon Bedrock Client', 'mcp_config.json'),
+    },
+    amazonq: {
+      type: 'file',
+      path: path.join(homeDir, '.aws', 'amazonq', 'mcp.json'),
+    },
+    librechat: {
+      type: 'yaml',
+      path: path.join(homeDir, 'LibreChat', 'librechat.yaml'),
+    },
+    'gemini-cli': {
+      type: 'file',
+      path: path.join(homeDir, '.gemini', 'settings.json'),
     },
   };
 
@@ -151,73 +203,127 @@ function saveMcpConfig(url: string, clientType: string, name: string, mcpUrl: st
     return;
   }
 
-  const { configDir, configPath } = clientPaths[clientType];
+  const clientConfig = clientPaths[clientType];
+  const newKey = name || url.split('/').slice(3).join('/').replace(/\//g, '-');
 
+  if (clientConfig.type === 'command') {
+    handleCommandClient(clientConfig, newKey, config);
+  } else if (clientConfig.type === 'yaml') {
+    handleYamlClient(clientConfig, newKey, config);
+  } else {
+    handleFileClient(clientConfig, newKey, config, mcpUrl);
+  }
+}
+
+function handleCommandClient(
+  clientConfig: { command?: string },
+  serverName: string,
+  config: MCPConfig
+): void {
+  if (!clientConfig.command) {
+    throw new Error('Command not specified for command-type client');
+  }
+
+  const args: string[] = [];
+  args.push('--add-mcp', JSON.stringify({ ...config, name: serverName }));
+
+  try {
+    const output = execFileSync(clientConfig.command, args);
+    console.log(chalk.green(`✅ Configuration added via ${clientConfig.command}: ${output.toString()}`));
+  } catch (error) {
+    if (error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(
+        `Command '${clientConfig.command}' not found. Make sure ${clientConfig.command} is installed and on your PATH`
+      );
+    }
+    throw error;
+  }
+}
+
+function handleYamlClient(
+  clientConfig: { path?: string },
+  serverName: string,
+  config: MCPConfig
+): void {
+  if (!clientConfig.path) {
+    throw new Error('Path not specified for YAML client');
+  }
+
+  const configDir = path.dirname(clientConfig.path);
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
   }
 
-  const newKey = name || url.split('/').slice(3).join('/').replace(/\//g, '-');
-
-  if (clientType === 'claude') {
-    let claudeConfig: ClaudeConfig = { mcpServers: {} };
-    if (fs.existsSync(configPath)) {
-      try {
-        claudeConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      } catch (error) {
-        console.log(chalk.yellow('⚠️  Creating new config file'));
-      }
+  let existingYaml: any = {};
+  
+  try {
+    if (fs.existsSync(clientConfig.path)) {
+      const originalContent = fs.readFileSync(clientConfig.path, 'utf8');
+      existingYaml = yaml.load(originalContent) as any || {};
     }
-
-    // Ensure mcpServers exists
-    if (!claudeConfig.mcpServers) claudeConfig.mcpServers = {};
-
-    // Update only the mcpServers entry
-    claudeConfig.mcpServers[newKey] = config;
-
-    fs.writeFileSync(configPath, JSON.stringify(claudeConfig, null, 2));
-
-    console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
-  } else if (clientType === 'windsurf') {
-    let windsurfConfig: WindsurfConfig = { mcpServers: {} };
-    if (fs.existsSync(configPath)) {
-      try {
-        windsurfConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (!windsurfConfig.mcpServers) windsurfConfig.mcpServers = {};
-      } catch (error) {
-        console.log(chalk.yellow('⚠️  Creating new config file'));
-      }
-    }
-
-    windsurfConfig.mcpServers[newKey] = config;
-    fs.writeFileSync(configPath, JSON.stringify(windsurfConfig, null, 2));
-    console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
-  } else if (clientType === 'cursor') {
-    let cursorConfig: CursorConfig = { mcpServers: {} };
-    if (fs.existsSync(configPath)) {
-      try {
-        cursorConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (!cursorConfig.mcpServers) cursorConfig.mcpServers = {};
-      } catch (error) {
-        console.log(chalk.yellow('⚠️  Creating new config file'));
-      }
-    }
-
-    if (cursorConfig.mcpServers[newKey]) {
-      delete cursorConfig.mcpServers[newKey];
-    }
-
-    try {
-
-      cursorConfig.mcpServers[newKey] = sseConfig;
-      fs.writeFileSync(configPath, JSON.stringify(cursorConfig, null, 2));
-      console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
-    } catch (error) {
-      console.log(chalk.red('❌ Error occurred while setting up MCP:'));
-      console.log(chalk.red(`   ${(error as ErrorWithMessage).message}`));
-      console.log(chalk.yellow('\nPlease try again or contact support if the issue persists.\n'));
-    }
+  } catch (error) {
+    console.log(chalk.yellow('⚠️  Creating new YAML config file'));
   }
+
+  // Initialize mcpServers if it doesn't exist
+  if (!existingYaml.mcpServers) {
+    existingYaml.mcpServers = {};
+  }
+  
+  // Add the new server
+  existingYaml.mcpServers[serverName] = config;
+  
+  // Write the updated YAML
+  const yamlContent = yaml.dump(existingYaml, { 
+    indent: 2,
+    lineWidth: -1,
+    noRefs: true
+  });
+  
+  fs.writeFileSync(clientConfig.path, yamlContent);
+  console.log(chalk.green(`✅ Configuration saved to: ${clientConfig.path}`));
+}
+
+function handleFileClient(
+  clientConfig: { path?: string },
+  serverName: string,
+  config: MCPConfig,
+  mcpUrl: string
+): void {
+  if (!clientConfig.path) {
+    throw new Error('Path not specified for file client');
+  }
+
+  const configDir = path.dirname(clientConfig.path);
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
+  let existingConfig: ClientConfig = { mcpServers: {} };
+  
+  try {
+    if (fs.existsSync(clientConfig.path)) {
+      existingConfig = JSON.parse(fs.readFileSync(clientConfig.path, 'utf8'));
+    }
+  } catch (error) {
+    console.log(chalk.yellow('⚠️  Creating new config file'));
+  }
+
+  // Ensure mcpServers exists
+  if (!existingConfig.mcpServers) existingConfig.mcpServers = {};
+
+  // Special handling for Cursor which uses SSE configuration
+  if (clientConfig.path?.includes('.cursor')) {
+    const sseConfig: MCPConfig = {
+      url: mcpUrl,
+    };
+    existingConfig.mcpServers[serverName] = sseConfig;
+  } else {
+    existingConfig.mcpServers[serverName] = config;
+  }
+
+  fs.writeFileSync(clientConfig.path, JSON.stringify(existingConfig, null, 2));
+  console.log(chalk.green(`✅ Configuration saved to: ${clientConfig.path}`));
 }
 
 export default command;

@@ -1,6 +1,6 @@
 {
   "name": "@composio/mcp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "MCP CLI tool",
   "main": "dist/index.js",
   "bin": {
@@ -24,12 +24,14 @@
   "license": "ISC",
   "packageManager": "pnpm@10.6.1",
   "dependencies": {
-    "composiohq-modelcontextprotocol-typescript-sdk": "1.12.2",
+    "@types/js-yaml": "^4.0.9",
     "abortcontroller-polyfill": "^1.7.8",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
+    "composiohq-modelcontextprotocol-typescript-sdk": "1.12.2",
     "event-source-polyfill": "^1.0.31",
     "event-target-polyfill": "^0.0.4",
+    "js-yaml": "^4.1.0",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "yargs": "^17.7.2",
     "zod": "^3.24.2"
