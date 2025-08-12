@@ -38,43 +38,42 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
 
     yield* Effect.logDebug(`Created session:`, session);
 
-    const url = `https://app.composio.dev?cliKey=${session.code}`;
+    // TODO: refactor into a PUT request
+    // const url = `https://platform.composio.dev?cliKey=${session.id}`;
 
-    if (noBrowser) {
-      yield* Console.log(`> Please login using the following URL:`);
-    } else {
-      yield* Console.log(`> Redirecting you to the login page`);
-    }
+    // if (noBrowser) {
+    //   yield* Console.log(`> Please login using the following URL:`);
+    // } else {
+    //   yield* Console.log(`> Redirecting you to the login page`);
+    // }
 
-    yield* Console.log(green`> ${url}`);
+    // yield* Console.log(green`> ${url}`);
 
-    if (!noBrowser) {
-      // Open the given `url` in the default browser
-      yield* Effect.tryPromise(() =>
-        open(url, {
-          app: {
-            name: apps.browser,
-          },
-          wait: false,
-        })
-      );
-    }
+    // if (!noBrowser) {
+    //   // Open the given `url` in the default browser
+    //   yield* Effect.tryPromise(() =>
+    //     open(url, {
+    //       app: {
+    //         name: apps.browser,
+    //       },
+    //       wait: false,
+    //     })
+    //   );
+    // }
 
-    const authenticationCode = yield* Prompt.text({
-      message: '> Please enter the authentication code:',
-    });
-    yield* Effect.logDebug(`Authentication code: ${authenticationCode}`);
-
-    /**
-     * TODO: we're waiting for the web UI to support logging in using v3 of the backend API.
-     */
-
-    // const linkedSession = yield* client.linkSession({
-    //   ...session,
-    //   id: authenticationCode,
+    // const authenticationCode = yield* Prompt.text({
+    //   message: '> Please enter the authentication code:',
     // });
+    // yield* Effect.logDebug(`Authentication code: ${authenticationCode}`);
 
-    // yield* Effect.logDebug(`Linked session: ${JSON.stringify(linkedSession)}`);
+    const authenticationCode = session.id;
+
+    const linkedSession = yield* client.linkSession({
+      ...session,
+      id: authenticationCode,
+    });
+
+    yield* Effect.logDebug(`Linked session: ${JSON.stringify(linkedSession)}`);
 
     // yield* Console.log(
     //   `Linked session code ${session.code} to user account ${linkedSession.account.email}`

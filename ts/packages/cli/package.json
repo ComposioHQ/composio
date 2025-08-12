@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "@clack/prompts": "1.0.0-alpha.1",
-    "@composio/client": "0.1.0-alpha.29",
+    "@composio/client": "0.1.0-alpha.31",
     "@composio/core": "workspace:*",
     "@composio/ts-builders": "workspace:*",
     "@effect/cli": "^0.64.2",
