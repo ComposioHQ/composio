@@ -4,9 +4,11 @@ import { generateTypeScriptToolkitSources } from 'src/generation/typescript/gene
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { TOOLS_GITHUB } from 'test/__mocks__/tools_github';
+import { TOOLS_GOOGLEDRIVE } from 'test/__mocks__/tools_googledrive';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TRIGGER_TYPES_GOOGLEDRIVE } from 'test/__mocks__/trigger-types-googledrive';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
@@ -88,16 +90,28 @@ describe('generateTypeScriptToolkitSources', () => {
               name: 'Slack Helper',
               slug: 'slack',
             },
+            {
+              name: 'Google Drive',
+              slug: 'googledrive',
+            },
           ]);
 
           const index = createToolkitIndex({
             toolkits,
-            tools: [...TOOLS_GITHUB.slice(0, 3), ...TOOLS_GMAIL.slice(0, 3)],
-            triggerTypes: [...TRIGGER_TYPES_GITHUB, ...TRIGGER_TYPES_GMAIL],
+            tools: [
+              ...TOOLS_GITHUB.slice(0, 3),
+              ...TOOLS_GMAIL.slice(0, 3),
+              ...TOOLS_GOOGLEDRIVE.slice(0, 3),
+            ],
+            triggerTypes: [
+              ...TRIGGER_TYPES_GITHUB,
+              ...TRIGGER_TYPES_GMAIL,
+              ...TRIGGER_TYPES_GOOGLEDRIVE,
+            ],
           });
 
           const sources = yield* generateTypeScriptToolkitSources(banner)(index);
-          expect(sources).toHaveLength(3);
+          expect(sources).toHaveLength(4);
 
           expect(sources[0]).toHaveLength(2);
           expect(sources[0][0]).toBe('gmail.ts');
@@ -972,6 +986,62 @@ describe('generateTypeScriptToolkitSources', () => {
           export type SLACK_TRIGGER_EVENTS = {}
           "
         `);
+
+          expect(sources[3]).toHaveLength(2);
+          expect(sources[3][0]).toBe('googledrive.ts');
+          expect(sources[3][1]).toMatchInlineSnapshot(`
+            "import { type TriggerEvent } from "@composio/core"
+
+            type GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES_PAYLOAD = object;
+
+            /**
+             * Map of Composio's GOOGLEDRIVE toolkit.
+             */
+            export const GOOGLEDRIVE = {
+              slug: "googledrive",
+              tools: {
+                ADD_FILE_SHARING_PREFERENCE: "GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE",
+                COPY_FILE: "GOOGLEDRIVE_COPY_FILE",
+                CREATE_COMMENT: "GOOGLEDRIVE_CREATE_COMMENT",
+              },
+              triggerTypes: {
+                GOOGLE_DRIVE_CHANGES: {
+                  slug: "GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES",
+                  name: "Google Drive Changes",
+                  description: "Triggers when changes are detected in a Google Drive.",
+                  instructions: "\\n    **Instructions for Setting Up the Trigger:**\\n    - Ensure you have set the necessary permissions to access Google Drive.\\n    ",
+                  config: {
+                    description: "Configuration for Google Drive trigger",
+                    properties: {},
+                    title: "DriveConfig",
+                    type: "object",
+                  },
+                  payload: {
+                    description: "Schema for Google Drive trigger payload.\\nCurrently no specific fields are present, but may include\\nconfiguration options in the future.",
+                    properties: {},
+                    title: "DrivePayload",
+                    type: "object",
+                  },
+                  type: "poll",
+                },
+              },
+            }
+
+            /**
+             * Type map of all available trigger payloads for toolkit "GOOGLEDRIVE".
+             */
+            export type GOOGLEDRIVE_TRIGGER_PAYLOADS = {
+              GOOGLE_DRIVE_CHANGES: GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES_PAYLOAD
+            }
+
+            /**
+             * Type map of all available trigger events for toolkit "GOOGLEDRIVE".
+             */
+            export type GOOGLEDRIVE_TRIGGER_EVENTS = {
+              GOOGLE_DRIVE_CHANGES: TriggerEvent<GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES_PAYLOAD>
+            }
+            "
+          `);
         })
       );
     });
