@@ -1,5 +1,13 @@
 # @composio/openai
 
+## 0.1.43
+
+### Patch Changes
+
+- eb7691e: Add strict mode to vercel provider
+- Updated dependencies [eb7691e]
+  - @composio/core@0.1.43
+
 ## 0.1.42
 
 ### Patch Changes
