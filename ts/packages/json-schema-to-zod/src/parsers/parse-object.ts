@@ -160,7 +160,8 @@ export function parseObject(
         output = propertiesSchema.catchall(additionalProperties);
       }
     } else {
-      output = zodSchema!;
+      // When additionalProperties is not specified, default to allowing any additional properties
+      output = propertiesSchema.catchall(z.any());
     }
   } else {
     if (hasPatternProperties) {
