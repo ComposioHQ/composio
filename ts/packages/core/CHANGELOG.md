@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.43
+
+### Patch Changes
+
+- eb7691e: Add strict mode to vercel provider
+
 ## 0.1.42
 
 ### Patch Changes
