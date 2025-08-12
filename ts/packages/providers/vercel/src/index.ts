@@ -16,15 +16,15 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  removeNonRequiredProperties,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { jsonSchema, tool } from 'ai';
-import { z } from 'zod';
 
 export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
   readonly name = 'vercel';
-
+  private strict: boolean | null;
   /**
    * Creates a new instance of the VercelProvider.
    *
@@ -46,8 +46,9 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    * const vercelTools = provider.wrapTools(composioTools, composio.tools.execute);
    * ```
    */
-  constructor() {
+  constructor({ strict = false }: { strict?: boolean } = {}) {
     super();
+    this.strict = strict;
   }
 
   /**
@@ -100,9 +101,22 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): VercelTool {
+    const inputParams = composioTool.inputParameters;
+
+    const parameters =
+      this.strict && inputParams?.type === 'object'
+        ? removeNonRequiredProperties(
+            inputParams as {
+              type: 'object';
+              properties: Record<string, unknown>;
+              required?: string[];
+            }
+          )
+        : (inputParams ?? {});
+
     return tool({
       description: composioTool.description,
-      parameters: jsonSchema((composioTool.inputParameters as Record<string, unknown>) ?? {}),
+      parameters: jsonSchema(parameters),
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
         return await executeTool(composioTool.slug, input);

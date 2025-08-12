@@ -5,4 +5,3 @@ export const MessageRoles = {
 } as const;
 
 export type MessageRole = (typeof MessageRoles)[keyof typeof MessageRoles];
-export type Message = { role: MessageRole; content: string | unknown };
