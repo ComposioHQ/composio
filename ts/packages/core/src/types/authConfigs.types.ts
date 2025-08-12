@@ -133,7 +133,7 @@ export const AuthCustomConfigUpdateParamsSchema = z.object({
 });
 
 export const AuthDefaultConfigUpdateParamsSchema = z.object({
-  scopes: z.string(),
+  scopes: z.string().optional(),
   type: z.literal('default'),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
