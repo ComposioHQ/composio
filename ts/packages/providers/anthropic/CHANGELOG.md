@@ -1,5 +1,27 @@
 # @composio/anthropic
 
+## 0.1.43
+
+### Patch Changes
+
+- eb7691e: Add strict mode to vercel provider
+- Updated dependencies [eb7691e]
+  - @composio/core@0.1.43
+
+## 0.1.42
+
+### Patch Changes
+
+- @composio/core@0.1.42
+
+## 0.1.41
+
+### Patch Changes
+
+- 025600f: Bump composio client version to 0.1.0-alpha.31
+- Updated dependencies [025600f]
+  - @composio/core@0.1.41
+
 ## 0.1.40
 
 ### Patch Changes

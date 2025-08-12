@@ -1,5 +1,24 @@
 # @composio/core
 
+## 0.1.43
+
+### Patch Changes
+
+- eb7691e: Add strict mode to vercel provider
+
+## 0.1.42
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.12
+
+## 0.1.41
+
+### Patch Changes
+
+- 025600f: Bump composio client version to 0.1.0-alpha.31
+
 ## 0.1.40
 
 ### Patch Changes

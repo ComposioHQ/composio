@@ -198,7 +198,7 @@ describe('jsonSchemaToZod', () => {
       expect(() => zodSchema.parse({ age: 30 })).toThrow();
     });
 
-    it('should validate additional properties', () => {
+    it('should validate additional properties when set to false', () => {
       const schema: JsonSchema = {
         type: 'object',
         properties: {
@@ -209,6 +209,260 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
       expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+    });
+
+    it('should allow any additional properties when set to true', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        additionalProperties: true,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
+        name: 'John',
+        extra: 'field',
+      });
+      expect(zodSchema.parse({ name: 'John', age: 30, city: 'NYC' })).toEqual({
+        name: 'John',
+        age: 30,
+        city: 'NYC',
+      });
+    });
+
+    it('should validate additional properties against a schema', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        additionalProperties: { type: 'number' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({
+        name: 'John',
+        age: 30,
+      });
+      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+    });
+
+    it('should validate additional properties with complex schema', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            value: { type: 'string' },
+            count: { type: 'number' },
+          },
+          required: ['value'],
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(
+        zodSchema.parse({
+          name: 'John',
+          metadata: { value: 'test', count: 5 },
+        })
+      ).toEqual({
+        name: 'John',
+        metadata: { value: 'test', count: 5 },
+      });
+      expect(
+        zodSchema.parse({
+          name: 'John',
+          metadata: { value: 'test' },
+        })
+      ).toEqual({
+        name: 'John',
+        metadata: { value: 'test' },
+      });
+      expect(() =>
+        zodSchema.parse({
+          name: 'John',
+          metadata: { count: 5 }, // missing required 'value'
+        })
+      ).toThrow();
+    });
+
+    it('should allow any additional properties when additionalProperties is not specified', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
+        name: 'John',
+        extra: 'field',
+      });
+    });
+
+    it('should handle additionalProperties with patternProperties', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^prefix_': { type: 'string' },
+        },
+        additionalProperties: { type: 'number' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should allow defined properties
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+
+      // Should allow pattern properties
+      expect(
+        zodSchema.parse({
+          name: 'John',
+          prefix_test: 'value',
+        })
+      ).toEqual({
+        name: 'John',
+        prefix_test: 'value',
+      });
+
+      // Should allow additional properties matching the schema
+      expect(
+        zodSchema.parse({
+          name: 'John',
+          age: 30,
+        })
+      ).toEqual({
+        name: 'John',
+        age: 30,
+      });
+
+      // Should reject additional properties not matching the schema
+      expect(() =>
+        zodSchema.parse({
+          name: 'John',
+          extra: 'field', // string, but additionalProperties expects number
+        })
+      ).toThrow();
+    });
+
+    it('should handle object with no properties but with additionalProperties schema', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({})).toEqual({});
+      expect(zodSchema.parse({ key1: 'value1', key2: 'value2' })).toEqual({
+        key1: 'value1',
+        key2: 'value2',
+      });
+      expect(() => zodSchema.parse({ key1: 123 })).toThrow();
+    });
+
+    it('should handle additionalProperties: false with patternProperties', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^prefix_': { type: 'string' },
+        },
+        additionalProperties: false,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(
+        zodSchema.parse({
+          name: 'John',
+          prefix_test: 'value',
+        })
+      ).toEqual({
+        name: 'John',
+        prefix_test: 'value',
+      });
+
+      // Should reject properties that don't match patterns or defined properties
+      expect(() =>
+        zodSchema.parse({
+          name: 'John',
+          extra: 'field',
+        })
+      ).toThrow();
+    });
+
+    it('should handle empty object with additionalProperties: true', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        additionalProperties: true,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({})).toEqual({});
+      expect(zodSchema.parse({ any: 'value', another: 123 })).toEqual({
+        any: 'value',
+        another: 123,
+      });
+    });
+
+    it('should handle empty object with additionalProperties: false', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        additionalProperties: false,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+      expect(zodSchema.parse({})).toEqual({});
+      expect(() => zodSchema.parse({ any: 'value' })).toThrow();
+    });
+
+    it('should handle nested additionalProperties', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          config: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+            },
+            additionalProperties: { type: 'number' },
+          },
+        },
+        additionalProperties: { type: 'string' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(
+        zodSchema.parse({
+          config: { name: 'test', timeout: 5000 },
+          env: 'production',
+        })
+      ).toEqual({
+        config: { name: 'test', timeout: 5000 },
+        env: 'production',
+      });
+
+      // Should reject nested additional properties that don't match schema
+      expect(() =>
+        zodSchema.parse({
+          config: { name: 'test', timeout: 'invalid' }, // should be number
+        })
+      ).toThrow();
+
+      // Should reject top-level additional properties that don't match schema
+      expect(() =>
+        zodSchema.parse({
+          config: { name: 'test' },
+          count: 123, // should be string
+        })
+      ).toThrow();
     });
 
     it('should validate pattern properties', () => {
