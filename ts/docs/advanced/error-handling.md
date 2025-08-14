@@ -177,27 +177,19 @@ try {
 When creating custom tools, implement proper error handling in your handler function:
 
 ```typescript
+import { z } from 'zod';
+
 const customTool = await composio.tools.createCustomTool({
   name: 'My Custom Tool',
   description: 'A custom tool with error handling',
   slug: 'MY_CUSTOM_TOOL',
-  inputParameters: {
-    type: 'object',
-    properties: {
-      param1: { type: 'string' },
-    },
-    required: ['param1'],
-  },
-  outputParameters: {
-    type: 'object',
-    properties: {
-      result: { type: 'string' },
-    },
-  },
-  handler: async (params, context) => {
+  inputParams: z.object({
+    param1: z.string().describe('Required parameter')
+  }),
+  execute: async (input) => {
     try {
-      // Validate input
-      const { param1 } = params.arguments;
+      // Input is already validated by zod
+      const { param1 } = input;
       if (!param1 || param1.trim() === '') {
         return {
           data: {},
