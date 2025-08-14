@@ -193,53 +193,28 @@ For a more complete integration, check out the [OpenAI Provider example](../exam
 You can extend Composio by creating your own custom tools:
 
 ```typescript
+import { z } from 'zod';
+
 // Create a custom tool
 const customTool = await composio.tools.createCustomTool({
   name: 'Weather Forecast',
   description: 'Get the weather forecast for a location',
   slug: 'WEATHER_FORECAST',
-  inputParameters: {
-    type: 'object',
-    properties: {
-      location: {
-        type: 'string',
-        description: 'The location to get the forecast for',
-      },
-      days: {
-        type: 'integer',
-        description: 'Number of days for the forecast',
-        default: 3,
-      },
-    },
-    required: ['location'],
-  },
-  outputParameters: {
-    type: 'object',
-    properties: {
-      forecast: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            date: { type: 'string' },
-            temperature: { type: 'number' },
-            conditions: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
-  handler: async (params, context) => {
+  inputParams: z.object({
+    location: z.string().describe('The location to get the forecast for'),
+    days: z.number().optional().default(3).describe('Number of days for the forecast')
+  }),
+  execute: async (input) => {
     try {
-      const { location, days = 3 } = params.arguments;
+      const { location, days = 3 } = input;
 
       // Here you would call your weather API
       const forecast = await getWeatherForecast(location, days);
 
       return {
         data: { forecast },
-        successful: true,
         error: null,
+        successful: true,
       };
     } catch (error) {
       return {

@@ -201,11 +201,23 @@ const wrappedTools = provider.wrapTools(tools);
 
 ### Custom Tool Creation
 ```typescript
+import { z } from 'zod';
+
 const customTool = await composio.tools.createCustomTool({
   name: 'My Tool',
   description: 'Tool description',
-  inputParameters: { /* JSON schema */ },
-  handler: async (params) => { /* implementation */ }
+  slug: 'MY_TOOL',
+  inputParams: z.object({
+    param: z.string().describe('Parameter description')
+  }),
+  execute: async (input) => {
+    // Implementation
+    return {
+      data: { result: input.param },
+      error: null,
+      successful: true
+    };
+  }
 });
 ```
 

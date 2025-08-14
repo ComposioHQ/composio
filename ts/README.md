@@ -138,45 +138,20 @@ if (completion.choices[0].message.tool_calls) {
 ## Creating Custom Tools
 
 ```typescript
+import { z } from 'zod';
+
 // Create a custom tool
 const customTool = await composio.tools.createCustomTool({
   name: 'Weather Forecast',
   description: 'Get the weather forecast for a location',
   slug: 'WEATHER_FORECAST',
-  inputParameters: {
-    type: 'object',
-    properties: {
-      location: {
-        type: 'string',
-        description: 'The location to get the forecast for',
-      },
-      days: {
-        type: 'integer',
-        description: 'Number of days for the forecast',
-        default: 3,
-      },
-    },
-    required: ['location'],
-  },
-  outputParameters: {
-    type: 'object',
-    properties: {
-      forecast: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            date: { type: 'string' },
-            temperature: { type: 'number' },
-            conditions: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
-  handler: async (params, context) => {
+  inputParams: z.object({
+    location: z.string().describe('The location to get the forecast for'),
+    days: z.number().optional().default(3).describe('Number of days for the forecast')
+  }),
+  execute: async (input) => {
     try {
-      const { location, days = 3 } = params.arguments;
+      const { location, days = 3 } = input;
 
       // Your implementation here
       const forecast = [

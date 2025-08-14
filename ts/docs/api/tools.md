@@ -90,26 +90,24 @@ const result = await composio.tools.execute(
 Creates a custom tool that can be used within the Composio SDK.
 
 ```typescript
+import { z } from 'zod';
+
 const customTool = await composio.tools.createCustomTool({
   name: 'My Custom Tool',
   description: 'A custom tool that does something specific',
   slug: 'MY_CUSTOM_TOOL',
-  inputParameters: {
-    param1: {
-      type: 'string',
-      description: 'First parameter',
-      required: true,
-    },
-  },
-  outputParameters: {
-    result: {
-      type: 'string',
-      description: 'The result of the operation',
-    },
-  },
-  handler: async (params, context) => {
+  inputParams: z.object({
+    param1: z.string().describe('Description of param1'),
+    param2: z.number().optional().describe('Optional numeric parameter')
+  }),
+  execute: async (input) => {
     // Custom logic here
-    return { data: { result: 'Success!' } };
+    console.log('Input:', input.param1, input.param2);
+    return { 
+      data: { result: 'Success!' },
+      error: null,
+      successful: true
+    };
   },
 });
 ```
