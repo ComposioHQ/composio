@@ -1,9 +1,9 @@
 import { Composio } from '@composio/core';
-import { generateText } from 'ai';
+import { generateText, CoreMessage } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { VercelProvider } from '@composio/vercel';
 import dotenv from 'dotenv';
-import { Message, MessageRoles } from './types';
+import { MessageRoles } from './types';
 dotenv.config();
 
 /**
@@ -21,7 +21,7 @@ const composio = new Composio({
 async function run() {
   const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE');
 
-  const messages: Message[] = [
+  const messages: CoreMessage[] = [
     {
       role: MessageRoles.USER,
       content: 'Summarize the front page of HackerNews',
