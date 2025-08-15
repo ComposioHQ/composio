@@ -360,16 +360,10 @@ class ConnectedAccounts:
         """
         Wait for connected account with given ID to be active
         """
-        # Get the connection status first
-        connection = self._client.connected_accounts.retrieve(nanoid=id)
-        # Create a ConnectionRequest instance
-        connection_request = ConnectionRequest(
+        return ConnectionRequest.from_id(
             id=id,
-            status=connection.status,
-            redirect_url=None,
             client=self._client,
-        )
-        return connection_request.wait_for_connection(
+        ).wait_for_connection(
             timeout=timeout,
         )
 
