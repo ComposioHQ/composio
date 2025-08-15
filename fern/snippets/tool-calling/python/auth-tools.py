@@ -29,7 +29,7 @@ user_api_key = "sk_1234567890"
 connection_request = composio.connected_accounts.initiate(
     user_id=user_id,
     auth_config_id=serp_auth_config_id,
-    config={"auth_scheme": "API_KEY", "val": user_api_key},
+    config={"auth_scheme": "API_KEY", "val": {"generic_api_key": user_api_key}},
 )
 
 # Auth scheme config for Airtable Bearer
