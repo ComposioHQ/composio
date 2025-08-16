@@ -51,9 +51,19 @@ An **Auth Config** is a *blueprint* that defines how authentication works for a 
   Auth configs contain your developer credentials and app-level settings (*scopes*, *authentication method*, etc.). Once created, you can reuse the same auth config for all your users.
 </Note>
 
+"When to create multiple auth configs"
+
+  You might create multiple auth configs for the same toolkit when you need:
+
+  - **Different authentication methods** - One OAuth config and one API key config
+  - **Different scopes** - Separate configs for read-only vs full access  
+  - **Different OAuth apps** - Using separate client credentials for different environments
+  - **Different permission levels** - Limiting actions for specific use cases
+
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
   For managing auth configs across multiple projects, you can create them programmatically via the API
 </Card>
+
 
 ## Connecting an account:
 
