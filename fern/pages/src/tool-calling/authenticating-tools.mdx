@@ -91,14 +91,15 @@ print(f"Redirect URL: {connection_request.redirect_url}")
 connected_account = connection_request.wait_for_connection()
 
 # Alternative: if you only have the connection request ID
-# connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+# connected_account = composio.connected_accounts.wait_for_connection(
+#     connection_request.id)
 # Recommended when the connection_request object is no longer available
 
 print(f"Connection established: {connected_account.id}")
 ```
 
 
-```typescript {10}
+```typescript {10-13}
 import { Composio } from '@composio/core';
 
 const composio = new Composio({apiKey: "YOUR_COMPOSIO_API_KEY"});
@@ -108,14 +109,18 @@ const authConfigId = 'ac_UdqFwixfy3cV';
 // Use a unique identifier for each user in your application
 const userId = 'user_4567';
 
-const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId);
+const connRequest = await composio.connectedAccounts.initiate(
+    userId,
+    authConfigId
+);
 
 console.log(`Redirect URL: ${connRequest.redirectUrl}`);
 
 const connectedAccount = await connRequest.waitForConnection();
 
 // Alternative: if you only have the connection request ID
-// const connectedAccount = await composio.connectedAccounts.waitForConnection(connRequest.id);
+// const connectedAccount = await composio.connectedAccounts
+//   .waitForConnection(connRequest.id);
 // Recommended when the connRequest object is no longer available
 
 console.log(`Connection established: ${connectedAccount.id}`);
@@ -157,7 +162,7 @@ For API key authentication, you can either *collect API keys from each user* or 
 Here is how to initiate the flow:
 
 <CodeGroup>
-```python {12-16}
+```python {13-19}
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
@@ -166,19 +171,22 @@ composio = Composio(api_key="your_api_key")
 auth_config_id = "ac_ZUWpt850AqTN"
 # Use a unique identifier for each user in your application  
 user_id = "user_12323"
-# API key provided by the user (collected from your app's UI) or use your own key
+# API key provided by the user (collected from your app's UI)
+# or use your own key
 user_api_key = "user_api_key_here"
 
 connection_request = composio.connected_accounts.initiate(
     user_id=user_id,
     auth_config_id=auth_config_id,
-    config={"auth_scheme": "API_KEY", "val": {"api_key": user_api_key}}
+    config={
+        "auth_scheme": "API_KEY", "val": {"api_key": user_api_key}
+    }
 )
 
 print(f"Connection established: {connection_request.id}")
 ```
 
-```typescript {12-16}
+```typescript {12-18}
 import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({apiKey: "your_api_key"});
@@ -190,10 +198,12 @@ const userId = 'user12345678';
 // API key provided by the user (collected from your app's UI)
 const userApiKey = 'user_api_key_here';
 
-const connectionRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
-  config: AuthScheme.APIKey({
-    api_key: userApiKey,
-  }),
+const connectionRequest = await composio.connectedAccounts.initiate(
+  userId, authConfigId, 
+  {
+    config: AuthScheme.APIKey({
+      api_key: userApiKey,
+    }),
 });
 
 console.log(`Connection established: ${connectionRequest.id}`);
