@@ -16,7 +16,7 @@ const createPayload = (overrides: Partial<TelemetryPayload> = {}): TelemetryPayl
   timestamp: Date.now() / 1000,
   props: { foo: 'bar' },
   source: {
-    name: 'test',
+    host: 'test-host',
     service: 'sdk',
     language: 'typescript',
     version: '1.0.0',
@@ -75,9 +75,8 @@ describe('TelemetryTransport', () => {
     apiKey: 'test-key',
     baseUrl: 'http://localhost',
     version: '1.0.0',
-    frameworkRuntime: 'node',
     isAgentic: false,
-    source: 'test-source',
+    host: 'test-host',
     provider: 'test',
   };
 

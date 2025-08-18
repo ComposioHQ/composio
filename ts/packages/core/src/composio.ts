@@ -203,6 +203,7 @@ export class Composio<
         host: this.config.host,
       });
     }
+    // instrument the composio instance
     telemetry.instrument(this);
     // instrument the provider since we are not using the provider class directly
     telemetry.instrument(this.provider);
