@@ -1,5 +1,13 @@
 # @composio/anthropic
 
+## 0.1.44
+
+### Patch Changes
+
+- b4b8b94: Fix telemetry flags and disable when passed
+- Updated dependencies [b4b8b94]
+  - @composio/core@0.1.44
+
 ## 0.1.43
 
 ### Patch Changes
