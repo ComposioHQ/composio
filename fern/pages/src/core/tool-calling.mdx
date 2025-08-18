@@ -1,0 +1,251 @@
+---
+title: Tool Calling
+image: "https://og.composio.dev/api/og?title=Tool%20Calling"
+subtitle: "How to call tools on the user's behalf"
+keywords: "composio, tool calling, tools"
+hide-nav-links: true
+---
+
+Tool calling is a feature of all frontier LLMs to allow them to interact with
+the outside world. Earlier you might be able to ask an LLM to write you a nice
+email, but you would have to manually send it. With tool calling, you can now
+provide an LLM a tool to go and accomplish the task autonomously.
+
+Composio SDKs exposes the ability to call the composio managed tools to the AI
+agents. We do this via `providers` which wraps the tool calling logic and exposes
+it to the AI agent framework of your choice.
+
+## Non-Agentic Providers
+
+Non-agentic providers are frameworks that are not designed to be used as agents.
+There more like a wrapper around the LLM API. They do not have the concept of
+agents or tasks. So with non-agentic providers, you have to handle the tool calls
+manually. For this, the composio SDKs exposes methods to handle tool calls from
+chat completion objects. Here are some examples:
+
+<CodeGroup>
+    <CodeGroupItem>
+        ```python OpenAI (Python)
+        from composio import Composio
+        from openai import OpenAI
+
+        composio = Composio(api_key="<YOUR_API_KEY>")
+        openai = OpenAI(api_key="<YOUR_OPENAI_API_KEY>")
+
+        # Fetch the tools for your agent
+        tools = composio.tools.get("<USER_ID>",
+            tools=["GMAIL_SEND_EMAIL"]
+        )
+        print(tools)
+
+        # Invoke agent
+        completion = openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "user", content: "say 'hi from the composio quickstart' to hey@composio.dev" },
+            ],
+            tools: tools,
+        })
+
+        # Handle Result from tool call
+        result = composio.provider.handle_tool_calls("<USER_ID>", completion)
+        print(result)
+        ```
+        ```typescript OpenAI (TypeScript)
+        import { Composio } from "composio";
+        import { OpenAI } from "openai";
+
+        const composio = new Composio({ apiKey: "<YOUR_API_KEY>" });
+        const openai = new OpenAI({ apiKey: "<YOUR_OPENAI_API_KEY>" });
+
+        // Fetch the tools for your agent
+        const tools = await composio.tools.get("<USER_ID>", {
+            tools: ["GMAIL_SEND_EMAIL"],
+        });
+        console.log(tools);
+
+        // Invoke agent
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "user", content: "say 'hi from the composio quickstart' to hey@composio.dev" },
+            ],
+            tools: tools,
+        });
+
+        // Handle Result from tool call
+        const result = await composio.provider.handleToolCalls("<USER_ID>", completion);
+        console.log(result);
+        ``` 
+        ```python Anthropic (Python)
+        from composio import Composio
+        from anthropic import Anthropic
+
+        composio = Composio(api_key="<YOUR_API_KEY>")
+        anthropic = Anthropic(api_key="<YOUR_ANTHROPIC_API_KEY>")
+
+        # Fetch the tools for your agent
+        tools = composio.tools.get("<USER_ID>",
+            tools=["GMAIL_SEND_EMAIL"]
+        )
+        print(tools)
+
+
+        # Invoke agent
+        completion = anthropic_client.messages.create(
+            model="claude-3-opus-20240229",
+            messages=[
+                {"role": "user", "content": "say 'hi from the composio quickstart' to hey@composio.dev"},
+            ],
+            tools=tools,
+        )
+
+        # Handle Result from tool call
+        result = composio.provider.handle_tool_calls("<USER_ID>", completion)
+        print(result)
+        ```
+        ```typescript Anthropic (TypeScript)
+        import { Composio } from "composio";
+        import { Anthropic } from "anthropic";
+
+        const composio = new Composio({ apiKey: "<YOUR_API_KEY>" });
+        const anthropic = new Anthropic({ apiKey: "<YOUR_ANTHROPIC_API_KEY>" });
+
+        // Fetch the tools for your agent
+        const tools = await composio.tools.get("<USER_ID>", {
+            tools: ["GMAIL_SEND_EMAIL"],
+        });
+        console.log(tools);
+
+        // Invoke agent
+        const completion = await anthropic.messages.create({
+            model: "claude-3-opus-20240229",
+            messages: [
+                { role: "user", content: "say 'hi from the composio quickstart' to hey@composio.dev" },
+            ],
+            tools: tools,
+        });
+
+        // Handle Result from tool call
+        const result = await composio.provider.handleToolCalls("<USER_ID>", completion);
+        console.log(result);
+        ```
+    </CodeGroupItem>
+</CodeGroup>
+
+## Agentic Providers
+
+Agentic providers are full fledged frameworks that are designed to be used as
+agents. They provide agentic loops where the tool calls are handled automatically.
+Here are some examples:
+
+<CodeGroup>
+    <CodeGroupItem>
+        ```python CrewAI (Python)
+        from crewai import Agent, Task, Crew
+        from composio import Composio
+        from composio_crewai import CrewAIProvider
+
+        # Initialize the Composio client with the CrewAI provider
+        composio = Composio(api_key="<YOUR_API_KEY>", provider=CrewAIProvider())
+
+        # Fetch the tools for your agent
+        tools = composio.tools.get("<USER_ID>",
+            tools=["GMAIL_SEND_EMAIL"]
+        )
+
+        # Create a task
+        task = Task(
+            description="say 'hi from the composio quickstart' to hey@composio.dev",
+            expected_output="Email sent successfully",
+            tools=tools,
+        )
+
+        # Create an agent
+        agent = Agent(
+            role="Email Sender",
+            goal="Send emails on behalf of the user",
+            task=task,
+        )
+
+        # Create a crew
+        crew = Crew(
+            agents=[agent],
+            verbose=True,
+        )
+
+        # Run the crew
+        result = crew.kickoff()
+        print(result)
+        ```
+        ```typescript Vercel AI SDK (TypeScript)
+        import { generateText } from 'ai';
+        import { anthropic } from '@ai-sdk/anthropic';
+        import { Composio } from "composio";
+        import { VercelProvider } from '@composio/vercel';
+
+        // Initialize the Composio client with the Vercel provider
+        const composio = new Composio({ apiKey: "<YOUR_API_KEY>", provider: new VercelProvider() });
+
+        // Fetch the tools for your agent
+        const tools = await composio.tools.get("<USER_ID>", {
+            tools: ["GMAIL_SEND_EMAIL"],
+        });
+        console.log(tools);
+
+        // Invoke agent
+        const { text } = await generateText({
+            model: anthropic('claude-3-opus-20240229'),
+            messages: [
+                { role: "user", content: "say 'hi from the composio quickstart' to hey@composio.dev" },
+            ],
+            tools,
+        });
+        console.log(text);
+        ```
+    </CodeGroupItem>
+</CodeGroup>
+
+Composio currently supports an array of popular AI frameworks. If there is a
+provider you are interested in that is missing, please let us know. Or check out
+the guide on how to build your own provider [here](/docs/custom-providers).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Check out all providers"
+    icon="fa-solid fa-list"
+    href="/providers"
+  >
+    List of all the providers supported by Composio.
+  </Card>
+  <Card
+    title="Execute Tool Proxy"
+    icon="fa-solid fa-arrow-right-arrow-left"
+    href="/docs/execute-proxy"
+  >
+    Learn how to execute tools in a proxy mode.
+  </Card>
+  <Card
+    title="File Handling"
+    icon="fa-solid fa-file"
+    href="/docs/file-handling"
+  >
+    Learn how the Composio SDKs handle file upload and downloads.
+  </Card>
+  <Card
+    title="Tool Execution Hooks"
+    icon="fa-solid fa-toolbox"
+    href="/docs/tool-execution-hooks"
+  >
+    Learn how to use pre/post execution hooks to improve the tool calling experience.
+  </Card>
+  <Card
+    title="Custom Providers"
+    icon="fa-solid fa-code"
+    href="/docs/custom-providers"
+  >
+    Learn how to build your own provider.
+  </Card>
+</CardGroup>
