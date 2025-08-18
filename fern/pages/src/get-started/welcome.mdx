@@ -1,24 +1,90 @@
 ---
 title: Welcome to Composio
-image: "https://og.composio.dev/api/og?title=Welcome%20to%20Composio"   # image for socials
-keywords: ''
-# subtitle: 'Our API and SDKs enable developers to build AI applications and experiences that are a step above the rest.'
+image: "https://og.composio.dev/api/og?title=Welcome%20to%20Composio"
+keywords: "composio, ai, agents, tools, integrations"
 hide-nav-links: false
+subtitle: "Take your AI agents out of development hell and into the real world"
 ---
 
-<Frame>
-  <img src="../../../assets/images/hero.png" alt="Composio introduction image" />
-</Frame>
+Connect your AI agents to real-world with managed authentication and tools from
+Composio. The Composio SDKs and API enable you to build AI agents that can
+take real-world actions without you needing to write and manage complex authentication
+flows or tool formatting.
 
-Composio is the fastest way to enable your AI agents to take real-world actions—without dealing with individual API integrations, authentication flows, or complex tool formatting.
+## Managed Tools and Authentication
 
-- **Access 3000+ tools** out of the box across popular apps like Slack, GitHub, Notion, and more. [Browse tools →](/tools/)
-- **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
-- **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
-- **Customize tools** for your proprietary APIs or internal functions via [modifiers](/docs/modifiers/schema-modifiers).
-- **Integrate seamlessly** with frameworks like OpenAI, Anthropic, LangChain, Vercel AI SDK, and more.
-- **Enhance reliability** with [input/output processing hooks](/docs/modifiers/before-execution) to clean or transform data on the fly.
+Composio has over 10000 [tools](/docs/tools) across 500+ [toolkits](/docs/toolkits) which will
+accelerate your AI agent development, and a managed set of [authentication](/docs/authentication)
+flows to reduce the boilerplate for managing your users. To get started, you can
+follow one of these guides below. 
 
-No more writing dozens of bespoke integrations. Composio handles auth, tool normalization, and execution—so your agents can focus on reasoning, not plumbing.
+<CardGroup cols={3}>
+  <Card
+    title="Gmail Agent"
+    href="/examples/fastapi"
+  >
+    Build Gmail agent with Composio, OpenAI and FastAPI that sends emails on your behalf.
+  </Card>
+  <Card
+    title="Slack Summarizer"
+    href="/examples/hono"
+  >
+    Build Slack agent with Composio, OpenAI that summarizes slack messages.
+  </Card>
+  <Card
+    title="Discord Updates Agent"
+    href="/examples/hono"
+  >
+    Build Discord agent with Composio, OpenAI that sends community updates to your discord.
+  </Card>
+</CardGroup>
 
-**We even optimize tool calls automatically for better accuracy—free of cost.**
+If you are looking for some other examples, check out our [Cookbooks](/docs/cookbooks).
+
+## SDKs and Providers
+
+Composio SDKs helps you effortlessly integrate your AI agents with Composio
+platform. Providers are extentions built on top of the Composio SDKs that
+enable you to use your favourite AI agents framework.
+
+<CardGroup cols={2}>
+  <Card
+    title="OpenAI Provider"
+    icon={<img src="../../../assets/images/openai-logo.svg" width="24" height="24" />}
+    href="/providers/openai"
+  >
+    Integrate with OpenAI's tool calling and agents.
+  </Card>
+  <Card
+    title="Anthropic Provider"
+    icon={<img src="../../../assets/images/anthropic-logo.svg" width="24" height="24" />}
+    href="/providers/anthropic"
+  >
+    Use Anthropic's Claude models with Composio tools.
+  </Card>
+  <Card
+    title="CrewAI Provider"
+    icon="fa-solid fa-people-group"
+    href="/providers/crewai"
+  >
+    Enable tool calling in CrewAI multi-agent systems.
+  </Card>
+  <Card
+    title="Vercel AI SDK Provider"
+    icon={<img src="../../../assets/images/vercel-logo.svg" width="24" height="24" />}
+    href="/providers/vercel"
+  >
+    Use Composio tools with Vercel's AI SDK.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup>
+  <Card title="Quickstart" href="/get-started/quickstart">
+    Get started with Composio SDKs and providers.
+  </Card>
+  <Card title="Authentication" href="/docs/authentication">
+    Learn how to authenticate your agent with Composio.
+  </Card>
+</CardGroup>

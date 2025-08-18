@@ -2,145 +2,152 @@
 title: Quickstart
 image: "https://og.composio.dev/api/og?title=Quickstart"   # image for socials
 description: "Add authenticated tool-calling to any LLM agent in three steps."
-keywords: ""
-subtitle: ""
+keywords: "composio, quickstart, tool calling"
+subtitle: "Connect your AI agents to real-world actions."
 hide-nav-links: false
 ---
 
-This guide walks you through **authenticated tool calling**—the foundation of how Composio connects your AI agents to real-world actions.
+This guide walks you through **authenticated tool calling** — the foundation of
+how Composio connects your AI agents to real-world actions. In this example, we
+will use a simple [OpenAI](https://openai.com/) agent to perform tasks on behalf
+of a user.
 
-You'll learn how to:
-1. **Discover and add tools** relevant to your use case (e.g., Slack, GitHub, Notion) to your AI agent
-2. **Authenticate tools** securely on behalf of a specific user, with fine-grained access control
-3. **Enable your LLM** (like OpenAI, Claude, or LangChain) to invoke these tools reliably using structured tool call formats
-
-Composio provides first-class SDKs for both **TypeScript** and **Python**, making it easy to integrate no matter what stack you're building with.
-
-**Before you start!**
-<Accordion title='Prerequisites'>
-1. Ensure you have created an account on [Composio](https://app.composio.dev) and have Python 3.8+ _or_ NodeJS 18+ installed!
-2. Get your API key from the [developer dashboard](https://app.composio.dev/developers) and set it as an environment variable.
-```bash
-export COMPOSIO_API_KEY=your_api_key
-```
-<Note title="Note!">Ensure you save the API key in a `.env` file and don't commit it to version control!</Note>
-</Accordion>
-
-## Install the SDK
-First, install the Composio SDK for your preferred language:
-
-<CodeGroup>
-```bash title="Python" for="python"
-pip install composio==0.8.0
-```
-```bash title="TypeScript" for="typescript"
-npm install @composio/core
-```
-</CodeGroup>
-
-## Initialize the SDK
-You’ll need to initialize the SDK with your Composio API key. This allows you to authenticate requests and access tools on behalf of your users.
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(
-  # api_key="your-api-key",
-)
-```
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-// Initialize the SDK
-const composio = new Composio({
-  // apiKey: 'your-api-key',
-});
-```
-</CodeGroup>
-
-
-## Authorize Tools & Run Them with an Agent
-Composio supports multiple LLM providers. Here’s how to use Composio with some of the most popular ones:
-<Tabs>
-<Tab title="OpenAI (Python)">
-Composio ships with support for OpenAI provider out of the box.
-<SnippetCode
-  src="fern/snippets/get-started/python/quickstart.py"
-  startLine={1}
-  endLine={34}
-/>
-</Tab>
-<Tab title="Anthropic (Typescript)">
-You may install the Anthropic provider as well!
-
-**Installation**
-```bash
-npm install @composio/anthropic
-```
-
-<SnippetCode
-  src="fern/snippets/get-started/typescript/quickstart.ts"
-  startLine={1}
-  endLine={30}
-/>
-
-</Tab>
-<Tab title="Vercel AI SDK (Typescript)">
-You may install the Vercel AI provider as well!
-
-**Installation**
-```bash
-npm install @composio/vercel
-```
-
-<SnippetCode
-  src="fern/snippets/get-started/typescript/vercel-quickstart.ts"
-  startLine={1}
-  endLine={34}
-/>
-
-</Tab>
-<Tab title="OpenAI Agents (Python)">
-You may install the OpenAI Agents provider as well!
-
-**Installation**
-```bash
-pip install composio_openai_agents==0.8.0
-```
-
-<SnippetCode
-  src="fern/snippets/get-started/python/quickstart-openai-agents.py"
-  startLine={1}
-  endLine={46}
-/>
-
-</Tab>
-</Tabs>
-
-<Note title="What just happened?">
-You just:
-1. Authorized a user account with Composio 
-2. Passed those tool permissions into an LLM framework 
-3. Let the LLM securely call real tools on the user’s behalf
-
-All OAuth flows and tool execution were automatically handled by Composio.
+<Note>
+    This guide assumes you have a basic understanding of AI agents and how they
+    work. To use the SDK, you require an agentic provider. By default, SDK ships with
+    [OpenAI](/docs/providers/openai) provider. You can learn more about different
+    providers in our [Providers](/docs/providers) guide.
 </Note>
 
+<Steps>
+    <Step title="Install the Composio SDK and OpenAI client">
+        <CodeGroup>
+        ```python Python
+        pip install composio openai
+        ```
+        ```typescript TypeScript
+        npm install @composio/core openai
+        ```
+        </CodeGroup>
 
-## Next steps
+        To initialize the Composio client, you will need API Key. You can find your
+        Composio API key in the [Composio dashboard](https://platform.composio.dev/?next_page=/settings).
+        
+        <CodeGroup>
+        ```python Python
+        from composio import Composio
+        from openai import OpenAI
 
-<CardGroup cols={2}>
-  <Card title="Use Providers" icon="fa-solid fa-plug" href="/providers">
-    Learn how to use Composio with various agent SDK and frameworks.
-  </Card>
-  <Card title="Work with tools" icon="fa-solid fa-toolbox" href="/docs/executing-tools">
-    Learn how to work with tools and tool calling on a deeper level with Composio.
-  </Card>
-  <Card title="Manage authentication" icon="fa-solid fa-key" href="/docs/custom-auth-configs">
-    Authorize tools for multiple users.
-  </Card>
-  <Card title="Triggers" icon="fa-solid fa-bolt" href="/docs/using-triggers">
-    Listen for external events to trigger actions in your agents
-  </Card>
+        # Initialize the Composio client
+        composio = Composio(api_key="<YOUR_COMPOSIO_API_KEY>")
+
+        # Initialize the OpenAI client
+        openai = OpenAI(api_key="<YOUR_OPENAI_API_KEY>")
+        ```
+        ```typescript TypeScript
+        import { Composio } from '@composio/core';
+        import { OpenAI } from 'openai';
+
+        // Initialize the Composio client
+        const composio = new Composio({ apiKey: "<YOUR_COMPOSIO_API_KEY>" });
+
+        // Initialize the OpenAI client
+        const openai = new OpenAI({ apiKey: "<YOUR_OPENAI_API_KEY>" });
+        ```
+        </CodeGroup>
+    </Step>
+    <Step title="Create a new connected account">
+        <CodeGroup>
+        ```python Python
+        # Create a new connection request
+        connection_request = composio.toolkits.authorize(toolkit="gmail")
+
+        # Follow the redirect URL to authorize the connection
+        print(connection_request.redirect_url)
+
+        # Wait for the connection to be established
+        connected_account = connection_request.wait_for_connection()
+        print(connected_account)
+        ```
+        ```typescript TypeScript
+        // Create a new connection request
+        const connectionRequest = await composio.toolkits.authorize("gmail");
+
+        // Follow the redirect URL to authorize the connection
+        console.log(connectionRequest.redirectUrl);
+
+        // Wait for the connection to be established
+        const connection = await connectionRequest.waitForConnection();
+        console.log(connection);
+        ```
+        </CodeGroup>
+        <Warning>
+            In this demo, we are using `composio.toolkits.authorize` to create a new
+            connection request. This method is just for demo purposes. Refer to [Authentication](/docs/authentication)
+            guide for more information on how to work with connected accounts.
+        </Warning>
+    </Step>
+    <Step title="Run your agent">
+        <CodeGroup>
+        ```python Python
+        # Fetch the tools for your agent
+        tools = composio.tools.get("default",
+            tools=["GMAIL_SEND_EMAIL"]
+        )
+
+        # Invoke agent
+        completion = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "say 'hi from the composio quickstart' to hey@composio.dev",
+                },
+            ],
+            tools=tools,
+        )
+        # Handle Result from tool call
+        result = composio.provider.handle_tool_calls(user_id=user_id, response=completion)
+        print(result)
+        ```
+        ```typescript TypeScript
+        // Fetch the tools for your agent
+        const tools = await composio.tools.get("default", {
+            tools: ["GMAIL_SEND_EMAIL"],
+        });
+
+        // Invoke agent
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    "role": "user",
+                    "content": "say 'hi from the composio quickstart' to hey@composio.dev",
+                },
+            ],
+            tools: tools,
+        });
+
+        // Handle Result from tool call
+        const result = await composio.provider.handleToolCalls("default", completion);
+        console.log(result);
+        ```
+        </CodeGroup>
+    </Step>
+</Steps>
+
+Congratulation! You have successfully integrated authenticated tool calling to your agent.
+
+## Next Steps
+
+<CardGroup>
+    <Card title="Authentication" href="/docs/authentication">
+        Learn how to authenticate and manage your users with Composio.
+    </Card>
+    <Card title="Providers" href="/docs/providers">
+        Learn about different providers.
+    </Card>
+    <Card title="Toolkits" href="/docs/toolkits">
+        Learn about toolkits and how to use them.
+    </Card>
 </CardGroup>
