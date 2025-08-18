@@ -24,6 +24,10 @@ _environment = os.getenv("ENVIRONMENT", "development")
 def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callable:
     """Wrap a method to log the call."""
 
+    # Check if the method is a class method
+    if getattr(method, "__self__", None) is not None:
+        return method
+
     @functools.wraps(method)
     def trace_wrapper(self, *args, **kwargs):
         if not allow_tracking.get():

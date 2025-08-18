@@ -73,24 +73,40 @@ const authConfig = await composio.authConfigs.create('github', {
 Updates an existing auth config.
 
 ```typescript
-// Update an auth config
+// Update a custom auth config with new credentials
 const updatedAuthConfig = await composio.authConfigs.update('auth_config_123', {
-  name: 'Updated GitHub Auth Config',
-  fields: {
+  type: 'custom',
+  credentials: {
     client_id: 'new_client_id',
     client_secret: 'new_client_secret',
   },
+  toolAccessConfig: {
+    toolsAvailableForExecution: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER']
+  }
+});
+
+// Update a default auth config with new scopes
+const updatedDefaultAuth = await composio.authConfigs.update('auth_config_456', {
+  type: 'default',
+  scopes: 'read:user,repo',
+  toolAccessConfig: {
+    toolsAvailableForExecution: ['GITHUB_GET_A_REPOSITORY', 'GITHUB_LIST_REPOSITORIES_FOR_A_USER']
+  }
 });
 ```
 
 **Parameters:**
 
 - `id` (string): The unique identifier of the auth config to update
-- `data` (AuthConfigUpdateParams): The parameters for updating the auth config
+- `data` (AuthConfigUpdateParams): The parameters for updating the auth config. Must be a discriminated union with either:
+  - `{ type: 'custom', credentials: Record<string, unknown>, toolAccessConfig?: {...} }`
+  - `{ type: 'default', scopes: string, toolAccessConfig?: {...} }`
 
 **Returns:** Promise<AuthConfigUpdateResponse> - The updated auth config
 
-**Throws:** ComposioAuthConfigNotFoundError if the auth config cannot be found
+**Throws:** 
+- ValidationError if the update parameters are invalid
+- ComposioAuthConfigNotFoundError if the auth config cannot be found
 
 ### delete(id)
 
@@ -167,10 +183,28 @@ interface AuthConfigCreateParams {
 ### AuthConfigUpdateParams
 
 ```typescript
-interface AuthConfigUpdateParams {
-  name?: string; // Name of the auth config
-  fields?: Record<string, unknown>; // Configuration fields
-}
+// Discriminated union type for updating auth configs
+type AuthConfigUpdateParams = 
+  | {
+      type: 'custom';
+      credentials: Record<string, string | number | boolean | unknown>;
+      toolAccessConfig?: {
+        toolsAvailableForExecution?: string[];
+        toolsForConnectedAccountCreation?: string[];
+      };
+      /** @deprecated Use toolAccessConfig instead */
+      restrictToFollowingTools?: string[];
+    }
+  | {
+      type: 'default';
+      scopes: string;
+      toolAccessConfig?: {
+        toolsAvailableForExecution?: string[];
+        toolsForConnectedAccountCreation?: string[];
+      };
+      /** @deprecated Use toolAccessConfig instead */
+      restrictToFollowingTools?: string[];
+    };
 ```
 
 ### AuthConfigType

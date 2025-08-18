@@ -14,7 +14,7 @@ def authenticate_toolkit(user_id: str, auth_config_id: str):
     connection_request = composio.connected_accounts.initiate(
         user_id=user_id,
         auth_config_id=auth_config_id,
-        config={"auth_scheme": "API_KEY", "val": user_api_key}
+        config={"auth_scheme": "API_KEY", "val": {"generic_api_key": user_api_key}}
     )
 
     # API Key authentication is immediate - no redirect needed

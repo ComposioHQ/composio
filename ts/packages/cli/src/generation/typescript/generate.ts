@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptToolkitSources } from './generate-toolkit-sources';
 import { generateIndexSource } from './generate-index-source';
+import { Effect } from 'effect';
+import type { GenerateTypeFromJsonSchemaError } from './generate-type-from-json-schema';
 
 type SourceFile = readonly [filename: string, content: string];
 
@@ -14,27 +16,30 @@ type GenerateTypeScriptSourcesParams = {
 };
 
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
-  return (index: ToolkitIndex): Array<SourceFile> => {
-    const toolkiteSources = generateTypeScriptToolkitSources(params.banner)(index);
+  return (
+    index: ToolkitIndex
+  ): Effect.Effect<Array<SourceFile>, GenerateTypeFromJsonSchemaError, never> =>
+    Effect.gen(function* () {
+      const toolkiteSources = yield* generateTypeScriptToolkitSources(params.banner)(index);
 
-    const indexSource = generateIndexSource(params)(index);
-    const indexFilename = path.join(params.outputDir, 'index.ts');
+      const indexSource = generateIndexSource(params)(index);
+      const indexFilename = path.join(params.outputDir, 'index.ts');
 
-    if (!params.emitSingleFile) {
-      return [
-        ...toolkiteSources.map(
-          ([filename, content]) => [path.join(params.outputDir, filename), content] as const
-        ),
-        [indexFilename, indexSource] as const,
-      ] as const;
-    }
+      if (!params.emitSingleFile) {
+        return [
+          ...toolkiteSources.map(
+            ([filename, content]) => [path.join(params.outputDir, filename), content] as const
+          ),
+          [indexFilename, indexSource] as const,
+        ] as const;
+      }
 
-    const localToolkitsSources = toolkiteSources.map(([_, content]) => content).join('\n');
+      const localToolkitsSources = toolkiteSources.map(([_, content]) => content).join('\n');
 
-    const indexSourceSingleFile = `${ts.stringify(ts.docComment(params.banner))}
-${localToolkitsSources}
-${indexSource}
-`;
-    return [[indexFilename, indexSourceSingleFile] as const];
-  };
+      const indexSourceSingleFile = `${ts.stringify(ts.docComment(params.banner))}
+  ${localToolkitsSources}
+  ${indexSource}
+  `;
+      return [[indexFilename, indexSourceSingleFile] as const];
+    });
 }

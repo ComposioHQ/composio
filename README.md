@@ -93,4 +93,4 @@ If you encounter any issues or have questions about the SDKs:
 
 - Open an issue in this repository
 - Contact our [support team](mailto:support@composio.dev)
-- Check our [documentation](https://v3.docs.composio.dev/)
+- Check our [documentation](https://docs.composio.dev/)

@@ -361,7 +361,8 @@ class ConnectedAccounts:
         Wait for connected account with given ID to be active
         """
         return ConnectionRequest.from_id(
-            id=id, client=self._client
+            id=id,
+            client=self._client,
         ).wait_for_connection(
             timeout=timeout,
         )

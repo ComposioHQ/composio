@@ -104,23 +104,26 @@ export class TelemetryTransport {
       ) => Promise<unknown>;
 
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
-        const telemetryPayload: TelemetryPayload = {
-          functionName: `${instrumentedClassName}.${name}`,
-          durationMs: 0,
-          timestamp: Date.now() / 1000,
-          props: {
-            fileName: instrumentedClassName,
-            method: name,
-            params: args,
-          },
-          metadata: {
-            provider: this.telemetryMetadata?.provider ?? 'openai',
-          },
-          error: undefined,
-          source: this.telemetrySource,
-        };
+        // Only collect telemetry if setup() has been called (telemetry is enabled)
+        if (this.shouldSendTelemetry()) {
+          const telemetryPayload: TelemetryPayload = {
+            functionName: `${instrumentedClassName}.${name}`,
+            durationMs: 0,
+            timestamp: Date.now() / 1000,
+            props: {
+              fileName: instrumentedClassName,
+              method: name,
+              params: args,
+            },
+            metadata: {
+              provider: this.telemetryMetadata?.provider ?? 'openai',
+            },
+            error: undefined,
+            source: this.telemetrySource,
+          };
 
-        this.batchProcessor.pushItem(telemetryPayload);
+          this.batchProcessor.pushItem(telemetryPayload);
+        }
 
         try {
           return await originalMethod.apply(instance, args);
@@ -128,7 +131,10 @@ export class TelemetryTransport {
           if (error instanceof Error) {
             if (!error.errorId) {
               error.errorId = getRandomUUID();
-              await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+              // Only send error telemetry if telemetry is enabled
+              if (this.shouldSendTelemetry()) {
+                await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+              }
             }
           }
           throw error;

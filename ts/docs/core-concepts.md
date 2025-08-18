@@ -399,27 +399,25 @@ Use direct execution when:
 Custom Tools allow you to extend Composio's functionality by creating your own tools. You define the input and output parameters and provide a handler function that implements the tool's behavior.
 
 ```typescript
+import { z } from 'zod';
+
 // Example: Create a custom tool
 const customTool = await composio.tools.createCustomTool({
   name: 'My Custom Tool',
   description: 'A custom tool that does something specific',
   slug: 'MY_CUSTOM_TOOL',
-  inputParameters: {
-    param1: {
-      type: 'string',
-      description: 'First parameter',
-      required: true,
-    },
-  },
-  outputParameters: {
-    result: {
-      type: 'string',
-      description: 'The result of the operation',
-    },
-  },
-  handler: async (params, context) => {
+  inputParams: z.object({
+    param1: z.string().describe('First parameter'),
+    param2: z.number().optional().describe('Optional parameter')
+  }),
+  execute: async (input) => {
     // Custom logic here
-    return { data: { result: 'Success!' } };
+    console.log('Received input:', input.param1, input.param2);
+    return { 
+      data: { result: 'Success!' },
+      error: null,
+      successful: true
+    };
   },
 });
 ```
