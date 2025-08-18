@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.44
+
+### Patch Changes
+
+- b4b8b94: Fix telemetry flags and disable when passed
+
 ## 0.1.43
 
 ### Patch Changes
