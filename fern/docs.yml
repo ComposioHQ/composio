@@ -39,7 +39,7 @@ navbar-links:
   url: https://v1.docs.composio.dev
 - type: filled
   text: LOG IN
-  url: https://app.composio.dev/login
+  url: https://platform.composio.dev/auth
 layout:
   page-width: full
   tabs-placement: header
