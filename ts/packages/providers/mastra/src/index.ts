@@ -12,6 +12,7 @@ import {
   ExecuteToolFn,
   jsonSchemaToZodSchema,
   McpUrlResponse,
+  removeNonRequiredProperties,
 } from '@composio/core';
 import { createTool } from '@mastra/core';
 
@@ -31,9 +32,32 @@ export class MastraProvider extends BaseAgenticProvider<
   MastraUrlMap
 > {
   readonly name = 'mastra';
+  private strict: boolean | null;
 
-  constructor() {
+  /**
+   * Creates a new instance of the MastraProvider.
+   *
+   * This provider enables integration with the Mastra AI SDK,
+   * allowing Composio tools to be used with Mastra AI applications.
+   *
+   * @param param0
+   * @param param0.strict - Whether to use strict mode for tool execution
+   * @returns A new instance of the MastraProvider
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
+   * import { MastraProvider } from '@composio/mastra';
+   *
+   * const composio = new Composio({
+   *   apiKey: 'your-composio-api-key',
+   *   provider: new MastraProvider(),
+   * });
+   * ```
+   */
+  constructor({ strict = false }: { strict?: boolean } = {}) {
     super();
+    this.strict = strict;
   }
 
   /**
@@ -53,10 +77,23 @@ export class MastraProvider extends BaseAgenticProvider<
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
+    const inputParams = tool.inputParameters;
+
+    const parameters =
+      this.strict && inputParams?.type === 'object'
+        ? removeNonRequiredProperties(
+            inputParams as {
+              type: 'object';
+              properties: Record<string, unknown>;
+              required?: string[];
+            }
+          )
+        : (inputParams ?? {});
+
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      inputSchema: tool.inputParameters ? jsonSchemaToZodSchema(tool.inputParameters) : undefined,
+      inputSchema: parameters ? jsonSchemaToZodSchema(parameters) : undefined,
       outputSchema: tool.outputParameters
         ? jsonSchemaToZodSchema(tool.outputParameters)
         : undefined,
