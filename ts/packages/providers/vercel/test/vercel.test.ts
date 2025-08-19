@@ -6,7 +6,7 @@ import { jsonSchema, tool } from 'ai';
 // Define an interface for our mocked Vercel tool
 interface MockedVercelTool {
   description: string;
-  parameters: any;
+  inputSchema: any;
   execute: Function;
   _isMockedVercelTool: boolean;
 }
@@ -80,7 +80,7 @@ describe('VercelProvider', () => {
 
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        inputSchema: mockTool.inputParameters,
         execute: expect.any(Function),
       });
 
@@ -144,12 +144,12 @@ describe('VercelProvider', () => {
       expect(tool).toHaveBeenCalledTimes(2);
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        inputSchema: mockTool.inputParameters,
         execute: expect.any(Function),
       });
       expect(tool).toHaveBeenCalledWith({
         description: anotherTool.description,
-        parameters: anotherTool.inputParameters,
+        inputSchema: anotherTool.inputParameters,
         execute: expect.any(Function),
       });
     });
@@ -197,17 +197,152 @@ describe('VercelProvider', () => {
     });
   });
 
+  describe('strict mode', () => {
+    it('should create provider with strict mode disabled by default', () => {
+      const defaultProvider = new VercelProvider();
+      expect(defaultProvider['strict']).toBe(false);
+    });
+
+    it('should create provider with strict mode enabled when specified', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+      expect(strictProvider['strict']).toBe(true);
+    });
+
+    it('should use removeNonRequiredProperties when strict mode is enabled', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+
+      const toolWithOptionalProps: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            required_field: {
+              type: 'string',
+              description: 'Required field',
+            },
+            optional_field: {
+              type: 'string',
+              description: 'Optional field',
+            },
+          },
+          required: ['required_field'],
+        },
+      };
+
+      strictProvider.wrapTool(toolWithOptionalProps, mockExecuteToolFn);
+
+      // In strict mode, only required properties should be passed to jsonSchema
+      expect(jsonSchema).toHaveBeenCalledWith({
+        type: 'object',
+        properties: {
+          required_field: {
+            type: 'string',
+            description: 'Required field',
+          },
+        },
+        required: ['required_field'],
+        additionalProperties: false,
+      });
+    });
+
+    it('should use all properties when strict mode is disabled', () => {
+      const nonStrictProvider = new VercelProvider({ strict: false });
+
+      const toolWithOptionalProps: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            required_field: {
+              type: 'string',
+              description: 'Required field',
+            },
+            optional_field: {
+              type: 'string',
+              description: 'Optional field',
+            },
+          },
+          required: ['required_field'],
+        },
+      };
+
+      nonStrictProvider.wrapTool(toolWithOptionalProps, mockExecuteToolFn);
+
+      // In non-strict mode, all properties should be passed to jsonSchema
+      expect(jsonSchema).toHaveBeenCalledWith({
+        type: 'object',
+        properties: {
+          required_field: {
+            type: 'string',
+            description: 'Required field',
+          },
+          optional_field: {
+            type: 'string',
+            description: 'Optional field',
+          },
+        },
+        required: ['required_field'],
+      });
+    });
+
+    it('should handle non-object input parameters in strict mode', () => {
+      const strictProvider = new VercelProvider({ strict: true });
+
+      const toolWithNonObjectParams: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'string',
+          description: 'A string parameter',
+        } as any,
+      };
+
+      strictProvider.wrapTool(toolWithNonObjectParams, mockExecuteToolFn);
+
+      // Non-object parameters should be passed as-is, even in strict mode
+      expect(jsonSchema).toHaveBeenCalledWith({
+        type: 'string',
+        description: 'A string parameter',
+      });
+    });
+  });
+
   describe('integration with Vercel AI SDK', () => {
     it('should produce tools compatible with Vercel AI SDK', () => {
       const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
 
       // Verify the wrapped tool has the expected structure
       expect(wrapped).toHaveProperty('description');
-      expect(wrapped).toHaveProperty('parameters');
+      expect(wrapped).toHaveProperty('inputSchema');
       expect(wrapped).toHaveProperty('execute');
 
       // The tool should be compatible with Vercel AI SDK's expected structure
       expect(typeof wrapped.execute).toBe('function');
+    });
+  });
+
+  describe('wrapMcpServerResponse', () => {
+    it('should transform MCP URL response into standard format', () => {
+      const mcpResponse = [
+        { url: 'http://example.com/server1', name: 'Server 1' },
+        { url: 'http://example.com/server2', name: 'Server 2' },
+      ];
+
+      const result = provider.wrapMcpServerResponse(mcpResponse);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        url: new URL('http://example.com/server1'),
+        name: 'Server 1',
+      });
+      expect(result[1]).toEqual({
+        url: new URL('http://example.com/server2'),
+        name: 'Server 2',
+      });
+    });
+
+    it('should handle empty MCP response', () => {
+      const result = provider.wrapMcpServerResponse([]);
+      expect(result).toEqual([]);
     });
   });
 });
