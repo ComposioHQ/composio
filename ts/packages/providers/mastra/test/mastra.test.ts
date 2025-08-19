@@ -132,7 +132,7 @@ describe('MastraProvider', () => {
       expect(createTool).toHaveBeenCalledWith({
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
-        inputSchema: undefined,
+        inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
@@ -403,7 +403,7 @@ describe('MastraProvider', () => {
       expect(createTool).toHaveBeenCalledWith({
         id: 'minimal-tool',
         description: 'A minimal tool',
-        inputSchema: undefined,
+        inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         outputSchema: undefined,
         execute: expect.any(Function),
       });
@@ -456,6 +456,232 @@ describe('MastraProvider', () => {
       // Should be an object with string keys
       expect(typeof wrapped).toBe('object');
       expect(Array.isArray(wrapped)).toBe(false);
+    });
+  });
+
+  describe('strict mode', () => {
+    it('should create provider with strict mode disabled by default', () => {
+      const defaultProvider = new MastraProvider();
+      expect(defaultProvider['strict']).toBe(false);
+    });
+
+    it('should create provider with strict mode enabled when specified', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+      expect(strictProvider['strict']).toBe(true);
+    });
+
+    it('should use removeNonRequiredProperties when strict mode is enabled', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+
+      const toolWithOptionalProps: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            required_field: {
+              type: 'string',
+              description: 'Required field',
+            },
+            optional_field: {
+              type: 'string',
+              description: 'Optional field',
+            },
+          },
+          required: ['required_field'],
+        },
+      };
+
+      strictProvider.wrapTool(toolWithOptionalProps, mockExecuteToolFn);
+
+      // In strict mode, only required properties should be passed to jsonSchemaToZodSchema
+      // The removeNonRequiredProperties function should have been called and filtered the schema
+      expect(createTool).toHaveBeenCalledWith({
+        id: toolWithOptionalProps.slug,
+        description: toolWithOptionalProps.description,
+        inputSchema: {
+          type: 'mock-zod-schema',
+          originalSchema: {
+            type: 'object',
+            properties: {
+              required_field: {
+                type: 'string',
+                description: 'Required field',
+              },
+            },
+            required: ['required_field'],
+            additionalProperties: false,
+          },
+        },
+        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        execute: expect.any(Function),
+      });
+    });
+
+    it('should use all properties when strict mode is disabled', () => {
+      const nonStrictProvider = new MastraProvider({ strict: false });
+
+      const toolWithOptionalProps: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            required_field: {
+              type: 'string',
+              description: 'Required field',
+            },
+            optional_field: {
+              type: 'string',
+              description: 'Optional field',
+            },
+          },
+          required: ['required_field'],
+        },
+      };
+
+      nonStrictProvider.wrapTool(toolWithOptionalProps, mockExecuteToolFn);
+
+      // In non-strict mode, all properties should be passed to jsonSchemaToZodSchema
+      expect(createTool).toHaveBeenCalledWith({
+        id: toolWithOptionalProps.slug,
+        description: toolWithOptionalProps.description,
+        inputSchema: {
+          type: 'mock-zod-schema',
+          originalSchema: {
+            type: 'object',
+            properties: {
+              required_field: {
+                type: 'string',
+                description: 'Required field',
+              },
+              optional_field: {
+                type: 'string',
+                description: 'Optional field',
+              },
+            },
+            required: ['required_field'],
+          },
+        },
+        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        execute: expect.any(Function),
+      });
+    });
+
+    it('should handle non-object input parameters in strict mode', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+
+      const toolWithNonObjectParams: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'string',
+          description: 'A string parameter',
+        } as any,
+      };
+
+      strictProvider.wrapTool(toolWithNonObjectParams, mockExecuteToolFn);
+
+      // Non-object parameters should be passed as-is, even in strict mode
+      expect(createTool).toHaveBeenCalledWith({
+        id: toolWithNonObjectParams.slug,
+        description: toolWithNonObjectParams.description,
+        inputSchema: {
+          type: 'mock-zod-schema',
+          originalSchema: {
+            type: 'string',
+            description: 'A string parameter',
+          },
+        },
+        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        execute: expect.any(Function),
+      });
+    });
+
+    it('should handle undefined input parameters in strict mode', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+
+      const toolWithoutInputParams: Tool = {
+        ...mockTool,
+        inputParameters: undefined,
+      };
+
+      strictProvider.wrapTool(toolWithoutInputParams, mockExecuteToolFn);
+
+      // Undefined parameters should result in empty object being passed to jsonSchemaToZodSchema
+      expect(createTool).toHaveBeenCalledWith({
+        id: toolWithoutInputParams.slug,
+        description: toolWithoutInputParams.description,
+        inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
+        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        execute: expect.any(Function),
+      });
+    });
+
+    it('should work correctly with wrapTools in strict mode', () => {
+      const strictProvider = new MastraProvider({ strict: true });
+
+      const toolsWithOptionalProps: Tool[] = [
+        {
+          ...mockTool,
+          slug: 'tool1',
+          inputParameters: {
+            type: 'object',
+            properties: {
+              required_field: { type: 'string' },
+              optional_field: { type: 'string' },
+            },
+            required: ['required_field'],
+          },
+        },
+        {
+          ...mockTool,
+          slug: 'tool2',
+          inputParameters: {
+            type: 'object',
+            properties: {
+              another_required: { type: 'number' },
+              another_optional: { type: 'boolean' },
+            },
+            required: ['another_required'],
+          },
+        },
+      ];
+
+      const wrapped = strictProvider.wrapTools(toolsWithOptionalProps, mockExecuteToolFn);
+
+      expect(Object.keys(wrapped)).toEqual(['tool1', 'tool2']);
+      expect(createTool).toHaveBeenCalledTimes(2);
+
+      // Both tools should have their schemas filtered for required properties only
+      expect(createTool).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          id: 'tool1',
+          inputSchema: {
+            type: 'mock-zod-schema',
+            originalSchema: expect.objectContaining({
+              properties: expect.objectContaining({
+                required_field: expect.any(Object),
+              }),
+              additionalProperties: false,
+            }),
+          },
+        })
+      );
+
+      expect(createTool).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: 'tool2',
+          inputSchema: {
+            type: 'mock-zod-schema',
+            originalSchema: expect.objectContaining({
+              properties: expect.objectContaining({
+                another_required: expect.any(Object),
+              }),
+              additionalProperties: false,
+            }),
+          },
+        })
+      );
     });
   });
 
