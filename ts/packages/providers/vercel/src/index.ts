@@ -20,7 +20,7 @@ import {
   jsonSchemaToZodSchema,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
-import { jsonSchema, tool } from 'ai';
+import { tool } from 'ai';
 
 export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {

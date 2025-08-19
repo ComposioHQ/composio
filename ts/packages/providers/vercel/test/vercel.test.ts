@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { VercelProvider } from '../src';
 import { Tool } from '@composio/core';
-import { jsonSchema, tool } from 'ai';
+import { tool } from 'ai';
 
 // Define an interface for our mocked Vercel tool
 interface MockedVercelTool {
