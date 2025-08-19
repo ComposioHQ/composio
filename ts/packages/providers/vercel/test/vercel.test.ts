@@ -6,7 +6,7 @@ import { jsonSchema, tool } from 'ai';
 // Define an interface for our mocked Vercel tool
 interface MockedVercelTool {
   description: string;
-  parameters: any;
+  inputSchema: any;
   execute: Function;
   _isMockedVercelTool: boolean;
 }
@@ -80,11 +80,11 @@ describe('VercelProvider', () => {
 
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        inputSchema: expect.any(Object), // Now it's a Zod schema object
         execute: expect.any(Function),
       });
 
-      expect(jsonSchema).toHaveBeenCalledWith(mockTool.inputParameters);
+      // jsonSchema is no longer called since we use Zod schemas directly
       expect(wrapped._isMockedVercelTool).toBe(true);
     });
 
@@ -99,7 +99,12 @@ describe('VercelProvider', () => {
         mockExecuteToolFn
       ) as unknown as MockedVercelTool;
 
-      expect(jsonSchema).toHaveBeenCalledWith({});
+      // Verify that tool was called with an empty object converted to Zod schema
+      expect(tool).toHaveBeenCalledWith({
+        description: toolWithoutParams.description,
+        inputSchema: expect.any(Object), // Should be a Zod schema for empty object
+        execute: expect.any(Function),
+      });
       expect(wrapped._isMockedVercelTool).toBe(true);
     });
 
@@ -144,12 +149,12 @@ describe('VercelProvider', () => {
       expect(tool).toHaveBeenCalledTimes(2);
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        parameters: mockTool.inputParameters,
+        inputSchema: expect.any(Object), // Now it's a Zod schema object
         execute: expect.any(Function),
       });
       expect(tool).toHaveBeenCalledWith({
         description: anotherTool.description,
-        parameters: anotherTool.inputParameters,
+        inputSchema: expect.any(Object), // Now it's a Zod schema object
         execute: expect.any(Function),
       });
     });
@@ -203,7 +208,7 @@ describe('VercelProvider', () => {
 
       // Verify the wrapped tool has the expected structure
       expect(wrapped).toHaveProperty('description');
-      expect(wrapped).toHaveProperty('parameters');
+      expect(wrapped).toHaveProperty('inputSchema'); // Changed from 'parameters' to 'inputSchema'
       expect(wrapped).toHaveProperty('execute');
 
       // The tool should be compatible with Vercel AI SDK's expected structure
