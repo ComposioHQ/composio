@@ -1,5 +1,11 @@
 # @composio/mastra
 
+## 0.1.45
+
+### Patch Changes
+
+- 6ec1c99: Bump mastra/core package and fix type issues
+
 ## 0.1.44
 
 ### Patch Changes
