@@ -142,9 +142,12 @@ navigation:
     - page: User Management
       path: pages/dist/guides/user-ids.mdx
       slug: user-ids
-    - page: Execute Proxy
-      path: pages/dist/guides/execute-proxy.mdx
-      slug: execute-proxy
+    - page: Custom Tools
+      path: pages/dist/guides/custom-tools.mdx
+      slug: custom-tools
+    # - page: Execute Proxy
+    #   path: pages/dist/guides/execute-proxy.mdx
+    #   slug: execute-proxy
     - section: Tool Execution Hooks
       slug: tool-execution-hooks
       contents:
@@ -157,9 +160,9 @@ navigation:
       - page: Schema Modifiers
         path: pages/dist/guides/tool-execution-hooks/schema-modifiers.mdx
         slug: tool-execution-hooks/schema-modifiers
-    - page: Custom Auth Params
-      path: pages/dist/guides/custom-auth-params.mdx
-      slug: custom-auth-params
+      - page: Custom Auth Params
+        path: pages/dist/guides/tool-execution-hooks/custom-auth-params.mdx
+        slug: custom-auth-params
     - page: Custom Providers
       path: pages/dist/guides/custom-providers.mdx
       slug: custom-providers
