@@ -1,11 +1,172 @@
 ---
 title: Triggers
 image: "https://og.composio.dev/api/og?title=Triggers"
-subtitle: "How to use triggers"
+subtitle: "Make your AI agents react to events"
 keywords: "composio, triggers, triggers"
 hide-nav-links: true
 ---
 
-# Triggers
+Triggers are a way to make your AI agents react to events. They are useful when you
+want to create an agent that can react to events from the outside world. For example,
+you can create an agent that can react to new emails, new messages on a Slack channel,
+new tweets, etc.
 
-Composio provides a set of triggers that can be used to trigger actions on the user's behalf.
+<Frame background="subtle">
+  <img src="../../../assets/images/triggers.png" alt="Triggers Overview" />
+</Frame>
+
+## Enabling triggers
+
+You can enable triggers via the dashboard or via the SDK. To enable a trigger,
+you need to have a connected account to the toolkit that supports triggers.
+
+
+<Tabs>
+    <Tab title="SDK">
+        <StepGroup>
+            <Step title="Make sure you have a connected account to the toolkit that supports triggers">
+                <CodeGroup>
+                    ```python Python
+                    from composio import Composio
+
+                    composio = Composio(api_key="<COMPOSIO_API_KEY>")
+                    connected_accounts = composio.connected_accounts.list(toolkit_slugs="GMAIL").items
+                    if len(connected_accounts) == 0:
+                        print("No connected accounts found")
+                        exit(1)
+
+                    connected_account = connected_accounts[0]
+                    print(connected_account)
+                    ```
+                    ```typescript TypeScript
+                    import { Composio } from "@composio/sdk";
+
+                    const composio = new Composio({apiKey: "<COMPOSIO_API_KEY>"});
+                    const connectedAccounts = await composio.connectedAccounts.list({toolkitSlugs: ["GMAIL"]}).items;
+                    if (connectedAccounts.items.length === 0) {
+                        console.error("No connected accounts found");
+                        process.exit(1);
+                    }
+
+                    const connectedAccount = connectedAccounts[0];
+                    console.log(connectedAccount);
+                    ```
+                </CodeGroup>
+            </Step>
+            <Step title="Enable trigger using the connected account">
+                <CodeGroup>
+                    ```python Python
+                    trigger_instance = composio.triggers.create(
+                        user_id="<USER_ID>",
+                        slug="GMAIL_NEW_GMAIL_MESSAGE",
+                        connected_account_id=connected_account.id,
+                    )
+                    print(trigger_instance)
+                    ```
+                    ```typescript TypeScript
+                    const triggerInstance = await composio.triggers.create(
+                        "<USER_ID>",
+                        "GMAIL_NEW_GMAIL_MESSAGE",
+                        {connectedAccountId: connectedAccount.id}
+                    );
+                    console.log(triggerInstance);
+                    ```
+                </CodeGroup>
+            </Step>
+        </StepGroup>
+    </Tab>
+    <Tab title="Dashboard">
+      <StepGroup>
+        <Step title="Head to the `triggers` page in the dashboard and click on the `Create trigger` button.">
+            TODO
+        </Step>
+    </StepGroup>
+    </Tab>
+</Tabs>
+
+
+## Consuming Trigger Events
+
+There are two ways for you to incorporate triggers into your agents. You can either
+setup a webhook URL where Composio can forward the event or you can use the Composio
+SDK to listen to the events.
+
+<Tabs>
+    <Tab title="Webhook">
+        This is the recommended way to consume trigger events.
+        <StepGroup>
+            <Step title="Setup webhook URL">
+                TODO
+            </Step>
+            <Step title="Setup webhook ingestion on your server">
+                <CodeGroup>
+                    ```python Python (FastAPI)
+                    @app.post("/webhook")
+                    async def webhook(request: Request):
+                        event = await request.json()
+                        print("Webhook received:", event)
+                        return {"status": "success", "message": "Webhook received"}
+                    ```
+                    ```typescript TypeScript (Hono)
+                    app.post('/webhook', c => {
+                        const event = c.req.json();
+                        console.log("Webhook received:", event);
+                        return c.json({ status: 'success', message: 'Webhook received' });
+                    });
+                    ```
+                </CodeGroup>
+            </Step>
+        </StepGroup>
+    </Tab>
+    <Tab title="SDK">
+        <CodeGroup>
+            ```python Python
+            from composio import Composio
+
+            # Initialize the Composio client
+            composio = Composio(api_key="<COMPOSIO_API_KEY>")
+
+            # Create a subscription to the triggers
+            subscription = composio.triggers.subscribe()
+
+            # Define a callback function to handle the event
+            @subscription.handle(toolkit="GMAIL")
+            def handle_gmail_event(data):
+                print('Gmail event received:', data)
+
+            # Wait for the subscription to be closed
+            subscription.wait_forever()
+            ```
+            ```typescript TypeScript
+            import { Composio } from "@composio/sdk";
+
+            // Initialize the Composio client
+            const composio = new Composio({apiKey: "<COMPOSIO_API_KEY>"});
+
+            // Register a callback function to handle the event
+            composio.triggers.subscribe(data => {
+                console.log('Gmail event received:', data);
+            });
+            ```
+        </CodeGroup>
+    </Tab>
+</Tabs>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Understanding User IDs"
+    icon="fa-solid fa-user"
+    href="/docs/user-ids"
+  >
+    Learn how to use user IDs to identify users in your agents.
+  </Card>
+  <Card
+    title="SDK Reference"
+    icon="fa-solid fa-code"
+    href="/docs/sdk-reference"
+  >
+    API reference for Composio SDKs.
+  </Card>
+</CardGroup>
