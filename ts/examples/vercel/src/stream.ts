@@ -1,5 +1,5 @@
 import { Composio } from '@composio/core';
-import { generateText, CoreMessage, ModelMessage, stepCountIs } from 'ai';
+import { generateText, ModelMessage, stepCountIs, streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { VercelProvider } from '@composio/vercel';
 import dotenv from 'dotenv';
@@ -24,10 +24,10 @@ async function run() {
       console.log(`🔄 Executing ${toolSlug} with params:`, { params });
       return params;
     },
-    afterExecute: ({ result }) => {
-      console.log(`✅ Executed ${tools.slug} with result:`);
+    afterExecute: ({ result, toolSlug }) => {
+      console.log(`✅ Executed ${toolSlug} with result:`);
       return result;
-    }
+    },
   });
 
   const messages: ModelMessage[] = [
@@ -37,14 +37,16 @@ async function run() {
     },
   ];
 
-  const { text } = await generateText({
+  const stream = await streamText({
     model: openai('gpt-4o-mini'),
     tools: tools,
     messages,
-    stopWhen: stepCountIs(5)
+    stopWhen: stepCountIs(5),
   });
 
-  console.log(text);
+  for await (const textPart of stream.textStream) {
+    process.stdout.write(textPart);
+  }
 }
 
 run();

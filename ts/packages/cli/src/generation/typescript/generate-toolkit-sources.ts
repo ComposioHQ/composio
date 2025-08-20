@@ -24,11 +24,15 @@
  */
 
 import * as ts from '@composio/ts-builders';
-import { pipe, Record } from 'effect';
+import { Effect, pipe, Record, Array as Arr } from 'effect';
 import type { ToolkitName } from 'src/models/toolkits';
 import type { ToolkitIndex, ToolkitIndexData } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
 import type { TriggerType } from 'src/models/trigger-types';
+import {
+  generateTypeFromJsonSchema,
+  GenerateTypeFromJsonSchemaError,
+} from './generate-type-from-json-schema';
 
 function jsValueToTsValue(value: unknown): ts.ValueBuilder {
   if (value === null) {
@@ -97,65 +101,148 @@ function generateTriggerTypeObjectValue(triggerType: TriggerType): ts.ValueBuild
  * Generates a list of TypeScript source files that should be written to disk by the caller.
  */
 export function generateTypeScriptToolkitSources(banner: string) {
-  return (index: ToolkitIndex): Array<SourceFile> => {
-    const toolkitSources = pipe(
-      index,
-      Record.mapEntries(generateTypeScriptToolkitSource(banner)),
-      Record.toEntries
-    );
+  return (index: ToolkitIndex) =>
+    Effect.gen(function* () {
+      const toolkitSources = yield* Effect.all(
+        Record.toEntries(index).map(([key, value]) =>
+          generateTypeScriptToolkitSource(banner)(key, value)
+        )
+      );
 
-    return toolkitSources;
-  };
+      return toolkitSources;
+    });
 }
 
 function generateTypeScriptToolkitSource(_banner: string) {
   return (
-    { slug, tools, triggerTypes }: ToolkitIndexData,
-    toolkitName: ToolkitName
-  ): SourceFile => {
-    const filename = `${slug}.ts`;
+    toolkitName: ToolkitName,
+    { slug, tools, triggerTypes }: ToolkitIndexData
+  ): Effect.Effect<SourceFile, GenerateTypeFromJsonSchemaError, never> => {
+    return Effect.gen(function* () {
+      const filename = `${slug}.ts`;
+      const file = ts.file();
 
-    const file = ts.file();
+      // add `import { type TriggerEvent } from "@composio/core"`, if there are trigger types
+      if (Object.keys(triggerTypes).length > 0) {
+        file.addImport(
+          ts.moduleImport('@composio/core').named(ts.namedImport('TriggerEvent').typeOnly())
+        );
+      }
 
-    const entry = ts.propertyValue(
-      toolkitName,
-      ts
-        .objectValue()
-        .add(ts.propertyValue('slug', ts.stringLiteral(slug).asValue()))
-        .add(
-          ts.propertyValue(
-            'tools',
-            ts
-              .objectValue()
-              .addMultiple(
-                Object.entries(tools).map(([toolName, tool]) =>
-                  ts.propertyValue(toolName, ts.stringLiteral(tool).asValue())
+      // write type declarations for each trigger payload, without exporting them
+      for (const [triggerTypeSlug, triggerType] of Record.toEntries(triggerTypes)) {
+        // e.g., `type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = { .. }`
+        const triggerPayloadType = yield* generateTypeFromJsonSchema(
+          `${toolkitName}_${triggerTypeSlug}_PAYLOAD`,
+          triggerType.payload
+        );
+        file.add(ts.typeDeclaration(triggerTypeSlug, triggerPayloadType));
+      }
+
+      // write the toolkit const object declaration
+      const toolValueDeclaration = ts.propertyValue(
+        toolkitName,
+        ts
+          .objectValue()
+          .add(ts.propertyValue('slug', ts.stringLiteral(slug).asValue()))
+          .add(
+            ts.propertyValue(
+              'tools',
+              ts
+                .objectValue()
+                .addMultiple(
+                  Object.entries(tools).map(([toolName, tool]) =>
+                    ts.propertyValue(toolName, ts.stringLiteral(tool).asValue())
+                  )
                 )
-              )
+            )
           )
-        )
-        .add(
-          ts.propertyValue(
-            'triggerTypes',
-            ts
-              .objectValue()
-              .addMultiple(
-                Object.entries(triggerTypes).map(([triggerTypeSlug, triggerType]) =>
-                  ts.propertyValue(triggerTypeSlug, generateTriggerTypeObjectValue(triggerType))
+          .add(
+            ts.propertyValue(
+              'triggerTypes',
+              ts
+                .objectValue()
+                .addMultiple(
+                  Object.entries(triggerTypes).map(([triggerTypeSlug, triggerType]) =>
+                    ts.propertyValue(triggerTypeSlug, generateTriggerTypeObjectValue(triggerType))
+                  )
                 )
-              )
+            )
           )
-        )
-    );
+      );
 
-    file.add(
-      ts
-        .moduleExport(ts.constDeclaration(entry.name as string).setValue(entry.value))
-        .setDocComment(ts.docComment(`Map of Composio's ${entry.name} toolkit.`))
-    );
+      file.add(
+        ts
+          .moduleExport(
+            ts
+              .constDeclaration(toolValueDeclaration.name as string)
+              .setValue(toolValueDeclaration.value)
+          )
+          .setDocComment(ts.docComment(`Map of Composio's ${toolValueDeclaration.name} toolkit.`))
+      );
 
-    const filesource = ts.stringify(file);
+      // write the map of trigger payload types
+      {
+        const triggerPayloadTypeEntries = pipe(
+          triggerTypes,
+          Record.map((_, triggerTypeSlug) =>
+            ts.property(triggerTypeSlug, ts.namedType(`${toolkitName}_${triggerTypeSlug}_PAYLOAD`))
+          ),
+          Record.toEntries,
+          Arr.map(([_, value]) => value)
+        );
 
-    return [filename, filesource];
+        const doc = ts.docComment(
+          `Type map of all available trigger payloads for toolkit "${toolkitName}".`
+        );
+
+        file.add(
+          ts
+            .moduleExport(
+              ts.typeDeclaration(
+                `${toolkitName}_TRIGGER_PAYLOADS`,
+                ts.objectType().addMultiple(triggerPayloadTypeEntries)
+              )
+            )
+            .setDocComment(doc)
+        );
+      }
+
+      // write the map of trigger events
+      {
+        const triggerEventTypeEntries = pipe(
+          triggerTypes,
+          Record.map((_, triggerTypeSlug) =>
+            ts.property(
+              triggerTypeSlug,
+              ts
+                .namedType('TriggerEvent')
+                .addGenericArgument(ts.namedType(`${toolkitName}_${triggerTypeSlug}_PAYLOAD`))
+            )
+          ),
+          Record.toEntries,
+          Arr.map(([_, value]) => value)
+        );
+
+        const doc = ts.docComment(
+          `Type map of all available trigger events for toolkit "${toolkitName}".`
+        );
+
+        file.add(
+          ts
+            .moduleExport(
+              ts.typeDeclaration(
+                `${toolkitName}_TRIGGER_EVENTS`,
+                ts.objectType().addMultiple(triggerEventTypeEntries)
+              )
+            )
+            .setDocComment(doc)
+        );
+      }
+
+      const filesource = ts.stringify(file);
+
+      return [filename, filesource];
+    });
   };
 }

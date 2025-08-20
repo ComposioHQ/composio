@@ -17,9 +17,10 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   removeNonRequiredProperties,
+  jsonSchemaToZodSchema,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
-import { jsonSchema, tool } from 'ai';
+import { tool } from 'ai';
 
 export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
@@ -114,9 +115,11 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
           )
         : (inputParams ?? {});
 
+    const inputParametersSchema = jsonSchemaToZodSchema(parameters);
+
     return tool({
       description: composioTool.description,
-      parameters: jsonSchema(parameters),
+      inputSchema: inputParametersSchema,
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
         return await executeTool(composioTool.slug, input);
