@@ -163,9 +163,9 @@ navigation:
       - page: Custom Auth Params
         path: pages/dist/guides/tool-execution-hooks/custom-auth-params.mdx
         slug: custom-auth-params
-    - page: Custom Providers
-      path: pages/dist/guides/custom-providers.mdx
-      slug: custom-providers
+    # - page: Custom Providers
+    #   path: pages/dist/guides/custom-providers.mdx
+    #   slug: custom-providers
     - page: File Handling
       path: pages/dist/guides/file-handling.mdx
       slug: file-handling
@@ -242,23 +242,23 @@ navigation:
 - tab: providers
   layout:
   - section: Supported Providers
-    icon: code
+    icon: list-tree
     contents:
-    - page: OpenAI Provider
+    - page: OpenAI
       path: pages/dist/providers/openai.mdx
-    - page: Anthropic Provider
+    - page: Anthropic
       path: pages/dist/providers/anthropic.mdx
-    - page: Google Provider
+    - page: Google
       path: pages/dist/providers/google.mdx
-    - page: LangChain Provider
+    - page: LangChain
       path: pages/dist/providers/langchain.mdx
-    - page: CrewAI Provider
+    - page: CrewAI
       path: pages/dist/providers/crewai.mdx
-    - page: Vercel AI SDK Provider
+    - page: Vercel AI SDK
       path: pages/dist/providers/vercel.mdx
-    - page: OpenAI Agents Provider
+    - page: OpenAI Agents
       path: pages/dist/providers/openai-agents.mdx
-    - page: Mastra Provider
+    - page: Mastra
       path: pages/dist/providers/mastra.mdx
   - section: Writing your own provider
     skip-slug: true
