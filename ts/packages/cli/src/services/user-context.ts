@@ -24,6 +24,11 @@ export class ComposioUserContext extends Context.Tag('ComposioUserData')<
     logout: Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
+     * Logs in the user by setting the API key.
+     */
+    login: (apiKey: string) => Effect.Effect<void, ParseError | PlatformError, never>;
+
+    /**
      * Saves the user data to a persistent store, e.g., file or database.
      */
     update: (data: UserData) => Effect.Effect<void, ParseError | PlatformError, never>;
@@ -51,6 +56,11 @@ export const ComposioUserContextLive = Layer.effect(
     const logout = Effect.gen(function* () {
       yield* update({ apiKey: Option.none() });
     });
+
+    const login = (apiKey: string) =>
+      Effect.gen(function* () {
+        yield* update({ apiKey: Option.some(apiKey) });
+      });
 
     /**
      * Saves the user data to a JSON file.
@@ -101,6 +111,7 @@ export const ComposioUserContextLive = Layer.effect(
       data: userData,
       isLoggedIn,
       update,
+      login,
       logout,
     });
   })

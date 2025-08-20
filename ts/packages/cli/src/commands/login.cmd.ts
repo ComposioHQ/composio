@@ -1,5 +1,5 @@
 import { Command, Options, Prompt } from '@effect/cli';
-import { Effect, Console } from 'effect';
+import { Effect, Console, Schedule } from 'effect';
 import { green } from 'ansis';
 import open, { apps } from 'open';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
@@ -38,45 +38,56 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
 
     yield* Effect.logDebug(`Created session:`, session);
 
-    // TODO: refactor into a PUT request
-    // const url = `https://platform.composio.dev?cliKey=${session.id}`;
+    const url = `https://platform.composio.dev?cliKey=${session.id}`;
 
-    // if (noBrowser) {
-    //   yield* Console.log(`> Please login using the following URL:`);
-    // } else {
-    //   yield* Console.log(`> Redirecting you to the login page`);
-    // }
+    if (noBrowser) {
+      yield* Console.log(`> Please login using the following URL:`);
+    } else {
+      yield* Console.log(`> Redirecting you to the login page`);
+    }
 
-    // yield* Console.log(green`> ${url}`);
+    yield* Console.log(green`> ${url}`);
 
-    // if (!noBrowser) {
-    //   // Open the given `url` in the default browser
-    //   yield* Effect.tryPromise(() =>
-    //     open(url, {
-    //       app: {
-    //         name: apps.browser,
-    //       },
-    //       wait: false,
-    //     })
-    //   );
-    // }
+    if (!noBrowser) {
+      // Open the given `url` in the default browser
+      yield* Effect.tryPromise(() =>
+        open(url, {
+          app: {
+            name: apps.browser,
+          },
+          wait: false,
+        })
+      );
+    }
 
-    // const authenticationCode = yield* Prompt.text({
-    //   message: '> Please enter the authentication code:',
-    // });
-    // yield* Effect.logDebug(`Authentication code: ${authenticationCode}`);
+    // Retry operation until the session status is "linked" with exponential backoff
+    const linkedSession = yield* Effect.retry(
+      Effect.gen(function* () {
+        const currentSession = yield* client.getSession({
+          ...session,
+        });
 
-    const authenticationCode = session.id;
+        // Check if session is linked
+        if (currentSession.status === 'linked') {
+          return currentSession;
+        }
 
-    const linkedSession = yield* client.linkSession({
-      ...session,
-      id: authenticationCode,
-    });
+        // If still pending, fail to trigger retry
+        return yield* Effect.fail(
+          new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
+        );
+      }),
+      // Exponential backoff: start with 0.3s, max 5s, up to 15 retries
+      Schedule.exponential('0.3 seconds').pipe(
+        Schedule.intersect(Schedule.recurs(15)),
+        Schedule.intersect(Schedule.spaced('5 seconds'))
+      )
+    );
 
     yield* Effect.logDebug(`Linked session: ${JSON.stringify(linkedSession)}`);
 
-    // yield* Console.log(
-    //   `Linked session code ${session.code} to user account ${linkedSession.account.email}`
-    // );
+    yield* ctx.login(linkedSession.api_key);
+
+    yield* Console.log(`Logged in with user account ${linkedSession.account.email}`);
   })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

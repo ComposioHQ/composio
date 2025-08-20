@@ -2,7 +2,7 @@ import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult } from 'e
 import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { Tools } from 'src/models/tools';
-import { LinkedSession, Session, RetrievedSession } from 'src/models/session';
+import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -34,9 +34,6 @@ export type HttpError = HttpServerError | HttpDecodingError;
 
 export const CliCreateSessionResponse = Session;
 export type CliCreateSessionResponse = Schema.Schema.Type<typeof CliCreateSessionResponse>;
-
-export const CliLinkSessionResponse = LinkedSession;
-export type CliLinkSessionResponse = Schema.Schema.Type<typeof CliLinkSessionResponse>;
 
 export const CliGetSessionResponse = RetrievedSession;
 export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliGetSessionResponse>;
@@ -228,16 +225,6 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               client => client.cli.getSession(session),
               CliGetSessionResponse
             ),
-
-          /**
-           * Links a pending CLI session to the currently authenticated user.
-           */
-          linkSession: (session: { id: string }) =>
-            callClient(
-              clientSingleton,
-              client => client.cli.linkSession(session),
-              CliLinkSessionResponse
-            ),
         },
       };
     }),
@@ -296,7 +283,6 @@ export class ComposioSessionRepository extends Effect.Service<ComposioSessionRep
       return {
         createSession: () => client.cli.createSession(),
         getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
-        linkSession: (session: { id: string }) => client.cli.linkSession({ id: session.id }),
       };
     }),
     dependencies: [ComposioClientLive.Default],
