@@ -157,11 +157,11 @@ export function parseObject(
       if (additionalProperties instanceof z.ZodNever) {
         output = propertiesSchema.strict();
       } else {
-        output = propertiesSchema.catchall(additionalProperties);
+        output = propertiesSchema.passthrough();
       }
     } else {
-      // When additionalProperties is not specified, default to allowing any additional properties
-      output = propertiesSchema.catchall(z.any());
+      // When additionalProperties is not specified, treat it as true
+      output = propertiesSchema.passthrough();
     }
   } else {
     if (hasPatternProperties) {
@@ -169,7 +169,8 @@ export function parseObject(
     } else if (additionalProperties) {
       output = z.record(additionalProperties);
     } else {
-      output = z.record(z.any());
+      // When no properties and no additionalProperties specified, create empty object
+      output = z.object({});
     }
   }
 

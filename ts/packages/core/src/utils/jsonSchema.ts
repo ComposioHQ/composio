@@ -26,7 +26,7 @@ export const removeNonRequiredProperties = <
       )
     );
   }
-  schema.additionalProperties = schema.additionalProperties ?? false;
+  schema.additionalProperties = schema.additionalProperties ?? true;
   return schema as T;
 };
 
