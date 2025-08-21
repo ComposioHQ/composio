@@ -1,5 +1,11 @@
 # @composio/vercel
 
+## 0.2.1
+
+### Patch Changes
+
+- @composio/core@0.1.45
+
 ## 0.2.0
 
 ### Minor Changes

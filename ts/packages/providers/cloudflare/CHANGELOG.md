@@ -1,5 +1,11 @@
 # @composio/cloudflare
 
+## 0.1.45
+
+### Patch Changes
+
+- @composio/core@0.1.45
+
 ## 0.1.44
 
 ### Patch Changes

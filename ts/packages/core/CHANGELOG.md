@@ -1,5 +1,12 @@
 # @composio/core
 
+## 0.1.45
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.13
+
 ## 0.1.44
 
 ### Patch Changes
