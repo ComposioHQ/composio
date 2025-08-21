@@ -38,7 +38,7 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
 
     yield* Effect.logDebug(`Created session:`, session);
 
-    const url = `https://platform.composio.dev?cliKey=${session.id}`;
+    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
 
     if (noBrowser) {
       yield* Console.log(`> Please login using the following URL:`);

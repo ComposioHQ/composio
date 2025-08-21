@@ -1,8 +1,10 @@
 import { Config, LogLevel, Option } from 'effect';
+import * as constants from 'src/constants';
 
 type APP_CONFIG = Config.Config.Wrap<{
   API_KEY: Option.Option<string>;
-  BASE_URL: Option.Option<string>;
+  BASE_URL: string;
+  WEB_URL: string;
   CACHE_DIR: Option.Option<string>;
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
 }>;
@@ -16,7 +18,10 @@ export const APP_CONFIG = {
   API_KEY: Config.option(Config.string('API_KEY')),
 
   // The base URL for the Composio API
-  BASE_URL: Config.option(Config.string('BASE_URL')),
+  BASE_URL: Config.string('BASE_URL').pipe(Config.withDefault(constants.DEFAULT_BASE_URL)),
+
+  // The base URL for the Composio web app
+  WEB_URL: Config.string('WEB_URL').pipe(Config.withDefault(constants.DEFAULT_WEB_URL)),
 
   // The cache directory for the Composio CLI
   CACHE_DIR: Config.option(Config.string('CACHE_DIR')),

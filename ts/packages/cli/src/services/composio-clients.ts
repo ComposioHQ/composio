@@ -148,7 +148,7 @@ class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
 
           // Note: `api_key` is not required in every API request.
           const apiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
-          const baseURL = ctx.data.baseURL.pipe(Option.getOrUndefined);
+          const baseURL = ctx.data.baseURL;
 
           yield* Effect.logDebug('Creating raw Composio client...');
           const client = new _RawComposioClient({ apiKey, baseURL });
