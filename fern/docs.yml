@@ -72,24 +72,30 @@ tabs:
     icon: book
     slug: docs
 
+  mcp:
+    display-name: MCP
+    icon: server
+    slug: mcp
+
   providers:
     display-name: Providers
     icon: code
-    skip-slug: true
+    slug: providers
 
   cookbooks:
     display-name: Cookbooks
     icon: user-chef
-    skip-slug: true
-
-  # sdk-reference:
-  #   display-name: SDK Reference
-  #   icon: code
+    slug: cookbooks
 
   toolkits:
     display-name: Toolkits
     icon: tools
     skip-slug: true
+
+  sdk-reference:
+    display-name: SDK Reference
+    icon: code
+    slug: sdk
 
   api-reference:
     display-name: API Reference
@@ -102,6 +108,7 @@ tabs:
     changelog: ./pages/changelog
 
 navigation:
+
 - tab: docs
   layout:
   - section: Get Started
@@ -117,9 +124,6 @@ navigation:
     - page: IDE and Agent Setup
       path: pages/dist/get-started/dev-setup.mdx
       slug: dev-setup
-    # - page: Providers
-    #   path: pages/dist/get-started/providers.mdx
-    #   slug: providers
 
   - section: Core Concepts
     icon: square-info
@@ -134,6 +138,9 @@ navigation:
     - page: Triggers
       path: pages/dist/core/triggers.mdx
       slug: triggers
+    - page: Providers
+      path: pages/dist/providers/understanding.mdx
+      slug: providers
 
   - section: Guides
     icon: books
@@ -145,9 +152,6 @@ navigation:
     - page: Custom Tools
       path: pages/dist/guides/custom-tools.mdx
       slug: custom-tools
-    # - page: Execute Proxy
-    #   path: pages/dist/guides/execute-proxy.mdx
-    #   slug: execute-proxy
     - section: Tool Execution Hooks
       slug: tool-execution-hooks
       contents:
@@ -163,9 +167,6 @@ navigation:
       - page: Custom Auth Params
         path: pages/dist/guides/tool-execution-hooks/custom-auth-params.mdx
         slug: custom-auth-params
-    # - page: Custom Providers
-    #   path: pages/dist/guides/custom-providers.mdx
-    #   slug: custom-providers
     - page: File Handling
       path: pages/dist/guides/file-handling.mdx
       slug: file-handling
@@ -239,27 +240,50 @@ navigation:
   #     path: pages/dist/migration-guide.mdx
   #     slug: migration
 
+- tab: mcp
+  layout:
+  - page: Overview
+    path: pages/dist/mcp/overview.mdx
+    slug: mcp-overview
+  - page: Developers
+    path: pages/dist/mcp/developers.mdx
+    slug: mcp-developers
+  - page: Partner Program
+    path: pages/dist/mcp/partner-api.mdx
+    slug: mcp-partner-api
+  - page: Providers
+    path: pages/dist/mcp/providers.mdx
+    slug: mcp-providers
+
 - tab: providers
   layout:
-  - section: Supported Providers
+  - section: Available Providers
     icon: list-tree
     contents:
     - page: OpenAI
       path: pages/dist/providers/openai.mdx
+      slug: openai
     - page: Anthropic
       path: pages/dist/providers/anthropic.mdx
+      slug: anthropic
     - page: Google
       path: pages/dist/providers/google.mdx
-    - page: LangChain
-      path: pages/dist/providers/langchain.mdx
+      slug: google
     - page: CrewAI
       path: pages/dist/providers/crewai.mdx
+      slug: crewai
+    - page: LangChain
+      path: pages/dist/providers/langchain.mdx
+      slug: langchain
     - page: Vercel AI SDK
       path: pages/dist/providers/vercel.mdx
+      slug: vercel
     - page: OpenAI Agents
       path: pages/dist/providers/openai-agents.mdx
+      slug: openai-agents
     - page: Mastra
       path: pages/dist/providers/mastra.mdx
+      slug: mastra
   - section: Writing your own provider
     skip-slug: true
     icon: code
@@ -275,14 +299,34 @@ navigation:
   layout:
   - section: Getting Started
     icon: rocket
-    skip-slug: true
+    slug: basic
     contents:
-    - page: Basic Hono Server
-      path: pages/dist/examples/sample-webserver/sample-webserver.mdx
-      slug: examples/sample-webserver
-    - page: Basic FastAPI Server
+    - page: Hono Server
+      path: pages/dist/examples/hono.mdx
+      slug: hono
+    - page: FastAPI Server
       path: pages/dist/examples/fast-api.mdx
-      slug: examples/fastapi
+      slug: fastapi
+  - section: Utility Agents
+    icon: robot
+    slug: utility
+    contents:
+    - page: Slack Summeriser
+      path: pages/dist/examples/utility_agents/slack_summeriser.mdx
+      slug: slack-summeriser
+    - page: Discord Community Manager
+      path: pages/dist/examples/utility_agents/discord_community_manager.mdx
+      slug: discord-community-manager
+    - page: Github Bot
+      path: pages/dist/examples/utility_agents/github_bot.mdx
+      slug: github-bot
+  - section: Chat Applications
+    icon: message
+    slug: chat-apps
+    contents:
+    - page: Vercel Chat
+      path: pages/dist/examples/chat_applications/vercel_chat.mdx
+      slug: vercel-chat
 
 - tab: toolkits
   layout:
@@ -319,45 +363,6 @@ navigation:
     - page: Composio
       slug: toolkits/composio
       path: toolkits/composio.mdx
-
-# - tab: sdk-reference
-#   layout:
-#   - section: Python
-#     icon: python
-#     contents:
-#     - page: Python SDK Reference
-#       path: pages/dist/sdk/python/sdk-reference.md
-#   - section: TypeScript
-#     icon: typescript
-#     contents:
-#     - section: Core Classes
-#       slug: core-classes
-#       contents:
-#       - page: Composio
-#         path: pages/dist/sdk/typescript/composio/classes/Composio.mdx
-#       - page: ComposioProvider
-#         path: pages/dist/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
-#       - page: OpenAIProvider
-#         path: pages/dist/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
-#       - page: BaseAgenticProvider
-#         path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
-#       - page: BaseNonAgenticProvider
-#         path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
-#     - section: Models
-#       slug: models
-#       contents:
-#       - page: Tools
-#         path: pages/dist/sdk/typescript/models/Tools/classes/Tools.mdx
-#       - page: Toolkits
-#         path: pages/dist/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
-#       - page: Triggers
-#         path: pages/dist/sdk/typescript/models/Triggers/classes/Triggers.mdx
-#       - page: AuthConfigs
-#         path: pages/dist/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
-#       - page: ConnectedAccounts
-#         path: pages/dist/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
-#       - page: CustomTools
-#         path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
 
 - tab: api-reference
   layout:

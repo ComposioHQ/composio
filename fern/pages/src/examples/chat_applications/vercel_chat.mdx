@@ -10,29 +10,29 @@ In this example, you will learn how to build a chatbot that:
 - Lets users connect their various apps to the chatbot using the Composio SDK.
 - Uses the Vercel provider in the Composio SDK to handle and execute tool calls from the LLM.
 
-This page gives a high-level overview of the Composio SDK and how it is used in the GitHub repository: [composiohq/chat](https://github.com/composiohq/chat).
-
-You can find the demo live [here](https://chat.composio.dev/).
+This page gives a high-level overview of the Composio SDK and how it is used in the
+GitHub repository: [composiohq/chat](https://github.com/composiohq/chat). You can
+find the demo live [here](https://chat.composio.dev/).
 
 ## Prerequisites
 
-Ensure you've followed the README.md in the [composiohq/chat](https://github.com/composiohq/chat) repository to set up the project locally.
+Ensure you've followed the README.md in the [composiohq/chat](https://github.com/composiohq/chat)
+repository to set up the project locally.
 
 ## Creating auth configs
 
-For all the apps you want to connect to the chatbot, you need to create their respective auth configs.
-
-Learn how to create auth configs [here](/docs/authenticating-tools#creating-an-auth-config).
-
+For all the apps you want to connect to the chatbot, you need to create their
+respective auth configs. Learn how to create auth configs [here](/docs/authenticating-tools#creating-an-auth-config).
 Once done, your auth configs will be available in the [Composio dashboard](https://app.composio.dev/integrations).
 
 <Frame>
-  <img src="../../../assets/images/examples/auth-configs.png" alt="Auth configs" />
+  <img src="../../../../assets/images/examples/auth-configs.png" alt="Auth configs" />
 </Frame>
 
 ### Save auth config IDs to environment variables
 
-For this project, the auth config IDs should be saved to the environment variables with the `NEXT_PUBLIC_` prefix.
+For this project, the auth config IDs should be saved to the environment variables
+with the `NEXT_PUBLIC_` prefix.
 
 ```bash .env.local
 NEXT_PUBLIC_GMAIL_AUTH_CONFIG_ID=ac_1234567890
@@ -41,7 +41,8 @@ NEXT_PUBLIC_GITHUB_AUTH_CONFIG_ID=ac_1234567890
 
 ## Create a Composio client instance
 
-We create a Composio client instance for server-side operations like API routes, server components, etc.
+We create a Composio client instance for server-side operations like API routes,
+server components, etc.
 
 ```typescript lib/service/composio.ts
 import { Composio } from '@composio/core';
@@ -57,17 +58,19 @@ export default composio;
 
 ## Creating an API for fetching toolkits
 
-The Composio SDK is meant to be used only in server-side code. For client-side functionality, we create API endpoints in the `/app/api/` directory.
-
-In order to list the toolkits and their connection status, we create a Next.js API route to fetch the toolkits using Composio SDK.
+The Composio SDK is meant to be used only in server-side code. For client-side
+functionality, we create API endpoints in the `/app/api/` directory. In order to
+list the toolkits and their connection status, we create a Next.js API route to
+fetch the toolkits using Composio SDK.
 
 <Frame>
-  <img src="../../../assets/images/examples/toolkits.png" />
+  <img src="../../../../assets/images/examples/toolkits.png" />
 </Frame>
 
 ### 1. Listing connected accounts
 
-First, we fetch all connected accounts for a user and create a mapping of toolkit slugs to their connection IDs:
+First, we fetch all connected accounts for a user and create a mapping of toolkit
+slugs to their connection IDs:
 
 ```typescript app/api/composio/toolkits.ts
 export async function GET() {
@@ -128,7 +131,7 @@ Users need to connect and disconnect their accounts from the chatbot to enable t
 When a user wants to connect their account, we create a connection request that redirects them to the OAuth provider:
 
 <Frame>
-  <img src="../../../assets/images/examples/create-connection.png" />
+  <img src="../../../../assets/images/examples/create-connection.png" />
 </Frame>
 
 ```typescript app/api/connections/initiate/route.ts
@@ -155,7 +158,7 @@ export async function POST(request: Request) {
 After initiating a connection, we need to wait for the OAuth flow to complete. We check the connection status to know when it's ready to use:
 
 <Frame>
-  <img src="../../../assets/images/examples/connection-status.png" />
+  <img src="../../../../assets/images/examples/connection-status.png" />
 </Frame>
 
 ```typescript app/api/connections/status/route.ts
@@ -260,7 +263,7 @@ export async function POST(request: Request) {
 By default, tool calls appear as raw JSON in the chat interface. To create a better user experience, we can build custom components that display tool calls with proper formatting and loading states.
 
 <Frame>
-  <img src="../../../assets/images/examples/custom-tool-component.png" />
+  <img src="../../../../assets/images/examples/custom-tool-component.png" />
 </Frame>
 
 You can find the `ToolCall` component at `components/tool-call.tsx`. Here's how to integrate it into your message rendering:

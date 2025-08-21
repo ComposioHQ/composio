@@ -6,7 +6,10 @@ keywords: "fastapi, composio, openai, gmail, agent"
 hide-nav-links: false
 ---
 
-With Composio's managed authentication and tool calling, it's easy to build AI agents that interact with the real world while reducing boilerplate for setup and authentication management. This cookbook will guide you through building and serving agents using `Composio`, `OpenAI`, and `FastAPI`.
+With Composio's managed authentication and tool calling, it's easy to build
+AI agents that interact with the real world while reducing boilerplate for
+setup and authentication management. This cookbook will guide you through
+building and serving agents using `Composio`, `OpenAI`, and `FastAPI`.
 
 ## Prerequisites
 
@@ -20,7 +23,8 @@ With Composio's managed authentication and tool calling, it's easy to build AI a
 
 ## Building an AI agent that can interact with `gmail` service
 
-First, let's start with building a simple AI agent embedded with tools from Composio that let's the agent interact with the `gmail` service.
+First, let's start with building a simple AI agent embedded with tools from
+Composio that let's the agent interact with the `gmail` service.
 
 ```python
 from openai import OpenAI
@@ -59,7 +63,12 @@ def run_gmail_agent(
     return result
 ```
 
-> **NOTE**: This is a simple agent without state management and agentic loop implementation, so the agent can't perform complicated tasks. If you want to understand how composio can be used with agentic loops, check other cookbooks with more agentic frameworks.
+<Note>
+This is a simple agent without state management and agentic loop implementation,
+so the agent can't perform complicated tasks. If you want to understand how
+composio can be used with agentic loops, check other cookbooks with more
+agentic frameworks.
+</Note>
 
 To invoke this agent, authenticate your users with Composio's managed authentication service.
 
@@ -112,7 +121,12 @@ def fetch_auth_config(composio_client: Composio[OpenAIProvider]):
     return None
 ```
 
-> **NOTE**: Composio platform provides composio managed authentication for some apps to fast-track your development, `gmail` being one of them. You can use these default auth configs for development, but for production, always use your own oauth app configuration.
+<Note>
+Composio platform provides composio managed authentication for some apps to
+fast-track your development, `gmail` being one of them. You can use these
+default auth configs for development, but for production, always use your
+own oauth app configuration.
+</Note>
 
 Once you have authentication management in place, we can start with connecting your users to your `gmail` app. Let's implement a function to connect users to your `gmail` app via composio.
 
@@ -258,13 +272,17 @@ def _run_gmail_agent(
     return result
 ```
 
-> **NOTE**: Check [server](./simple_gmail_agent/server/) module for service implementation
+<Note>
+Check [server](./simple_gmail_agent/server/) module for service implementation
+</Note>
 
 ## Putting everything together
 
 So far, we have created an agent with ability to interact with `gmail` using the `composio` SDK, functions to manage connected accounts for users and a FastAPI service. Now let's run the service.
 
-> Before proceeding, check the [code](./simple_gmail_agent/server/api.py) for utility endpoints not discussed in the cookbook
+<Note>
+Before proceeding, check the [code](./simple_gmail_agent/server/api.py) for utility endpoints not discussed in the cookbook
+</Note>
 
 
 1. Clone the repository
@@ -292,46 +310,6 @@ So far, we have created an agent with ability to interact with `gmail` using the
    ```bash
    uvicorn simple_gmail_agent.server.api:create_app --factory
    ```
-
-## Using Composio for managed auth and tools
-
-Composio reduces boilerplate for building AI agents that access and use various apps. In this cookbook, to build Gmail integration without Composio, you would have to write code to
-
-- manage Gmail OAuth app
-- manage user connections
-- tools for your agents to interact with Gmail
-
-Using Composio simplifies all of the above to a few lines of code as shown in the cookbook.
-
-## Best practices
-
-**🎯 Effective Prompts**:
-- Be specific: "Send email to john@company.com about tomorrow's 2pm meeting" works better than "send email"
-- Include context: "Reply to Sarah's email about the budget with our approval"
-- Use natural language: The agent understands conversational requests
-
-**🔒 User Management**:
-- Use unique, consistent `user_id` values for each person
-- Each user maintains their own Gmail connection
-- User IDs can be email addresses, usernames, or any unique identifier
-
-
-## Troubleshooting
-
-**Connection Issues**:
-- Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
-- Check if the user has completed Gmail authorization.
-- Verify the user_id matches exactly between requests
-
-**API Errors**:
-- Check the server logs for detailed error messages
-- Ensure request payloads match the expected format
-- Visit `/docs` endpoint for API schema validation
-
-**Gmail API Limits**:
-- Gmail has rate limits; the agent will handle these gracefully
-- For high-volume usage, consider implementing request queuing
-
 ## Testing the API with curl
 
 Assuming the server is running locally on `http://localhost:8000`.
@@ -386,3 +364,42 @@ curl -X POST http://localhost:8000/actions/fetch_emails \
 ```
 
 These examples are intended solely for testing purposes.
+
+## Using Composio for managed auth and tools
+
+Composio reduces boilerplate for building AI agents that access and use various apps. In this cookbook, to build Gmail integration without Composio, you would have to write code to
+
+- manage Gmail OAuth app
+- manage user connections
+- tools for your agents to interact with Gmail
+
+Using Composio simplifies all of the above to a few lines of code as shown in the cookbook.
+
+## Best practices
+
+**🎯 Effective Prompts**:
+- Be specific: "Send email to john@company.com about tomorrow's 2pm meeting" works better than "send email"
+- Include context: "Reply to Sarah's email about the budget with our approval"
+- Use natural language: The agent understands conversational requests
+
+**🔒 User Management**:
+- Use unique, consistent `user_id` values for each person
+- Each user maintains their own Gmail connection
+- User IDs can be email addresses, usernames, or any unique identifier
+
+
+## Troubleshooting
+
+**Connection Issues**:
+- Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
+- Check if the user has completed Gmail authorization.
+- Verify the user_id matches exactly between requests
+
+**API Errors**:
+- Check the server logs for detailed error messages
+- Ensure request payloads match the expected format
+- Visit `/docs` endpoint for API schema validation
+
+**Gmail API Limits**:
+- Gmail has rate limits; the agent will handle these gracefully
+- For high-volume usage, consider implementing request queuing

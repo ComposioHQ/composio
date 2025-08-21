@@ -1,0 +1,277 @@
+---
+title: Understanding Providers
+image: "https://og.composio.dev/api/og?title=Understanding%20Providers"   # image for socials
+keywords: 'providers, understanding, composio'
+hide-nav-links: false
+---
+
+Providers in Composio act as bridges between your AI models and external tools.
+They transform Composio's tools into formats that different AI frameworks can
+understand and use, making it possible to integrate with any AI framework seamlessly.
+
+For example:
+- OpenAI expects tools in a specific JSON schema format with type: "function"
+- Anthropic Claude expects tools with an input_schema structure
+- LangChain expects tools as callable functions with specific parameters
+
+Providers ensure that Composio tools work correctly with your chosen AI platform
+without you having to worry about the technical details.
+
+
+## Using Providers
+
+Here's how you can generate text with various providers using Composio SDK:
+
+### Default Provider (OpenAI)
+
+If you don't specify a provider, Composio uses the OpenAI provider by default:
+
+<CodeGroup>
+  ```python Python
+  from openai import OpenAI
+  from composio import Composio
+
+  # Initialize tools.
+  openai_client = OpenAI()
+  composio = Composio(api_key="your-composio-api-key")
+
+  # Define task.
+  task = "Star a repo composiohq/composio on GitHub"
+
+  # Get GitHub tools that are pre-configured
+  tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+  # Get response from the LLM
+  response = openai_client.chat.completions.create(
+      model="gpt-4o-mini",
+      tools=tools,
+      messages=[
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": task},
+      ],
+  )
+  print(response)
+
+  # Execute the function calls.
+  result = composio.provider.handle_tool_calls(response=response, user_id="default")
+  print(result)
+  ```
+  ```typescript TypeScript
+  import { Composio } from '@composio/core';
+
+  // Uses OpenAI provider automatically
+  const composio = new Composio({
+    apiKey: 'your-composio-api-key'
+  });
+
+  // Get tools formatted for OpenAI
+  const tools = await composio.tools.get('default', {
+    toolkits: ['github']
+  });
+
+  // Use with OpenAI
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Star the repo composiohq/composio on GitHub' },
+    ],
+    tools: tools // Already formatted for OpenAI
+  });
+
+  // Execute the function calls.
+  const result = await composio.provider.handleToolCalls("user@example.com", completion)
+  console.log(result)
+
+  ```
+</CodeGroup>
+
+### Using a Different Provider
+Different providers may require additional packages:
+
+
+<CodeGroup>
+```shell Python
+# Core SDK (includes OpenAI provider)
+pip install composio==0.8.0
+
+# Additional providers
+pip install composio_anthropic==0.8.0
+pip install composio_google==0.8.0
+pip install composio_langchain==0.8.0
+pip install composio_crewai==0.8.0
+```
+```shell Typescript
+# Core SDK (includes OpenAI provider)
+npm install @composio/core
+
+# Additional providers
+npm install @composio/anthropic
+npm install @composio/google  
+npm install @composio/langchain
+npm install @composio/vercel
+```
+</CodeGroup>
+
+To use a different provider, specify it when initializing Composio:
+
+<Tabs>
+<Tab title="OpenAI (Default)">
+OpenAI is a completion provider. You can use it to generate text, function calls.
+<CodeGroup>
+```python Python
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+composio = Composio(provider=OpenAIProvider())
+```
+```typescript TypeScript
+import { Composio } from "@composio/core";
+import { OpenAIProvider } from "@composio/openai";
+
+const composio = new Composio({ provider: new OpenAIProvider() });
+
+```
+
+</CodeGroup>
+</Tab>
+<Tab title="Anthropic">
+Anthropic is a completion provider. You can use it to generate text, function calls.
+<CodeGroup>
+```python Python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+```
+```typescript TypeScript
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+import { Anthropic } from "@anthropic-ai/sdk";
+
+const composio = new Composio({ provider: new AnthropicProvider() });
+
+```
+</CodeGroup>
+</Tab>
+<Tab title="Vercel AI SDK">
+```typescript TypeScript
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+```
+</Tab>
+<Tab title="Mastra">
+```typescript TypeScript
+import { MastraProvider } from '@composio/mastra';
+import { Agent } from '@mastra/core/agent';
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new MastraProvider(),
+});
+
+```
+
+</Tab>
+<Tab title="OpenAI Agents">
+```python Python
+import asyncio
+
+from agents import Agent, Runner
+
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+# Initialize Composio toolset
+composio = Composio(provider=OpenAIAgentsProvider())
+```
+</Tab>
+</Tabs>
+
+
+## Supported Providers
+Composio supports two different types of providers based on the type of AI framework you are using:
+
+### Non-Agentic Providers
+These providers work with AI platforms that use chat completion APIs, where you control the tool execution flow. The AI model analyzes your conversation and suggests which tools to use, but your code decides when and how to execute them.
+With chat completion APIs, the typical flow is:
+
+1. You send a message to the AI model along with available tools
+2. The AI responds with either a text message or a request to use specific tools
+3. If tools are requested, you execute them and send the results back to continue the conversation
+
+<CardGroup cols={3}>
+  <Card
+    title="OpenAI Provider"
+    icon={<img src="../../../assets/images/openai-logo.svg" width="24" height="24" />}
+    href="/providers/openai"
+  >
+    Integrate with OpenAI's tool calling and agents.
+  </Card>
+  <Card
+    title="Anthropic Provider"
+    icon={<img src="../../../assets/images/anthropic-logo.svg" width="24" height="24" />}
+    href="/providers/anthropic"
+  >
+    Use Anthropic's Claude models with Composio tools.
+  </Card>
+  <Card
+    title="Gemini Provider"
+    icon={<img src="../../../assets/images/google-logo.svg" width="24" height="24" />}
+    href="/providers/google-adk"
+  >
+    Integrate with Google's Gemini models.
+  </Card>
+</CardGroup>
+
+### Agentic Providers
+These providers work with AI frameworks that can execute tools autonomously. The AI agent can decide to run tools on its own without your direct intervention.
+
+<CardGroup cols={3}>
+  <Card
+    title="LangGraph Provider"
+    icon={<img src="../../../assets/images/langgraph-logo.svg"/>}
+    href="/providers/langgraph"
+  >
+    Add tools to LangGraph agent flows.
+  </Card>
+  <Card
+    title="CrewAI Provider"
+    icon="fa-solid fa-people-group"
+    href="/providers/crewai"
+  >
+    Enable tool calling in CrewAI multi-agent systems.
+  </Card>
+  <Card
+    title="Vercel AI SDK Provider"
+    icon={<img src="../../../assets/images/vercel-logo.svg" width="24" height="24" />}
+    href="/providers/vercel"
+  >
+    Use Composio tools with Vercel's AI SDK.
+  </Card>
+  <Card
+    title="OpenAI Agents Provider"
+    icon="fa-solid fa-user-astronaut"
+    href="/providers/openai-agents"
+  >
+    Add tools to OpenAI's new Agents API.
+  </Card>
+  <Card
+    title="Mastra Provider"
+    icon="fa-solid fa-cubes"
+    href="/providers/mastra"
+  >
+    Use Composio tools with Mastra agent framework.
+  </Card>
+</CardGroup>
+
+<Tip title="Custom Providers" icon="puzzle">
+Using a framework not yet supported by Composio? Create a [custom provider](/providers/custom)!
+</Tip>
