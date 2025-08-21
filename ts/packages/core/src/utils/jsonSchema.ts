@@ -26,7 +26,8 @@ export const removeNonRequiredProperties = <
       )
     );
   }
-  schema.additionalProperties = schema.additionalProperties ?? false;
+  // In strict mode, we don't allow additional properties
+  schema.additionalProperties = false;
   return schema as T;
 };
 
