@@ -157,7 +157,13 @@ export function parseObject(
       if (additionalProperties instanceof z.ZodNever) {
         output = propertiesSchema.strict();
       } else {
-        output = propertiesSchema.passthrough();
+        // Check if propertiesSchema is an empty object
+        const isEmptyObject = Object.keys(propertiesSchema._def.shape()).length === 0;
+        if (isEmptyObject) {
+          output = propertiesSchema.passthrough();
+        } else {
+          output = propertiesSchema.catchall(additionalProperties);
+        }
       }
     } else {
       // When additionalProperties is not specified, treat it as true
