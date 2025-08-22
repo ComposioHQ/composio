@@ -23,9 +23,10 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.none(),
-            BASE_URL: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            WEB_URL: 'https://platform.composio.dev',
           })
         );
       });
@@ -46,9 +47,10 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.none(),
-            BASE_URL: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            WEB_URL: 'https://platform.composio.dev',
           })
         );
       });
@@ -57,6 +59,7 @@ describe('Config', () => {
         const map = new Map([
           ['COMPOSIO_API_KEY', 'api_key'],
           ['COMPOSIO_BASE_URL', 'https://test.localhost'],
+          ['COMPOSIO_WEB_URL', 'https://test.localhost'],
           ['COMPOSIO_CACHE_DIR', '~/.composio'],
           ['COMPOSIO_LOG_LEVEL', 'info'],
         ]) satisfies Map<string, string>;
@@ -69,7 +72,8 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.some('api_key'),
-            BASE_URL: Option.some('https://test.localhost'),
+            BASE_URL: 'https://test.localhost',
+            WEB_URL: 'https://test.localhost',
             CACHE_DIR: Option.some('~/.composio'),
             LOG_LEVEL: Option.some(LogLevel.Info),
           })
@@ -175,7 +179,8 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.none(),
-            BASE_URL: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://platform.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
           })
@@ -196,7 +201,8 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.none(),
-            BASE_URL: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://platform.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
           })
@@ -206,6 +212,7 @@ describe('Config', () => {
       it('[When] env variables are set with `COMPOSIO_` prefix', () => {
         vi.stubEnv('COMPOSIO_API_KEY', 'api_key');
         vi.stubEnv('COMPOSIO_BASE_URL', 'https://test.localhost');
+        vi.stubEnv('COMPOSIO_WEB_URL', 'https://test.localhost');
         vi.stubEnv('COMPOSIO_CACHE_DIR', '~/.composio');
         vi.stubEnv('COMPOSIO_LOG_LEVEL', 'info');
 
@@ -217,7 +224,8 @@ describe('Config', () => {
           actual,
           Data.struct({
             API_KEY: Option.some('api_key'),
-            BASE_URL: Option.some('https://test.localhost'),
+            BASE_URL: 'https://test.localhost',
+            WEB_URL: 'https://test.localhost',
             CACHE_DIR: Option.some('~/.composio'),
             LOG_LEVEL: Option.some(LogLevel.Info),
           })

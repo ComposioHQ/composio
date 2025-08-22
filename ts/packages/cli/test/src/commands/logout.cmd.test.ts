@@ -1,6 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
-import { UserData } from 'src/models/user-data';
+import { UserDataWithDefaults } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -13,9 +13,10 @@ describe('CLI: composio logout', () => {
           const ctx = yield* ComposioUserContext;
 
           expect(ctx.isLoggedIn()).toBeFalsy();
-          const expectedUserData = UserData.make({
+          const expectedUserData = UserDataWithDefaults.make({
             apiKey: Option.none(),
-            baseURL: Option.none(),
+            baseURL: 'https://backend.composio.dev',
+            webURL: 'https://platform.composio.dev',
           });
 
           expect(ctx.data).toMatchObject(expectedUserData);
@@ -46,9 +47,10 @@ describe('CLI: composio logout', () => {
           const ctx = yield* ComposioUserContext;
           expect(ctx.isLoggedIn()).toBeTruthy();
           expect(ctx.data).toMatchObject(
-            UserData.make({
+            UserDataWithDefaults.make({
               apiKey: Option.some('api_key_already_logged_in'),
-              baseURL: Option.none(),
+              baseURL: 'https://backend.composio.dev',
+              webURL: 'https://platform.composio.dev',
             })
           );
 

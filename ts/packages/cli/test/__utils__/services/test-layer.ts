@@ -235,14 +235,7 @@ function setupComposioSessionRepository() {
           code: sessionCode,
           expiresAt,
           status: 'pending',
-        }),
-      linkSession: () =>
-        Effect.succeed({
-          id: sessionId,
-          code: sessionCode,
-          expiresAt,
-          status: 'linked',
-          account,
+          api_key: null,
         }),
     });
     const ComposioSessionRepositoryTest = Layer.succeed(
