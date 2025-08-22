@@ -139,7 +139,7 @@ navigation:
       path: pages/dist/core/triggers.mdx
       slug: triggers
     - page: Providers
-      path: pages/dist/providers/understanding.mdx
+      path: pages/dist/core/providers.mdx
       slug: providers
 
   - section: Guides
