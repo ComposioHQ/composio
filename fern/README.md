@@ -17,7 +17,7 @@ Before you start, make sure you have the following installed on your system:
 - **Node.js** (version 18 or higher) - [Download here](https://nodejs.org/)
 - **pnpm** (package manager) - Install with `npm install -g pnpm`
 - **Git** - For version control
-- **A Composio API key** - Get one from [Composio Dashboard](https://app.composio.dev/)
+- **A Composio API key** - Get one from [Composio Dashboard](https://platform.composio.dev?next_page=/settings)
 
 ## One-Time Setup
 

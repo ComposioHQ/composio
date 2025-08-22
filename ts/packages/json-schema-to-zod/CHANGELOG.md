@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.13
+
+### Patch Changes
+
+- Fix parsing of additional properties
+
 ## 0.1.12
 
 ### Patch Changes

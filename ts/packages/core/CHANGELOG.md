@@ -1,5 +1,18 @@
 # @composio/core
 
+## 0.1.45
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.13
+
+## 0.1.44
+
+### Patch Changes
+
+- b4b8b94: Fix telemetry flags and disable when passed
+
 ## 0.1.43
 
 ### Patch Changes
