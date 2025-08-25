@@ -41,6 +41,17 @@ const oauthConnection = await composio.connectedAccounts.initiate('user_123', 'a
   callbackUrl: 'https://myapp.com/auth/callback',
 });
 
+// For OAuth configs requiring additional parameters (e.g., Zendesk, PostHog)
+const zendeskConnection = await composio.connectedAccounts.initiate('user_123', 'zendesk_auth_config', {
+  config: {
+    authScheme: 'OAUTH2',
+    val: {
+      status: 'INITIALIZING',
+      subdomain: 'mycompany', // For mycompany.zendesk.com
+    }
+  }
+});
+
 // For API Key based auth configs (requires additional parameters)
 const apiKeyConnection = await composio.connectedAccounts.initiate('user_123', 'auth_config_456', {
   config: AuthScheme.ApiKey({
