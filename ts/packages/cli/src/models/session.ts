@@ -20,26 +20,11 @@ const SessionAccount = Schema.Struct({
 }).annotations({ identifier: 'SessionAccount' });
 export type SessionAccount = Schema.Schema.Type<typeof SessionAccount>;
 
-export const LinkedSession = Session.omit('status')
-  .pipe(
-    Schema.extend(
-      Schema.Struct({
-        status: Schema.Literal('linked'),
-        account: SessionAccount.annotations({ identifier: 'LinkedSession.Account' }),
-      })
-    )
-  )
-  .annotations({ identifier: 'LinkedSession' });
-export type LinkedSession = Schema.Schema.Type<typeof LinkedSession>;
-
-export const LinkedSessionJSON = JSONTransformSchema(LinkedSession);
-export const LinkedSessionFromJSON = Schema.decode(LinkedSessionJSON);
-export const LinkedSessionToJSON = Schema.encode(LinkedSessionJSON);
-
 export const RetrievedSession = Schema.Union(
-  Schema.Struct({ ...Session.fields, status: Schema.Literal('pending') }),
+  Schema.Struct({ ...Session.fields, api_key: Schema.Null, status: Schema.Literal('pending') }),
   Schema.Struct({
     ...Session.fields,
+    api_key: Schema.String,
     account: SessionAccount.annotations({ identifier: 'RetrievedSession.Account' }),
     status: Schema.Literal('linked'),
   })

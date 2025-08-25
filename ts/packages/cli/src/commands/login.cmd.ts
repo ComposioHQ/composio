@@ -1,5 +1,5 @@
 import { Command, Options, Prompt } from '@effect/cli';
-import { Effect, Console } from 'effect';
+import { Effect, Console, Schedule } from 'effect';
 import { green } from 'ansis';
 import open, { apps } from 'open';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
@@ -38,7 +38,7 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
 
     yield* Effect.logDebug(`Created session:`, session);
 
-    const url = `https://app.composio.dev?cliKey=${session.code}`;
+    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
 
     if (noBrowser) {
       yield* Console.log(`> Please login using the following URL:`);
@@ -60,24 +60,34 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
       );
     }
 
-    const authenticationCode = yield* Prompt.text({
-      message: '> Please enter the authentication code:',
-    });
-    yield* Effect.logDebug(`Authentication code: ${authenticationCode}`);
+    // Retry operation until the session status is "linked" with exponential backoff
+    const linkedSession = yield* Effect.retry(
+      Effect.gen(function* () {
+        const currentSession = yield* client.getSession({
+          ...session,
+        });
 
-    /**
-     * TODO: we're waiting for the web UI to support logging in using v3 of the backend API.
-     */
+        // Check if session is linked
+        if (currentSession.status === 'linked') {
+          return currentSession;
+        }
 
-    // const linkedSession = yield* client.linkSession({
-    //   ...session,
-    //   id: authenticationCode,
-    // });
+        // If still pending, fail to trigger retry
+        return yield* Effect.fail(
+          new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
+        );
+      }),
+      // Exponential backoff: start with 0.3s, max 5s, up to 15 retries
+      Schedule.exponential('0.3 seconds').pipe(
+        Schedule.intersect(Schedule.recurs(15)),
+        Schedule.intersect(Schedule.spaced('5 seconds'))
+      )
+    );
 
-    // yield* Effect.logDebug(`Linked session: ${JSON.stringify(linkedSession)}`);
+    yield* Effect.logDebug(`Linked session: ${JSON.stringify(linkedSession)}`);
 
-    // yield* Console.log(
-    //   `Linked session code ${session.code} to user account ${linkedSession.account.email}`
-    // );
+    yield* ctx.login(linkedSession.api_key);
+
+    yield* Console.log(`Logged in with user account ${linkedSession.account.email}`);
   })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));
