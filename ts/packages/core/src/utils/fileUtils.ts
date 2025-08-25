@@ -195,7 +195,7 @@ const readFile = async (
     // if file is a File, read the content from the file
     const content = await file.arrayBuffer();
     return {
-      fileName: generateTimestampedFilename(file.name.split('.').pop() || 'txt', file.name),
+      fileName: file.name,
       content: Buffer.from(content).toString('base64'),
       mimeType: file.type,
     };
