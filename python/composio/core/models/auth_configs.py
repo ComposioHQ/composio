@@ -45,12 +45,57 @@ class AuthConfigs(Resource):
         """
         Create a new auth config
 
-        :param toolkit: The toolkit to create the auth config for.
-        :param options: The options to create the auth config with.
-        :return: The created auth config.
+        Args:
+            toolkit: The toolkit to create the auth config for.
+            options: The options to create the auth config with.
+
+        Returns:
+            The created auth config.
+
+        Examples:
+        ```python
+            # Use composio managed auth
+            auth_config = composio.auth_configs.create(
+                toolkit="github",
+                options={
+                    "type": "use_composio_managed_auth",
+                },
+            )
+            print(auth_config)
+
+            # Use custom auth
+            auth_config = composio.auth_configs.create(
+                toolkit="gmail",
+                options={
+                    "name": "Gmail Auth",
+                    "type": "use_custom_auth",
+                    "auth_scheme": "OAUTH2",
+                    "credentials": {
+                        "client_id": "<AUTH_CONFIG_ID>",
+                        "client_secret": "<AUTH_CONFIG_ID>",
+                    },
+                },
+            )
+            print(auth_config)
+
+            # Restrict tool access
+            auth_config = composio.auth_configs.create(
+                toolkit="github",
+                options={
+                    "type": "use_composio_managed_auth",
+                    "tool_access_config": {
+                        "tools_for_connected_account_creation": [
+                            "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"
+                        ],
+                    },
+                },
+            )
+            print(auth_config)
+        ```
         """
         return self._client.auth_configs.create(
-            toolkit={"slug": toolkit}, auth_config=options
+            toolkit={"slug": toolkit},
+            auth_config=options,
         ).auth_config
 
     def get(
@@ -59,8 +104,17 @@ class AuthConfigs(Resource):
         """
         Retrieves a specific authentication configuration by its ID
 
-        :param nanoid: The ID of the auth config to retrieve.
-        :return: The retrieved auth config.
+        Args:
+            nanoid: The ID of the auth config to retrieve.
+
+        Returns:
+            The retrieved auth config.
+
+        Examples:
+        ```python
+            # Retrieve a specific auth config
+            composio.auth_configs.get("<AUTH_CONFIG_ID>")
+        ```
         """
         return self._client.auth_configs.retrieve(nanoid)
 
@@ -76,7 +130,10 @@ class AuthConfigs(Resource):
 
     # FIXME: what type is this response, in ts, it's AuthConfigUpdateResponse
     def update(
-        self, nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams
+        self,
+        nanoid: str,
+        *,
+        options: auth_config_update_params.AuthConfigUpdateParams,
     ) -> t.Dict:
         """
         Updates an existing authentication configuration.
@@ -85,9 +142,22 @@ class AuthConfigs(Resource):
         scopes, or tool restrictions. The update type (custom or default) determines which
         fields can be updated.
 
-        :param nanoid: The ID of the auth config to update.
-        :param options: The options to update the auth config with.
-        :return: The updated auth config.
+        Args:
+            nanoid: The ID of the auth config to update.
+            options: The options to update the auth config with.
+
+        Returns:
+            The updated auth config.
+
+        Examples:
+        ```python
+            composio.auth_configs.update("<AUTH_CONFIG_ID>", options={
+                "type": "default",
+                "credentials": {
+                    "api_key": "sk-1234567890",
+                },
+            })
+        ```
         """
         return t.cast(
             t.Dict,
@@ -105,8 +175,16 @@ class AuthConfigs(Resource):
         """
         Deletes an existing authentication configuration.
 
-        :param nanoid: The ID of the auth config to delete.
-        :return: The deleted auth config.
+        Args:
+            nanoid: The ID of the auth config to delete.
+
+        Returns:
+            The deleted auth config.
+
+        Examples:
+        ```python
+            composio.auth_configs.delete("<AUTH_CONFIG_ID>")
+        ```
         """
         return t.cast(t.Dict, self._client.auth_configs.delete(nanoid))
 
@@ -127,8 +205,16 @@ class AuthConfigs(Resource):
         """
         Enables an existing authentication configuration.
 
-        :param nanoid: The ID of the auth config to enable.
-        :return: The enabled auth config.
+        Args:
+            nanoid: The ID of the auth config to enable.
+
+        Returns:
+            The enabled auth config.
+
+        Examples:
+        ```python
+            composio.auth_configs.enable("<AUTH_CONFIG_ID>")
+        ```
         """
         return self.__update_status(nanoid, "ENABLED")
 
@@ -136,7 +222,15 @@ class AuthConfigs(Resource):
         """
         Disables an existing authentication configuration.
 
-        :param nanoid: The ID of the auth config to disable.
-        :return: The disabled auth config.
+        Args:
+            nanoid: The ID of the auth config to disable.
+
+        Returns:
+            The disabled auth config.
+
+        Examples:
+        ```python
+            composio.auth_configs.disable("<AUTH_CONFIG_ID>")
+        ```
         """
         return self.__update_status(nanoid, "DISABLED")

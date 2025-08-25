@@ -4,7 +4,7 @@ from composio.types import auth_scheme
 composio = Composio()
 
 # List all connected accounts
-connected_accounts = composio.connected_accounts.list()
+connected_accounts = composio.connected_accounts.list().items
 print(connected_accounts)
 
 # Create a new connected account (OAuth)

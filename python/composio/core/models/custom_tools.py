@@ -62,9 +62,10 @@ class CustomTool:
         """
         Initialize the custom tool.
 
-        :param f: The function to wrap.
-        :param client: The client to use for the custom tool.
-        :param toolkit: The toolkit to use for the custom tool.
+        Args:
+            f: The function to wrap.
+            client: The client to use for the custom tool.
+            toolkit: The toolkit to use for the custom tool.
         """
         self.f = t.cast(CustomToolFn, f)
         self.name, self.slug = f.__name__, f.__name__.upper()
@@ -144,11 +145,17 @@ class CustomTool:
 
 
 class CustomTools:
-    """CustomTools class
-
-    Used to manage custom tools created by users."""
+    """
+    Used to manage custom tools created by users.
+    """
 
     def __init__(self, client: HttpClient):
+        """
+        Initialize the custom tools.
+
+        Args:
+            client: The client to use for the custom tools.
+        """
         self.client = client
         self.custom_tools_registry: dict[str, CustomTool] = {}
 
@@ -157,7 +164,15 @@ class CustomTools:
         return self.custom_tools_registry[slug]
 
     def get(self, slug: str) -> t.Optional[CustomTool]:
-        """Get a custom tool by its slug."""
+        """
+        Get a custom tool by its slug.
+
+        Args:
+            slug: The slug of the custom tool.
+
+        Returns:
+            The custom tool.
+        """
         try:
             return self.custom_tools_registry[slug]
         except KeyError:
@@ -181,7 +196,89 @@ class CustomTools:
         t.Callable[[CustomToolProtocol], CustomTool],
         t.Callable[[CustomToolWithProxyProtocol], CustomTool],
     ]:
-        """Register a custom tool."""
+        """
+        Register a custom tool.
+
+        Args:
+            f: The function to wrap.
+            toolkit: The toolkit to use for the custom tool.
+
+        Returns:
+            The custom tool.
+
+        Examples:
+        ```python
+            from pydantic import BaseModel, Field
+
+            # Define the request model
+            class AddNumbersRequest(BaseModel):
+                a: int = Field(..., description="The first number")
+                b: int = Field(..., description="The second number")
+
+            # Define a custom tool function
+            @composio.tools.custom_tool
+            def add_numbers(request: AddNumbersRequest) -> int:
+                \"\"\"return request.a + request.b\"\"\"
+
+            # Execute the custom tool
+            result = composio.tools.execute(
+                user_id="<USER_ID>",
+                slug=add_numbers.slug,
+                arguments={"a": 1, "b": 2},
+            )
+            print(result)
+
+            # Define a custom tool function with a toolkit
+            class GetIssueInfoInput(BaseModel):
+                issue_number: int = Field(
+                    ...,
+                    description="The number of the issue to get information about",
+                )
+
+
+            @composio.tools.custom_tool(toolkit="github")
+            def get_issue_info(
+                request: GetIssueInfoInput,
+                execute_request: ExecuteRequestFn,
+                auth_credentials: dict,
+            ) -> dict:
+                \"\"\"Get information about a GitHub issue.\"\"\"
+                response = execute_request(
+                    endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+                    method="GET",
+                    parameters=[
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.github.v3+json",
+                            "type": "header",
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": f"Bearer {auth_credentials['access_token']}",
+                            "type": "header",
+                        },
+                    ],
+                )
+                return {"data": response.data}
+
+            # Execute the custom tool
+            result = composio.tools.execute(
+                user_id="<USER_ID>",
+                slug=get_issue_info.slug,
+                arguments={"issue_number": 1},
+            )
+            print(result)
+
+            # Include the custom tool in your agent
+            tools = composio.tools.get(
+                user_id="<USER_ID>",
+                tools=[
+                    get_issue_info.slug,
+                ],
+            )
+            print(tools)
+        ```
+        """
         if f is not None:
             return self._wrap_tool(f, toolkit)
         return functools.partial(self._wrap_tool, toolkit=toolkit)
@@ -197,7 +294,15 @@ class CustomTools:
         return tool
 
     def execute(self, slug: str, request: t.Dict) -> t.Dict:
-        """Execute a custom tool."""
+        """Execute a custom tool.
+
+        Args:
+            slug: The slug of the custom tool.
+            request: The request to execute the custom tool with.
+
+        Returns:
+            The result of the custom tool.
+        """
         custom_tool = self.get(slug)
         if custom_tool is None:
             raise NotFoundError(f"Custom tool with slug {slug} not found")

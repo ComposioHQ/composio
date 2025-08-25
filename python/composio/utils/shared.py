@@ -46,9 +46,6 @@ def json_schema_to_pydantic_type(
 ) -> t.Union[t.Type, t.Optional[t.Any]]:
     """
     Converts a JSON schema type to a Pydantic type.
-
-    :param json_schema: The JSON schema to convert.
-    :return: A Pydantic type.
     """
     # Add fallback type - string
     if "type" not in json_schema:
@@ -102,11 +99,6 @@ def json_schema_to_pydantic_field(
 ) -> t.Tuple[str, t.Type, FieldInfo]:
     """
     Converts a JSON schema property to a Pydantic field definition.
-
-    :param name: The field name.
-    :param json_schema: The JSON schema property.
-    :param required: List of required properties.
-    :return: A Pydantic field definition.
     """
     description = json_schema.get("description")
     if "oneOf" in json_schema:
@@ -158,18 +150,6 @@ def json_schema_to_pydantic_field(
 def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     """
     Converts a JSON schema to a dictionary of param name, and a tuple of type & Field.
-
-    :param json_schema: The JSON schema to convert.
-    :return: dict<str, tuple<<class 'type'>, Field>>
-
-    Example Output:
-    ```python
-    {
-        'owner': (<class 'str'>, FieldInfo(default=Ellipsis, description='The account owner of the repository.', extra={'examples': ([],)})),
-        'repo': (<class 'str'>, FieldInfo(default=Ellipsis, description='The name of the repository without the `.git` extension.', extra={'examples': ([],)}))}
-    }
-    ```
-
     """
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
@@ -186,10 +166,6 @@ def json_schema_to_model(
 ) -> t.Type[BaseModel]:
     """
     Converts a JSON schema to a Pydantic BaseModel class.
-
-    :param json_schema: The JSON schema to convert.
-    :param skip_default: Skip the default values when building field object
-    :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
     field_definitions = {}
@@ -207,15 +183,6 @@ def json_schema_to_model(
 def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     """
     Dynamically creates a Pydantic model from a schema dictionary.
-
-    :param param_schema: Schema with 'title', 'properties', and optionally 'required' keys.
-    :return: A Pydantic model class for the defined schema.
-
-    :raises KeyError: Missing 'type' in property definitions.
-    :raised ValueError: Invalid 'type' for property or recursive model creation.
-
-    Note: Requires global `schema_type_python_type_dict` for type mapping and
-        `fallback_values` for default values.
     """
     required_fields = {}
     optional_fields = {}
@@ -290,21 +257,7 @@ def get_signature_format_from_schema_params(
 ) -> t.List[Parameter]:
     """
     Get function parameters signature(with pydantic field definition as default values)
-    from schema parameters. Works like:
-
-    def demo_function(
-        owner: str,
-        repo: str),
-    )
-
-    :param schema_params: A dictionary object containing schema params, with keys [properties, required etc.].
-    :return: List of required and optional parameters
-
-    Output Format:
-    [
-        <Parameter "owner: str">,
-        <Parameter "repo: str">
-    ]
+    from schema parameters.
     """
     default_parameters = []
     none_default_parameters = []
@@ -373,29 +326,7 @@ def get_pydantic_signature_format_from_schema_params(
 ) -> t.List[Parameter]:
     """
     Get function parameters signature(with pydantic field definition as default values)
-    from schema parameters. Works like:
-
-    def demo_function(
-        owner: str=Field(..., description='The account owner of the repository.'),
-        repo: str=Field(..., description='The name of the repository without the `.git` extension.'),
-    )
-
-    :param schema_params: A dictionary object containing schema params, with keys [properties, required etc.].
-    :return: List of required and optional parameters
-
-    Example Output Format:
-    ```python
-    [
-        <Parameter "owner: str = FieldInfo(
-            default=Ellipsis,
-            description='The account owner of the repository.',
-            extra={'examples': ([],)})">,
-        <Parameter "repo: str = FieldInfo(
-            default=Ellipsis,
-            description='The name of the repository without the `.git` extension.',
-            extra={'examples': ([],)})">
-    ]
-    ```
+    from schema parameters.
     """
     all_parameters = []
     field_definitions = json_schema_to_fields_dict(schema_params)

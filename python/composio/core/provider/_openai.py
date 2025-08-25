@@ -53,9 +53,21 @@ class OpenAIProvider(
     ) -> ToolExecutionResponse:
         """Execute a tool call.
 
-        :param tool_call: Tool call metadata.
-        :param user_id: User ID to use for executing the function call.
-        :return: Object containing output data from the tool call.
+        Args:
+            tool_call: Tool call metadata.
+            user_id: User ID to use for executing the function call.
+            modifiers: Modifiers to use for executing the function call.
+
+        Returns:
+            Object containing output data from the tool call.
+
+        Examples:
+        ```python
+            result = provider.execute_tool_call(
+                user_id="default",
+                tool_call=response.choices[0].message.tool_calls[0],
+            )
+        ```
         """
         return self.execute_tool(
             slug=tool_call.function.name,
@@ -73,10 +85,22 @@ class OpenAIProvider(
         """
         Handle tool calls from OpenAI chat completion object.
 
-        :param response: Chat completion object from
+        Args:
+            response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param entity_id: Entity ID to use for executing the function call.
-        :return: A list of output objects from the function calls.
+            user_id: Entity ID to use for executing the function call.
+            modifiers: Modifiers to use for executing the function call.
+
+        Returns:
+            A list of output objects from the function calls.
+
+        Examples:
+        ```python
+            outputs = composio.provider.handle_tool_calls(
+                user_id="default",
+                response=response,  # Result of openai.chat.completions.create
+            )
+        ```
         """
         outputs = []
         for choice in response.choices:
@@ -87,7 +111,7 @@ class OpenAIProvider(
                 outputs.append(
                     self.execute_tool_call(
                         user_id=user_id,
-                        tool_call=tool_call,
+                        tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
                         modifiers=modifiers,
                     )
                 )
@@ -98,7 +122,24 @@ class OpenAIProvider(
         user_id: str,
         run: Run,
     ) -> t.List:
-        """Wait and handle assistant function calls"""
+        """
+        Wait and handle assistant function calls.
+
+        Args:
+            user_id: Entity ID to use for executing the function call.
+            run: Run object from openai.beta.threads.runs.submit_tool_outputs.
+
+        Returns:
+            A list of tool outputs.
+
+        Examples:
+        ```python
+            tool_outputs = composio.provider.handle_assistant_tool_calls(
+                user_id="default",
+                run=run,
+            )
+        ```
+        """
         tool_outputs: list[dict] = []
         if run.required_action is None:
             return tool_outputs
@@ -121,10 +162,30 @@ class OpenAIProvider(
         self,
         user_id: str,
         client: Client,
-        run: Run,
         thread: Thread,
+        run: Run,
     ) -> Run:
-        """Wait and handle assistant function calls"""
+        """Wait and handle assistant function calls.
+
+        Args:
+            user_id: Entity ID to use for executing the function call.
+            client: Client object from openai.OpenAI.
+            thread: Thread object from openai.beta.threads.runs.submit_tool_outputs.
+            run: Run object from openai.beta.threads.runs.submit_tool_outputs.
+
+        Returns:
+            A list of tool outputs.
+
+        Examples:
+        ```python
+            tool_outputs = composio.provider.wait_and_handle_assistant_tool_calls(
+                user_id="default",
+                client=client,
+                thread=thread,
+                run=run,
+            )
+        ```
+        """
         while run.status in ("queued", "in_progress", "requires_action"):
             if run.status != "requires_action":
                 run = client.beta.threads.runs.retrieve(

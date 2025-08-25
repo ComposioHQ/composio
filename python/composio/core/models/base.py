@@ -89,3 +89,33 @@ class Resource(WithLogger, metaclass=ResourceMeta):
     def __init__(self, client: HttpClient):
         super().__init__()
         self._client = client
+
+    def __docspec__(self) -> dict:
+        children = []
+        for name in dir(self):
+            if name.startswith("_") or name in ("__docspec__", "sanitize_payload"):
+                continue
+
+            try:
+                child = getattr(self, name)
+            except AttributeError:
+                continue
+
+            if not callable(child):
+                continue
+
+            if child.__doc__ is None:
+                print(f"[W]{self.__class__.__name__}.{name} has no docstring")
+                continue
+
+            children.append(
+                {
+                    "name": name,
+                    "doc": child.__doc__,
+                }
+            )
+
+        return {
+            "name": self.__class__.__name__,
+            "children": children,
+        }

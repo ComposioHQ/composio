@@ -152,8 +152,11 @@ class WithLogger:
         """
         Initialize the logger.
 
-        :param logger: the logger object.
-        :param logger_name: the default logger name, if a logger is not provided.
+        Args:
+            logger: the logger object.
+            logger_name: the default logger name, if a logger is not provided.
+            logging_level: the logging level.
+            verbosity_level: the verbosity level.
         """
         self._logger = (
             _VerbosityWrapper(logger, verbosity_level=verbosity_level)

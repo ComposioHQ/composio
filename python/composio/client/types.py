@@ -4,7 +4,7 @@ This module is a light wrapper around the auto-generated composio client types.
 
 import typing as t
 
-from composio_client import NotGiven
+from composio_client import NOT_GIVEN, NotGiven
 from composio_client.types import (
     auth_config_create_params,
     auth_config_create_response,
@@ -27,6 +27,8 @@ from composio_client.types import (
     toolkit_list_response,
     toolkit_retrieve_response,
     trigger_instance_upsert_response,
+    triggers_type_list_response,
+    triggers_type_retrieve_response,
 )
 
 Tool: t.TypeAlias = tool_list_response.Item
@@ -87,5 +89,8 @@ __all__ = (
     "ToolkitMinimal",
     "AuthConfig",
     "NotGiven",
+    "NOT_GIVEN",
     "AuthSchemeL",
+    "triggers_type_retrieve_response",
+    "triggers_type_list_response",
 )

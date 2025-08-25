@@ -54,15 +54,17 @@ class HttpClient(BaseComposio, WithLogger):
         """
         Initialize the client.
 
-        :param provider: The provider to use for the client.
-        :param api_key: The API key to use for the client.
-        :param environment: The environment to use for the client.
-        :param base_url: The base URL to use for the client.
-        :param timeout: The timeout to use for the client.
-        :param max_retries: The maximum number of retries to use for the client.
-        :param default_headers: The default headers to use for the client.
-        :param default_query: The default query parameters to use for the client.
-        :param http_client: The HTTP client to use for the client.
+        Args:
+            provider: The provider to use for the client.
+            api_key: The API key to use for the client.
+            environment: The environment to use for the client.
+            base_url: The base URL to use for the client.
+            timeout: The timeout to use for the client.
+            max_retries: The maximum number of retries to use for the client.
+            default_headers: The default headers to use for the client.
+            default_query: The default query parameters to use for the client.
+            http_client: The HTTP client to use for the client.
+            _strict_response_validation: Whether to validate the response.
         """
         WithLogger.__init__(self)
         BaseComposio.__init__(

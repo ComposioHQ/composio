@@ -42,16 +42,13 @@ instance = composio.triggers.create(
 print(instance)
 
 # Disable a trigger instance
-disabled_instance = composio.triggers.disable(trigger_id="123")
-print(disabled_instance)
+composio.triggers.disable(trigger_id="123")
 
 # Enable a trigger instance
-enabled_instance = composio.triggers.enable(trigger_id="123")
-print(enabled_instance)
+composio.triggers.enable(trigger_id="123")
 
 # Delete a trigger instance
-deleted_instance = composio.triggers.delete(trigger_id="123")
-print(deleted_instance)
+composio.triggers.delete(trigger_id="123")
 
 # Subscribe to a trigger
 subscription = composio.triggers.subscribe()
@@ -68,4 +65,5 @@ def handle_slack_event(data):
     print(data)
 
 
+# Wait for the subscription to be closed
 subscription.wait_forever()

@@ -60,9 +60,10 @@ class Tools(Resource, t.Generic[TProvider]):
         """
         Initialize the tools resource.
 
-        :param client: The client to use for the tools resource.
-        :param provider: The provider to use for the tools resource.
-        :param file_download_dir: Output directory for downloadable files
+        Args:
+            client: The client to use for the tools resource.
+            provider: The provider to use for the tools resource.
+            file_download_dir: Output directory for downloadable files
         """
         self._client = client
         self._custom_tools = CustomTools(client)
@@ -75,7 +76,16 @@ class Tools(Resource, t.Generic[TProvider]):
     def _filter_custom_tools(
         self, tools: t.List[str]
     ) -> t.Tuple[t.List[str], t.List[Tool]]:
-        """Filter out custom tools from the list of tools."""
+        """
+        Filter out custom tools from the list of tools.
+
+        Args:
+            tools: The list of tools to filter.
+
+        Returns:
+            A tuple of lists, the first containing the tools that are not custom,
+            and the second containing the custom tools.
+        """
         _tools = []
         _custom_tools = []
         for tool in tools:
@@ -88,6 +98,19 @@ class Tools(Resource, t.Generic[TProvider]):
     def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
         """
         Returns schema for the given tool slug.
+
+        Args:
+            slug: The slug of the tool to get the schema for.
+
+        Returns:
+            The schema for the given tool slug.
+
+        Examples:
+        ```python
+            # Get the schema for a tool
+            schema = composio.tools.get_raw_composio_tool_by_slug(slug="github")
+            print(schema)
+        ```
         """
         try:
             return t.cast(Tool, self._custom_tools[slug])
@@ -104,6 +127,31 @@ class Tools(Resource, t.Generic[TProvider]):
     ) -> list[Tool]:
         """
         Get a list of tool schemas based on the provided filters.
+
+        Args:
+            tools: The list of tools to get the schema for.
+            search: The search term to filter the tools by.
+            toolkits: The list of toolkits to filter the tools by.
+            scopes: The scopes to filter the tools by.
+            limit: The limit of tools to return.
+
+        Returns:
+            A list of tool schemas.
+
+        Examples:
+        ```python
+            # Get a list of tool schemas
+            schemas = composio.tools.get_raw_composio_tools()
+            print(schemas)
+
+            # Get a list of tool schemas filtered by toolkits
+            schemas = composio.tools.get_raw_composio_tools(toolkits=["github"])
+            print(schemas)
+
+            # Get a list of tool schemas filtered by search
+            schemas = composio.tools.get_raw_composio_tools(search="github")
+            print(schemas)
+        ```
         """
         if tools is None and search is None and toolkits is None:
             raise InvalidParams(
@@ -256,17 +304,63 @@ class Tools(Resource, t.Generic[TProvider]):
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
     ):
-        """Get a tool or list of tools based on the provided arguments."""
+        """Get a tool or list of tools based on the provided arguments.
+
+        Args:
+            user_id: The ID of the user to get the tools for.
+            slug: The slug of the tool to get.
+            tools: The list of tool slugs to get.
+            search: The search term to filter the tools by.
+            toolkits: The list of toolkits to filter the tools by.
+            scopes: The scopes to filter the tools by.
+            limit: The limit of tools to return.
+            modifiers: The modifiers to apply to the tools.
+
+        Returns:
+            A tool or list of tools.
+
+        Examples:
+        ```python
+            # Get a tool by slug
+            tool = composio.tools.get(
+                user_id="1234567890",
+                slug="GMAIL_SEND_EMAIL",
+            )
+            print(tool)
+
+            # Get a list of tools by tool slugs
+            tools = composio.tools.get(
+                user_id="1234567890",
+                tools=[
+                    "GMAIL_SEND_EMAIL",
+                    "GMAIL_FETCH_EMAILS",
+                ],
+            )
+            print(tools)
+
+            # Get a list of tools by search term
+            tools = composio.tools.get(
+                user_id="1234567890",
+                search="star a github repository",
+            )
+            print(tools)
+        ```
+        """
         if slug is not None:
-            return self._get(user_id=user_id, tools=[slug], modifiers=modifiers)
+            return self._get(
+                user_id=user_id,
+                tools=[slug],
+                modifiers=modifiers,
+            )
+
         return self._get(
             user_id=user_id,
             tools=tools,
             search=search,
             toolkits=toolkits,
             scopes=scopes,
-            modifiers=modifiers,
             limit=limit,
+            modifiers=modifiers,
         )
 
     def _wrap_execute_tool(
@@ -359,16 +453,64 @@ class Tools(Resource, t.Generic[TProvider]):
         the tool and returns the response. It automatically determines whether
         to use a custom tool or a Composio API tool based on the slug.
 
-        :param slug: The slug of the tool to execute.
-        :param arguments: The arguments to pass to the tool.
-        :param connected_account_id: The ID of the connected account to use for the tool.
-        :param custom_auth_params: The custom auth params to use for the tool.
-        :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
-        :param user_id: The ID of the user to execute the tool for.
-        :param text: The text to pass to the tool.
-        :param version: The version of the tool to execute.
-        :param modifiers: The modifiers to apply to the tool.
-        :return: The response from the tool.
+        Args:
+            slug: The slug of the tool to execute.
+            arguments: The arguments to pass to the tool.
+            connected_account_id: The ID of the connected account to use for the tool.
+            custom_auth_params: The custom auth params to use for the tool.
+            custom_connection_data: The custom connection data to use for the tool,
+                takes priority over custom_auth_params.
+            user_id: The ID of the user to execute the tool for.
+            text: Use this to pass a natural language query to the tool.
+            version: The version of the tool to execute.
+            modifiers: The modifiers to apply to the tool.
+
+        Returns:
+            The response from the tool.
+
+        Examples:
+        ```python
+            # Execute a tool with a custom auth params
+            response = composio.tools.execute(
+                user_id="1234567890",
+                slug="GMAIL_SEND_EMAIL",
+                arguments={
+                    "to": "test@example.com",
+                    "subject": "Hello",
+                    "body": "Hello, world!",
+                },
+            )
+            print(response)
+
+            # Execute a tool with a custom auth params
+            response = composio.tools.execute(
+                user_id="1234567890",
+                slug="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+                arguments={
+                    "owner": "composiohq",
+                    "repo": "composio",
+                },
+                custom_auth_params={
+                    "base_url": "https://api.github.com",
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer ghp_1234567890",
+                            "in": "header",
+                        }
+                    ],
+                },
+            )
+            print(response)
+
+            # Execute a tool using natural language
+            response = composio.tools.execute(
+                user_id="1234567890",
+                slug="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+                text="Star the repository composiohq/composio on GitHub",
+                arguments={},
+            )
+            print(response)
         """
         tool = self._tool_schemas.get(slug)
         if tool is None and self._custom_tools.get(slug=slug) is not None:
@@ -438,7 +580,29 @@ class Tools(Resource, t.Generic[TProvider]):
     def proxy(
         self, **options: te.Unpack[tool_proxy_params.ToolProxyParams]
     ) -> tool_proxy_response.ToolProxyResponse:
-        """Proxy a tool call to the Composio API"""
+        """Proxy a tool call to the Composio API.
+
+        Args:
+            endpoint: The endpoint to proxy the tool call to.
+            method: The method to use for the tool call.
+            body: The body to use for the tool call.
+            parameters: The parameters to use for the tool call.
+            connected_account_id: The connected account ID to use for the tool call.
+
+        Returns:
+            The response from the tool.
+
+        Examples:
+        ```python
+            # Make request to GitHub API via Composio API
+            response = composio.tools.proxy(
+                connected_account_id="1234567890",  # Connected account ID corresponding to GitHub
+                endpoint="/repos/composiohq/composio/issues/1",
+                method="GET",
+                body={},
+            )
+            print(response)
+        """
         return self._client.tools.proxy(
             endpoint=options["endpoint"],
             method=options["method"],

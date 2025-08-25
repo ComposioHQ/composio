@@ -24,10 +24,7 @@ AuthFieldsT: t.TypeAlias = t.List[
 
 class Toolkits(Resource):
     """
-    Toolkits are a collectiono of tools that can be used to perform various tasks.
-    They're conceptualized as a set of tools. Ex: Github toolkit can perform
-    Github actions via its collection of tools. This is a replacement of the
-    `apps` concept in the earlier versions of the SDK.
+    Manage toolkits.
     """
 
     connected_accounts: ConnectedAccounts
@@ -61,16 +58,60 @@ class Toolkits(Resource):
         toolkit_retrieve_response.ToolkitRetrieveResponse,
         list[toolkit_list_response.Item],
     ]:
+        """
+        Get a toolkit by slug or list toolkits by query.
+
+        Args:
+            slug: The slug of the toolkit to get.
+            query: The query to filter toolkits by.
+
+        Returns:
+            The toolkit or list of toolkits.
+
+        Examples:
+        ```python
+            # List all toolkits
+            toolkits = composio.toolkits.get()
+            print(toolkits)
+
+            # Query by slug
+            toolkit = composio.toolkits.get(slug="github")
+            print(toolkit.name)
+
+            # Query by category
+            toolkits = composio.toolkits.get(query={"category": "Developer Tools"})
+            print(toolkits)
+        ```
+        """
         if slug is not None:
             return self._client.toolkits.retrieve(slug=slug)
         return self._client.toolkits.list(**(query or {})).items
 
     def list_categories(self):
-        """List all categories of toolkits."""
+        """
+        List all categories of toolkits.
+
+        Returns:
+            The list of categories.
+
+        Examples:
+        ```python
+            # List all available categories
+            categories = composio.toolkits.list_categories()
+            print(categories)
+        ```
+        """
         return self._client.toolkits.retrieve_categories().items
 
     def _get_auth_config_id(self, toolkit: str) -> str:
-        """Get the auth config ID for a toolkit."""
+        """Get the auth config ID for a toolkit.
+
+        Args:
+            toolkit: The slug of the toolkit to get the auth config ID for.
+
+        Returns:
+            The auth config ID.
+        """
         auth_configs = self._client.auth_configs.list(toolkit_slug=toolkit)
         if len(auth_configs.items) > 0:
             (auth_config, *_) = sorted(
@@ -92,13 +133,26 @@ class Toolkits(Resource):
 
     def authorize(self, *, user_id: str, toolkit: str):
         """
-        Authorize a user to a toolkit
+        Authorize a user to a toolkit If auth config is not found, it will be
+        created using composio managed auth.
 
-        If auth config is not found, it will be created using composio managed auth.
+        Args:
+            user_id: The ID of the user to authorize.
+            toolkit: The slug of the toolkit to authorize.
 
-        :param user_id: The ID of the user to authorize.
-        :param toolkit: The slug of the toolkit to authorize.
-        :return: The connection request.
+        Returns:
+            The connection request.
+
+        Examples:
+        ```python
+            connection_request = composio.toolkits.authorize(
+                user_id="1234567890",
+                toolkit="github",
+            )
+        ```
+
+        Note:
+            This method should not be used in production.
         """
         return self.connected_accounts.initiate(
             user_id=user_id,
@@ -115,6 +169,29 @@ class Toolkits(Resource):
     ) -> AuthFieldsT:
         """
         Get the required property for a given toolkit and auth scheme.
+
+        Args:
+            toolkit: The slug of the toolkit to get the connected account
+                initiation fields for.
+            auth_scheme: The auth scheme to get the connected account initiation
+                fields for.
+            required_only: Whether to return only the required fields.
+
+        Returns:
+            The connected account initiation fields.
+
+        Raises:
+            InvalidParams: If the auth config details are not found.
+
+        Examples:
+        ```python
+            # Get the required fields to initiate a connected account
+            fields = composio.toolkits.get_connected_account_initiation_fields(
+                toolkit="github",
+                auth_scheme="OAUTH2",
+                required_only=True,
+            )
+        ```
         """
         details = self._client.toolkits.retrieve(slug=toolkit).auth_config_details or []
         for auth_detail in details:
@@ -145,6 +222,27 @@ class Toolkits(Resource):
     ) -> AuthFieldsT:
         """
         Get the required property for a given toolkit and auth scheme.
+
+        Args:
+            toolkit: The slug of the toolkit to get the auth config creation fields for.
+            auth_scheme: The auth scheme to get the auth config creation fields for.
+            required_only: Whether to return only the required fields.
+
+        Returns:
+            The auth config creation fields.
+
+        Raises:
+            InvalidParams: If the auth config details are not found.
+
+        Examples:
+        ```python
+            # Get the required fields to create an auth config
+            fields = composio.toolkits.get_auth_config_creation_fields(
+                toolkit="github",
+                auth_scheme="OAUTH2",
+                required_only=True,
+            )
+        ```
         """
         info = self._client.toolkits.retrieve(slug=toolkit)
         for auth_detail in info.auth_config_details or []:

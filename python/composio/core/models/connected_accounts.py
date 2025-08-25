@@ -36,10 +36,25 @@ class ConnectionRequest(Resource):
         """
         Initialize the connection request.
 
-        :param id: The ID of the connection request.
-        :param status: The status of the connection request.
-        :param redirect_url: The redirect URL of the connection request.
-        :param client: The client to use for the connection request.
+        Args:
+            id: The ID of the connection request.
+            status: The status of the connection request.
+            redirect_url: The redirect URL of the connection request.
+            client: The client to use for the connection request.
+
+        Returns:
+            The connection request.
+
+        Examples:
+            >>> connection_request = ConnectionRequest(
+            ...     id="1234567890",
+            ...     status="ACTIVE",
+            ...     redirect_url="https://example.com",
+            ...     client=client,
+            ... )
+            >>> connection_request.wait_for_connection()
+            >>> print(connection_request.status)
+            ACTIVE
         """
         super().__init__(client)
         self.id = id
@@ -53,8 +68,22 @@ class ConnectionRequest(Resource):
         """
         Wait for the connection to be established.
 
-        :param timeout: The timeout to wait for the connection to be established.
-        :return: Connected account object.
+        Args:
+            timeout: The timeout to wait for the connection to be established.
+
+        Returns:
+            The connected account object.
+
+        Examples:
+            >>> connection_request = ConnectionRequest(
+            ...     id="1234567890",
+            ...     status="ACTIVE",
+            ...     redirect_url="https://example.com",
+            ...     client=client,
+            ... )
+            >>> connection_request.wait_for_connection()
+            >>> print(connection_request.status)
+            ACTIVE
         """
         timeout = self.DEFAULT_WAIT_TIMEOUT if timeout is None else timeout
         deadline = time.time() + timeout
@@ -72,6 +101,21 @@ class ConnectionRequest(Resource):
 
     @classmethod
     def from_id(cls, id: str, client: HttpClient) -> te.Self:
+        """
+        Create a connection request from an ID.
+
+        Args:
+            id: The ID of the connection request.
+            client: The client to use for the connection request.
+
+        Returns:
+            The connection request.
+
+        Examples:
+            >>> connection_request = ConnectionRequest.from_id("1234567890", client)
+            >>> print(connection_request.status)
+            ACTIVE
+        """
         return cls(
             id=id,
             status=client.connected_accounts.retrieve(nanoid=id).status,
@@ -297,7 +341,8 @@ class ConnectedAccounts:
         """
         Initialize the connected accounts resource.
 
-        :param client: The client to use for the connected accounts resource.
+        Args:
+            client: The client to use for the connected accounts resource.
         """
         self._client = client
         self.get = self._client.connected_accounts.retrieve
@@ -328,11 +373,25 @@ class ConnectedAccounts:
         Users can then wait for the connection to be established using the
         `wait_for_connection` method.
 
-        :param user_id: The user ID to create the connected account for.
-        :param auth_config_id: The auth config ID to create the connected account for.
-        :param callback_url: Callback URL to use for OAuth apps.
-        :param options: The options to create the connected account with.
-        :return: The connection request.
+        Args:
+            user_id: The user ID to create the connected account for.
+            auth_config_id: The auth config ID to create the connected account for.
+            callback_url: Callback URL to use for OAuth apps.
+            config: The options to create the connected account with.
+
+        Returns:
+            The connection request.
+
+        Examples:
+            >>> connected_accounts = ConnectedAccounts(client)
+            >>> connection_request = connected_accounts.initiate(
+            ...     user_id="1234567890",
+            ...     auth_config_id="1234567890",
+            ...     callback_url="https://example.com",
+            ... )
+            >>> connection_request.wait_for_connection()
+            >>> print(connection_request.status)
+            ACTIVE
         """
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
@@ -359,6 +418,22 @@ class ConnectedAccounts:
     ) -> connected_account_retrieve_response.ConnectedAccountRetrieveResponse:
         """
         Wait for connected account with given ID to be active
+
+        Args:
+            id: The ID of the connected account to wait for.
+            timeout: The timeout to wait for the connected account to be active.
+
+        Returns:
+            The connected account object.
+
+        Examples:
+            >>> connected_accounts = ConnectedAccounts(client)
+            >>> connection_request = connected_accounts.wait_for_connection(
+            ...     id="1234567890",
+            ...     timeout=10,
+            ... )
+            >>> print(connection_request.status)
+            ACTIVE
         """
         return ConnectionRequest.from_id(
             id=id,

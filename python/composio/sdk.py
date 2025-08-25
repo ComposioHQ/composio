@@ -47,12 +47,15 @@ class Composio(t.Generic[TProvider], WithLogger):
         """
         Initialize the Composio SDK.
 
-        :param provider: The provider to use for the SDK.
-        :param environment: The environment to use for the SDK.
-        :param api_key: The API key to use for the SDK.
-        :param base_url: The base URL to use for the SDK.
-        :param timeout: The timeout to use for the SDK.
-        :param max_retries: The maximum number of retries to use for the SDK.
+        Args:
+            provider: The provider to use for the SDK.
+            environment: The environment to use for the SDK.
+            api_key: The API key to use for the SDK.
+            base_url: The base URL to use for the SDK.
+            timeout: The timeout to use for the SDK.
+            max_retries: The maximum number of retries to use for the SDK.
+            allow_tracking: Whether to allow tracking of usage.
+            file_download_dir: The directory to download files to.
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import json
 import time
 import traceback
@@ -16,37 +15,17 @@ from pysher.connection import Connection as PusherConnection
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio.client.types import trigger_instance_upsert_response
+from composio.client.types import (
+    trigger_instance_upsert_response,
+    triggers_type_list_response,
+    triggers_type_retrieve_response,
+)
 from composio.core.models.base import Resource
 from composio.core.models.internal import Internal
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
-
-"""
-export type _TriggerData = {
-  appName: string;
-  clientId: number;
-  payload: Record<string, unknown>;
-  originalPayload: Record<string, unknown>;
-  metadata: {
-    id: string;
-    nanoId: string;
-    triggerName: string;
-    triggerData: string;
-    triggerConfig: Record<string, unknown>;
-    connection: {
-      id: string;
-      connectedAccountNanoId: string;
-      integrationId: string;
-      authConfigNanoId: string;
-      clientUniqueUserId: string;
-      status: string;
-    };
-  };
-};
-"""
 
 
 class _ConnectionData(te.TypedDict):
@@ -106,227 +85,6 @@ class TriggerEvent(t.TypedDict):
     original_payload: t.Optional[
         t.Dict[str, t.Any]
     ]  # The original payload of the trigger
-
-
-_ = {
-    "appName": "github",
-    "payload": {
-        "author": "angrybayblade",
-        "id": "a2334682759c4324e911d8f52f8fb6bdf1338d94",
-        "message": "temp",
-        "timestamp": "2025-06-19T11:28:01+05:30",
-        "url": "https://github.com/angrybayblade/ph7/commit/a2334682759c4324e911d8f52f8fb6bdf1338d94",
-    },
-    "originalPayload": {
-        "ref": "refs/heads/temp",
-        "before": "e5eb72bc9f973b6cc82e0de9708660c5341befe5",
-        "after": "a2334682759c4324e911d8f52f8fb6bdf1338d94",
-        "repository": {
-            "id": 752122629,
-            "node_id": "R_kgDOLNR7BQ",
-            "name": "ph7",
-            "full_name": "angrybayblade/ph7",
-            "private": False,
-            "owner": {
-                "name": "angrybayblade",
-                "email": "35092918+angrybayblade@users.noreply.github.com",
-                "login": "angrybayblade",
-                "id": 35092918,
-                "node_id": "MDQ6VXNlcjM1MDkyOTE4",
-                "avatar_url": "https://avatars.githubusercontent.com/u/35092918?v=4",
-                "gravatar_id": "",
-                "url": "https://api.github.com/users/angrybayblade",
-                "html_url": "https://github.com/angrybayblade",
-                "followers_url": "https://api.github.com/users/angrybayblade/followers",
-                "following_url": "https://api.github.com/users/angrybayblade/following{/other_user}",
-                "gists_url": "https://api.github.com/users/angrybayblade/gists{/gist_id}",
-                "starred_url": "https://api.github.com/users/angrybayblade/starred{/owner}{/repo}",
-                "subscriptions_url": "https://api.github.com/users/angrybayblade/subscriptions",
-                "organizations_url": "https://api.github.com/users/angrybayblade/orgs",
-                "repos_url": "https://api.github.com/users/angrybayblade/repos",
-                "events_url": "https://api.github.com/users/angrybayblade/events{/privacy}",
-                "received_events_url": "https://api.github.com/users/angrybayblade/received_events",
-                "type": "User",
-                "user_view_type": "public",
-                "site_admin": False,
-            },
-            "html_url": "https://github.com/angrybayblade/ph7",
-            "description": "💧 Python native HTML rendering",
-            "fork": False,
-            "url": "https://api.github.com/repos/angrybayblade/ph7",
-            "forks_url": "https://api.github.com/repos/angrybayblade/ph7/forks",
-            "keys_url": "https://api.github.com/repos/angrybayblade/ph7/keys{/key_id}",
-            "collaborators_url": "https://api.github.com/repos/angrybayblade/ph7/collaborators{/collaborator}",
-            "teams_url": "https://api.github.com/repos/angrybayblade/ph7/teams",
-            "hooks_url": "https://api.github.com/repos/angrybayblade/ph7/hooks",
-            "issue_events_url": "https://api.github.com/repos/angrybayblade/ph7/issues/events{/number}",
-            "events_url": "https://api.github.com/repos/angrybayblade/ph7/events",
-            "assignees_url": "https://api.github.com/repos/angrybayblade/ph7/assignees{/user}",
-            "branches_url": "https://api.github.com/repos/angrybayblade/ph7/branches{/branch}",
-            "tags_url": "https://api.github.com/repos/angrybayblade/ph7/tags",
-            "blobs_url": "https://api.github.com/repos/angrybayblade/ph7/git/blobs{/sha}",
-            "git_tags_url": "https://api.github.com/repos/angrybayblade/ph7/git/tags{/sha}",
-            "git_refs_url": "https://api.github.com/repos/angrybayblade/ph7/git/refs{/sha}",
-            "trees_url": "https://api.github.com/repos/angrybayblade/ph7/git/trees{/sha}",
-            "statuses_url": "https://api.github.com/repos/angrybayblade/ph7/statuses/{sha}",
-            "languages_url": "https://api.github.com/repos/angrybayblade/ph7/languages",
-            "stargazers_url": "https://api.github.com/repos/angrybayblade/ph7/stargazers",
-            "contributors_url": "https://api.github.com/repos/angrybayblade/ph7/contributors",
-            "subscribers_url": "https://api.github.com/repos/angrybayblade/ph7/subscribers",
-            "subscription_url": "https://api.github.com/repos/angrybayblade/ph7/subscription",
-            "commits_url": "https://api.github.com/repos/angrybayblade/ph7/commits{/sha}",
-            "git_commits_url": "https://api.github.com/repos/angrybayblade/ph7/git/commits{/sha}",
-            "comments_url": "https://api.github.com/repos/angrybayblade/ph7/comments{/number}",
-            "issue_comment_url": "https://api.github.com/repos/angrybayblade/ph7/issues/comments{/number}",
-            "contents_url": "https://api.github.com/repos/angrybayblade/ph7/contents/{+path}",
-            "compare_url": "https://api.github.com/repos/angrybayblade/ph7/compare/{base}...{head}",
-            "merges_url": "https://api.github.com/repos/angrybayblade/ph7/merges",
-            "archive_url": "https://api.github.com/repos/angrybayblade/ph7/{archive_format}{/ref}",
-            "downloads_url": "https://api.github.com/repos/angrybayblade/ph7/downloads",
-            "issues_url": "https://api.github.com/repos/angrybayblade/ph7/issues{/number}",
-            "pulls_url": "https://api.github.com/repos/angrybayblade/ph7/pulls{/number}",
-            "milestones_url": "https://api.github.com/repos/angrybayblade/ph7/milestones{/number}",
-            "notifications_url": "https://api.github.com/repos/angrybayblade/ph7/notifications{?since,all,participating}",
-            "labels_url": "https://api.github.com/repos/angrybayblade/ph7/labels{/name}",
-            "releases_url": "https://api.github.com/repos/angrybayblade/ph7/releases{/id}",
-            "deployments_url": "https://api.github.com/repos/angrybayblade/ph7/deployments",
-            "created_at": 1706936166,
-            "updated_at": "2025-03-22T17:26:27Z",
-            "pushed_at": 1750312684,
-            "git_url": "git://github.com/angrybayblade/ph7.git",
-            "ssh_url": "git@github.com:angrybayblade/ph7.git",
-            "clone_url": "https://github.com/angrybayblade/ph7.git",
-            "svn_url": "https://github.com/angrybayblade/ph7",
-            "homepage": "https://angrybayblade.github.io/ph7/",
-            "size": 3031,
-            "stargazers_count": 7,
-            "watchers_count": 7,
-            "language": "Python",
-            "has_issues": True,
-            "has_projects": True,
-            "has_downloads": True,
-            "has_wiki": True,
-            "has_pages": True,
-            "has_discussions": False,
-            "forks_count": 1,
-            "mirror_url": None,
-            "archived": False,
-            "disabled": False,
-            "open_issues_count": 0,
-            "license": None,
-            "allow_forking": True,
-            "is_template": False,
-            "web_commit_signoff_required": False,
-            "topics": [
-                "css",
-                "django",
-                "flask",
-                "html",
-                "js",
-                "template-engine",
-                "web",
-            ],
-            "visibility": "public",
-            "forks": 1,
-            "open_issues": 0,
-            "watchers": 7,
-            "default_branch": "main",
-            "stargazers": 7,
-            "master_branch": "main",
-        },
-        "pusher": {
-            "name": "angrybayblade",
-            "email": "35092918+angrybayblade@users.noreply.github.com",
-        },
-        "sender": {
-            "login": "angrybayblade",
-            "id": 35092918,
-            "node_id": "MDQ6VXNlcjM1MDkyOTE4",
-            "avatar_url": "https://avatars.githubusercontent.com/u/35092918?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/angrybayblade",
-            "html_url": "https://github.com/angrybayblade",
-            "followers_url": "https://api.github.com/users/angrybayblade/followers",
-            "following_url": "https://api.github.com/users/angrybayblade/following{/other_user}",
-            "gists_url": "https://api.github.com/users/angrybayblade/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/angrybayblade/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/angrybayblade/subscriptions",
-            "organizations_url": "https://api.github.com/users/angrybayblade/orgs",
-            "repos_url": "https://api.github.com/users/angrybayblade/repos",
-            "events_url": "https://api.github.com/users/angrybayblade/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/angrybayblade/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": False,
-        },
-        "created": False,
-        "deleted": False,
-        "forced": False,
-        "base_ref": None,
-        "compare": "https://github.com/angrybayblade/ph7/compare/e5eb72bc9f97...a2334682759c",
-        "commits": [
-            {
-                "id": "a2334682759c4324e911d8f52f8fb6bdf1338d94",
-                "tree_id": "ed0ae8c902cb2a0e12d3c64aea8aab66f7b06054",
-                "distinct": True,
-                "message": "temp",
-                "timestamp": "2025-06-19T11:28:01+05:30",
-                "url": "https://github.com/angrybayblade/ph7/commit/a2334682759c4324e911d8f52f8fb6bdf1338d94",
-                "author": {
-                    "name": "angrybayblade",
-                    "email": "vptl185@gmail.com",
-                    "username": "angrybayblade",
-                },
-                "committer": {
-                    "name": "angrybayblade",
-                    "email": "vptl185@gmail.com",
-                    "username": "angrybayblade",
-                },
-                "added": [],
-                "removed": [],
-                "modified": ["mkdocs.yml"],
-            }
-        ],
-        "head_commit": {
-            "id": "a2334682759c4324e911d8f52f8fb6bdf1338d94",
-            "tree_id": "ed0ae8c902cb2a0e12d3c64aea8aab66f7b06054",
-            "distinct": True,
-            "message": "temp",
-            "timestamp": "2025-06-19T11:28:01+05:30",
-            "url": "https://github.com/angrybayblade/ph7/commit/a2334682759c4324e911d8f52f8fb6bdf1338d94",
-            "author": {
-                "name": "angrybayblade",
-                "email": "vptl185@gmail.com",
-                "username": "angrybayblade",
-            },
-            "committer": {
-                "name": "angrybayblade",
-                "email": "vptl185@gmail.com",
-                "username": "angrybayblade",
-            },
-            "added": [],
-            "removed": [],
-            "modified": ["mkdocs.yml"],
-        },
-    },
-    "metadata": {
-        "id": "2507236e-4be2-4606-b338-fb24c76ce38d",
-        "nanoId": "ti_VZEWUqF5fQ6P",
-        "connectionId": "75271255-fe95-4d34-bee3-459a02645e38",
-        "connectionNanoId": "ca_5KdA-e2C4ZMd",
-        "triggerName": "GITHUB_COMMIT_EVENT",
-        "triggerData": '{"event_type": "push", "github_hook_id": "552965247"}',
-        "triggerConfig": {"repo": "ph7", "owner": "angrybayblade"},
-        "connection": {
-            "id": "75271255-fe95-4d34-bee3-459a02645e38",
-            "connectedAccountNanoId": "ca_5KdA-e2C4ZMd",
-            "integrationId": "500748ea-8547-4abb-9f9e-10dbcfdb81c2",
-            "authConfigNanoId": "ac_ZxnpxqOo1nAP",
-            "clientUniqueUserId": "default",
-            "status": "ACTIVE",
-        },
-    },
-}
 
 
 class _ChunkedTriggerEventData(te.TypedDict):
@@ -620,40 +378,60 @@ class _SubcriptionBuilder(WithLogger):
 
 
 class Triggers(Resource):
-    """Triggers (instance) class"""
+    """Triggers resource."""
 
-    enable: t.Callable
-    """Enables a trigger given its id"""
+    def get_type(
+        self, slug: str
+    ) -> triggers_type_retrieve_response.TriggersTypeRetrieveResponse:
+        """Get a trigger type by slug.
 
-    disable: t.Callable
-    """Disables a trigger given its id"""
+        Args:
+            slug: The slug of the trigger type to get.
 
-    def __init__(self, client: HttpClient):
+        Returns:
+            The trigger type.
+
+        Examples:
+        ```python
+            # Get a trigger type by slug
+            trigger_type = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+            print(trigger_type)
+        ```
         """
-        Initialize the triggers resource.
+        return self._client.triggers_types.retrieve(slug=slug)
 
-        :param client: The client to use for the triggers resource.
+    def list_enum(self) -> list[str]:
+        """List all trigger enums.
+
+        Examples:
+        ```python
+            # List all trigger enums
+            enums = composio.triggers.list_enum()
+            print(enums)
+        ```
         """
-        self._client = client
-        self.list_enum = self._client.triggers_types.retrieve_enum
-        self.get_type = self._client.triggers_types.retrieve
-        self.list = self._client.triggers_types.list
-        self.delete = self._client.trigger_instances.manage.delete
-        self.enable = functools.partial(
-            self._client.trigger_instances.manage.update,
-            status="enable",
-        )
-        self.disable = functools.partial(
-            self._client.trigger_instances.manage.update,
-            status="disable",
+        return self._client.triggers_types.retrieve_enum()
+
+    def list(
+        self,
+        *,
+        cursor: t.Optional[str] = None,
+        limit: t.Optional[int] = None,
+        toolkit_slugs: t.Optional[t.List[str]] = None,
+    ) -> triggers_type_list_response.TriggersTypeListResponse:
+        """List all trigger types."""
+        return self._client.triggers_types.list(
+            cursor=cursor or self._client.not_given,
+            limit=limit or self._client.not_given,
+            toolkit_slugs=toolkit_slugs or self._client.not_given,
         )
 
     def list_active(
         self,
-        trigger_ids: t.Optional[list[str]] = None,
-        trigger_names: t.Optional[list[str]] = None,
-        auth_config_ids: t.Optional[list[str]] = None,
-        connected_account_ids: t.Optional[list[str]] = None,
+        trigger_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[str]] = None,
+        auth_config_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
         show_disabled: t.Optional[bool] = None,
         limit: t.Optional[int] = None,
         page: t.Optional[int] = None,
@@ -661,14 +439,30 @@ class Triggers(Resource):
         """
         List all active triggers
 
-        :param trigger_ids: List of trigger IDs to filter by
-        :param trigger_names: List of trigger names to filter by
-        :param auth_config_ids: List of auth config IDs to filter by
-        :param connected_account_ids: List of connected account IDs to filter by
-        :param show_disabled: Whether to show disabled triggers
-        :param limit: Limit the number of triggers to return
-        :param page: Page number to return
-        :return: List of active triggers
+        Args:
+            trigger_ids: List of trigger IDs to filter by
+            trigger_names: List of trigger names to filter by
+            auth_config_ids: List of auth config IDs to filter by
+            connected_account_ids: List of connected account IDs to filter by
+            show_disabled: Whether to show disabled triggers
+            limit: Limit the number of triggers to return
+            page: Page number to return
+
+        Returns:
+            List of active triggers
+
+        Examples:
+        ```python
+            # List all active triggers
+            triggers = composio.triggers.list_active()
+            print(triggers)
+
+            # List all active triggers for a connected account
+            triggers = composio.triggers.list_active(
+                connected_account_ids=["1234567890"],
+            )
+            print(triggers)
+        ```
         """
         return self._client.trigger_instances.list_active(
             query_trigger_ids_1=trigger_ids,
@@ -709,10 +503,39 @@ class Triggers(Resource):
         """
         Create a trigger instance
 
-        :param slug: The slug of the trigger
-        :param connected_account_id: The ID of the connected account
-        :param trigger_config: The configuration of the trigger
-        :return: The trigger instance
+        Args:
+            slug: The slug of the trigger
+            user_id: The ID of the user
+            connected_account_id: The ID of the connected account
+            trigger_config: The configuration of the trigger
+
+        Returns:
+            The trigger instance
+
+        Examples:
+        ```python
+            # Create a trigger using a user ID
+            trigger = composio.triggers.create(
+                slug="GITHUB_COMMIT_EVENT",
+                user_id="1234567890",
+                trigger_config={
+                    "owner": "composiohq",
+                    "repo": "composio",
+                },
+            )
+            print(trigger)
+
+            # Create a trigger using a connected account ID
+            trigger = composio.triggers.create(
+                slug="GITHUB_COMMIT_EVENT",
+                connected_account_id="1234567890",
+                trigger_config={
+                    "owner": "composiohq",
+                    "repo": "composio",
+                },
+            )
+            print(trigger)
+        ```
         """
         if user_id is not None:
             connected_account_id = self._get_connected_account_for_user(
@@ -729,6 +552,52 @@ class Triggers(Resource):
             slug=slug,
             connected_account_id=connected_account_id,
             body_trigger_config_1=trigger_config or self._client.not_given,
+        )
+
+    def delete(self, trigger_id: str) -> None:
+        """Delete a trigger instance.
+
+        Args:
+            trigger_id: The ID of the trigger to delete.
+
+        Examples:
+        ```python
+            # Delete a trigger
+            composio.triggers.delete(trigger_id="1234567890")
+        ```
+        """
+        self._client.trigger_instances.manage.delete(trigger_id=trigger_id)
+
+    def enable(self, trigger_id: str) -> None:
+        """Enable a trigger instance.
+
+        Args:
+            trigger_id: The ID of the trigger to enable.
+
+        Examples:
+        ```python
+            # Enable a trigger
+            composio.triggers.enable(trigger_id="1234567890")
+        ```
+        """
+        self._client.trigger_instances.manage.update(
+            trigger_id=trigger_id, status="enable"
+        )
+
+    def disable(self, trigger_id: str) -> None:
+        """Disable a trigger instance.
+
+        Args:
+            trigger_id: The ID of the trigger to disable.
+
+        Examples:
+        ```python
+            # Disable a trigger
+            composio.triggers.disable(trigger_id="1234567890")
+        ```
+        """
+        self._client.trigger_instances.manage.update(
+            trigger_id=trigger_id, status="disable"
         )
 
     def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
@@ -752,7 +621,23 @@ class Triggers(Resource):
         """
         Subscribe to a trigger and receive trigger events.
 
-        :param timeout: The timeout to wait for the subscription to be established.
-        :return: The trigger subscription handler.
+        Args:
+            timeout: The timeout to wait for the subscription to be established.
+
+        Returns:
+            The trigger subscription handler.
+
+        Examples:
+        ```python
+            # Subscribe to a trigger
+            subscription = composio.triggers.subscribe()
+
+            @subscription.handle(toolkit="GITHUB")
+            def handle_github_event(data):
+                print(data)
+
+            # Wait for the subscription to be closed
+            subscription.wait_forever()
+        ```
         """
         return _SubcriptionBuilder(client=self._client).connect(timeout=timeout)
