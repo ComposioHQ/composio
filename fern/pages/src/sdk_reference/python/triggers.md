@@ -21,26 +21,26 @@ Create a trigger instance
 
 ```python
 # Create a trigger using a user ID
-    trigger = composio.triggers.create(
-        slug="GITHUB_COMMIT_EVENT",
-        user_id="1234567890",
-        trigger_config={
-            "owner": "composiohq",
-            "repo": "composio",
-        },
-    )
-    print(trigger)
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id="<USER_ID>",
+    trigger_config={
+        "owner": "composiohq",
+        "repo": "composio",
+    },
+)
+print(trigger)
 
-    # Create a trigger using a connected account ID
-    trigger = composio.triggers.create(
-        slug="GITHUB_COMMIT_EVENT",
-        connected_account_id="1234567890",
-        trigger_config={
-            "owner": "composiohq",
-            "repo": "composio",
-        },
-    )
-    print(trigger)
+# Create a trigger using a connected account ID
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    connected_account_id="<CONNECTED_ACCOUNT_ID>",
+    trigger_config={
+        "owner": "composiohq",
+        "repo": "composio",
+    },
+)
+print(trigger)
 ```
 
 ## composio.triggers.delete
@@ -51,15 +51,10 @@ Delete a trigger instance.
 
     - **trigger_id**: The ID of the trigger to delete. 
 
-**Returns**
-
-    - 
-
 **Examples**
 
 ```python
-# Delete a trigger
-    composio.triggers.delete(trigger_id="1234567890")
+composio.triggers.delete(trigger_id="<TRIGGER_ID>")
 ```
 
 ## composio.triggers.disable
@@ -70,15 +65,10 @@ Disable a trigger instance.
 
     - **trigger_id**: The ID of the trigger to disable. 
 
-**Returns**
-
-    - 
-
 **Examples**
 
 ```python
-# Disable a trigger
-    composio.triggers.disable(trigger_id="1234567890")
+composio.triggers.disable(trigger_id="<TRIGGER_ID>")
 ```
 
 ## composio.triggers.enable
@@ -89,15 +79,10 @@ Enable a trigger instance.
 
     - **trigger_id**: The ID of the trigger to enable. 
 
-**Returns**
-
-    - 
-
 **Examples**
 
 ```python
-# Enable a trigger
-    composio.triggers.enable(trigger_id="1234567890")
+composio.triggers.enable(trigger_id="<TRIGGER_ID>")
 ```
 
 ## composio.triggers.get_type
@@ -115,9 +100,8 @@ Get a trigger type by slug.
 **Examples**
 
 ```python
-# Get a trigger type by slug
-    trigger_type = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
-    print(trigger_type)
+trigger_type = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
+print(trigger_type)
 ```
 
 ## composio.triggers.list
@@ -137,9 +121,8 @@ List all trigger types.
 **Examples**
 
 ```python
-# List all trigger types
-    triggers = composio.triggers.list()
-    print(triggers)
+triggers = composio.triggers.list()
+print(triggers)
 ```
 
 ## composio.triggers.list_active
@@ -164,14 +147,14 @@ List all active triggers
 
 ```python
 # List all active triggers
-    triggers = composio.triggers.list_active()
-    print(triggers)
+triggers = composio.triggers.list_active()
+print(triggers)
 
-    # List all active triggers for a connected account
-    triggers = composio.triggers.list_active(
-        connected_account_ids=["1234567890"],
-    )
-    print(triggers)
+# List all active triggers for a connected account
+triggers = composio.triggers.list_active(
+    connected_account_ids=["<CONNECTED_ACCOUNT_ID>"],
+)
+print(triggers)
 ```
 
 ## composio.triggers.list_enum
@@ -179,16 +162,11 @@ List all active triggers
 List all trigger enums.
 
 
-**Returns**
-
-    - 
-
 **Examples**
 
 ```python
-# List all trigger enums
-    enums = composio.triggers.list_enum()
-    print(enums)
+enums = composio.triggers.list_enum()
+print(enums)
 ```
 
 ## composio.triggers.subscribe
@@ -206,13 +184,15 @@ Subscribe to a trigger and receive trigger events.
 **Examples**
 
 ```python
-# Subscribe to a trigger
-    subscription = composio.triggers.subscribe()
-    @subscription.handle(toolkit="GITHUB")
-    def handle_github_event(data):
-        print(data)
+# Create a subscription object
+subscription = composio.triggers.subscribe()
 
-    # Wait for the subscription to be closed
-    subscription.wait_forever()
+# Register a callback for a trigger
+@subscription.handle(toolkit="GITHUB")
+def handle_github_event(data):
+    print(data)
+
+# Wait for the subscription to be closed
+subscription.wait_forever()
 ```
 

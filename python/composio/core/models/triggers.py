@@ -392,11 +392,10 @@ class Triggers(Resource):
             The trigger type.
 
         Examples:
-        ```python
-            # Get a trigger type by slug
+            ```python
             trigger_type = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
             print(trigger_type)
-        ```
+            ```
         """
         return self._client.triggers_types.retrieve(slug=slug)
 
@@ -404,11 +403,10 @@ class Triggers(Resource):
         """List all trigger enums.
 
         Examples:
-        ```python
-            # List all trigger enums
+            ```python
             enums = composio.triggers.list_enum()
             print(enums)
-        ```
+            ```
         """
         return self._client.triggers_types.retrieve_enum()
 
@@ -431,11 +429,10 @@ class Triggers(Resource):
             List of trigger types
 
         Examples:
-        ```python
-            # List all trigger types
+            ```python
             triggers = composio.triggers.list()
             print(triggers)
-        ```
+            ```
         """
         return self._client.triggers_types.list(
             cursor=cursor or self._client.not_given,
@@ -469,17 +466,17 @@ class Triggers(Resource):
             List of active triggers
 
         Examples:
-        ```python
+            ```python
             # List all active triggers
             triggers = composio.triggers.list_active()
             print(triggers)
 
             # List all active triggers for a connected account
             triggers = composio.triggers.list_active(
-                connected_account_ids=["1234567890"],
+                connected_account_ids=["<CONNECTED_ACCOUNT_ID>"],
             )
             print(triggers)
-        ```
+            ```
         """
         return self._client.trigger_instances.list_active(
             query_trigger_ids_1=trigger_ids,
@@ -530,11 +527,11 @@ class Triggers(Resource):
             The trigger instance
 
         Examples:
-        ```python
+            ```python
             # Create a trigger using a user ID
             trigger = composio.triggers.create(
                 slug="GITHUB_COMMIT_EVENT",
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 trigger_config={
                     "owner": "composiohq",
                     "repo": "composio",
@@ -545,14 +542,14 @@ class Triggers(Resource):
             # Create a trigger using a connected account ID
             trigger = composio.triggers.create(
                 slug="GITHUB_COMMIT_EVENT",
-                connected_account_id="1234567890",
+                connected_account_id="<CONNECTED_ACCOUNT_ID>",
                 trigger_config={
                     "owner": "composiohq",
                     "repo": "composio",
                 },
             )
             print(trigger)
-        ```
+            ```
         """
         if user_id is not None:
             connected_account_id = self._get_connected_account_for_user(
@@ -578,10 +575,9 @@ class Triggers(Resource):
             trigger_id: The ID of the trigger to delete.
 
         Examples:
-        ```python
-            # Delete a trigger
-            composio.triggers.delete(trigger_id="1234567890")
-        ```
+            ```python
+            composio.triggers.delete(trigger_id="<TRIGGER_ID>")
+            ```
         """
         self._client.trigger_instances.manage.delete(trigger_id=trigger_id)
 
@@ -592,10 +588,9 @@ class Triggers(Resource):
             trigger_id: The ID of the trigger to enable.
 
         Examples:
-        ```python
-            # Enable a trigger
-            composio.triggers.enable(trigger_id="1234567890")
-        ```
+            ```python
+            composio.triggers.enable(trigger_id="<TRIGGER_ID>")
+            ```
         """
         self._client.trigger_instances.manage.update(
             trigger_id=trigger_id, status="enable"
@@ -608,10 +603,9 @@ class Triggers(Resource):
             trigger_id: The ID of the trigger to disable.
 
         Examples:
-        ```python
-            # Disable a trigger
-            composio.triggers.disable(trigger_id="1234567890")
-        ```
+            ```python
+            composio.triggers.disable(trigger_id="<TRIGGER_ID>")
+            ```
         """
         self._client.trigger_instances.manage.update(
             trigger_id=trigger_id, status="disable"
@@ -645,16 +639,17 @@ class Triggers(Resource):
             The trigger subscription handler.
 
         Examples:
-        ```python
-            # Subscribe to a trigger
+            ```python
+            # Create a subscription object
             subscription = composio.triggers.subscribe()
 
+            # Register a callback for a trigger
             @subscription.handle(toolkit="GITHUB")
             def handle_github_event(data):
                 print(data)
 
             # Wait for the subscription to be closed
             subscription.wait_forever()
-        ```
+            ```
         """
         return _SubcriptionBuilder(client=self._client).connect(timeout=timeout)

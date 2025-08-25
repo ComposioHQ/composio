@@ -317,6 +317,8 @@ navigation:
       path: pages/dist/sdk_reference/python/toolkits.md
     - page: Tools
       path: pages/dist/sdk_reference/python/tools.md
+    - page: Triggers
+      path: pages/dist/sdk_reference/python/triggers.md
 
 - tab: api-reference
   layout:

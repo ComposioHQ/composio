@@ -149,9 +149,10 @@ def generate_docs(attr: str, docspec: dict) -> str:
                 render += f"    - **{param_name}**: {param_desc}\n"
 
         render += "\n"
-        render += "**Returns**\n\n"
-        render += "    - " + doc.returns
-        render += "\n\n"
+        if doc.returns:
+            render += "**Returns**\n\n"
+            render += "    - " + doc.returns
+            render += "\n\n"
 
         if doc.raises:
             render += "**Raises**\n\n"
