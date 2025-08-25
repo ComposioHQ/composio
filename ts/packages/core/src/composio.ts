@@ -67,6 +67,12 @@ export type ComposioConfig<
    * ```
    */
   defaultHeaders?: ComposioRequestHeaders;
+  /**
+   * Whether to disable version check for the Composio SDK.
+   * @example true, false
+   * @default false
+   */
+  disableVersionCheck?: boolean;
 };
 
 /**
@@ -209,7 +215,9 @@ export class Composio<
     telemetry.instrument(this.provider);
 
     // Check for the latest version of the Composio SDK from NPM.
-    checkForLatestVersionFromNPM(version);
+    if (!this.config.disableVersionCheck) {
+      checkForLatestVersionFromNPM(version);
+    }
   }
 
   /**
