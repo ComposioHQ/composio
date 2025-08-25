@@ -63,8 +63,8 @@ analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
 redirects:
-- source: /tools/*
-  destination: /toolkits/*
+- source: /tools/:path
+  destination: /toolkits/:path
 tabs:
   docs:
     display-name: Guides
