@@ -180,14 +180,15 @@ connection_request = composio.connected_accounts.initiate(
 ```
 
 ```typescript
+import { AuthScheme } from '@composio/core';
 // For Zendesk - include subdomain  
 const connRequest = await composio.connectedAccounts.initiate(
-  userId, authConfigId,
+  userId, 
+  authConfigId,
   {
-    config: {
-      authScheme: 'OAUTH2',
-      val: { status: 'INITIALIZING', subdomain: 'mycompany' }
-    }
+    config: AuthScheme.OAuth2({
+      subdomain: 'mycompany'
+    })
   }
 );
 ```
