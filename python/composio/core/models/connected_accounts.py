@@ -11,7 +11,8 @@ from composio.client import HttpClient
 from composio.client.types import (
     connected_account_create_params,
     connected_account_retrieve_response,
-    connected_account_update_status_response,
+    connected_account_list_response,
+    connected_account_list_params,
 )
 
 from .base import Resource
@@ -46,15 +47,16 @@ class ConnectionRequest(Resource):
             The connection request.
 
         Examples:
-            >>> connection_request = ConnectionRequest(
-            ...     id="1234567890",
-            ...     status="ACTIVE",
-            ...     redirect_url="https://example.com",
-            ...     client=client,
-            ... )
-            >>> connection_request.wait_for_connection()
-            >>> print(connection_request.status)
-            ACTIVE
+            ```python
+            connection_request = ConnectionRequest(
+                id="1234567890",
+                status="ACTIVE",
+                redirect_url="https://example.com",
+                client=client,
+            )
+            connection_request.wait_for_connection()
+            print(connection_request.status)
+            ```
         """
         super().__init__(client)
         self.id = id
@@ -75,15 +77,16 @@ class ConnectionRequest(Resource):
             The connected account object.
 
         Examples:
-            >>> connection_request = ConnectionRequest(
-            ...     id="1234567890",
-            ...     status="ACTIVE",
-            ...     redirect_url="https://example.com",
-            ...     client=client,
-            ... )
-            >>> connection_request.wait_for_connection()
-            >>> print(connection_request.status)
-            ACTIVE
+            ```python
+            connection_request = ConnectionRequest(
+                id="1234567890",
+                status="ACTIVE",
+                redirect_url="https://example.com",
+                client=client,
+            )
+            connection_request.wait_for_connection()
+            print(connection_request.status)
+            ```
         """
         timeout = self.DEFAULT_WAIT_TIMEOUT if timeout is None else timeout
         deadline = time.time() + timeout
@@ -112,9 +115,10 @@ class ConnectionRequest(Resource):
             The connection request.
 
         Examples:
-            >>> connection_request = ConnectionRequest.from_id("1234567890", client)
-            >>> print(connection_request.status)
-            ACTIVE
+            ```python
+            connection_request = ConnectionRequest.from_id("1234567890", client)
+            print(connection_request.status)
+            ```
         """
         return cls(
             id=id,
@@ -317,46 +321,79 @@ class AuthScheme:
         }
 
 
-class ConnectedAccounts:
+class ConnectedAccounts(Resource):
     """
     Manage connected accounts.
-
-    This class is used to manage connected accounts in the Composio SDK.
-    These are used to authenticate with third-party services.
     """
 
-    enable: t.Callable[
-        [str],
-        connected_account_update_status_response.ConnectedAccountUpdateStatusResponse,
-    ]
-    """Enable a connected account."""
-
-    disable: t.Callable[
-        [str],
-        connected_account_update_status_response.ConnectedAccountUpdateStatusResponse,
-    ]
-    """Disable a connected account."""
-
-    def __init__(self, client: HttpClient):
+    def get(
+        self, id: str
+    ) -> connected_account_retrieve_response.ConnectedAccountRetrieveResponse:
         """
-        Initialize the connected accounts resource.
+        Get a connected account by ID.
 
         Args:
-            client: The client to use for the connected accounts resource.
+            id: The nanoid of the connected account to get.
+
+        Returns:
+            The connected account object.
+
+        Examples:
+            ```python
+            connected_account = composio.connected_accounts.get(id="1234567890")
+            print(connected_account.status)
+            ```
         """
-        self._client = client
-        self.get = self._client.connected_accounts.retrieve
-        self.list = self._client.connected_accounts.list
-        self.delete = self._client.connected_accounts.delete
-        self.update_status = self._client.connected_accounts.update_status
-        self.enable = functools.partial(
-            self._client.connected_accounts.update_status,
-            enabled=True,
-        )
-        self.disable = functools.partial(
-            self._client.connected_accounts.update_status,
-            enabled=False,
-        )
+        return self._client.connected_accounts.retrieve(nanoid=id)
+
+    def list(
+        self,
+        **options: te.Unpack[connected_account_list_params.ConnectedAccountListParams],
+    ) -> connected_account_list_response.ConnectedAccountListResponse:
+        """
+        List all connected accounts.
+
+        Args:
+            auth_config_ids: The auth config ids of the connected accounts
+            connected_account_ids: The connected account ids to filter by
+            cursor: The cursor to paginate through the connected accounts
+            labels: The labels of the connected accounts
+            limit: The limit of the connected accounts to return
+            order_by: The order by of the connected accounts
+            order_direction: The order direction of the connected accounts
+            statuses: The status of the connected account
+            toolkit_slugs: The toolkit slugs of the connected accounts
+            user_ids: The user ids of the connected accounts
+
+        Returns:
+            The connected accounts object.
+
+        Examples:
+            ```python
+            # List all connected accounts
+            connected_accounts = composio.connected_accounts.list()
+            print(connected_accounts.items)
+
+            # List all connected accounts for given users
+            connected_accounts = composio.connected_accounts.list(
+                user_ids=["<USER_ID>"],
+            )
+            print(connected_accounts.items)
+
+            # List all connected accounts for given toolkits
+            connected_accounts = composio.connected_accounts.list(
+                toolkit_slugs=["<TOOLKIT_SLUG>"],
+            )
+            print(connected_accounts.items)
+
+            # List all connected accounts for given auth config
+            connected_accounts = composio.connected_accounts.list(
+                auth_config_ids=["<AUTH_CONFIG_ID>"],
+            )
+            print(connected_accounts.items)
+            ```
+        """
+        return self._client.connected_accounts.list(**options)
 
     def initiate(
         self,
@@ -383,15 +420,14 @@ class ConnectedAccounts:
             The connection request.
 
         Examples:
-            >>> connected_accounts = ConnectedAccounts(client)
-            >>> connection_request = connected_accounts.initiate(
-            ...     user_id="1234567890",
-            ...     auth_config_id="1234567890",
-            ...     callback_url="https://example.com",
-            ... )
-            >>> connection_request.wait_for_connection()
-            >>> print(connection_request.status)
-            ACTIVE
+            ```python
+            connection_request = composio.connected_accounts.initiate(
+                user_id="1234567890",
+                auth_config_id="1234567890",
+            )
+            connection_request.wait_for_connection()
+            print(connection_request.status)
+            ```
         """
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
@@ -427,13 +463,13 @@ class ConnectedAccounts:
             The connected account object.
 
         Examples:
-            >>> connected_accounts = ConnectedAccounts(client)
-            >>> connection_request = connected_accounts.wait_for_connection(
-            ...     id="1234567890",
-            ...     timeout=10,
-            ... )
-            >>> print(connection_request.status)
-            ACTIVE
+            ```python
+            connection_request = composio.connected_accounts.wait_for_connection(
+                id="1234567890",
+                timeout=10,
+            )
+            print(connection_request.status)
+            ```
         """
         return ConnectionRequest.from_id(
             id=id,
@@ -441,6 +477,98 @@ class ConnectedAccounts:
         ).wait_for_connection(
             timeout=timeout,
         )
+
+    def update_status(
+        self,
+        id: str,
+        enabled: bool,
+    ) -> bool:
+        """
+        Update the status of a connected account by ID.
+
+        Args:
+            id: The ID of the connected account to update the status of.
+            enabled: Whether the connected account should be enabled.
+
+        Returns:
+            True if the connected account was updated, False otherwise.
+
+        Examples:
+            ```python
+            # Enable a connected account
+            composio.connected_accounts.update_status(id="<CONNECTED_ACCOUNT_ID>", enabled=True)
+
+            # Disable a connected account
+            composio.connected_accounts.update_status(id="<CONNECTED_ACCOUNT_ID>", enabled=False)
+            ```
+        """
+        return self._client.connected_accounts.update_status(
+            nano_id=id,
+            enabled=enabled,
+        ).success
+
+    def delete(
+        self,
+        id: str,
+    ) -> bool:
+        """
+        Delete a connected account by ID.
+
+        Args:
+            id: The ID of the connected account to delete.
+
+        Returns:
+            True if the connected account was deleted, False otherwise.
+
+        Examples:
+            ```python
+            composio.connected_accounts.delete(id="<CONNECTED_ACCOUNT_ID>")
+            ```
+        """
+        return self._client.connected_accounts.delete(nanoid=id).success
+
+    def enable(self, id: str) -> bool:
+        """
+        Enable a connected account by ID.
+
+        Args:
+            id: The ID of the connected account to enable.
+
+        Returns:
+            True if the connected account was enabled, False otherwise.
+
+        Examples:
+            ```python
+            composio.connected_accounts.enable(id="<CONNECTED_ACCOUNT_ID>")
+            ```
+        """
+        return self._client.connected_accounts.update_status(
+            nano_id=id,
+            enabled=True,
+        ).success
+
+    def disable(
+        self,
+        id: str,
+    ) -> bool:
+        """
+        Disable a connected account by ID.
+
+        Args:
+            id: The ID of the connected account to disable.
+
+        Returns:
+            True if the connected account was disabled, False otherwise.
+
+        Examples:
+            ```python
+            composio.connected_accounts.disable(id="<CONNECTED_ACCOUNT_ID>")
+            ```
+        """
+        return self._client.connected_accounts.update_status(
+            nano_id=id,
+            enabled=False,
+        ).success
 
 
 auth_scheme = AuthScheme()

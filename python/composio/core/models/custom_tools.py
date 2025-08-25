@@ -207,7 +207,7 @@ class CustomTools:
             The custom tool.
 
         Examples:
-        ```python
+            ```python
             from pydantic import BaseModel, Field
 
             # Define the request model
@@ -277,7 +277,7 @@ class CustomTools:
                 ],
             )
             print(tools)
-        ```
+            ```
         """
         if f is not None:
             return self._wrap_tool(f, toolkit)

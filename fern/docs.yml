@@ -171,74 +171,13 @@ navigation:
       path: pages/dist/guides/file-handling.mdx
       slug: file-handling
 
-  #   - page: Programmatic Auth Configs
-  #     path: pages/dist/authentication/programmatic-auth-configs.mdx
-  #     slug: programmatic-auth-configs
-  #   - page: Custom Auth Parameters
-  #     path: pages/dist/authentication/custom-auth-params.mdx
-  #     slug: custom-auth-params
-
-  # - section: Tools
-  #   icon: tools
-  #   skip-slug: true
-  #   contents:
-  #   - page: Executing Tools
-  #     path: pages/dist/tool-calling/executing-tools.mdx
-  #     slug: executing-tools
-  #   - page: Authenticating Tools
-  #     path: pages/dist/tool-calling/authenticating-tools.mdx
-  #     slug: authenticating-tools
-  #   - page: Fetch and Filter Tools
-  #     path: pages/dist/tool-calling/fetching-tools.mdx
-  #     slug: fetching-tools
-  #   - section: Modifiers
-  #     slug: modifiers
-  #     contents:
-  #     - page: Schema Modifiers
-  #       path: pages/dist/tool-calling/schema-modifiers.mdx
-  #       slug: schema-modifiers
-  #     - page: Before Tool Execution
-  #       path: pages/dist/tool-calling/before-execution-modifiers.mdx
-  #       slug: before-execution
-  #     - page: After Tool Execution
-  #       path: pages/dist/tool-calling/after-execution-modifiers.mdx
-  #       slug: after-execution
-  #   - page: Custom tools
-  #     path: pages/dist/tool-calling/custom-tools.mdx
-  #     slug: custom-tools
-
-  # - section: Triggers
-  #   icon: bolt
-  #   skip-slug: true
-  #   contents:
-  #   - page: Using Triggers
-  #     path: pages/dist/triggers/using-triggers.mdx
-  #     slug: using-triggers
-
-  # - section: MCP
-  #   icon: server
-  #   skip-slug: true
-  #   contents:
-  #   - page: Overview
-  #     path: pages/dist/mcp/overview.mdx
-  #     slug: mcp-overview
-  #   - page: Developers
-  #     path: pages/dist/mcp/developers.mdx
-  #     slug: mcp-developers
-  #   - page: Partner Program
-  #     path: pages/dist/mcp/partner-api.mdx
-  #     slug: mcp-partner-api
-  #   - page: Providers
-  #     path: pages/dist/mcp/providers.mdx
-  #     slug: mcp-providers
-
-  # - section: Resources
-  #   icon: book
-  #   skip-slug: true
-  #   contents:
-  #   - page: Migration Guide
-  #     path: pages/dist/migration-guide.mdx
-  #     slug: migration
+  - section: Migration Guides
+    icon: book
+    skip-slug: true
+    contents:
+    - page: Migration Guide V3
+      path: pages/dist/migration-guide.mdx
+      slug: migration
 
 - tab: mcp
   layout:
@@ -363,6 +302,21 @@ navigation:
     - page: Composio
       slug: toolkits/composio
       path: toolkits/composio.mdx
+
+- tab: sdk-reference
+  layout:
+  - section: Python
+    icon: snake
+    slug: python
+    contents:
+    - page: Auth Configs
+      path: pages/dist/sdk_reference/python/auth_configs.md
+    - page: Connected Accounts
+      path: pages/dist/sdk_reference/python/connected_accounts.md
+    - page: Toolkits
+      path: pages/dist/sdk_reference/python/toolkits.md
+    - page: Tools
+      path: pages/dist/sdk_reference/python/tools.md
 
 - tab: api-reference
   layout:

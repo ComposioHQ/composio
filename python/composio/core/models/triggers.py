@@ -419,7 +419,24 @@ class Triggers(Resource):
         limit: t.Optional[int] = None,
         toolkit_slugs: t.Optional[t.List[str]] = None,
     ) -> triggers_type_list_response.TriggersTypeListResponse:
-        """List all trigger types."""
+        """
+        List all trigger types.
+
+        Args:
+            cursor: Cursor to start from
+            limit: Limit the number of triggers to return
+            toolkit_slugs: List of toolkit slugs to filter by
+
+        Returns:
+            List of trigger types
+
+        Examples:
+        ```python
+            # List all trigger types
+            triggers = composio.triggers.list()
+            print(triggers)
+        ```
+        """
         return self._client.triggers_types.list(
             cursor=cursor or self._client.not_given,
             limit=limit or self._client.not_given,

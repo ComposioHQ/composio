@@ -26,6 +26,33 @@ class AuthConfigs(Resource):
     ) -> auth_config_list_response.AuthConfigListResponse:
         """
         Lists authentication configurations based on provided filter criteria.
+
+        Args:
+            deprecated_app_id: The app id to filter by
+            deprecated_status: The status to filter by
+            is_composio_managed: Whether to filter by composio managed auth configs
+            limit: Number of items per page
+            search: Search auth configs by name
+            show_disabled: Show disabled auth configs
+            toolkit_slug: Comma-separated list of toolkit slugs to filter auth configs by
+
+        Returns:
+            The list of auth configs.
+
+        Examples:
+            ```python
+            # List all auth configs
+            auth_configs = composio.auth_configs.list()
+            print(auth_configs)
+
+            # List composio managed auth configs
+            auth_configs = composio.auth_configs.list(is_composio_managed=True)
+            print(auth_configs)
+
+            # List auth configs for a specific toolkit
+            auth_configs = composio.auth_configs.list(toolkit_slug="<TOOLKIT_SLUG>")
+            print(auth_configs)
+            ```
         """
         return self._client.auth_configs.list(**query)
 
@@ -53,7 +80,7 @@ class AuthConfigs(Resource):
             The created auth config.
 
         Examples:
-        ```python
+            ```python
             # Use composio managed auth
             auth_config = composio.auth_configs.create(
                 toolkit="github",
@@ -91,7 +118,7 @@ class AuthConfigs(Resource):
                 },
             )
             print(auth_config)
-        ```
+            ```
         """
         return self._client.auth_configs.create(
             toolkit={"slug": toolkit},
@@ -111,10 +138,10 @@ class AuthConfigs(Resource):
             The retrieved auth config.
 
         Examples:
-        ```python
+            ```python
             # Retrieve a specific auth config
             composio.auth_configs.get("<AUTH_CONFIG_ID>")
-        ```
+            ```
         """
         return self._client.auth_configs.retrieve(nanoid)
 
@@ -150,14 +177,14 @@ class AuthConfigs(Resource):
             The updated auth config.
 
         Examples:
-        ```python
+            ```python
             composio.auth_configs.update("<AUTH_CONFIG_ID>", options={
                 "type": "default",
                 "credentials": {
                     "api_key": "sk-1234567890",
                 },
             })
-        ```
+            ```
         """
         return t.cast(
             t.Dict,
@@ -182,9 +209,9 @@ class AuthConfigs(Resource):
             The deleted auth config.
 
         Examples:
-        ```python
+            ```python
             composio.auth_configs.delete("<AUTH_CONFIG_ID>")
-        ```
+            ```
         """
         return t.cast(t.Dict, self._client.auth_configs.delete(nanoid))
 
@@ -212,9 +239,9 @@ class AuthConfigs(Resource):
             The enabled auth config.
 
         Examples:
-        ```python
+            ```python
             composio.auth_configs.enable("<AUTH_CONFIG_ID>")
-        ```
+            ```
         """
         return self.__update_status(nanoid, "ENABLED")
 
@@ -229,8 +256,8 @@ class AuthConfigs(Resource):
             The disabled auth config.
 
         Examples:
-        ```python
+            ```python
             composio.auth_configs.disable("<AUTH_CONFIG_ID>")
-        ```
+            ```
         """
         return self.__update_status(nanoid, "DISABLED")

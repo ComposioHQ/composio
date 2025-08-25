@@ -43,10 +43,7 @@ class ToolExecutionResponse(te.TypedDict):
 
 class Tools(Resource, t.Generic[TProvider]):
     """
-    Tools class definition
-
-    This class is used to manage tools in the Composio SDK.
-    It provides methods to list, get, and execute tools.
+    Manage tools in the Composio SDK.
     """
 
     provider: TProvider
@@ -106,11 +103,11 @@ class Tools(Resource, t.Generic[TProvider]):
             The schema for the given tool slug.
 
         Examples:
-        ```python
+            ```python
             # Get the schema for a tool
             schema = composio.tools.get_raw_composio_tool_by_slug(slug="github")
             print(schema)
-        ```
+            ```
         """
         try:
             return t.cast(Tool, self._custom_tools[slug])
@@ -139,7 +136,7 @@ class Tools(Resource, t.Generic[TProvider]):
             A list of tool schemas.
 
         Examples:
-        ```python
+            ```python
             # Get a list of tool schemas
             schemas = composio.tools.get_raw_composio_tools()
             print(schemas)
@@ -151,7 +148,7 @@ class Tools(Resource, t.Generic[TProvider]):
             # Get a list of tool schemas filtered by search
             schemas = composio.tools.get_raw_composio_tools(search="github")
             print(schemas)
-        ```
+            ```
         """
         if tools is None and search is None and toolkits is None:
             raise InvalidParams(
@@ -320,17 +317,17 @@ class Tools(Resource, t.Generic[TProvider]):
             A tool or list of tools.
 
         Examples:
-        ```python
+            ```python
             # Get a tool by slug
             tool = composio.tools.get(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 slug="GMAIL_SEND_EMAIL",
             )
             print(tool)
 
             # Get a list of tools by tool slugs
             tools = composio.tools.get(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 tools=[
                     "GMAIL_SEND_EMAIL",
                     "GMAIL_FETCH_EMAILS",
@@ -340,11 +337,11 @@ class Tools(Resource, t.Generic[TProvider]):
 
             # Get a list of tools by search term
             tools = composio.tools.get(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 search="star a github repository",
             )
             print(tools)
-        ```
+            ```
         """
         if slug is not None:
             return self._get(
@@ -469,10 +466,10 @@ class Tools(Resource, t.Generic[TProvider]):
             The response from the tool.
 
         Examples:
-        ```python
+            ```python
             # Execute a tool with a custom auth params
             response = composio.tools.execute(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 slug="GMAIL_SEND_EMAIL",
                 arguments={
                     "to": "test@example.com",
@@ -484,7 +481,7 @@ class Tools(Resource, t.Generic[TProvider]):
 
             # Execute a tool with a custom auth params
             response = composio.tools.execute(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 slug="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
                 arguments={
                     "owner": "composiohq",
@@ -505,12 +502,13 @@ class Tools(Resource, t.Generic[TProvider]):
 
             # Execute a tool using natural language
             response = composio.tools.execute(
-                user_id="1234567890",
+                user_id="<USER_ID>",
                 slug="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
                 text="Star the repository composiohq/composio on GitHub",
                 arguments={},
             )
             print(response)
+            ```
         """
         tool = self._tool_schemas.get(slug)
         if tool is None and self._custom_tools.get(slug=slug) is not None:
@@ -593,15 +591,16 @@ class Tools(Resource, t.Generic[TProvider]):
             The response from the tool.
 
         Examples:
-        ```python
+            ```python
             # Make request to GitHub API via Composio API
             response = composio.tools.proxy(
-                connected_account_id="1234567890",  # Connected account ID corresponding to GitHub
+                connected_account_id="<CONNECTED_ACCOUNT_ID>",  # Connected account ID corresponding to GitHub
                 endpoint="/repos/composiohq/composio/issues/1",
                 method="GET",
                 body={},
             )
             print(response)
+            ```
         """
         return self._client.tools.proxy(
             endpoint=options["endpoint"],

@@ -118,4 +118,5 @@ class Resource(WithLogger, metaclass=ResourceMeta):
         return {
             "name": self.__class__.__name__,
             "children": children,
+            "description": self.__doc__,
         }

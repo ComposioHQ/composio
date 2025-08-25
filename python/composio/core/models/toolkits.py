@@ -69,7 +69,7 @@ class Toolkits(Resource):
             The toolkit or list of toolkits.
 
         Examples:
-        ```python
+            ```python
             # List all toolkits
             toolkits = composio.toolkits.get()
             print(toolkits)
@@ -81,7 +81,7 @@ class Toolkits(Resource):
             # Query by category
             toolkits = composio.toolkits.get(query={"category": "Developer Tools"})
             print(toolkits)
-        ```
+            ```
         """
         if slug is not None:
             return self._client.toolkits.retrieve(slug=slug)
@@ -95,11 +95,10 @@ class Toolkits(Resource):
             The list of categories.
 
         Examples:
-        ```python
-            # List all available categories
+            ```python
             categories = composio.toolkits.list_categories()
             print(categories)
-        ```
+            ```
         """
         return self._client.toolkits.retrieve_categories().items
 
@@ -144,12 +143,12 @@ class Toolkits(Resource):
             The connection request.
 
         Examples:
-        ```python
+            ```python
             connection_request = composio.toolkits.authorize(
                 user_id="1234567890",
                 toolkit="github",
             )
-        ```
+            ```
 
         Note:
             This method should not be used in production.
@@ -184,14 +183,13 @@ class Toolkits(Resource):
             InvalidParams: If the auth config details are not found.
 
         Examples:
-        ```python
-            # Get the required fields to initiate a connected account
+            ```python
             fields = composio.toolkits.get_connected_account_initiation_fields(
                 toolkit="github",
                 auth_scheme="OAUTH2",
                 required_only=True,
             )
-        ```
+            ```
         """
         details = self._client.toolkits.retrieve(slug=toolkit).auth_config_details or []
         for auth_detail in details:
@@ -235,14 +233,13 @@ class Toolkits(Resource):
             InvalidParams: If the auth config details are not found.
 
         Examples:
-        ```python
-            # Get the required fields to create an auth config
+            ```python
             fields = composio.toolkits.get_auth_config_creation_fields(
                 toolkit="github",
                 auth_scheme="OAUTH2",
                 required_only=True,
             )
-        ```
+            ```
         """
         info = self._client.toolkits.retrieve(slug=toolkit)
         for auth_detail in info.auth_config_details or []:

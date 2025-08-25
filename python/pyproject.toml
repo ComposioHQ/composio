@@ -29,4 +29,5 @@ dev = [
     "twine>=6.1.0",
     "click>=8.2.1",
     "semver>=3.0.4",
+    "inflection>=0.5.1",
 ]
