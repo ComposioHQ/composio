@@ -1,5 +1,12 @@
 # @composio/core
 
+## 0.1.46
+
+### Patch Changes
+
+- ee12d25: Fix long filenames while uploading files from URL
+- 9458513: Feat: Add flags to disable version check
+
 ## 0.1.45
 
 ### Patch Changes
