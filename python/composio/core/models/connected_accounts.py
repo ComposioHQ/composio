@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import time
 import typing as t
 
@@ -10,9 +9,9 @@ from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import (
     connected_account_create_params,
-    connected_account_retrieve_response,
-    connected_account_list_response,
     connected_account_list_params,
+    connected_account_list_response,
+    connected_account_retrieve_response,
 )
 
 from .base import Resource
