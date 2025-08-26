@@ -87,7 +87,7 @@ class OpenAIProvider(
                 outputs.append(
                     self.execute_tool_call(
                         user_id=user_id,
-                        tool_call=tool_call,
+                        tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
                         modifiers=modifiers,
                     )
                 )
