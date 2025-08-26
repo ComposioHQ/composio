@@ -102,10 +102,10 @@ tabs:
     icon: server
     skip-slug: true
 
-  changelog:
-    display-name: Changelog
-    icon: history
-    changelog: ./pages/changelog
+  # changelog:
+  #   display-name: Changelog
+  #   icon: history
+  #   changelog: ./pages/changelog
 
 navigation:
 
@@ -229,10 +229,10 @@ navigation:
     contents:
     - page: TypeScript
       path: pages/dist/providers/ts-custom.mdx
-      slug: providers/custom/typescript
+      slug: custom/typescript
     - page: Python
       path: pages/dist/providers/py-custom.mdx
-      slug: providers/custom/python
+      slug: custom/python
 
 - tab: cookbooks
   layout:
@@ -246,19 +246,22 @@ navigation:
     - page: FastAPI Server
       path: pages/dist/examples/fast-api.mdx
       slug: fastapi
+    - page: User Management
+      path: pages/dist/examples/user-management.mdx
+      slug: user-management
   - section: Utility Agents
     icon: robot
     slug: utility
     contents:
-    - page: Slack Summeriser
-      path: pages/dist/examples/utility_agents/slack_summeriser.mdx
-      slug: slack-summeriser
-    - page: Discord Community Manager
-      path: pages/dist/examples/utility_agents/discord_community_manager.mdx
-      slug: discord-community-manager
+    - page: Slack Summariser
+      path: pages/dist/examples/utility_agents/slack_summariser.mdx
+      slug: slack-summariser
     - page: Github Bot
       path: pages/dist/examples/utility_agents/github_bot.mdx
       slug: github-bot
+    - page: Supabase SQL Agent
+      path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
+      slug: supabase-sql-agent
   - section: Chat Applications
     icon: message
     slug: chat-apps
@@ -330,4 +333,4 @@ navigation:
       paginated: false
       flattened: true
 
-- tab: changelog
+# - tab: changelog
