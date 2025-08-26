@@ -160,7 +160,7 @@ export class ConnectedAccounts {
     });
     if (connectedAccount.items.length > 0 && !options?.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(
-        `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}`
+        `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
       );
     } else if (connectedAccount.items.length > 0) {
       logger.warn(

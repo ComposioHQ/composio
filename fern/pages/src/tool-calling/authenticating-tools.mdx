@@ -165,6 +165,35 @@ const connRequest = await composio.connectedAccounts.initiate(
 </CodeGroup>
 
 
+### Services with Additional Parameters
+
+Some services like Zendesk require additional parameters such as `subdomain`:
+
+<CodeGroup>
+```python
+# For Zendesk - include subdomain
+connection_request = composio.connected_accounts.initiate(
+    user_id=user_id,
+    auth_config_id=auth_config_id,
+    config=auth_scheme.oauth2(subdomain="mycompany")  # For mycompany.zendesk.com
+)
+```
+
+```typescript
+import { AuthScheme } from '@composio/core';
+// For Zendesk - include subdomain  
+const connRequest = await composio.connectedAccounts.initiate(
+  userId, 
+  authConfigId,
+  {
+    config: AuthScheme.OAuth2({
+      subdomain: 'mycompany'
+    })
+  }
+);
+```
+</CodeGroup>
+
 ### API Key Connections
 
 For API key authentication, you can either *collect API keys from each user* or *use your own API key* for all users. Popular Toolkits that use API Keys include Stripe, Perplexity etc.
