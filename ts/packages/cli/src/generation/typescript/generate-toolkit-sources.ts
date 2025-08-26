@@ -116,7 +116,7 @@ export function generateTypeScriptToolkitSources(banner: string) {
 function generateTypeScriptToolkitSource(_banner: string) {
   return (
     toolkitName: ToolkitName,
-    { slug, tools, triggerTypes }: ToolkitIndexData
+    { slug, typeableTools, triggerTypes }: ToolkitIndexData
   ): Effect.Effect<SourceFile, GenerateTypeFromJsonSchemaError, never> => {
     return Effect.gen(function* () {
       const filename = `${slug}.ts`;
@@ -129,6 +129,107 @@ function generateTypeScriptToolkitSource(_banner: string) {
         );
       }
 
+      if (typeableTools.withTypes) {
+        file.add(
+          ts.docSectionComment(
+            `// --------------- //
+             //    Tool types   //
+             // --------------- //
+            `
+          )
+        );
+
+        // write type declarations for each tool, without exporting them
+        for (const [toolName, tool] of Record.toEntries(typeableTools.value)) {
+          // e.g., `type GMAIL_SEND_EMAIL_INPUT = { .. }`
+          const toolInputType = yield* generateTypeFromJsonSchema(
+            `${toolkitName}_${toolName}_INPUT`,
+            tool.input_parameters
+          );
+
+          // e.g., `type GMAIL_SEND_EMAIL_OUTPUT = { .. }`
+          const toolOutputType = yield* generateTypeFromJsonSchema(
+            `${toolkitName}_${toolName}_OUTPUT`,
+            tool.output_parameters
+          );
+
+          file.add(
+            ts
+              .typeDeclaration(tool.slug, toolInputType)
+              .setDocComment(ts.docComment(`Type of ${toolkitName}'s ${tool.slug} tool input.`))
+          );
+
+          file.add(
+            ts
+              .typeDeclaration(tool.slug, toolOutputType)
+              .setDocComment(ts.docComment(`Type of ${toolkitName}'s ${tool.slug} tool output.`))
+          );
+        }
+
+        // write the map of input tool types
+        {
+          const toolInputTypeEntries = pipe(
+            typeableTools.value,
+            Record.map((_, toolName) =>
+              ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_INPUT`))
+            ),
+            Record.toEntries,
+            Arr.map(([_, value]) => value)
+          );
+
+          const doc = ts.docComment(
+            `Type map of all available tool input types for toolkit "${toolkitName}".`
+          );
+
+          file.add(
+            ts
+              .moduleExport(
+                ts.typeDeclaration(
+                  `${toolkitName}_TOOL_INPUTS`,
+                  ts.objectType().addMultiple(toolInputTypeEntries)
+                )
+              )
+              .setDocComment(doc)
+          );
+        }
+
+        // write the map of output tool types
+        {
+          const toolOutputTypeEntries = pipe(
+            typeableTools.value,
+            Record.map((_, toolName) =>
+              ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_OUTPUT`))
+            ),
+            Record.toEntries,
+            Arr.map(([_, value]) => value)
+          );
+
+          const doc = ts.docComment(
+            `Type map of all available tool input types for toolkit "${toolkitName}".`
+          );
+
+          file.add(
+            ts
+              .moduleExport(
+                ts.typeDeclaration(
+                  `${toolkitName}_TOOL_OUTPUTS`,
+                  ts.objectType().addMultiple(toolOutputTypeEntries)
+                )
+              )
+              .setDocComment(doc)
+          );
+        }
+      }
+
+      file.add(
+        ts.docSectionComment(
+          `// ------------------- //
+           //    Trigger types    //
+           // ------------------- //
+          `
+        )
+      );
+
       // write type declarations for each trigger payload, without exporting them
       for (const [triggerTypeSlug, triggerType] of Record.toEntries(triggerTypes)) {
         // e.g., `type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = { .. }`
@@ -136,7 +237,13 @@ function generateTypeScriptToolkitSource(_banner: string) {
           `${toolkitName}_${triggerTypeSlug}_PAYLOAD`,
           triggerType.payload
         );
-        file.add(ts.typeDeclaration(triggerTypeSlug, triggerPayloadType));
+        file.add(
+          ts
+            .typeDeclaration(triggerTypeSlug, triggerPayloadType)
+            .setDocComment(
+              ts.docComment(`Type of ${toolkitName}'s ${triggerTypeSlug} trigger payload.`)
+            )
+        );
       }
 
       // write the toolkit const object declaration
@@ -151,7 +258,7 @@ function generateTypeScriptToolkitSource(_banner: string) {
               ts
                 .objectValue()
                 .addMultiple(
-                  Object.entries(tools).map(([toolName, tool]) =>
+                  Object.entries(typeableTools.value).map(([toolName, tool]) =>
                     ts.propertyValue(toolName, ts.stringLiteral(tool).asValue())
                   )
                 )

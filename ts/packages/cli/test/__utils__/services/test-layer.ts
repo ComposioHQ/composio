@@ -24,7 +24,7 @@ import {
 } from 'src/services/composio-clients';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
-import type { Tools } from 'src/models/tools';
+import type { ToolsAsEnums } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -48,7 +48,7 @@ export interface TestLiveInput {
    */
   toolkitsData?: {
     toolkits?: Toolkits;
-    tools?: Tools;
+    tools?: ToolsAsEnums;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
     triggerTypes?: TriggerTypes;
   };
@@ -90,9 +90,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
-        getTools: () => Effect.succeed(toolkitsData.tools),
+        getToolsAsEnums: () => Effect.succeed(toolkitsData.tools),
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
         getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
+        getTools: limit => Effect.succeed(toolkitsData.tools.slice(0, limit)),
       })
     );
 

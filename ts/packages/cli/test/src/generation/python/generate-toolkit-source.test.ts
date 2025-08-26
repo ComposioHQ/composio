@@ -11,7 +11,7 @@ describe('generatePythonToolkitSources', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty array', () => {
     const index = createToolkitIndex({
       toolkits: [],
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
@@ -30,7 +30,7 @@ describe('generatePythonToolkitSources', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
@@ -71,7 +71,7 @@ describe('generatePythonToolkitSources', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: [...TOOLS_GMAIL.slice(0, 3)],
+      typeableTools: { withTypes: false, tools: [...TOOLS_GMAIL.slice(0, 3)] },
       triggerTypes: [...TRIGGER_TYPES_GMAIL],
     });
 

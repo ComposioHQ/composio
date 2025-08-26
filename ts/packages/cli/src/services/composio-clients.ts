@@ -1,7 +1,7 @@
 import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult } from 'effect';
 import { Composio as _RawComposioClient } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
-import { Tools } from 'src/models/tools';
+import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
@@ -45,7 +45,14 @@ export const ToolkitsResponse = Schema.Struct({
 }).annotations({ identifier: 'ToolkitsResponse' });
 export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 
-export const ToolsResponse = Tools;
+export const ToolsAsEnumsResponse = ToolsAsEnums;
+export type ToolsAsEnumsResponse = Schema.Schema.Type<typeof ToolsAsEnumsResponse>;
+
+export const ToolsResponse = Schema.Struct({
+  items: Tools,
+  total_pages: Schema.Int,
+  next_cursor: Schema.NullOr(Schema.Int),
+}).annotations({ identifier: 'ToolsResponse' });
 export type ToolsResponse = Schema.Schema.Type<typeof ToolsResponse>;
 
 export const TriggerTypesAsEnumsResponse = TriggerTypesAsEnums;
@@ -182,7 +189,17 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
            * Retrieve a list of all available tool enumeration values (tool slugs) for the project.
            */
           retrieveEnum: () =>
-            callClient(clientSingleton, client => client.tools.retrieveEnum(), ToolsResponse),
+            callClient(
+              clientSingleton,
+              client => client.tools.retrieveEnum(),
+              ToolsAsEnumsResponse
+            ),
+          /**
+           * Retrieve a list of $limit trigger types, containing their payload.
+           * Usually, you would call this with a limit matching the length of the list returned by `retrieveEnum`.
+           */
+          list: (params: { limit: number }) =>
+            callClient(clientSingleton, client => client.tools.list(params), ToolsResponse),
         },
         triggersTypes: {
           /**
@@ -242,7 +259,6 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getToolkits: () =>
           client.toolkits.list().pipe(
             Effect.map(response => response.items),
-            Effect.tap(Effect.logDebug),
             Effect.flatMap(
               Effect.fn(function* (toolkits) {
                 // Sort apps by slug.
@@ -252,13 +268,23 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
               })
             )
           ),
-        getTools: () => client.tools.retrieveEnum().pipe(Effect.tap(Effect.logDebug)),
-        getTriggerTypesAsEnums: () =>
-          client.triggersTypes.retrieveEnum().pipe(Effect.tap(Effect.logDebug)),
+        getToolsAsEnums: () => client.tools.retrieveEnum(),
+        getTools: (limit: number) =>
+          client.tools.list({ limit }).pipe(
+            Effect.map(response => response.items),
+            Effect.flatMap(
+              Effect.fn(function* (tools) {
+                // Sort apps by slug.
+                // TODO: make sure this happens on the server-side.
+                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
+                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
+              })
+            )
+          ),
+        getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
         getTriggerTypes: (limit: number) =>
           client.triggersTypes.list({ limit }).pipe(
             Effect.map(response => response.items),
-            Effect.tap(Effect.logDebug),
             Effect.flatMap(
               Effect.fn(function* (triggerTypes) {
                 // Sort apps by slug.

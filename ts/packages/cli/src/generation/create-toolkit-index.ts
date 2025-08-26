@@ -1,7 +1,7 @@
-import { pipe, String, Record } from 'effect';
+import { pipe, String, Record, Match } from 'effect';
 import type { Simplify } from 'effect/Types';
 import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
-import { Tools } from 'src/models/tools';
+import { ToolsAsEnums, Tools, ToolAsEnum, Tool } from 'src/models/tools';
 import { TriggerType, TriggerTypes } from 'src/models/trigger-types';
 
 const startsWith =
@@ -11,13 +11,15 @@ const startsWith =
 
 interface CreateToolkitIndexInput {
   toolkits: Toolkits; // e.g., [ { slug: 'gmail', ... }]
-  tools: Tools; // e.g., [ 'GMAIL_SEND_EMAIL' ]
+  typeableTools: { withTypes: false; tools: ToolsAsEnums } | { withTypes: true; tools: Tools }; // e.g., [ 'GMAIL_SEND_EMAIL' ] | [ { slug: 'GMAIL_SEND_EMAIL', ... } ]
   triggerTypes: TriggerTypes; // e.g., [ { slug: 'GMAIL_NEW_EMAIL', ... } ]
 }
 
 export type ToolkitIndexData = Simplify<{
   slug: string;
-  tools: Record<`${ToolkitName}_${string}`, string>;
+  typeableTools:
+    | { withTypes: false; value: Record<`${ToolkitName}_${string}`, ToolAsEnum> }
+    | { withTypes: true; value: Record<`${ToolkitName}_${string}`, Tool> };
   triggerTypes: Record<`${ToolkitName}_${string}`, TriggerType>;
 }>;
 
@@ -37,14 +39,34 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
       const stripPrefix = String.slice(key.length + 1);
 
       const { slug } = value.toolkit;
-      const tools = value.tools.map(tool => [stripPrefix(tool), tool] as const);
+
+      const typeableTools = Match.value(value.typeableTools).pipe(
+        Match.when({ withTypes: true }, ({ withTypes, tools }) => {
+          return {
+            withTypes,
+            value: Record.fromEntries(tools.map(tool => [stripPrefix(tool.slug), tool] as const)),
+          };
+        }),
+        Match.when({ withTypes: false }, ({ withTypes, tools }) => {
+          return {
+            withTypes,
+            value: Record.fromEntries(tools.map(tool => [stripPrefix(tool), tool] as const)),
+          };
+        }),
+        Match.exhaustive
+      );
+
       const triggerTypes = value.triggerTypes.map(
         triggerType => [stripPrefix(triggerType.slug), triggerType] as const
       );
 
       return [
         key,
-        { slug, tools: Record.fromEntries(tools), triggerTypes: Record.fromEntries(triggerTypes) },
+        {
+          slug,
+          typeableTools,
+          triggerTypes: Record.fromEntries(triggerTypes),
+        },
       ] as const;
     })
   );
@@ -58,7 +80,9 @@ type GroupByToolkitOutput<T extends ToolkitName> = [
   Uppercase<T>,
   {
     toolkit: Toolkit;
-    tools: Array<`${Uppercase<T>}_${string}`>;
+    typeableTools:
+      | { withTypes: false; tools: Array<`${Uppercase<T>}_${string}`> }
+      | { withTypes: true; tools: Array<Tool & { slug: `${Uppercase<T>}_${string}` }> };
     triggerTypes: Array<TriggerTypeWithUppercaseSlug<T>>;
   },
 ];
@@ -66,18 +90,32 @@ type GroupByToolkitOutput<T extends ToolkitName> = [
 const groupByToolkit =
   <const T extends string>(toolkit: Omit<Toolkit, 'name'> & { name: T }) =>
   ({
-    tools,
+    typeableTools,
     triggerTypes,
   }: Omit<CreateToolkitIndexInput, 'toolkits'>): GroupByToolkitOutput<T & ToolkitName> => {
     const toolkitName = pipe(toolkit.slug, String.toUpperCase, ToolkitName) as Uppercase<
       T & ToolkitName
     >;
 
+    const filteredTypeableTools = Match.value(typeableTools).pipe(
+      Match.when({ withTypes: true }, ({ withTypes, tools }) => ({
+        withTypes,
+        tools: tools.filter(tool => startsWith(`${toolkitName}_`)(tool.slug)) as Array<
+          Tool & { slug: `${typeof toolkitName}_${string}` }
+        >,
+      })),
+      Match.when({ withTypes: false }, ({ withTypes, tools }) => ({
+        withTypes,
+        tools: tools.filter(startsWith(`${toolkitName}_`)),
+      })),
+      Match.exhaustive
+    );
+
     return [
       toolkitName,
       {
         toolkit,
-        tools: tools.filter(startsWith(`${toolkitName}_`)),
+        typeableTools: filteredTypeableTools,
         triggerTypes: triggerTypes.filter(triggerType =>
           startsWith(`${toolkitName}_`)(triggerType.slug)
         ) as Array<TriggerTypeWithUppercaseSlug<T & ToolkitName>>,

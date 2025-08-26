@@ -64,6 +64,15 @@ describe('CLI: composio ts generate', () => {
               expect(gmailSourceCode).toMatchInlineSnapshot(`
                 "import { type TriggerEvent } from "@composio/core"
 
+                // ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
+                 * Type of GMAIL's NEW_GMAIL_MESSAGE trigger payload.
+                 */
                 type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = {
                   /**
                    * Attachment List
@@ -288,7 +297,13 @@ describe('CLI: composio ts generate', () => {
                 "
               `);
               expect(slackSourceCode).toMatchInlineSnapshot(`
-                "/**
+                "// ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
                  * Map of Composio's SLACK toolkit.
                  */
                 export const SLACK = {
@@ -392,6 +407,15 @@ describe('CLI: composio ts generate', () => {
               expect(gmailSourceCode).toMatchInlineSnapshot(`
                 "import { type TriggerEvent } from "@composio/core"
 
+                // ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
+                 * Type of GMAIL's NEW_GMAIL_MESSAGE trigger payload.
+                 */
                 type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = {
                   /**
                    * Attachment List
@@ -616,7 +640,13 @@ describe('CLI: composio ts generate', () => {
                 "
               `);
               expect(slackSourceCode).toMatchInlineSnapshot(`
-                "/**
+                "// ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
                  * Map of Composio's SLACK toolkit.
                  */
                 export const SLACK = {
