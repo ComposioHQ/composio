@@ -1,5 +1,18 @@
 # @composio/core
 
+## 0.1.47
+
+### Patch Changes
+
+- 05ce9c6: Fix make access token and token type optional in oauth scheme
+
+## 0.1.46
+
+### Patch Changes
+
+- ee12d25: Fix long filenames while uploading files from URL
+- 9458513: Feat: Add flags to disable version check
+
 ## 0.1.45
 
 ### Patch Changes

@@ -379,12 +379,17 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         slug: str,
         arguments: t.Dict,
+        user_id: t.Optional[str] = None,
     ) -> ToolExecutionResponse:
         """Execute a custom tool"""
         # TODO: Better error handling, pydantic validation eg...
         try:
             return {
-                "data": self._custom_tools.execute(slug=slug, request=arguments),
+                "data": self._custom_tools.execute(
+                    slug=slug,
+                    request=arguments,
+                    user_id=user_id,
+                ),
                 "error": None,
                 "successful": True,
             }
@@ -548,7 +553,11 @@ class Tools(Resource, t.Generic[TProvider]):
             request=arguments,
         )
         response = (
-            self._execute_custom_tool(slug=slug, arguments=arguments)
+            self._execute_custom_tool(
+                slug=slug,
+                arguments=arguments,
+                user_id=user_id,
+            )
             if self._custom_tools.get(slug) is not None
             else self._execute_tool(
                 slug=slug,

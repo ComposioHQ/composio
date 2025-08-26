@@ -13,8 +13,8 @@ export class AuthScheme {
    */
   static OAuth2(
     params: BaseConnectionFields & {
-      access_token: string;
-      token_type: string;
+      access_token?: string;
+      token_type?: string;
       id_token?: string;
       refresh_token?: string;
       expires_in?: number;
@@ -49,7 +49,7 @@ export class AuthScheme {
    */
   static OAuth1(
     params: BaseConnectionFields & {
-      oauth_token: string;
+      oauth_token?: string;
       consumer_key?: string;
       redirectUrl?: string;
       callback_url?: string;

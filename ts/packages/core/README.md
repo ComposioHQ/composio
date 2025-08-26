@@ -1,6 +1,10 @@
+![Composio Banner](https://github.com/user-attachments/assets/9ba0e9c1-85a4-4b51-ae60-f9fe7992e819)
+
 # @composio/core
 
 The core Composio SDK which allows users to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various platforms and frameworks.
+
+[Learn more about the SDK from our docs](https://docs.composio.dev)
 
 ## Core Features
 
@@ -27,22 +31,86 @@ pnpm add @composio/core
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai';
+import { OpenAI } from 'openai';
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Initialize Composio with your API key
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  // OpenAIProvider is the default, so this is optional
-  provider: new OpenAIProvider(),
 });
 
-// Fetch a single tool by slig
-const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS');
+async function main() {
+  try {
+    // Fetch tools - single tool or multiple tools
+    const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+    // Or fetch multiple tools: await composio.tools.get('default', { toolkits: ['hackernews'] });
 
-// Fetch multiple tools
-const tools = await composio.tools.get('user123', {
-  category: 'search',
-  limit: 10,
-});
+    const query = "Find information about the HackerNews user 'pg'";
+
+    // Create chat completion with tools
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that can use tools to answer questions.',
+        },
+        { role: 'user', content: query },
+      ],
+      tools: tools,
+      tool_choice: 'auto',
+    });
+
+    // Handle tool calls if the assistant decides to use them
+    if (response.choices[0].message.tool_calls) {
+      console.log(
+        '🔧 Assistant is using tool:',
+        response.choices[0].message.tool_calls[0].function.name
+      );
+
+      // Execute the tool call
+      const toolResult = await composio.provider.executeToolCall(
+        'default',
+        response.choices[0].message.tool_calls[0],
+        {
+          connectedAccountId: '', // Optional: specify connected account
+        }
+      );
+
+      console.log('✅ Tool execution result:', JSON.parse(toolResult));
+
+      // Get final response from assistant with tool result
+      const finalResponse = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that can use tools to answer questions.',
+          },
+          { role: 'user', content: query },
+          response.choices[0].message,
+          {
+            role: 'tool',
+            tool_call_id: response.choices[0].message.tool_calls[0].id,
+            content: toolResult,
+          },
+        ],
+      });
+
+      console.log('🤖 Final response:', finalResponse.choices[0].message.content);
+    } else {
+      console.log('🤖 Response:', response.choices[0].message.content);
+    }
+  } catch (error) {
+    console.error('❌ Error:', error);
+  }
+}
+
+main();
 ```
 
 ## Configuration
@@ -51,12 +119,14 @@ The Composio constructor accepts the following configuration options:
 
 ```typescript
 interface ComposioConfig {
-  apiKey?: string; // Your Composio API key
-  baseURL?: string; // Custom API base URL (optional)
+  apiKey?: string | null; // Your Composio API key
+  baseURL?: string | null; // Custom API base URL (optional)
   allowTracking?: boolean; // Enable/disable telemetry (default: true)
-  allowTracing?: boolean; // Enable/disable tracing (default: true)
+  autoUploadDownloadFiles?: boolean; // Whether to automatically upload and download files during tool execution (default: true)
   provider?: TProvider; // Custom provider (default: OpenAIProvider)
-  host?: string; // Name of the host service which is using the SDK, this is for telemetry.
+  host?: string; // Name of the host service which is using the SDK, this is for telemetry
+  defaultHeaders?: ComposioRequestHeaders; // Request headers to be passed to the Composio API client
+  disableVersionCheck?: boolean; // Whether to disable version check for the Composio SDK (default: false)
 }
 ```
 
@@ -70,7 +140,7 @@ Schema modifiers allow you to transform tool schemas before they are used:
 
 ```typescript
 const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
-  modifySchema: (toolSlug: string, toolkitSlug: string, tool: Tool) => ({
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => ({
     ...tool,
     description: 'Enhanced HackerNews search with additional features',
     inputParameters: {
@@ -92,7 +162,7 @@ For agentic providers (like Vercel AI and Langchain), you can also modify tool e
 ```typescript
 const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   // Transform input before execution
-  beforeExecute: (toolSlug: string, toolkitSlug: string, params: ToolExecuteParams) => ({
+  beforeExecute: ({ toolSlug, toolkitSlug, params }) => ({
     ...params,
     arguments: {
       ...params.arguments,
@@ -101,7 +171,7 @@ const tools = await composio.tools.get('user123', 'HACKERNEWS_SEARCH_POSTS', {
   }),
 
   // Transform output after execution
-  afterExecute: (toolSlug: string, toolkitSlug: string, response: ToolExecuteResponse) => ({
+  afterExecute: ({ toolSlug, toolkitSlug, result }) => ({
     ...response,
     data: {
       ...response.data,
@@ -128,11 +198,11 @@ const composio = new Composio({
 });
 
 // Create a connected account
-const connectionRequest = await composio.createConnectedAccount(
+const connectionRequest = await composio.connectedAccounts.initiate(
   'user123', // userId
-  'HACKERNEWS', // authConfigId
+  'ac_12343544', // authConfigId: You can create it from the dashboard
   {
-    redirectUrl: 'https://your-app.com/callback',
+    callbackUrl: 'https://your-app.com/callback',
     data: {
       // Additional data for the connection
       scope: ['read', 'write'],
@@ -143,6 +213,7 @@ const connectionRequest = await composio.createConnectedAccount(
 // Wait for the connection to be established
 // Default timeout is 60 seconds
 const connectedAccount = await connectionRequest.waitForConnection();
+console.log({ connectedAccount });
 ```
 
 ### Waiting for Connection Establishment
