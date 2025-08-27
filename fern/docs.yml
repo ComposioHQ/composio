@@ -149,6 +149,21 @@ navigation:
     - page: User Management
       path: pages/dist/guides/user-ids.mdx
       slug: user-ids
+    # - section: Auth Schemes
+    #   slug: auth-schemes
+    #   contents:
+    #   - page: OAuth
+    #     path: pages/dist/guides/auth-schemes/oauth.mdx
+    #     slug: oauth
+    #   - page: API Keys
+    #     path: pages/dist/guides/auth-schemes/api_keys.mdx
+    #     slug: api-keys
+    #   - page: Bearer Tokens
+    #     path: pages/dist/guides/auth-schemes/bearer.mdx
+    #     slug: bearer-tokens
+    #   - page: Basic Auth
+    #     path: pages/dist/guides/auth-schemes/basic.mdx
+    #     slug: basic-auth
     - page: Custom Tools
       path: pages/dist/guides/custom-tools.mdx
       slug: custom-tools
@@ -157,13 +172,13 @@ navigation:
       contents:
       - page: Before Execution
         path: pages/dist/guides/tool-execution-hooks/before-execution.mdx
-        slug: tool-execution-hooks/before-execution
+        slug: before-execution
       - page: After Execution
         path: pages/dist/guides/tool-execution-hooks/after-execution.mdx
-        slug: tool-execution-hooks/after-execution
+        slug: after-execution
       - page: Schema Modifiers
         path: pages/dist/guides/tool-execution-hooks/schema-modifiers.mdx
-        slug: tool-execution-hooks/schema-modifiers
+        slug: schema-modifiers
       - page: Custom Auth Params
         path: pages/dist/guides/tool-execution-hooks/custom-auth-params.mdx
         slug: custom-auth-params
@@ -262,6 +277,9 @@ navigation:
     - page: Supabase SQL Agent
       path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
       slug: supabase-sql-agent
+    - page: Gmail Labeler
+      path: pages/dist/examples/utility_agents/gmail_labeler.mdx
+      slug: gmail-labeler
   - section: Chat Applications
     icon: message
     slug: chat-apps

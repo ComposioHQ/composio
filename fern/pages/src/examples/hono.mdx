@@ -224,7 +224,7 @@ export function checkConnectedAccountExists(
      * Check if a connected account exists for a given user id.
      */
     // Fetch all connected accounts for the user
-    return composioClient.connectedAccounts.list({ userIds: [userId] }).then(connectedAccounts => {
+    return composioClient.connectedAccounts.list({ userIds: [userId], toolkitSlugs: ["GMAIL"] }).then(connectedAccounts => {
 
         // Check if there's an active connected account
         for (const account of connectedAccounts.items) {

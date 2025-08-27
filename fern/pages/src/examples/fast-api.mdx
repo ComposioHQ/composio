@@ -224,7 +224,10 @@ def check_connected_account_exists(
     Check if a connected account exists for a given user id.
     """
     # Fetch all connected accounts for the user
-    connected_accounts = composio_client.connected_accounts.list(user_ids=[user_id])
+    connected_accounts = composio_client.connected_accounts.list(
+        user_ids=[user_id],
+        toolkit_slugs=["GMAIL"],
+    )
 
     # Check if there's an active connected account
     for account in connected_accounts.items:
