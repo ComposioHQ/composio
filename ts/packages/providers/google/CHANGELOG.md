@@ -1,5 +1,12 @@
 # @composio/google
 
+## 0.1.48
+
+### Patch Changes
+
+- Updated dependencies [bb32cc2]
+  - @composio/core@0.1.48
+
 ## 0.1.47
 
 ### Patch Changes
