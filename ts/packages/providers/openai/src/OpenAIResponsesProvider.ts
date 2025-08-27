@@ -42,7 +42,7 @@ export interface OpenAIMcpServerResponse {
 export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   OpenAiToolCollection,
   OpenAiTool,
-  OpenAIMcpServerResponse[]
+  OpenAiMcpTool[]
 > {
   readonly name = 'openai';
   private strict: boolean | null;
