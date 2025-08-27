@@ -5,14 +5,16 @@ keywords: ""
 subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
 hide-nav-links: false
 ---
+LLMs on their own can only generate text. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, *act,* observe, and adapt.
 
-Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tool, for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+
+In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or Databases*, and Composio handles authentication and user scoping.
 
 ## Using Chat Completions
 For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
 This approach works consistently across all supported non-agent providers.
 
-To learn how to setup these providers, see [Providers](/providers).
+To learn how to setup these providers, see [Providers](/providers/openai).
 
 <CodeGroup>
 <SnippetCode
