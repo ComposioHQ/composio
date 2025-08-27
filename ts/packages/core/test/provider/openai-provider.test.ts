@@ -74,8 +74,10 @@ describe('OpenAIProvider', () => {
       const wrapped = provider.wrapTools(tools);
 
       expect(wrapped).toHaveLength(2);
-      expect(wrapped[0].function.name).toBe(mockTool.slug);
-      expect(wrapped[1].function.name).toBe(anotherTool.slug);
+      expect((wrapped[0] as OpenAI.ChatCompletionFunctionTool).function.name).toBe(mockTool.slug);
+      expect((wrapped[1] as OpenAI.ChatCompletionFunctionTool).function.name).toBe(
+        anotherTool.slug
+      );
     });
   });
 
@@ -89,7 +91,7 @@ describe('OpenAIProvider', () => {
           name: 'test-tool',
           arguments: JSON.stringify({ input: 'test-value' }),
         },
-      } as OpenAI.ChatCompletionMessageToolCall;
+      } as OpenAI.ChatCompletionMessageFunctionToolCall;
 
       const result = await provider.executeToolCall(userId, toolCall);
 
@@ -115,7 +117,7 @@ describe('OpenAIProvider', () => {
           name: 'test-tool',
           arguments: JSON.stringify({ input: 'test-value' }),
         },
-      } as OpenAI.ChatCompletionMessageToolCall;
+      } as OpenAI.ChatCompletionMessageFunctionToolCall;
 
       const options = {
         connectedAccountId: 'conn-123',
