@@ -10,10 +10,10 @@ vi.mock('openai', () => {
       beta: {
         threads: {
           runs: {
-            retrieve: vi.fn().mockImplementation((threadId, runId) => {
+            retrieve: vi.fn().mockImplementation((runId, options) => {
               return { id: runId, status: 'completed' };
             }),
-            submitToolOutputs: vi.fn().mockImplementation((threadId, runId, options) => {
+            submitToolOutputs: vi.fn().mockImplementation((runId, options) => {
               return { id: runId, status: 'completed' };
             }),
           },
@@ -172,7 +172,7 @@ describe('OpenAIProvider', () => {
           name: 'test-tool',
           arguments: JSON.stringify({ input: 'test-value' }),
         },
-      } as OpenAI.ChatCompletionMessageToolCall;
+      } as OpenAI.ChatCompletionMessageFunctionToolCall;
 
       const result = await provider.executeToolCall(userId, toolCall);
 
@@ -218,7 +218,12 @@ describe('OpenAIProvider', () => {
         afterExecute: vi.fn(({ result }) => result),
       };
 
-      await provider.executeToolCall(userId, toolCall, options, modifiers);
+      await provider.executeToolCall(
+        userId,
+        toolCall as OpenAI.ChatCompletionMessageFunctionToolCall,
+        options,
+        modifiers
+      );
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(
         'test-tool',
@@ -500,7 +505,8 @@ describe('OpenAIProvider', () => {
       const result = await provider.waitAndHandleAssistantToolCalls(userId, client, run, thread);
 
       expect(handleAssistantMessageSpy).toHaveBeenCalledWith(userId, run, undefined, undefined);
-      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith(thread.id, run.id, {
+      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith(run.id, {
+        thread_id: thread.id,
         tool_outputs: [
           {
             tool_call_id: 'tool-call-123',
