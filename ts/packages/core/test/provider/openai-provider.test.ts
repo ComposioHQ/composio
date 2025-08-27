@@ -419,19 +419,18 @@ describe('OpenAIProvider', () => {
         undefined,
         undefined
       );
-      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith(
-        'thread-123',
-        'run-123',
-        {
-          tool_outputs: [
-            {
-              tool_call_id: 'call-123',
-              output: JSON.stringify({ result: 'success' }),
-            },
-          ],
-        }
-      );
-      expect(client.beta.threads.runs.retrieve).toHaveBeenCalledWith('thread-123', 'run-123');
+      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith('run-123', {
+        thread_id: 'thread-123',
+        tool_outputs: [
+          {
+            tool_call_id: 'call-123',
+            output: JSON.stringify({ result: 'success' }),
+          },
+        ],
+      });
+      expect(client.beta.threads.runs.retrieve).toHaveBeenCalledWith('run-123', {
+        thread_id: 'thread-123',
+      });
       expect(result).toEqual(completedRun);
     });
   });
@@ -543,18 +542,15 @@ describe('OpenAIProvider', () => {
         undefined,
         undefined
       );
-      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith(
-        'thread-123',
-        'run-123',
-        {
-          tool_outputs: [
-            {
-              tool_call_id: 'call-123',
-              output: JSON.stringify({ result: 'success' }),
-            },
-          ],
-        }
-      );
+      expect(client.beta.threads.runs.submitToolOutputs).toHaveBeenCalledWith('run-123', {
+        thread_id: 'thread-123',
+        tool_outputs: [
+          {
+            tool_call_id: 'call-123',
+            output: JSON.stringify({ result: 'success' }),
+          },
+        ],
+      });
     });
   });
 });
