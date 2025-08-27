@@ -224,8 +224,15 @@ export class MCP<T = McpServerGetResponse> {
     const serverResponseResult =
       ComposioCustomCreateResponseSchema.safeParse(mcpServerCreatedResponse);
     if (serverResponseResult.error) {
-      throw new ValidationError('Failed to parse MCP server creation response', {
+      const issues = serverResponseResult.error.issues
+        .map(issue => `${issue.path.length > 0 ? issue.path.join('.') : 'root'}: ${issue.message}`)
+        .join(', ');
+      throw new ValidationError(`Failed to parse MCP server creation response ${issues}`, {
         cause: serverResponseResult.error,
+        meta: {
+          serverName: name,
+          backendResponse: mcpServerCreatedResponse,
+        },
       });
     }
 
