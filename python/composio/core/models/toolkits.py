@@ -57,7 +57,7 @@ class Toolkits(Resource):
         )
 
     @t.overload
-    def get(self) -> list[toolkit_list_response.Item]:
+    def get(self) -> t.List[toolkit_list_response.Item]:
         """Get all toolkits."""
 
     @t.overload
@@ -69,7 +69,7 @@ class Toolkits(Resource):
         self,
         *,
         query: toolkit_list_params.ToolkitListParams,
-    ) -> list[toolkit_list_response.Item]:
+    ) -> t.List[toolkit_list_response.Item]:
         """Get a list of toolkits by query."""
 
     def get(
@@ -79,7 +79,7 @@ class Toolkits(Resource):
         query: t.Optional[toolkit_list_params.ToolkitListParams] = None,
     ) -> t.Union[
         toolkit_retrieve_response.ToolkitRetrieveResponse,
-        list[toolkit_list_response.Item],
+        t.List[toolkit_list_response.Item],
     ]:
         if slug is not None:
             return self._client.toolkits.retrieve(slug=slug)
