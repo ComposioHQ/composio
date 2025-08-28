@@ -11,9 +11,9 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or GitHub*, and Composio handles authentication and user scoping.
 
 
-<Tooltip>
-Ensure you have created a connected account for that user with the toolkit you want to use before following these steps.
-</Tooltip>
+<Info>
+Ensure you have created a connected account for that user with the toolkit you want to use before executing the tools. Follow instruction in [Authenticating Tools](/tool-calling/authenticating-tools) to set it up.
+</Info>
 
 
 ## **Using Chat Completions**
@@ -24,12 +24,14 @@ With providers like *OpenAI*, *Anthropic*, and *Google AI*, use the Composio SDK
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-completions.py"
   title="Python (Google)"
-  highlightStart={31}
-  highlightEnd={32}
+  highlightStart={32}
+  highlightEnd={33}
 />
 <SnippetCode
   src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
   title="TypeScript (Anthropic)"
+  highlightStart={37}
+  highlightEnd={38} 
 />
 </CodeGroup>
 

@@ -2,29 +2,39 @@ import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
 
-const userId = '0000-1111-2222-3333'; // User's UUID
+// Use a unique identifier for each user in your application
+const userId = 'user-k7334'; // User's UUID
 
+// Create anthropic client
 const anthropic = new Anthropic();
+
+// Create Composio client
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
+  apiKey: "your-composio-api-key",
   provider: new AnthropicProvider(),
 });
 
+// Get calendar tools for this user
 const tools = await composio.tools.get(userId, {
-  tools: ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH'],
+  tools: ['GOOGLECALENDAR_EVENTS_LIST'],
 });
 
+const today = new Date();
+
+// Ask the LLM to check calendar
 const msg = await anthropic.messages.create({
-  model: 'claude-3-7-sonnet-latest',
+  model: 'claude-sonnet-4-20250514',
   tools: tools,
   messages: [
     {
       role: 'user',
-      content: "What's new with OpenAI?",
+      content: `What's on my calendar for the next 7 days starting today:${today.toLocaleDateString()}?`,
     },
   ],
   max_tokens: 1024,
 });
 
+// Handle tool calls
 const result = await composio.provider.handleToolCalls(userId, msg);
-console.log(result);
+console.log('Results:', JSON.stringify(result, null, 2));
+
