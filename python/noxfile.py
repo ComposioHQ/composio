@@ -21,6 +21,7 @@ type_stubs = [
     "fastapi",
     "langchain",
     "langgraph",
+    "llama-index",
     "openai-agents",
     "langchain-openai",
     "google-cloud-aiplatform",

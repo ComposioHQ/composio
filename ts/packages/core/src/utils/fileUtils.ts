@@ -4,6 +4,93 @@ import ComposioClient from '@composio/client';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
+import { getRandomShortId, getRandomUUID } from './uuid';
+
+// Helper function to get file extension from MIME type
+const getExtensionFromMimeType = (mimeType: string): string => {
+  const mimeToExt: Record<string, string> = {
+    'text/plain': 'txt',
+    'text/html': 'html',
+    'text/css': 'css',
+    'text/javascript': 'js',
+    'application/json': 'json',
+    'application/xml': 'xml',
+    'application/pdf': 'pdf',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
+    'application/gzip': 'gz',
+    'application/x-tar': 'tar',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/webp': 'webp',
+    'image/bmp': 'bmp',
+    'image/tiff': 'tiff',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+    'audio/ogg': 'ogg',
+    'video/mp4': 'mp4',
+    'video/mpeg': 'mpeg',
+    'video/quicktime': 'mov',
+    'video/x-msvideo': 'avi',
+    'video/webm': 'webm',
+  };
+
+  // Clean the MIME type by removing parameters (e.g., "text/plain; charset=utf-8" -> "text/plain")
+  const cleanMimeType = mimeType.split(';')[0].toLowerCase().trim();
+
+  // Try exact match first
+  if (mimeToExt[cleanMimeType]) {
+    return mimeToExt[cleanMimeType];
+  }
+
+  // Try to extract from the MIME type (e.g., "image/png" -> "png")
+  const parts = cleanMimeType.split('/');
+  if (parts.length === 2) {
+    const subtype = parts[1].toLowerCase();
+    const cleanSubtype = subtype; // Already cleaned above
+
+    // Handle structured MIME types with + (e.g., "application/vnd.api+json" -> "json")
+    if (cleanSubtype.includes('+')) {
+      const plusParts = cleanSubtype.split('+');
+      const prefix = plusParts[0];
+      const suffix = plusParts[plusParts.length - 1]; // Get the part after the last +
+
+      // For specific formats, prefer the prefix (e.g., "atom+xml" -> "atom")
+      const knownPrefixes = ['svg', 'atom', 'rss'];
+      if (knownPrefixes.includes(prefix)) {
+        return prefix;
+      }
+
+      // For common structured suffixes, use the suffix (e.g., "vnd.api+json" -> "json")
+      const structuredSuffixes = ['json', 'xml', 'yaml', 'zip', 'gzip'];
+      if (structuredSuffixes.includes(suffix)) {
+        return suffix;
+      }
+
+      // Default to the suffix for other structured types
+      return suffix;
+    }
+
+    return cleanSubtype || 'txt';
+  }
+
+  return 'txt'; // Default fallback
+};
+
+// Helper function to generate a filename with timestamp and random ID
+const generateTimestampedFilename = (extension: string, prefix?: string): string => {
+  const basePrefix = prefix || 'file_ts';
+  return `${basePrefix}${Date.now()}${getRandomShortId()}.${extension}`;
+};
 
 const readFileContent = async (
   path: string
@@ -11,7 +98,7 @@ const readFileContent = async (
   try {
     const content = require('fs').readFileSync(path);
     return {
-      fileName: pathModule.basename(path) || `file_${Date.now()}.${path.split('.').pop()}`,
+      fileName: generateTimestampedFilename(path.split('.').pop() || 'txt'),
       content: content.toString('base64'),
       mimeType: 'application/octet-stream',
     };
@@ -30,10 +117,30 @@ const readFileContentFromURL = async (
   const arrayBuffer = await response.arrayBuffer();
   const content = Buffer.from(arrayBuffer);
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+
+  // Extract clean filename from URL, removing query parameters
+  const url = new URL(path);
+  const pathname = url.pathname;
+  let fileName = pathModule.basename(pathname);
+
+  // If no filename from URL, generate one with appropriate extension
+  if (!fileName || fileName === '/') {
+    // Try to get extension from mimeType
+    const extension = getExtensionFromMimeType(mimeType);
+    fileName = generateTimestampedFilename(extension);
+  } else {
+    // If filename has no extension, try to add one from mimeType
+    const hasExtension = fileName.includes('.');
+    if (!hasExtension) {
+      const extension = getExtensionFromMimeType(mimeType);
+      fileName = generateTimestampedFilename(extension);
+    }
+  }
+
   return {
     content: content.toString('base64'),
     mimeType,
-    fileName: pathModule.basename(path) || `file_${Date.now()}.${path.split('.').pop()}`,
+    fileName,
   };
 };
 
@@ -152,8 +259,8 @@ export const downloadFileFromS3 = async ({
   }
   const data = await response.arrayBuffer();
 
-  const extension = mimeType.split('/')[1] || 'txt';
-  const fileName = `${toolSlug}_${Date.now()}.${extension}`;
+  const extension = getExtensionFromMimeType(mimeType);
+  const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
   const filePath = saveFile(fileName, Buffer.from(data), true);
   return {
     name: fileName,
