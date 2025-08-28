@@ -1,0 +1,20 @@
+[project]
+name = "composio-llamaindex"
+version = "0.8.9"
+description = "Use Composio to get array of tools with LlamaIndex Agent Workflows."
+readme = "README.md"
+requires-python = ">=3.9,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "llama_index",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"

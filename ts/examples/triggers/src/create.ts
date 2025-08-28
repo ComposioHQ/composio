@@ -11,12 +11,8 @@ console.log(JSON.stringify(triggerType, null, 2));
 
 // create a trigger
 const trigger = await composio.triggers.create('default', triggerType.slug, {
-  connectedAccountId: 'ca_jjYIG9L40LDIS',
-  triggerConfig: {
-    labelIds: 'INBOX',
-    userId: 'me',
-    interval: 60,
-  },
+  connectedAccountId: 'ca_uQvmu9uZOhQo',
+  triggerConfig: {},
 });
 
 console.log(trigger);

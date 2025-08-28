@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.48
+
+### Patch Changes
+
+- bb32cc2: Bump openai responses and deprecate openai assistant
+
 ## 0.1.47
 
 ### Patch Changes

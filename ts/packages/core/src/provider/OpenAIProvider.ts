@@ -175,7 +175,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    */
   async executeToolCall(
     userId: string,
-    tool: OpenAI.ChatCompletionMessageToolCall,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
@@ -240,7 +240,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
     for (const message of chatCompletion.choices) {
-      if (message.message.tool_calls) {
+      if (message.message.tool_calls && message.message.tool_calls[0].type === 'function') {
         const toolResult = await this.executeToolCall(
           userId,
           message.message.tool_calls[0],
@@ -263,11 +263,14 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * This method processes tool calls from an OpenAI Assistant run,
    * executes each tool call, and returns the tool outputs for submission.
    *
+   * @deprecated Assistant API is deprecated, please use responses or chat completions instead. This method will be removed in the next major version.
+   *
    * @param {string} userId - The user ID for authentication and tracking
    * @param {OpenAI.Beta.Threads.Run} run - The Assistant run object containing tool calls
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} Array of tool outputs for submission
+   *
    *
    * @example
    * ```typescript
@@ -319,7 +322,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
           // Execute each tool call and get the response
           const tool_response = await this.executeToolCall(
             userId,
-            tool_call as OpenAI.ChatCompletionMessageToolCall,
+            tool_call as OpenAI.ChatCompletionMessageFunctionToolCall,
             options,
             modifiers
           );
@@ -342,6 +345,8 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * that require action, and yields each event from the stream. It's designed
    * for streaming Assistant responses while handling tool calls in real-time.
    *
+   * @deprecated Assistant API is deprecated, please use responses or chat completions instead. It will be removed in the next major version.
+   *
    * @param {string} userId - The user ID for authentication and tracking
    * @param {OpenAI} client - The OpenAI client instance
    * @param {Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>} runStream - The Assistant run stream
@@ -349,6 +354,8 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
    * @returns {AsyncGenerator<OpenAI.Beta.Assistants.AssistantStreamEvent, void, unknown>} Generator yielding stream events
+   *
+   *
    *
    * @example
    * ```typescript
@@ -410,7 +417,8 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
         );
 
         // Submit the tool outputs
-        await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+        await client.beta.threads.runs.submitToolOutputs(runId, {
+          thread_id: thread.id,
           tool_outputs: toolOutputs,
         });
       }
@@ -433,19 +441,24 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
     }
 
     // Handle any final actions after the stream ends
-    let finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
+    let finalRun = await client.beta.threads.runs.retrieve(runId, {
+      thread_id: thread.id,
+    });
 
     while (['queued', 'in_progress', 'requires_action'].includes(finalRun.status)) {
       if (finalRun.status === 'requires_action') {
         const toolOutputs = await this.handleAssistantMessage(userId, finalRun, options, modifiers);
 
         // Submit tool outputs
-        finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+        finalRun = await client.beta.threads.runs.submitToolOutputs(runId, {
+          thread_id: thread.id,
           tool_outputs: toolOutputs,
         });
       } else {
         // Update the run status
-        finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
+        finalRun = await client.beta.threads.runs.retrieve(runId, {
+          thread_id: thread.id,
+        });
         await new Promise(resolve => setTimeout(resolve, 500)); // Wait before rechecking
       }
     }
@@ -457,6 +470,8 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * This method polls an OpenAI Assistant run until it completes or requires action,
    * handles any tool calls, and returns the final run object. It's designed for
    * non-streaming Assistant interactions.
+   *
+   * @deprecated Assistant API is deprecated, please use responses or chat completions instead. It will be removed in the next major version.
    *
    * @param {string} userId - The user ID for authentication and tracking
    * @param {OpenAI} client - The OpenAI client instance
@@ -509,11 +524,14 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
         // logger.debug(
         //   `Submitting tool outputs for run ID: ${run.id} in thread ID: ${thread.id}`
         // );
-        run = await client.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
+        run = await client.beta.threads.runs.submitToolOutputs(run.id, {
+          thread_id: thread.id,
           tool_outputs: tool_outputs,
         });
       } else {
-        run = await client.beta.threads.runs.retrieve(thread.id, run.id);
+        run = await client.beta.threads.runs.retrieve(run.id, {
+          thread_id: thread.id,
+        });
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
