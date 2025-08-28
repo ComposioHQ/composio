@@ -5,28 +5,30 @@ keywords: ""
 subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
 hide-nav-links: false
 ---
-LLMs on their own can only generate text. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, *act,* observe, and adapt.
+LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, *act,* observe, and adapt.
 
 
-In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or Databases*, and Composio handles authentication and user scoping.
+In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or GitHub*, and Composio handles authentication and user scoping.
 
-## Using Chat Completions
-For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
-This approach works consistently across all supported non-agent providers.
 
-To learn how to setup these providers, see [Providers](/providers/openai).
+<Tooltip>
+Ensure you have created a connected account for that user with the toolkit you want to use before following these steps.
+</Tooltip>
+
+
+## **Using Chat Completions**
+
+With providers like *OpenAI*, *Anthropic*, and *Google AI*, use the Composio SDK to execute tool calls easily. To learn how to setup these providers, see [Providers](/providers/openai). 
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-completions.py"
-  startLine={1}
-  endLine={30}
   title="Python (Google)"
+  highlightStart={31}
+  highlightEnd={32}
 />
 <SnippetCode
   src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
-  startLine={1}
-  endLine={30}
   title="TypeScript (Anthropic)"
 />
 </CodeGroup>
