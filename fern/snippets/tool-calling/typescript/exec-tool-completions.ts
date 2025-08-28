@@ -37,4 +37,3 @@ const msg = await anthropic.messages.create({
 // Handle tool calls
 const result = await composio.provider.handleToolCalls(userId, msg);
 console.log('Results:', JSON.stringify(result, null, 2));
-
