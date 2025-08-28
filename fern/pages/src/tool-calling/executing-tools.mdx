@@ -23,7 +23,7 @@ With providers like *OpenAI*, *Anthropic*, and *Google AI*, use the Composio SDK
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-completions.py"
-  title="Python (Google)"
+  title="Python (OpenAI)"
   highlightStart={32}
   highlightEnd={33}
 />
@@ -36,25 +36,22 @@ With providers like *OpenAI*, *Anthropic*, and *Google AI*, use the Composio SDK
 </CodeGroup>
 
 ## Using Agentic Frameworks
-Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
+Agentic frameworks automatically handle the tool execution loop. 
+Composio provides support for frameworks like this by making sure the tools are formatted into the correct objects for the agentic framework to execute.
 
-
-<Tip icon="info">
-Here, the tool execution is handled by the agentic framework. Composio makes sure the tools are formatted into the correct objects for the agentic framework to execute.
-</Tip>
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-agentic.py"
-  startLine={1}
-  endLine={37}
   title="Python (OpenAI Agents SDK)"
+  highlightStart={19}
+  highlightEnd={23}
 />
 <SnippetCode
   src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
-  startLine={1}
-  endLine={30}
   title="TypeScript (Anthropic)"
+  highlightStart={21}
+  highlightEnd={31}
 />
 </CodeGroup>
 

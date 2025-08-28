@@ -3,7 +3,7 @@ import { AnthropicProvider } from '@composio/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
 
 // Use a unique identifier for each user in your application
-const userId = 'user-k7334'; // User's UUID
+const userId = 'user-k7334';
 
 // Create anthropic client
 const anthropic = new Anthropic();
