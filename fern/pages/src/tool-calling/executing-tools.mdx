@@ -11,10 +11,9 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or GitHub*, and Composio handles authentication and user scoping.
 
 
-<Info>
-Ensure you have created a connected account for that user with the toolkit you want to use before executing the tools. Follow instruction in [Authenticating Tools](/tool-calling/authenticating-tools) to set it up.
-</Info>
-
+<Tip icon="info">
+**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Each user must authenticate with their respective services (Gmail, Calendar, etc.) before executing tools. [Learn more about authentication →](./authenticating-tools)
+</Tip>
 
 ## **Using Chat Completions**
 
@@ -54,14 +53,6 @@ Composio provides support for frameworks like this by making sure the tools are 
   highlightEnd={31}
 />
 </CodeGroup>
-
-## Tools are scoped to a user
-Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
-
-The authentication state is checked and used while fetching and executing a tool.
-
-You need to authorize the user to execute tools.
-For more information on authentication, see [Authenticating Tools](./authenticating-tools).
 
 ## For Humans (deterministic tool calling)
 In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
