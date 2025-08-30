@@ -24,7 +24,7 @@
  */
 
 import * as ts from '@composio/ts-builders';
-import { Effect, pipe, Record, Array as Arr } from 'effect';
+import { Effect, pipe, Record, Match, Array as Arr } from 'effect';
 import type { ToolkitName } from 'src/models/toolkits';
 import type { ToolkitIndex, ToolkitIndexData } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
@@ -246,35 +246,38 @@ function generateTypeScriptToolkitSource(_banner: string) {
         );
       }
 
+      const toolsValueEntries = Match.value(typeableTools).pipe(
+        Match.when({ withTypes: true }, ({ value }) =>
+          Object.entries(value).map(([toolName, tool]) =>
+            ts
+              .propertyValue(toolName, ts.stringLiteral(tool.slug).asValue())
+              .setDocComment(ts.docComment(`${tool.description}`))
+          )
+        ),
+        Match.when({ withTypes: false }, ({ value }) =>
+          Object.entries(value).map(([toolName, tool]) =>
+            ts.propertyValue(toolName, ts.stringLiteral(tool).asValue())
+          )
+        ),
+        Match.exhaustive
+      );
+
+      const triggerTypesValueEntries = Object.entries(triggerTypes).map(
+        ([triggerTypeSlug, triggerType]) =>
+          ts
+            .propertyValue(triggerTypeSlug, ts.stringLiteral(triggerType.slug).asValue())
+            .setDocComment(ts.docComment(`${triggerType.description}`))
+      );
+
       // write the toolkit const object declaration
       const toolValueDeclaration = ts.propertyValue(
         toolkitName,
         ts
           .objectValue()
           .add(ts.propertyValue('slug', ts.stringLiteral(slug).asValue()))
+          .add(ts.propertyValue('tools', ts.objectValue().addMultiple(toolsValueEntries)))
           .add(
-            ts.propertyValue(
-              'tools',
-              ts
-                .objectValue()
-                .addMultiple(
-                  Object.entries(typeableTools.value).map(([toolName, tool]) =>
-                    ts.propertyValue(toolName, ts.stringLiteral(tool).asValue())
-                  )
-                )
-            )
-          )
-          .add(
-            ts.propertyValue(
-              'triggerTypes',
-              ts
-                .objectValue()
-                .addMultiple(
-                  Object.entries(triggerTypes).map(([triggerTypeSlug, triggerType]) =>
-                    ts.propertyValue(triggerTypeSlug, generateTriggerTypeObjectValue(triggerType))
-                  )
-                )
-            )
+            ts.propertyValue('triggerTypes', ts.objectValue().addMultiple(triggerTypesValueEntries))
           )
       );
 

@@ -12,7 +12,7 @@ import {
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
 
 describe('CLI: composio ts generate', () => {
   const appClientData = {
@@ -26,7 +26,7 @@ describe('CLI: composio ts generate', () => {
         slug: 'slack',
       },
     ]),
-    tools: [...TOOLS_GMAIL.slice(0, 3)],
+    tools: [...TOOLS_TYPES_GMAIL.slice(0, 3)],
     triggerTypes: [...TRIGGER_TYPES_GMAIL.slice(0, 3)],
     triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
   } satisfies TestLiveInput['toolkitsData'];
@@ -141,143 +141,10 @@ describe('CLI: composio ts generate', () => {
                     CREATE_LABEL: "GMAIL_CREATE_LABEL",
                   },
                   triggerTypes: {
-                    NEW_GMAIL_MESSAGE: {
-                      slug: "GMAIL_NEW_GMAIL_MESSAGE",
-                      name: "New Gmail Message Received Trigger",
-                      description: "Triggers when a new message is received in Gmail.",
-                      instructions: "\\n    **Instructions for Setting Up the Trigger:**\\n\\n    - Ensure that the Gmail API is enabled for your Google account.\\n    - Provide the user ID (usually 'me' for the authenticated user).\\n    - Optionally, provide label IDs to filter messages.\\n    ",
-                      config: {
-                        properties: {
-                          interval: {
-                            default: 1,
-                            description: "Periodic Interval to Check for Updates & Send a Trigger in Minutes",
-                            title: "Interval",
-                            type: "number",
-                          },
-                          labelIds: {
-                            default: "INBOX",
-                            description: "Filter messages by a single label ID. Labels identify the status or category of messages. Supported labels include 'INBOX', 'SPAM', 'TRASH', 'UNREAD', 'STARRED', 'IMPORTANT', 'CATEGORY_PERSONAL', 'CATEGORY_SOCIAL', 'CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', and 'CATEGORY_FORUMS'. For complex label filtering, use the 'query' parameter instead.",
-                            examples: ["INBOX", "UNREAD", "STARRED"],
-                            title: "Labelids",
-                            type: "string",
-                          },
-                          query: {
-                            default: "",
-                            description: "Advanced Gmail search using the same syntax as Gmail's search box. Use 'AND' for messages that match all conditions, 'OR' for any condition. Search by sender (from:email@domain.com), labels (label:inbox), status (is:unread), attachments (has:attachment), dates (after:2023/1/1), and more. If specified, this takes precedence over labelIds.",
-                            examples: ["label:inbox OR label:sent", "from:example@gmail.com is:unread", "has:attachment after:2023/1/1", "is:important is:unread"],
-                            title: "Query",
-                            type: "string",
-                          },
-                          userId: {
-                            default: "me",
-                            description: "The user's email address or 'me' for the authenticated user.",
-                            examples: ["me"],
-                            title: "Userid",
-                            type: "string",
-                          },
-                        },
-                        title: "NewMessageConfig",
-                        type: "object",
-                      },
-                      payload: {
-                        properties: {
-                          attachment_list: {
-                            anyOf: [{
-                              items: {},
-                              type: "array",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The list of attachments in the message",
-                            title: "Attachment List",
-                          },
-                          message_id: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The message ID of the message",
-                            title: "Message ID",
-                          },
-                          message_text: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The text of the message",
-                            title: "Message Text",
-                          },
-                          message_timestamp: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The timestamp of the message",
-                            title: "Message Timestamp",
-                          },
-                          payload: {
-                            anyOf: [{
-                              type: "object",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The payload of the message",
-                            title: "Payload",
-                          },
-                          sender: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The sender of the message",
-                            title: "Sender",
-                          },
-                          subject: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The subject of the message",
-                            title: "Subject",
-                          },
-                          thread_id: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The thread ID of the message",
-                            title: "Thread ID",
-                          },
-                          to: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The recipient of the message",
-                            title: "To",
-                          },
-                        },
-                        title: "NewMessagePayload",
-                        type: "object",
-                      },
-                      type: "poll",
-                    },
+                    /**
+                     * Triggers when a new message is received in Gmail.
+                     */
+                    NEW_GMAIL_MESSAGE: "GMAIL_NEW_GMAIL_MESSAGE",
                   },
                 }
 
@@ -387,6 +254,487 @@ describe('CLI: composio ts generate', () => {
             })
         );
 
+        it.scoped.only('[Given] --type-tools [Then] it generates types for tools as well', () =>
+          Effect.gen(function* () {
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+
+            // Create the @composio/core/generated directory structure as if installed
+            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
+            const generatedDir = path.join(nodeModulesDir, 'generated');
+            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
+            yield* fs.makeDirectory(generatedDir, { recursive: true });
+
+            const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
+            const args = ['ts', 'generate', '--type-tools'];
+            yield* cli(args);
+
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+            const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.ts'));
+            const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
+
+            expect(gmailSourceCode).toMatchInlineSnapshot(`
+                "import { type TriggerEvent } from "@composio/core"
+
+                // --------------- //
+                //    Tool types   //
+                // --------------- //
+
+
+
+                /**
+                 * Type of GMAIL's GMAIL_ADD_LABEL_TO_EMAIL tool input.
+                 */
+                type GMAIL_ADD_LABEL_TO_EMAIL_INPUT = {
+                  /**
+                   * Add Label Ids
+                   * @description Label IDs to add. For custom labels, obtain IDs via 'listLabels'. System labels (e.g., 'INBOX', 'SPAM') can also be used.
+                   * @default []
+                   */
+                  add_label_ids: string[];
+                  /**
+                   * Message Id
+                   * @description Immutable ID of the message to modify (e.g., from 'fetchEmails' or 'fetchMessagesByThreadId').
+                   */
+                  message_id?: string;
+                  /**
+                   * Remove Label Ids
+                   * @description Label IDs to remove. For custom labels, obtain IDs via 'listLabels'. System labels can also be used.
+                   * @default []
+                   */
+                  remove_label_ids: string[];
+                  /**
+                   * User Id
+                   * @description User's email address or 'me' for the authenticated user.
+                   * @default me
+                   */
+                  user_id: string;
+                };
+
+                /**
+                 * Type of GMAIL's GMAIL_ADD_LABEL_TO_EMAIL tool output.
+                 */
+                type GMAIL_ADD_LABEL_TO_EMAIL_OUTPUT = {
+                  /**
+                   * Data
+                   * @description Data from the action execution
+                   */
+                  data?: {
+                      /**
+                       * Response Data
+                       * @description Full \`Message\` resource with updated labels.
+                       */
+                      response_data: {
+                          [key: string]: unknown;
+                      };
+                  };
+                  /**
+                   * Error
+                   * @description Error if any occurred during the execution of the action
+                   * @default null
+                   */
+                  error: string | null;
+                  /**
+                   * Successful
+                   * @description Whether or not the action execution was successful or not
+                   */
+                  successful?: boolean;
+                };
+
+                /**
+                 * Type of GMAIL's GMAIL_CREATE_EMAIL_DRAFT tool input.
+                 */
+                type GMAIL_CREATE_EMAIL_DRAFT_INPUT = {
+                  /**
+                   * FileUploadable
+                   * @description File to attach to the email.
+                   * @default null
+                   */
+                  attachment: {
+                      /** Mimetype */
+                      mimetype: string;
+                      /** Name */
+                      name: string;
+                      /** S3Key */
+                      s3key: string;
+                  } | null;
+                  /**
+                   * Bcc
+                   * @description 'Bcc' (blind carbon copy) recipient email addresses.
+                   * @default []
+                   */
+                  bcc: string[];
+                  /**
+                   * Body
+                   * @description Email body content (plain text or HTML); \`is_html\` must be True if HTML.
+                   */
+                  body?: string;
+                  /**
+                   * Cc
+                   * @description 'Cc' (carbon copy) recipient email addresses.
+                   * @default []
+                   */
+                  cc: string[];
+                  /**
+                   * Extra Recipients
+                   * @description Additional 'To' recipient email addresses.
+                   * @default []
+                   */
+                  extra_recipients: string[];
+                  /**
+                   * Is Html
+                   * @description Set to True if \`body\` is HTML, otherwise the action may fail.
+                   * @default false
+                   */
+                  is_html: boolean;
+                  /**
+                   * Recipient Email
+                   * @description Primary recipient's email address.
+                   */
+                  recipient_email?: string;
+                  /**
+                   * Subject
+                   * @description Email subject line.
+                   */
+                  subject?: string;
+                  /**
+                   * Thread Id
+                   * @description ID of an existing Gmail thread to reply to; omit for new thread.
+                   * @default null
+                   */
+                  thread_id: string | null;
+                  /**
+                   * User Id
+                   * @description User's email address or 'me' for the authenticated user.
+                   * @default me
+                   */
+                  user_id: string;
+                };
+
+                /**
+                 * Type of GMAIL's GMAIL_CREATE_EMAIL_DRAFT tool output.
+                 */
+                type GMAIL_CREATE_EMAIL_DRAFT_OUTPUT = {
+                  /**
+                   * Data
+                   * @description Data from the action execution
+                   */
+                  data?: {
+                      /**
+                       * Response Data
+                       * @description Gmail API response with created draft details, including ID.
+                       * @default null
+                       */
+                      response_data: {
+                          [key: string]: unknown;
+                      } | null;
+                  };
+                  /**
+                   * Error
+                   * @description Error if any occurred during the execution of the action
+                   * @default null
+                   */
+                  error: string | null;
+                  /**
+                   * Successful
+                   * @description Whether or not the action execution was successful or not
+                   */
+                  successful?: boolean;
+                };
+
+                /**
+                 * Type of GMAIL's GMAIL_CREATE_LABEL tool input.
+                 */
+                type GMAIL_CREATE_LABEL_INPUT = {
+                  /**
+                   * Label List Visibility
+                   * @description Controls how the label is displayed in the label list in the Gmail sidebar.
+                   * @default labelShow
+                   */
+                  label_list_visibility: string;
+                  /**
+                   * Label Name
+                   * @description The name for the new label. Must be unique within the account, non-blank, maximum length 225 characters, cannot contain ',' or '/', not only whitespace, and must not be a reserved system label (e.g., INBOX, DRAFTS, SENT).
+                   */
+                  label_name?: string;
+                  /**
+                   * Message List Visibility
+                   * @description Controls how messages with this label are displayed in the message list.
+                   * @default show
+                   */
+                  message_list_visibility: string;
+                  /**
+                   * User Id
+                   * @description The email address of the user in whose account the label will be created.
+                   * @default me
+                   */
+                  user_id: string;
+                };
+
+                /**
+                 * Type of GMAIL's GMAIL_CREATE_LABEL tool output.
+                 */
+                type GMAIL_CREATE_LABEL_OUTPUT = {
+                  /**
+                   * Data
+                   * @description Data from the action execution
+                   */
+                  data?: {
+                      /**
+                       * Response Data
+                       * @description Full API response from Gmail for the created label.
+                       */
+                      response_data: {
+                          [key: string]: unknown;
+                      };
+                  };
+                  /**
+                   * Error
+                   * @description Error if any occurred during the execution of the action
+                   * @default null
+                   */
+                  error: string | null;
+                  /**
+                   * Successful
+                   * @description Whether or not the action execution was successful or not
+                   */
+                  successful?: boolean;
+                };
+
+                /**
+                 * Type map of all available tool input types for toolkit "GMAIL".
+                 */
+                export type GMAIL_TOOL_INPUTS = {
+                  ADD_LABEL_TO_EMAIL: GMAIL_ADD_LABEL_TO_EMAIL_INPUT
+                  CREATE_EMAIL_DRAFT: GMAIL_CREATE_EMAIL_DRAFT_INPUT
+                  CREATE_LABEL: GMAIL_CREATE_LABEL_INPUT
+                }
+
+                /**
+                 * Type map of all available tool input types for toolkit "GMAIL".
+                 */
+                export type GMAIL_TOOL_OUTPUTS = {
+                  ADD_LABEL_TO_EMAIL: GMAIL_ADD_LABEL_TO_EMAIL_OUTPUT
+                  CREATE_EMAIL_DRAFT: GMAIL_CREATE_EMAIL_DRAFT_OUTPUT
+                  CREATE_LABEL: GMAIL_CREATE_LABEL_OUTPUT
+                }
+
+                // ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
+                 * Type of GMAIL's NEW_GMAIL_MESSAGE trigger payload.
+                 */
+                type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = {
+                  /**
+                   * Attachment List
+                   * @description The list of attachments in the message
+                   * @default null
+                   */
+                  attachment_list: unknown[] | null;
+                  /**
+                   * Message ID
+                   * @description The message ID of the message
+                   * @default null
+                   */
+                  message_id: string | null;
+                  /**
+                   * Message Text
+                   * @description The text of the message
+                   * @default null
+                   */
+                  message_text: string | null;
+                  /**
+                   * Message Timestamp
+                   * @description The timestamp of the message
+                   * @default null
+                   */
+                  message_timestamp: string | null;
+                  /**
+                   * Payload
+                   * @description The payload of the message
+                   * @default null
+                   */
+                  payload: Record<string, never> | null;
+                  /**
+                   * Sender
+                   * @description The sender of the message
+                   * @default null
+                   */
+                  sender: string | null;
+                  /**
+                   * Subject
+                   * @description The subject of the message
+                   * @default null
+                   */
+                  subject: string | null;
+                  /**
+                   * Thread ID
+                   * @description The thread ID of the message
+                   * @default null
+                   */
+                  thread_id: string | null;
+                  /**
+                   * To
+                   * @description The recipient of the message
+                   * @default null
+                   */
+                  to: string | null;
+                };
+
+                /**
+                 * Map of Composio's GMAIL toolkit.
+                 */
+                export const GMAIL = {
+                  slug: "gmail",
+                  tools: {
+                    /**
+                     * Adds and/or removes specified gmail labels for a message; ensure \`message id\` and all \`label ids\` are valid (use 'listlabels' for custom label ids).
+                     */
+                    ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
+                    /**
+                     * Creates a gmail email draft, supporting to/cc/bcc, subject, plain/html body (ensure \`is html=true\` for html), attachments, and threading.
+                     */
+                    CREATE_EMAIL_DRAFT: "GMAIL_CREATE_EMAIL_DRAFT",
+                    /**
+                     * Creates a new label with a unique name in the specified user's gmail account.
+                     */
+                    CREATE_LABEL: "GMAIL_CREATE_LABEL",
+                  },
+                  triggerTypes: {
+                    /**
+                     * Triggers when a new message is received in Gmail.
+                     */
+                    NEW_GMAIL_MESSAGE: "GMAIL_NEW_GMAIL_MESSAGE",
+                  },
+                }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_PAYLOADS = {
+                  NEW_GMAIL_MESSAGE: GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD
+                }
+
+                /**
+                 * Type map of all available trigger events for toolkit "GMAIL".
+                 */
+                export type GMAIL_TRIGGER_EVENTS = {
+                  NEW_GMAIL_MESSAGE: TriggerEvent<GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD>
+                }
+                "
+              `);
+            expect(slackSourceCode).toMatchInlineSnapshot(`
+                "// --------------- //
+                //    Tool types   //
+                // --------------- //
+
+
+
+                /**
+                 * Type map of all available tool input types for toolkit "SLACK".
+                 */
+                export type SLACK_TOOL_INPUTS = {}
+
+                /**
+                 * Type map of all available tool input types for toolkit "SLACK".
+                 */
+                export type SLACK_TOOL_OUTPUTS = {}
+
+                // ------------------- //
+                //    Trigger types    //
+                // ------------------- //
+
+
+
+                /**
+                 * Map of Composio's SLACK toolkit.
+                 */
+                export const SLACK = {
+                  slug: "slack",
+                  tools: {},
+                  triggerTypes: {},
+                }
+
+                /**
+                 * Type map of all available trigger payloads for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_PAYLOADS = {}
+
+                /**
+                 * Type map of all available trigger events for toolkit "SLACK".
+                 */
+                export type SLACK_TRIGGER_EVENTS = {}
+                "
+              `);
+            expect(indexSourceCode).toMatchInlineSnapshot(`
+                "/**
+                 * Auto-generated by Composio CLI. Do not modify manually.
+                 */
+
+                import { GMAIL } from "./gmail.js"
+                import { SLACK } from "./slack.js"
+
+                /**
+                 * Map of Composio toolkits to actions.
+                 */
+                export const Toolkits = {
+                  GMAIL: GMAIL,
+                  SLACK: SLACK,
+                }
+
+                /**
+                 * Type declarations
+                 */
+
+                /**
+                 * Union of all available toolkits.
+                 */
+                export type Toolkit = 
+                  | "GMAIL"
+                  | "SLACK"
+                  
+                /**
+                 * Given a toolkit, returns the tools available for that toolkit.
+                 */
+                export type ToolsByToolkit<$Toolkit extends keyof (typeof Toolkits)> = typeof Toolkits[$Toolkit]
+
+                "
+              `);
+
+            assertTypeScriptIsValid({ files: { './gmail.ts': gmailSourceCode } });
+            assertTypeScriptIsValid({ files: { './slack.ts': slackSourceCode } });
+            assertTypeScriptIsValid({
+              files: {
+                './index.ts': indexSourceCode,
+                './gmail.ts': gmailSourceCode,
+                './slack.ts': slackSourceCode,
+              },
+            });
+
+            const testSourceCodePath = path.join(cwd, 'src', 'index.js');
+            const testSourceCode = yield* fs.readFileString(testSourceCodePath);
+            expect(testSourceCode).toMatchInlineSnapshot(`
+                "import { Toolkits } from '@composio/core/generated';
+
+                console.log('Test: Using generated Composio types');
+                console.log(Toolkits.GMAIL.tools.CREATE_EMAIL_DRAFT);
+                "
+              `);
+
+            const stdout = yield* assertTranspiledTypeScriptIsValid({ cwd, testSourceCodePath });
+            expect(stdout).toMatchInlineSnapshot(`
+                "Test: Using generated Composio types
+                GMAIL_CREATE_EMAIL_DRAFT
+                "
+              `);
+          })
+        );
+
         it.scoped(
           '[Given] --output-dir [Then] it generates type stubs relative to the given output directory',
           () =>
@@ -484,143 +832,10 @@ describe('CLI: composio ts generate', () => {
                     CREATE_LABEL: "GMAIL_CREATE_LABEL",
                   },
                   triggerTypes: {
-                    NEW_GMAIL_MESSAGE: {
-                      slug: "GMAIL_NEW_GMAIL_MESSAGE",
-                      name: "New Gmail Message Received Trigger",
-                      description: "Triggers when a new message is received in Gmail.",
-                      instructions: "\\n    **Instructions for Setting Up the Trigger:**\\n\\n    - Ensure that the Gmail API is enabled for your Google account.\\n    - Provide the user ID (usually 'me' for the authenticated user).\\n    - Optionally, provide label IDs to filter messages.\\n    ",
-                      config: {
-                        properties: {
-                          interval: {
-                            default: 1,
-                            description: "Periodic Interval to Check for Updates & Send a Trigger in Minutes",
-                            title: "Interval",
-                            type: "number",
-                          },
-                          labelIds: {
-                            default: "INBOX",
-                            description: "Filter messages by a single label ID. Labels identify the status or category of messages. Supported labels include 'INBOX', 'SPAM', 'TRASH', 'UNREAD', 'STARRED', 'IMPORTANT', 'CATEGORY_PERSONAL', 'CATEGORY_SOCIAL', 'CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', and 'CATEGORY_FORUMS'. For complex label filtering, use the 'query' parameter instead.",
-                            examples: ["INBOX", "UNREAD", "STARRED"],
-                            title: "Labelids",
-                            type: "string",
-                          },
-                          query: {
-                            default: "",
-                            description: "Advanced Gmail search using the same syntax as Gmail's search box. Use 'AND' for messages that match all conditions, 'OR' for any condition. Search by sender (from:email@domain.com), labels (label:inbox), status (is:unread), attachments (has:attachment), dates (after:2023/1/1), and more. If specified, this takes precedence over labelIds.",
-                            examples: ["label:inbox OR label:sent", "from:example@gmail.com is:unread", "has:attachment after:2023/1/1", "is:important is:unread"],
-                            title: "Query",
-                            type: "string",
-                          },
-                          userId: {
-                            default: "me",
-                            description: "The user's email address or 'me' for the authenticated user.",
-                            examples: ["me"],
-                            title: "Userid",
-                            type: "string",
-                          },
-                        },
-                        title: "NewMessageConfig",
-                        type: "object",
-                      },
-                      payload: {
-                        properties: {
-                          attachment_list: {
-                            anyOf: [{
-                              items: {},
-                              type: "array",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The list of attachments in the message",
-                            title: "Attachment List",
-                          },
-                          message_id: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The message ID of the message",
-                            title: "Message ID",
-                          },
-                          message_text: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The text of the message",
-                            title: "Message Text",
-                          },
-                          message_timestamp: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The timestamp of the message",
-                            title: "Message Timestamp",
-                          },
-                          payload: {
-                            anyOf: [{
-                              type: "object",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The payload of the message",
-                            title: "Payload",
-                          },
-                          sender: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The sender of the message",
-                            title: "Sender",
-                          },
-                          subject: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The subject of the message",
-                            title: "Subject",
-                          },
-                          thread_id: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The thread ID of the message",
-                            title: "Thread ID",
-                          },
-                          to: {
-                            anyOf: [{
-                              type: "string",
-                            }, {
-                              type: "null",
-                            }],
-                            default: null,
-                            description: "The recipient of the message",
-                            title: "To",
-                          },
-                        },
-                        title: "NewMessagePayload",
-                        type: "object",
-                      },
-                      type: "poll",
-                    },
+                    /**
+                     * Triggers when a new message is received in Gmail.
+                     */
+                    NEW_GMAIL_MESSAGE: "GMAIL_NEW_GMAIL_MESSAGE",
                   },
                 }
 

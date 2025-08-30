@@ -6,10 +6,10 @@ import {
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
-import { TOOLS_GITHUB } from 'test/__mocks__/tools_github';
+import { TOOLS_GITHUB } from 'test/__mocks__/tools-github';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {

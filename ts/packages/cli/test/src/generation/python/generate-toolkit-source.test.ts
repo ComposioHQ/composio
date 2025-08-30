@@ -5,7 +5,7 @@ import { BANNER } from 'src/generation/constants';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
 
 describe('generatePythonToolkitSources', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty array', () => {
