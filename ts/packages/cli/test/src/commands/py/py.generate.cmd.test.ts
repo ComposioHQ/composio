@@ -127,9 +127,7 @@ describe('CLI: composio py generate', () => {
                 slug: str = "gmail"
 
                 class tools:
-                    ADD_LABEL_TO_EMAIL = "GMAIL_ADD_LABEL_TO_EMAIL"
-                    CREATE_EMAIL_DRAFT = "GMAIL_CREATE_EMAIL_DRAFT"
-                    CREATE_LABEL = "GMAIL_CREATE_LABEL"
+                    pass
 
                 class triggers:
                     NEW_GMAIL_MESSAGE = {
