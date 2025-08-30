@@ -16,22 +16,24 @@ You'll learn how to:
 
 Composio provides first-class SDKs for both **TypeScript** and **Python**, making it easy to integrate no matter what stack you're building with.
 
-**Before you start!**
-<Accordion title='Prerequisites'>
-1. Ensure you have created an account on [Composio](https://platform.composio.dev) and have Python 3.8+ _or_ NodeJS 18+ installed!
-2. Get your API key from the <a href="https://platform.composio.dev?next_page=/settings" target="_blank">developer dashboard</a> and set it as an environment variable.
+## Prerequisites
+
+Before you begin, ensure you have:
+
+1. **A Composio account** - [Sign up here](https://platform.composio.dev) if you haven't already
+2. **Python 3.8+** or **Node.js 18+** installed on your system
+3. **Your API key** - Get it from the [developer dashboard](https://platform.composio.dev?next_page=/settings) and set it as an environment variable:
+
 ```bash
 export COMPOSIO_API_KEY=your_api_key
 ```
-<Note title="Note!">Ensure you save the API key in a `.env` file and don't commit it to version control!</Note>
-</Accordion>
 
 ## Install the SDK
 First, install the Composio SDK for your preferred language:
 
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio==0.8.0
+pip install composio
 ```
 ```bash title="TypeScript" for="typescript"
 npm install @composio/core
@@ -97,7 +99,7 @@ npm install @composio/vercel
 <SnippetCode
   src="fern/snippets/get-started/typescript/vercel-quickstart.ts"
   startLine={1}
-  endLine={34}
+  endLine={27}
 />
 
 </Tab>
@@ -131,7 +133,7 @@ All OAuth flows and tool execution were automatically handled by Composio.
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Use Providers" icon="fa-solid fa-plug" href="/providers">
+  <Card title="Use Providers" icon="fa-solid fa-plug" href="/providers/openai">
     Learn how to use Composio with various agent SDK and frameworks.
   </Card>
   <Card title="Work with tools" icon="fa-solid fa-toolbox" href="/docs/executing-tools">

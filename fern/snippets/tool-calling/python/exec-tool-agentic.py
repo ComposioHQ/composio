@@ -2,14 +2,14 @@ import asyncio
 from agents import Agent, Runner
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
-from uuid import uuid4
 
-user_id = uuid4()
+# Use a unique identifier for each user in your application
+user_id = "user-k7334"
 
 # Initialize Composio toolset
-composio = Composio(provider=OpenAIAgentsProvider())
+composio = Composio(provider=OpenAIAgentsProvider(), api_key="your_composio_api_key")
 
-# Get all the tools
+# Get all tools for the user
 tools = composio.tools.get(
     user_id=user_id,
     toolkits=["COMPOSIO_SEARCH"],
@@ -22,14 +22,12 @@ agent = Agent(
     tools=tools,
 )
 
-
-# Run the agent
 async def main():
     result = await Runner.run(
         starting_agent=agent,
-        input=("Do a thorough DEEP research on Ilya Sutskever"),
+        input=("Do a thorough DEEP research on Golden Gate Bridge"),
     )
     print(result.final_output)
 
-
+# Run the agent
 asyncio.run(main())

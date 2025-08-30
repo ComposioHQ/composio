@@ -7,7 +7,7 @@ from composio_openai_agents import OpenAIAgentsProvider
 
 # Initialize Composio toolset
 user_id = "user@email.com"
-composio = Composio(provider=OpenAIAgentsProvider())
+composio = Composio(provider=OpenAIAgentsProvider(), api_key="your-composio-api-key")
 
 # Initialize connection request
 connection_request = composio.toolkits.authorize(user_id=user_id, toolkit="github")

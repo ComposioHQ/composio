@@ -5,89 +5,69 @@ keywords: ""
 subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
 hide-nav-links: false
 ---
+LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, *act,* observe, and adapt.
 
-Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tool, for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+
+In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like *Gmail, Slack, or GitHub*, and Composio handles authentication and user scoping.
+
+
+<Tip icon="info">
+**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Each user must authenticate with their respective services (Gmail, Calendar, etc.) before executing tools. [Learn more about authentication →](./authenticating-tools)
+</Tip>
 
 ## Using Chat Completions
-For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
-This approach works consistently across all supported non-agent providers.
 
-To learn how to setup these providers, see [Providers](/providers).
+With providers like *OpenAI*, *Anthropic*, and *Google AI*, use the Composio SDK to execute tool calls easily. To learn how to setup these providers, see [Providers](/providers/openai). 
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-completions.py"
-  startLine={1}
-  endLine={30}
-  title="Python (Google)"
+  title="Python (OpenAI)"
+  highlightStart={32}
+  highlightEnd={33}
 />
 <SnippetCode
   src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
-  startLine={1}
-  endLine={30}
   title="TypeScript (Anthropic)"
+  highlightStart={37}
+  highlightEnd={38} 
 />
 </CodeGroup>
 
 ## Using Agentic Frameworks
-Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
+Agentic frameworks automatically handle the tool execution loop. 
+Composio provides support for frameworks like this by making sure the tools are formatted into the correct objects for the agentic framework to execute.
 
-
-<Tip icon="info">
-Here, the tool execution is handled by the agentic framework. Composio makes sure the tools are formatted into the correct objects for the agentic framework to execute.
-</Tip>
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/tool-calling/python/exec-tool-agentic.py"
-  startLine={1}
-  endLine={37}
   title="Python (OpenAI Agents SDK)"
+  highlightStart={19}
+  highlightEnd={23}
 />
 <SnippetCode
   src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
-  startLine={1}
-  endLine={30}
   title="TypeScript (Anthropic)"
+  highlightStart={22}
+  highlightEnd={31}
 />
 </CodeGroup>
 
-## Tools are scoped to a user
-Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
-
-The authentication state is checked and used while fetching and executing a tool.
-
-You need to authorize the user to execute tools.
-For more information on authentication, see [Authenticating Tools](./authenticating-tools).
-
-## For Humans (deterministic tool calling)
-In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
-
+## Direct Tool execution
+In case you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
+<Tip icon="lightbulb">
+**Finding tool arguments**: Visit [Composio Toolkits](https://platform.composio.dev?next_page=/marketplace) → Select your toolkit -> Select tool to see its required and optional parameters, types, and descriptions.
+</Tip>
 <CodeGroup>
-```python Python maxLines=60 wordWrap
-
-user_id = "user@example.com"
-composio = Composio()
-
-result = composio.tools.execute(
-    "HACKERNEWS_GET_USER",
-    user_id=user_id,
-    arguments={"username": "pg"}
-)
-print(result)
-```
-```typescript TypeScript maxLines=60 wordWrap
-const userId = "user@example.com";
-const composio = new Composio();
-
-const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
-  userId,
-  arguments: {
-    username: "pg",
-  },
-});
-console.log(result);
-```
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/direct-tool-call.py"
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/direct-tool-call.ts"
+  title="TypeScript"
+/>
 </CodeGroup> 
 
 ### Proxy Execute -- Manually calling toolkit APIs
