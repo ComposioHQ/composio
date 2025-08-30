@@ -19,7 +19,7 @@ const tools = await composio.tools.get(userId, { tools: ['GMAIL_SEND_EMAIL'] });
 
 const { text } = await generateText({
   model: anthropic('claude-3-7-sonnet-20250219'),
-  prompt: "say 'hi from the composio quickstart' to sid@composio.dev", // we'll ship you free merch if you do ;)
+  prompt: "say 'hi from the composio quickstart' to soham.g@composio.dev", // we'll ship you free merch if you do ;)
   tools,
 });
 
