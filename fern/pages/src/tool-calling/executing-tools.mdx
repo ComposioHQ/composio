@@ -18,7 +18,7 @@ In Composio, every **tool** is a single API action—fully described with schema
 
 ## Using Chat Completions
 
-With providers like _OpenAI_, _Anthropic_, and _Google AI_, use the Composio SDK to execute tool calls easily. To learn how to setup these providers, see [Providers](/providers/openai).
+Use the Composio SDK with providers like OpenAI, Anthropic, and Google AI. To learn how to set-up these providers, see [Providers](/providers/openai).
 
 <CodeGroup>
   <SnippetCode
@@ -71,7 +71,7 @@ In case you just want to call a tool without using any framework or LLM provider
 
 ### Proxy Execute -- Manually calling toolkit APIs
 
-You can Proxy requests to any supported toolkit API and let Composio inject the **authentication state**. This is useful when you need an API endpoint that isn't available as a predefined tool.
+You can proxy requests to any supported toolkit API and let Composio inject the **authentication state**. This is useful when you need an API endpoint that isn't available as a predefined tool.
 
 The `endpoint` can be a relative path or absolute URL. Composio uses the `connected_account_id` to determine the toolkit and resolve relative paths against the appropriate base URL.
 
@@ -126,6 +126,7 @@ Pass local file paths, URLs, or File objects to tools that accept files:
 ### File Download
 
 When tools return files, Composio downloads them to the local directory and provides file path in the response:
+When tools return files, Composio downloads them to the local directory and provides the file path in the response:
 
 <CodeGroup>
   <SnippetCode
