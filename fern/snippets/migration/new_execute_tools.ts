@@ -18,7 +18,7 @@ const msg = await anthropic.messages.create({
   messages: [
     {
       role: 'user',
-      content: "Say hi to 'sid@composio.dev'",
+      content: "Say hi to 'soham@composio.dev'",
     },
   ],
   max_tokens: 1024,

@@ -1,8 +1,8 @@
 ---
 title: Vercel AI SDK Provider
 slug: /providers/vercel
-image: "https://og.composio.dev/api/og?title=Vercel%20AI%20SDK%20Provider"   # image for socials
-keywords: ""
+image: 'https://og.composio.dev/api/og?title=Vercel%20AI%20SDK%20Provider' # image for socials
+keywords: ''
 hide-nav-links: false
 ---
 
@@ -11,6 +11,7 @@ Vercel AI SDK allows you to configure an optional async `execute` function that 
 The Vercel provider for Composio formats the Composio tools and adds this `execute` function to the tool calls.
 
 ## Setup
+
 Vercel AI SDK and the provider are only available for the TypeScript SDK.
 
 ```typescript TypeScript maxLines=60 wordWrap
@@ -20,8 +21,8 @@ npm install @composio/vercel
 You can specify and import the provider in the constructor.
 
 ```typescript TypeScript maxLines=60 wordWrap
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
 
 const composio = new Composio({
   provider: new VercelProvider(),
@@ -31,15 +32,14 @@ const composio = new Composio({
 ## Usage
 
 ```typescript TypeScript maxLines=60 wordWrap
-const tools = await composio.tools.get(userId, "GMAIL_SEND_EMAIL");
+const tools = await composio.tools.get(userId, 'GMAIL_SEND_EMAIL');
 
 const { text } = await generateText({
-  model: anthropic("claude-3-7-sonnet-20250219"),
+  model: anthropic('claude-3-7-sonnet-20250219'),
   messages: [
     {
-      role: "user",
-      content:
-        "Send an email to sid@composio.dev saying 'hi from the ether of composio'",
+      role: 'user',
+      content: "Send an email to soham@composio.dev saying 'hi from the ether of composio'",
     },
   ],
   tools,

@@ -13,4 +13,4 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     "per_page": 5
   },
 });
-console.log('✅ GitHub stargazers:', JSON.stringify(result, null, 2));
+console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
