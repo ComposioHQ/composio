@@ -131,7 +131,13 @@ class CustomTool:
 
     def __call__(self, **kwargs: t.Any) -> t.Any:
         """Call the custom tool."""
-        user_id = kwargs.pop("user_id", None) or "default"
+        user_id = kwargs.pop("user_id", None)
+        # For toolkit-backed custom tools, an explicit user_id is required to
+        # avoid accidentally using the wrong connected account.
+        if self.toolkit is not None and not user_id:
+            raise ValueError(
+                "user_id is required when invoking toolkit-backed custom tools"
+            )
         request = self.request_model.model_validate(kwargs)
         if self.toolkit is None:
             return t.cast(CustomToolProtocol, self.f)(request=request)
