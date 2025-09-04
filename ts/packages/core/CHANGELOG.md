@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.49
+
+### Patch Changes
+
+- 5027e18: Fix openai responses schema parsing
+- Updated dependencies [5027e18]
+  - @composio/json-schema-to-zod@0.1.14
+
 ## 0.1.48
 
 ### Patch Changes
