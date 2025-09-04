@@ -489,8 +489,11 @@ importers:
         specifier: ^16.4.1
         version: 16.5.0
       openai:
-        specifier: ^4.94.0
-        version: 4.104.0(ws@8.18.2)(zod@3.25.67)
+        specifier: ^5.19.1
+        version: 5.19.1(ws@8.18.2)(zod@3.25.67)
+      zod-to-json-schema:
+        specifier: ^3.24.5
+        version: 3.24.5(zod@3.25.67)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -707,6 +710,9 @@ importers:
       vitest:
         specifier: ^3.1.4
         version: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+      zod-to-json-schema:
+        specifier: ^3.24.5
+        version: 3.24.5(zod@3.25.67)
 
   ts/packages/providers/anthropic:
     dependencies:
@@ -766,7 +772,7 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^0.3.63
-        version: 0.3.63(openai@5.16.0(ws@8.18.2)(zod@3.25.67))
+        version: 0.3.63(openai@5.19.1(ws@8.18.2)(zod@3.25.67))
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -5809,8 +5815,8 @@ packages:
       zod:
         optional: true
 
-  openai@5.5.1:
-    resolution: {integrity: sha512-5i19097mGotHA1eFsM6Tjd/tJ8uo9sa5Ysv4Q6bKJ2vtN6rc0MzMrUefXnLXYAJcmMQrC1Efhj0AvfIkXrQamw==}
+  openai@5.19.1:
+    resolution: {integrity: sha512-zSqnUF7oR9ksmpusKkpUgkNrj8Sl57U+OyzO8jzc7LUjTMg4DRfR3uCm+EIMA6iw06sRPNp4t7ojp3sCpEUZRQ==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -8652,14 +8658,14 @@ snapshots:
     transitivePeerDependencies:
       - openai
 
-  '@langchain/core@0.3.63(openai@5.16.0(ws@8.18.2)(zod@3.25.67))':
+  '@langchain/core@0.3.63(openai@5.19.1(ws@8.18.2)(zod@3.25.67))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.20
-      langsmith: 0.3.33(openai@5.16.0(ws@8.18.2)(zod@3.25.67))
+      langsmith: 0.3.33(openai@5.19.1(ws@8.18.2)(zod@3.25.67))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -8734,7 +8740,7 @@ snapshots:
     dependencies:
       '@langchain/core': 0.3.63(openai@4.104.0(ws@8.18.2)(zod@3.25.67))
       js-tiktoken: 1.0.20
-      openai: 5.5.1(ws@8.18.2)(zod@3.25.67)
+      openai: 5.16.0(ws@8.18.2)(zod@3.25.67)
       zod: 3.25.67
     transitivePeerDependencies:
       - ws
@@ -12726,7 +12732,7 @@ snapshots:
     optionalDependencies:
       openai: 4.104.0(ws@8.18.2)(zod@3.25.67)
 
-  langsmith@0.3.33(openai@5.16.0(ws@8.18.2)(zod@3.25.67)):
+  langsmith@0.3.33(openai@5.19.1(ws@8.18.2)(zod@3.25.67)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -12736,7 +12742,7 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 5.16.0(ws@8.18.2)(zod@3.25.67)
+      openai: 5.19.1(ws@8.18.2)(zod@3.25.67)
 
   levn@0.4.1:
     dependencies:
@@ -13107,7 +13113,7 @@ snapshots:
       ws: 8.18.2
       zod: 3.25.67
 
-  openai@5.5.1(ws@8.18.2)(zod@3.25.67):
+  openai@5.19.1(ws@8.18.2)(zod@3.25.67):
     optionalDependencies:
       ws: 8.18.2
       zod: 3.25.67
