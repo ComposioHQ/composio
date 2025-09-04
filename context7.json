@@ -1,23 +1,18 @@
 {
-  "settings": {
-    "title": "Composio",
-    "project": "/composiohq/composio",
-    "docsRepoUrl": "https://github.com/composiohq/composio",
-    "folders": ["fern/pages/src", "fern/snippets", "ts", "python"],
-    "branch": "next",
-    "description": "Composio equip's your AI agents & LLMs with 100+ high-quality integrations via function calling",
-    "stars": 25113,
-    "trustScore": 9.4,
-    "excludeFiles": [
-      "CHANGELOG.md",
-      "changelog.md",
-      "CHANGELOG.mdx",
-      "changelog.mdx",
-      "LICENSE.md",
-      "license.md",
-      "CODE_OF_CONDUCT.md",
-      "code_of_conduct.md"
-    ],
-    "type": "repo"
-  }
+  "projectTitle": "Composio",
+  "description": "Composio equip's your AI agents & LLMs with 100+ high-quality integrations via function calling",
+  "folders": ["fern/pages/src", "fern/snippets", "ts", "python"],
+  "excludeFolders": [],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "changelog.md",
+    "CHANGELOG.mdx",
+    "changelog.mdx",
+    "LICENSE.md",
+    "license.md",
+    "CODE_OF_CONDUCT.md",
+    "code_of_conduct.md"
+  ],
+  "rules": [], 
+  "previousVersions": []
 }

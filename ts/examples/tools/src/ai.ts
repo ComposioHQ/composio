@@ -51,10 +51,9 @@ console.log('✅ Chat completion created successfully...');
  * If the assistant has tool calls, execute them and log the result
  */
 console.log('🔄 Calling tool...');
-if (response.choices[0].message.tool_calls) {
+if (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls[0].type === 'function') {
   console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
   const result = await composio.provider.handleToolCalls('default', response);
-  const data = JSON.parse(result[0]);
-  console.log(data);
+  console.log(result);
 }
 console.log('✅ Tool called successfully...');
