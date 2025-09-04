@@ -87,7 +87,10 @@ def function_signature_from_jsonschema(
         elif "type" in p_schema:
             p_type = _type_to_parameter(schema=p_schema)
         else:
-            raise InvalidSchemaError(f"Invalid property object {p_name}: {p_schema!r}")
+            # Handle cases where no type is specified (e.g., Pydantic's Any type)
+            # This typically happens when using typing.Any in Pydantic models,
+            # which intentionally omits the 'type' field in JSON schema
+            p_type = t.Any
 
         p_val = p_schema.get("default", None)
         if p_name in required or p_schema.get("required", False) or skip_default:
