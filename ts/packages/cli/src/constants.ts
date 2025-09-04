@@ -1,6 +1,10 @@
 import { constants } from '@composio/core';
 import pkg from '../package.json' with { type: 'json' };
 
+const { DEFAULT_BASE_URL, DEFAULT_WEB_URL } = constants;
+
+export { DEFAULT_BASE_URL, DEFAULT_WEB_URL };
+
 /**
  * Prefix for user environment variable keys used by the Composio CLI.
  */

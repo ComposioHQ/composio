@@ -1,16 +1,11 @@
-
 from composio_core import Composio
 from openai import OpenAI
 
 # Initialize OpenAI client
-openai = OpenAI(
-    api_key="your-openai-api-key"
-)
+openai = OpenAI(api_key="your-openai-api-key")
 
 # Initialize Composio client
-composio = Composio(
-    api_key="your-composio-api-key"
-)
+composio = Composio(api_key="your-composio-api-key")
 
 # Set up user identifier
 userId = "your@email.com"
@@ -32,7 +27,7 @@ completion = openai.chat.completions.create(
         },
         {
             "role": "user",
-            "content": "send an email to sid@composio.dev saying 'hi from the composio quickstart'",
+            "content": "send an email to soham@composio.dev saying 'hi from the composio quickstart'",
             # we'll ship you free merch if you do ;)
         },
     ],

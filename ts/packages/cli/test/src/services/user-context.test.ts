@@ -6,7 +6,7 @@ import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioUserContext, ComposioUserContextLive } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
-import { UserData, userDataToJSON } from 'src/models/user-data';
+import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
 import path from 'node:path';
 
@@ -29,9 +29,10 @@ describe('ComposioUserContext', () => {
         return Effect.gen(function* () {
           const ctx = yield* ComposioUserContext;
 
-          const expectedUserData = UserData.make({
+          const expectedUserData = UserDataWithDefaults.make({
             apiKey: Option.none(),
-            baseURL: Option.none(),
+            baseURL: 'https://backend.composio.dev',
+            webURL: 'https://platform.composio.dev',
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -56,9 +57,10 @@ describe('ComposioUserContext', () => {
         return Effect.gen(function* () {
           const ctx = yield* ComposioUserContext;
 
-          const expectedUserData = UserData.make({
+          const expectedUserData = UserDataWithDefaults.make({
             apiKey: Option.some('api_key'),
-            baseURL: Option.some('https://test.composio.localhost'),
+            baseURL: 'https://test.composio.localhost',
+            webURL: 'https://platform.composio.dev',
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), true);
@@ -84,6 +86,7 @@ describe('ComposioUserContext', () => {
           const expectedUserData = UserData.make({
             apiKey: Option.some('api_key'),
             baseURL: Option.some('https://test.composio.localhost'),
+            webURL: Option.some('https://platform.composio.dev'),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -92,7 +95,14 @@ describe('ComposioUserContext', () => {
           yield* fs.writeFileString(path.join(cwd, '.composio', 'user_data.json'), userDataAsJson);
 
           const ctx = yield* ComposioUserContext;
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
+          assertEquals(
+            Data.struct(ctx.data),
+            Data.struct({
+              ...expectedUserData,
+              baseURL: expectedUserData.baseURL.pipe(Option.getOrUndefined),
+              webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
+            })
+          );
           assertEquals(ctx.isLoggedIn(), true);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
@@ -113,6 +123,7 @@ describe('ComposioUserContext', () => {
           const expectedUserData = UserData.make({
             apiKey: Option.some('api_key'),
             baseURL: Option.none(),
+            webURL: Option.some('https://platform.composio.dev'),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -122,7 +133,14 @@ describe('ComposioUserContext', () => {
 
           const ctx = yield* ComposioUserContext;
 
-          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
+          assertEquals(
+            Data.struct(ctx.data),
+            Data.struct({
+              ...expectedUserData,
+              baseURL: 'https://backend.composio.dev',
+              webURL: expectedUserData.webURL.pipe(Option.getOrUndefined),
+            })
+          );
           assertEquals(ctx.isLoggedIn(), true);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });

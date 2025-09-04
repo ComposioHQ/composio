@@ -1,5 +1,37 @@
 # @composio/core
 
+## 0.1.48
+
+### Patch Changes
+
+- bb32cc2: Bump openai responses and deprecate openai assistant
+
+## 0.1.47
+
+### Patch Changes
+
+- 05ce9c6: Fix make access token and token type optional in oauth scheme
+
+## 0.1.46
+
+### Patch Changes
+
+- ee12d25: Fix long filenames while uploading files from URL
+- 9458513: Feat: Add flags to disable version check
+
+## 0.1.45
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/json-schema-to-zod@0.1.13
+
+## 0.1.44
+
+### Patch Changes
+
+- b4b8b94: Fix telemetry flags and disable when passed
+
 ## 0.1.43
 
 ### Patch Changes

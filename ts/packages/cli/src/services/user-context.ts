@@ -1,7 +1,12 @@
 import { FileSystem } from '@effect/platform';
 import { Effect, Context, Layer, Option } from 'effect';
 import path from 'path';
-import { UserData, userDataFromJSON, userDataToJSON } from 'src/models/user-data';
+import {
+  type UserDataWithDefaults,
+  UserData,
+  userDataFromJSON,
+  userDataToJSON,
+} from 'src/models/user-data';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
 import type { PlatformError } from '@effect/platform/Error';
@@ -11,7 +16,7 @@ import { APP_CONFIG } from 'src/effects/app-config';
 export class ComposioUserContext extends Context.Tag('ComposioUserData')<
   ComposioUserContext,
   {
-    readonly data: UserData;
+    readonly data: UserDataWithDefaults;
 
     /**
      * Returns `true` if the user is logged in, i.e., has a valid Composio API key.
@@ -22,6 +27,11 @@ export class ComposioUserContext extends Context.Tag('ComposioUserData')<
      * Logs out the user by clearing the API key and any other sensitive data.
      */
     logout: Effect.Effect<void, ParseError | PlatformError, never>;
+
+    /**
+     * Logs in the user by setting the API key.
+     */
+    login: (apiKey: string) => Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
      * Saves the user data to a persistent store, e.g., file or database.
@@ -35,7 +45,8 @@ export const ComposioUserContextLive = Layer.effect(
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const apiKey = yield* APP_CONFIG['API_KEY'];
-    const baseURL = yield* APP_CONFIG['BASE_URL']; // Some('/'), idk why
+    const baseURL = yield* APP_CONFIG['BASE_URL'];
+    const webURL = yield* APP_CONFIG['WEB_URL'];
 
     /**
      * Ensure the cache directory exists before reading/writing user data.
@@ -45,12 +56,18 @@ export const ComposioUserContextLive = Layer.effect(
 
     let userData = UserData.make({
       apiKey,
-      baseURL,
+      baseURL: Option.some(baseURL),
+      webURL: Option.some(webURL),
     });
 
     const logout = Effect.gen(function* () {
-      yield* update({ apiKey: Option.none() });
+      yield* update({ apiKey: Option.none(), baseURL: Option.none(), webURL: Option.some(webURL) });
     });
+
+    const login = (apiKey: string) =>
+      Effect.gen(function* () {
+        yield* update({ apiKey: Option.some(apiKey) });
+      });
 
     /**
      * Saves the user data to a JSON file.
@@ -78,7 +95,8 @@ export const ComposioUserContextLive = Layer.effect(
         ...userData,
         ...parsedUserData,
         apiKey: apiKey.pipe(Option.orElse(() => parsedUserData.apiKey)),
-        baseURL: baseURL.pipe(Option.orElse(() => parsedUserData.baseURL)),
+        baseURL: Option.some(baseURL),
+        webURL: Option.some(webURL),
       } satisfies UserData;
 
       yield* Effect.logDebug('User data (overridden from env vars):', overriddenUserData);
@@ -97,10 +115,17 @@ export const ComposioUserContextLive = Layer.effect(
 
     const isLoggedIn = () => Option.isSome(userData.apiKey);
 
+    const userDataWithDefaults = {
+      ...userData,
+      baseURL: Option.getOrElse(userData.baseURL, () => baseURL),
+      webURL: Option.getOrElse(userData.webURL, () => webURL),
+    };
+
     return ComposioUserContext.of({
-      data: userData,
+      data: userDataWithDefaults,
       isLoggedIn,
       update,
+      login,
       logout,
     });
   })

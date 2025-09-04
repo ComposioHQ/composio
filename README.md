@@ -1,3 +1,5 @@
+![Composio Banner](https://github.com/user-attachments/assets/9ba0e9c1-85a4-4b51-ae60-f9fe7992e819)
+
 # Composio SDK
 
 | This is the preview for our next generation sdk, you can learn more about them here and how to move here https://v3.docs.composio.dev/docs/migration

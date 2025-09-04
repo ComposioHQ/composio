@@ -11,10 +11,17 @@ export const UserData = Schema.Struct({
   ),
 
   /**
-   * Base URL for the Composio API server.
+   * Base URL for the Composio API server (backend).
    */
   baseURL: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('base_url')
+  ),
+
+  /**
+   * Base URL for the Composio web app (frontend).
+   */
+  webURL: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('web_url')
   ),
 }).annotations({
   identifier: 'UserData',
@@ -22,6 +29,18 @@ export const UserData = Schema.Struct({
 });
 
 export type UserData = Schema.Schema.Type<typeof UserData>;
+
+export const UserDataWithDefaults = Schema.Struct({
+  ...UserData.fields,
+
+  baseURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('base_url')),
+  webURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('web_url')),
+}).annotations({
+  identifier: 'UserDataWithDefaults',
+  description: 'User data storage for the Composio CLI with defaults',
+});
+
+export type UserDataWithDefaults = Schema.Schema.Type<typeof UserDataWithDefaults>;
 
 export const UserDataJSON = JSONTransformSchema(UserData);
 export const userDataFromJSON = Schema.decode(UserDataJSON, {

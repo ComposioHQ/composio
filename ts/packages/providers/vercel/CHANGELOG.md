@@ -1,5 +1,47 @@
 # @composio/vercel
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [bb32cc2]
+  - @composio/core@0.1.48
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [05ce9c6]
+  - @composio/core@0.1.47
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [ee12d25]
+- Updated dependencies [9458513]
+  - @composio/core@0.1.46
+
+## 0.2.1
+
+### Patch Changes
+
+- @composio/core@0.1.45
+
+## 0.2.0
+
+### Minor Changes
+
+- 69cb3d2: Add support for ai-sdk v5
+
+## 0.1.44
+
+### Patch Changes
+
+- b4b8b94: Fix telemetry flags and disable when passed
+- Updated dependencies [b4b8b94]
+  - @composio/core@0.1.44
+
 ## 0.1.43
 
 ### Patch Changes

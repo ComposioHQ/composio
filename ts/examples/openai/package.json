@@ -22,9 +22,9 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@composio/openai-agents": "workspace:*",
-    "@openai/agents": "^0.0.7",
+    "@openai/agents": "^0.0.17",
     "dotenv": "^16.4.1",
-    "openai": "^4.94.0",
+    "openai": "^5.16.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

@@ -20,11 +20,11 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "dotenv": "^16.4.1",
-    "openai": "^4.94.0"
+    "openai": "^5.19.1",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
     "typescript": "^5.8.3"
   }
 }
-

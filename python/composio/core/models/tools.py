@@ -288,12 +288,17 @@ class Tools(Resource, t.Generic[TProvider]):
         self,
         slug: str,
         arguments: t.Dict,
+        user_id: t.Optional[str] = None,
     ) -> ToolExecutionResponse:
         """Execute a custom tool"""
         # TODO: Better error handling, pydantic validation eg...
         try:
             return {
-                "data": self._custom_tools.execute(slug=slug, request=arguments),
+                "data": self._custom_tools.execute(
+                    slug=slug,
+                    request=arguments,
+                    user_id=user_id,
+                ),
                 "error": None,
                 "successful": True,
             }
@@ -323,12 +328,24 @@ class Tools(Resource, t.Generic[TProvider]):
             self._client.tools.execute(
                 tool_slug=slug,
                 arguments=arguments,
-                connected_account_id=connected_account_id or self._client.not_given,
-                custom_auth_params=custom_auth_params or self._client.not_given,
-                custom_connection_data=custom_connection_data or self._client.not_given,
-                user_id=user_id or self._client.not_given,
-                text=text or self._client.not_given,
-                version=version or self._client.not_given,
+                connected_account_id=(
+                    connected_account_id
+                    if connected_account_id is not None
+                    else self._client.not_given
+                ),
+                custom_auth_params=(
+                    custom_auth_params
+                    if custom_auth_params is not None
+                    else self._client.not_given
+                ),
+                custom_connection_data=(
+                    custom_connection_data
+                    if custom_connection_data is not None
+                    else self._client.not_given
+                ),
+                user_id=user_id if user_id is not None else self._client.not_given,
+                text=text if text is not None else self._client.not_given,
+                version=version if version is not None else self._client.not_given,
             ).model_dump(
                 exclude={
                     "log_id",
@@ -408,7 +425,11 @@ class Tools(Resource, t.Generic[TProvider]):
             request=arguments,
         )
         response = (
-            self._execute_custom_tool(slug=slug, arguments=arguments)
+            self._execute_custom_tool(
+                slug=slug,
+                arguments=arguments,
+                user_id=user_id,
+            )
             if self._custom_tools.get(slug) is not None
             else self._execute_tool(
                 slug=slug,

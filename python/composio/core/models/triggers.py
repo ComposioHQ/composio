@@ -676,8 +676,8 @@ class Triggers(Resource):
             query_auth_config_ids_1=auth_config_ids,
             query_connected_account_ids_1=connected_account_ids,
             query_show_disabled_1=show_disabled,
-            limit=limit or self._client.not_given,
-            page=page or self._client.not_given,
+            limit=limit if limit is not None else self._client.not_given,
+            page=page if page is not None else self._client.not_given,
         )
 
     @t.overload
@@ -728,7 +728,9 @@ class Triggers(Resource):
         return self._client.trigger_instances.upsert(
             slug=slug,
             connected_account_id=connected_account_id,
-            body_trigger_config_1=trigger_config or self._client.not_given,
+            body_trigger_config_1=(
+                trigger_config if trigger_config is not None else self._client.not_given
+            ),
         )
 
     def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
