@@ -4,7 +4,7 @@ import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
 import { parseOneOf } from './parse-one-of';
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs } from '../types';
+import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object' }, refs: Refs) {
@@ -39,8 +39,33 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
       'default' in propJsonSchema
     ) {
       // If default is null, make the field nullable with the null default
+      // But don't make it nullable if it's already an anyOf/oneOf that includes null
       if (propJsonSchema.default === null) {
-        properties[key] = propZodSchema.nullable().optional().default(null);
+        const hasAnyOfWithNull =
+          propJsonSchema.anyOf &&
+          Array.isArray(propJsonSchema.anyOf) &&
+          propJsonSchema.anyOf.some(
+            (schema: JsonSchema) =>
+              typeof schema === 'object' && schema !== null && schema.type === 'null'
+          );
+        const hasOneOfWithNull =
+          propJsonSchema.oneOf &&
+          Array.isArray(propJsonSchema.oneOf) &&
+          propJsonSchema.oneOf.some(
+            (schema: JsonSchema) =>
+              typeof schema === 'object' && schema !== null && schema.type === 'null'
+          );
+        const isNullable =
+          'nullable' in propJsonSchema &&
+          (propJsonSchema as JsonSchemaObject & { nullable?: boolean }).nullable === true;
+
+        if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
+          // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
+          properties[key] = propZodSchema.optional().default(null);
+        } else {
+          // Make the field nullable with the null default
+          properties[key] = propZodSchema.nullable().optional().default(null);
+        }
       } else {
         properties[key] = propZodSchema.optional().default(propJsonSchema.default);
       }

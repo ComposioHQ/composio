@@ -53,8 +53,23 @@ const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.
   return zodSchema;
 };
 
-const addDefaults = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addDefaults = (
+  jsonSchema: JsonSchemaObject,
+  zodSchema: z.ZodTypeAny,
+  refs?: Refs
+): z.ZodTypeAny => {
   if (jsonSchema.default !== undefined) {
+    // Don't apply null defaults to non-nullable types within anyOf/oneOf contexts
+    if (jsonSchema.default === null) {
+      // Check if we're in an anyOf/oneOf context by examining the path
+      const inAnyOfOrOneOf = refs?.path.some(segment => segment === 'anyOf' || segment === 'oneOf');
+
+      // If we're in anyOf/oneOf and this is a non-nullable type, skip the default
+      if (inAnyOfOrOneOf && jsonSchema.type && jsonSchema.type !== 'null' && !jsonSchema.nullable) {
+        return zodSchema;
+      }
+    }
+
     zodSchema = zodSchema.default(jsonSchema.default);
   }
 
@@ -144,7 +159,7 @@ export const parseSchema = (
     }
 
     if (!refs.withoutDefaults) {
-      parsedZodSchema = addDefaults(jsonSchema, parsedZodSchema);
+      parsedZodSchema = addDefaults(jsonSchema, parsedZodSchema, refs);
     }
 
     parsedZodSchema = addAnnotations(jsonSchema, parsedZodSchema);

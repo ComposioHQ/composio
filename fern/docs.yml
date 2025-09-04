@@ -5,7 +5,7 @@ instances:
     github:
       owner: ComposioHQ
       repo: composio
-      branch: master
+      branch: next
 title: Composio Docs
 default-language: python
 logo:
