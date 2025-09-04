@@ -1,14 +1,18 @@
 ---
 title: AI Gmail Labeller
-subtitle: "A Python app that uses your custom LLM prompt to label your Gmail!"
-image: "https://og.composio.dev/api/og?title=AI%20Gmail%20Labeller"   # image for socials
+subtitle: 'A Python app that uses your custom LLM prompt to label your Gmail!'
+image: 'https://og.composio.dev/api/og?title=AI%20Gmail%20Labeller' # image for socials
 keywords: ''
 hide-nav-links: false
 ---
+
 Imagine having an AI assistant that automatically organizes your Gmail inbox by intelligently labeling incoming emails. That's exactly what we'll build in this tutorial.
 
 <Frame>
-  <img src="https://camo.githubusercontent.com/29b105fdcc2e005d8dd76bab0af33081a0567637da1061da6e1664285b843f8d/68747470733a2f2f692e696d6775722e636f6d2f515646337956582e676966" alt="Gmail Labeller" />
+  <img
+    src="https://camo.githubusercontent.com/29b105fdcc2e005d8dd76bab0af33081a0567637da1061da6e1664285b843f8d/68747470733a2f2f692e696d6775722e636f6d2f515646337956582e676966"
+    alt="Gmail Labeller"
+  />
 </Frame>
 
 The complete app is available in our [`filter-gmails-example`](https://github.com/ComposioHQ/filter-gmails-example) repository. The app has a frontend built with Next.js along with Supabase for authentication.
@@ -24,11 +28,12 @@ The complete app is available in our [`filter-gmails-example`](https://github.co
 In this guide, we'll focus on the Composio + OpenAI Agents part of the app.
 
 ## Prerequisites
+
 - Clone the [`filter-gmails-example`](https://github.com/ComposioHQ/filter-gmails-example) repository and set the project up locally.
 - Get a Composio API key. You can get one <a href="https://platform.composio.dev?next_page=/settings" target="_blank">here</a>.
 
-
 ## Creating Triggers for users
+
 [Triggers](/docs/using-triggers) are a way to listen for events from apps. They act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your apps.
 
 In some cases, triggers require certain configurations to set the correct events. You can inspect and add these properties while enabling the triggers.
@@ -49,8 +54,8 @@ Then the trigger can be created with the following code:
   title="apps/backend/email_processor.py"
 />
 
-
 ## Listening for a trigger event
+
 <Callout type="info">
 For local development, you can use [ngrok](https://ngrok.com/) to expose your local server to the internet.
 
@@ -59,6 +64,7 @@ ngrok http 8000
 ```
 
 Then you can set the ngrok URL in the trigger configuration.
+
 <Frame>
     <img src="../../../assets/images/examples/trigger-config.png" alt="Trigger configuration" />
 </Frame>
@@ -73,12 +79,12 @@ It is parsed and then the labeling method `process_gmail_message` is called thro
 ```python apps/backend/main.py {1-5, 29-33} maxLines=33
 @app.post("/composio/webhook")
 async def listen_webhooks(
-    request: Request, 
+    request: Request,
     background_tasks: BackgroundTasks
 ):
     """
-    Main webhook endpoint for processing Gmail 
-    new message events. This is the core webhook 
+    Main webhook endpoint for processing Gmail
+    new message events. This is the core webhook
     labeling functionality.
     """
     # Verify webhook signature
@@ -100,8 +106,8 @@ async def listen_webhooks(
 
         # Add email processing to background tasks
         background_tasks.add_task(
-            process_gmail_message, 
-            gmail_message, 
+            process_gmail_message,
+            gmail_message,
             user_prompt
         )
 
@@ -112,6 +118,7 @@ async def listen_webhooks(
 ```
 
 ## Processing the mail using OpenAI Agents SDK
+
 The `process_gmail_message` method is responsible for processing the email using the OpenAI Agents SDK.
 
 <SnippetCode
@@ -149,6 +156,7 @@ You can view the agent trace in OpenAI's [Traces Dashboard](https://platform.ope
 </Frame>
 
 ## Securing the webhooks!
+
 It is important to validate the webhook signature to ensure the request is coming from Composio.
 
 Generate and store the webhook signature in the environment variables.
@@ -158,6 +166,7 @@ Generate and store the webhook signature in the environment variables.
 </Frame>
 
 The webhook signature is validated in the `verify_webhook_signature` function.
+
 <SnippetCode
   githubUrl="https://github.com/ComposioHQ/filter-gmails-example/blob/master/apps/backend/webhook.py#L10-L56"
   language="python"
@@ -173,6 +182,7 @@ In the `/composio/webhook` endpoint, we verify the webhook signature and then pa
 />
 
 ## Inspiration
+
 This example was inspired by an X/Twitter post by [@FarzaTV](https://x.com/FarzaTV/status/1905371012369350857).
 
-We encourage you to check out the [full app](https://github.com/ComposioHQ/filter-gmails-example), fork it, build it, and make it your own! Reach out to [sid@composio.dev](mailto:sid@composio.dev) for free credits ;)
+We encourage you to check out the [full app](https://github.com/ComposioHQ/filter-gmails-example), fork it, build it, and make it your own! Reach out to [soham@composio.dev](mailto:soham@composio.dev) for free credits ;)

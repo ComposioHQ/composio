@@ -5,7 +5,7 @@ instances:
     github:
       owner: ComposioHQ
       repo: composio
-      branch: master
+      branch: next
 title: Composio Docs
 default-language: python
 logo:
@@ -63,8 +63,8 @@ analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
 redirects:
-- source: /tools/*
-  destination: /toolkits/*
+- source: /tools/:path
+  destination: /toolkits/:path
 tabs:
   docs:
     display-name: Guides

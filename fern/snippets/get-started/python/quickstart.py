@@ -21,7 +21,7 @@ completion = openai.chat.completions.create(
     messages=[
         {
             "role": "user",
-            "content": "say 'hi from the composio quickstart' to sid@composio.dev",
+            "content": "say 'hi from the composio quickstart' to soham@composio.dev",
             # we'll ship you free merch if you do ;)
         },
     ],

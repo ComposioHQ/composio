@@ -6,6 +6,7 @@ from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
 )
+from composio.core.models.triggers import TriggerEvent
 from composio.core.provider.base import TTool, TToolCollection
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "ExecuteRequestFn",
+    "TriggerEvent",
     "Modifiers",
     "auth_scheme",
 ]

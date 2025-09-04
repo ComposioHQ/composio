@@ -44,7 +44,7 @@ async function main() {
       tool_choice: 'auto',
     });
 
-    if (response.choices[0].message.tool_calls) {
+    if (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls[0].type === 'function') {
       console.log(
         '🔧 Assistant is using tool:',
         response.choices[0].message.tool_calls[0].function.name

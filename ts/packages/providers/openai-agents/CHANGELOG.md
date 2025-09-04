@@ -1,5 +1,20 @@
 # @composio/vercel
 
+## 0.1.48
+
+### Patch Changes
+
+- bb32cc2: Bump openai responses and deprecate openai assistant
+- Updated dependencies [bb32cc2]
+  - @composio/core@0.1.48
+
+## 0.1.47
+
+### Patch Changes
+
+- Updated dependencies [05ce9c6]
+  - @composio/core@0.1.47
+
 ## 0.1.46
 
 ### Patch Changes

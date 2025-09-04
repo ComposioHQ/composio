@@ -1,5 +1,17 @@
 # @composio/core
 
+## 0.1.48
+
+### Patch Changes
+
+- bb32cc2: Bump openai responses and deprecate openai assistant
+
+## 0.1.47
+
+### Patch Changes
+
+- 05ce9c6: Fix make access token and token type optional in oauth scheme
+
 ## 0.1.46
 
 ### Patch Changes

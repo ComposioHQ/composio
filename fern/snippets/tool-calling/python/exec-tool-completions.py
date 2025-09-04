@@ -1,27 +1,34 @@
 from composio import Composio
-from composio_gemini import GeminiProvider
-from google import genai
-from google.genai import types
+from composio_openai import OpenAIProvider
+from openai import OpenAI
+from datetime import datetime
 
-user_id = "0000-1111-2222"
+# Use a unique identifier for each user in your application
+user_id = "user-k7334" 
 
 # Create composio client
-composio = Composio(provider=GeminiProvider())
+composio = Composio(provider=OpenAIProvider(), api_key="your_composio_api_key")
 
-# Create google client
-client = genai.Client()
-
-# Create genai client config
-config = types.GenerateContentConfig(
-    tools=composio.tools.get(
-        user_id=user_id,
-        tools=[
-            "COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH",
-        ],
-    )
+# Create openai client
+openai = OpenAI()
+  
+# Get calendar tools for this user
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["GOOGLECALENDAR_EVENTS_LIST"]
 )
 
-# Use the chat interface.
-chat = client.chats.create(model="gemini-2.0-flash", config=config)
-response = chat.send_message("What's new happening with Cluely?")
-print(response.text)
+# Ask the LLM to check calendar
+result = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"What's on my calendar for the next 7 days. Its {datetime.now().strftime("%Y-%m-%d")} today.",}
+    ]
+)
+
+
+# Handle tool calls
+result = composio.provider.handle_tool_calls(user_id=user_id, response=result)
+print(result)

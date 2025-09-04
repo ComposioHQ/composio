@@ -131,7 +131,7 @@ class CustomTool:
 
     def __call__(self, **kwargs: t.Any) -> t.Any:
         """Call the custom tool."""
-        user_id = kwargs.pop("user_id", "default")
+        user_id = kwargs.pop("user_id", None) or "default"
         request = self.request_model.model_validate(kwargs)
         if self.toolkit is None:
             return t.cast(CustomToolProtocol, self.f)(request=request)
@@ -196,9 +196,14 @@ class CustomTools:
         self.custom_tools_registry[tool.slug] = tool
         return tool
 
-    def execute(self, slug: str, request: t.Dict) -> t.Dict:
+    def execute(
+        self,
+        slug: str,
+        request: t.Dict,
+        user_id: t.Optional[str] = None,
+    ) -> t.Dict:
         """Execute a custom tool."""
         custom_tool = self.get(slug)
         if custom_tool is None:
             raise NotFoundError(f"Custom tool with slug {slug} not found")
-        return custom_tool(**request)
+        return custom_tool(**request, user_id=user_id)

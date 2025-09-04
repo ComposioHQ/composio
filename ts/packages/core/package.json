@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.46",
+  "version": "0.1.48",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -48,7 +48,7 @@
     "@composio/json-schema-to-zod": "0.1.13",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
-    "openai": "^4.94.0",
+    "openai": "^5.16.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "uuid": "^11.1.0",

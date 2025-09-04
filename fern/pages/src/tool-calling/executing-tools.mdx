@@ -1,220 +1,146 @@
 ---
 title: Executing Tools
-image: "https://og.composio.dev/api/og?title=Executing%20Tools"   # image for socials
-keywords: ""
+image: 'https://og.composio.dev/api/og?title=Executing%20Tools' # image for socials
+keywords: ''
 subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
 hide-nav-links: false
 ---
 
-Tool calling is a feature of all frontier LLMs to allow them to interact with the outside world. Earlier you might be able to ask an LLM to write you a nice email, but you would have to manually send it. With tool calling, you can now provide an LLM a valid tool, for example, `GMAIL_SEND_EMAIL` to go and accomplish the task autonomously.
+LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, _act,_ observe, and adapt.
+
+In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like _Gmail, Slack, or GitHub_, and Composio handles authentication and user scoping.
+
+<Tip icon="info">
+  **User Scoping**: All tools are scoped to a specific user - that's why every example includes a
+  `user_id`. Each user must authenticate with their respective services (Gmail, Calendar, etc.)
+  before executing tools. [Learn more about authentication →](./authenticating-tools)
+</Tip>
 
 ## Using Chat Completions
-For non-agent providers—such as OpenAI, Anthropic, and Google AI—you can process tool calls using the tool call handlers provided by the Composio SDK.
-This approach works consistently across all supported non-agent providers.
 
-To learn how to setup these providers, see [Providers](/providers).
+Use the Composio SDK with providers like OpenAI, Anthropic, and Google AI. To learn how to set-up these providers, see [Providers](/providers/openai).
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/tool-calling/python/exec-tool-completions.py"
-  startLine={1}
-  endLine={30}
-  title="Python (Google)"
-/>
-<SnippetCode
-  src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
-  startLine={1}
-  endLine={30}
-  title="TypeScript (Anthropic)"
-/>
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/exec-tool-completions.py"
+    title="Python (OpenAI)"
+    highlightStart={32}
+    highlightEnd={33}
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/exec-tool-completions.ts"
+    title="TypeScript (Anthropic)"
+    highlightStart={37}
+    highlightEnd={38}
+  />
 </CodeGroup>
 
 ## Using Agentic Frameworks
-Composio also has first-party support for agentic frameworks which execute tools, feed the result to the LLM and continue the conversation.
 
-
-<Tip icon="info">
-Here, the tool execution is handled by the agentic framework. Composio makes sure the tools are formatted into the correct objects for the agentic framework to execute.
-</Tip>
+Agentic frameworks automatically handle the tool execution loop.
+Composio provides support for frameworks like this by making sure the tools are formatted into the correct objects for the agentic framework to execute.
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/tool-calling/python/exec-tool-agentic.py"
-  startLine={1}
-  endLine={37}
-  title="Python (OpenAI Agents SDK)"
-/>
-<SnippetCode
-  src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
-  startLine={1}
-  endLine={30}
-  title="TypeScript (Anthropic)"
-/>
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/exec-tool-agentic.py"
+    title="Python (OpenAI Agents SDK)"
+    highlightStart={19}
+    highlightEnd={23}
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
+    title="TypeScript (Anthropic)"
+    highlightStart={22}
+    highlightEnd={31}
+  />
 </CodeGroup>
 
-## Tools are scoped to a user
-Each tool and tool action is scoped to a user. Hence, a `user_id` is required to fetch and execute tools.
+## Direct Tool execution
 
-The authentication state is checked and used while fetching and executing a tool.
+In case you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
 
-You need to authorize the user to execute tools.
-For more information on authentication, see [Authenticating Tools](./authenticating-tools).
-
-## For Humans (deterministic tool calling)
-In case you just want to call a tool manually -- not using any framework or LLM provider, you can do so using the `execute` method.
-
+<Tip icon="lightbulb">
+  **Finding tool arguments**: In the [Auth Configs
+  tab](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools &
+  Triggers → Select the tool to see its required and optional parameters, types, and descriptions.
+</Tip>
 <CodeGroup>
-```python Python maxLines=60 wordWrap
-
-user_id = "user@example.com"
-composio = Composio()
-
-result = composio.tools.execute(
-    "HACKERNEWS_GET_USER",
-    user_id=user_id,
-    arguments={"username": "pg"}
-)
-print(result)
-```
-```typescript TypeScript maxLines=60 wordWrap
-const userId = "user@example.com";
-const composio = new Composio();
-
-const result = await composio.tools.execute("HACKERNEWS_GET_USER", {
-  userId,
-  arguments: {
-    username: "pg",
-  },
-});
-console.log(result);
-```
-</CodeGroup> 
+  <SnippetCode src="fern/snippets/tool-calling/python/direct-tool-call.py" title="Python" />
+  <SnippetCode src="fern/snippets/tool-calling/typescript/direct-tool-call.ts" title="TypeScript" />
+</CodeGroup>
 
 ### Proxy Execute -- Manually calling toolkit APIs
-You can also proxy requests to an API of any supported toolkit. This is useful when you want to manually call an API of a toolkit and inject the authentication state from Composio.
+
+You can proxy requests to any supported toolkit API and let Composio inject the **authentication state**. This is useful when you need an API endpoint that isn't available as a predefined tool.
+
+The `endpoint` can be a relative path or absolute URL. Composio uses the `connected_account_id` to determine the toolkit and resolve relative paths against the appropriate base URL.
 
 <CodeGroup>
-```python Python maxLines=60 wordWrap
-response = composio.tools.proxy(
-    endpoint="/repos/composiohq/composio/issues/1",
-    method="GET",
-    connected_account_id="ac_1234",  # use connected account for github
-    parameters=[
-        {
-            "name": "Accept",
-            "value": "application/vnd.github.v3+json",
-            "type": "header",
-        },
-    ],
-)
-```
-```typescript TypeScript maxLines=60 wordWrap
-// Send a custom request to a toolkit
-const { data } = await composio.tools.proxyExecute({
-  toolkitSlug: 'github',
-  userId: 'user@example.com',
-  data: {
-    endpoint: '/repos/owner/repo/issues',
-    method: 'GET'
-  }
-});
-console.log(data);
-```
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/proxy-tool.py"
+    title="Python"
+    startLine={5}
+    highlightStart={9}
+    highlightEnd={9}
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/proxy-tool.ts"
+    title="TypeScript"
+    startLine={5}
+    highlightStart={9}
+    highlightEnd={9}
+/>
+
 </CodeGroup>
 
-If you're interested in extending toolkits and creating custom tools, see [Custom tools](/docs/custom-tools).
+<Tip icon="info">
+  Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn
+  how to [create custom tools](/docs/custom-tools).
+</Tip>
 
 ## Automatic File Handling
 
-Composio SDK includes automatic file handling for tools that work with files. When enabled (default), the SDK automatically handles file uploads and downloads during tool execution.
+Composio handles file operations automatically. Pass file paths to tools that need them, and get local file paths back from tools that return files.
 
 ### File Upload
 
-When a tool accepts file inputs (marked with `file_uploadable: true`), you can pass local file paths or URLs or a `File` object. Here's an example using Google Drive upload:
+Pass local file paths, URLs, or File objects to tools that accept files:
 
 <CodeGroup>
-```python Python maxLines=60 wordWrap
-import os
-
-from composio import Composio
-
-composio = Composio()
-
-# Upload a local file to Google Drive
-result = composio.tools.execute(
-    "GOOGLEDRIVE_UPLOAD_FILE",
-    user_id="default",
-    arguments={
-        "file_to_upload": os.path.join(os.getcwd(), "document.pdf")  # Local file path
-    }
-)
-
-print(result.data)  # Contains Google Drive file details
-```
-
-```typescript TypeScript maxLines=60 wordWrap
-import { Composio } from '@composio/core';
-import path from 'path';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
-
-// Upload a local file to Google Drive
-const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
-  userId: 'default',
-  arguments: {
-    file_to_upload: path.join(__dirname, 'document.pdf')  // Local file path or URL or File object
-  }
-});
-
-console.log(result.data);  // Contains Google Drive file details
-```
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/file-upload.py"
+    title="Python"
+    startLine={7}
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/file-upload.ts"
+    title="TypeScript"
+    startLine={8}
+  />
 </CodeGroup>
-
-The SDK automatically:
-1. Reads the file content
-2. Uploads it to secure storage
-3. Passes the file metadata to the tool
 
 ### File Download
 
-When a tool returns file outputs, the SDK automatically:
-1. Downloads the file to a local temporary directory
-2. Provides the local file path in the response
+When tools return files, Composio downloads them to the local directory and provides file path in the response:
+When tools return files, Composio downloads them to the local directory and provides the file path in the response:
 
 <CodeGroup>
-```python Python maxLines=60 wordWrap
-# Download a file from Google Drive
-result = composio.tools.execute(
-    "GOOGLEDRIVE_DOWNLOAD_FILE",
-    user_id="default",
-    arguments={
-        "file_id": "your_file_id"
-    }
-)
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/file-download.py"
+    title="Python"
+    startLine={4}
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/file-download.ts"
+    title="TypeScript"
+    startLine={4}
+  />
 
-# Result includes local file path
-print(result.data["file"])  # "/path/to/downloaded/file.pdf"
-```
-
-```typescript TypeScript maxLines=60 wordWrap
-// Download a file from Google Drive
-const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
-  userId: 'default',
-  arguments: {
-    file_id: 'your_file_id'
-  }
-});
-
-// Result includes local file path
-console.log(result.data.file.uri);  // "/path/to/downloaded/file.pdf"
-```
 </CodeGroup>
 
 ### Disabling Auto File Handling
 
-You can disable automatic file handling when initializing the Typescript SDK:
+You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:
 
 <CodeGroup>
 ```typescript TypeScript maxLines=60 wordWrap
@@ -225,11 +151,12 @@ const composio = new Composio({
 
 // Now you need to handle files manually using composio.files API
 const fileData = await composio.files.upload({
-  filePath: path.join(__dirname, 'document.pdf'),
-  toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
-  toolkitSlug: 'googledrive'
+filePath: path.join(\_\_dirname, 'document.pdf'),
+toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
+toolkitSlug: 'googledrive'
 });
+
 ```
 </CodeGroup>
 
-For more details on file handling, see [Auto Upload and Download Files](/docs/advanced/auto-upload-download).
+```

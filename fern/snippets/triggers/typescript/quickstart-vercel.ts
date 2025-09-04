@@ -22,7 +22,7 @@ const { text } = await generateText({
   messages: [
     {
       role: 'user',
-      content: "say 'hi from the composio quickstart' to sid@composio.dev", // we'll ship you free merch if you do ;)
+      content: "say 'hi from the composio quickstart' to soham@composio.dev", // we'll ship you free merch if you do ;)
     },
   ],
   tools,
