@@ -96,6 +96,9 @@ export function parseObject(
         })
       : undefined;
 
+  // Track if additionalProperties was explicitly set to true
+  const isAdditionalPropertiesTrue = objectSchema.additionalProperties === true;
+
   if (objectSchema.patternProperties) {
     const parsedPatternProperties = Object.fromEntries(
       Object.entries(objectSchema.patternProperties).map(([key, value]) => {
@@ -173,7 +176,6 @@ export function parseObject(
       }
     });
   }
-
   let output: z.ZodTypeAny;
   if (propertiesSchema) {
     if (hasPatternProperties) {
@@ -181,6 +183,9 @@ export function parseObject(
     } else if (additionalProperties) {
       if (additionalProperties instanceof z.ZodNever) {
         output = propertiesSchema.strict();
+      } else if (isAdditionalPropertiesTrue) {
+        // When additionalProperties was explicitly true, use passthrough
+        output = propertiesSchema.passthrough();
       } else {
         // Check if propertiesSchema is an empty object
         const isEmptyObject = Object.keys(propertiesSchema._def.shape()).length === 0;
@@ -198,10 +203,18 @@ export function parseObject(
     if (hasPatternProperties) {
       output = zodSchema!;
     } else if (additionalProperties) {
-      output = z.record(additionalProperties);
+      if (additionalProperties instanceof z.ZodNever) {
+        // When additionalProperties is false, create strict empty object
+        output = z.object({}).strict();
+      } else if (isAdditionalPropertiesTrue) {
+        // When additionalProperties was explicitly true, use empty object with passthrough
+        output = z.object({}).passthrough();
+      } else {
+        output = z.record(additionalProperties);
+      }
     } else {
-      // When no properties and no additionalProperties specified, create empty object
-      output = z.object({});
+      // When no properties and no additionalProperties specified, default to allowing additional properties
+      output = z.object({}).passthrough();
     }
   }
 
