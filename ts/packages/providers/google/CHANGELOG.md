@@ -1,5 +1,11 @@
 # @composio/google
 
+## 0.1.50
+
+### Patch Changes
+
+- @composio/core@0.1.50
+
 ## 0.1.49
 
 ### Patch Changes
