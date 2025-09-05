@@ -1,5 +1,11 @@
 # @composio/mastra
 
+## 0.1.51
+
+### Patch Changes
+
+- @composio/core@0.1.50
+
 ## 0.1.50
 
 ### Patch Changes

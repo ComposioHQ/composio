@@ -5,7 +5,7 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tool = await composio.tools.getRawComposioToolBySlug('GMAIL_CREATE_EMAIL_DRAFT');
+const tool = await composio.tools.getRawComposioToolBySlug('COMPOSIO_MULTI_EXECUTE_TOOL');
 const inputParams = tool.inputParameters;
 console.log(`---------- Original Input Parameters ----------`);
 console.log(JSON.stringify(inputParams, null, 2));
