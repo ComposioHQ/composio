@@ -646,8 +646,8 @@ importers:
         specifier: 0.1.0-alpha.31
         version: 0.1.0-alpha.31
       '@composio/json-schema-to-zod':
-        specifier: workspace:*
-        version: link:../json-schema-to-zod
+        specifier: 0.1.14
+        version: 0.1.14
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1269,6 +1269,9 @@ packages:
 
   '@composio/client@0.1.0-alpha.31':
     resolution: {integrity: sha512-DVPVCMDXzoQn1aUZx38e8s5+gA/J/c6FpVfS1rzUnMKCRSuXXrOoKXFAvoRME5pcaKN2Wjux5ARyvIPBugNoMA==}
+
+  '@composio/json-schema-to-zod@0.1.14':
+    resolution: {integrity: sha512-GorIdGeQbZ8T55JYw4Xlf/4WVCrFBAGtQzN5IgwavvFQd84ekwNjaJtpHgvdaEPqrtDzc1ItqCZmPE8np/1Jhg==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7950,6 +7953,11 @@ snapshots:
   '@cloudflare/workers-types@4.20250619.0': {}
 
   '@composio/client@0.1.0-alpha.31': {}
+
+  '@composio/json-schema-to-zod@0.1.14':
+    dependencies:
+      '@types/json-schema': 7.0.15
+      zod: 3.25.67
 
   '@composio/mcp@1.0.3-0': {}
 
