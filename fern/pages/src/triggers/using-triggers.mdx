@@ -1,27 +1,30 @@
 ---
 title: Using Triggers
 subtitle: Send payloads to your AI agents or systems based on events in apps.
-image: "https://og.composio.dev/api/og?title=Using%20Triggers"   # image for socials
-keywords: ''
+image: 'https://og.composio.dev/api/og?title=Using%20Triggers' # image for socials
+keywords: 'triggers, webhooks, websockets, events, active triggers'
 hide-nav-links: true
 ---
 
-Triggers act as a notification system for your AI applications, enabling your agents to respond dynamically to external events occurring within your apps.
+When events occur in connected apps (like new Slack messages or GitHub commits), triggers automatically send the event data to your application.
 
-
-When these events take place, triggers capture relevant information and deliver structured payloads directly to your system, letting you build agents that respond proactively.
+Each event is delivered as a **structured payload** to your webhook endpoint(via webhooks or WebSockets), enabling your applications or AI agents to respond proactively.
 
 <Frame caption="Triggers through Composio" background="subtle">
   ![Triggers Overview](../../../assets/images/triggers.png)
 </Frame>
 
 <Tip title="Prerequisites">
-  Before proceeding, ensure you've created an [auth config](/docs/authenticating-tools#creating-an-auth-config) and [established a connection](/docs/authenticating-tools#connecting-to-an-oauth-toolkit) to an app (e.g., Slack, GitHub).
+  Before proceeding, ensure you've created an [auth
+  config](/docs/authenticating-tools#creating-an-auth-config) and [established a
+  connection](/docs/authenticating-tools#connecting-to-an-oauth-toolkit) to an app (e.g., Slack,
+  GitHub).
 </Tip>
 
 ## Creating a trigger
 
 Head to any app that supports triggers, such as <a href="https://platform.composio.dev?next_page=/marketplace/slack" target="_blank">Slack</a> in the dashboard and enable the trigger of choice.
+
 <Tabs>
 <Tab title="Dashboard">
 <video
@@ -33,10 +36,6 @@ Head to any app that supports triggers, such as <a href="https://platform.compos
   playsinline
   controls
 ></video>
-
-<Frame caption="Triggers page" background="subtle">
-  <img src="../../../assets/images/manage-triggers.png" alt="Manage triggers" />
-</Frame>
 
 In some cases, triggers require certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
 
@@ -50,7 +49,6 @@ The dashboard will show you the trigger configuration to fill in.
     height="auto"
   />
 </Frame>
-
 
 </Tab>
 <Tab title="SDK">
@@ -76,7 +74,6 @@ You can also create triggers programmatically using the SDK. To get started, fir
 />
 </CodeGroup>
 
-
 Most triggers require certain configuration to send the correct events. For example, `GITHUB_COMMIT_EVENT` requires you to specify the repository and owner.
 
 **Fetch required trigger configuration**
@@ -99,15 +96,15 @@ Most triggers require certain configuration to send the correct events. For exam
 </Tab>
 </Tabs>
 
-
 ## Subscribing to triggers
-The typical and recommended way to subscribe to triggers is through webhooks.
 
+The typical and recommended way to subscribe to triggers is through webhooks.
 
 To receive trigger events via webhooks, you need to configure a publicly accessible URL where Composio can send the event payloads. This URL should point to an endpoint in your application that can process incoming webhook requests.
 
 <Tip title="Use ngrok/webhook.site for local dev!">
-During development, you can use ngrok/webhook.site or other services to expose your local server to the internet.
+  During development, you can use ngrok/webhook.site or other services to expose your local server
+  to the internet.
 </Tip>
 
 <Frame caption="Webhook setup" background="subtle">
@@ -129,6 +126,7 @@ Below are some examples of how to listen in on trigger events for a FastAPI/Next
 </CodeGroup>
 
 ## Trigger payload types
+
 When subscribing to triggers, it is helpful to know the payload type received from the trigger. You can inspect the payload type by fetching the trigger type.
 
 <CodeGroup>
@@ -139,7 +137,7 @@ print(trigger.payload)
 ```
 
 ```typescript TypeScript maxLines=60 wordWrap
-const triggerType = await composio.triggers.getType("GITHUB_COMMIT_EVENT");
+const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
 
 console.log(triggerType.payload);
 ```
@@ -167,13 +165,14 @@ For better type safety and developer experience in TypeScript, you can define sp
 </CodeGroup>
 
 This approach provides:
+
 - **IntelliSense support** for trigger payload fields
 - **Compile-time error checking** for typos and invalid field access
 - **Better documentation** through TypeScript types
 - **Improved maintainability** of trigger handling code
 
-
 ## Prototyping triggers during development
+
 During development, you may not have a proper webhook setup -- so you can subscribe to triggers directly through the SDK.
 
 You subscribe to multiple trigger events by configuring the filters. When you specify multiple filters, ALL of them must match for the trigger to be subscribed to.
@@ -185,13 +184,16 @@ This method uses WebSocket to subscribe to the trigger.
 user_id = "user@email.com"
 
 # Subscribe to a trigger
+
 subscription = composio.triggers.subscribe()
 
 # Define a handler
+
 @subscription.handle(toolkit="GITHUB", user_id=user_id)
 def handle_github_event(data):
-    print(data)
-```
+print(data)
+
+````
 ```typescript TypeScript maxLines=60 wordWrap
 await composio.triggers.subscribe(
   triggerData => {
@@ -205,7 +207,8 @@ await composio.triggers.subscribe(
     // authConfigId: "ac_1234567890"
   }
 )
-```
+````
+
 </CodeGroup>
 
 ## Enabling/Disabling triggers
@@ -213,30 +216,21 @@ await composio.triggers.subscribe(
 In cases where the trigger isn't required for the system, it can be disabled.
 
 <CodeGroup>
-  ```python Python maxLines=60 wordWrap
-  # Disable a trigger instance 
-  disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
-  print(disabled_instance) 
-  ```
-  ```typescript TypeScript maxLines=60 wordWrap
-  await composio.triggers.disable("ti_abcd123");
-  ```
+  ```python Python maxLines=60 wordWrap # Disable a trigger instance disabled_instance =
+  composio.triggers.disable(trigger_id="ti_abcd123") print(disabled_instance) ``` ```typescript
+  TypeScript maxLines=60 wordWrap await composio.triggers.disable("ti_abcd123"); ```
 </CodeGroup>
 
 If needed, the trigger can be enabled again.
 
 <CodeGroup>
-  ```python Python maxLines=60 wordWrap
-  # Enable a trigger instance
-  enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
-  print(enabled_instance)
-  ```
-  ```typescript TypeScript maxLines=60 wordWrap
-  await composio.triggers.enable("ti_abcd123");
-  ```
+  ```python Python maxLines=60 wordWrap # Enable a trigger instance enabled_instance =
+  composio.triggers.enable(trigger_id="ti_abcd123") print(enabled_instance) ``` ```typescript
+  TypeScript maxLines=60 wordWrap await composio.triggers.enable("ti_abcd123"); ```
 </CodeGroup>
 
 ## Troubleshooting
+
 If you encounter issues with triggers or webhook listeners, you can use the Composio dashboard to inspect detailed trigger logs. The dashboard allows you to review event payloads, identify errors, and manually resend events for testing purposes.
 
 Access the trigger logs <a href="https://platform.composio.dev?next_page=/logs/triggers" target="_blank">here</a>.
