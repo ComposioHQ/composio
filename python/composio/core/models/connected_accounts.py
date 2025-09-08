@@ -351,6 +351,30 @@ class ConnectedAccounts:
             redirect_url=getattr(response.connection_data.val, "redirect_url", None),
             client=self._client,
         )
+    
+    def link(
+        self,
+        user_id: str,
+        auth_config_id: str,
+        *,
+        callback_url: t.Optional[str] = None,
+    ) -> ConnectionRequest:
+        """
+        Create a new connected account using Composio Link.
+
+        This function creates a link which can be used to authenticate a user.
+
+        :param user_id: The user ID to create the connected account for.
+        :param auth_config_id: The auth config ID to create the connected account for.
+        :param callback_url: Callback URL to use for OAuth apps.
+        :return: The connection request.
+        """
+        return ConnectionRequest(
+            id=response.id,
+            status=response.connection_data.val.status,
+            redirect_url=getattr(response.connection_data.val, "redirect_url", None),
+            client=self._client,
+        )
 
     def wait_for_connection(
         self,

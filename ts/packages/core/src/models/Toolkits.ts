@@ -292,6 +292,7 @@ export class Toolkits {
    * ```typescript
    * const connectionRequest = await composio.toolkits.authorize(userId, 'github');
    * ```
+   *
    */
   async authorize(
     userId: string,

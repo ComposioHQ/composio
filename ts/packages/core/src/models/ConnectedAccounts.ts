@@ -20,7 +20,9 @@ import {
   ConnectedAccountListParams,
   ConnectedAccountListParamsSchema,
   ConnectedAccountListResponse,
-  ConnectedAccountListResponseSchema,
+  CreateConnectedAccountLinkOptions,
+  CreateConnectedAccountLinkOptionsSchema,
+  ConnectedAccountStatuses,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
@@ -30,7 +32,10 @@ import {
   transformConnectedAccountListResponse,
   transformConnectedAccountResponse,
 } from '../utils/transformers/connectedAccounts';
-import { ComposioMultipleConnectedAccountsError } from '../errors';
+import {
+  ComposioFailedToCreateConnectedAccountLink,
+  ComposioMultipleConnectedAccountsError,
+} from '../errors';
 import logger from '../utils/logger';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 /**
@@ -204,6 +209,77 @@ export class ConnectedAccounts {
       response.connectionData.val.status,
       redirectUrl
     );
+  }
+
+  /**
+   * @description Create a Composio Connect Link for a user to connect their account to a given auth config. This method will return an external link which you can use the user to connect their account.
+   *
+   * @docs https://docs.composio.dev/reference/connected-accounts/create-connected-account#create-a-composio-connect-link
+   *
+   * @param userId {string} - The external user ID to create the connected account for.
+   * @param authConfigId {string} - The auth config ID to create the connected account for.
+   * @param options {CreateConnectedAccountOptions} - Options for creating a new connected account.
+   * @param options.callbackUrl {string} - The url to redirect the user to post connecting their account.
+   * @returns {ConnectionRequest} Connection request object
+   *
+   * @example
+   * ```typescript
+   * // create a connection request and redirect the user to the redirect url
+   * const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123');
+   * const redirectUrl = connectionRequest.redirectUrl;
+   * console.log(`Visit: ${redirectUrl} to authenticate your account`);
+   *
+   * // Wait for the connection to be established
+   * const connectedAccount = await connectionRequest.waitForConnection()
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // create a connection request and redirect the user to the redirect url
+   * const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123', {
+   *   callbackUrl: 'https://your-app.com/callback'
+   * });
+   * const redirectUrl = connectionRequest.redirectUrl;
+   * console.log(`Visit: ${redirectUrl} to authenticate your account`);
+   *
+   * // Wait for the connection to be established
+   * const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequest.id);
+   * ```
+   */
+  async link(
+    userId: string,
+    authConfigId: string,
+    options?: CreateConnectedAccountLinkOptions
+  ): Promise<ConnectionRequest> {
+    const requestOptions = await CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
+    if (!requestOptions.success) {
+      throw new ValidationError('Failed to parse create connected account link options', {
+        cause: requestOptions.error,
+      });
+    }
+
+    try {
+      const response = await this.client.link.create({
+        auth_config_id: authConfigId,
+        user_id: userId,
+        ...(requestOptions?.data.callbackUrl && { callback_url: requestOptions.data.callbackUrl }),
+      });
+
+      const connectionRequest = createConnectionRequest(
+        this.client,
+        response.connected_account_id,
+        ConnectedAccountStatuses.INITIATED,
+        response.redirect_url
+      );
+      return connectionRequest;
+    } catch (error) {
+      throw new ComposioFailedToCreateConnectedAccountLink(
+        'Failed to create connected account link',
+        {
+          cause: error,
+        }
+      );
+    }
   }
 
   /**

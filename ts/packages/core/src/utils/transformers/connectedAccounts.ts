@@ -8,6 +8,7 @@ import {
   ConnectedAccountRetrieveResponse,
   ConnectedAccountRetrieveResponseSchema,
 } from '../../types/connectedAccounts.types';
+import { ConnectionDataSchema } from '../../types/connectedAccountAuthStates.types';
 import { ValidationError } from '../../errors';
 import logger from '../logger';
 import { transform } from '../transform';
@@ -27,6 +28,18 @@ import { transform } from '../transform';
 export function transformConnectedAccountResponse(
   response: RawConnectedAccountRetrieveResponse | RawConnectedAccountListResponse['items'][0]
 ): ConnectedAccountRetrieveResponse {
+  // Safely parse the state field, filtering out unsupported auth schemes
+  const parseState = (state: unknown) => {
+    try {
+      return state ? ConnectionDataSchema.parse(state) : undefined;
+    } catch (error) {
+      logger.warn('Unsupported auth scheme in connected account state, ignoring state field', {
+        error,
+      });
+      return undefined;
+    }
+  };
+
   return transform(response)
     .with(ConnectedAccountRetrieveResponseSchema)
     .using(response => ({
@@ -38,7 +51,7 @@ export function transformConnectedAccountResponse(
         isDisabled: response.auth_config.is_disabled,
       },
       data: (response as unknown as ConnectedAccountRetrieveResponse).data ?? undefined,
-      state: response.state,
+      state: parseState(response.state),
       status: response.status,
       statusReason: response.status_reason,
       isDisabled: response.is_disabled,
