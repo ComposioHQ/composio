@@ -194,6 +194,7 @@ def handle_github_event(data):
 print(data)
 
 ````
+
 ```typescript TypeScript maxLines=60 wordWrap
 await composio.triggers.subscribe(
   triggerData => {
@@ -216,17 +217,31 @@ await composio.triggers.subscribe(
 In cases where the trigger isn't required for the system, it can be disabled.
 
 <CodeGroup>
-  ```python Python maxLines=60 wordWrap # Disable a trigger instance disabled_instance =
-  composio.triggers.disable(trigger_id="ti_abcd123") print(disabled_instance) ``` ```typescript
-  TypeScript maxLines=60 wordWrap await composio.triggers.disable("ti_abcd123"); ```
+```python Python maxLines=60 wordWrap
+# Disable a trigger instance
+disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+print(disabled_instance)
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+await composio.triggers.disable('ti_abcd123');
+```
+
 </CodeGroup>
 
 If needed, the trigger can be enabled again.
 
 <CodeGroup>
-  ```python Python maxLines=60 wordWrap # Enable a trigger instance enabled_instance =
-  composio.triggers.enable(trigger_id="ti_abcd123") print(enabled_instance) ``` ```typescript
-  TypeScript maxLines=60 wordWrap await composio.triggers.enable("ti_abcd123"); ```
+```python Python maxLines=60 wordWrap
+# Enable a trigger instance
+enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+print(enabled_instance)
+```
+
+```typescript TypeScript maxLines=60 wordWrap
+await composio.triggers.enable('ti_abcd123');
+```
+
 </CodeGroup>
 
 ## Troubleshooting
