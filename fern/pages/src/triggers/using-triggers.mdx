@@ -122,12 +122,13 @@ To see what data you'll receive in your webhook handler, inspect the trigger's p
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap
-# Get a trigger by id
+# Get trigger type to inspect payload structure
 trigger = composio.triggers.get_type(slug="GITHUB_COMMIT_EVENT")
 print(trigger.payload)
 ```
 
 ```typescript TypeScript maxLines=60 wordWrap
+// Get trigger type to inspect payload structure
 const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
 
 console.log(triggerType.payload);
