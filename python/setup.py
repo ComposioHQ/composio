@@ -90,14 +90,15 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.7.20",
+    version="0.7.21",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
-    description="Core package to act as a bridge between composio platform and other services.",
+    description="[DEPRECATED] Core package to act as a bridge between composio platform and other services. Please use 'composio' instead.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/composiohq/composio",
     classifiers=[
+        "Development Status :: 7 - Inactive",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
