@@ -1,7 +1,7 @@
 ---
 title: Using Triggers
 subtitle: Send payloads to your AI agents or systems based on events in apps.
-image: "https://og.composio.dev/api/og?title=Using%20Triggers"   # image for socials
+image: 'https://og.composio.dev/api/og?title=Using%20Triggers' # image for socials
 keywords: 'triggers, webhooks, websockets, events, active triggers'
 hide-nav-links: true
 ---
@@ -176,7 +176,7 @@ You can pause triggers temporarily without deleting them.
 1. Go to the [Auth Config](https://platform.composio.dev?next_page=/auth-configs) page
 2. Select your auth config
 3. Navigate to "Active Triggers"
-4. Toggle the trigger on/off
+4. Disable/Enable the trigger
 
 <Frame caption="Enable/disable triggers" background="subtle">
   <img
@@ -195,6 +195,7 @@ You can pause triggers temporarily without deleting them.
 composio.triggers.disable(trigger_id="ti_abcd123")
 
 # Re-enable when needed
+
 composio.triggers.enable(trigger_id="ti_abcd123")
 
 ````
