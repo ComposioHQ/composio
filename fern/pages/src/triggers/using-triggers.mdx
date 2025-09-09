@@ -54,47 +54,27 @@ Some triggers require additional configuration. The dashboard will prompt you fo
 
 </Tab>
 <Tab title="SDK">
-You can also create triggers programmatically using the SDK. To get started, first view the required configuration for creating a trigger:
-
+Create triggers programmatically by providing the trigger type and any required configuration.
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/triggers/python/triggers.py"
   title="Python"
   startLine={1}
-  endLine={12}
-  highlightStart={10}
-  highlightEnd={10}
+  endLine={18}
+  highlightStart={12}
+  highlightEnd={16}
 />
 
 <SnippetCode
   src="fern/snippets/triggers/typescript/triggers.ts"
   startLine={1}
-  endLine={13}
-  highlightStart={8}
-  highlightEnd={11}
+  endLine={22}
+  highlightStart={12}
+  highlightEnd={21}
   title="TypeScript"
 />
 </CodeGroup>
 
-Most triggers require certain configuration to send the correct events. For example, `GITHUB_COMMIT_EVENT` requires you to specify the repository and owner.
-
-**Fetch required trigger configuration**
-
-<CodeGroup>
-<SnippetCode
-  src="fern/snippets/triggers/python/triggers.py"
-  startLine={13}
-  endLine={32}
-  title="Python"
-/>
-
-<SnippetCode
-  src="fern/snippets/triggers/typescript/triggers.ts"
-  startLine={5}
-  endLine={29}
-  title="TypeScript"
-/>
-</CodeGroup>
 </Tab>
 </Tabs>
 
