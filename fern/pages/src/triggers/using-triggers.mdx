@@ -6,7 +6,7 @@ keywords: 'triggers, webhooks, websockets, events, active triggers'
 hide-nav-links: true
 ---
 
-When events occur in connected apps (like new Slack messages or GitHub commits), triggers automatically send the event data to your application.
+When **events** occur in connected apps (like new Slack messages or GitHub commits), triggers automatically send the event data to your application.
 
 Each event is delivered as a **structured payload** to your webhook endpoint(via webhooks or WebSockets), enabling your applications or AI agents to respond proactively.
 
@@ -17,34 +17,36 @@ Each event is delivered as a **structured payload** to your webhook endpoint(via
 <Tip title="Prerequisites">
   Before proceeding, ensure you've created an [auth
   config](/docs/authenticating-tools#creating-an-auth-config) and [established a
-  connection](/docs/authenticating-tools#connecting-to-an-oauth-toolkit) to an app (e.g., Slack,
-  GitHub).
+  connection](/docs/authenticating-tools#oauth-connections) to an app (e.g., Slack, GitHub).
 </Tip>
 
 ## Creating a trigger
 
-Head to any app that supports triggers, such as <a href="https://platform.composio.dev?next_page=/marketplace/slack" target="_blank">Slack</a> in the dashboard and enable the trigger of choice.
+You can create triggers using either the Composio dashboard or programmatically via the SDK.
 
 <Tabs>
 <Tab title="Dashboard">
-<video
-  src="../../../assets/videos/enabling-triggers.mp4"
-  width="854"
-  height="480"
-  autoplay
-  loop
-  playsinline
-  controls
-></video>
+To create triggers through the **dashboard**:
 
-In some cases, triggers require certain configuration to set the correct events. You can inspect and add these properties while enabling the triggers.
+- Navigate to the <a href="https://platform.composio.dev?next_page=%2Fauth-configs" target="_blank">Auth Configs</a> page
+- Select the auth config
+- Click "Add Trigger" and navigate to "Active Triggers" tab to fetch the trigger ID.
+  <video
+    src="../../../assets/videos/enabling-triggers.mp4"
+    width="854"
+    height="480"
+    autoplay
+    loop
+    playsinline
+    controls
+  ></video>
 
-The dashboard will show you the trigger configuration to fill in.
+Some triggers require additional configuration. The dashboard will prompt you for any required fields during setup.
 
-<Frame caption="Trigger configuration" background="subtle">
+<Frame caption="Example: Gmail trigger configuration" background="subtle">
   <img
     src="../../../assets/images/trigger-config.png"
-    alt="Trigger configuration"
+    alt="Trigger configuration example"
     width="400px"
     height="auto"
   />
