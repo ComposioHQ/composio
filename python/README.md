@@ -1,3 +1,21 @@
+# ⚠️ DEPRECATION NOTICE
+
+**This package (`composio-core`) is deprecated and will no longer receive updates.**
+
+**Please migrate to the new package: [`composio`](https://pypi.org/project/composio/)**
+
+```bash
+# Instead of:
+pip install composio-core
+
+# Use:
+pip install composio
+```
+
+The new `composio` package provides the same functionality with improved features and active maintenance.
+
+---
+
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
