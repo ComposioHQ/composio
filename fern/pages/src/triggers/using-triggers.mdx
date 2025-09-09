@@ -90,22 +90,10 @@ Use a publicly accessible URL where Composio can send event payloads. This endpo
   **Local development:** Use [ngrok](https://ngrok.com) or [webhook.site](https://webhook.site) to
   expose your local server to the internet for testing.
 </Tip>
+**Implement your webhook handler:**
 
-### WebSocket subscriptions (Development)
-
-During development, you can subscribe to triggers directly through the SDK without setting up webhooks. This creates a real-time WebSocket connection to receive events.
-
-<CodeGroup>
-  <SnippetCode src="fern/snippets/triggers/python/trigger-subscription.py" title="Python" />
-  <SnippetCode src="fern/snippets/triggers/typescript/trigger-subscription.ts" title="Typescript" />
-</CodeGroup>
-
-<Note>
-  Real-time subscriptions are only for development. For production, always use webhooks for
-  reliability and scalability.
-</Note>
-
-Below are some examples of how to listen in on trigger events for a FastAPI/Next.js application.
+Below are some examples of how to listen in on trigger events
+for a FastAPI/Next.js application.
 
 <CodeGroup>
 <SnippetCode
@@ -119,9 +107,18 @@ Below are some examples of how to listen in on trigger events for a FastAPI/Next
 />
 </CodeGroup>
 
+### WebSocket subscriptions (Development)
+
+During development, you can subscribe to triggers directly through the SDK without setting up webhooks. This creates a real-time WebSocket connection to receive events.
+
+<CodeGroup>
+  <SnippetCode src="fern/snippets/triggers/python/trigger-subscription.py" title="Python" />
+  <SnippetCode src="fern/snippets/triggers/typescript/trigger-subscription.ts" title="Typescript" />
+</CodeGroup>
+
 ## Trigger payload types
 
-When subscribing to triggers, it is helpful to know the payload type received from the trigger. You can inspect the payload type by fetching the trigger type.
+To see what data you'll receive in your webhook handler, inspect the trigger's payload:
 
 <CodeGroup>
 ```python Python maxLines=60 wordWrap
