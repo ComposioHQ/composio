@@ -9,7 +9,12 @@ composio.triggers.subscribe(
         console.log(`New commit detected:`, data);
         // Add your custom logic here
     },
-    { triggerId: 'your_trigger_id' }
+    { triggerId: 'your_trigger_id'    
+        // userId: 'user@acme.com',
+        // toolkits: ['github', 'slack'],
+        // triggerSlug: ["GITHUB_STAR_ADDED_EVENT"]
+        // authConfigId: "ac_1234567890" }
+    }
 );
 
 // Note: For production use, set up webhooks instead
