@@ -1,32 +1,17 @@
 from composio import Composio
 
-composio = Composio()
+composio = Composio(api_key="your-api-key")
+user_id = "user-id-123435"
 
-user_id = "user@example.com"
+# Check what configuration is required
+trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_type.config)
+# Returns: {"properties": {...}, "required": ["owner", "repo"], ...}
 
+# Create trigger with the required config
 trigger = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
-    trigger_config={"repo": "composiohq", "owner": "composio"},
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
 )
-print(trigger)
-
-trigger_config = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
-print(trigger_config.config)
-### Trigger Config
-# {
-#     "properties": {
-#         "owner": {
-#             "description": "Owner of the repository",
-#             "title": "Owner",
-#             "type": "string"
-#         },
-#         "repo": {
-#             "description": "Repository name",
-#             "title": "Repo",
-#             "type": "string"
-#         }
-#     },
-#     "required": ["owner", "repo"],
-#     "title": "WebhookConfigSchema",
-#     "type": "object"
+print(f"Trigger created: {trigger.trigger_id}")
