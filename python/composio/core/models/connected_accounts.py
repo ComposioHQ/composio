@@ -322,7 +322,7 @@ class ConnectedAccounts:
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
     ) -> ConnectionRequest:
         """
-        Compound function to create a new coneected account. This function creates
+        Compound function to create a new connected account. This function creates
         a new connected account and returns a connection request.
 
         Users can then wait for the connection to be established using the
