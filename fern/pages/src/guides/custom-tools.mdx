@@ -1,0 +1,215 @@
+---
+title: Custom Tools
+image: "https://og.composio.dev/api/og?title=Custom%20Tools"
+keywords: 'custom tools'
+hide-nav-links: false
+---
+
+In case you cannot find a tool that you need as part of the Composio SDK, you can
+create a custom tool that is compatible with the Composio SDKs. Let's create a
+simple custom tool that adds two numbers.
+
+<Steps>
+    <Step title="Create a custom tool">
+        <CodeGroup>
+            ```python Python
+            from pydantic import BaseModel, Field
+            from composio import Composio
+
+            # Initialize the Composio client
+            composio = Composio(api_key="<COMPOSIO_API_KEY>")
+
+            # Define the input schema for the custom tool
+            class AddTwoNumbersInput(BaseModel):
+                a: int = Field(
+                    ...,
+                    description="The first number to add",
+                )
+                b: int = Field(
+                    ...,
+                    description="The second number to add",
+                )
+
+            # Register a custom tool
+            @composio.tools.custom_tool
+            def add_two_numbers(request: AddTwoNumbersInput) -> int:
+                """Add two numbers."""
+                return request.a + request.b
+            ```
+            ```typescript TypeScript
+            import { Composio } from "@composio/sdk";
+            import { z } from "zod";
+
+            // Initialize the Composio client
+            const composio = new Composio({apiKey: "<COMPOSIO_API_KEY>"});
+
+            // Register a custom tool
+            composio.tools.createCustomTool({
+                slug: "ADD_TWO_NUMBERS",
+                name: "Add two numbers",
+                description: "Add two numbers",
+                inputParams: z.object({
+                    a: z.number().describe("The first number to add"),
+                    b: z.number().describe("The second number to add"),
+                }),
+                execute: async (input) => {
+                    return {
+                        data: {
+                            result: input.a + input.b,
+                        },
+                        error: null,
+                        successful: true,
+                    };
+                },
+            });
+            ```
+        </CodeGroup>
+    </Step>
+    <Step title="Execute the custom tool">
+        <CodeGroup>
+            ```python Python
+            result = composio.tools.execute(
+                user_id="default",
+                slug="ADD_TWO_NUMBERS",
+                arguments={"a": 1, "b": 2}
+            )
+            print(result)
+            ```
+            ```typescript TypeScript
+            const result = await composio.tools.execute("ADD_TWO_NUMBERS", {
+                userId: "default",
+                arguments: {a: 1,b: 2},
+            });
+            console.log(result);
+            ```
+        </CodeGroup>
+    </Step>
+    <Step title="Using a custom tool with agent">
+        <CodeGroup>
+            ```python Python
+            tools = composio.tools.get(
+                user_id="default",
+                tools=["ADD_TWO_NUMBERS"],
+            )
+            print(tools)
+            ```
+            ```typescript TypeScript
+            const tools = await composio.tools.get("default", {
+                tools: ["ADD_TWO_NUMBERS"],
+            });
+            console.log(tools);
+            ```
+        </CodeGroup>
+    </Step>
+</Steps>
+
+
+## Extending a toolkit
+
+If you run into a situation where you cannot find a tool that you need as part of
+the Composio SDK, you can extend a toolkit to add a custom tool.
+
+<CodeGroup>
+    ```python Python
+    from pydantic import BaseModel, Field
+    from composio import Composio
+    from composio.types import ExecuteRequestFn
+
+    # Initialize the Composio client
+    composio = Composio(api_key="<COMPOSIO_API_KEY>")
+
+    # Define the input schema for the custom tool
+    class GetIssueInfoInput(BaseModel):
+        issue_number: int = Field(
+            ...,
+            description="The number of the issue to get",
+        )
+
+    # Register a custom tool
+    @composio.tools.custom_tool(toolkit="github")
+    def get_issue_info(
+        request: GetIssueInfoInput,
+        execute_request: ExecuteRequestFn,
+        auth_credentials: dict,
+    ) -> dict:
+        """Get information about a GitHub issue."""
+        response = execute_request(
+            endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+            method="GET",
+            parameters=[
+                {
+                    "name": "Accept",
+                    "value": "application/vnd.github.v3+json",
+                    "type": "header",
+                },
+                {
+                    "name": "Authorization",
+                    "value": f"Bearer {auth_credentials['access_token']}",
+                    "type": "header",
+                },
+            ],
+        )
+        return {"data": response.data}
+    ```
+    ```typescript TypeScript
+    import { Composio } from "@composio/sdk";
+    import { z } from "zod";
+
+    // Initialize the Composio client
+    const composio = new Composio({apiKey: "<COMPOSIO_API_KEY>"});
+
+    // Register a custom tool
+    const tool = await composio.tools.createCustomTool({
+        slug: "GITHUB_GET_ISSUE_INFO",
+        name: 'Github get issue info',
+        toolkitSlug: 'github',
+        description: 'For any given issue number, get the issue info',
+        inputParams: z.object({
+            issue_number: z.number().describe('The issue number to get'),
+        }),
+        execute: async (input, connectionConfig, executeToolRequest) => {
+            const result = await executeToolRequest({
+                endpoint: `/repos/composiohq/composio/issues/${input.issue_number}`,
+                method: 'GET',
+                parameters: [
+                    {
+                        name: 'Accept',
+                        value: 'application/vnd.github.v3+json',
+                        type: 'header',
+                    },
+                    {
+                        name: 'Authorization',
+                        value: `Bearer ${connectionConfig.access_token}`,
+                        type: 'header',
+                    },
+                ],
+            });
+            return result;
+        },
+    });
+    ```
+</CodeGroup>
+
+<Info>
+    When a custom tool is registered as part of a toolkit, you require a connected
+    account for the same toolkit to be able to execute the tool.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="File Handling"
+    icon="fa-solid fa-file"
+    href="/docs/file-handling"
+  >
+    Learn how the Composio SDKs handle file upload and downloads.
+  </Card>
+  <Card
+    title="SDK Reference"
+    icon="fa-solid fa-code"
+    href="/sdk/python/tools"
+  >
+    API reference for Composio SDKs.
+  </Card>
+</CardGroup>

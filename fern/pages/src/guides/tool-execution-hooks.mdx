@@ -1,0 +1,25 @@
+---
+title: Execution Modifiers
+image: "https://og.composio.dev/api/og?title=Execution%20Modifiers"   # image for socials
+subtitle: "How to use tool execution hooks"
+keywords: "composio, tool execution hooks, hooks"
+hide-nav-links: true
+---
+
+When working with tool calling, you might want to modify the tool execution. Maybe
+you want to inject some custom parameters before the tool is executed. Or maybe you
+want to modify the response from the tool. Modifiers are a way to do this.
+
+## Before Execution
+
+These modifier are called before the tool is executed. This allows you to modify
+different tool execution parameters.
+
+<Frame>
+  <img src="../../../assets/images/before-execute.png" alt="Before Execution Modifier" />
+</Frame>
+
+
+```python
+from composio import ExecutionModifier
+```

@@ -1,0 +1,219 @@
+---
+title: Schema Modifiers
+image: "https://og.composio.dev/api/og?title=Schema%20Modifiers"   # image for socials
+keywords: ''
+subtitle: 'Learn how to use schema modifiers to transform tool schemas before they are seen by agents.'
+hide-nav-links: false
+---
+
+Schema modifiers are used to modify the tool schema before it is seen by the agent.
+This is useful if you want to add or remove arguments from the tool schema.
+
+<Frame>
+  <img src="../../../../assets/images/schema-modifier.png" alt="Schema Modifier" />
+</Frame>
+
+<Note>
+  Below we modify the schema of the `HACKERNEWS_GET_LATEST_POSTS` to make the `size` argument
+  required and remove the `page` argument.
+</Note>
+
+<CodeGroup>
+  ```python Python
+  from composio import Composio, schema_modifier
+  from composio.types import Tool
+
+  @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+  def modify_schema(
+      tool: str,
+      toolkit: str,
+      schema: Tool,
+  ) -> Tool:
+      _ = schema.input_parameters["properties"].pop("page", None)
+      schema.input_parameters["required"] = ["size"]
+      return schema
+
+  user_id = "your@email.com"
+  tools = composio.tools.get(
+      user_id=user_id,
+      tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+      modifiers=[
+          modify_schema,
+      ]
+  )
+  ```
+  ```typescript TypeScript
+  const userId = "your@email.com";
+  const tools = await composio.tools.get(
+    userId,
+    {
+      tools: ["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    },
+    {
+      modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+        if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+          const { inputParameters } = schema;
+          if (inputParameters?.properties) {
+            delete inputParameters.properties["page"];
+          }
+          inputParameters.required = ["size"];
+        }
+        return schema;
+      },
+    }
+  );
+  console.log(JSON.stringify(tools, null, 2));
+  ```
+</CodeGroup>
+
+In using the above modified tool schema, the `page` argument is removed and the
+`size` argument is required. You can test this out by viewing the tool call
+response in the LLM too!
+
+<Accordion title="Schema modified tool call">
+  <CodeGroup>
+    ```python Python
+    from openai import OpenAI
+
+    from composio import Composio, schema_modifier
+    from composio_openai import OpenAIProvider
+    from composio.types import Tool
+
+
+    @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+    def modify_schema(
+        tool: str,
+        toolkit: str,
+        schema: Tool,
+    ) -> Tool:
+        _ = schema.input_parameters["properties"].pop("page", None)
+        schema.input_parameters["required"] = ["size"]
+        return schema
+
+    # Initialize tools.
+    openai_client = OpenAI()
+    composio = Composio(provider=OpenAIProvider())
+
+    # Define task.
+    task = "Get the latest posts from Hacker News"
+
+    # Get GitHub tools that are pre-configured
+    tools = composio.tools.get(
+      user_id="default",
+      tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+      modifiers=[
+          modify_schema,
+      ],
+    )
+
+    # Get response from the LLM
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        tools=tools,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": task},
+        ],
+    )
+    print(response)
+
+    # Execute the function calls.
+    result = composio.provider.handle_tool_calls(response=response, user_id="default")
+    print(result)
+    ```
+
+    ```typescript TypeScript
+    import { Composio } from '@composio/core';
+    import { OpenAI } from 'openai';
+
+    const composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+    });
+    const openai = new OpenAI();
+
+    const userId = 'your@email.com';
+    const tools = await composio.tools.get(
+      userId,
+      {
+        tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+      },
+      {
+        modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+          if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
+            const { inputParameters } = schema;
+            if (inputParameters?.properties) {
+              delete inputParameters.properties['page'];
+            }
+            inputParameters.required = ['size'];
+          }
+          return schema;
+        },
+      }
+    );
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that can help with tasks.',
+        },
+        { role: 'user', content: 'Get the latest posts from Hacker News' },
+      ],
+      tools: tools,
+      tool_choice: 'auto',
+    });
+    console.log(response.choices[0].message.tool_calls);
+    ```
+  </CodeGroup>
+</Accordion>
+
+
+Sometimes you need to provide additional context to help the agent understand
+how to use a tool correctly. This example demonstrates modifying the description
+of the `GITHUB_LIST_REPOSITORY_ISSUES` tool to specify a default repository when
+none is provided.
+
+<Note>
+  This approach is particularly useful when you want to guide the agent's behavior
+  without changing the tool's underlying functionality.
+</Note>
+
+In this example:
+- We append additional instructions to the tool's description
+- The modified description tells the agent to use `composiohq/composio` as the default repository
+- This helps prevent errors when the agent forgets to specify a repository parameter
+
+<CodeGroup>
+  <SnippetCode 
+    src="fern/snippets/modifiers/python/description.py" 
+    title="Python"
+    startLine={1} 
+    endLine={27} 
+  />
+  <SnippetCode 
+    src="fern/snippets/modifiers/typescript/description.ts" 
+    title="TypeScript"
+    startLine={1} 
+    endLine={31} 
+  />
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Custom Auth Params"
+    icon="fa-solid fa-code"
+    href="/docs/guides/tool-execution-hooks/custom-auth-params"
+  >
+    Learn how to inject custom auth params.
+  </Card>
+  <Card
+    title="SDK Reference"
+    icon="fa-solid fa-code"
+    href="/docs/sdk-reference"
+  >
+    API reference for Composio SDKs.
+  </Card>
+</CardGroup>
