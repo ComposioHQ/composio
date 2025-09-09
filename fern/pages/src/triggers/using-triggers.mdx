@@ -80,18 +80,30 @@ Create triggers programmatically by providing the trigger type and any required 
 
 ## Subscribing to triggers
 
-The typical and recommended way to subscribe to triggers is through webhooks.
+### Webhooks (Production)
 
-To receive trigger events via webhooks, you need to configure a publicly accessible URL where Composio can send the event payloads. This URL should point to an endpoint in your application that can process incoming webhook requests.
+The recommended way to subscribe to triggers is through webhooks. Configure your webhook URL in the [Event & Trigger settings](https://platform.composio.dev?next_page=/settings/events).
 
-<Tip title="Use ngrok/webhook.site for local dev!">
-  During development, you can use ngrok/webhook.site or other services to expose your local server
-  to the internet.
+Use a publicly accessible URL where Composio can send event payloads. This endpoint should be able to process incoming POST requests containing the trigger data.
+
+<Tip>
+  **Local development:** Use [ngrok](https://ngrok.com) or [webhook.site](https://webhook.site) to
+  expose your local server to the internet for testing.
 </Tip>
 
-<Frame caption="Webhook setup" background="subtle">
-  <img src="../../../assets/images/setup-webhook.png" alt="Webhook setup" />
-</Frame>
+### WebSocket subscriptions (Development)
+
+During development, you can subscribe to triggers directly through the SDK without setting up webhooks. This creates a real-time WebSocket connection to receive events.
+
+<CodeGroup>
+  <SnippetCode src="fern/snippets/triggers/python/trigger-subscription.py" title="Python" />
+  <SnippetCode src="fern/snippets/triggers/typescript/trigger-subscription.ts" title="Typescript" />
+</CodeGroup>
+
+<Note>
+  Real-time subscriptions are only for development. For production, always use webhooks for
+  reliability and scalability.
+</Note>
 
 Below are some examples of how to listen in on trigger events for a FastAPI/Next.js application.
 
