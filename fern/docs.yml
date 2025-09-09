@@ -206,7 +206,7 @@ navigation:
         icon: zap
         skip-slug: true
         contents:
-          - page: AI Gmail Labeller
+          - page: Gmail Labeller
             path: pages/dist/examples/utility_agents/gmail_labeler.mdx
             slug: examples/gmail-labeler
           - page: Slack summariser
