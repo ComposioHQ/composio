@@ -84,6 +84,8 @@ describe('MastraProvider', () => {
         slug: 'test-toolkit',
         name: 'Test Toolkit',
       },
+      version: '20250909_00',
+      availableVersions: ['20250909_00', '20250901_00'],
       tags: [],
     };
 
@@ -194,12 +196,40 @@ describe('MastraProvider', () => {
       const context = { input: 'test-value' };
       const result = await executeFunction({ context });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, context);
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
         successful: true,
       });
+    });
+
+    it('should preserve and pass tool version information when executing', async () => {
+      const toolWithVersion = { ...mockTool, version: '20250101_01' };
+      provider.wrapTool(toolWithVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
+
+      // Extract the execute function from the call to createTool()
+      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+
+      // Test that the version is passed correctly
+      const context = { input: 'version-test' };
+      await executeFunction({ context });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, '20250101_01', context);
+    });
+
+    it('should handle tools without version information', async () => {
+      const toolWithoutVersion = { ...mockTool, version: undefined };
+      provider.wrapTool(toolWithoutVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
+
+      // Extract the execute function from the call to createTool()
+      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+
+      // Test that undefined version is passed correctly
+      const context = { input: 'no-version-test' };
+      await executeFunction({ context });
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, undefined, context);
     });
 
     it('should handle empty context parameter', async () => {
@@ -211,7 +241,7 @@ describe('MastraProvider', () => {
       // Test the execute function with empty context
       const result = await executeFunction({ context: {} });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, {});
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
@@ -228,7 +258,7 @@ describe('MastraProvider', () => {
       // Test the execute function without context
       const result = await executeFunction({});
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, undefined);
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,

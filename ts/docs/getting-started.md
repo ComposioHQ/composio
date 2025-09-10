@@ -72,8 +72,17 @@ const githubTools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
-// Get a specific tool by slug
+// Get tools with version control
+const versionedTools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  toolkitVersions: { github: '20250909_00' }
+});
+
+// Get a specific tool by slug (latest version)
 const getRepoTool = await composio.tools.get('default', 'GITHUB_GET_REPO');
+
+// Get a specific version of a tool
+const specificVersionTool = await composio.tools.get('default', 'GITHUB_GET_REPO', '20250909_00');
 ```
 
 ### Executing a Tool
@@ -155,6 +164,12 @@ const openai = new OpenAI({
 // Get tools from the GitHub toolkit
 const tools = await composio.tools.get('default', {
   toolkits: ['github'],
+});
+
+// Or get specific version of tools
+const versionedTools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  toolkitVersions: { github: 'latest' }
 });
 
 // Create a chat completion with OpenAI using the tools

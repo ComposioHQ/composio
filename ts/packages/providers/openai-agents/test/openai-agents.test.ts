@@ -45,6 +45,8 @@ describe('OpenAIAgentsProvider', () => {
       slug: 'test-tool',
       name: 'Test Tool',
       description: 'A tool for testing',
+      version: '20250909_00',
+      availableVersions: ['20250909_00', '20250901_00'],
       inputParameters: {
         type: 'object',
         properties: {
@@ -115,14 +117,14 @@ describe('OpenAIAgentsProvider', () => {
       const params = { input: 'test-value' };
       await executeFunction(params);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
 
       // Reset and test with a JSON string parameter
       vi.clearAllMocks();
       const stringParams = JSON.stringify(params);
       await executeFunction(stringParams);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
     });
   });
 

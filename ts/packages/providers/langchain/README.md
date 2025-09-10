@@ -52,8 +52,17 @@ const tools = await composio.tools.get('user123', {
   limit: 10,
 });
 
-// Get a specific tool
+// Get tools with version control
+const versionedTools = await composio.tools.get('user123', {
+  toolkits: ['gmail'],
+  toolkitVersions: { gmail: '20250909_00' },
+});
+
+// Get a specific tool (latest version)
 const sendEmailTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL');
+
+// Get a specific version of a tool
+const specificVersionTool = await composio.tools.get('user123', 'GMAIL_SEND_EMAIL', '20250909_00');
 ```
 
 ## Examples

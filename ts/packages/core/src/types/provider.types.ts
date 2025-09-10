@@ -4,6 +4,7 @@ import {
   Tool,
   ToolExecuteParams,
   ToolExecuteResponse,
+  ToolkitVersion,
   ToolListParams,
 } from './tool.types';
 import { CustomConnectionData } from './connectedAccountAuthStates.types';
@@ -22,6 +23,7 @@ export type ExecuteToolFnOptions = {
   connectedAccountId?: string;
   customAuthParams?: CustomAuthParams;
   customConnectionData?: CustomConnectionData;
+  version?: ToolkitVersion;
 };
 
 /**
@@ -30,6 +32,7 @@ export type ExecuteToolFnOptions = {
  */
 export type ExecuteToolFn = (
   toolSlug: string,
+  version: string | undefined,
   input: Record<string, unknown>
 ) => Promise<ToolExecuteResponse>;
 

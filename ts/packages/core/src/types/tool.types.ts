@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
+import { TransformToolSchemaModifier } from './modifiers.types';
 
 /**
  * Toolkit is the collection of tools,
@@ -114,7 +115,11 @@ export const ToolSchema = z.object({
   outputParameters: ParametersSchema.optional().describe('The output parameters of the tool'),
   tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
   toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
-  version: z.optional(z.string()).describe('The version of the tool, e.g. "1.0.0"'),
+  version: z.optional(z.string()).describe('The version of the tool, e.g. "20250909_00"'),
+  availableVersions: z
+    .optional(z.array(z.string()))
+    .describe('Available versions of the tool.')
+    .default([]),
   scopes: z.optional(z.array(z.string())).describe('The scopes of the tool. eg: ["task:add"]'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
@@ -134,6 +139,31 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
+/**
+ * latest toolkit version param
+ */
+export type ToolkitLatestVersion = 'latest';
+/**
+ * Versioning a tool based on it's toolkit version, either 'latest' or actual tool version as string '20250902_00'
+ * @example
+ * 'latest'
+ * '20250902_00'
+ */
+export type ToolkitVersion = ToolkitLatestVersion | string;
+/**
+ * Versioning multiple toolkits
+ *  @example
+ * { 'github': 'latest', 'slack': '20250902_00' }
+ */
+export type ToolkitVersions = Record<string, ToolkitVersion>;
+/**
+ * Versioning a toolkit based on it's tool versions, either 'latest' or actual tool version as string '20250902_00'
+ * @example
+ * 'latest'
+ * { 'github': 'latest', 'slack': '20250902_00' }
+ */
+export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions;
+
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
   toolkits: z.array(z.string()).optional(),
@@ -142,6 +172,11 @@ export const ToolListParamsSchema = z.object({
   limit: z.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
+  toolkitVersions: z
+    .union([z.literal('latest'), z.record(z.string(), z.string())])
+    .optional()
+    .default('latest')
+    .describe('The versions of the toolkits to filter by'),
 });
 
 type BaseParams = {
@@ -149,6 +184,7 @@ type BaseParams = {
   search?: string;
   scopes?: string[];
   tags?: string[];
+  toolkitVersions?: ToolkitVersionParam;
 };
 
 // tools only
@@ -158,21 +194,21 @@ type ToolsOnlyParams = {
   scopes?: never;
   search?: never;
   tags?: never;
-};
+} & Pick<BaseParams, 'toolkitVersions'>;
 
 // toolkits only
 type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 
 // toolkit + scopes (single toolkit only)
 type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 
 // tags only
 type TagsOnlyParams = {
@@ -180,7 +216,7 @@ type TagsOnlyParams = {
   tags: string[];
   tools?: never;
   search?: never;
-} & Pick<BaseParams, 'limit'>;
+} & Pick<BaseParams, 'limit' | 'toolkitVersions'>;
 
 // search only
 type SearchOnlyParams = {
@@ -190,14 +226,14 @@ type SearchOnlyParams = {
   limit?: never;
   search: string;
   tags?: never;
-};
+} & Pick<BaseParams, 'toolkitVersions'>;
 
 // tools by auth config ids only
 type AuthConfigIdsOnlyParams = {
   authConfigIds: string[];
   tools?: never;
   toolkits?: never;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
@@ -236,7 +272,10 @@ export const ToolExecuteParamsSchema = z.object({
   customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
   userId: z.string().optional(), //
-  version: z.string().optional(),
+  version: z
+    .union([z.literal('latest'), z.string()])
+    .default('latest')
+    .optional(),
   text: z.string().optional(),
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
@@ -270,3 +309,11 @@ export const ToolProxyParamsSchema = z.object({
   customConnectionData: CustomConnectionDataSchema.optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
+
+export type GetRawComposioToolBySlugOptions = {
+  modifySchema?: TransformToolSchemaModifier;
+};
+
+export type GetRawComposioToolsOptions = {
+  modifySchema?: TransformToolSchemaModifier;
+};

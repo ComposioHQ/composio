@@ -26,7 +26,9 @@ describe('Tools Modifiers', () => {
       // mock client to send back the tool
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getRawComposioToolBySlug(slug, schemaModifier);
+      const result = await context.tools.getRawComposioToolBySlug(slug, 'latest', {
+        modifySchema: schemaModifier,
+      });
 
       expect(schemaModifier).toHaveBeenCalledTimes(1);
       expect(schemaModifier).toHaveBeenCalledWith(
@@ -57,7 +59,7 @@ describe('Tools Modifiers', () => {
 
       const result = await context.tools.getRawComposioTools(
         { tools: ['TOOL1', 'TOOL2'] },
-        schemaModifier
+        { modifySchema: schemaModifier }
       );
 
       expect(schemaModifier).toHaveBeenCalledTimes(2);
@@ -237,7 +239,9 @@ describe('Tools Modifiers', () => {
       });
 
       // Verify schema modification
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, schemaModifier);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, 'latest', {
+        modifySchema: schemaModifier,
+      });
       expect(mockTool.description).toBe('Enhanced GITHUB_GET_REPOS for better context');
       expect(mockTool.tags).toContain('enhanced');
       expect(mockTool.tags).toContain('modified');

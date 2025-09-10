@@ -221,7 +221,7 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioTools(
         { tools: ['TEST_TOOL'] },
-        schemaModifier
+        { modifySchema: schemaModifier }
       );
 
       expect(schemaModifier).toHaveBeenCalled();
@@ -242,7 +242,7 @@ describe('Tools', () => {
           {
             toolkits: ['invalid'],
           },
-          invalidModifier
+          { modifySchema: invalidModifier }
         )
       ).rejects.toThrow('Invalid schema modifier. Not a function.');
     });
@@ -276,7 +276,7 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioToolBySlug(slug);
 
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug);
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, { version: 'latest' });
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
@@ -316,7 +316,9 @@ describe('Tools', () => {
 
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getRawComposioToolBySlug(slug, schemaModifier);
+      const result = await context.tools.getRawComposioToolBySlug(slug, 'latest', {
+        modifySchema: schemaModifier,
+      });
 
       expect(schemaModifier).toHaveBeenCalled();
       expect(result.description).toEqual('Modified description');
@@ -337,7 +339,9 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, slug);
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, undefined);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, 'latest', {
+        modifySchema: undefined,
+      });
       expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
         [toolMocks.transformedTool],
         expect.any(Function)
@@ -356,7 +360,7 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, filters);
 
-      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, undefined);
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, { modifySchema: undefined });
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tools-collection');
     });
@@ -375,7 +379,9 @@ describe('Tools', () => {
 
       await context.tools.get(userId, slug, { modifySchema: schemaModifier });
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, schemaModifier);
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, 'latest', {
+        modifySchema: schemaModifier,
+      });
     });
   });
 

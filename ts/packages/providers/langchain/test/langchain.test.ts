@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LangchainProvider } from '../src';
 import { Tool } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
@@ -8,28 +8,34 @@ describe('LangchainProvider', () => {
   let sampleTool: Tool;
   let executeToolFn: (
     toolSlug: string,
-    params: Record<string, unknown>,
-    modifiers?: any
+    version: string | undefined,
+    params: Record<string, unknown>
   ) => Promise<any>;
 
   beforeEach(() => {
     provider = new LangchainProvider();
 
     // Create a real execute function that simulates tool execution
-    executeToolFn = async (toolSlug: string, params: Record<string, unknown>) => {
-      // Simulate actual tool execution with realistic response
-      return {
-        data: { toolSlug, params },
-        error: null,
-        successful: true,
-      };
-    };
+    executeToolFn = vi
+      .fn()
+      .mockImplementation(
+        async (toolSlug: string, version: string | undefined, params: Record<string, unknown>) => {
+          // Simulate actual tool execution with realistic response
+          return {
+            data: { toolSlug, version, params },
+            error: null,
+            successful: true,
+          };
+        }
+      );
 
     // Create a real sample tool that matches actual tool structure
     sampleTool = {
       slug: 'SEARCH_TOOL',
       name: 'Search Tool',
       description: 'Search for information in the knowledge base',
+      version: '20250909_00',
+      availableVersions: ['20250909_00', '20250901_00'],
       inputParameters: {
         type: 'object',
         properties: {
@@ -80,6 +86,7 @@ describe('LangchainProvider', () => {
       expect(parsedResult).toEqual({
         data: {
           toolSlug: sampleTool.slug,
+          version: sampleTool.version,
           params: searchParams,
         },
         error: null,
@@ -101,6 +108,28 @@ describe('LangchainProvider', () => {
       expect(() => {
         provider.wrapTool(invalidTool, executeToolFn);
       }).toThrow('Tool input parameters are not defined');
+    });
+
+    it('should preserve and pass tool version information when executing', async () => {
+      const toolWithVersion = { ...sampleTool, version: '20250101_01' };
+      const wrappedTool = provider.wrapTool(toolWithVersion, executeToolFn);
+      const searchParams = { query: 'version test' };
+
+      await wrappedTool.func(searchParams);
+
+      // Verify that executeToolFn was called with the correct version
+      expect(executeToolFn).toHaveBeenCalledWith(toolWithVersion.slug, '20250101_01', searchParams);
+    });
+
+    it('should handle tools without version information', async () => {
+      const toolWithoutVersion = { ...sampleTool, version: undefined };
+      const wrappedTool = provider.wrapTool(toolWithoutVersion, executeToolFn);
+      const searchParams = { query: 'no version test' };
+
+      await wrappedTool.func(searchParams);
+
+      // Verify that executeToolFn was called with undefined version
+      expect(executeToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, undefined, searchParams);
     });
   });
 

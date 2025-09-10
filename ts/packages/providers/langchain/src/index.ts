@@ -127,7 +127,7 @@ export class LangchainProvider extends BaseAgenticProvider<
       throw new Error('App name is not defined');
     }
     const func = async (...args: unknown[]): Promise<unknown> => {
-      const result = await executeTool(toolName, args[0] as Record<string, unknown>);
+      const result = await executeTool(toolName, tool.version, args[0] as Record<string, unknown>);
       return JSON.stringify(result);
     };
     if (!tool.inputParameters) {

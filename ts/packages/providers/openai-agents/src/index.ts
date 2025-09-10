@@ -132,7 +132,7 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
       ),
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
-        return await executeTool(composioTool.slug, input);
+        return await executeTool(composioTool.slug, composioTool.version, input);
       },
     });
   }

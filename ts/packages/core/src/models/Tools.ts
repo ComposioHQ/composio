@@ -10,6 +10,11 @@ import {
   ToolExecuteResponseSchema,
   ToolProxyParamsSchema,
   ToolProxyParams,
+  GetRawComposioToolBySlugOptions,
+  GetRawComposioToolsOptions,
+  ToolkitVersion,
+  ToolkitLatestVersion,
+  ToolExecuteParamsSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -106,6 +111,7 @@ export class Tools<
       ...tool,
       inputParameters: tool.input_parameters,
       outputParameters: tool.output_parameters,
+      availableVersions: tool.available_versions,
     });
   }
 
@@ -345,34 +351,61 @@ export class Tools<
    *
    * This method fetches tools from the Composio API in raw format and combines them with
    * any registered custom tools. The response can be filtered and modified as needed.
+   * It provides access to the underlying tool data without provider-specific wrapping.
    *
-   * @param {ToolListParams} [query={}] - Optional query parameters to filter the tools
-   * @param {TransformToolSchemaModifier} [modifier] - Optional function to transform tool schemas
+   * @param {ToolListParams} query - Query parameters to filter the tools (required)
+   * @param {GetRawComposioToolsOptions} [options] - Optional configuration for tool retrieval
+   * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform tool schemas
    * @returns {Promise<ToolList>} List of tools matching the query criteria
    *
    * @example
    * ```typescript
-   * // Get all tools
-   * const tools = await composio.tools.getRawComposioTools();
-   *
-   * // Get tools with filters
+   * // Get tools from specific toolkits
    * const githubTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
    *   limit: 10
    * });
    *
+   * // Get specific tools by slug
+   * const specificTools = await composio.tools.getRawComposioTools({
+   *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
+   * });
+   *
+   * // Get tools with toolkit version control
+   * const versionedTools = await composio.tools.getRawComposioTools({
+   *   toolkits: ['github'],
+   *   toolkitVersions: { github: '20250909_00' }
+   * });
+   *
    * // Get tools with schema transformation
-   * const tools = await composio.tools.getRawComposioTools({},
-   *   (toolSlug, toolkitSlug, tool) => {
+   * const customizedTools = await composio.tools.getRawComposioTools({
+   *   toolkits: ['github'],
+   *   limit: 5
+   * }, {
+   *   modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
    *     // Add custom properties to tool schema
-   *     return {...tool, customProperty: 'value'};
+   *     return {
+   *       ...schema,
+   *       customProperty: `Modified ${toolSlug} from ${toolkitSlug}`,
+   *       tags: [...(schema.tags || []), 'customized']
+   *     };
    *   }
-   * );
+   * });
+   *
+   * // Search for tools
+   * const searchResults = await composio.tools.getRawComposioTools({
+   *   search: 'user management'
+   * });
+   *
+   * // Get tools by authentication config
+   * const authSpecificTools = await composio.tools.getRawComposioTools({
+   *   authConfigIds: ['auth_config_123']
+   * });
    * ```
    */
   async getRawComposioTools(
     query: ToolListParams,
-    modifier?: TransformToolSchemaModifier
+    options?: GetRawComposioToolsOptions
   ): Promise<ToolList> {
     if ('tools' in query && 'toolkits' in query) {
       throw new ValidationError(
@@ -419,6 +452,9 @@ export class Tools<
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
+      ...('toolkit_versions' in queryParams.data
+        ? { toolkit_versions: queryParams.data.toolkitVersions }
+        : {}),
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
@@ -440,7 +476,8 @@ export class Tools<
     ]);
 
     // apply local modifiers if they are provided
-    if (modifier) {
+    if (options?.modifySchema) {
+      const modifier = options.modifySchema;
       if (typeof modifier === 'function') {
         const modifiedPromises = modifiedTools.map(tool =>
           modifier({
@@ -459,19 +496,67 @@ export class Tools<
   }
 
   /**
-   * Retrieves a tool by its Slug.
-   * This method is used to get the raw tools from the composio API.
-   * @param slug The ID of the tool to be retrieved
-   * @returns {Promise<Tool>} The tool
+   * Retrieves a specific tool by its slug from the Composio API.
+   *
+   * This method fetches a single tool in raw format without provider-specific wrapping,
+   * providing direct access to the tool's schema and metadata. It supports version control
+   * and schema transformation options.
+   *
+   * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
+   * @param {ToolkitVersion} [version='latest'] - The version of the tool to retrieve
+   * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval
+   * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
+   * @returns {Promise<Tool>} The requested tool with its complete schema and metadata
    *
    * @example
-   * ```ts
-   * const tool = await composio.tools.getRawComposioToolBySlug('github');
+   * ```typescript
+   * // Get the latest version of a tool
+   * const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
+   * console.log(tool.name, tool.description);
+   *
+   * // Get a specific version of a tool
+   * const specificVersionTool = await composio.tools.getRawComposioToolBySlug(
+   *   'HACKERNEWS_GET_USER',
+   *   '20250909_00'
+   * );
+   *
+   * // Get a tool with schema transformation
+   * const customizedTool = await composio.tools.getRawComposioToolBySlug(
+   *   'SLACK_SEND_MESSAGE',
+   *   'latest',
+   *   {
+   *     modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+   *       return {
+   *         ...schema,
+   *         description: `Enhanced ${schema.description} with custom modifications`,
+   *         customMetadata: {
+   *           lastModified: new Date().toISOString(),
+   *           toolkit: toolkitSlug
+   *         }
+   *       };
+   *     }
+   *   }
+   * );
+   *
+   * // Get a custom tool (will check custom tools first)
+   * const customTool = await composio.tools.getRawComposioToolBySlug('MY_CUSTOM_TOOL');
+   *
+   * // Access tool properties
+   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+   * console.log({
+   *   slug: githubTool.slug,
+   *   name: githubTool.name,
+   *   toolkit: githubTool.toolkit?.name,
+   *   version: githubTool.version,
+   *   availableVersions: githubTool.availableVersions,
+   *   inputParameters: githubTool.inputParameters
+   * });
    * ```
    */
   async getRawComposioToolBySlug(
     slug: string,
-    modifier?: TransformToolSchemaModifier
+    version?: ToolkitVersion,
+    options?: GetRawComposioToolBySlugOptions
   ): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
@@ -484,7 +569,9 @@ export class Tools<
     // if not, fetch the tool from the Composio API
     let tool: ToolRetrieveResponse;
     try {
-      tool = await this.client.tools.retrieve(slug);
+      tool = await this.client.tools.retrieve(slug, {
+        version: version || 'latest',
+      });
     } catch (error) {
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
         cause: error,
@@ -494,7 +581,8 @@ export class Tools<
     // change the case of the tool to camel case and apply default modifiers
     let [modifiedTool] = await this.applyDefaultSchemaModifiers([this.transformToolCases(tool)]);
     // apply local modifiers if they are provided
-    if (modifier) {
+    if (options?.modifySchema) {
+      const modifier = options.modifySchema;
       if (typeof modifier === 'function') {
         modifiedTool = await modifier({
           toolSlug: slug,
@@ -579,28 +667,94 @@ export class Tools<
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
+   * Get a specific tool by slug with version control.
+   *
+   * This overload allows you to specify a particular version of a tool, providing
+   * fine-grained control over which version of the tool to retrieve. This is useful
+   * when you need to ensure consistency across different environments or when you
+   * want to use a specific version that has certain features or bug fixes.
+   *
+   * @param {string} userId - The user ID to get the tool for
+   * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
+   * @param {ToolkitVersion} [version] - The version of the tool to retrieve.
+   *   Can be 'latest' for the most recent version, or a specific version string like '20250909_00'
+   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tool with the specified version
+   *
+   * @example
+   * ```typescript
+   * // Get the latest version of a tool (explicit)
+   * const latestTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', 'latest');
+   *
+   * // Get a specific version of a tool
+   * const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00');
+   *
+   * // Get a specific version with schema modifications
+   * const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00', {
+   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
+   *     return {
+   *       ...schema,
+   *       description: `Custom ${toolSlug} v20250909_00 - Enhanced with custom modifications`
+   *     };
+   *   }
+   * });
+   *
+   * // Version-specific tool for backwards compatibility
+   * const legacyTool = await composio.tools.get('default', 'SLACK_SEND_MESSAGE', '20241201_00', {
+   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
+   *     // Ensure legacy parameter names are preserved
+   *     return schema;
+   *   }
+   * });
+   * ```
+   */
+  async get<T extends TProvider>(
+    userId: string,
+    slug: string,
+    version?: ToolkitVersion,
+    options?: ProviderOptions<TProvider>
+  ): Promise<ReturnType<T['wrapTools']>>;
+
+  /**
    * Get a tool or list of tools based on the provided arguments.
-   * This is an implementation method that handles both overloads.
+   * This is an implementation method that handles all overloads.
    *
    * @param {string} userId - The user id to get the tool(s) for
    * @param {ToolListParams | string} arg2 - Either a slug string or filters object
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options
+   * @param {ProviderOptions<TProvider> | ToolkitVersion} [arg3] - Optional provider options or version string
+   * @param {ProviderOptions<TProvider>} [arg4] - Optional provider options (when arg3 is version)
    * @returns {Promise<TToolCollection>} The tool collection
    */
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    options?: ProviderOptions<TProvider>
+    arg3?: ProviderOptions<TProvider> | ToolkitVersion,
+    arg4?: ProviderOptions<TProvider>
   ): Promise<TToolCollection> {
-    // create the execute tool function
+    // Handle the three-parameter overload: get(userId, slug, version, options?)
+    if (typeof arg2 === 'string' && typeof arg3 === 'string') {
+      const executeToolFn = this.createExecuteToolFn(userId, arg4 as ExecuteToolModifiers);
+      const tool = await this.getRawComposioToolBySlug(arg2, arg3, {
+        modifySchema: arg4?.modifySchema,
+      });
+      return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
+    }
+
+    // Handle the two-parameter overloads
+    const options = arg3 as ProviderOptions<TProvider>;
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
-    // if the first argument is a string, get a single tool
+
+    // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(arg2, options?.modifySchema);
+      const tool = await this.getRawComposioToolBySlug(arg2, 'latest', {
+        modifySchema: options?.modifySchema,
+      });
       return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
-      // if the first argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(arg2, options?.modifySchema);
+      // if the second argument is an object, get a list of tools
+      const tools = await this.getRawComposioTools(arg2, {
+        modifySchema: options?.modifySchema,
+      });
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
@@ -616,12 +770,17 @@ export class Tools<
    * @returns {ExecuteToolFn} The execute tool function
    */
   private createExecuteToolFn(userId: string, modifiers?: ExecuteToolModifiers): ExecuteToolFn {
-    const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {
+    const executeToolFn = async (
+      toolSlug: string,
+      version: string | undefined,
+      input: Record<string, unknown>
+    ) => {
       return await this.execute(
         toolSlug,
         {
           userId,
           arguments: input,
+          version: version || 'latest',
         },
         modifiers
       );
@@ -777,27 +936,37 @@ export class Tools<
       );
     }
 
+    const executeParams = ToolExecuteParamsSchema.safeParse(body);
+    if (!executeParams.success) {
+      throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
+    }
+
     try {
       const customTool = await this.customTools.getCustomToolBySlug(slug);
       if (customTool) {
         // handle custom tool execution
-        return this.handleCustomToolExecution(customTool, body, modifiers);
+        return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
       } else {
         // handle composio tool execution
-        const composioTool = await this.getRawComposioToolBySlug(slug);
+        const composioTool = await this.getRawComposioToolBySlug(slug, executeParams.data.version);
         if (!composioTool) {
-          throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
+          throw new ComposioToolNotFoundError(
+            `Tool with slug ${slug} version:${executeParams.data.version} not found`
+          );
         }
-        return this.handleComposioToolExecution(composioTool, body, modifiers);
+        return this.handleComposioToolExecution(composioTool, executeParams.data, modifiers);
       }
     } catch (error) {
-      throw new ComposioToolExecutionError(`Error executing tool ${slug}`, {
-        originalError: error as Error,
-        meta: {
-          toolSlug: slug,
-          body,
-        },
-      });
+      throw new ComposioToolExecutionError(
+        `Error executing tool ${slug} version:${executeParams.data.version}`,
+        {
+          originalError: error as Error,
+          meta: {
+            toolSlug: slug,
+            body,
+          },
+        }
+      );
     }
   }
 
