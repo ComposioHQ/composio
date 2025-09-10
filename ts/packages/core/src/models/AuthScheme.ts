@@ -68,20 +68,6 @@ export class AuthScheme {
   }
 
   /**
-   * Creates a ConnectionData object for Composio Link authentication
-   * @returns ConnectionData object
-   */
-  static ComposioLink(params?: BaseConnectionFields): ConnectionData {
-    return {
-      authScheme: AuthSchemeTypes.COMPOSIO_LINK,
-      val: {
-        status: ConnectionStatuses.INITIALIZING,
-        ...(params ?? {}),
-      },
-    };
-  }
-
-  /**
    * Creates a ConnectionData object for API Key authentication
    * @param params The API key parameters
    * @returns ConnectionData object
