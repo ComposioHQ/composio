@@ -31,9 +31,49 @@ const githubAccounts = await composio.connectedAccounts.list({
 
 **Throws:** ValidationError if the query fails validation against the expected schema
 
+
+### link(userId, authConfigId, options?)
+
+Creates a Composio Connect Link for a user to connect their account to a given auth config. This method returns an external link which you can use for the user to connect their account through Composio's hosted authentication flow.
+
+```typescript
+// Create a connection request and redirect the user to the redirect URL
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123');
+const redirectUrl = connectionRequest.redirectUrl;
+console.log(`Visit: ${redirectUrl} to authenticate your account`);
+
+// Wait for the connection to be established
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+
+```typescript
+// Create a connection request with callback URL
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123', {
+  callbackUrl: 'https://your-app.com/callback'
+});
+const redirectUrl = connectionRequest.redirectUrl;
+console.log(`Visit: ${redirectUrl} to authenticate your account`);
+
+// Wait for the connection to be established
+const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequest.id);
+```
+
+**Parameters:**
+
+- `userId` (string): The external user ID to create the connected account for
+- `authConfigId` (string): The auth config ID to create the connected account for  
+- `options` (CreateConnectedAccountLinkOptions): Optional configuration for the link
+  - `callbackUrl` (string): The URL to redirect the user to after connecting their account
+
+**Returns:** Promise<ConnectionRequest> - Connection request object with redirect URL
+
+**Throws:** 
+- `ValidationError`: If the options fail validation
+- `ComposioFailedToCreateConnectedAccountLink`: If the link creation fails
+
 ### initiate(userId, authConfigId, options?)
 
-Creates a new connected account and returns a connection request. Users can then wait for the connection to be established using the `waitForConnection` method.
+Creates a new connected account by accepting the parameters manually and returns a connection request. Users can then wait for the connection to be established using the `waitForConnection` method.
 
 ```typescript
 // For OAuth based auth configs (no additional parameters needed)
@@ -83,6 +123,7 @@ const connectedAccount = await oauthConnection.waitForConnection();
   - `callbackUrl`: URL to redirect after OAuth authentication
 
 **Returns:** Promise<ConnectionRequest> - Connection request object
+
 
 ### waitForConnection(connectedAccountId, timeout?)
 
@@ -272,6 +313,14 @@ interface ConnectedAccountRetrieveResponse {
 interface CreateConnectedAccountOptions {
   config?: ConnectionData; // Connection configuration using AuthScheme helpers
   callbackUrl?: string; // URL to redirect after authentication
+}
+```
+
+### CreateConnectedAccountLinkOptions
+
+```typescript
+interface CreateConnectedAccountLinkOptions {
+  callbackUrl?: string; // URL to redirect the user to after connecting their account
 }
 ```
 

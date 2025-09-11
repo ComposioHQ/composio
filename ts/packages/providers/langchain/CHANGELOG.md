@@ -1,5 +1,12 @@
 # @composio/langchain
 
+## 0.1.51
+
+### Patch Changes
+
+- Updated dependencies [b9b005a]
+  - @composio/core@0.1.51
+
 ## 0.1.50
 
 ### Patch Changes

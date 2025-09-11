@@ -14,7 +14,6 @@ import {
   BaseAgenticProvider,
   Tool as ComposioTool,
   ExecuteToolFn,
-  jsonSchemaToZodSchema,
   McpUrlResponse,
   McpServerGetResponse,
 } from '@composio/core';
@@ -124,12 +123,13 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
     return createOpenAIAgentTool({
       name: composioTool.slug,
       description: composioTool.description ?? '',
-      parameters: jsonSchemaToZodSchema(
-        (composioTool.inputParameters as Record<string, unknown>) ?? {},
-        {
-          strict: this.strict ? true : false,
-        }
-      ),
+      parameters: {
+        type: 'object',
+        properties: composioTool.inputParameters?.properties || {},
+        required: composioTool.inputParameters?.required || [],
+        additionalProperties: true,
+      },
+      strict: false,
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
         return await executeTool(composioTool.slug, composioTool.version, input);
