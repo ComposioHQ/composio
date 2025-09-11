@@ -144,6 +144,9 @@ navigation:
     icon: lock
     skip-slug: true
     contents:
+    - page: Composio Connect Link
+      path: pages/dist/authentication/composio-connect-link.mdx
+      slug: composio-connect-link
     - page: Custom Auth Configs
       path: pages/dist/authentication/custom-auth-configs.mdx
       slug: custom-auth-configs

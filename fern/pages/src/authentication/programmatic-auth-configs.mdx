@@ -188,3 +188,53 @@ console.log("Required auth config fields:", authFields);
 </CodeGroup>
 
 and then inspect the required fields and specify them in the `credentials` object.
+
+## Using auth configs with Composio Connect Link
+
+Once you've created an auth config programmatically, you can use it with Composio Connect Link for a simplified authentication flow:
+
+<CodeGroup>
+```python Python
+# After creating the auth config
+auth_config_id = auth_config.id
+
+# Create a Connect Link for your user
+connection_request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id=auth_config_id,
+    callback_url="https://yourapp.com/auth/callback"
+)
+
+# Share the link with your user
+print(f"Connect your account: {connection_request.redirect_url}")
+
+# Wait for connection
+connected_account = connection_request.wait_for_connection()
+```
+
+```typescript TypeScript
+// After creating the auth config
+const authConfigId = authConfig.id;
+
+// Create a Connect Link for your user
+const connectionRequest = await composio.connectedAccounts.link(
+    'user_123',
+    authConfigId,
+    { callbackUrl: 'https://yourapp.com/auth/callback' }
+);
+
+// Share the link with your user
+console.log(`Connect your account: ${connectionRequest.redirectUrl}`);
+
+// Wait for connection
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+</CodeGroup>
+
+<Note title="Advantages of Connect Link">
+  Using the `link` method with programmatically created auth configs provides:
+  - Simplified authentication flow for all auth types
+  - No need to handle OAuth redirects or credential collection
+  - Consistent user experience across different toolkits
+  - Automatic handling of authentication parameters
+</Note>

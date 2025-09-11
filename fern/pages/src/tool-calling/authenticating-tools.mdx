@@ -77,11 +77,101 @@ You should create multiple auth configs for the same toolkit when you need:
 
 ## Connecting an account:
 
-With an auth config created, you're ready to authenticate your users!
+With an auth config created, you're ready to authenticate your users! There are two ways to connect accounts:
 
-**Choose the section below that matches your toolkit's authentication method:**
+1. **Composio Connect Link** (Recommended) - Hosted authentication flow
+2. **Direct Integration** - Handle authentication within your application
 
-### OAuth Connections
+### Using Composio Connect Link (Recommended)
+
+Composio Connect Link provides a hosted authentication flow that simplifies the connection process for all authentication methods (OAuth, API Key, etc.). This is the easiest way to authenticate your users.
+
+<CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio(api_key="YOUR_COMPOSIO_API_KEY")
+
+# Use the "AUTH CONFIG ID" from your dashboard
+auth_config_id = "ac_UdqFwixfy3cV"
+
+# Use a unique identifier for each user in your application
+user_id = "user_123"
+
+# Create a Composio Connect Link
+connection_request = composio.connected_accounts.link(
+    user_id=user_id,
+    auth_config_id=auth_config_id
+)
+
+# Share this URL with your user
+print(f"Connect your account: {connection_request.redirect_url}")
+
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
+print(f"Connection established: {connected_account.id}")
+```
+
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({apiKey: "YOUR_COMPOSIO_API_KEY"});
+
+// Use the "AUTH CONFIG ID" from your dashboard
+const authConfigId = 'ac_UdqFwixfy3cV';
+
+// Use a unique identifier for each user in your application
+const userId = 'user_4567';
+
+// Create a Composio Connect Link
+const connectionRequest = await composio.connectedAccounts.link(
+    userId,
+    authConfigId
+);
+
+// Share this URL with your user
+console.log(`Connect your account: ${connectionRequest.redirectUrl}`);
+
+// Wait for the connection to be established
+const connectedAccount = await connectionRequest.waitForConnection();
+console.log(`Connection established: ${connectedAccount.id}`);
+```
+</CodeGroup>
+
+#### With Callback URL
+
+You can specify a callback URL to redirect users after they complete the authentication:
+
+<CodeGroup>
+```python Python
+connection_request = composio.connected_accounts.link(
+    user_id=user_id,
+    auth_config_id=auth_config_id,
+    callback_url="https://www.yourapp.com/callback"
+)
+```
+
+```typescript TypeScript
+const connectionRequest = await composio.connectedAccounts.link(userId, authConfigId, {
+    callbackUrl: 'https://www.yourapp.com/callback'
+});
+```
+</CodeGroup>
+
+<Note title="Why use Composio Connect Link?">
+  Composio Connect Link handles all authentication complexities for you:
+  - Works with all authentication methods (OAuth, API Key, etc.)
+  - Provides a consistent user experience
+  - Handles parameter collection automatically
+  - Manages OAuth redirects seamlessly
+  - Reduces implementation complexity
+</Note>
+
+### Direct Integration
+
+For advanced use cases where you need more control over the authentication flow, you can handle authentication directly within your application.
+
+#### OAuth Connections
 
 **OAuth** connections redirect users to the toolkit's login page. Popular toolkits that use **OAuth** authentication include: _Gmail_, _Notion_ etc.
 
