@@ -1,5 +1,11 @@
 # @composio/vercel
 
+## 0.1.52
+
+### Patch Changes
+
+- 0a61cbe: Use non strict schema for tools and bump @openai/agents sdk version
+
 ## 0.1.51
 
 ### Patch Changes
