@@ -31,7 +31,7 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@composio/core": "0.1.51",
-    "@openai/agents": "^0.0.17"
+    "@openai/agents": "^0.1.1"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
