@@ -84,8 +84,8 @@ const versionedTools = await composio.tools.get('default', {
   toolkitVersions: { github: '20250909_00' }
 });
 
-// Get a specific tool with version
-const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00');
+// Get a specific tool
+const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS');
 
 // Execute a tool
 const result = await composio.tools.execute('GITHUB_GET_REPO', {

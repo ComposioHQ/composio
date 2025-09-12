@@ -313,10 +313,10 @@ export class Tools<
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
    * });
    *
-   * // Get tools with toolkit version control
-   * const versionedTools = await composio.tools.getRawComposioTools({
+   * // Get tools from specific toolkits
+   * const githubTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
-   *   toolkitVersions: { github: '20250909_00' }
+   *   limit: 10
    * });
    *
    * // Get tools with schema transformation
@@ -439,31 +439,23 @@ export class Tools<
    * Retrieves a specific tool by its slug from the Composio API.
    *
    * This method fetches a single tool in raw format without provider-specific wrapping,
-   * providing direct access to the tool's schema and metadata. It supports version control
-   * and schema transformation options.
+   * providing direct access to the tool's schema and metadata. Tool versions are controlled
+   * at the Composio SDK initialization level through the `toolkitVersions` configuration.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
-   * @param {ToolkitVersion} [version='latest'] - The version of the tool to retrieve
    * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval
    * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
    * @returns {Promise<Tool>} The requested tool with its complete schema and metadata
    *
    * @example
    * ```typescript
-   * // Get the latest version of a tool
+   * // Get a tool by slug
    * const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
    * console.log(tool.name, tool.description);
-   *
-   * // Get a specific version of a tool
-   * const specificVersionTool = await composio.tools.getRawComposioToolBySlug(
-   *   'HACKERNEWS_GET_USER',
-   *   '20250909_00'
-   * );
    *
    * // Get a tool with schema transformation
    * const customizedTool = await composio.tools.getRawComposioToolBySlug(
    *   'SLACK_SEND_MESSAGE',
-   *   'latest',
    *   {
    *     modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
    *       return {

@@ -49,15 +49,6 @@ async function main() {
     const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
     // Or fetch multiple tools: await composio.tools.get('default', { toolkits: ['hackernews'] });
 
-    // Fetch specific version of a tool
-    const versionedTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER', '20250909_00');
-
-    // Fetch tools with version control
-    const versionedTools = await composio.tools.get('default', {
-      toolkits: ['hackernews'],
-      toolkitVersions: { hackernews: 'latest' },
-    });
-
     const query = "Find information about the HackerNews user 'pg'";
 
     // Create chat completion with tools

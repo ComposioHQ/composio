@@ -6,7 +6,7 @@ The `Tools` class provides methods to list, retrieve, and execute tools from var
 
 ### get(userId, filters, options?)
 
-Retrieves and wraps tools based on the provided filters. This method has multiple overloads to support different use cases including version control.
+Retrieves and wraps tools based on the provided filters. Tool versions are controlled at the Composio SDK initialization level through the `toolkitVersions` configuration.
 
 #### Overload 1: Get multiple tools with filters
 
@@ -20,12 +20,6 @@ const githubTools = await composio.tools.get('default', {
 // Get tools with search
 const searchTools = await composio.tools.get('default', {
   search: 'user'
-});
-
-// Get tools with version control
-const versionedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  toolkitVersions: { github: '20250909_00' }
 });
 
 // Get tools with schema modifications
@@ -47,7 +41,7 @@ const customizedTools = await composio.tools.get('default', {
 #### Overload 2: Get a specific tool by slug
 
 ```typescript
-// Get a specific tool by slug (latest version)
+// Get a specific tool by slug
 const tool = await composio.tools.get('default', 'GITHUB_GET_REPO');
 
 // Get a tool with schema modifications
@@ -61,40 +55,6 @@ const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
 **Parameters:**
 - `userId` (string): The user ID to get the tool for
 - `slug` (string): The slug of the specific tool to fetch
-- `options` (ProviderOptions): Optional provider options including modifiers
-
-#### Overload 3: Get a specific tool with version control
-
-```typescript
-// Get the latest version of a tool (explicit)
-const latestTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', 'latest');
-
-// Get a specific version of a tool
-const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00');
-
-// Get a specific version with schema modifications
-const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00', {
-  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
-    return {
-      ...schema,
-      description: `Custom ${toolSlug} v20250909_00 - Enhanced with modifications`
-    };
-  }
-});
-
-// Version-specific tool for backwards compatibility
-const legacyTool = await composio.tools.get('default', 'SLACK_SEND_MESSAGE', '20241201_00', {
-  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
-    // Ensure legacy parameter names are preserved
-    return schema;
-  }
-});
-```
-
-**Parameters:**
-- `userId` (string): The user ID to get the tool for
-- `slug` (string): The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
-- `version` (ToolkitLatestVersion | string): The version of the tool to retrieve ('latest' or specific version like '20250909_00')
 - `options` (ProviderOptions): Optional provider options including modifiers
 
 **Returns:** The wrapped tools collection, formatted according to the provider being used
@@ -193,10 +153,10 @@ const specificTools = await composio.tools.getRawComposioTools({
   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
 });
 
-// Get tools with version control
-const versionedTools = await composio.tools.getRawComposioTools({
+// Get tools from specific toolkits
+const githubTools = await composio.tools.getRawComposioTools({
   toolkits: ['github'],
-  toolkitVersions: { github: '20250909_00' }
+  limit: 10
 });
 
 // Get tools with schema transformation
@@ -227,24 +187,17 @@ const searchResults = await composio.tools.getRawComposioTools({
 
 **Returns:** Promise<ToolList> - List of tools matching the query criteria
 
-### getRawComposioToolBySlug(slug, version?, options?)
+### getRawComposioToolBySlug(slug, options?)
 
 Retrieves a specific tool by its slug from the Composio API. This method provides direct access to tool schema and metadata without provider-specific wrapping.
 
 ```typescript
-// Get the latest version of a tool
+// Get a tool by slug
 const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
-
-// Get a specific version of a tool
-const specificVersionTool = await composio.tools.getRawComposioToolBySlug(
-  'HACKERNEWS_GET_USER', 
-  '20250909_00'
-);
 
 // Get a tool with schema transformation
 const customizedTool = await composio.tools.getRawComposioToolBySlug(
   'SLACK_SEND_MESSAGE',
-  'latest',
   {
     modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       return {
@@ -273,7 +226,6 @@ console.log({
 **Parameters:**
 
 - `slug` (string): The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
-- `version` (ToolkitLatestVersion | string): Optional version of the tool to retrieve (defaults to 'latest')
 - `options` (GetRawComposioToolBySlugOptions): Optional configuration for tool retrieval
   - `modifySchema` (TransformToolSchemaModifier): Function to transform the tool schema
 

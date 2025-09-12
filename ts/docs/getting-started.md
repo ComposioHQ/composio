@@ -42,6 +42,7 @@ const composio = new Composio({
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
   provider: new OpenAIProvider(), // Optional: Custom provider
+  toolkitVersions: { github: '20250909_00', slack: 'latest' }, // Optional: Toolkit versions
 });
 ```
 
@@ -72,17 +73,8 @@ const githubTools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
-// Get tools with version control
-const versionedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  toolkitVersions: { github: '20250909_00' }
-});
-
-// Get a specific tool by slug (latest version)
+// Get a specific tool by slug
 const getRepoTool = await composio.tools.get('default', 'GITHUB_GET_REPO');
-
-// Get a specific version of a tool
-const specificVersionTool = await composio.tools.get('default', 'GITHUB_GET_REPO', '20250909_00');
 ```
 
 ### Executing a Tool
@@ -164,12 +156,6 @@ const openai = new OpenAI({
 // Get tools from the GitHub toolkit
 const tools = await composio.tools.get('default', {
   toolkits: ['github'],
-});
-
-// Or get specific version of tools
-const versionedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  toolkitVersions: { github: 'latest' }
 });
 
 // Create a chat completion with OpenAI using the tools

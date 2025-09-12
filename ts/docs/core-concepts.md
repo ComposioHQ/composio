@@ -50,10 +50,9 @@ const tools = await composio.tools.get(userId, {
   toolkits: ['github'],
 });
 
-// You can also specify toolkit versions per user
-const versionedTools = await composio.tools.get(userId, {
+// Get tools for a specific user
+const userTools = await composio.tools.get(userId, {
   toolkits: ['github'],
-  toolkitVersions: { github: 'latest' }
 });
 
 const result = await composio.tools.execute('GITHUB_GET_REPO', {
