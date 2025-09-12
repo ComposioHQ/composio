@@ -78,12 +78,6 @@ const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
-// Get tools with version control
-const versionedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  toolkitVersions: { github: '20250909_00' }
-});
-
 // Get a specific tool
 const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS');
 
@@ -119,11 +113,6 @@ const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
-// Get specific version of GitHub tools
-const versionedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  toolkitVersions: { github: 'latest' }
-});
 
 // Create a chat completion with the tools
 const completion = await openai.chat.completions.create({

@@ -23,7 +23,6 @@ export type ExecuteToolFnOptions = {
   connectedAccountId?: string;
   customAuthParams?: CustomAuthParams;
   customConnectionData?: CustomConnectionData;
-  version?: ToolkitVersion;
 };
 
 /**
