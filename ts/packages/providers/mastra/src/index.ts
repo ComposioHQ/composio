@@ -98,7 +98,7 @@ export class MastraProvider extends BaseAgenticProvider<
         ? jsonSchemaToZodSchema(tool.outputParameters)
         : undefined,
       execute: async ({ context }) => {
-        const result = await executeTool(tool.slug, tool.version, context);
+        const result = await executeTool(tool.slug, context);
         return result;
       },
     });

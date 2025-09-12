@@ -10,11 +10,9 @@ import {
   ToolExecuteResponseSchema,
   ToolProxyParamsSchema,
   ToolProxyParams,
-  GetRawComposioToolBySlugOptions,
-  GetRawComposioToolsOptions,
-  ToolkitVersion,
-  ToolkitLatestVersion,
   ToolExecuteParamsSchema,
+  ToolkitVersionParam,
+  SchemaModifierOptions,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -49,8 +47,9 @@ import {
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
-import { CustomConnectionDataSchema } from '../types/connectedAccountAuthStates.types';
 import { AuthSchemeTypes } from '../types/authConfigs.types';
+import { ComposioConfig } from '../composio';
+import { getToolkitVersion } from '../utils/toolkitVersion';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -64,12 +63,9 @@ export class Tools<
   private readonly customTools: CustomTools;
   private provider: TProvider;
   private autoUploadDownloadFiles: boolean;
+  private toolkitVersions: ToolkitVersionParam;
 
-  constructor(
-    client: ComposioClient,
-    provider: TProvider,
-    options?: { autoUploadDownloadFiles: boolean }
-  ) {
+  constructor(client: ComposioClient, provider: TProvider, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
     }
@@ -80,12 +76,12 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = provider;
-    this.autoUploadDownloadFiles = options?.autoUploadDownloadFiles ?? true;
+    this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
+    this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider
     this.provider._setExecuteToolFn(this.execute);
-
     // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
@@ -134,60 +130,6 @@ export class Tools<
       logId: response.log_id,
       sessionInfo: response.session_info,
     });
-  }
-
-  /**
-   * Check if the connected account exists for the given tools.
-   * @param {string} userId - The user id.
-   * @param {ToolList} tools - The tools to check.
-   * @returns {Promise<boolean>} True if the connected account exists for the given tools, false otherwise.
-   */
-  private async checkIfConnectedAccountExistsForTools(
-    userIds: string[],
-    tools: ToolList
-  ): Promise<boolean> {
-    // @TODO: Filter out tools that don't require a connected account
-
-    // if no tools, return true as no connections needed
-    if (!tools.length) {
-      return true;
-    }
-    const connectedAccounts = await this.client.connectedAccounts.list({
-      user_ids: userIds,
-    });
-    // if no connected accounts, return false
-    if (connectedAccounts.items.length === 0) {
-      return false;
-    }
-
-    // create a map of toolkit slugs that have connected accounts
-    const connectedToolkitSlugs = connectedAccounts.items.reduce(
-      (acc, account) => {
-        if (account.toolkit.slug) {
-          acc[account.toolkit.slug] = true;
-        }
-        return acc;
-      },
-      {} as Record<string, boolean>
-    );
-
-    // create a map of tool slugs
-    const toolSlugs = tools.reduce(
-      (acc, tool) => {
-        acc[tool.slug] = true;
-        return acc;
-      },
-      {} as Record<string, boolean>
-    );
-
-    // check if each tool's toolkit has a connected account
-    for (const tool of Object.keys(toolSlugs)) {
-      if (!connectedToolkitSlugs[tool]) {
-        logger.warn(`Tool ${tool} requires a connected account but no connected account was found`);
-        return false;
-      }
-    }
-    return true;
   }
 
   /**
@@ -405,7 +347,7 @@ export class Tools<
    */
   async getRawComposioTools(
     query: ToolListParams,
-    options?: GetRawComposioToolsOptions
+    options?: SchemaModifierOptions
   ): Promise<ToolList> {
     if ('tools' in query && 'toolkits' in query) {
       throw new ValidationError(
@@ -453,7 +395,7 @@ export class Tools<
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
       ...('toolkit_versions' in queryParams.data
-        ? { toolkit_versions: queryParams.data.toolkitVersions }
+        ? { toolkit_versions: queryParams.data.toolkitVersions ?? this.toolkitVersions }
         : {}),
     };
 
@@ -553,11 +495,7 @@ export class Tools<
    * });
    * ```
    */
-  async getRawComposioToolBySlug(
-    slug: string,
-    version?: ToolkitVersion,
-    options?: GetRawComposioToolBySlugOptions
-  ): Promise<Tool> {
+  async getRawComposioToolBySlug(slug: string, options?: SchemaModifierOptions): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -570,7 +508,7 @@ export class Tools<
     let tool: ToolRetrieveResponse;
     try {
       tool = await this.client.tools.retrieve(slug, {
-        version: version || 'latest',
+        toolkit_versions: this.toolkitVersions,
       });
     } catch (error) {
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
@@ -667,55 +605,6 @@ export class Tools<
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
-   * Get a specific tool by slug with version control.
-   *
-   * This overload allows you to specify a particular version of a tool, providing
-   * fine-grained control over which version of the tool to retrieve. This is useful
-   * when you need to ensure consistency across different environments or when you
-   * want to use a specific version that has certain features or bug fixes.
-   *
-   * @param {string} userId - The user ID to get the tool for
-   * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
-   * @param {ToolkitVersion} [version] - The version of the tool to retrieve.
-   *   Can be 'latest' for the most recent version, or a specific version string like '20250909_00'
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
-   * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tool with the specified version
-   *
-   * @example
-   * ```typescript
-   * // Get the latest version of a tool (explicit)
-   * const latestTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', 'latest');
-   *
-   * // Get a specific version of a tool
-   * const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00');
-   *
-   * // Get a specific version with schema modifications
-   * const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', '20250909_00', {
-   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
-   *     return {
-   *       ...schema,
-   *       description: `Custom ${toolSlug} v20250909_00 - Enhanced with custom modifications`
-   *     };
-   *   }
-   * });
-   *
-   * // Version-specific tool for backwards compatibility
-   * const legacyTool = await composio.tools.get('default', 'SLACK_SEND_MESSAGE', '20241201_00', {
-   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
-   *     // Ensure legacy parameter names are preserved
-   *     return schema;
-   *   }
-   * });
-   * ```
-   */
-  async get<T extends TProvider>(
-    userId: string,
-    slug: string,
-    version?: ToolkitVersion,
-    options?: ProviderOptions<TProvider>
-  ): Promise<ReturnType<T['wrapTools']>>;
-
-  /**
    * Get a tool or list of tools based on the provided arguments.
    * This is an implementation method that handles all overloads.
    *
@@ -728,32 +617,22 @@ export class Tools<
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    arg3?: ProviderOptions<TProvider> | ToolkitVersion,
-    arg4?: ProviderOptions<TProvider>
+    arg3?: ProviderOptions<TProvider>
   ): Promise<TToolCollection> {
-    // Handle the three-parameter overload: get(userId, slug, version, options?)
-    if (typeof arg2 === 'string' && typeof arg3 === 'string') {
-      const executeToolFn = this.createExecuteToolFn(userId, arg4 as ExecuteToolModifiers);
-      const tool = await this.getRawComposioToolBySlug(arg2, arg3, {
-        modifySchema: arg4?.modifySchema,
-      });
-      return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
-    }
-
     // Handle the two-parameter overloads
     const options = arg3 as ProviderOptions<TProvider>;
     const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
 
     // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(arg2, 'latest', {
-        modifySchema: options?.modifySchema,
+      const tool = await this.getRawComposioToolBySlug(arg2, {
+        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
       return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
     } else {
       // if the second argument is an object, get a list of tools
       const tools = await this.getRawComposioTools(arg2, {
-        modifySchema: options?.modifySchema,
+        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
@@ -770,17 +649,12 @@ export class Tools<
    * @returns {ExecuteToolFn} The execute tool function
    */
   private createExecuteToolFn(userId: string, modifiers?: ExecuteToolModifiers): ExecuteToolFn {
-    const executeToolFn = async (
-      toolSlug: string,
-      version: string | undefined,
-      input: Record<string, unknown>
-    ) => {
+    const executeToolFn = async (toolSlug: string, input: Record<string, unknown>) => {
       return await this.execute(
         toolSlug,
         {
           userId,
           arguments: input,
-          version: version || 'latest',
         },
         modifiers
       );
@@ -868,12 +742,12 @@ export class Tools<
       custom_connection_data: body.customConnectionData,
       arguments: body.arguments,
       user_id: body.userId,
-      version: body.version,
+      version:
+        body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
       text: body.text,
     });
     // apply transformations to the response
     result = this.transformToolExecuteResponse(result);
-
     result = await this.applyAfterExecuteModifiers(
       tool,
       {
@@ -948,7 +822,7 @@ export class Tools<
         return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
       } else {
         // handle composio tool execution
-        const composioTool = await this.getRawComposioToolBySlug(slug, executeParams.data.version);
+        const composioTool = await this.getRawComposioToolBySlug(slug);
         if (!composioTool) {
           throw new ComposioToolNotFoundError(
             `Tool with slug ${slug} version:${executeParams.data.version} not found`

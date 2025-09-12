@@ -546,6 +546,22 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  ts/examples/versioning:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      dotenv:
+        specifier: ^16.4.1
+        version: 16.6.1
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.2.9
+        version: 1.2.16
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   ts/packages/cli:
     dependencies:
       '@clack/prompts':
@@ -646,8 +662,8 @@ importers:
   ts/packages/core:
     dependencies:
       '@composio/client':
-        specifier: 0.1.0-alpha.35
-        version: 0.1.0-alpha.35
+        specifier: 0.1.0-alpha.36
+        version: 0.1.0-alpha.36
       '@composio/json-schema-to-zod':
         specifier: 0.1.15
         version: 0.1.15
@@ -1273,8 +1289,8 @@ packages:
   '@composio/client@0.1.0-alpha.31':
     resolution: {integrity: sha512-DVPVCMDXzoQn1aUZx38e8s5+gA/J/c6FpVfS1rzUnMKCRSuXXrOoKXFAvoRME5pcaKN2Wjux5ARyvIPBugNoMA==}
 
-  '@composio/client@0.1.0-alpha.35':
-    resolution: {integrity: sha512-Db40bfq4BqVdjWf7JXzXH0zH9LtRPikZkF8+GoVFYRrDJXfHzNkhXIb+7xksCDb0mLww4LEa1cDw8jX5prA3nA==}
+  '@composio/client@0.1.0-alpha.36':
+    resolution: {integrity: sha512-YRsx5rRWFoT2kyzYTsJ5lDd6dZI2KmkLxdnaQdACc7A/DkFHzhZraSROaYLElYUP+2ScK4WynVU6+IaHzYn2KA==}
 
   '@composio/json-schema-to-zod@0.1.15':
     resolution: {integrity: sha512-GaeFd60EozDN4zHZUU4mLp+kqO11ZzUyMaljKbdBNHUsq+TYgomWvoZESyUcDqyvqHx+4+V4Smg91s8Rd7bB4Q==}
@@ -7960,7 +7976,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.31': {}
 
-  '@composio/client@0.1.0-alpha.35': {}
+  '@composio/client@0.1.0-alpha.36': {}
 
   '@composio/json-schema-to-zod@0.1.15':
     dependencies:

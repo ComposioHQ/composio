@@ -122,7 +122,7 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
       inputSchema: inputParametersSchema,
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
-        return await executeTool(composioTool.slug, composioTool.version, input);
+        return await executeTool(composioTool.slug, input);
       },
     });
   }

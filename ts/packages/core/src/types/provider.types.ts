@@ -32,7 +32,6 @@ export type ExecuteToolFnOptions = {
  */
 export type ExecuteToolFn = (
   toolSlug: string,
-  version: string | undefined,
   input: Record<string, unknown>
 ) => Promise<ToolExecuteResponse>;
 

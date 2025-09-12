@@ -162,7 +162,7 @@ export type ToolkitVersions = Record<string, ToolkitVersion>;
  * 'latest'
  * { 'github': 'latest', 'slack': '20250902_00' }
  */
-export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions;
+export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions | undefined;
 
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
@@ -271,11 +271,8 @@ export const ToolExecuteParamsSchema = z.object({
   customAuthParams: CustomAuthParamsSchema.optional(),
   customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
-  userId: z.string().optional(), //
-  version: z
-    .union([z.literal('latest'), z.string()])
-    .default('latest')
-    .optional(),
+  userId: z.string().optional(), // we have no auth apps which can be execute
+  version: z.union([z.literal('latest'), z.string()]).optional(),
   text: z.string().optional(),
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
@@ -310,10 +307,6 @@ export const ToolProxyParamsSchema = z.object({
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 
-export type GetRawComposioToolBySlugOptions = {
-  modifySchema?: TransformToolSchemaModifier;
-};
-
-export type GetRawComposioToolsOptions = {
-  modifySchema?: TransformToolSchemaModifier;
+export type SchemaModifierOptions = {
+  modifySchema: TransformToolSchemaModifier;
 };
