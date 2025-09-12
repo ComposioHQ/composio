@@ -119,8 +119,8 @@ export const ToolSchema = z.object({
   availableVersions: z
     .array(z.string())
     .describe('Available versions of the tool.')
-    .optional()
-    .default([]),
+    .default([])
+    .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
 });
 export type Tool = z.infer<typeof ToolSchema>;
