@@ -394,9 +394,7 @@ export class Tools<
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
-      ...('toolkit_versions' in queryParams.data
-        ? { toolkit_versions: queryParams.data.toolkitVersions ?? this.toolkitVersions }
-        : {}),
+      ...{ toolkit_versions: this.toolkitVersions },
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);

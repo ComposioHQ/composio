@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
-import { Tool, ToolListParams } from '../../src/types/tool.types';
+import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
 import { Tools } from '../../src/models/Tools';
 import ComposioClient from '@composio/client';
 import {
@@ -10,6 +10,7 @@ import {
   mockToolExecution,
   createSchemaModifier,
 } from '../utils/toolExecuteUtils';
+import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 
 describe('Tools', () => {
@@ -67,8 +68,7 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
         limit: 9999,
-        search: undefined,
-        toolkit_slug: undefined,
+        toolkit_versions: 'latest',
       });
     });
 
@@ -87,10 +87,9 @@ describe('Tools', () => {
       await context.tools.getRawComposioTools(query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: undefined,
         toolkit_slug: 'github',
         limit: 10,
-        search: undefined,
+        toolkit_versions: 'latest',
       });
     });
 
@@ -110,10 +109,10 @@ describe('Tools', () => {
       await context.tools.getRawComposioTools(query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: undefined,
         toolkit_slug: 'github',
         limit: 10,
         search: 'test',
+        toolkit_versions: 'latest',
       });
     });
 
@@ -133,11 +132,10 @@ describe('Tools', () => {
       await context.tools.getRawComposioTools(query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: undefined,
         toolkit_slug: 'todoist',
         limit: 10,
-        search: undefined,
         scopes: ['task:add', 'task:read'],
+        toolkit_versions: 'latest',
       });
     });
 
@@ -158,11 +156,11 @@ describe('Tools', () => {
       await context.tools.getRawComposioTools(query);
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: undefined,
         toolkit_slug: 'todoist',
         limit: 10,
         search: 'add task',
         scopes: ['task:add'],
+        toolkit_versions: 'latest',
       });
     });
 
@@ -276,7 +274,7 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioToolBySlug(slug);
 
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, { version: 'latest' });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, { toolkit_versions: 'latest' });
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
@@ -316,7 +314,7 @@ describe('Tools', () => {
 
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
 
-      const result = await context.tools.getRawComposioToolBySlug(slug, 'latest', {
+      const result = await context.tools.getRawComposioToolBySlug(slug, {
         modifySchema: schemaModifier,
       });
 
@@ -339,7 +337,7 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, slug);
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, 'latest', {
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
         modifySchema: undefined,
       });
       expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
@@ -379,7 +377,7 @@ describe('Tools', () => {
 
       await context.tools.get(userId, slug, { modifySchema: schemaModifier });
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, 'latest', {
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
         modifySchema: schemaModifier,
       });
     });
@@ -423,7 +421,7 @@ describe('Tools', () => {
         custom_connection_data: undefined,
         arguments: body.arguments,
         user_id: body.userId,
-        version: undefined,
+        version: 'latest',
         text: undefined,
       });
       expect(result).toEqual(toolMocks.toolExecuteResponse);
@@ -448,7 +446,7 @@ describe('Tools', () => {
         custom_connection_data: undefined,
         arguments: body.arguments,
         user_id: body.userId,
-        version: undefined,
+        version: 'latest',
         text: undefined,
       });
       expect(result).toEqual(toolMocks.toolExecuteResponse);
@@ -718,6 +716,461 @@ describe('Tools', () => {
       await expect(context.tools.proxyExecute(invalidProxyParams)).rejects.toThrow(
         'Invalid tool proxy parameters'
       );
+    });
+  });
+
+  describe('Version Integration Tests', () => {
+    describe('toolkit versions in tool fetching', () => {
+      it('should pass default "latest" version when no version is configured', async () => {
+        const context = createTestContext();
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await context.tools.getRawComposioTools({ tools: ['TEST_TOOL'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          tool_slugs: 'TEST_TOOL',
+          limit: 9999,
+          toolkit_versions: 'latest',
+        });
+      });
+
+      it('should pass global version string when configured', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: '20250902_00' as any,
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ toolkits: ['github'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          toolkit_slug: 'github',
+          toolkit_versions: '20250902_00',
+        });
+      });
+
+      it('should pass toolkit-specific versions when configured as object', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+            slack: 'latest',
+            gmail: '20250901_01',
+          },
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ toolkits: ['github'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          toolkit_slug: 'github',
+          toolkit_versions: {
+            github: '20250902_00',
+            slack: 'latest',
+            gmail: '20250901_01',
+          },
+        });
+      });
+
+      it('should pass versions when fetching tools by tool slugs', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+            slack: 'latest',
+          },
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ tools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          tool_slugs: 'GITHUB_CREATE_ISSUE,SLACK_SEND_MESSAGE',
+          limit: 9999,
+          toolkit_versions: {
+            github: '20250902_00',
+            slack: 'latest',
+          },
+        });
+      });
+
+      it('should pass versions when searching tools', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: 'latest',
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ search: 'create issue' });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          search: 'create issue',
+          toolkit_versions: 'latest',
+        });
+      });
+    });
+
+    describe('toolkit versions in individual tool retrieval', () => {
+      it('should pass default "latest" version when retrieving single tool', async () => {
+        const context = createTestContext();
+
+        mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+        await context.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('GITHUB_CREATE_ISSUE', {
+          toolkit_versions: 'latest',
+        });
+      });
+
+      it('should pass global version when retrieving single tool', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: '20250902_00' as any,
+        });
+
+        mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+        await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('GITHUB_CREATE_ISSUE', {
+          toolkit_versions: '20250902_00',
+        });
+      });
+
+      it('should pass toolkit-specific versions when retrieving single tool', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+            slack: 'latest',
+            gmail: '20250901_01',
+          },
+        });
+
+        mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+        await tools.getRawComposioToolBySlug('SLACK_SEND_MESSAGE');
+
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('SLACK_SEND_MESSAGE', {
+          toolkit_versions: {
+            github: '20250902_00',
+            slack: 'latest',
+            gmail: '20250901_01',
+          },
+        });
+      });
+    });
+
+    describe('toolkit versions in tool execution', () => {
+      it('should use default "latest" version when executing tool without explicit version', async () => {
+        const context = createTestContext();
+        const spies = await mockToolExecution(context.tools);
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { title: 'Test Issue' },
+          connectedAccountId: 'test-account',
+        };
+
+        await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { title: 'Test Issue' },
+          user_id: undefined,
+          version: 'latest', // should use latest as default
+          text: undefined,
+        });
+      });
+
+      it('should use global version when configured', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: '20250902_00' as any,
+        });
+        const spies = await mockToolExecution(tools);
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { title: 'Test Issue' },
+          connectedAccountId: 'test-account',
+        };
+
+        await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { title: 'Test Issue' },
+          user_id: undefined,
+          version: '20250902_00', // should use global version
+          text: undefined,
+        });
+      });
+
+      it('should use toolkit-specific version when configured as object', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            'test-toolkit': '20250902_00', // Use the actual toolkit slug from mock
+            slack: 'latest',
+            gmail: '20250901_01',
+          },
+        });
+
+        // Mock the tool with test-toolkit (matching the mock data)
+        const testTool = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' }, // Use actual mock toolkit
+        };
+
+        const spies = await mockToolExecution(tools);
+        // Override the mock to return our custom tool with the correct toolkit
+        spies.getRawComposioToolBySlugSpy.mockReset();
+        spies.getRawComposioToolBySlugSpy.mockResolvedValueOnce(testTool as unknown as Tool);
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { title: 'Test Issue' },
+          connectedAccountId: 'test-account',
+        };
+
+        await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { title: 'Test Issue' },
+          user_id: undefined,
+          version: '20250902_00', // should use test-toolkit-specific version
+          text: undefined,
+        });
+      });
+
+      it('should use fallback to "latest" when toolkit not in version mapping', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+            slack: 'latest',
+          },
+        });
+
+        // Mock the tool with notion toolkit (not in version mapping)
+        const notionTool = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'notion', name: 'Notion' },
+        };
+
+        const spies = await mockToolExecution(tools);
+        spies.getRawComposioToolBySlugSpy.mockResolvedValueOnce(notionTool as unknown as Tool);
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { title: 'Test Page' },
+          connectedAccountId: 'test-account',
+        };
+
+        await tools.execute('NOTION_CREATE_PAGE', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { title: 'Test Page' },
+          user_id: undefined,
+          version: 'latest', // should fallback to latest for unknown toolkit
+          text: undefined,
+        });
+      });
+
+      it('should prioritize explicit version parameter over configured versions', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+            slack: 'latest',
+          },
+        });
+
+        const spies = await mockToolExecution(tools);
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { title: 'Test Issue' },
+          connectedAccountId: 'test-account',
+          version: '20250903_00', // explicit version should override config
+        };
+
+        await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { title: 'Test Issue' },
+          user_id: undefined,
+          version: '20250903_00', // explicit version takes precedence
+          text: undefined,
+        });
+      });
+
+      it('should handle tool without toolkit gracefully', async () => {
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250902_00',
+          },
+        });
+
+        // Mock the tool without toolkit
+        const toolWithoutToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: undefined,
+        };
+
+        const spies = await mockToolExecution(tools);
+        spies.getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolWithoutToolkit as unknown as Tool
+        );
+
+        const executeParams: ToolExecuteParams = {
+          arguments: { query: 'test' },
+          connectedAccountId: 'test-account',
+        };
+
+        await tools.execute('SOME_CUSTOM_TOOL', executeParams);
+
+        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
+          allow_tracing: undefined,
+          connected_account_id: 'test-account',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: { query: 'test' },
+          user_id: undefined,
+          version: 'latest', // should fallback to latest for unknown toolkit
+          text: undefined,
+        });
+      });
+    });
+
+    describe('environment variable integration', () => {
+      const originalEnv = process.env;
+
+      beforeEach(() => {
+        process.env = { ...originalEnv };
+      });
+
+      afterEach(() => {
+        process.env = originalEnv;
+      });
+
+      it('should use environment variable versions when no user config provided', async () => {
+        // Set environment variables
+        process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250903_00';
+        process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
+
+        const mockProvider = new MockProvider();
+        // Pass the processed environment variables to the Tools constructor
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250903_00',
+            slack: 'latest',
+          },
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ toolkits: ['github'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          toolkit_slug: 'github',
+          toolkit_versions: {
+            github: '20250903_00',
+            slack: 'latest',
+          },
+        });
+      });
+
+      it('should prioritize user config over environment variables', async () => {
+        // Set environment variables
+        process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250903_00';
+        process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
+
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: {
+            github: '20250904_00', // should override env
+            gmail: '20250902_00', // new toolkit not in env
+          },
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ toolkits: ['github'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          toolkit_slug: 'github',
+          toolkit_versions: {
+            github: '20250904_00', // user config wins
+            gmail: '20250902_00', // from user config
+          },
+        });
+      });
+
+      it('should use global version string to override everything', async () => {
+        // Set environment variables
+        process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250903_00';
+        process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
+
+        const mockProvider = new MockProvider();
+        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+          toolkitVersions: '20250905_00' as any, // global version overrides everything
+        });
+
+        mockClient.tools.list.mockResolvedValueOnce({
+          items: [toolMocks.rawTool],
+          totalPages: 1,
+        });
+
+        await tools.getRawComposioTools({ toolkits: ['github'] });
+
+        expect(mockClient.tools.list).toHaveBeenCalledWith({
+          toolkit_slug: 'github',
+          toolkit_versions: '20250905_00', // global version ignores env vars
+        });
+      });
     });
   });
 });

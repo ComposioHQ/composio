@@ -196,7 +196,7 @@ describe('MastraProvider', () => {
       const context = { input: 'test-value' };
       const result = await executeFunction({ context });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, context);
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
@@ -215,7 +215,7 @@ describe('MastraProvider', () => {
       const context = { input: 'version-test' };
       await executeFunction({ context });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, '20250101_01', context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, context);
     });
 
     it('should handle tools without version information', async () => {
@@ -229,7 +229,7 @@ describe('MastraProvider', () => {
       const context = { input: 'no-version-test' };
       await executeFunction({ context });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, undefined, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, context);
     });
 
     it('should handle empty context parameter', async () => {
@@ -241,7 +241,7 @@ describe('MastraProvider', () => {
       // Test the execute function with empty context
       const result = await executeFunction({ context: {} });
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
@@ -258,7 +258,7 @@ describe('MastraProvider', () => {
       // Test the execute function without context
       const result = await executeFunction({});
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, undefined);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,

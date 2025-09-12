@@ -113,14 +113,15 @@ export const ToolSchema = z.object({
   description: z.string().optional().describe('The description of the tool'),
   inputParameters: ParametersSchema.optional().describe('The input parameters of the tool'),
   outputParameters: ParametersSchema.optional().describe('The output parameters of the tool'),
-  tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
-  toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
-  version: z.optional(z.string()).describe('The version of the tool, e.g. "20250909_00"'),
+  tags: z.array(z.string()).describe('The tags of the tool. eg: Important').default([]).optional(),
+  toolkit: ToolkitSchema.describe('The toolkit of the tool').optional(),
+  version: z.string().describe('The version of the tool, e.g. "20250909_00"').optional(),
   availableVersions: z
-    .optional(z.array(z.string()))
+    .array(z.string())
     .describe('Available versions of the tool.')
+    .optional()
     .default([]),
-  scopes: z.optional(z.array(z.string())).describe('The scopes of the tool. eg: ["task:add"]'),
+  scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 

@@ -120,50 +120,14 @@ describe('VercelProvider', () => {
       const params = { input: 'test-value' };
       await executeFunction(params);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
 
       // Reset and test with a JSON string parameter
       vi.clearAllMocks();
       const stringParams = JSON.stringify(params);
       await executeFunction(stringParams);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
-    });
-
-    it('should preserve tool version information when wrapping', async () => {
-      const toolWithVersion: Tool = {
-        ...mockTool,
-        version: '20250101_01',
-      };
-
-      provider.wrapTool(toolWithVersion, mockExecuteToolFn) as unknown as MockedVercelTool;
-
-      // Extract the execute function from the call to tool()
-      const executeFunction = (tool as any).mock.calls[0][0].execute;
-
-      // Test that the version is passed correctly
-      const params = { input: 'version-test' };
-      await executeFunction(params);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, '20250101_01', params);
-    });
-
-    it('should handle tools without version information', async () => {
-      const toolWithoutVersion: Tool = {
-        ...mockTool,
-        version: undefined,
-      };
-
-      provider.wrapTool(toolWithoutVersion, mockExecuteToolFn) as unknown as MockedVercelTool;
-
-      // Extract the execute function from the call to tool()
-      const executeFunction = (tool as any).mock.calls[0][0].execute;
-
-      // Test that undefined version is passed correctly
-      const params = { input: 'no-version-test' };
-      await executeFunction(params);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, undefined, params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
     });
   });
 

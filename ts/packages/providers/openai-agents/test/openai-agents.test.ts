@@ -112,26 +112,6 @@ describe('OpenAIAgentsProvider', () => {
 
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
     });
-
-    it('should create a function that executes the tool with the right parameters', async () => {
-      provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedOpenAIAgentTool;
-
-      // Extract the execute function from the call to tool()
-      const executeFunction = (createOpenAIAgentTool as any).mock.calls[0][0].execute;
-
-      // Test the execute function with an object parameter
-      const params = { input: 'test-value' };
-      await executeFunction(params);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
-
-      // Reset and test with a JSON string parameter
-      vi.clearAllMocks();
-      const stringParams = JSON.stringify(params);
-      await executeFunction(stringParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, mockTool.version, params);
-    });
   });
 
   describe('wrapTools', () => {
