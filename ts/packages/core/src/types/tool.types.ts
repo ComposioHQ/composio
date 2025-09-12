@@ -172,11 +172,6 @@ export const ToolListParamsSchema = z.object({
   limit: z.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
-  toolkitVersions: z
-    .union([z.literal('latest'), z.record(z.string(), z.string())])
-    .optional()
-    .default('latest')
-    .describe('The versions of the toolkits to filter by'),
 });
 
 type BaseParams = {
@@ -184,7 +179,6 @@ type BaseParams = {
   search?: string;
   scopes?: string[];
   tags?: string[];
-  toolkitVersions?: ToolkitVersionParam;
 };
 
 // tools only
@@ -194,21 +188,20 @@ type ToolsOnlyParams = {
   scopes?: never;
   search?: never;
   tags?: never;
-} & Pick<BaseParams, 'toolkitVersions'>;
-
+};
 // toolkits only
 type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // toolkit + scopes (single toolkit only)
 type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
-} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // tags only
 type TagsOnlyParams = {
@@ -216,24 +209,24 @@ type TagsOnlyParams = {
   tags: string[];
   tools?: never;
   search?: never;
-} & Pick<BaseParams, 'limit' | 'toolkitVersions'>;
+} & Pick<BaseParams, 'limit'>;
 
 // search only
 type SearchOnlyParams = {
+  search: string;
   tools?: never;
   toolkits?: never;
   scopes?: never;
   limit?: never;
-  search: string;
   tags?: never;
-} & Pick<BaseParams, 'toolkitVersions'>;
+};
 
 // tools by auth config ids only
 type AuthConfigIdsOnlyParams = {
   authConfigIds: string[];
   tools?: never;
   toolkits?: never;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
