@@ -1,17 +1,18 @@
 ---
 title: Authenticating Tools
-image: "https://og.composio.dev/api/og?title=Authenticating%20Tools"   # image for socials
+image: 'https://og.composio.dev/api/og?title=Authenticating%20Tools' # image for socials
 keywords: 'auth config, authentication, oauth, api key, user authentication'
 subtitle: 'Create auth configs and connect user accounts'
 hide-nav-links: false
 ---
-The first step in authenticating your Users is to create an **Auth Config**. Every toolkit has its own *authentication method* such as **OAuth**, **API key**, **Basic Auth**, or custom schemes.
 
-An **Auth Config** is a *blueprint* that defines how authentication works for a toolkit across all your users. It defines:
+The first step in authenticating your Users is to create an **Auth Config**. Every toolkit has its own _authentication method_ such as **OAuth**, **API key**, **Basic Auth**, or custom schemes.
 
-1. **Authentication method** - *OAuth2*, *Bearer token*, *API key*, or *Basic Auth*
-2. **Scopes** - *what actions your tools can perform*
-3. **Credentials** - *whether you'll use your own app credentials or Composio's managed auth*
+An **Auth Config** is a _blueprint_ that defines how authentication works for a toolkit across all your users. It defines:
+
+1. **Authentication method** - _OAuth2_, _Bearer token_, _API key_, or _Basic Auth_
+2. **Scopes** - _what actions your tools can perform_
+3. **Credentials** - _whether you'll use your own app credentials or Composio's managed auth_
 
 <Frame>
   <img src="../../../assets/images/executingtools.png" alt="Composio introduction image" />
@@ -23,32 +24,41 @@ An **Auth Config** is a *blueprint* that defines how authentication works for a 
 
 <Steps>
   <Step title="**Selecting a toolkit**">
-    Navigate to <a target="_blank" href="https://platform.composio.dev?next_page=%2Fauth-configs" target="_blank">Auth Configs</a> tab in your dashboard and click "**Create Auth Config**". Find and select the toolkit you want to integrate (e.g., **Gmail**, **Slack**, **GitHub**).
+    Navigate to{' '}
+    <a
+      target="_blank"
+      href="https://platform.composio.dev?next_page=%2Fauth-configs"
+      target="_blank"
+    >
+      Auth Configs
+    </a>{' '}
+    tab in your dashboard and click "**Create Auth Config**". Find and select the toolkit you want
+    to integrate (e.g., **Gmail**, **Slack**, **GitHub**).
   </Step>
   <Step title="**Selecting the Authentication method**">
-    Each toolkit supports different authentication methods such as **OAuth**, **API Key**, **Bearer Token**. Select from the available options for your toolkit.
+    Each toolkit supports different authentication methods such as **OAuth**, **API Key**, **Bearer
+    Token**. Select from the available options for your toolkit.
   </Step>
   <Step title="**Configure scopes**">
-    Depending on your authentication method, you may need to configure scopes:
-    - **OAuth2**: Configure scopes for what data and actions your integration can access.
-    - **API Key/Bearer Token**: Permissions are typically fixed based on the key's access level.
+    Depending on your authentication method, you may need to configure scopes: - **OAuth2**:
+    Configure scopes for what data and actions your integration can access. - **API Key/Bearer
+    Token**: Permissions are typically fixed based on the key's access level.
   </Step>
   <Step title="**Authentication Management**">
-      **For OAuth toolkits:**
-      - **Development/Testing**: Use Composio's managed authentication (no setup required)
-      - **Production**: Generate your own OAuth credentials from the toolkit's developer portal
-      
-      **For custom authentication schemes:**
-      You must provide your own credentials regardless of environment.
+    **For OAuth toolkits:** - **Development/Testing**: Use Composio's managed authentication (no
+    setup required) - **Production**: Generate your own OAuth credentials from the toolkit's
+    developer portal **For custom authentication schemes:** You must provide your own credentials
+    regardless of environment.
   </Step>
   <Step title="**You are all set!**">
-    Click "**Create Auth Configuration**" button and you have completed your first step! 
-    Now you can move ahead to authenticating your users by *Connecting an Account*.
+    Click "**Create Auth Configuration**" button and you have completed your first step! Now you can
+    move ahead to authenticating your users by *Connecting an Account*.
   </Step>
 </Steps>
 
 <Note title="Auth configs are reusable">
-  Auth configs contain your developer credentials and app-level settings (*scopes*, *authentication method*, etc.). Once created, you can reuse the same auth config for all your users.
+  Auth configs contain your developer credentials and app-level settings (*scopes*, *authentication
+  method*, etc.). Once created, you can reuse the same auth config for all your users.
 </Note>
 
 **When to create multiple auth configs?**
@@ -56,26 +66,35 @@ An **Auth Config** is a *blueprint* that defines how authentication works for a 
 You should create multiple auth configs for the same toolkit when you need:
 
 - **Different authentication methods** - One OAuth config and one API key config
-- **Different scopes** - Separate configs for read-only vs full access  
+- **Different scopes** - Separate configs for read-only vs full access
 - **Different OAuth apps** - Using separate client credentials for different environments
 - **Different permission levels** - Limiting actions for specific use cases
 
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
-  For managing auth configs across multiple projects, you can create them programmatically via the API
+  For managing auth configs across multiple projects, you can create them programmatically via the
+  API
 </Card>
-
 
 ## Connecting an account:
 
-With an auth config created, you're ready to authenticate your users! 
+With an auth config created, you're ready to authenticate your users!
+
+You can either use [Connect Link](#hosted-authenticationconnect-link) for a simpler setup where Composio provides the authentication forms and handles the entire flow, or use [Direct SDK Integration](#direct-sdk-integration) to build your own authentication experience in your application.
+
+### Hosted Authentication(Connect Link)
+
+
+
+
+### Direct SDK Integration
 
 **Choose the section below that matches your toolkit's authentication method:**
+
 ### OAuth Connections
 
-**OAuth** connections redirect users to the toolkit's login page. Popular toolkits that use **OAuth** authentication include: *Gmail*, *Notion* etc.
+**OAuth** connections redirect users to the toolkit's login page. Popular toolkits that use **OAuth** authentication include: _Gmail_, _Notion_ etc.
 
 Here's how to initiate the flow:
-
 
 <CodeGroup>
 ```python Python {11-15}
@@ -84,29 +103,36 @@ from composio import Composio
 composio = Composio(api_key="YOUR_COMPOSIO_API_KEY")
 
 # Use the "AUTH CONFIG ID" from your dashboard
+
 auth_config_id = "ac_UdqFwixfy3cV"
 
 # Use a unique identifier for each user in your application
+
 user_id = "user_123"
 
 connection_request = composio.connected_accounts.initiate(
-    user_id=user_id, 
-    auth_config_id=auth_config_id, 
-    config={"auth_scheme": "OAUTH2"}
+user_id=user_id,
+auth_config_id=auth_config_id,
+config={"auth_scheme": "OAUTH2"}
 )
 
 # Redirect user to this URL
+
 print(f"Redirect URL: {connection_request.redirect_url}")
 
 connected_account = connection_request.wait_for_connection()
 
 # Alternative: if you only have the connection request ID
+
 # connected_account = composio.connected_accounts.wait_for_connection(
-#     connection_request.id)
+
+# connection_request.id)
+
 # Recommended when the connection_request object is no longer available
 
 print(f"Connection established: {connected_account.id}")
-```
+
+````
 
 
 ```typescript {10-13}
@@ -134,10 +160,9 @@ const connectedAccount = await connRequest.waitForConnection();
 // Recommended when the connRequest object is no longer available
 
 console.log(`Connection established: ${connectedAccount.id}`);
-```
+````
+
 </CodeGroup>
-
-
 
 ### Redirecting Users (OAuth only)
 
@@ -154,16 +179,12 @@ connection_request = composio.connected_accounts.initiate(
 ```
 
 ```typescript {5}
-const connRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    callbackUrl: 'https://www.yourapp.com/callback',
-  }
-);
+const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
+  callbackUrl: 'https://www.yourapp.com/callback',
+});
 ```
-</CodeGroup>
 
+</CodeGroup>
 
 ### Services with Additional Parameters
 
@@ -181,22 +202,19 @@ connection_request = composio.connected_accounts.initiate(
 
 ```typescript
 import { AuthScheme } from '@composio/core';
-// For Zendesk - include subdomain  
-const connRequest = await composio.connectedAccounts.initiate(
-  userId, 
-  authConfigId,
-  {
-    config: AuthScheme.OAuth2({
-      subdomain: 'mycompany'
-    })
-  }
-);
+// For Zendesk - include subdomain
+const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
+  config: AuthScheme.OAuth2({
+    subdomain: 'mycompany',
+  }),
+});
 ```
+
 </CodeGroup>
 
 ### API Key Connections
 
-For API key authentication, you can either *collect API keys from each user* or *use your own API key* for all users. Popular Toolkits that use API Keys include Stripe, Perplexity etc.
+For API key authentication, you can either _collect API keys from each user_ or _use your own API key_ for all users. Popular Toolkits that use API Keys include Stripe, Perplexity etc.
 
 Here is how to initiate the flow:
 
@@ -207,23 +225,30 @@ from composio import Composio
 composio = Composio(api_key="your_api_key")
 
 # Use the "AUTH CONFIG ID" from your dashboard
+
 auth_config_id = "ac_ZUWpt850AqTN"
-# Use a unique identifier for each user in your application  
+
+# Use a unique identifier for each user in your application
+
 user_id = "user_12323"
+
 # API key provided by the user (collected from your app's UI)
+
 # or use your own key
+
 user_api_key = "user_api_key_here"
 
 connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=auth_config_id,
-    config={
-        "auth_scheme": "API_KEY", "val": {"api_key": user_api_key}
-    }
+user_id=user_id,
+auth_config_id=auth_config_id,
+config={
+"auth_scheme": "API_KEY", "val": {"api_key": user_api_key}
+}
 )
 
 print(f"Connection established: {connection_request.id}")
-```
+
+````
 
 ```typescript {12-18}
 import { Composio, AuthScheme } from '@composio/core';
@@ -238,7 +263,7 @@ const userId = 'user12345678';
 const userApiKey = 'user_api_key_here';
 
 const connectionRequest = await composio.connectedAccounts.initiate(
-  userId, authConfigId, 
+  userId, authConfigId,
   {
     config: AuthScheme.APIKey({
       api_key: userApiKey,
@@ -246,13 +271,13 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 });
 
 console.log(`Connection established: ${connectionRequest.id}`);
-```
-</CodeGroup>
+````
 
+</CodeGroup>
 
 ## Fetching the required `config` parameters for an Auth Config
 
-When working with any toolkits, you can **inspect an auth config** to understand its *authentication requirements* and *expected parameters*.
+When working with any toolkits, you can **inspect an auth config** to understand its _authentication requirements_ and _expected parameters_.
 
 Here is how you would fetch the authentication method and input fields:
 
@@ -263,17 +288,22 @@ from composio import Composio
 composio = Composio(api_key="your_api_key")
 
 # Use the "AUTH CONFIG ID" from your dashboard
+
 auth_config_id = "ac_ZUWpt850AqTN"
 
 # Fetch the auth configuration details
+
 auth_config = composio.auth_configs.get(auth_config_id)
 
 # Check what authentication method this config uses
+
 print(f"Authentication method: {auth_config.auth_scheme}")
 
 # See what input fields are required
+
 print(f"Required fields: {auth_config.expected_input_fields}")
-```
+
+````
 
 ```typescript {9}
 import { Composio } from '@composio/core';
@@ -288,9 +318,9 @@ const authConfig = await composio.authConfigs.get(authConfigId);
 
 console.log(`Authentication method: ${authConfig.authScheme}`);
 console.log(`Required fields:`, authConfig.expectedInputFields);
-```
-</CodeGroup>
+````
 
+</CodeGroup>
 
 ## Other Authentication Methods
 
@@ -303,9 +333,12 @@ Composio also supports a wide range of other auth schemas:
 **Custom Schemes** - Some toolkits use their own custom authentication methods. Follow the toolkit-specific requirements for such cases.
 
 <Note title="Fetching auth config">
-For any of these methods, [fetch the config parameter](#fetching-the-required-config-parameters-for-an-auth-config) to determine the exact fields required. 
-Every toolkit has its own requirements, and understanding these is essential for successfully creating connections.
+  For any of these methods, [fetch the config
+  parameter](#fetching-the-required-config-parameters-for-an-auth-config) to determine the exact
+  fields required. Every toolkit has its own requirements, and understanding these is essential for
+  successfully creating connections.
 </Note>
 
 ## Next Step
+
 With authentication set up, you can now fetch and execute tools. See [Executing Tools](/docs/executing-tools) to get started.
