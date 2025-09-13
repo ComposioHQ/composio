@@ -81,13 +81,17 @@ With an auth config created, you're ready to authenticate your users!
 
 You can either use [Connect Link](#hosted-authenticationconnect-link) for a simpler setup where Composio provides the authentication forms and handles the entire flow, or use [Direct SDK Integration](#direct-sdk-integration) to build your own authentication experience in your application.
 
-### Hosted Authentication(Connect Link)
+### Hosted Authentication (Connect Link)
+
+Connect Link provides a complete, hosted authentication flow where Composio handles all form generation and credential collection.
+This eliminates building forms for different authentication types—whether OAuth, API Key, or custom fields like subdomains or workspace IDs.
+Redirect users to the provided URL and Composio manages the entire authentication process from start to finish.
 
 ### Direct SDK Integration
 
 **Choose the section below that matches your toolkit's authentication method:**
 
-### OAuth Connections
+#### OAuth Connections
 
 For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control
 where users return after authentication:
@@ -162,7 +166,7 @@ console.log(`Connection established: ${connectedAccount.id}`);
 
 </CodeGroup>
 
-### Services with Additional Parameters
+#### Services with Additional Parameters
 
 Some services like Zendesk require additional parameters such as `subdomain`:
 
@@ -188,7 +192,7 @@ const connRequest = await composio.connectedAccounts.initiate(userId, authConfig
 
 </CodeGroup>
 
-### API Key Connections
+#### API Key Connections
 
 For API key authentication, you can either _collect API keys from each user_ or _use your own API key_ for all users. Popular Toolkits that use API Keys include Stripe, Perplexity etc.
 
