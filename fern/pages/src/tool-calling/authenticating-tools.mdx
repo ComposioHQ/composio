@@ -113,7 +113,7 @@ const authConfigId = 'your_auth_config_id';
 const userId = 'user-1349-129-12';
 
 const connectionRequest = await composio.connectedAccounts.link(userId, authConfigId, {
-callbackUrl: 'https://your-app.com/callback'
+  callbackUrl: 'https://your-app.com/callback'
 });
 const redirectUrl = connectionRequest.redirectUrl;
 console.log(`Visit: ${redirectUrl} to authenticate your account`);
@@ -177,9 +177,9 @@ const authConfigId = 'your_auth_config_id';
 const userId = 'user_4567';
 
 const connRequest = await composio.connectedAccounts.initiate(
-    userId,
-    authConfigId,
-    callbackUrl: 'https://www.yourapp.com/callback'
+  userId,
+  authConfigId,
+  callbackUrl: 'https://www.yourapp.com/callback'
 );
 console.log(`Redirect URL: ${connRequest.redirectUrl}`);
 
@@ -203,9 +203,9 @@ Some services like Zendesk require additional parameters such as `subdomain`:
 ```python
 # For Zendesk - include subdomain
 connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=auth_config_id,
-    config=auth_scheme.oauth2(subdomain="mycompany")  # For mycompany.zendesk.com
+  user_id=user_id,
+  auth_config_id=auth_config_id,
+  config=auth_scheme.oauth2(subdomain="mycompany")  # For mycompany.zendesk.com
 )
 ```
 
