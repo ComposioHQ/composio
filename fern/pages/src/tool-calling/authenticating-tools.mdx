@@ -83,18 +83,14 @@ You can either use [Connect Link](#hosted-authenticationconnect-link) for a simp
 
 ### Hosted Authentication(Connect Link)
 
-
-
-
 ### Direct SDK Integration
 
 **Choose the section below that matches your toolkit's authentication method:**
 
 ### OAuth Connections
 
-**OAuth** connections redirect users to the toolkit's login page. Popular toolkits that use **OAuth** authentication include: _Gmail_, _Notion_ etc.
-
-Here's how to initiate the flow:
+For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control
+where users return after authentication:
 
 <CodeGroup>
 ```python Python {11-15}
@@ -113,7 +109,8 @@ user_id = "user_123"
 connection_request = composio.connected_accounts.initiate(
 user_id=user_id,
 auth_config_id=auth_config_id,
-config={"auth_scheme": "OAUTH2"}
+config={"auth_scheme": "OAUTH2"},
+callback_url="https://www.yourapp.com/callback"
 )
 
 # Redirect user to this URL
@@ -147,7 +144,8 @@ const userId = 'user_4567';
 
 const connRequest = await composio.connectedAccounts.initiate(
     userId,
-    authConfigId
+    authConfigId,
+    callbackUrl: 'https://www.yourapp.com/callback'
 );
 
 console.log(`Redirect URL: ${connRequest.redirectUrl}`);
@@ -161,28 +159,6 @@ const connectedAccount = await connRequest.waitForConnection();
 
 console.log(`Connection established: ${connectedAccount.id}`);
 ````
-
-</CodeGroup>
-
-### Redirecting Users (OAuth only)
-
-For OAuth flows, you can control where users are redirected after authentication by providing a callback Url:
-
-<CodeGroup>
-```python {5}
-connection_request = composio.connected_accounts.initiate(
-    user_id=user_id,
-    auth_config_id=auth_config_id,
-    config={"auth_scheme": "OAUTH2"},
-    callback_url="https://www.yourapp.com/callback"
-)
-```
-
-```typescript {5}
-const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
-  callbackUrl: 'https://www.yourapp.com/callback',
-});
-```
 
 </CodeGroup>
 
