@@ -22,7 +22,7 @@ Use Organization IDs
 *Example: Company Slack workspace*
 
 - **Just testing or building an internal tool?**  
-Use `'default'` temporarily (**do not use this production**)
+Use `'default'` temporarily (**do not use this in production**)
 
 
 ## Patterns
@@ -69,7 +69,7 @@ tools = composio.tools.get(
 
 result = composio.tools.execute(
   "GITHUB_GET_REPO",
-  user_id="sdf",
+  user_id=user_id,
   arguments={ 
     "owner": 'example', 
     "repo": 'repo' 
@@ -120,7 +120,7 @@ tools = composio.tools.get(
 # Execute tools in the organization context
 result = composio.tools.execute(
   "SLACK_SEND_MESSAGE",
-  user_id="sdf",
+  user_id=user_id,
   arguments={ 
     "channel": '#general', 
     "text": 'Hello from the team!' 
@@ -291,7 +291,6 @@ org_shared_tools = composio.tools.get(
 ```
 </CodeGroup>
 Remember: The userId must match how the account was connected. If admin connected Slack with org ID, all members must use org ID to access it.
-Retry
 
 ## Best Practices
 
@@ -302,4 +301,4 @@ Retry
 - Keep User IDs consistent across your application and Composio
 - Use stable identifiers that won't change over time
 
-**Data isolation:** Composio ensures complete isolation between User IDs - users cannot access another ID's connections or data.
+**Data isolation:** Composio ensures complete isolation between User IDs. Users cannot access another ID's connections or data.
