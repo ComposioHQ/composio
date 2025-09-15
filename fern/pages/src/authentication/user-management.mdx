@@ -127,6 +127,19 @@ result = composio.tools.execute(
 ```
 </CodeGroup>
 
+## Multiple Connected Accounts
+
+A single User ID can have multiple connected accounts for the same toolkit. For example, a user might connect both their personal and work Gmail accounts.
+
+**Key concepts:**
+- Each connected account gets a unique Connected Account ID
+- Multiple accounts can exist under the same User ID for any toolkit
+- You can specify which account to use when executing tools
+
+**Account selection:**
+- **Explicit:** Specify the Connected Account ID to target a specific account
+- **Default:** If no Connected Account ID is provided, the most recently connected account is used 
+
 ## Examples
 ### Organization-Based Application
 
