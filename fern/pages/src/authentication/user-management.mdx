@@ -6,8 +6,11 @@ hide-nav-links: false
 ---
 
 ## What are User IDs?
-User IDs determine whose connected accounts and data you're accessing in Composio. 
-Every tool execution, connection authorization, and account operation requires a `userId` parameter that identifies which user's context to use.
+User IDs determine whose connected accounts and data you're accessing in Composio. Every tool execution, connection authorization, and account operation
+requires a `userId` parameter that identifies which context to use.
+
+User IDs act as containers that group connected accounts together across toolkits. Depending on your application, you can use User IDs to represent an
+individual user, a team, or an entire organization.
 
 ## Quick Decision Guide
 
@@ -15,23 +18,15 @@ Every tool execution, connection authorization, and account operation requires a
 
 - **Each user connects their own personal accounts?**  
 Use User IDs  
+*Use your database UUID or primary key (e.g., `user.id`)*  
 *Example: Users connect their personal Gmail, GitHub*
 
 - **Teams share the same connected accounts?**  
 Use Organization IDs  
+*Use your organization UUID or primary key (e.g., `organization.id`)*  
 *Example: Company Slack workspace*
 
-- **Just testing or building an internal tool?**  
-Use `'default'` temporarily (**do not use this in production**)
-
-
 ## Patterns
-### Default User (Development)
-
-The `'default'` userId is for testing and single-user applications. 
-<Warning>
-Never use 'default' in production with multiple users. This could expose other users' data
-</Warning>
 
 ### User IDs (Individual Accounts)
 
@@ -78,6 +73,9 @@ result = composio.tools.execute(
 ```
 
 </CodeGroup>
+<Warning>
+Never use 'default' as an User ID in production with users. This could expose other users' data
+</Warning>
 
 ### Organization IDs (Team Accounts)
 
@@ -129,7 +127,7 @@ result = composio.tools.execute(
 ```
 </CodeGroup>
 
-## Implementation
+## Examples
 ### Organization-Based Application
 
 In B2B applications, typically an admin connects accounts once and all team members share access. Here's a complete implementation:
