@@ -24,6 +24,8 @@ from composio.core.provider.none_agentic import (
     NoneAgenticProviderExecuteFn,
 )
 from composio.exceptions import InvalidParams, NotFoundError
+from composio.types import ToolkitVersionParam
+from composio.utils.toolkit_version import get_toolkit_version
 
 from ._modifiers import (
     Modifiers,
@@ -56,6 +58,7 @@ class Tools(Resource, t.Generic[TProvider]):
         client: HttpClient,
         provider: TProvider,
         file_download_dir: t.Optional[str] = None,
+        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
     ):
         """
         Initialize the tools resource.
@@ -63,11 +66,13 @@ class Tools(Resource, t.Generic[TProvider]):
         :param client: The client to use for the tools resource.
         :param provider: The provider to use for the tools resource.
         :param file_download_dir: Output directory for downloadable files
+        :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
         """
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
+        self._toolkit_versions = toolkit_versions or "latest"
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
@@ -92,7 +97,12 @@ class Tools(Resource, t.Generic[TProvider]):
         try:
             return t.cast(Tool, self._custom_tools[slug])
         except KeyError:
-            return t.cast(Tool, self._client.tools.retrieve(tool_slug=slug))
+            return t.cast(
+                Tool,
+                self._client.tools.retrieve(
+                    tool_slug=slug, toolkit_versions=self._toolkit_versions
+                ),
+            )
 
     def get_raw_composio_tools(
         self,
@@ -116,7 +126,10 @@ class Tools(Resource, t.Generic[TProvider]):
             tools_list.extend(custom_tools)
             if len(tools):
                 tools_list.extend(
-                    self._client.tools.list(tool_slugs=",".join(tools)).items
+                    self._client.tools.list(
+                        tool_slugs=",".join(tools),
+                        toolkit_versions=self._toolkit_versions,
+                    ).items
                 )
 
         # Search tools by toolkit slugs and search term
@@ -129,6 +142,7 @@ class Tools(Resource, t.Generic[TProvider]):
                     search=search if search else self._client.not_given,
                     scopes=scopes,
                     limit=limit,
+                    toolkit_versions=self._toolkit_versions,
                 ).items
             )
         return tools_list
@@ -321,6 +335,7 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
+        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool"""
         return t.cast(
@@ -346,6 +361,9 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id if user_id is not None else self._client.not_given,
                 text=text if text is not None else self._client.not_given,
                 version=version if version is not None else self._client.not_given,
+                toolkit_versions=toolkit_versions
+                if toolkit_versions is not None
+                else self._client.not_given,
             ).model_dump(
                 exclude={
                     "log_id",
@@ -367,6 +385,7 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
+        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
         modifiers: t.Optional[Modifiers] = None,
     ) -> ToolExecutionResponse:
         """
@@ -384,16 +403,25 @@ class Tools(Resource, t.Generic[TProvider]):
         :param user_id: The ID of the user to execute the tool for.
         :param text: The text to pass to the tool.
         :param version: The version of the tool to execute.
+        :param toolkit_versions: Toolkit versions to use for execution, overrides the SDK-level configuration.
         :param modifiers: The modifiers to apply to the tool.
         :return: The response from the tool.
         """
+        # Use provided toolkit_versions or fall back to instance-level versions
+        effective_toolkit_versions = toolkit_versions or self._toolkit_versions
+
         tool = self._tool_schemas.get(slug)
         if tool is None and self._custom_tools.get(slug=slug) is not None:
             tool = self._custom_tools[slug].info
             self._tool_schemas[slug] = tool
 
         if tool is None:
-            tool = t.cast(Tool, self._client.tools.retrieve(tool_slug=slug))
+            tool = t.cast(
+                Tool,
+                self._client.tools.retrieve(
+                    tool_slug=slug, toolkit_versions=effective_toolkit_versions
+                ),
+            )
             self._tool_schemas[slug] = tool
 
         if modifiers is not None:
@@ -440,6 +468,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id,
                 text=text,
                 version=version,
+                toolkit_versions=effective_toolkit_versions,
             )
         )
         response = self._file_helper.substitute_file_downloads(
