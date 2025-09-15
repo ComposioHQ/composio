@@ -8,8 +8,8 @@ from .sdk import Composio
 from .types import (
     ToolkitLatestVersion,
     ToolkitVersion,
-    ToolkitVersions,
     ToolkitVersionParam,
+    ToolkitVersions,
 )
 
 __all__ = (
