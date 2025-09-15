@@ -166,7 +166,7 @@ print(f"Connection established: {connected_account.id}")
 
 ````
 
-```typescript {10-14}
+```typescript {10-16}
 import { Composio } from '@composio/core';
 
 const composio = new Composio({apiKey: "YOUR_COMPOSIO_API_KEY"});
@@ -179,7 +179,9 @@ const userId = 'user_4567';
 const connRequest = await composio.connectedAccounts.initiate(
   userId,
   authConfigId,
-  callbackUrl: 'https://www.yourapp.com/callback'
+  {
+    callbackUrl: 'https://www.yourapp.com/callback',
+  }
 );
 console.log(`Redirect URL: ${connRequest.redirectUrl}`);
 
