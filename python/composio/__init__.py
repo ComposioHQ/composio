@@ -5,6 +5,12 @@ from .core.models.tools import (
     schema_modifier,
 )
 from .sdk import Composio
+from .types import (
+    ToolkitLatestVersion,
+    ToolkitVersion,
+    ToolkitVersions,
+    ToolkitVersionParam,
+)
 
 __all__ = (
     "Composio",
@@ -12,4 +18,8 @@ __all__ = (
     "before_execute",
     "schema_modifier",
     "__version__",
+    "ToolkitLatestVersion",
+    "ToolkitVersion",
+    "ToolkitVersions",
+    "ToolkitVersionParam",
 )
