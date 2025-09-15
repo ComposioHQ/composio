@@ -12,7 +12,7 @@ This repository contains the official Software Development Kits (SDKs) for Compo
 
 ```
 composio/
-├── py/         # Python SDK
+├── python/         # Python SDK
 └── ts/         # TypeScript SDK
 ```
 
