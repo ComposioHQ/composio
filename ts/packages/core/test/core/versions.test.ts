@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getToolkitVersions } from '../../src/utils/sdk';
+import { getToolkitVersionsFromEnv } from '../../src/utils/sdk';
 import { getToolkitVersion } from '../../src/utils/toolkitVersion';
 import { getEnvsWithPrefix } from '../../src/utils/env';
 import { ToolkitVersions } from '../../src/types/tool.types';
@@ -90,15 +90,15 @@ describe('Version Management', () => {
     });
   });
 
-  describe('getToolkitVersions', () => {
+  describe('getToolkitVersionsFromEnv', () => {
     describe('when user provides string version (global version)', () => {
       it('should return the string version as-is when user provides "latest"', () => {
-        const result = getToolkitVersions('latest');
+        const result = getToolkitVersionsFromEnv('latest');
         expect(result).toBe('latest');
       });
 
       it('should return the string version as-is when user provides specific version', () => {
-        const result = getToolkitVersions('20250902_00' as any);
+        const result = getToolkitVersionsFromEnv('20250902_00' as any);
         expect(result).toBe('20250902_00');
       });
 
@@ -106,7 +106,7 @@ describe('Version Management', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250901_01';
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
-        const result = getToolkitVersions('20250902_00' as any);
+        const result = getToolkitVersionsFromEnv('20250902_00' as any);
         expect(result).toBe('20250902_00');
       });
     });
@@ -119,7 +119,7 @@ describe('Version Management', () => {
           gmail: '20250901_01',
         };
 
-        const result = getToolkitVersions(userVersions) as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv(userVersions) as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250902_00',
@@ -137,7 +137,7 @@ describe('Version Management', () => {
           gmail: 'latest',
         };
 
-        const result = getToolkitVersions(userVersions) as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv(userVersions) as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250901_00', // from env
@@ -157,7 +157,7 @@ describe('Version Management', () => {
           gmail: '20250902_01', // new toolkit
         };
 
-        const result = getToolkitVersions(userVersions) as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv(userVersions) as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250902_00', // user version takes precedence
@@ -170,7 +170,7 @@ describe('Version Management', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250901_00';
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
-        const result = getToolkitVersions({}) as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv({}) as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250901_00', // normalized to lowercase
@@ -184,7 +184,7 @@ describe('Version Management', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250901_00';
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
-        const result = getToolkitVersions() as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv() as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250901_00',
@@ -193,19 +193,19 @@ describe('Version Management', () => {
       });
 
       it('should return "latest" when no environment variables or user versions exist', () => {
-        const result = getToolkitVersions();
+        const result = getToolkitVersionsFromEnv();
         expect(result).toBe('latest');
       });
 
       it('should return "latest" when empty object is provided and no env vars exist', () => {
-        const result = getToolkitVersions({});
+        const result = getToolkitVersionsFromEnv({});
         expect(result).toBe('latest');
       });
 
       it('should handle undefined input correctly', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250901_00';
 
-        const result = getToolkitVersions(undefined) as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv(undefined) as ToolkitVersions;
 
         expect(result).toEqual({
           github: '20250901_00',
@@ -219,7 +219,7 @@ describe('Version Management', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_GOOGLE_WORKSPACE = 'latest';
         process.env.COMPOSIO_TOOLKIT_VERSION_MS_TEAMS = '20250902_00';
 
-        const result = getToolkitVersions() as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv() as ToolkitVersions;
 
         expect(result).toEqual({
           github_enterprise: '20250901_00',
@@ -232,7 +232,7 @@ describe('Version Management', () => {
         process.env['COMPOSIO_TOOLKIT_VERSION_MY-TOOLKIT'] = '20250901_00';
         process.env['COMPOSIO_TOOLKIT_VERSION_ANOTHER_TOOLKIT'] = 'latest';
 
-        const result = getToolkitVersions() as ToolkitVersions;
+        const result = getToolkitVersionsFromEnv() as ToolkitVersions;
 
         expect(result).toEqual({
           'my-toolkit': '20250901_00',
@@ -343,7 +343,7 @@ describe('Version Management', () => {
   });
 
   describe('Integration tests', () => {
-    it('should work together: getToolkitVersions + getToolkitVersion', () => {
+    it('should work together: getToolkitVersionsFromEnv + getToolkitVersion', () => {
       // Set up environment
       process.env.COMPOSIO_TOOLKIT_VERSION_GITHUB = '20250901_00';
       process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
@@ -355,7 +355,7 @@ describe('Version Management', () => {
       };
 
       // Get toolkit versions configuration
-      const toolkitVersions = getToolkitVersions(userVersions) as ToolkitVersions;
+      const toolkitVersions = getToolkitVersionsFromEnv(userVersions) as ToolkitVersions;
 
       // Test individual toolkit version retrieval
       expect(getToolkitVersion('github', toolkitVersions)).toBe('20250901_00'); // from env
@@ -371,7 +371,7 @@ describe('Version Management', () => {
       process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
       // User provides global version
-      const toolkitVersions = getToolkitVersions('20250902_00' as any);
+      const toolkitVersions = getToolkitVersionsFromEnv('20250902_00' as any);
 
       // All toolkits should get the global version
       expect(getToolkitVersion('github', toolkitVersions)).toBe('20250902_00');
@@ -382,7 +382,7 @@ describe('Version Management', () => {
 
     it('should fall back to "latest" when no configuration is provided', () => {
       // No environment variables, no user input
-      const toolkitVersions = getToolkitVersions();
+      const toolkitVersions = getToolkitVersionsFromEnv();
 
       expect(toolkitVersions).toBe('latest');
       expect(getToolkitVersion('github', toolkitVersions)).toBe('latest');
@@ -402,7 +402,7 @@ describe('Version Management', () => {
         // slack not specified, should use env
       };
 
-      const toolkitVersions = getToolkitVersions(userVersions) as ToolkitVersions;
+      const toolkitVersions = getToolkitVersionsFromEnv(userVersions) as ToolkitVersions;
 
       expect(getToolkitVersion('github', toolkitVersions)).toBe('user_version'); // user wins
       expect(getToolkitVersion('slack', toolkitVersions)).toBe('env_slack_version'); // from env

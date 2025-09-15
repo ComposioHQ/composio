@@ -7,7 +7,7 @@ import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
-import { getSDKConfig, getToolkitVersions } from './utils/sdk';
+import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
 import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
@@ -173,7 +173,7 @@ export class Composio<
       ...config,
       baseURL: baseURLParsed,
       apiKey: apiKeyParsed,
-      toolkitVersions: getToolkitVersions(config?.toolkitVersions),
+      toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? true,
       autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
     };

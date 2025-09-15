@@ -69,7 +69,9 @@ export function getSDKConfig(baseUrl?: string | null, apiKey?: string | null) {
  * @param defaultVersions - Optional default versions configuration (string for global version or object mapping toolkit names to versions)
  * @returns Toolkit versions configuration - either a global version string, toolkit-specific version mapping, or 'latest'
  */
-export function getToolkitVersions(defaultVersions?: ToolkitVersionParam): ToolkitVersionParam {
+export function getToolkitVersionsFromEnv(
+  defaultVersions?: ToolkitVersionParam
+): ToolkitVersionParam {
   // if already set by user either a single version or 'latest' use that as is / override everything else
   if (defaultVersions && typeof defaultVersions === 'string') {
     return defaultVersions;

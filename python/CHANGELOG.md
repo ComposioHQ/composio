@@ -5,6 +5,19 @@ All notable changes to the Composio Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.11] - 2025-09-10
+
+### Added
+- **Composio Connect Link Support**: New link() method for creating external authentication links
+  - Added `link()` method to ConnectedAccounts class for generating user authentication links
+  - Support for callback URL redirection after authentication
+  - Enhanced user experience with external link-based authentication flow
+  - Includes comprehensive documentation and usage examples
+
+### Fixed
+- **Documentation**: Fixed typo in connected account creation function docstring
+  - Corrected "coneected" to "connected" in function documentation
+
 ## [0.8.10] - 2024-12-19
 
 ### Added
