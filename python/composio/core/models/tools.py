@@ -97,10 +97,12 @@ class Tools(Resource, t.Generic[TProvider]):
         try:
             return t.cast(Tool, self._custom_tools[slug])
         except KeyError:
-            return t.cast(Tool, self._client.tools.retrieve(
-                tool_slug=slug,
-                toolkit_versions=self._toolkit_versions
-            ))
+            return t.cast(
+                Tool,
+                self._client.tools.retrieve(
+                    tool_slug=slug, toolkit_versions=self._toolkit_versions
+                ),
+            )
 
     def get_raw_composio_tools(
         self,
@@ -126,7 +128,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 tools_list.extend(
                     self._client.tools.list(
                         tool_slugs=",".join(tools),
-                        toolkit_versions=self._toolkit_versions
+                        toolkit_versions=self._toolkit_versions,
                     ).items
                 )
 
@@ -359,7 +361,9 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id if user_id is not None else self._client.not_given,
                 text=text if text is not None else self._client.not_given,
                 version=version if version is not None else self._client.not_given,
-                toolkit_versions=toolkit_versions if toolkit_versions is not None else self._client.not_given,
+                toolkit_versions=toolkit_versions
+                if toolkit_versions is not None
+                else self._client.not_given,
             ).model_dump(
                 exclude={
                     "log_id",
@@ -405,17 +409,19 @@ class Tools(Resource, t.Generic[TProvider]):
         """
         # Use provided toolkit_versions or fall back to instance-level versions
         effective_toolkit_versions = toolkit_versions or self._toolkit_versions
-        
+
         tool = self._tool_schemas.get(slug)
         if tool is None and self._custom_tools.get(slug=slug) is not None:
             tool = self._custom_tools[slug].info
             self._tool_schemas[slug] = tool
 
         if tool is None:
-            tool = t.cast(Tool, self._client.tools.retrieve(
-                tool_slug=slug,
-                toolkit_versions=effective_toolkit_versions
-            ))
+            tool = t.cast(
+                Tool,
+                self._client.tools.retrieve(
+                    tool_slug=slug, toolkit_versions=effective_toolkit_versions
+                ),
+            )
             self._tool_schemas[slug] = tool
 
         if modifiers is not None:
