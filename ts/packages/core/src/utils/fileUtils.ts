@@ -121,7 +121,21 @@ const readFileContentFromURL = async (
   // Extract clean filename from URL, removing query parameters
   const url = new URL(path);
   const pathname = url.pathname;
-  const fileName = pathModule.basename(pathname);
+  let fileName = pathModule.basename(pathname);
+
+  // If no filename from URL, generate one with appropriate extension
+  if (!fileName || fileName === '/') {
+    // Try to get extension from mimeType
+    const extension = getExtensionFromMimeType(mimeType);
+    fileName = generateTimestampedFilename(extension);
+  } else {
+    // If filename has no extension, try to add one from mimeType
+    const hasExtension = fileName.includes('.');
+    if (!hasExtension) {
+      const extension = getExtensionFromMimeType(mimeType);
+      fileName = generateTimestampedFilename(extension);
+    }
+  }
 
   return {
     content: content.toString('base64'),
