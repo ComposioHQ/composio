@@ -351,7 +351,7 @@ class ConnectedAccounts:
             redirect_url=getattr(response.connection_data.val, "redirect_url", None),
             client=self._client,
         )
-    
+
     def link(
         self,
         user_id: str,
@@ -361,33 +361,33 @@ class ConnectedAccounts:
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
-        
+
         This method will return an external link which you can use for the user to connect their account.
 
         :param user_id: The external user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
         :param callback_url: The URL to redirect the user to post connecting their account.
         :return: Connection request object.
-        
+
         Example:
             # Create a connection request and redirect the user to the redirect url
             connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
             redirect_url = connection_request.redirect_url
             print(f"Visit: {redirect_url} to authenticate your account")
-            
+
             # Wait for the connection to be established
             connected_account = connection_request.wait_for_connection()
-            
+
         Example with callback URL:
             # Create a connection request with callback URL
             connection_request = composio.connected_accounts.link(
-                'user_123', 
+                'user_123',
                 'auth_config_123',
                 callback_url='https://your-app.com/callback'
             )
             redirect_url = connection_request.redirect_url
             print(f"Visit: {redirect_url} to authenticate your account")
-            
+
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
         """
@@ -396,14 +396,14 @@ class ConnectedAccounts:
             "auth_config_id": auth_config_id,
             "user_id": user_id,
         }
-        
+
         # Add callback_url only if provided
         if callback_url is not None:
             payload["callback_url"] = callback_url
-        
+
         # Call the link creation endpoint
         response = self._client.link.create(**payload)
-        
+
         return ConnectionRequest(
             id=response.connected_account_id,
             status="INITIATED",
