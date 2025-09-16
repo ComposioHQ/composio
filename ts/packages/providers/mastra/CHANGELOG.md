@@ -1,5 +1,13 @@
 # @composio/mastra
 
+## 0.1.53
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+- Updated dependencies [7077cee]
+  - @composio/core@0.1.52
+
 ## 0.1.52
 
 ### Patch Changes
