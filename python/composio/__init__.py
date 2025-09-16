@@ -4,13 +4,13 @@ from .core.models.tools import (
     before_execute,
     schema_modifier,
 )
-from .sdk import Composio
-from .types import (
+from .core.types import (
     ToolkitLatestVersion,
     ToolkitVersion,
     ToolkitVersionParam,
     ToolkitVersions,
 )
+from .sdk import Composio
 
 __all__ = (
     "Composio",

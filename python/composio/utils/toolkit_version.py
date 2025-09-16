@@ -5,7 +5,7 @@ Utilities for handling toolkit versions.
 import os
 import typing as t
 
-from composio.types import ToolkitVersion, ToolkitVersionParam, ToolkitVersions
+from composio.core.types import ToolkitVersion, ToolkitVersionParam, ToolkitVersions
 
 
 def get_toolkit_version(

@@ -1,0 +1,172 @@
+name: Test Python SDK
+
+on:
+  push:
+    branches: [main, next]
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.test.yml"
+      - "python/pyproject.toml"
+      - "python/requirements*.txt"
+  pull_request:
+    branches: [main, next]
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.test.yml"
+      - "python/pyproject.toml"
+      - "python/requirements*.txt"
+
+jobs:
+  test:
+    name: Test Python SDK
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            pip-${{ matrix.python-version }}-
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: |
+          cd python/
+          uv venv --python ${{ matrix.python-version }}
+          source .venv/bin/activate
+          uv pip install -e .
+          uv pip install pytest pytest-mock
+
+      - name: Run Import Tests
+        run: |
+          cd python/
+          source .venv/bin/activate
+          python -c "from composio import Composio; print('✓ Basic import successful')"
+
+      - name: Run Unit Tests
+        run: |
+          cd python/
+          source .venv/bin/activate
+          python -m pytest tests/ -v --tb=short
+
+      - name: Test Package Installation
+        run: |
+          cd python/
+          # Test that the package can be installed and imported in a fresh environment
+          uv venv test-env --python ${{ matrix.python-version }}
+          source test-env/bin/activate
+          uv pip install -e .
+          python -c "
+          from composio import Composio, ToolkitVersionParam
+          from composio.types import Modifiers
+          from composio.core.types import ToolkitVersion
+          print('✓ All critical imports successful')
+          "
+
+  test-circular-imports:
+    name: Test Circular Import Prevention
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: |
+          cd python/
+          uv venv --python 3.11
+          source .venv/bin/activate
+          uv pip install -e .
+
+      - name: Test Circular Import Prevention
+        run: |
+          cd python/
+          source .venv/bin/activate
+          python -c "
+          # Test various import combinations that previously caused circular imports
+          import sys
+          
+          # Test 1: Basic imports
+          from composio import Composio
+          print('✓ Basic Composio import')
+          
+          # Test 2: Import toolkit version types
+          from composio import ToolkitVersionParam
+          from composio.core.types import ToolkitVersion
+          print('✓ Toolkit version types import')
+          
+          # Test 3: Import from types module
+          from composio.types import Modifiers
+          print('✓ Types module import')
+          
+          # Test 4: Import core models
+          from composio.core.models.tools import Tools
+          print('✓ Core models import')
+          
+          # Test 5: Cross-module imports that caused the original circular import
+          from composio.core.models.tools import Modifiers as CoreModifiers
+          from composio.types import Modifiers as TypesModifiers
+          assert CoreModifiers is TypesModifiers
+          print('✓ Cross-module import consistency')
+          
+          print('✓ All circular import prevention tests passed!')
+          "
+
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: |
+          cd python/
+          uv venv --python 3.11
+          source .venv/bin/activate
+          uv pip install -e .
+          uv pip install ruff
+
+      - name: Run Ruff Linter
+        run: |
+          cd python/
+          source .venv/bin/activate
+          ruff check --config config/ruff.toml composio/ tests/
+
+      - name: Run Ruff Formatter Check
+        run: |
+          cd python/
+          source .venv/bin/activate
+          ruff format --check --config config/ruff.toml composio/ tests/
