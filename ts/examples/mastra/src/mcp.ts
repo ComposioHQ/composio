@@ -32,7 +32,6 @@ const mcpConfig = await composio.mcp.create(
   "gmail-mcp-" + Date.now(),
   [
     {
-      toolkit: "gmail",
       authConfigId: "<auth_config_id>", // Use your auth config ID
       allowedTools: [
         "GMAIL_FETCH_EMAILS"
@@ -47,6 +46,7 @@ console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 
 // Get server instance with connected accounts (using convenience method)
 const serverInstance = await mcpConfig.getServer({
+  userId: "<user_id>", // Replace it with the user id
   connectedAccountIds: {
     "gmail": "<connected_account_id>" // Replace it with the connected account id
   }
