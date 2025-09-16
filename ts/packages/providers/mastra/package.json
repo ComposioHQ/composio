@@ -35,12 +35,14 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
-    "@mastra/core": "^0.13.2"
+    "@mastra/core": "^0.16.2",
+    "@mastra/mcp": "^0.12.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "zod": "catalog:"
   }
 }

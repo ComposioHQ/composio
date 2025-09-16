@@ -15,6 +15,7 @@ import {
   removeNonRequiredProperties,
 } from '@composio/core';
 import { createTool } from '@mastra/core';
+import { type MastraMCPServerDefinition } from '@mastra/mcp';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -29,7 +30,8 @@ export interface MastraUrlMap {
 export class MastraProvider extends BaseAgenticProvider<
   MastraToolCollection,
   MastraTool,
-  MastraUrlMap
+  MastraUrlMap,
+  Record<string, MastraMCPServerDefinition>
 > {
   readonly name = 'mastra';
   private strict: boolean | null;
@@ -74,6 +76,15 @@ export class MastraProvider extends BaseAgenticProvider<
       acc[item.name] = { url: item.url };
       return acc;
     }, {});
+  }
+
+  override wrapMcpServers(urls: MastraUrlMap) {
+    return Object.fromEntries(
+      Object.entries(urls).map(([key, value]) => [
+        key,
+        { url: new URL(value.url) }
+      ])
+    ) satisfies Record<string, MastraMCPServerDefinition>;
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {

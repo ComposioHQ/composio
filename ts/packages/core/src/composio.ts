@@ -5,7 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP';
+import { ExperimentalMCP, MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -14,13 +14,27 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { McpServerGetResponse } from './types/mcp.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
+import { MCPConfig } from './models/MCPConfig';
+
+/**
+ * The experimental configuration options for the Composio SDK.
+ */
+type ExperimentalConfig = {
+  /**
+   * Enable experimental MCP (Model Control Protocol) features.
+   * More precisely:
+   * - Exposes `composio.mcpConfig.*` methods to manage MCP configurations.
+   * - Exposes `composio.mcp.experimental.*` methods to interact with MCP servers.
+   * @default undefined (disabled)
+   */
+  mcp?: boolean;
+};
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, /* TMcpResponse */ unknown, /* TMcpExperimentalResponse */ unknown> = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -83,26 +97,34 @@ export type ComposioConfig<
    * 'latest'
    */
   toolkitVersions?: ToolkitVersionParam;
+  /**
+   * Experimental configuration options for the Composio SDK.
+   * These options may enable features that are not yet stable and may change in future releases.
+   * 
+   * @example
+   * ```typescript
+   * const composio = new Composio({
+   *   experimental: {
+   *     mcp: true,
+   *   },
+   * });
+   * ```
+   */
+  experimental?: ExperimentalConfig;
 };
-
-/**
- * Extract the MCP response type from a provider
- */
-type ExtractMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, infer TMcp> ? TMcp : McpServerGetResponse;
 
 /**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
 > {
   /**
    * The Composio API client.
    * @type {ComposioClient}
    */
-  private client: ComposioClient;
+  protected client: ComposioClient;
 
   /**
    * The configuration for the Composio SDK.
@@ -123,7 +145,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: MCP<ExtractMcpResponseType<TProvider>>;
+  mcp: MCP<TProvider>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -198,7 +220,6 @@ export class Composio<
 
     this.tools = new Tools(this.client, this.provider, this.config);
     this.mcp = new MCP(this.client, this.provider);
-
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -292,4 +313,29 @@ export class Composio<
       defaultHeaders: sessionHeaders,
     });
   }
+}
+
+class ComposioWithExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider> extends Composio<TProvider> {
+  mcp: ExperimentalMCP<TProvider>;
+  mcpConfig: MCPConfig<TProvider>;
+  
+  constructor(config?: ComposioConfig<TProvider>) {
+    super(config);
+    this.mcp = new ExperimentalMCP(this.client, this.provider);
+    this.mcpConfig = new MCPConfig(this.mcp);
+  }
+}
+
+/**
+ * Creates a new instance of the Composio SDK.
+ * This factory function enables type-safe access to experimental Composio features.
+ */
+export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config: { experimental: { mcp: true } } & ComposioConfig<TProvider>): ComposioWithExperimentalMCP<TProvider>;
+export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config?: ComposioConfig<TProvider>): Composio<TProvider>;
+export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config?: ComposioConfig<TProvider>) {
+  if (config?.experimental?.mcp === true) {
+    return new ComposioWithExperimentalMCP(config)
+  }
+
+  return new Composio(config)
 }
