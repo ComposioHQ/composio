@@ -15,6 +15,7 @@ import {
   removeNonRequiredProperties,
 } from '@composio/core';
 import { createTool } from '@mastra/core';
+import { type MastraMCPServerDefinition } from '@mastra/mcp';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -29,7 +30,8 @@ export interface MastraUrlMap {
 export class MastraProvider extends BaseAgenticProvider<
   MastraToolCollection,
   MastraTool,
-  MastraUrlMap
+  MastraUrlMap,
+  Record<string, MastraMCPServerDefinition>
 > {
   readonly name = 'mastra';
   private strict: boolean | null;
@@ -76,6 +78,15 @@ export class MastraProvider extends BaseAgenticProvider<
     }, {});
   }
 
+  override wrapMcpServers(urls: MastraUrlMap) {
+    return Object.fromEntries(
+      Object.entries(urls).map(([key, value]) => [
+        key,
+        { url: new URL(value.url) }
+      ])
+    ) satisfies Record<string, MastraMCPServerDefinition>;
+  }
+
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): MastraTool {
     const inputParams = tool.inputParameters;
 
@@ -93,11 +104,14 @@ export class MastraProvider extends BaseAgenticProvider<
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
+      // @ts-ignore: Note, something in the new `@mastra/*` types messes up the types here
       inputSchema: parameters ? jsonSchemaToZodSchema(parameters) : undefined,
+      // @ts-ignore: See above.
       outputSchema: tool.outputParameters
         ? jsonSchemaToZodSchema(tool.outputParameters)
         : undefined,
       execute: async ({ context }) => {
+        // @ts-ignore: See above.
         const result = await executeTool(tool.slug, context);
         return result;
       },

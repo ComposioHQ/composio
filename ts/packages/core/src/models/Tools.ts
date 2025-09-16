@@ -53,7 +53,7 @@ import { AuthSchemeTypes } from '../types/authConfigs.types';
 export class Tools<
   TToolCollection,
   TTool,
-  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown, unknown>,
 > {
   private client: ComposioClient;
   private readonly customTools: CustomTools;

@@ -9,7 +9,7 @@ import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
  * Base class for all providers.
  * This class is not meant to be used directly, but rather to be extended by different provider implementations.
  */
-abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
+abstract class BaseProvider<TMcpResponse = McpServerGetResponse, TMcpExperimentalResponse = McpServerGetResponse> {
   /**
    * @public
    * The name of the provider.
@@ -60,16 +60,22 @@ abstract class BaseProvider<TMcpResponse = McpServerGetResponse> {
 
   /**
    * @public
+   * @deprecated: Will be removed in a future version, once the `experimental.mcp` flag is stabilized. Use `wrapMcpServers` instead.
    * Optional method to transform MCP URL response into provider-specific format.
    * Providers can override this method to define custom transformation logic
    * for MCP server responses.
    *
    * @param data - The MCP URL response data
-   * @param serverName - Name of the MCP server
 
    * @returns Transformed response in provider-specific format, or undefined to use default transformation
    */
   wrapMcpServerResponse?(data: McpUrlResponse): TMcpResponse;
+
+  /**
+   * This method replaces `wrapMcpServerResponse` when Composio's config contains has the
+   * `experimental.mcp` flag enabled.
+   */
+  abstract wrapMcpServers(data: TMcpResponse): TMcpExperimentalResponse;
 }
 
 /**
@@ -81,7 +87,8 @@ export abstract class BaseNonAgenticProvider<
   TToolCollection,
   TTool,
   TMcpResponse = McpServerGetResponse,
-> extends BaseProvider<TMcpResponse> {
+  TMcpExperimentalResponse = McpServerGetResponse,
+> extends BaseProvider<TMcpResponse, TMcpExperimentalResponse> {
   override readonly _isAgentic = false;
 
   /**
@@ -107,7 +114,8 @@ export abstract class BaseAgenticProvider<
   TToolCollection,
   TTool,
   TMcpResponse = McpServerGetResponse,
-> extends BaseProvider<TMcpResponse> {
+  TMcpExperimentalResponse = McpServerGetResponse,
+> extends BaseProvider<TMcpResponse, TMcpExperimentalResponse> {
   override readonly _isAgentic = true;
 
   /**
@@ -131,6 +139,6 @@ export abstract class BaseAgenticProvider<
  * Base type for all providers.
  * This type is used to infer the type of the provider from the provider implementation.
  */
-export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse> =
-  | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse>
-  | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse>;
+export type BaseComposioProvider<TToolCollection, TTool, TMcpResponse = McpServerGetResponse, TMcpExperimentalResponse = McpServerGetResponse> =
+  | BaseNonAgenticProvider<TToolCollection, TTool, TMcpResponse, TMcpExperimentalResponse>
+  | BaseAgenticProvider<TToolCollection, TTool, TMcpResponse, TMcpExperimentalResponse>;

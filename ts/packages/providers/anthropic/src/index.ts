@@ -17,7 +17,34 @@ import {
   McpUrlResponse,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
+import { type MastraMCPServerDefinition } from '@mastra/mcp';
 import { AnthropicTool, InputSchema } from './types';
+
+export function wrapTools(servers: AnthropicMcpServerGetResponse, tools: Record<string, ComposioTool>): Array<AnthropicTool> {
+  const prefixes = servers.map(({ name }) => name);
+
+  function removePrefix(str: string): string {
+    for (const prefix of prefixes) {
+      if (str.startsWith(prefix)) {
+        return str.slice(prefix.length + 1);
+      }
+    }
+    return str;
+  }
+
+  return Object.entries(tools).map(([key, tool]) => {
+    return {
+      name: removePrefix(key),
+      description: tool.description,
+      input_schema: {
+        // @ts-ignore: TODO
+        ...tool.inputSchema!,
+        type: 'object',
+      },
+      type: 'custom',
+    }
+  })
+}
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -54,7 +81,8 @@ export type AnthropicContentBlock = {
 export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicToolCollection,
   AnthropicTool,
-  AnthropicMcpServerGetResponse
+  AnthropicMcpServerGetResponse,
+  Record<string, MastraMCPServerDefinition>
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
@@ -128,6 +156,20 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       }) as InputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
+  }
+
+  /**
+   * Note(jkomyno): right now, there's a strict dependency between the return type of this method
+   * and the expected MCP client that will be used to retrieve the tools from it (`MCPClient` from `@mastra/mcp`).
+   * Do we want to keep this for Anthropic?
+   */
+  override wrapMcpServers(servers: AnthropicMcpServerGetResponse) {
+    return Object.fromEntries(
+      servers.map(({ name, url }) => [
+        name,
+        { url: new URL(url) }
+      ])
+    ) satisfies Record<string, MastraMCPServerDefinition>;
   }
 
   /**
