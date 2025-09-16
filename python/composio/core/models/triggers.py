@@ -736,7 +736,8 @@ class Triggers(Resource):
     def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
         toolkit = self.get_type(slug=trigger).toolkit.slug
         connected_accounts = self._client.connected_accounts.list(
-            toolkit_slugs=[toolkit]
+            toolkit_slugs=[toolkit],
+            user_ids=[user_id],
         )
         if len(connected_accounts.items) == 0:
             raise exceptions.NoItemsFound(

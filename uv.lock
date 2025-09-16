@@ -468,7 +468,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.8.10"
+version = "0.8.11"
 source = { virtual = "python" }
 dependencies = [
     { name = "composio-client" },

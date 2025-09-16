@@ -37,6 +37,8 @@ describe('FileToolModifier', () => {
         name: 'Test Tool',
         description: 'A test tool',
         tags: ['test'],
+        version: '20250902_00',
+        availableVersions: ['20250902_00'],
       };
 
       const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
@@ -49,6 +51,8 @@ describe('FileToolModifier', () => {
         name: 'Test Tool',
         description: 'A test tool',
         tags: ['test'],
+        version: '20250902_00',
+        availableVersions: ['20250902_00'],
         inputParameters: {
           type: 'object',
           properties: {
@@ -87,6 +91,8 @@ describe('FileToolModifier', () => {
           },
         },
       },
+      version: '20250902_00',
+      availableVersions: ['20250902_00'],
     };
 
     it('should upload file for file_uploadable parameters', async () => {
@@ -180,6 +186,8 @@ describe('FileToolModifier', () => {
       name: 'Test Tool',
       description: 'A test tool',
       tags: ['test'],
+      availableVersions: ['20250902_00'],
+      version: '20250902_00',
     };
 
     it('should download file from S3 URL', async () => {
@@ -314,6 +322,8 @@ describe('Tools with autoUploadDownloadFiles', () => {
       },
       additionalProperties: false,
     },
+    version: '20250902_00',
+    availableVersions: ['20250902_00'],
   };
 
   const mockRawToolWithFileUpload = {
@@ -352,6 +362,8 @@ describe('Tools with autoUploadDownloadFiles', () => {
       },
       additionalProperties: false,
     },
+    version: '20250902_00',
+    availableVersions: ['20250902_00'],
   };
 
   describe('when autoUploadDownloadFiles is false', () => {
@@ -419,7 +431,7 @@ describe('Tools with autoUploadDownloadFiles', () => {
         custom_connection_data: undefined,
         text: undefined,
         user_id: 'test-user',
-        version: undefined,
+        version: 'latest',
       });
     });
 

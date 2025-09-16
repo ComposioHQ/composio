@@ -28,6 +28,7 @@ const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
+
 // ❌ This could expose other users' data
 const result = await composio.tools.execute('GITHUB_GET_REPO', {
   userId: 'default',
@@ -46,6 +47,11 @@ In production applications with multiple users, always use unique identifiers fo
 const userId = user.id; // e.g., "550e8400-e29b-41d4-a716-446655440000"
 
 const tools = await composio.tools.get(userId, {
+  toolkits: ['github'],
+});
+
+// Get tools for a specific user
+const userTools = await composio.tools.get(userId, {
   toolkits: ['github'],
 });
 
