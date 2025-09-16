@@ -90,11 +90,11 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
       return hostedMcpTool({
         serverLabel: removePrefix(name),
         serverUrl: url.toString(),
-      })
+      });
     }
 
     if (Array.isArray(servers)) {
-      return servers.map(server => wrapMcpServer(server))
+      return servers.map(server => wrapMcpServer(server));
     }
 
     return [wrapMcpServer(servers)];

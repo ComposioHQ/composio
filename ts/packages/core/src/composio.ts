@@ -16,7 +16,7 @@ import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
-import { MCPConfig } from './models/MCPConfig'
+import { MCPConfig } from './models/MCPConfig';
 
 /**
  * The experimental configuration options for the Composio SDK.
@@ -33,7 +33,12 @@ type ExperimentalConfig = {
 };
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown, /* TMcpResponse */ unknown, /* TMcpExperimentalResponse */ unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<
+    unknown,
+    unknown,
+    /* TMcpResponse */ unknown,
+    /* TMcpExperimentalResponse */ unknown
+  > = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -91,7 +96,7 @@ export type ComposioConfig<
   /**
    * Experimental configuration options for the Composio SDK.
    * These options may enable features that are not yet stable and may change in future releases.
-   * 
+   *
    * @example
    * ```typescript
    * const composio = new Composio({
@@ -298,10 +303,12 @@ export class Composio<
   }
 }
 
-class ComposioWithExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider> extends Composio<TProvider> {
+class ComposioWithExperimentalMCP<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+> extends Composio<TProvider> {
   mcp: ExperimentalMCP<TProvider>;
   mcpConfig: MCPConfig<TProvider>;
-  
+
   constructor(config?: ComposioConfig<TProvider>) {
     super(config);
     this.mcp = new ExperimentalMCP(this.client, this.provider);
@@ -313,12 +320,20 @@ class ComposioWithExperimentalMCP<TProvider extends BaseComposioProvider<unknown
  * Creates a new instance of the Composio SDK.
  * This factory function enables type-safe access to experimental Composio features.
  */
-export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config: { experimental: { mcp: true } } & ComposioConfig<TProvider>): ComposioWithExperimentalMCP<TProvider>;
-export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config?: ComposioConfig<TProvider>): Composio<TProvider>;
-export function create<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider>(config?: ComposioConfig<TProvider>) {
+export function create<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+>(
+  config: { experimental: { mcp: true } } & ComposioConfig<TProvider>
+): ComposioWithExperimentalMCP<TProvider>;
+export function create<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+>(config?: ComposioConfig<TProvider>): Composio<TProvider>;
+export function create<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+>(config?: ComposioConfig<TProvider>) {
   if (config?.experimental?.mcp === true) {
-    return new ComposioWithExperimentalMCP(config)
+    return new ComposioWithExperimentalMCP(config);
   }
 
-  return new Composio(config)
+  return new Composio(config);
 }

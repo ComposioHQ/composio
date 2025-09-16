@@ -7,9 +7,7 @@ import type { MCP } from './MCP';
  * Handles CRUD operations related to MCP configurations.
  */
 export class MCPConfig<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
-  constructor(private mcp: MCP<TProvider>) {
-    
-  }
+  constructor(private mcp: MCP<TProvider>) {}
 
   /**
    * Create a new MCP configuration.
