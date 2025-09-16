@@ -42,6 +42,7 @@ const composio = new Composio({
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
   provider: new OpenAIProvider(), // Optional: Custom provider
+  toolkitVersions: { github: '20250909_00', slack: 'latest' }, // Optional: Toolkit versions
 });
 ```
 

@@ -78,6 +78,9 @@ const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
 
+// Get a specific tool
+const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS');
+
 // Execute a tool
 const result = await composio.tools.execute('GITHUB_GET_REPO', {
   userId: 'default',
@@ -109,6 +112,7 @@ const openai = new OpenAI({
 const tools = await composio.tools.get('default', {
   toolkits: ['github'],
 });
+
 
 // Create a chat completion with the tools
 const completion = await openai.chat.completions.create({
@@ -294,6 +298,7 @@ For detailed information about both automated and manual release processes, plea
 - `COMPOSIO_BASE_URL`: Custom API base URL (optional)
 - `COMPOSIO_LOG_LEVEL`: Logging level (silent, error, warn, info, debug)
 - `COMPOSIO_DISABLE_TELEMETRY`: Disable telemetry when set to "true"
+- `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>`: Specific version for a toolkit (e.g., `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`)
 - `DEVELOPMENT`: Development mode flag
 - `CI`: CI environment flag
 

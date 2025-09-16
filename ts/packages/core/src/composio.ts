@@ -7,7 +7,7 @@ import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
-import { getSDKConfig } from './utils/sdk';
+import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
 import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
@@ -16,7 +16,8 @@ import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { McpServerGetResponse } from './types/mcp.types';
 import { Files } from './models/Files';
-import { getDefaultHeaders, getSessionHeaders } from './utils/session';
+import { getDefaultHeaders } from './utils/session';
+import { ToolkitVersionParam } from './types/tool.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -73,6 +74,15 @@ export type ComposioConfig<
    * @default false
    */
   disableVersionCheck?: boolean;
+  /**
+   * The versions of the toolkits to fetch.
+   * Defaults to latest is nothing is provided.
+   * Alternatively you can specify individual toolkit versions in the env `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`
+   * @example
+   * { 'github': 'latest', 'slack': '20250902_00' }
+   * 'latest'
+   */
+  toolkitVersions?: ToolkitVersionParam;
 };
 
 /**
@@ -161,7 +171,11 @@ export class Composio<
      */
     this.config = {
       ...config,
+      baseURL: baseURLParsed,
+      apiKey: apiKeyParsed,
+      toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? true,
+      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
     };
 
     /**
@@ -182,9 +196,7 @@ export class Composio<
       logLevel: COMPOSIO_LOG_LEVEL,
     });
 
-    this.tools = new Tools(this.client, this.provider, {
-      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
-    });
+    this.tools = new Tools(this.client, this.provider, this.config);
     this.mcp = new MCP(this.client, this.provider);
 
     this.toolkits = new Toolkits(this.client);
@@ -229,6 +241,14 @@ export class Composio<
       throw new Error('Composio client is not initialized. Please initialize it first.');
     }
     return this.client;
+  }
+
+  /**
+   * Get the configuration SDK is initialized with
+   * @returns {ComposioConfig<TProvider>} The configuration SDK is initialized with
+   */
+  getConfig(): ComposioConfig<TProvider> {
+    return this.config;
   }
 
   /**
