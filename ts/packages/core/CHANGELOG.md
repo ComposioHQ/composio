@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.52
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+
 ## 0.1.51
 
 ### Patch Changes
