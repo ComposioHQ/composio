@@ -98,7 +98,7 @@ const readFileContent = async (
   try {
     const content = require('fs').readFileSync(path);
     return {
-      fileName: generateTimestampedFilename(path.split('.').pop() || 'txt'),
+      fileName: pathModule.basename(path),
       content: content.toString('base64'),
       mimeType: 'application/octet-stream',
     };
@@ -121,21 +121,7 @@ const readFileContentFromURL = async (
   // Extract clean filename from URL, removing query parameters
   const url = new URL(path);
   const pathname = url.pathname;
-  let fileName = pathModule.basename(pathname);
-
-  // If no filename from URL, generate one with appropriate extension
-  if (!fileName || fileName === '/') {
-    // Try to get extension from mimeType
-    const extension = getExtensionFromMimeType(mimeType);
-    fileName = generateTimestampedFilename(extension);
-  } else {
-    // If filename has no extension, try to add one from mimeType
-    const hasExtension = fileName.includes('.');
-    if (!hasExtension) {
-      const extension = getExtensionFromMimeType(mimeType);
-      fileName = generateTimestampedFilename(extension);
-    }
-  }
+  const fileName = pathModule.basename(pathname);
 
   return {
     content: content.toString('base64'),
