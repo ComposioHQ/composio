@@ -75,7 +75,7 @@ cat > "$TOOLSET_PATH/tsconfig.json" << EOL
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "resolveJsonModule": true
   },

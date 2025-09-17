@@ -60,7 +60,7 @@ cat > "$EXAMPLE_PATH/tsconfig.json" << EOL
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "resolveJsonModule": true
   },

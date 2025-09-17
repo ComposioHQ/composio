@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 import type { JsonSchemaObject } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
@@ -11,11 +11,11 @@ export const parseString = (jsonSchema: JsonSchemaObject & { type: 'string' }) =
       case 'email':
         return zs.email(errorMsg);
       case 'ip':
-        return zs.ip(errorMsg);
+        return zs.ipv4(errorMsg);
       case 'ipv4':
-        return zs.ip({ version: 'v4', message: errorMsg });
+        return zs.ipv4({ message: errorMsg });
       case 'ipv6':
-        return zs.ip({ version: 'v6', message: errorMsg });
+        return zs.ipv6({ message: errorMsg });
       case 'uri':
         return zs.url(errorMsg);
       case 'uuid':

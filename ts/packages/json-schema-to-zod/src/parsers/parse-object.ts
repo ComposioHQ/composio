@@ -61,16 +61,16 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
 
         if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
           // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = propZodSchema.optional().default(null);
+          properties[key] = z.optional(propZodSchema).default(null);
         } else {
           // Make the field nullable with the null default
-          properties[key] = propZodSchema.nullable().optional().default(null);
+          properties[key] = z.nullable(z.optional(propZodSchema)).default(null);
         }
       } else {
-        properties[key] = propZodSchema.optional().default(propJsonSchema.default);
+        properties[key] = z.optional(propZodSchema).default(propJsonSchema.default);
       }
     } else {
-      properties[key] = required ? propZodSchema : propZodSchema.optional();
+      properties[key] = required ? propZodSchema : z.optional(propZodSchema);
     }
   }
 
@@ -188,7 +188,11 @@ export function parseObject(
         output = propertiesSchema.passthrough();
       } else {
         // Check if propertiesSchema is an empty object
-        const isEmptyObject = Object.keys(propertiesSchema._def.shape()).length === 0;
+        const shape =
+          '_zod' in propertiesSchema
+            ? propertiesSchema._zod.def.shape
+            : propertiesSchema._def.shape();
+        const isEmptyObject = Object.keys(shape).length === 0;
         if (isEmptyObject) {
           output = propertiesSchema.passthrough();
         } else {

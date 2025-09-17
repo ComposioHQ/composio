@@ -52,7 +52,7 @@
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "uuid": "^11.1.0",
-    "zod": "^3.24.2",
+    "zod": "^4.1.8",
     "zod-to-json-schema": "^3.24.5"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"

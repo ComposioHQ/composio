@@ -34,10 +34,12 @@
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4",
-    "zod-to-json-schema": "^3.24.5"
+    "zod": "^4.1.8"
   },
   "dependencies": {
-    "@types/json-schema": "^7.0.15",
-    "zod": "^3.24.2"
+    "@types/json-schema": "^7.0.15"
+  },
+  "peerDependencies": {
+    "zod": "^3.25.0 || ^4.0.0"
   }
 }

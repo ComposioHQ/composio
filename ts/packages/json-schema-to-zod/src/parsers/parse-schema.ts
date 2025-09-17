@@ -1,3 +1,4 @@
+import { $ZodType } from 'zod/v4/core';
 import * as z from 'zod';
 
 import { parseAllOf } from './parse-all-of';
@@ -19,7 +20,7 @@ import { parseString } from './parse-string';
 import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
-const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: $ZodType): $ZodType => {
   let description = '';
 
   if (jsonSchema.description) {
@@ -47,17 +48,14 @@ const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.
   }
 
   if (description) {
+    // @ts-ignore
     zodSchema = zodSchema.describe(description);
   }
 
   return zodSchema;
 };
 
-const addDefaults = (
-  jsonSchema: JsonSchemaObject,
-  zodSchema: z.ZodTypeAny,
-  refs?: Refs
-): z.ZodTypeAny => {
+const addDefaults = (jsonSchema: JsonSchemaObject, zodSchema: $ZodType, refs?: Refs): $ZodType => {
   if (jsonSchema.default !== undefined) {
     // Don't apply null defaults to non-nullable types within anyOf/oneOf contexts
     if (jsonSchema.default === null) {
@@ -70,15 +68,15 @@ const addDefaults = (
       }
     }
 
-    zodSchema = zodSchema.default(jsonSchema.default);
+    zodSchema = z.prefault(zodSchema, jsonSchema.default);
   }
 
   return zodSchema;
 };
 
-const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: $ZodType): $ZodType => {
   if (jsonSchema.readOnly) {
-    zodSchema = zodSchema.readonly();
+    zodSchema = z.readonly(zodSchema);
   }
 
   return zodSchema;
@@ -124,13 +122,13 @@ export const parseSchema = (
   jsonSchema: JsonSchema,
   refs: Refs = { seen: new Map(), path: [] },
   blockMeta?: boolean
-): z.ZodType => {
+): $ZodType => {
   if (typeof jsonSchema !== 'object') return jsonSchema ? z.any() : z.never();
 
   if (refs.parserOverride) {
     const custom = refs.parserOverride(jsonSchema, refs);
 
-    if (custom instanceof z.ZodType) {
+    if (custom instanceof $ZodType) {
       return custom;
     }
   }

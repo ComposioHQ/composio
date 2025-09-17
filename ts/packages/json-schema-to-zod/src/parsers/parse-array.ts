@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import { $ZodType } from 'zod/v4/core';
+import * as z from 'zod';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
@@ -62,7 +63,7 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
     return z.tuple(
       jsonSchema.items.map((v, i) =>
         parseSchema(v, { ...refs, path: [...refs.path, 'items', i] })
-      ) as [z.ZodTypeAny]
+      ) as [$ZodType]
     );
   }
 

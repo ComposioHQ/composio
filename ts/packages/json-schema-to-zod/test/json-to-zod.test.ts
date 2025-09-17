@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
+import * as z from 'zod/v4/core';
 import { jsonSchemaToZod } from '../src/json-schema-to-zod';
 import type { JsonSchema } from '../src/types';
+import { $ZodType } from 'zod/v4/core';
 
 describe('jsonSchemaToZod', () => {
   describe('Basic Types', () => {
@@ -11,9 +11,9 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema).toBeInstanceOf(z.ZodString);
-      expect(zodSchema.parse('test')).toBe('test');
-      expect(() => zodSchema.parse(123)).toThrow();
+      expect(zodSchema).toBeInstanceOf(z.$ZodString);
+      expect(z.parse(zodSchema, 'test')).toBe('test');
+      expect(() => z.parse(zodSchema, 123)).toThrow();
     });
 
     it('should convert number schema', () => {
@@ -21,9 +21,9 @@ describe('jsonSchemaToZod', () => {
         type: 'number',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema).toBeInstanceOf(z.ZodNumber);
-      expect(zodSchema.parse(123)).toBe(123);
-      expect(() => zodSchema.parse('123')).toThrow();
+      expect(zodSchema).toBeInstanceOf(z.$ZodNumber);
+      expect(z.parse(zodSchema, 123)).toBe(123);
+      expect(() => z.parse(zodSchema, '123')).toThrow();
     });
 
     it('should convert integer schema', () => {
@@ -31,8 +31,8 @@ describe('jsonSchemaToZod', () => {
         type: 'integer',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(123)).toBe(123);
-      expect(() => zodSchema.parse(123.45)).toThrow();
+      expect(z.parse(zodSchema, 123)).toBe(123);
+      expect(() => z.parse(zodSchema, 123.45)).toThrow();
     });
 
     it('should convert boolean schema', () => {
@@ -40,9 +40,9 @@ describe('jsonSchemaToZod', () => {
         type: 'boolean',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema).toBeInstanceOf(z.ZodBoolean);
-      expect(zodSchema.parse(true)).toBe(true);
-      expect(() => zodSchema.parse('true')).toThrow();
+      expect(zodSchema).toBeInstanceOf(z.$ZodBoolean);
+      expect(z.parse(zodSchema, true)).toBe(true);
+      expect(() => z.parse(zodSchema, 'true')).toThrow();
     });
 
     it('should convert null schema', () => {
@@ -50,9 +50,9 @@ describe('jsonSchemaToZod', () => {
         type: 'null',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema).toBeInstanceOf(z.ZodNull);
-      expect(zodSchema.parse(null)).toBe(null);
-      expect(() => zodSchema.parse(undefined)).toThrow();
+      expect(zodSchema).toBeInstanceOf(z.$ZodNull);
+      expect(z.parse(zodSchema, null)).toBe(null);
+      expect(() => z.parse(zodSchema, undefined)).toThrow();
     });
   });
 
@@ -63,8 +63,8 @@ describe('jsonSchemaToZod', () => {
         format: 'email',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('test@example.com')).toBe('test@example.com');
-      expect(() => zodSchema.parse('invalid-email')).toThrow();
+      expect(z.parse(zodSchema, 'test@example.com')).toBe('test@example.com');
+      expect(() => z.parse(zodSchema, 'invalid-email')).toThrow();
     });
 
     it('should validate date-time format', () => {
@@ -73,8 +73,8 @@ describe('jsonSchemaToZod', () => {
         format: 'date-time',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('2024-03-20T12:00:00Z')).toBe('2024-03-20T12:00:00Z');
-      expect(() => zodSchema.parse('invalid-date')).toThrow();
+      expect(z.parse(zodSchema, '2024-03-20T12:00:00Z')).toBe('2024-03-20T12:00:00Z');
+      expect(() => z.parse(zodSchema, 'invalid-date')).toThrow();
     });
 
     it('should validate uuid format', () => {
@@ -83,10 +83,10 @@ describe('jsonSchemaToZod', () => {
         format: 'uuid',
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('123e4567-e89b-12d3-a456-426614174000')).toBe(
+      expect(z.parse(zodSchema, '123e4567-e89b-12d3-a456-426614174000')).toBe(
         '123e4567-e89b-12d3-a456-426614174000'
       );
-      expect(() => zodSchema.parse('invalid-uuid')).toThrow();
+      expect(() => z.parse(zodSchema, 'invalid-uuid')).toThrow();
     });
   });
 
@@ -98,9 +98,9 @@ describe('jsonSchemaToZod', () => {
         maximum: 100,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(50)).toBe(50);
-      expect(() => zodSchema.parse(-1)).toThrow();
-      expect(() => zodSchema.parse(101)).toThrow();
+      expect(z.parse(zodSchema, 50)).toBe(50);
+      expect(() => z.parse(zodSchema, -1)).toThrow();
+      expect(() => z.parse(zodSchema, 101)).toThrow();
     });
 
     it('should validate exclusive minimum and maximum', () => {
@@ -110,9 +110,9 @@ describe('jsonSchemaToZod', () => {
         exclusiveMaximum: 100,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(50)).toBe(50);
-      expect(() => zodSchema.parse(0)).toThrow();
-      expect(() => zodSchema.parse(100)).toThrow();
+      expect(z.parse(zodSchema, 50)).toBe(50);
+      expect(() => z.parse(zodSchema, 0)).toThrow();
+      expect(() => z.parse(zodSchema, 100)).toThrow();
     });
 
     it('should validate multipleOf', () => {
@@ -121,8 +121,8 @@ describe('jsonSchemaToZod', () => {
         multipleOf: 5,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(15)).toBe(15);
-      expect(() => zodSchema.parse(17)).toThrow();
+      expect(z.parse(zodSchema, 15)).toBe(15);
+      expect(() => z.parse(zodSchema, 17)).toThrow();
     });
 
     it('should handle generic min and max properties for numbers', () => {
@@ -132,9 +132,9 @@ describe('jsonSchemaToZod', () => {
         max: 100,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(50)).toBe(50);
-      expect(() => zodSchema.parse(-1)).toThrow();
-      expect(() => zodSchema.parse(101)).toThrow();
+      expect(z.parse(zodSchema, 50)).toBe(50);
+      expect(() => z.parse(zodSchema, -1)).toThrow();
+      expect(() => z.parse(zodSchema, 101)).toThrow();
     });
 
     it('should prioritize minimum/maximum over min/max for numbers', () => {
@@ -146,11 +146,11 @@ describe('jsonSchemaToZod', () => {
         max: 100,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(50)).toBe(50);
-      expect(zodSchema.parse(10)).toBe(10);
-      expect(zodSchema.parse(90)).toBe(90);
-      expect(() => zodSchema.parse(5)).toThrow(); // Uses minimum (10), not min (0)
-      expect(() => zodSchema.parse(95)).toThrow(); // Uses maximum (90), not max (100)
+      expect(z.parse(zodSchema, 50)).toBe(50);
+      expect(z.parse(zodSchema, 10)).toBe(10);
+      expect(z.parse(zodSchema, 90)).toBe(90);
+      expect(() => z.parse(zodSchema, 5)).toThrow(); // Uses minimum (10), not min (0)
+      expect(() => z.parse(zodSchema, 95)).toThrow(); // Uses maximum (90), not max (100)
     });
   });
 
@@ -162,9 +162,9 @@ describe('jsonSchemaToZod', () => {
         max: 10,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('hello')).toBe('hello');
-      expect(() => zodSchema.parse('hi')).toThrow();
-      expect(() => zodSchema.parse('this is too long')).toThrow();
+      expect(z.parse(zodSchema, 'hello')).toBe('hello');
+      expect(() => z.parse(zodSchema, 'hi')).toThrow();
+      expect(() => z.parse(zodSchema, 'this is too long')).toThrow();
     });
 
     it('should prioritize minLength/maxLength over min/max for strings', () => {
@@ -176,10 +176,10 @@ describe('jsonSchemaToZod', () => {
         max: 10,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('hello')).toBe('hello');
-      expect(zodSchema.parse('testing')).toBe('testing');
-      expect(() => zodSchema.parse('test')).toThrow(); // Uses minLength (5), not min (3)
-      expect(() => zodSchema.parse('toolongstring')).toThrow(); // Uses maxLength (8), not max (10)
+      expect(z.parse(zodSchema, 'hello')).toBe('hello');
+      expect(z.parse(zodSchema, 'testing')).toBe('testing');
+      expect(() => z.parse(zodSchema, 'test')).toThrow(); // Uses minLength (5), not min (3)
+      expect(() => z.parse(zodSchema, 'toolongstring')).toThrow(); // Uses maxLength (8), not max (10)
     });
   });
 
@@ -194,9 +194,9 @@ describe('jsonSchemaToZod', () => {
         required: ['name'],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(() => zodSchema.parse({ age: 30 })).toThrow();
+      expect(z.parse(zodSchema, { name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(() => z.parse(zodSchema, { age: 30 })).toThrow();
     });
 
     it('should validate additional properties when set to false', () => {
@@ -208,8 +208,8 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: false,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(() => z.parse(zodSchema, { name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should allow any additional properties when set to true', () => {
@@ -221,12 +221,12 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: true,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', extra: 'field' })).toEqual({
         name: 'John',
         extra: 'field',
       });
-      expect(zodSchema.parse({ name: 'John', age: 30, city: 'NYC' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John', age: 30, city: 'NYC' })).toEqual({
         name: 'John',
         age: 30,
         city: 'NYC',
@@ -242,12 +242,12 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: { type: 'number' },
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', age: 30 })).toEqual({
         name: 'John',
         age: 30,
       });
-      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+      expect(() => z.parse(zodSchema, { name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should validate additional properties with complex schema', () => {
@@ -267,7 +267,7 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           metadata: { value: 'test', count: 5 },
         })
@@ -276,7 +276,7 @@ describe('jsonSchemaToZod', () => {
         metadata: { value: 'test', count: 5 },
       });
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           metadata: { value: 'test' },
         })
@@ -285,7 +285,7 @@ describe('jsonSchemaToZod', () => {
         metadata: { value: 'test' },
       });
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           metadata: { count: 5 }, // missing required 'value'
         })
@@ -300,8 +300,8 @@ describe('jsonSchemaToZod', () => {
         },
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', extra: 'field' })).toEqual({
         name: 'John',
         extra: 'field',
       });
@@ -321,11 +321,11 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Should allow defined properties
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
 
       // Should allow pattern properties
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           prefix_test: 'value',
         })
@@ -336,7 +336,7 @@ describe('jsonSchemaToZod', () => {
 
       // Should allow additional properties matching the schema
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           age: 30,
         })
@@ -347,7 +347,7 @@ describe('jsonSchemaToZod', () => {
 
       // Should reject additional properties not matching the schema
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           extra: 'field', // string, but additionalProperties expects number
         })
@@ -360,12 +360,12 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: { type: 'string' },
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({})).toEqual({});
-      expect(zodSchema.parse({ key1: 'value1', key2: 'value2' })).toEqual({
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(z.parse(zodSchema, { key1: 'value1', key2: 'value2' })).toEqual({
         key1: 'value1',
         key2: 'value2',
       });
-      expect(() => zodSchema.parse({ key1: 123 })).toThrow();
+      expect(() => z.parse(zodSchema, { key1: 123 })).toThrow();
     });
 
     it('should handle additionalProperties: false with patternProperties', () => {
@@ -381,9 +381,9 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
 
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           prefix_test: 'value',
         })
@@ -394,7 +394,7 @@ describe('jsonSchemaToZod', () => {
 
       // Should reject properties that don't match patterns or defined properties
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           extra: 'field',
         })
@@ -407,8 +407,8 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: true,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({})).toEqual({});
-      expect(zodSchema.parse({ any: 'value', another: 123 })).toEqual({
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(z.parse(zodSchema, { any: 'value', another: 123 })).toEqual({
         any: 'value',
         another: 123,
       });
@@ -420,8 +420,8 @@ describe('jsonSchemaToZod', () => {
         additionalProperties: false,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({})).toEqual({});
-      expect(() => zodSchema.parse({ any: 'value' })).toThrow();
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(() => z.parse(zodSchema, { any: 'value' })).toThrow();
     });
 
     it('should handle nested additionalProperties', () => {
@@ -441,7 +441,7 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           config: { name: 'test', timeout: 5000 },
           env: 'production',
         })
@@ -452,14 +452,14 @@ describe('jsonSchemaToZod', () => {
 
       // Should reject nested additional properties that don't match schema
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           config: { name: 'test', timeout: 'invalid' }, // should be number
         })
       ).toThrow();
 
       // Should reject top-level additional properties that don't match schema
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           config: { name: 'test' },
           count: 123, // should be string
         })
@@ -474,11 +474,11 @@ describe('jsonSchemaToZod', () => {
         },
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse({ prefix_one: 'value1', prefix_two: 'value2' })).toEqual({
+      expect(z.parse(zodSchema, { prefix_one: 'value1', prefix_two: 'value2' })).toEqual({
         prefix_one: 'value1',
         prefix_two: 'value2',
       });
-      expect(() => zodSchema.parse({ prefix_one: 123 })).toThrow();
+      expect(() => z.parse(zodSchema, { prefix_one: 123 })).toThrow();
     });
   });
 
@@ -489,8 +489,8 @@ describe('jsonSchemaToZod', () => {
         items: { type: 'string' },
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(['one', 'two'])).toEqual(['one', 'two']);
-      expect(() => zodSchema.parse(['one', 2])).toThrow();
+      expect(z.parse(zodSchema, ['one', 'two'])).toEqual(['one', 'two']);
+      expect(() => z.parse(zodSchema, ['one', 2])).toThrow();
     });
 
     it('should validate tuple items', () => {
@@ -499,8 +499,8 @@ describe('jsonSchemaToZod', () => {
         items: [{ type: 'string' }, { type: 'number' }],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(['test', 123])).toEqual(['test', 123]);
-      expect(() => zodSchema.parse(['test', 'wrong'])).toThrow();
+      expect(z.parse(zodSchema, ['test', 123])).toEqual(['test', 123]);
+      expect(() => z.parse(zodSchema, ['test', 'wrong'])).toThrow();
     });
 
     it('should validate array length', () => {
@@ -511,10 +511,10 @@ describe('jsonSchemaToZod', () => {
         maxItems: 3,
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(['one'])).toEqual(['one']);
-      expect(zodSchema.parse(['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
-      expect(() => zodSchema.parse([])).toThrow();
-      expect(() => zodSchema.parse(['one', 'two', 'three', 'four'])).toThrow();
+      expect(z.parse(zodSchema, ['one'])).toEqual(['one']);
+      expect(z.parse(zodSchema, ['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
+      expect(() => z.parse(zodSchema, [])).toThrow();
+      expect(() => z.parse(zodSchema, ['one', 'two', 'three', 'four'])).toThrow();
     });
 
     it('should handle generic min and max properties for arrays', () => {
@@ -525,10 +525,10 @@ describe('jsonSchemaToZod', () => {
         max: 3,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(['one'])).toEqual(['one']);
-      expect(zodSchema.parse(['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
-      expect(() => zodSchema.parse([])).toThrow();
-      expect(() => zodSchema.parse(['one', 'two', 'three', 'four'])).toThrow();
+      expect(z.parse(zodSchema, ['one'])).toEqual(['one']);
+      expect(z.parse(zodSchema, ['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
+      expect(() => z.parse(zodSchema, [])).toThrow();
+      expect(() => z.parse(zodSchema, ['one', 'two', 'three', 'four'])).toThrow();
     });
 
     it('should prioritize minItems/maxItems over min/max for arrays', () => {
@@ -541,15 +541,15 @@ describe('jsonSchemaToZod', () => {
         max: 3,
       } as any;
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(['one', 'two'])).toEqual(['one', 'two']);
-      expect(zodSchema.parse(['one', 'two', 'three', 'four'])).toEqual([
+      expect(z.parse(zodSchema, ['one', 'two'])).toEqual(['one', 'two']);
+      expect(z.parse(zodSchema, ['one', 'two', 'three', 'four'])).toEqual([
         'one',
         'two',
         'three',
         'four',
       ]);
-      expect(() => zodSchema.parse(['one'])).toThrow(); // Uses minItems (2), not min (1)
-      expect(() => zodSchema.parse(['one', 'two', 'three', 'four', 'five'])).toThrow(); // Uses maxItems (4), not max (3)
+      expect(() => z.parse(zodSchema, ['one'])).toThrow(); // Uses minItems (2), not min (1)
+      expect(() => z.parse(zodSchema, ['one', 'two', 'three', 'four', 'five'])).toThrow(); // Uses maxItems (4), not max (3)
     });
 
     it('should handle arrays with anyOf patterns', () => {
@@ -569,13 +569,13 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Should accept string arrays
-      expect(zodSchema.parse(['hello', 'world'])).toEqual(['hello', 'world']);
+      expect(z.parse(zodSchema, ['hello', 'world'])).toEqual(['hello', 'world']);
 
       // Should accept number arrays
-      expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
+      expect(z.parse(zodSchema, [1, 2, 3])).toEqual([1, 2, 3]);
 
       // Should accept mixed arrays (union of item types)
-      expect(zodSchema.parse(['hello', 123])).toEqual(['hello', 123]);
+      expect(z.parse(zodSchema, ['hello', 123])).toEqual(['hello', 123]);
     });
 
     it('should handle arrays with anyOf at top level without explicit types', () => {
@@ -593,10 +593,10 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Should accept string arrays
-      expect(zodSchema.parse(['hello', 'world'])).toEqual(['hello', 'world']);
+      expect(z.parse(zodSchema, ['hello', 'world'])).toEqual(['hello', 'world']);
 
       // Should accept number arrays
-      expect(zodSchema.parse([1, 2, 3])).toEqual([1, 2, 3]);
+      expect(z.parse(zodSchema, [1, 2, 3])).toEqual([1, 2, 3]);
     });
 
     it('should handle arrays with object items having default null', () => {
@@ -614,13 +614,13 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Should apply default null for missing status
-      expect(zodSchema.parse([{ name: 'test1' }, { name: 'test2', status: 'active' }])).toEqual([
+      expect(z.parse(zodSchema, [{ name: 'test1' }, { name: 'test2', status: 'active' }])).toEqual([
         { name: 'test1', status: null },
         { name: 'test2', status: 'active' },
       ]);
 
       // Should fail for missing required field
-      expect(() => zodSchema.parse([{ status: 'active' }])).toThrow();
+      expect(() => z.parse(zodSchema, [{ status: 'active' }])).toThrow();
     });
 
     it('should handle nested arrays', () => {
@@ -634,7 +634,7 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       expect(
-        zodSchema.parse([
+        z.parse(zodSchema, [
           [1, 2],
           [3, 4, 5],
         ])
@@ -642,7 +642,7 @@ describe('jsonSchemaToZod', () => {
         [1, 2],
         [3, 4, 5],
       ]);
-      expect(() => zodSchema.parse([['string', 2]])).toThrow();
+      expect(() => z.parse(zodSchema, [['string', 2]])).toThrow();
     });
   });
 
@@ -653,8 +653,8 @@ describe('jsonSchemaToZod', () => {
         enum: ['one', 'two', 'three'],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('one')).toBe('one');
-      expect(() => zodSchema.parse('four')).toThrow();
+      expect(z.parse(zodSchema, 'one')).toBe('one');
+      expect(() => z.parse(zodSchema, 'four')).toThrow();
     });
 
     it('should validate mixed type enums', () => {
@@ -662,10 +662,10 @@ describe('jsonSchemaToZod', () => {
         enum: ['string', 123, true],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('string')).toBe('string');
-      expect(zodSchema.parse(123)).toBe(123);
-      expect(zodSchema.parse(true)).toBe(true);
-      expect(() => zodSchema.parse('invalid')).toThrow();
+      expect(z.parse(zodSchema, 'string')).toBe('string');
+      expect(z.parse(zodSchema, 123)).toBe(123);
+      expect(z.parse(zodSchema, true)).toBe(true);
+      expect(() => z.parse(zodSchema, 'invalid')).toThrow();
     });
   });
 
@@ -675,9 +675,9 @@ describe('jsonSchemaToZod', () => {
         anyOf: [{ type: 'string' }, { type: 'number' }],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse('test')).toBe('test');
-      expect(zodSchema.parse(123)).toBe(123);
-      expect(() => zodSchema.parse(true)).toThrow();
+      expect(z.parse(zodSchema, 'test')).toBe('test');
+      expect(z.parse(zodSchema, 123)).toBe(123);
+      expect(() => z.parse(zodSchema, true)).toThrow();
     });
 
     it('should validate oneOf', () => {
@@ -688,9 +688,9 @@ describe('jsonSchemaToZod', () => {
         ],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(1)).toBe(1);
-      expect(zodSchema.parse(-1)).toBe(-1);
-      expect(() => zodSchema.parse(0)).toThrow(); // Should fail as 0 matches both schemas
+      expect(z.parse(zodSchema, 1)).toBe(1);
+      expect(z.parse(zodSchema, -1)).toBe(-1);
+      expect(() => z.parse(zodSchema, 0)).toThrow(); // Should fail as 0 matches both schemas
     });
 
     it('should validate allOf', () => {
@@ -701,9 +701,9 @@ describe('jsonSchemaToZod', () => {
         ],
       };
       const zodSchema = jsonSchemaToZod(schema);
-      expect(zodSchema.parse(50)).toBe(50);
-      expect(() => zodSchema.parse(-1)).toThrow();
-      expect(() => zodSchema.parse(101)).toThrow();
+      expect(z.parse(zodSchema, 50)).toBe(50);
+      expect(() => z.parse(zodSchema, -1)).toThrow();
+      expect(() => z.parse(zodSchema, 101)).toThrow();
     });
   });
 
@@ -745,9 +745,9 @@ describe('jsonSchemaToZod', () => {
         },
       };
 
-      expect(zodSchema.parse(validData)).toEqual(validData);
+      expect(z.parse(zodSchema, validData)).toEqual(validData);
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           user: {
             name: 'John Doe',
             contacts: [{ type: 'invalid', value: 'test' }],
@@ -786,13 +786,13 @@ describe('jsonSchemaToZod', () => {
       expect(zodSchema.description).toBe('A user profile object');
 
       // Test required fields
-      expect(() => zodSchema.parse({})).toThrow();
-      expect(() => zodSchema.parse({ username: 'test' })).toThrow();
-      expect(() => zodSchema.parse({ email: 'test@example.com' })).toThrow();
+      expect(() => z.parse(zodSchema, {})).toThrow();
+      expect(() => z.parse(zodSchema, { username: 'test' })).toThrow();
+      expect(() => z.parse(zodSchema, { email: 'test@example.com' })).toThrow();
 
       // Valid data should pass
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           username: 'testuser',
           email: 'test@example.com',
         })
@@ -803,7 +803,7 @@ describe('jsonSchemaToZod', () => {
 
       // Optional field should be allowed to be missing
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           username: 'testuser',
           email: 'test@example.com',
         })
@@ -839,43 +839,43 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Test property with type
-      expect(zodSchema.parse({ withType: 'test' })).toEqual({
+      expect(z.parse(zodSchema, { withType: 'test' })).toEqual({
         withType: 'test',
         withoutType: 'default value',
       });
-      expect(() => zodSchema.parse({ withType: 123 })).toThrow();
+      expect(() => z.parse(zodSchema, { withType: 123 })).toThrow();
 
       // Test property without type (should accept any value)
-      expect(zodSchema.parse({ withoutType: 'string value' })).toEqual({
+      expect(z.parse(zodSchema, { withoutType: 'string value' })).toEqual({
         withoutType: 'string value', // Override default
       });
-      expect(zodSchema.parse({ withoutType: 123 })).toEqual({
+      expect(z.parse(zodSchema, { withoutType: 123 })).toEqual({
         withoutType: 123, // Override default
       });
-      expect(zodSchema.parse({ withoutType: { nested: true } })).toEqual({
+      expect(z.parse(zodSchema, { withoutType: { nested: true } })).toEqual({
         withoutType: { nested: true }, // Override default
       });
 
       // Test property with anyOf but no direct type
-      expect(zodSchema.parse({ withAnyOf: 'string value' })).toEqual({
+      expect(z.parse(zodSchema, { withAnyOf: 'string value' })).toEqual({
         withAnyOf: 'string value',
         withoutType: 'default value', // Default value is included
       });
-      expect(zodSchema.parse({ withAnyOf: 123 })).toEqual({
+      expect(z.parse(zodSchema, { withAnyOf: 123 })).toEqual({
         withAnyOf: 123,
         withoutType: 'default value', // Default value is included
       });
-      expect(() => zodSchema.parse({ withAnyOf: true })).toThrow();
+      expect(() => z.parse(zodSchema, { withAnyOf: true })).toThrow();
 
       // Test property with enum but no type
-      expect(zodSchema.parse({ withEnum: 'one' })).toEqual({
+      expect(z.parse(zodSchema, { withEnum: 'one' })).toEqual({
         withEnum: 'one',
         withoutType: 'default value', // Default value is included
       });
-      expect(() => zodSchema.parse({ withEnum: 'invalid' })).toThrow();
+      expect(() => z.parse(zodSchema, { withEnum: 'invalid' })).toThrow();
 
       // Test that default value is included when property is missing
-      expect(zodSchema.parse({})).toEqual({
+      expect(z.parse(zodSchema, {})).toEqual({
         withoutType: 'default value',
       });
     });
@@ -903,14 +903,14 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Test default values for top-level property
-      expect(zodSchema.parse({})).toEqual({
+      expect(z.parse(zodSchema, {})).toEqual({
         name: 'Anonymous',
         settings: { theme: 'light' },
       });
 
       // Test that defaults don't override provided values
       expect(
-        zodSchema.parse({
+        z.parse(zodSchema, {
           name: 'John',
           settings: {
             theme: 'dark',
@@ -948,25 +948,25 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
 
       // Test with required field only - should include null default
-      expect(zodSchema.parse({ name: 'John' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({
         name: 'John',
         status: null,
       });
 
       // Test with status explicitly set to null
-      expect(zodSchema.parse({ name: 'John', status: null })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John', status: null })).toEqual({
         name: 'John',
         status: null,
       });
 
       // Test with status set to a string value
-      expect(zodSchema.parse({ name: 'John', status: 'active' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John', status: 'active' })).toEqual({
         name: 'John',
         status: 'active',
       });
 
       // Test that required field validation still works
-      expect(() => zodSchema.parse({})).toThrow();
+      expect(() => z.parse(zodSchema, {})).toThrow();
     });
 
     it('should transform GetUserRequest schema correctly', () => {
@@ -989,16 +989,17 @@ describe('jsonSchemaToZod', () => {
       expect(zodSchema.description).toBe('GetUserRequest');
 
       // Test required field validation
-      expect(() => zodSchema.parse({})).toThrow();
-      expect(() => zodSchema.parse({ username: 123 })).toThrow();
+      expect(() => z.parse(zodSchema, {})).toThrow();
+      expect(() => z.parse(zodSchema, { username: 123 })).toThrow();
 
       // Test valid data
-      expect(zodSchema.parse({ username: 'testuser' })).toEqual({
+      expect(z.parse(zodSchema, { username: 'testuser' })).toEqual({
         username: 'testuser',
       });
 
       // Test property description
-      const shape = (zodSchema as any)._def.shape();
+      // @ts-ignore
+      const shape = (zodSchema as $ZodType)._zod.def.shape;
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
 
@@ -1117,7 +1118,7 @@ describe('jsonSchemaToZod', () => {
     // Helper function to test round-trip conversion
     const testRoundTrip = (originalSchema: JsonSchema, expectedAdditionalProperties: any) => {
       const zodSchema = jsonSchemaToZod(originalSchema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       // Remove $schema field for comparison
       const { $schema, ...cleanConverted } = convertedBack;
@@ -1144,8 +1145,11 @@ describe('jsonSchemaToZod', () => {
       expect(convertedBack.properties).toEqual({});
 
       // Test parsing behavior
-      expect(zodSchema.parse({})).toEqual({});
-      expect(zodSchema.parse({ any: 'value', number: 123 })).toEqual({ any: 'value', number: 123 });
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(z.parse(zodSchema, { any: 'value', number: 123 })).toEqual({
+        any: 'value',
+        number: 123,
+      });
     });
 
     it('should preserve additionalProperties: true for objects with properties', () => {
@@ -1167,8 +1171,8 @@ describe('jsonSchemaToZod', () => {
       expect(convertedBack.required).toEqual(['name']);
 
       // Test parsing behavior
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', age: 30, extra: 'field' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', age: 30, extra: 'field' })).toEqual({
         name: 'John',
         age: 30,
         extra: 'field',
@@ -1182,7 +1186,7 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       // Note: zod-to-json-schema may convert z.object({}).strict() to { not: {} }
       // which is semantically equivalent to additionalProperties: false
@@ -1193,8 +1197,8 @@ describe('jsonSchemaToZod', () => {
       expect(convertedBack.type).toBe('object');
 
       // Test parsing behavior - this is the most important part
-      expect(zodSchema.parse({})).toEqual({});
-      expect(() => zodSchema.parse({ extra: 'field' })).toThrow();
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(() => z.parse(zodSchema, { extra: 'field' })).toThrow();
     });
 
     it('should preserve additionalProperties: false for objects with properties', () => {
@@ -1207,14 +1211,14 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       expect(convertedBack.additionalProperties).toBe(false);
       expect(convertedBack.properties).toBeDefined();
 
       // Test parsing behavior
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(() => z.parse(zodSchema, { name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should handle additionalProperties with empty schema {}', () => {
@@ -1227,15 +1231,15 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       // Empty schema {} should remain as {} (not become true)
       expect(convertedBack.additionalProperties).toEqual({});
       expect(convertedBack.properties).toBeDefined();
 
       // Test parsing behavior - should allow any additional properties
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field', number: 123 })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', extra: 'field', number: 123 })).toEqual({
         name: 'John',
         extra: 'field',
         number: 123,
@@ -1252,15 +1256,15 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       expect(convertedBack.additionalProperties).toEqual({ type: 'number' });
       expect(convertedBack.properties).toBeDefined();
 
       // Test parsing behavior
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
-      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(() => z.parse(zodSchema, { name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should handle additionalProperties with complex schema', () => {
@@ -1280,7 +1284,7 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       expect(convertedBack.additionalProperties).toEqual({
         type: 'object',
@@ -1293,12 +1297,12 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test parsing behavior
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', meta: { value: 'test', count: 5 } })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', meta: { value: 'test', count: 5 } })).toEqual({
         name: 'John',
         meta: { value: 'test', count: 5 },
       });
-      expect(() => zodSchema.parse({ name: 'John', meta: { count: 5 } })).toThrow(); // missing required 'value'
+      expect(() => z.parse(zodSchema, { name: 'John', meta: { count: 5 } })).toThrow(); // missing required 'value'
     });
 
     it('should handle objects with no properties and additionalProperties undefined (default behavior)', () => {
@@ -1307,15 +1311,18 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       // When additionalProperties is undefined, it should default to true behavior
       expect(convertedBack.additionalProperties).toBe(true);
       expect(convertedBack.type).toBe('object');
 
       // Test parsing behavior - should allow any additional properties
-      expect(zodSchema.parse({})).toEqual({});
-      expect(zodSchema.parse({ any: 'value', number: 123 })).toEqual({ any: 'value', number: 123 });
+      expect(z.parse(zodSchema, {})).toEqual({});
+      expect(z.parse(zodSchema, { any: 'value', number: 123 })).toEqual({
+        any: 'value',
+        number: 123,
+      });
     });
 
     it('should handle objects with properties and additionalProperties undefined (default behavior)', () => {
@@ -1327,15 +1334,15 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7', io: 'input' }) as any;
 
       // When additionalProperties is undefined, it should default to true behavior
       expect(convertedBack.additionalProperties).toBe(true);
       expect(convertedBack.properties).toBeDefined();
 
       // Test parsing behavior - should allow any additional properties
-      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
+      expect(z.parse(zodSchema, { name: 'John' })).toEqual({ name: 'John' });
+      expect(z.parse(zodSchema, { name: 'John', extra: 'field' })).toEqual({
         name: 'John',
         extra: 'field',
       });
@@ -1364,7 +1371,7 @@ describe('jsonSchemaToZod', () => {
       };
 
       const zodSchema = jsonSchemaToZod(schema);
-      const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
+      const convertedBack = z.toJSONSchema(zodSchema, { target: 'draft-7' }) as any;
 
       expect(convertedBack.additionalProperties).toEqual({ type: 'string' });
       expect(convertedBack.properties?.strictChild).toBeDefined();
@@ -1376,17 +1383,17 @@ describe('jsonSchemaToZod', () => {
         flexibleChild: { age: 30, extra: 'allowed' },
         extraString: 'this should be a string',
       };
-      expect(zodSchema.parse(validData)).toEqual(validData);
+      expect(z.parse(zodSchema, validData)).toEqual(validData);
 
       // Test invalid cases
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           strictChild: { name: 'John', extra: 'not allowed' },
         })
       ).toThrow();
 
       expect(() =>
-        zodSchema.parse({
+        z.parse(zodSchema, {
           extraNumber: 123, // should be string according to additionalProperties
         })
       ).toThrow();

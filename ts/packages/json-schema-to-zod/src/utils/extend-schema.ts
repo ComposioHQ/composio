@@ -1,9 +1,9 @@
-import type { z } from 'zod';
+import type { $ZodType } from 'zod/v4/core';
 
 import type { JsonSchemaObject } from '../types';
 
 export function extendSchemaWithMessage<
-  TZod extends z.ZodTypeAny,
+  TZod extends $ZodType,
   TJson extends JsonSchemaObject,
   TKey extends keyof TJson,
 >(
