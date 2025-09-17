@@ -34,12 +34,12 @@ const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // Create an MCP server with Gmail toolkit
 const mcpConfig = await composio.mcp.create(
-  "gmail-anthropic-" + Date.now(),
+  'gmail-anthropic-' + Date.now(),
   [
     {
       authConfigId,
       allowedTools,
-    }
+    },
   ],
   { isChatAuth: true }
 );
@@ -51,8 +51,8 @@ console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 const serverInstances = await mcpConfig.getServer({
   userId: connectedAccountId,
   connectedAccountIds: {
-    "gmail": connectedAccountId,
-  }
+    gmail: connectedAccountId,
+  },
 });
 
 // Alternative: You can also use the standalone method
@@ -63,24 +63,23 @@ const serverInstances = await mcpConfig.getServer({
 //   }
 // });
 
-console.log("Server instances for connected accounts:", serverInstances);
+console.log('Server instances for connected accounts:', serverInstances);
 
 console.log('\n=== Fetching and Summarizing Recent Emails ===');
 
 // Use Anthropic with the MCP servers
-const stream = await anthropic.beta.messages.stream(
-  {
-    model: 'claude-4-sonnet-20250514',
-    max_tokens: 64_000,
-    mcp_servers: serverInstances,
-    messages: [
-      {
-        role: 'user',
-        content: 'Please fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email. Format the response in a clear, organized way.',
-      },
-    ],
-  },
-);
+const stream = await anthropic.beta.messages.stream({
+  model: 'claude-4-sonnet-20250514',
+  max_tokens: 64_000,
+  mcp_servers: serverInstances,
+  messages: [
+    {
+      role: 'user',
+      content:
+        'Please fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email. Format the response in a clear, organized way.',
+    },
+  ],
+});
 
 console.log('\n📬 Email Summary:');
 for await (const event of stream) {

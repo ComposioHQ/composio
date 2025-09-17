@@ -811,6 +811,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
       return transformed as typeof this.TMcpResponse;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     // Default transformation
@@ -890,7 +891,9 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
  * Handles MCP server operations.
  * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
  */
-export class ExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> extends MCP<TProvider> {
+export class ExperimentalMCP<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>,
+> extends MCP<TProvider> {
   constructor(client: ComposioClient, provider: TProvider) {
     super(client, provider);
   }
@@ -907,8 +910,8 @@ export class ExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unk
         limitTools?: string[];
         isChatAuth?: boolean;
       }
-    ) => this.getServer(mcpConfigurationId, userId, options)
-      .then(res => {
+    ) =>
+      this.getServer(mcpConfigurationId, userId, options).then(res => {
         // TODO: investigate why this cast is needed in the first place.
         // Without it, this type is always inferred as `unknown`.
         return this.provider.wrapMcpServers(res) as typeof this.TMcpExperimentalResponse;
@@ -925,5 +928,5 @@ export class ExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unk
         isChatAuth?: boolean;
       }
     ) => await this.getServer(mcpConfigurationId, userId, options),
-  }
+  };
 }

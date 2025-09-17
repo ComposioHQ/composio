@@ -20,7 +20,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { type MastraMCPServerDefinition } from '@mastra/mcp';
 import { AnthropicTool, InputSchema } from './types';
 
-export function wrapTools(servers: AnthropicMcpServerGetResponse, tools: Record<string, ComposioTool>): Array<AnthropicTool> {
+export function wrapTools(
+  servers: AnthropicMcpServerGetResponse,
+  tools: Record<string, ComposioTool>
+): Array<AnthropicTool> {
   const prefixes = servers.map(({ name }) => name);
 
   function removePrefix(str: string): string {
@@ -42,8 +45,8 @@ export function wrapTools(servers: AnthropicMcpServerGetResponse, tools: Record<
         type: 'object',
       },
       type: 'custom',
-    }
-  })
+    };
+  });
 }
 
 export type AnthropicMcpServerGetResponse = {
@@ -165,10 +168,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    */
   override wrapMcpServers(servers: AnthropicMcpServerGetResponse) {
     return Object.fromEntries(
-      servers.map(({ name, url }) => [
-        name,
-        { url: new URL(url) }
-      ])
+      servers.map(({ name, url }) => [name, { url: new URL(url) }])
     ) satisfies Record<string, MastraMCPServerDefinition>;
   }
 

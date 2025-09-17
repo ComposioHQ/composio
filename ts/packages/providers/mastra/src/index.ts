@@ -80,10 +80,7 @@ export class MastraProvider extends BaseAgenticProvider<
 
   override wrapMcpServers(urls: MastraUrlMap) {
     return Object.fromEntries(
-      Object.entries(urls).map(([key, value]) => [
-        key,
-        { url: new URL(value.url) }
-      ])
+      Object.entries(urls).map(([key, value]) => [key, { url: new URL(value.url) }])
     ) satisfies Record<string, MastraMCPServerDefinition>;
   }
 
