@@ -30,7 +30,7 @@
     "@mastra/core": "^0.16.3",
     "@mastra/mcp": "^0.10.3",
     "dotenv": "^16.4.1",
-    "zod": "3.25.76"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

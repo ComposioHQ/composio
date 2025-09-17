@@ -140,6 +140,8 @@ export class LangchainProvider extends BaseAgenticProvider<
       throw new Error('Tool input parameters are not defined');
     }
     const parameters = jsonSchemaToZodSchema(tool.inputParameters);
+
+    // @ts-ignore error TS2589: Type instantiation is excessively deep and possibly infinite.
     return new DynamicStructuredTool({
       name: toolName,
       description: description || '',

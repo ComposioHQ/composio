@@ -37,5 +37,8 @@
     "vitest": "^3.1.4",
     "zod": "^3.25.0",
     "zod-to-json-schema": "^3.24.5"
+  },
+  "peerDependencies": {
+    "zod": "^3.25.0"
   }
 }

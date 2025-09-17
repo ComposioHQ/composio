@@ -27,7 +27,7 @@ export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<
   VercelToolCollection,
   VercelTool,
-  McpUrlResponse,
+  McpServerGetResponse,
   URL
 > {
   readonly name = 'vercel';
@@ -58,7 +58,7 @@ export class VercelProvider extends BaseAgenticProvider<
     this.strict = strict;
   }
 
-  override wrapMcpServers(servers: McpServerUrlInfo[] | McpServerUrlInfo): URL {
+  override wrapMcpServers(servers: McpServerGetResponse): URL {
     function wrapMcpServer(server: McpServerUrlInfo) {
       return server.url;
     }
@@ -139,6 +139,7 @@ export class VercelProvider extends BaseAgenticProvider<
 
     const inputParametersSchema = jsonSchemaToZodSchema(parameters);
 
+    // @ts-ignore error TS2589: Type instantiation is excessively deep and possibly infinite.
     return tool({
       description: composioTool.description,
       inputSchema: inputParametersSchema,

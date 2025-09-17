@@ -31,13 +31,15 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
-    "@langchain/core": "^0.3.63"
+    "@langchain/core": "^0.3.63",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "zod": "^3.25.0"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }
