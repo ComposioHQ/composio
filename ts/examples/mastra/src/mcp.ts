@@ -17,13 +17,9 @@ import { MCPClient } from '@mastra/mcp';
 import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
 import type { MastraMCPServerDefinition } from '@mastra/mcp';
-import type { ToolAction } from '@mastra/core';
 import 'dotenv/config';
 
-function wrapTools(
-  servers: Record<string, unknown>,
-  tools: Record<string, ToolAction<any, any, any>>
-): Record<string, ToolAction<any, any, any>> {
+function wrapTools(servers: Record<string, any>, tools: Record<string, any>): Record<string, any> {
   const prefixes = Object.keys(servers);
 
   function removePrefix(str: string): string {

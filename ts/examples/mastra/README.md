@@ -5,16 +5,19 @@ This example demonstrates how to use Composio SDK for mastra.
 ## Setup
 
 1. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 2. **Configure environment:**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Then edit `.env` and add your API keys:
+
    - `COMPOSIO_API_KEY`: Get it from [Composio Dashboard](https://app.composio.dev)
 
 ## Running the Example
@@ -36,6 +39,7 @@ pnpm dev
 ## Customization
 
 Edit `src/index.ts` to:
+
 - Add specific apps you want to integrate with
 - Implement your business logic
 - Add error handling and logging
