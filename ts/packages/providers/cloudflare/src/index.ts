@@ -18,6 +18,7 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
+  McpServerUrlInfo,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -26,7 +27,7 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
   AiToolCollection,
   AiTextGenerationToolInput,
   McpServerGetResponse,
-  McpServerGetResponse
+  URL
 > {
   readonly name = 'cloudflare';
 
@@ -69,8 +70,20 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
     })) as McpServerGetResponse;
   }
 
-  override wrapMcpServers(data: McpServerGetResponse): McpServerGetResponse {
-    return data;
+  override wrapMcpServers(servers: McpServerGetResponse): URL {
+    function wrapMcpServer(server: McpServerUrlInfo) {
+      return server.url;
+    }
+
+    if (Array.isArray(servers)) {
+      if (servers.length === 0) {
+        throw new Error('No servers found');
+      }
+
+      return wrapMcpServer(servers[0]);
+    }
+
+    return wrapMcpServer(servers);
   }
 
   /**

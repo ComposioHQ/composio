@@ -1,0 +1,26 @@
+{
+	"name": "cloudflare-ai",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"cf-typegen": "wrangler types"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.8.19",
+		"@cloudflare/workers-types": "catalog:",
+		"typescript": "^5.9.2",
+		"vitest": "~3.2.0",
+		"wrangler": "^4.37.0"
+	},
+	"dependencies": {
+		"@composio/cloudflare": "workspace:^",
+		"@composio/core": "workspace:^",
+		"@modelcontextprotocol/sdk": "^1.18.0",
+		"ai": "catalog:",
+		"workers-ai-provider": "^2.0.0"
+	}
+}
