@@ -27,7 +27,7 @@ async function run() {
     afterExecute: ({ result }) => {
       console.log(`✅ Executed ${tools.slug} with result:`);
       return result;
-    }
+    },
   });
 
   const messages: ModelMessage[] = [
@@ -41,7 +41,7 @@ async function run() {
     model: openai('gpt-4o-mini'),
     tools: tools,
     messages,
-    stopWhen: stepCountIs(5)
+    stopWhen: stepCountIs(5),
   });
 
   console.log(text);

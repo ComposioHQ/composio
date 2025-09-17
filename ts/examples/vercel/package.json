@@ -18,6 +18,7 @@
     "@ai-sdk/openai": "^2.0.16",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "ai": "catalog:",
     "dotenv": "^16.5.0"
   },
