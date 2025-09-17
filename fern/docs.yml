@@ -192,12 +192,12 @@ navigation:
     icon: rocket
     skip-slug: true
     contents:
-    - page: Basic Hono Server
-      path: pages/dist/examples/hono.mdx
-      slug: examples/hono
     - page: Basic FastAPI Server
       path: pages/dist/examples/fast-api.mdx
       slug: examples/fast-api
+    - page: Basic Hono Server
+      path: pages/dist/examples/hono.mdx
+      slug: examples/hono
   - section: Productivity & Automation
     icon: zap
     skip-slug: true
