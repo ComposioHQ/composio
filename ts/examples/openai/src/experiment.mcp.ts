@@ -48,8 +48,8 @@ const composio = createComposio({
   },
 });
 
-const authConfigId = 'ac_uINV_uCV87lm';
-const connectedAccountId = 'ca_WSQrf8EWVuCq';
+const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config

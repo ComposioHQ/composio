@@ -28,8 +28,8 @@ const composio = new Composio({
   provider: new AnthropicProvider({ cacheTools: true }),
 });
 
-const authConfigId = 'ac_uINV_uCV87lm'; // Use your auth config ID
-const connectedAccountId = 'alberto.schiabel@gmail.com'; // "<connected_account_id>"; // Replace it with the connected account id
+const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // Create an MCP server with Gmail toolkit
