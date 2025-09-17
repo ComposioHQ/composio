@@ -31,13 +31,16 @@
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
-    "@openai/agents": "^0.1.1"
+    "@openai/agents": "^0.1.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
+    "@openai/agents": "^0.1.3",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }
