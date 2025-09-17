@@ -17,7 +17,7 @@ from composio.core.models import (
 from composio.core.models.base import allow_tracking
 from composio.core.provider import TProvider
 from composio.core.provider._openai import OpenAIProvider
-from composio.types import ToolkitVersionParam
+from composio.core.types import ToolkitVersionParam
 from composio.utils.logging import WithLogger
 from composio.utils.toolkit_version import get_toolkit_versions
 
@@ -66,7 +66,7 @@ class Composio(t.Generic[TProvider], WithLogger):
         if not api_key:
             raise exceptions.ApiKeyNotProvidedError()
 
-        # Process toolkit versions
+        # Process toolkit versions with environment variable support
         toolkit_versions = get_toolkit_versions(kwargs.get("toolkit_versions"))
 
         allow_tracking.set(kwargs.get("allow_tracking", True))

@@ -1,4 +1,4 @@
-import { Option, Effect, ConfigProvider, Layer, Logger, LogLevel } from 'effect';
+import { Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
 import * as constants from 'src/constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { APP_CONFIG } from 'src/effects/app-config';

@@ -23,8 +23,8 @@ from composio.core.provider.none_agentic import (
     NonAgenticProvider,
     NoneAgenticProviderExecuteFn,
 )
+from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError
-from composio.types import ToolkitVersionParam
 from composio.utils.toolkit_version import get_toolkit_version
 
 from ._modifiers import (
@@ -72,7 +72,7 @@ class Tools(Resource, t.Generic[TProvider]):
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
-        self._toolkit_versions = toolkit_versions or "latest"
+        self._toolkit_versions = toolkit_versions
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
@@ -338,6 +338,15 @@ class Tools(Resource, t.Generic[TProvider]):
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool"""
+        # Get the tool to determine its toolkit
+        tool = self.get_raw_composio_tool_by_slug(slug)
+
+        # If version is not explicitly provided, resolve it from toolkit versions
+        # This matches the TypeScript behavior
+        if version is None and toolkit_versions is not None:
+            toolkit_slug = tool.toolkit.slug if tool.toolkit else "unknown"
+            version = get_toolkit_version(toolkit_slug, toolkit_versions)
+
         return t.cast(
             ToolExecutionResponse,
             self._client.tools.execute(
@@ -361,9 +370,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id if user_id is not None else self._client.not_given,
                 text=text if text is not None else self._client.not_given,
                 version=version if version is not None else self._client.not_given,
-                toolkit_versions=toolkit_versions
-                if toolkit_versions is not None
-                else self._client.not_given,
+                # Note: We don't pass toolkit_versions to the API, we resolve the specific version above
             ).model_dump(
                 exclude={
                     "log_id",

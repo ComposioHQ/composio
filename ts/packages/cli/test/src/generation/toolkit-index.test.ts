@@ -7,7 +7,7 @@ describe('createToolkitIndex', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty index', () => {
     const index = createToolkitIndex({
       toolkits: [],
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
@@ -28,19 +28,19 @@ describe('createToolkitIndex', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
     expect(index).toEqual({
       GMAIL: {
         slug: 'gmail',
-        tools: {},
+        typeableTools: { withTypes: false, value: {} },
         triggerTypes: {},
       },
       SLACK: {
         slug: 'slack',
-        tools: {},
+        typeableTools: { withTypes: false, value: {} },
         triggerTypes: {},
       },
     });
@@ -67,17 +67,20 @@ describe('createToolkitIndex', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools,
+      typeableTools: { withTypes: false, tools },
       triggerTypes,
     });
 
     expect(index).toEqual({
       GMAIL: {
         slug: 'gmail',
-        tools: {
-          CREATE_EMAIL_DRAFT: 'GMAIL_CREATE_EMAIL_DRAFT',
-          DELETE_MESSAGE: 'GMAIL_DELETE_MESSAGE',
-          FETCH_EMAILS: 'GMAIL_FETCH_EMAILS',
+        typeableTools: {
+          withTypes: false,
+          value: {
+            CREATE_EMAIL_DRAFT: 'GMAIL_CREATE_EMAIL_DRAFT',
+            DELETE_MESSAGE: 'GMAIL_DELETE_MESSAGE',
+            FETCH_EMAILS: 'GMAIL_FETCH_EMAILS',
+          },
         },
         triggerTypes: {
           NEW_GMAIL_MESSAGE: GMAIL_NEW_GMAIL_MESSAGE,
@@ -85,7 +88,7 @@ describe('createToolkitIndex', () => {
       },
       SLACK: {
         slug: 'slack',
-        tools: {},
+        typeableTools: { withTypes: false, value: {} },
         triggerTypes: {},
       },
     });
