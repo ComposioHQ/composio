@@ -28,8 +28,8 @@ const composio = new Composio({
   provider: new AnthropicProvider({ cacheTools: true }),
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const authConfigId = 'ac_uINV_uCV87lm'; // Use your auth config ID
+const connectedAccountId = 'alberto.schiabel@gmail.com'; // "<connected_account_id>"; // Replace it with the connected account id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // Create an MCP server with Gmail toolkit
@@ -48,7 +48,7 @@ console.log(`✅ MCP server created: ${mcpConfig.id}`);
 console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 
 // Get server instance with connected accounts (using convenience method)
-const serverInstances = await mcpConfig.getServer({
+const servers = await mcpConfig.getServer({
   userId: connectedAccountId,
   connectedAccountIds: {
     gmail: connectedAccountId,
@@ -56,22 +56,20 @@ const serverInstances = await mcpConfig.getServer({
 });
 
 // Alternative: You can also use the standalone method
-// const serverInstances = await composio.mcp.getServer(mcpConfig.id, {
+// const servers = await composio.mcp.getServer(mcpConfig.id, {
 //   userId: connectedAccountId,
 //   connectedAccountIds: {
 //     "gmail": connectedAccountId,
 //   }
 // });
 
-console.log('Server instances for connected accounts:', serverInstances);
-
 console.log('\n=== Fetching and Summarizing Recent Emails ===');
 
 // Use Anthropic with the MCP servers
-const stream = await anthropic.beta.messages.stream({
+const stream = anthropic.beta.messages.stream({
   model: 'claude-4-sonnet-20250514',
   max_tokens: 64_000,
-  mcp_servers: serverInstances,
+  mcp_servers: servers,
   messages: [
     {
       role: 'user',
@@ -79,6 +77,7 @@ const stream = await anthropic.beta.messages.stream({
         'Please fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email. Format the response in a clear, organized way.',
     },
   ],
+  betas: ['mcp-client-2025-04-04'],
 });
 
 console.log('\n📬 Email Summary:');
