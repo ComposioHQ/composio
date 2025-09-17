@@ -4,6 +4,7 @@ import {
   Tool,
   ToolExecuteParams,
   ToolExecuteResponse,
+  ToolkitVersion,
   ToolListParams,
 } from './tool.types';
 import { CustomConnectionData } from './connectedAccountAuthStates.types';

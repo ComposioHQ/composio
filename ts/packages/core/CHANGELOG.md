@@ -1,5 +1,17 @@
 # @composio/core
 
+## 0.1.52
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+
+## 0.1.51
+
+### Patch Changes
+
+- b9b005a: Add support for composio connect links
+
 ## 0.1.50
 
 ### Patch Changes

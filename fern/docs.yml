@@ -92,9 +92,9 @@ tabs:
   changelog:
     display-name: Changelog
     icon: history
-    changelog: ./pages/changelog
+    changelog: ./pages/src/changelog
 navigation:
-  - tab: docs
+- tab: docs
     layout:
       - section: Get Started
         icon: rocket

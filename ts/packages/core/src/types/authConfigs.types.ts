@@ -16,7 +16,6 @@ export const AuthSchemeTypes = {
   GOOGLE_SERVICE_ACCOUNT: 'GOOGLE_SERVICE_ACCOUNT',
   NO_AUTH: 'NO_AUTH',
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
-  COMPOSIO_LINK: 'COMPOSIO_LINK',
   CALCOM_AUTH: 'CALCOM_AUTH',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
@@ -40,7 +39,6 @@ export const AuthSchemeEnum = z.enum([
   'GOOGLE_SERVICE_ACCOUNT',
   'NO_AUTH',
   'BASIC_WITH_JWT',
-  'COMPOSIO_LINK',
   'CALCOM_AUTH',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({

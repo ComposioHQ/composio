@@ -14,7 +14,6 @@ export type ConnectionStatusEnum = (typeof ConnectionStatuses)[keyof typeof Conn
 export const RedirectableAuthSchemeSchema = z.enum([
   AuthSchemeTypes.OAUTH1,
   AuthSchemeTypes.OAUTH2,
-  AuthSchemeTypes.COMPOSIO_LINK,
 ]);
 
 // Define base fields as a Zod object (no baseUrl)
@@ -209,33 +208,6 @@ export type Oauth1ExpiredConnectionData = z.infer<typeof Oauth1ExpiredConnection
 export type Oauth1InactiveConnectionData = z.infer<typeof Oauth1InactiveConnectionDataSchema>;
 export type Oauth1ConnectionData = z.infer<typeof Oauth1ConnectionDataSchema>;
 export type CustomOauth1ConnectionData = z.infer<typeof CustomOauth1ConnectionDataSchema>;
-
-// COMPOSIO_LINK_AUTH
-const ComposioLinkInitiatingSchema = BaseSchemeRaw.extend({
-  status: z.literal(ConnectionStatuses.INITIALIZING),
-}).catchall(z.unknown());
-export const ComposioLinkConnectionDataSchema = z.discriminatedUnion('status', [
-  ComposioLinkInitiatingSchema,
-  ComposioLinkInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.INITIATED),
-    redirectUrl: z.string(),
-  }).catchall(z.unknown()),
-  ComposioLinkInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.ACTIVE),
-  }).catchall(z.unknown()),
-  ComposioLinkInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.FAILED),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }).catchall(z.unknown()),
-  ComposioLinkInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.EXPIRED),
-    expired_at: z.string().optional(),
-  }).catchall(z.unknown()),
-  ComposioLinkInitiatingSchema.extend({
-    status: z.literal(ConnectionStatuses.INACTIVE),
-  }).catchall(z.unknown()),
-]);
 
 // BILLCOM_AUTH
 const BillcomAuthInitiatingSchema = BaseSchemeRaw.extend({
@@ -460,13 +432,6 @@ export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
      * the main connection data discriminated by auth scheme
      */
     val: Oauth2ConnectionDataSchema,
-  }),
-  z.object({
-    authScheme: z.literal(AuthSchemeTypes.COMPOSIO_LINK),
-    /**
-     * the main connection data discriminated by auth scheme
-     */
-    val: ComposioLinkConnectionDataSchema,
   }),
   z.object({
     authScheme: z.literal(AuthSchemeTypes.API_KEY),

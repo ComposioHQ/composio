@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.50",
+  "version": "0.1.52",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -44,7 +44,7 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.31",
+    "@composio/client": "0.1.0-alpha.36",
     "@composio/json-schema-to-zod": "0.1.15",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",

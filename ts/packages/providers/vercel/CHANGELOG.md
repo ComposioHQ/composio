@@ -1,5 +1,20 @@
 # @composio/vercel
 
+## 0.2.8
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+- Updated dependencies [7077cee]
+  - @composio/core@0.1.52
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [b9b005a]
+  - @composio/core@0.1.51
+
 ## 0.2.6
 
 ### Patch Changes
