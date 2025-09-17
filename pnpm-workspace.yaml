@@ -10,3 +10,19 @@ packages:
 - "fern/llms-txt-worker"
 - "fern/pages/examples/*"
 - "fern/snippets/*"
+
+# See: https://pnpm.io/catalogs
+catalog:
+  "@cloudflare/vitest-pool-workers": ^0.9.2
+  "@cloudflare/workers-types": ^4.20250917.0
+  "ai": ^5.0.44
+  "openai": ^5.20.3
+  "tsup": ^8.5.0
+  "typescript": ^5.9.2
+  "wrangler": ^4.37.0
+
+  # According to https://github.com/langchain-ai/langchainjs/issues/8468, v3.25.75 is broken. v3.25.76 is probably broken as well,
+  # as it causes "error TS2589: Type instantiation is excessively deep and possibly infinite." in `./ts/packages/providers/langchain/src/index.ts`.
+  # However, most packages imported elsewhere (e.g., ´@ai-sdk/*`) require `zod: ^3.25.76 || ^4`.
+  # Hence, we have to use at least v3.25.76 for now, and "accept" and ignore the above TS2589 error in `@composio/langchain`.
+  "zod": 3.25.76
