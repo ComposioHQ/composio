@@ -193,22 +193,31 @@ navigation:
     skip-slug: true
     contents:
     - page: Basic Hono Server
-      path: pages/dist/examples/sample-webserver/sample-webserver.mdx
-      slug: examples/sample-webserver
+      path: pages/dist/examples/hono.mdx
+      slug: examples/hono
+    - page: Basic FastAPI Server
+      path: pages/dist/examples/fast-api.mdx
+      slug: examples/fast-api
+  - section: Productivity & Automation
+    icon: zap
+    skip-slug: true
+    contents:
+    - page: Gmail Labeller
+      path: pages/dist/examples/utility_agents/gmail_labeler.mdx
+      slug: examples/gmail-labeler
+    - page: Slack summariser
+      path: pages/dist/examples/utility_agents/slack_summariser.mdx
+      slug: examples/slack-summariser
+    - page: Supabase SQL Agent
+      path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
+      slug: examples/supabase-sql-agent
   - section: Full Stack Applications
     icon: globe
     skip-slug: true
     contents:
     - page: Full Stack Chat App
-      path: pages/dist/examples/vercel-composio.mdx
-      slug: examples/chat-app
-  - section: Productivity & Automation
-    icon: zap
-    skip-slug: true
-    contents:
-    - page: AI Gmail Labeller
-      path: pages/dist/examples/gmail-filterer.mdx
-      slug: examples/gmail-reaper
+      path: pages/dist/examples/chat_applications/vercel_chat.mdx
+      slug: examples/vercel-chat
   - section: Behind the curtain
     icon: person-booth
     skip-slug: true
