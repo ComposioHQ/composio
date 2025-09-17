@@ -26,13 +26,13 @@
   "dependencies": {
     "@ai-sdk/openai": "^1.3.16",
     "@composio/core": "workspace:*",
-    "@composio/mastra": "workspace:^",
+    "@composio/mastra": "workspace:*",
     "@mastra/core": "^0.10.0",
     "@mastra/mcp": "^0.10.3",
     "dotenv": "^16.4.1"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }

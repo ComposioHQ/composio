@@ -30,14 +30,15 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
-    "@types/node": "^24.0.1",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.4",
-    "zod-to-json-schema": "^3.24.5"
-  },
-  "dependencies": {
     "@types/json-schema": "^7.0.15",
-    "zod": "^3.24.2"
+    "@types/node": "^24.0.1",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^3.1.4",
+    "zod-to-json-schema": "^3.24.5",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "zod": "catalog:"
   }
 }

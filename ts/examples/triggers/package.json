@@ -20,6 +20,6 @@
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }

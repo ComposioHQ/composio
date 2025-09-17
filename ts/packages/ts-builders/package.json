@@ -23,7 +23,7 @@
   "devDependencies": {
     "@types/babel__helper-validator-identifier": "^7.15.2",
     "helper-validator-identifier": "link:@types/@babel/helper-validator-identifier",
-    "tsup": "^8.4.0",
+    "tsup": "catalog:",
     "vitest": "^3.1.4"
   },
   "scripts": {

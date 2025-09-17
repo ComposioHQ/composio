@@ -39,8 +39,8 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
     "vitest": "^3.1.4"
   }
 }
