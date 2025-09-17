@@ -2,7 +2,7 @@
   "name": "@composio/json-schema-to-zod",
   "version": "0.1.15",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "type": "module",
   "publishConfig": {
     "access": "public",
@@ -30,14 +30,12 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "devDependencies": {
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^24.0.1",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4",
+    "zod": "^3.25.0",
     "zod-to-json-schema": "^3.24.5"
-  },
-  "dependencies": {
-    "@types/json-schema": "^7.0.15",
-    "zod": "^3.24.2"
   }
 }
