@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LangchainProvider } from '../src';
 import { Tool } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
@@ -6,30 +6,30 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 describe('LangchainProvider', () => {
   let provider: LangchainProvider;
   let sampleTool: Tool;
-  let executeToolFn: (
-    toolSlug: string,
-    params: Record<string, unknown>,
-    modifiers?: any
-  ) => Promise<any>;
+  let executeToolFn: (toolSlug: string, params: Record<string, unknown>) => Promise<any>;
 
   beforeEach(() => {
     provider = new LangchainProvider();
 
     // Create a real execute function that simulates tool execution
-    executeToolFn = async (toolSlug: string, params: Record<string, unknown>) => {
-      // Simulate actual tool execution with realistic response
-      return {
-        data: { toolSlug, params },
-        error: null,
-        successful: true,
-      };
-    };
+    executeToolFn = vi
+      .fn()
+      .mockImplementation(async (toolSlug: string, params: Record<string, unknown>) => {
+        // Simulate actual tool execution with realistic response
+        return {
+          data: { toolSlug, params },
+          error: null,
+          successful: true,
+        };
+      });
 
     // Create a real sample tool that matches actual tool structure
     sampleTool = {
       slug: 'SEARCH_TOOL',
       name: 'Search Tool',
       description: 'Search for information in the knowledge base',
+      version: '20250909_00',
+      availableVersions: ['20250909_00', '20250901_00'],
       inputParameters: {
         type: 'object',
         properties: {

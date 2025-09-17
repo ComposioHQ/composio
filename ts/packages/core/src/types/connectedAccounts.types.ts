@@ -140,3 +140,26 @@ export const ConnectedAccountListResponseSchema = z.object({
   totalPages: z.number().describe('The total number of pages of connected accounts'),
 });
 export type ConnectedAccountListResponse = z.infer<typeof ConnectedAccountListResponseSchema>;
+
+export const CreateConnectedAccountLinkOptionsSchema = z.object({
+  /**
+   * The url to redirect the user to post connecting their account.
+   *
+   * For sucessfull connections, you will get a query param called status=success
+   * And for failed connections you will get a query param called satus=failed
+   *
+   * @example https://your-app.com/callback
+   *
+   */
+  callbackUrl: z.string().optional(),
+});
+export type CreateConnectedAccountLinkOptions = z.infer<
+  typeof CreateConnectedAccountLinkOptionsSchema
+>;
+
+export const CreateConnectedAccountLinkResponseSchema = z.object({
+  redirectUrl: z.string(),
+});
+export type CreateConnectedAccountLinkResponse = z.infer<
+  typeof CreateConnectedAccountLinkResponseSchema
+>;

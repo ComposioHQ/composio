@@ -92,7 +92,7 @@ tabs:
   changelog:
     display-name: Changelog
     icon: history
-    changelog: ./pages/changelog
+    changelog: ./pages/src/changelog
 navigation:
 - tab: docs
   layout:
@@ -153,6 +153,9 @@ navigation:
     - page: Custom Auth Parameters
       path: pages/dist/authentication/custom-auth-params.mdx
       slug: custom-auth-params
+    - page: User Management
+      path: pages/dist/authentication/user-management.mdx
+      slug: user-management
   - section: Triggers
     icon: bolt
     skip-slug: true

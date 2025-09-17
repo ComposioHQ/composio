@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.15
+
+### Patch Changes
+
+- 51033d8: Fix additional properties in nested structures
+
 ## 0.1.14
 
 ### Patch Changes

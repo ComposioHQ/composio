@@ -17,7 +17,9 @@ from composio.core.models import (
 from composio.core.models.base import allow_tracking
 from composio.core.provider import TProvider
 from composio.core.provider._openai import OpenAIProvider
+from composio.core.types import ToolkitVersionParam
 from composio.utils.logging import WithLogger
+from composio.utils.toolkit_version import get_toolkit_versions
 
 _DEFAULT_PROVIDER = OpenAIProvider()
 
@@ -30,6 +32,7 @@ class SDKConfig(te.TypedDict):
     max_retries: te.NotRequired[int]
     allow_tracking: te.NotRequired[bool]
     file_download_dir: te.NotRequired[str]
+    toolkit_versions: te.NotRequired[ToolkitVersionParam]
 
 
 class Composio(t.Generic[TProvider], WithLogger):
@@ -53,11 +56,18 @@ class Composio(t.Generic[TProvider], WithLogger):
         :param base_url: The base URL to use for the SDK.
         :param timeout: The timeout to use for the SDK.
         :param max_retries: The maximum number of retries to use for the SDK.
+        :param toolkit_versions: The versions of the toolkits to use. Can be:
+                                - A string (e.g., 'latest', '20250906_01') to use the same version for all toolkits
+                                - A dict mapping toolkit names to specific versions
+                                - None to use 'latest' as default
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
         if not api_key:
             raise exceptions.ApiKeyNotProvidedError()
+
+        # Process toolkit versions with environment variable support
+        toolkit_versions = get_toolkit_versions(kwargs.get("toolkit_versions"))
 
         allow_tracking.set(kwargs.get("allow_tracking", True))
         self._client = HttpClient(
@@ -73,6 +83,7 @@ class Composio(t.Generic[TProvider], WithLogger):
             client=self._client,
             provider=self.provider,
             file_download_dir=kwargs.get("file_download_dir"),
+            toolkit_versions=toolkit_versions,
         )
         self.toolkits = Toolkits(client=self._client)
         self.triggers = Triggers(client=self._client)

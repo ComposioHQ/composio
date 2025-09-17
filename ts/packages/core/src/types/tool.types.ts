@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
+import { TransformToolSchemaModifier } from './modifiers.types';
 
 /**
  * Toolkit is the collection of tools,
@@ -112,10 +113,15 @@ export const ToolSchema = z.object({
   description: z.string().optional().describe('The description of the tool'),
   inputParameters: ParametersSchema.optional().describe('The input parameters of the tool'),
   outputParameters: ParametersSchema.optional().describe('The output parameters of the tool'),
-  tags: z.optional(z.array(z.string())).describe('The tags of the tool. eg: Important').default([]),
-  toolkit: z.optional(ToolkitSchema).describe('The toolkit of the tool'),
-  version: z.optional(z.string()).describe('The version of the tool, e.g. "1.0.0"'),
-  scopes: z.optional(z.array(z.string())).describe('The scopes of the tool. eg: ["task:add"]'),
+  tags: z.array(z.string()).describe('The tags of the tool. eg: Important').default([]).optional(),
+  toolkit: ToolkitSchema.describe('The toolkit of the tool').optional(),
+  version: z.string().describe('The version of the tool, e.g. "20250909_00"').optional(),
+  availableVersions: z
+    .array(z.string())
+    .describe('Available versions of the tool.')
+    .default([])
+    .optional(),
+  scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
@@ -133,6 +139,31 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  * Plain SDK level Tool List
  */
 export type ToolList = Array<Tool>;
+
+/**
+ * latest toolkit version param
+ */
+export type ToolkitLatestVersion = 'latest';
+/**
+ * Versioning a tool based on it's toolkit version, either 'latest' or actual tool version as string '20250902_00'
+ * @example
+ * 'latest'
+ * '20250902_00'
+ */
+export type ToolkitVersion = ToolkitLatestVersion | string;
+/**
+ * Versioning multiple toolkits
+ *  @example
+ * { 'github': 'latest', 'slack': '20250902_00' }
+ */
+export type ToolkitVersions = Record<string, ToolkitVersion>;
+/**
+ * Versioning a toolkit based on it's tool versions, either 'latest' or actual tool version as string '20250902_00'
+ * @example
+ * 'latest'
+ * { 'github': 'latest', 'slack': '20250902_00' }
+ */
+export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions | undefined;
 
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
@@ -159,7 +190,6 @@ type ToolsOnlyParams = {
   search?: never;
   tags?: never;
 };
-
 // toolkits only
 type ToolkitsOnlyParams = {
   toolkits: string[];
@@ -184,11 +214,11 @@ type TagsOnlyParams = {
 
 // search only
 type SearchOnlyParams = {
+  search: string;
   tools?: never;
   toolkits?: never;
   scopes?: never;
   limit?: never;
-  search: string;
   tags?: never;
 };
 
@@ -235,8 +265,8 @@ export const ToolExecuteParamsSchema = z.object({
   customAuthParams: CustomAuthParamsSchema.optional(),
   customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
-  userId: z.string().optional(), //
-  version: z.string().optional(),
+  userId: z.string().optional(), // we have no auth apps which can be execute
+  version: z.union([z.literal('latest'), z.string()]).optional(),
   text: z.string().optional(),
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
@@ -270,3 +300,7 @@ export const ToolProxyParamsSchema = z.object({
   customConnectionData: CustomConnectionDataSchema.optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
+
+export type SchemaModifierOptions = {
+  modifySchema: TransformToolSchemaModifier;
+};

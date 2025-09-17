@@ -6,10 +6,10 @@ import {
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
-import { TOOLS_GITHUB } from 'test/__mocks__/tools_github';
+import { TOOLS_GITHUB } from 'test/__mocks__/tools-github';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
 
 describe('generateTypeScriptToolkitSources', () => {
   describe('with a single emitted file', () => {
@@ -28,7 +28,7 @@ describe('generateTypeScriptToolkitSources', () => {
       it('[Given] empty toolkits, tools, triggerTypes [Then] it creates a valid but empty index map', () => {
         const index = createToolkitIndex({
           toolkits: [],
-          tools: [],
+          typeableTools: { withTypes: false, tools: [] },
           triggerTypes: [],
         });
 
@@ -71,7 +71,7 @@ describe('generateTypeScriptToolkitSources', () => {
 
         const index = createToolkitIndex({
           toolkits,
-          tools: [],
+          typeableTools: { withTypes: false, tools: [] },
           triggerTypes: [],
         });
 
@@ -119,7 +119,10 @@ describe('generateTypeScriptToolkitSources', () => {
 
         const index = createToolkitIndex({
           toolkits,
-          tools: [...TOOLS_GMAIL.slice(0, 3), ...TOOLS_GITHUB.slice(0, 3)],
+          typeableTools: {
+            withTypes: false,
+            tools: [...TOOLS_GMAIL.slice(0, 3), ...TOOLS_GITHUB.slice(0, 3)],
+          },
           triggerTypes: [...TRIGGER_TYPES_GITHUB, ...TRIGGER_TYPES_GMAIL],
         });
 
@@ -173,7 +176,7 @@ describe('generateTypeScriptToolkitSources', () => {
       it('[Given] empty toolkits, tools, triggerTypes [Then] it creates a valid but empty index map', () => {
         const index = createToolkitIndex({
           toolkits: [],
-          tools: [],
+          typeableTools: { withTypes: false, tools: [] },
           triggerTypes: [],
         });
 
@@ -220,7 +223,7 @@ describe('generateTypeScriptToolkitSources', () => {
 
         const index = createToolkitIndex({
           toolkits,
-          tools: [],
+          typeableTools: { withTypes: false, tools: [] },
           triggerTypes: [],
         });
 
@@ -274,7 +277,10 @@ describe('generateTypeScriptToolkitSources', () => {
 
         const index = createToolkitIndex({
           toolkits,
-          tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
+          typeableTools: {
+            withTypes: false,
+            tools: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_DELETE_MESSAGE', 'GMAIL_FETCH_EMAILS'],
+          },
           triggerTypes: [...TRIGGER_TYPES_GMAIL],
         });
 

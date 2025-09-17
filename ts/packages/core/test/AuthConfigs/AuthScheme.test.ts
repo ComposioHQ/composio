@@ -102,22 +102,6 @@ describe('AuthScheme', () => {
     });
   });
 
-  describe('ComposioLink', () => {
-    it('should create ComposioLink connection data', () => {
-      const result = AuthScheme.ComposioLink({});
-
-      expect(result).toEqual({
-        authScheme: AuthSchemeTypes.COMPOSIO_LINK,
-        val: {
-          status: ConnectionStatuses.INITIALIZING,
-        },
-      });
-
-      // Verify Zod schema validation
-      expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
-    });
-  });
-
   describe('APIKey', () => {
     it('should create APIKey connection data', () => {
       const params = {

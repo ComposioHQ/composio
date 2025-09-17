@@ -1,4 +1,4 @@
-import { Command, Options, Prompt } from '@effect/cli';
+import { Command, Options } from '@effect/cli';
 import { Effect, Console, Schedule } from 'effect';
 import { green } from 'ansis';
 import open, { apps } from 'open';

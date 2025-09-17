@@ -20,21 +20,21 @@ export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParam
     index: ToolkitIndex
   ): Effect.Effect<Array<SourceFile>, GenerateTypeFromJsonSchemaError, never> =>
     Effect.gen(function* () {
-      const toolkiteSources = yield* generateTypeScriptToolkitSources(params.banner)(index);
+      const toolkitSources = yield* generateTypeScriptToolkitSources(params.banner)(index);
 
       const indexSource = generateIndexSource(params)(index);
       const indexFilename = path.join(params.outputDir, 'index.ts');
 
       if (!params.emitSingleFile) {
         return [
-          ...toolkiteSources.map(
+          ...toolkitSources.map(
             ([filename, content]) => [path.join(params.outputDir, filename), content] as const
           ),
           [indexFilename, indexSource] as const,
         ] as const;
       }
 
-      const localToolkitsSources = toolkiteSources.map(([_, content]) => content).join('\n');
+      const localToolkitsSources = toolkitSources.map(([_, content]) => content).join('\n');
 
       const indexSourceSingleFile = `${ts.stringify(ts.docComment(params.banner))}
   ${localToolkitsSources}
