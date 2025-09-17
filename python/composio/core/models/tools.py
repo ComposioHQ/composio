@@ -83,10 +83,12 @@ class Tools(Resource, t.Generic[TProvider]):
         """Filter out custom tools from the list of tools."""
         _tools = []
         _custom_tools = []
+        custom_tools_registry = self._custom_tools.custom_tools_registry
         for tool in tools:
-            try:
-                _custom_tools.append(self._custom_tools[tool].info)
-            except KeyError:
+            custom_tool = custom_tools_registry.get(tool)
+            if custom_tool is not None:
+                _custom_tools.append(custom_tool.info)
+            else:
                 _tools.append(tool)
         return _tools, _custom_tools
 
