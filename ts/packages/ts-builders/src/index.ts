@@ -6,6 +6,7 @@ export * from './BasicBuilder';
 export * from './Class';
 export * from './ConstDeclaration';
 export * from './DocComment';
+export * from './DocSectionComment';
 export * from './Export';
 export * from './ExportFrom';
 export * from './File';

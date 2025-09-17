@@ -5,13 +5,13 @@ import { BANNER } from 'src/generation/constants';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
 
 describe('generatePythonToolkitSources', () => {
   it('[Given] empty toolkits, tools, triggerTypes [Then] it returns an empty array', () => {
     const index = createToolkitIndex({
       toolkits: [],
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
@@ -30,7 +30,7 @@ describe('generatePythonToolkitSources', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: [],
+      typeableTools: { withTypes: false, tools: [] },
       triggerTypes: [],
     });
 
@@ -71,7 +71,7 @@ describe('generatePythonToolkitSources', () => {
 
     const index = createToolkitIndex({
       toolkits,
-      tools: [...TOOLS_GMAIL.slice(0, 3)],
+      typeableTools: { withTypes: false, tools: [...TOOLS_GMAIL.slice(0, 3)] },
       triggerTypes: [...TRIGGER_TYPES_GMAIL],
     });
 
