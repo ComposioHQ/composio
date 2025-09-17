@@ -195,13 +195,6 @@ navigation:
           - page: Basic FastAPI Server
             path: pages/dist/examples/fast-api.mdx
             slug: examples/fast-api
-      - section: Full Stack Applications
-        icon: globe
-        skip-slug: true
-        contents:
-          - page: Full Stack Chat App
-            path: pages/dist/examples/chat_applications/vercel_chat.mdx
-            slug: examples/vercel-chat
       - section: Productivity & Automation
         icon: zap
         skip-slug: true
@@ -215,6 +208,13 @@ navigation:
           - page: Supabase SQL Agent
             path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
             slug: examples/supabase-sql-agent
+      - section: Full Stack Applications
+        icon: globe
+        skip-slug: true
+        contents:
+          - page: Full Stack Chat App
+            path: pages/dist/examples/chat_applications/vercel_chat.mdx
+            slug: examples/vercel-chat
       - section: Behind the curtain
         icon: person-booth
         skip-slug: true
