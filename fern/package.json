@@ -52,7 +52,7 @@
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
 		"@types/yaml": "^1.9.7",
-		"ai": "^4.3.8",
+		"ai": "catalog:",
 		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
 		"messages": "link:@langchain/core/messages",
@@ -64,7 +64,7 @@
 		"typedoc": "^0.28.5",
 		"typedoc-plugin-markdown": "^4.6.4",
 		"typedoc-plugin-zod": "^1.4.1",
-		"typescript": "^5.8.3",
+		"typescript": "catalog:",
 		"uuid": "^11.1.0",
 		"vitest": "^3.1.4",
 		"yaml": "^2.8.0"

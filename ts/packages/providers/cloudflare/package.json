@@ -30,13 +30,13 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
-    "@cloudflare/workers-types": "^4.20250416.0",
+    "@cloudflare/workers-types": "catalog:",
     "@composio/core": "0.1.52"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
     "vitest": "^3.1.4"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"

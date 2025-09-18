@@ -53,9 +53,9 @@
     "@types/decompress": "^4.2.7",
     "@types/semver": "^7.7.0",
     "tempy": "^3.1.0",
-    "tsup": "^8.5.0",
+    "tsup": "catalog:",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
+    "typescript": "catalog:",
     "vitest": "^3.2.4"
   },
   "dependencies": {

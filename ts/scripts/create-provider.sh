@@ -57,8 +57,8 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3"
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }
 EOL
@@ -68,14 +68,14 @@ cat > "$TOOLSET_PATH/tsconfig.json" << EOL
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "es2022",
+    "module": "esnext",
     "declaration": true,
     "declarationDir": "./dist",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
