@@ -26,3 +26,6 @@ catalog:
   # However, most packages imported elsewhere (e.g., ´@ai-sdk/*`) require `zod: ^3.25.76 || ^4`.
   # Hence, we have to use at least v3.25.76 for now, and "accept" and ignore the above TS2589 error in `@composio/langchain`.
   "zod": 3.25.76
+
+# See: https://pnpm.io/settings#minimumreleaseage
+minimumReleaseAge: 1440 # 1 day
