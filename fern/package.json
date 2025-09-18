@@ -65,8 +65,8 @@
 		"typedoc-plugin-markdown": "^4.6.4",
 		"typedoc-plugin-zod": "^1.4.1",
 		"typescript": "catalog:",
-		"uuid": "^11.1.0",
-		"vitest": "^3.1.4",
+		"uuid": "catalog:",
+		"vitest": "catalog:",
 		"yaml": "^2.8.0"
 	}
 }

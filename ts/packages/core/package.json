@@ -39,23 +39,23 @@
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/semver": "^7.7.0",
     "tsup": "catalog:",
-    "tsx": "^4.19.3",
+    "tsx": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4",
+    "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "zod": "catalog:"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.36",
+    "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "0.1.15",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
     "openai": "^5.16.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
-    "uuid": "^11.1.0",
+    "uuid": "catalog:",
     "zod-to-json-schema": "^3.24.5"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
