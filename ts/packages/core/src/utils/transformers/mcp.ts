@@ -12,10 +12,10 @@ import {
   McpUpdateResponse,
   GenerateURLResponse,
   GenerateURLResponseSchema,
+  ComposioGenerateURLResponse,
 } from '../../types/mcp.types';
 import {
   CustomCreateResponse as CustomCreateResponseRaw,
-  GenerateURLResponse as GenerateURLResponseRaw,
   McpListResponse as McpListResponseRaw,
   McpCreateResponse as McpCreateResponseRaw,
   McpDeleteResponse as McpDeleteResponseRaw,
@@ -146,10 +146,9 @@ export function transformMcpUpdateResponse(response: McpUpdateResponseRaw): McpU
  * Transform MCP generate URL response from snake_case to camelCase
  */
 export function transformMcpGenerateUrlResponse(
-  response: GenerateURLResponseRaw
+  response: ComposioGenerateURLResponse
 ): GenerateURLResponse {
   const result = GenerateURLResponseSchema.safeParse({
-    connectedAccountUrls: response.connected_account_urls,
     userIdsUrl: response.user_ids_url,
     mcpUrl: response.mcp_url,
   });

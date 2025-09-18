@@ -142,6 +142,8 @@ export class Tools<
     userId: string,
     toolSlug: string
   ): Promise<string | null> {
+    console.log('[getConnectedAccountIdForTool]', { userId, toolSlug });
+
     const tool = await this.getRawComposioToolBySlug(toolSlug);
     if (!tool.toolkit) {
       throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
@@ -794,6 +796,8 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
+    console.log('[Tools.execute] body.userId', body.userId);
+
     if (!this.customTools) {
       throw new ComposioCustomToolsNotInitializedError(
         'CustomTools not initialized. Make sure Tools class is properly constructed.'

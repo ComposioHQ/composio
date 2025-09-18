@@ -16,8 +16,6 @@ import {
   McpRetrieveResponseSchema,
   ComposioMcpDeleteResponseSchema,
   ComposioMcpUpdateResponseSchema,
-  McpUrlResponse,
-  McpUrlResponseCamelCase,
   McpServerGetResponse,
   McpServerCreateResponse,
   ComposioGenerateURLResponseSchema,
@@ -48,15 +46,28 @@ import { ToolkitAuthFieldsResponse } from '../types/toolkit.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 
 /**
+ * Extract the MCP response type from a provider.
+ */
+type ExtractMcpResponseType<T> =
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp>
+    ? TMcp
+    : /* @default */ McpServerGetResponse;
+
+/**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations
  */
-export class MCP<T = McpServerGetResponse> {
+export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   private client: ComposioClient;
-  private provider?: BaseComposioProvider<unknown, unknown, unknown>;
+  private provider: TProvider;
   private toolkits: Toolkits;
 
-  constructor(client: ComposioClient, provider?: BaseComposioProvider<unknown, unknown, unknown>) {
+  // Trick to store types derived from a generic parameter inside the class.
+  // It's similar to `using type` declarations in C++.
+  // See: https://stackoverflow.com/questions/76017389/type-or-interface-inside-class-in-typescript.
+  declare readonly TMcpResponse: ExtractMcpResponseType<TProvider>;
+
+  constructor(client: ComposioClient, provider: TProvider) {
     this.client = client;
     this.provider = provider;
     this.toolkits = new Toolkits(client);
@@ -95,7 +106,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {Object} params - Parameters for creating the MCP server
    * @param {Array} params.authConfig - Array of auth configurations with id and allowed tools
    * @param {Object} params.options - Server creation options
-   * @param {string} params.options.name - Unique name for the MCP server
+   * @param {string} params.options.label - Unique name for the MCP server
    * @param {boolean} [params.options.isChatAuth] - Whether to use chat-based authentication
    * @returns {Promise<McpServerCreateResponse<T>>} Created server details with instance getter
    *
@@ -124,10 +135,10 @@ export class MCP<T = McpServerGetResponse> {
       authConfigId: string;
       allowedTools: string[];
     }>,
-    options: {
+    options?: {
       isChatAuth?: boolean;
     }
-  ): Promise<McpServerCreateResponse<T>> {
+  ): Promise<McpServerCreateResponse<typeof this.TMcpResponse>> {
     // Validate inputs using Zod schemas
     if (!serverConfig || serverConfig.length === 0) {
       throw new ValidationError('At least one auth config is required', {});
@@ -174,7 +185,7 @@ export class MCP<T = McpServerGetResponse> {
         name: mcpServer.name,
         auth_config_ids: serverConfig.map(config => config.authConfigId),
         allowed_tools: serverConfig.flatMap(config => config.allowedTools),
-        managed_auth_via_composio: options.isChatAuth || false,
+        managed_auth_via_composio: options?.isChatAuth ?? false,
         commands: mcpServer.commands!,
         created_at: mcpServer.createdAt!,
         updated_at: mcpServer.updatedAt!,
@@ -184,12 +195,13 @@ export class MCP<T = McpServerGetResponse> {
       return {
         ...camelCaseResponse,
         toolkits,
-        getServer: async (params: MCPGetServerParams): Promise<T> => {
+        getServer: async (params: MCPGetServerParams): Promise<typeof this.TMcpResponse> => {
           return this.getServer(camelCaseResponse.id, params.userId || '', {
-            isChatAuth: options.isChatAuth,
+            isChatAuth: options?.isChatAuth,
+            label: params?.label,
           });
         },
-      } as McpServerCreateResponse<T>;
+      } as McpServerCreateResponse<typeof this.TMcpResponse>;
     } catch (error) {
       // If error is not about server not found, re-throw it
       if (error instanceof ValidationError && !error.message.includes('not found')) {
@@ -211,7 +223,7 @@ export class MCP<T = McpServerGetResponse> {
         name: name,
         toolkits: toolkits,
         custom_tools: serverConfig.flatMap(config => config.allowedTools),
-        managed_auth_via_composio: options.isChatAuth || false,
+        managed_auth_via_composio: options?.isChatAuth ?? false,
         auth_config_ids: serverConfig.map(config => config.authConfigId),
       });
     } catch (error) {
@@ -236,13 +248,14 @@ export class MCP<T = McpServerGetResponse> {
     return {
       ...camelCaseResponse,
       toolkits,
-      getServer: async (params: MCPGetServerParams): Promise<T> => {
+      getServer: async (params: MCPGetServerParams): Promise<typeof this.TMcpResponse> => {
         // Delegate to the standalone getServer method
         return this.getServer(camelCaseResponse.id, params.userId || '', {
-          isChatAuth: options.isChatAuth,
+          label: params.label,
+          isChatAuth: options?.isChatAuth,
         });
       },
-    } as McpServerCreateResponse<T>;
+    } as McpServerCreateResponse<typeof this.TMcpResponse>;
   }
 
   /**
@@ -404,6 +417,8 @@ export class MCP<T = McpServerGetResponse> {
   async authorize(userId: string, serverId: string, toolkit: string): Promise<ConnectionRequest> {
     const mcpServerDetails = await this.get(serverId);
     const authConfigId = mcpServerDetails.authConfigIds?.[0];
+
+    // TODO use connectedAccounts.link(userId, authConfigId)?
     return this.toolkits.authorize(userId, toolkit, authConfigId);
   }
 
@@ -412,6 +427,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {string} serverId - Server UUID
    * @param {string} userId - User ID to get server URLs for
    * @param {Object} [options] - Additional options for server configuration
+   * @param {string} options.label - Label for the server instance
    * @param {string[]} [options.limitTools] - Subset of tools to limit (from MCP config)
    * @param {boolean} [options.isChatAuth] - Whether to use chat-based authentication
    * @returns {Promise<T>} Transformed server URLs in provider-specific format
@@ -431,11 +447,12 @@ export class MCP<T = McpServerGetResponse> {
   async getServer(
     serverId: string,
     userId: string,
-    options?: {
+    options: {
+      label: string;
       limitTools?: string[];
       isChatAuth?: boolean;
     }
-  ): Promise<T> {
+  ): Promise<typeof this.TMcpResponse> {
     // Get server details first
     const serverDetails = await this.get(serverId);
 
@@ -444,29 +461,11 @@ export class MCP<T = McpServerGetResponse> {
       throw new ValidationError('User ID is required', {});
     }
 
-    // Extract toolkits from server details
-    const toolkits = serverDetails.toolkits || [];
-
-    const connectedAccountIds = (
-      await Promise.all(
-        toolkits.map(toolkit =>
-          this.client.connectedAccounts
-            .list({
-              user_ids: [userId],
-              toolkit_slugs: [toolkit],
-              statuses: ['ACTIVE'],
-            })
-            .then(res => res.items?.[0]?.id)
-        )
-      )
-    ).filter(Boolean);
-
     // Generate URL with error handling
     let data;
     try {
       data = await this.client.mcp.generate.url({
         user_ids: [userId],
-        // @TODO(utkarsh-dixit): Add support for this later
         connected_account_ids: [],
         mcp_server_id: serverId,
         managed_auth_by_composio:
@@ -487,16 +486,10 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Transform to camelCase
-    const camelCaseData = transformMcpGenerateUrlResponse(data);
+    const camelCaseData = transformMcpGenerateUrlResponse(urlResponseResult.data);
 
     // Use the wrapMcpServerResponse method to transform the response
-    return this.wrapMcpServerResponse(
-      camelCaseData,
-      serverDetails.name,
-      connectedAccountIds,
-      [userId],
-      toolkits
-    );
+    return this.wrapMcpServerResponse(camelCaseData, options.label);
   }
 
   /**
@@ -741,7 +734,7 @@ export class MCP<T = McpServerGetResponse> {
     }
 
     // Transform the response to camelCase
-    return transformMcpGenerateUrlResponse(urlResponse);
+    return transformMcpGenerateUrlResponse(responseResult.data);
   }
 
   /**
@@ -750,63 +743,28 @@ export class MCP<T = McpServerGetResponse> {
    * Otherwise, use the default transformation.
    *
    * @param data - The MCP URL response data (in camelCase)
-   * @param serverName - Name of the MCP server
+   * @param label - Name of the MCP server
 
    * @returns Transformed response in appropriate format
    */
   private wrapMcpServerResponse(
-    data: McpUrlResponseCamelCase,
-    serverName: string,
-    connectedAccountIds?: string[],
-    userIds?: string[],
-    toolkits?: string[]
-  ): T {
+    data: GenerateURLResponse,
+    label: string
+  ): typeof this.TMcpResponse {
+    const [userIdUrl] = data.userIdsUrl;
+
+    const transformedData = {
+      url: new URL(userIdUrl),
+      label,
+    };
+
     // Check if provider has a custom transform method
-    if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
-      // Convert to array of name and url based on connected accounts or user ids
-      let snakeCaseData: McpUrlResponse;
-
-      if (data.connectedAccountUrls?.length) {
-        snakeCaseData = data.connectedAccountUrls.map((url, index) => ({
-          name: serverName + '-' + connectedAccountIds?.[index],
-          url: url,
-        }));
-      } else if (data.userIdsUrl?.length) {
-        snakeCaseData = data.userIdsUrl.map((url, index) => ({
-          name: serverName + '-' + userIds?.[index],
-          url: url,
-        }));
-      } else {
-        snakeCaseData = [
-          {
-            name: serverName,
-            url: data.mcpUrl,
-          },
-        ];
-      }
-
-      const transformed = this.provider.wrapMcpServerResponse(snakeCaseData);
-      return transformed as T;
+    if (typeof this.provider.wrapMcpServerResponse === 'function') {
+      const wrapped = this.provider.wrapMcpServerResponse(transformedData);
+      return wrapped as typeof this.TMcpResponse;
     }
 
-    // Default transformation
-    if (connectedAccountIds?.length && data.connectedAccountUrls) {
-      return data.connectedAccountUrls.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${connectedAccountIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as T;
-    } else if (userIds?.length && data.userIdsUrl) {
-      return data.userIdsUrl.map((url: string, index: number) => ({
-        url: new URL(url),
-        name: `${serverName}-${userIds[index]}`,
-        toolkit: toolkits?.[index],
-      })) as T;
-    }
-    return {
-      url: new URL(data.mcpUrl),
-      name: serverName,
-    } as T;
+    return transformedData as typeof this.TMcpResponse;
   }
 
   /**

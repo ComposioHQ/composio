@@ -20,7 +20,11 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<
+    unknown,
+    unknown,
+    /* TMcpResponse */ unknown
+  > = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -123,7 +127,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: MCP<ExtractMcpResponseType<TProvider>>;
+  mcp: MCP<TProvider>;
 
   /**
    * Creates a new instance of the Composio SDK.

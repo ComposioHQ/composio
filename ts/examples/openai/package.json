@@ -22,6 +22,7 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@composio/openai-agents": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "@openai/agents": "^0.1.1",
     "dotenv": "^16.4.1",
     "openai": "^5.16.0",

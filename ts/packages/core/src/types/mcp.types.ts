@@ -33,25 +33,10 @@ export const MCPAuthOptionsSchema = z.object({
 
 export type MCPAuthOptions = z.infer<typeof MCPAuthOptionsSchema>;
 
-export const MCPGetServerParamsSchema = z
-  .object({
-    userId: z.string().min(1, 'User ID cannot be empty').optional(),
-    connectedAccountIds: z
-      .record(z.string(), z.string().min(1, 'Account ID cannot be empty'))
-      .optional(),
-  })
-  .refine(
-    data => {
-      // Ensure exactly one of userId or connectedAccountIds is provided
-      const hasUserId = !!data.userId;
-      const hasConnectedAccountIds =
-        !!data.connectedAccountIds && Object.keys(data.connectedAccountIds).length > 0;
-      return hasUserId !== hasConnectedAccountIds; // XOR: exactly one should be true
-    },
-    {
-      message: 'Must provide either userId or connectedAccountIds, but not both',
-    }
-  );
+export const MCPGetServerParamsSchema = z.object({
+  userId: z.string().min(1, 'User ID cannot be empty'),
+  label: z.string().min(1, 'Label cannot be empty'),
+});
 
 export type MCPGetServerParams = z.infer<typeof MCPGetServerParamsSchema>;
 
@@ -87,17 +72,16 @@ export type GenerateURLParams = z.infer<typeof GenerateURLParamsSchema>;
 
 // CamelCase response schema for generate URL
 export const GenerateURLResponseSchema = z.object({
-  connectedAccountUrls: z.array(z.string()).optional(),
-  userIdsUrl: z.array(z.string()).optional(),
+  userIdsUrl: z.array(z.string()).nonempty().max(1),
   mcpUrl: z.string().min(1, 'MCP URL cannot be empty'),
 });
 
 // Snake_case response schema for API
 export const ComposioGenerateURLResponseSchema = z.object({
-  connected_account_urls: z.array(z.string()).optional(),
-  user_ids_url: z.array(z.string()).optional(),
+  user_ids_url: z.array(z.string()).nonempty().max(1),
   mcp_url: z.string().min(1, 'MCP URL cannot be empty'),
 });
+export type ComposioGenerateURLResponse = z.infer<typeof ComposioGenerateURLResponseSchema>;
 
 export type GenerateURLResponseValidated = z.infer<typeof GenerateURLResponseSchema>;
 
@@ -176,13 +160,10 @@ export type MCPCreateMethodResponse<T = GenerateURLResponseRaw> = (
 /**
  * MCP Server URL Information
  */
-export type McpServerUrlInfo = {
+export type McpServerGetResponse = {
   url: URL;
-  name: string;
-  toolkit?: string;
+  label: string;
 };
-
-export type McpServerGetResponse = McpServerUrlInfo | McpServerUrlInfo[];
 
 // CamelCase URL response
 export type McpUrlResponseCamelCase = {
@@ -193,9 +174,9 @@ export type McpUrlResponseCamelCase = {
 
 // Snake_case URL response (for internal API use)
 export type McpUrlResponse = {
-  name: string;
-  url: string;
-}[];
+  label: string;
+  url: URL;
+};
 
 export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateResponseRaw) & {
   toolkits: string[];
