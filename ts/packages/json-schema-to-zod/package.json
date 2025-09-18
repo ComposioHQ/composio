@@ -39,6 +39,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "catalog:"
+    "zod": "3.25.76"
   }
 }
