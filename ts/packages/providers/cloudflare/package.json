@@ -28,7 +28,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@composio/core": "0.1.52"
@@ -37,7 +37,7 @@
     "@composio/core": "workspace:*",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }

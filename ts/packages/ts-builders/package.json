@@ -24,7 +24,7 @@
     "@types/babel__helper-validator-identifier": "^7.15.2",
     "helper-validator-identifier": "link:@types/@babel/helper-validator-identifier",
     "tsup": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "catalog:"
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",

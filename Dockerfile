@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 # Install Node.js, pnpm and bun
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g pnpm@10.8.0 \
+    && npm install -g pnpm@10.17.0 \
     && curl -fsSL https://bun.sh/install | bash
 
 # Add bun to PATH

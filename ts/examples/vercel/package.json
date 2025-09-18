@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.16",
     "@composio/core": "workspace:*",

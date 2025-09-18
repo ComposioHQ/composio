@@ -32,7 +32,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
     "@mastra/core": "^0.13.2"
@@ -41,6 +41,6 @@
     "@composio/core": "workspace:*",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "catalog:"
   }
 }

@@ -32,7 +32,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
     "@composio/core": "0.1.52"
@@ -41,6 +41,6 @@
     "@composio/core": "workspace:*",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4"
+    "vitest": "catalog:"
   }
 }

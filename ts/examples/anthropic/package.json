@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
     "@composio/core": "workspace:*",
