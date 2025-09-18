@@ -34,7 +34,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.16.0",
   "devDependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/semver": "^7.7.0",

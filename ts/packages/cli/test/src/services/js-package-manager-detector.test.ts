@@ -91,7 +91,7 @@ describe('JsPackageManagerDetector', () => {
 
         yield* fs.writeFileString(
           path.join(rootDir, 'package.json'),
-          JSON.stringify({ packageManager: 'pnpm@10.8.0' })
+          JSON.stringify({ packageManager: 'pnpm@10.16.0' })
         );
 
         const subDir = path.join(rootDir, 'subdir');

@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"private": true,
-	"packageManager": "pnpm@10.8.0",
+	"packageManager": "pnpm@10.16.0",
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
 		"clean": "git clean -xdf node_modules",
