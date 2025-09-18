@@ -14,7 +14,6 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { McpServerGetResponse } from './types/mcp.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
@@ -86,12 +85,6 @@ export type ComposioConfig<
 };
 
 /**
- * Extract the MCP response type from a provider
- */
-type ExtractMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, infer TMcp> ? TMcp : McpServerGetResponse;
-
-/**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
@@ -123,7 +116,7 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: MCP<ExtractMcpResponseType<TProvider>>;
+  mcp: MCP<TProvider>;
 
   /**
    * Creates a new instance of the Composio SDK.
