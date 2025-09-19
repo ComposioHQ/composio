@@ -6,25 +6,18 @@ keywords: "fastapi, composio, openai, gmail, agent"
 hide-nav-links: false
 ---
 
-With Composio's managed authentication and tool calling, it's easy to build
-AI agents that interact with the real world while reducing boilerplate for
-setup and authentication management. This cookbook will guide you through
-building and serving agents using `Composio`, `OpenAI`, and `FastAPI`.
+This cookbook will guide you through building agents equipped with tools using `Composio`, `OpenAI`, and `FastAPI`.
 
 ## Prerequisites
 
-* Python3.x
+* Python 3.10+
 * [UV](https://docs.astral.sh/uv/getting-started/installation/)
 * Composio API key
 * OpenAI API key
-* Basic knowledge of OAuth
-* Understanding of building HTTP services (preferably using FastAPI)
-
 
 ## Building an AI agent that can interact with `gmail` service
 
-First, let's start with building a simple AI agent embedded with tools from
-Composio that let's the agent interact with the `gmail` service.
+First, let's start with building a simple AI agent with Composio tools that let's the agent interact with `gmail`.
 
 ```python
 from openai import OpenAI
@@ -64,10 +57,10 @@ def run_gmail_agent(
 ```
 
 <Note>
-This is a simple agent without state management and agentic loop implementation,
-so the agent can't perform complicated tasks. If you want to understand how
-composio can be used with agentic loops, check other cookbooks with more
-agentic frameworks.
+This example demonstrates a basic agent without state management or agentic loops,
+suitable for simple one-step tasks. For complex multi-step workflows requiring
+memory and iterative reasoning, see our cookbooks with frameworks like LangChain,
+CrewAI, or AutoGen.
 </Note>
 
 To invoke this agent, authenticate your users with Composio's managed authentication service.
