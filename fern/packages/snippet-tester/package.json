@@ -24,7 +24,7 @@
     "@types/convict": "^6.1.6",
     "@types/glob": "^8.1.0",
     "@types/node": "^20.10.0",
-    "typescript": "^5.0.0",
+    "typescript": "catalog:",
     "bun-types": "latest"
   }
 }

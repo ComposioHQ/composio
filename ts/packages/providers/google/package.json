@@ -34,14 +34,14 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
     "@google/genai": "^1.1.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3"
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }
