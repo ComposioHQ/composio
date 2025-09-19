@@ -488,12 +488,13 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
     { name = "semver" },
+    { name = "tomli" },
     { name = "twine" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = "==1.8.0" },
+    { name = "composio-client", specifier = "==1.9.1" },
     { name = "openai" },
     { name = "pydantic", specifier = ">=2.6.4" },
     { name = "pysher", specifier = ">=1.0.8" },
@@ -510,6 +511,7 @@ dev = [
     { name = "pytest", specifier = ">=8.4.0" },
     { name = "ruff", specifier = ">=0.11.13" },
     { name = "semver", specifier = ">=3.0.4" },
+    { name = "tomli", specifier = ">=2.2.1" },
     { name = "twine", specifier = ">=6.1.0" },
 ]
 
@@ -530,7 +532,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "1.8.0"
+version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -540,9 +542,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/33/5c93446f71eb43f61329beb42d6aaf104935f9afc1e334782f5d49061280/composio_client-1.8.0.tar.gz", hash = "sha256:8e4cc6ed4dac3a5429c2ce649e07f6b37e1bc22b72a4e3ea4797e8fd84b3ced8", size = 178687 }
+sdist = { url = "https://files.pythonhosted.org/packages/14/a3/af66576c1604262c403483f825ef9063e90a64d1d7df54dea12dd8f44eb9/composio_client-1.9.1.tar.gz", hash = "sha256:79ae8f06fbe56b6fbdc4a2c0b81e847d22860d15865353971e7029e8552d7647", size = 178698 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/15/25ce1c2742579c2c7c0992d210b8b43954656b8cdb83b2df1d68b0ad7242/composio_client-1.8.0-py3-none-any.whl", hash = "sha256:e92a23188b5ae1bd79fc016521642f8896b638f28199371a5f6c038126e88b84", size = 209791 },
+    { url = "https://files.pythonhosted.org/packages/a4/51/1a6a12c3b57e57627144c948dde33a4d7f1b0df83b810d10a0fbd938a6eb/composio_client-1.9.1-py3-none-any.whl", hash = "sha256:a3bf630013f0f80907a30d9ff27da4b9586f239709c38a6af66340869214ce61", size = 210090 },
 ]
 
 [[package]]
