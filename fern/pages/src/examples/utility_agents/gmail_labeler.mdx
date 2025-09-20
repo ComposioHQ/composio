@@ -164,7 +164,7 @@ def check_connected_account_exists(
     """
     # Fetch all connected accounts for the user
     connected_accounts = composio_client.connected_accounts.list(
-        user_ids=[user_id]
+        user_ids=[user_id],
         toolkit_slugs=["GMAIL"],
     )
 
@@ -311,7 +311,7 @@ def run_agent(user_id: str):
     # Create agent
     agent = create_agent(user_id=user_id, composio_client=composio_client)
 
-    # Create triggeer subscription
+    # Create trigger subscription
     trigger_subscription = create_trigger_subscription(
         composio_client=composio_client,
         trigger_slug=GMAIL_NEW_GMAIL_MESSAGE_TRIGGER,
