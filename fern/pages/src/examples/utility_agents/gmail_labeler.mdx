@@ -94,7 +94,7 @@ def create_auth_config(composio_client: Composio[OpenAIProvider]):
     client_id = os.getenv("GMAIL_CLIENT_ID")
     client_secret = os.getenv("GMAIL_CLIENT_SECRET")
     if not client_id or not client_secret:
-        raise ValueError("GMAIL_CLIENT_ID and gmail_CLIENT_SECRET must be set")
+        raise ValueError("GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set")
 
     return composio_client.auth_configs.create(
         toolkit="gmail",
@@ -110,7 +110,7 @@ def create_auth_config(composio_client: Composio[OpenAIProvider]):
     )
 ```
 
-This will create an authencation config for `gmail` which you can use to
+This will create an authentication config for `gmail` which you can use to
 authenticate your users for your app. Ideally you should just create one
 authentication object per project, so check for an existing auth config
 before you create a new one.
@@ -280,7 +280,7 @@ def create_trigger_subscription(
     return trigger_subscription
 ```
 
-Package everthing as a single entry point.
+Package everything as a single entry point.
 
 ```python
 def run_agent(user_id: str):

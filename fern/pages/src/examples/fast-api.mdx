@@ -17,7 +17,7 @@ This cookbook will guide you through building agents equipped with tools using `
 
 ## Building an AI agent that can interact with `gmail` service
 
-First, let's start with building a simple AI agent with Composio tools that let's the agent interact with `gmail`.
+First, let's start with building a simple AI agent with Composio tools that lets the agent interact with `gmail`.
 
 ```python
 from openai import OpenAI
@@ -86,7 +86,7 @@ def create_auth_config(composio_client: Composio[OpenAIProvider]):
         raise ValueError("GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set")
 
     return composio_client.auth_configs.create(
-        toolkit="GMAIL,
+        toolkit="GMAIL",
         options={
             "name": "default_gmail_auth_config",
             "type": "use_custom_auth",
