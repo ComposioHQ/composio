@@ -113,7 +113,7 @@ export class MastraProvider extends BaseAgenticProvider<
           context = undefined;
         }
 
-        const result = await executeTool(tool.slug, context);
+        const result = await executeTool(tool.slug, context || {});
         return result;
       },
     });

@@ -258,7 +258,7 @@ describe('MastraProvider', () => {
       // Test the execute function without context
       const result = await executeFunction({});
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
