@@ -15,6 +15,7 @@ import {
   removeNonRequiredProperties,
 } from '@composio/core';
 import { createTool } from '@mastra/core';
+import { z } from 'zod';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -25,6 +26,8 @@ export interface MastraToolCollection {
 export interface MastraUrlMap {
   [name: string]: { url: string };
 }
+
+type ExecuteParams = Record<string, unknown> | { context?: Record<string, unknown> };
 
 export class MastraProvider extends BaseAgenticProvider<
   MastraToolCollection,
@@ -93,26 +96,24 @@ export class MastraProvider extends BaseAgenticProvider<
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      inputSchema: parameters ? (jsonSchemaToZodSchema(parameters) as any) : undefined,
+      inputSchema: parameters ? (jsonSchemaToZodSchema(parameters) as z.ZodSchema) : undefined,
       outputSchema: tool.outputParameters
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (jsonSchemaToZodSchema(tool.outputParameters) as any)
+        ? (jsonSchemaToZodSchema(tool.outputParameters) as z.ZodSchema)
         : undefined,
-      execute: async (params: { context?: unknown } | unknown) => {
-         
-        const hasContextProperty = params && typeof params === 'object' && 'context' in params;
-        let context: unknown;
-        if (hasContextProperty) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          context = (params as any).context;
+      execute: async (params: ExecuteParams) => {
+        let context: Record<string, unknown> | undefined;
+
+        if (params && typeof params === 'object' && 'context' in params) {
+          context = params.context as Record<string, unknown>;
         } else if (params && typeof params === 'object' && Object.keys(params).length === 0) {
           context = undefined;
+        } else if (params && typeof params === 'object') {
+          context = params as Record<string, unknown>;
         } else {
-          context = params;
+          context = undefined;
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await executeTool(tool.slug, context as any);
+
+        const result = await executeTool(tool.slug, context);
         return result;
       },
     });
