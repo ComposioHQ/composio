@@ -99,7 +99,18 @@ export class MastraProvider extends BaseAgenticProvider<
         ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (jsonSchemaToZodSchema(tool.outputParameters) as any)
         : undefined,
-      execute: async (context: unknown) => {
+      execute: async (params: { context?: unknown } | unknown) => {
+         
+        const hasContextProperty = params && typeof params === 'object' && 'context' in params;
+        let context: unknown;
+        if (hasContextProperty) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context = (params as any).context;
+        } else if (params && typeof params === 'object' && Object.keys(params).length === 0) {
+          context = undefined;
+        } else {
+          context = params;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await executeTool(tool.slug, context as any);
         return result;
