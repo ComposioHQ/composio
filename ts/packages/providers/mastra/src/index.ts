@@ -93,12 +93,15 @@ export class MastraProvider extends BaseAgenticProvider<
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      inputSchema: parameters ? jsonSchemaToZodSchema(parameters) : undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      inputSchema: parameters ? (jsonSchemaToZodSchema(parameters) as any) : undefined,
       outputSchema: tool.outputParameters
-        ? jsonSchemaToZodSchema(tool.outputParameters)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (jsonSchemaToZodSchema(tool.outputParameters) as any)
         : undefined,
-      execute: async ({ context }) => {
-        const result = await executeTool(tool.slug, context);
+      execute: async (context: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await executeTool(tool.slug, context as any);
         return result;
       },
     });
