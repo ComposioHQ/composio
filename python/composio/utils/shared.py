@@ -353,13 +353,15 @@ def get_signature_format_from_schema_params(
 
         if skip_default:
             default = Parameter.empty
-
-        parameter = Parameter(
-            name=param_name,
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=annotation,
-            default=default,
-        )
+        try:
+            parameter = Parameter(
+                name=param_name,
+                kind=Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=annotation,
+                default=default,
+            )
+        except ValueError:
+            continue
         if required:
             default_parameters.append(parameter)
             continue
