@@ -35,7 +35,8 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
-    "@mastra/core": "^0.17.1"
+    "@mastra/core": "^0.17.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",

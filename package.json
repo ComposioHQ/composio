@@ -54,6 +54,11 @@
     "vitest": "catalog:",
     "zod": "catalog:"
   },
+  "pnpm": {
+    "overrides": {
+      "zod": "3.25.76"
+    }
+  },
   "lint-staged": {
     "ts/packages/**/*.{ts,tsx}": [
       "eslint --fix"
