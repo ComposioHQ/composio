@@ -905,13 +905,17 @@ importers:
         version: 3.2.4(@types/node@24.0.3)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.0)
 
   ts/packages/providers/vercel:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
       ai:
         specifier: 'catalog:'
-        version: 5.0.44(zod@4.1.11)
+        version: 5.0.44(zod@3.25.76)
       tsup:
         specifier: 'catalog:'
         version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.8.0)

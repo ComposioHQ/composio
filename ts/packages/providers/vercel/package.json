@@ -31,7 +31,8 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.1.52",
-    "ai": "^5.0.44"
+    "ai": "^5.0.44",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
