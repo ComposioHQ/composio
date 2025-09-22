@@ -116,15 +116,15 @@ navigation:
     icon: tools
     skip-slug: true
     contents:
-    - page: Executing Tools
-      path: pages/dist/tool-calling/executing-tools.mdx
-      slug: executing-tools
     - page: Authenticating Tools
       path: pages/dist/tool-calling/authenticating-tools.mdx
       slug: authenticating-tools
     - page: Fetch and Filter Tools
       path: pages/dist/tool-calling/fetching-tools.mdx
       slug: fetching-tools
+    - page: Executing Tools
+      path: pages/dist/tool-calling/executing-tools.mdx
+      slug: executing-tools
     - section: Modifiers
       slug: modifiers
       contents:
