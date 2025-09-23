@@ -1,4 +1,5 @@
 import type { BaseComposioProvider } from '../provider/BaseProvider';
+import { telemetry } from '../telemetry/Telemetry';
 import type { McpServerCreateResponse, McpRetrieveResponse } from '../types/mcp.types';
 import type { MCP } from './MCP';
 
@@ -7,7 +8,9 @@ import type { MCP } from './MCP';
  * Handles CRUD operations related to MCP configurations.
  */
 export class MCPConfig<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
-  constructor(private mcp: MCP<TProvider>) {}
+  constructor(private mcp: MCP<TProvider>) {
+    telemetry.instrument(this);
+  }
 
   /**
    * Create a new MCP configuration.

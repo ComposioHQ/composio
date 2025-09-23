@@ -901,6 +901,7 @@ export class ExperimentalMCP<
   constructor(client: ComposioClient, provider: TProvider) {
     this.mcp = new MCP(client, provider);
     this.provider = provider;
+    telemetry.instrument(this);
   }
 
   /**
