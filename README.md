@@ -66,6 +66,9 @@ import { OpenAI } from 'openai';
 const openai = new OpenAI();
 
 const composioForCompletions = new Composio({ provider: new OpenAIProvider() });
+
+const userId = 'user@acme.org'
+
 const toolsForCompletions = await composioForCompletions.tools.get(userId, {
   toolkits: ['HACKERNEWS'],
 });
