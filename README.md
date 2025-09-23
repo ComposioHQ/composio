@@ -1,7 +1,8 @@
 
 <div align="center">
 
-![Composio Logo](https://raw.githubusercontent.com/ComposioHQ/composio/next/public/logo.png)
+<img src="https://raw.githubusercontent.com/ComposioHQ/composio/next/public/logo.png" alt="Composio Logo" width="200" height="auto" style="margin-bottom: 20px;"/>
+
 
 # Composio SDK
 
