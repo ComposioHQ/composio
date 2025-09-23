@@ -9,7 +9,7 @@ const composio = new Composio({
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<external_user_id>'; // Replace it with the your user id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
@@ -25,7 +25,7 @@ const mcpConfig = await composio.experimental.mcpConfig.create(
 );
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.experimental.mcp.getServer(mcpConfig.id, connectedAccountId, {
+const servers = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
   limitTools: allowedTools,
 });
 
