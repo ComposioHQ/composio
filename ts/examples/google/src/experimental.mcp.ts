@@ -1,4 +1,4 @@
-import { create as createComposio } from '@composio/core';
+import { Composio } from '@composio/core';
 import { GoogleGenAI, mcpToTool } from '@google/genai';
 import { GoogleProvider } from '@composio/google';
 import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js';
@@ -9,20 +9,17 @@ function wrapTools(client: MCPClient) {
 }
 
 // 1. Initialize Composio.
-const composio = createComposio({
+const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new GoogleProvider(),
-  experimental: {
-    mcp: true,
-  },
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<externalUserId>'; // Replace it with the user id from your database
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcpConfig.create(
+const mcpConfig = await composio.experimental.mcpConfig.create(
   `${Date.now()}`,
   [
     {
@@ -34,8 +31,8 @@ const mcpConfig = await composio.mcpConfig.create(
   { isChatAuth: true }
 );
 
-// 3. Retrieve the MCP server instance for the connected accounts
-const url = await composio.mcp.experimental.getServer(mcpConfig.id, connectedAccountId, {
+// 3. Retrieve the MCP server instance for the user
+const url = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
   limitTools: allowedTools,
 });
 

@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { create as createComposio } from '@composio/core';
+import { Composio } from '@composio/core';
 import { MastraProvider } from '@composio/mastra';
 import { MCPClient as MastraMCPClient } from '@mastra/mcp';
 import { Agent as MastraAgent } from '@mastra/core/agent';
@@ -24,20 +24,17 @@ function wrapTools(servers: Record<string, any>, tools: Record<string, any>): Re
 }
 
 // 1. Initialize Composio.
-const composio = createComposio({
+const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
-  experimental: {
-    mcp: true,
-  },
+  provider: new MastraProvider()
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<external_user_id>'; // Replace it with the user id id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcpConfig.create(
+const mcpConfig = await composio.experimental.mcpConfig.create(
   `${Date.now()}`,
   [
     {
@@ -49,8 +46,8 @@ const mcpConfig = await composio.mcpConfig.create(
   { isChatAuth: true }
 );
 
-// 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.mcp.experimental.getServer(mcpConfig.id, connectedAccountId, {
+// 3. Retrieve the MCP server instance for the user
+const servers = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
   limitTools: allowedTools,
 });
 

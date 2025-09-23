@@ -76,7 +76,6 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
   // It's similar to `using type` declarations in C++.
   // See: https://stackoverflow.com/questions/76017389/type-or-interface-inside-class-in-typescript.
   declare readonly TMcpResponse: ExtractMcpResponseType<TProvider>;
-  declare readonly TMcpExperimentalResponse: ExtractExperimentalMcpResponseType<TProvider>;
 
   constructor(client: ComposioClient, provider: TProvider) {
     this.client = client;
@@ -449,6 +448,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
    *   isChatAuth: true
    * });
    * ```
+   *
    */
   async getServer(
     serverId: string,
@@ -893,40 +893,46 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
  */
 export class ExperimentalMCP<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>,
-> extends MCP<TProvider> {
+> {
+  mcp: MCP<TProvider>;
+  provider: TProvider;
+  declare readonly TMcpExperimentalResponse: ExtractExperimentalMcpResponseType<TProvider>;
+
   constructor(client: ComposioClient, provider: TProvider) {
-    super(client, provider);
+    this.mcp = new MCP(client, provider);
+    this.provider = provider;
   }
 
-  experimental = {
-    /**
-     * Get server URLs for an existing MCP server.
-     * The response is wrapped according to the provider's specifications.
-     */
-    getServer: async (
-      mcpConfigurationId: string,
-      userId: string,
-      options?: {
-        limitTools?: string[];
-        isChatAuth?: boolean;
-      }
-    ) =>
-      this.getServer(mcpConfigurationId, userId, options).then(res => {
-        // TODO: investigate why this cast is needed in the first place.
-        // Without it, this type is always inferred as `unknown`.
-        return this.provider.wrapMcpServers(res) as typeof this.TMcpExperimentalResponse;
-      }),
+  /**
+   * Get server URLs for an existing MCP server.
+   * The response is wrapped according to the provider's specifications.
+   */
+  async getServer(
+    userId: string,
+    mcpConfigurationId: string,
+    options?: {
+      limitTools?: string[];
+      isChatAuth?: boolean;
+    }
+  ): Promise<ReturnType<TProvider['wrapMcpServers']>> {
+    return this.mcp.getServer(mcpConfigurationId, userId, options).then(res => {
+      // TODO: investigate why this cast is needed in the first place.
+      // Without it, this type is always inferred as `unknown`.
+      return this.provider.wrapMcpServers(res) as ReturnType<TProvider['wrapMcpServers']>;
+    });
+  }
 
-    /**
-     * Get server URLs for an existing MCP server.
-     */
-    _getServerRaw: async (
-      mcpConfigurationId: string,
-      userId: string,
-      options?: {
-        limitTools?: string[];
-        isChatAuth?: boolean;
-      }
-    ) => await this.getServer(mcpConfigurationId, userId, options),
-  };
+  /**
+   * Get server URLs for an existing MCP server.
+   */
+  async getRawMCPServer(
+    userId: string,
+    mcpConfigurationId: string,
+    options?: {
+      limitTools?: string[];
+      isChatAuth?: boolean;
+    }
+  ) {
+    return await this.getServer(mcpConfigurationId, userId, options);
+  }
 }

@@ -1,5 +1,5 @@
 // Core exports
-export { Composio, create } from './composio';
+export { Composio } from './composio';
 export { OpenAIProvider } from './provider/OpenAIProvider';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';

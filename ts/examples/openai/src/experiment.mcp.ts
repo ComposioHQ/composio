@@ -1,4 +1,4 @@
-import { create as createComposio } from '@composio/core';
+import { Composio } from '@composio/core';
 import OpenAI from 'openai';
 import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
@@ -41,19 +41,16 @@ async function wrapTools(client: MCPClient): Promise<Array<OpenAI.ChatCompletion
 }
 
 // 1. Initialize Composio.
-const composio = createComposio({
+const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  experimental: {
-    mcp: true,
-  },
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<external_user_id>'; // Replace it with the user id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcpConfig.create(
+const mcpConfig = await composio.experimental.mcpConfig.create(
   `gmail-mcp-${Date.now()}`,
   [
     {
@@ -65,7 +62,7 @@ const mcpConfig = await composio.mcpConfig.create(
 );
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const url = await composio.mcp.experimental.getServer(mcpConfig.id, connectedAccountId, {
+const url = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
   limitTools: allowedTools,
 });
 

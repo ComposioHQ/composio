@@ -1,25 +1,22 @@
 import { openai } from '@ai-sdk/openai';
-import { create as createComposio } from '@composio/core';
+import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { experimental_createMCPClient as createMCPClient, stepCountIs, streamText } from 'ai';
 import 'dotenv/config';
 
 // 1. Initialize Composio.
-const composio = createComposio({
+const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new VercelProvider(),
-  experimental: {
-    mcp: true,
-  },
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<extern_user_id>'; // Replace it with the user id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcpConfig.create(
+const mcpConfig = await composio.experimental.mcpConfig.create(
   `${Date.now()}`,
   [
     {
@@ -31,8 +28,8 @@ const mcpConfig = await composio.mcpConfig.create(
   { isChatAuth: true }
 );
 
-// 3. Retrieve the MCP server instance for the connected accounts
-const url = await composio.mcp.experimental.getServer(mcpConfig.id, connectedAccountId, {
+// 3. Retrieve the MCP server instance for the user
+const url = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
   limitTools: allowedTools,
 });
 
