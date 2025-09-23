@@ -43,7 +43,7 @@
   ],
   "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "devDependencies": {
     "@effect/eslint-plugin": "^0.3.2",
     "@effect/language-service": "^0.27.1",
@@ -54,13 +54,13 @@
     "@types/semver": "^7.7.0",
     "tempy": "^3.1.0",
     "tsup": "catalog:",
-    "tsx": "^4.20.3",
+    "tsx": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@clack/prompts": "1.0.0-alpha.1",
-    "@composio/client": "0.1.0-alpha.31",
+    "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/ts-builders": "workspace:*",
     "@effect/cli": "^0.64.2",

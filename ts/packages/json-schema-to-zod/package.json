@@ -28,17 +28,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.0.1",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4",
+    "vitest": "catalog:",
     "zod-to-json-schema": "^3.24.5",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "catalog:"
+    "zod": "3.25.76"
   }
 }

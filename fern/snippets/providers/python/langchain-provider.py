@@ -1,13 +1,26 @@
 from composio import Composio
 from composio_langchain import LangchainProvider
-from langchain.chat_models import init_chat_model
+from langchain import hub  # type: ignore
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_openai import ChatOpenAI
 
-model = init_chat_model("gpt-4o")
+# Pull relevant agent model.
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+# Initialize tools.
+openai_client = ChatOpenAI(model="gpt-4-turbo")
+
 composio = Composio(provider=LangchainProvider())
 
-tools_list = composio.tools.get(user_id="sid", toolkits=["LINEAR"])
+# Get All the tools
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
-model_with_tools = model.bind_tools(tools_list)
-print(model_with_tools)
+# Define task
+task = "Star a repo composiohq/composio on GitHub"
 
-result = model_with_tools.invoke("What are the linear projects assigned to me?")
+# Define agent
+agent = create_openai_functions_agent(openai_client, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+# Execute using agent_executor
+agent_executor.invoke({"input": task})
