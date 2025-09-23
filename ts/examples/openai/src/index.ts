@@ -44,11 +44,13 @@ const response = await openai.chat.completions.create({
 /**
  * If the assistant has tool calls, execute them and log the result
  */
-if (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls[0].type === 'function') {
+if (
+  response.choices[0].message.tool_calls &&
+  response.choices[0].message.tool_calls[0].type === 'function'
+) {
   console.log(JSON.stringify(response, null, 2));
   const toolCall = response.choices[0].message.tool_calls[0];
   if (toolCall.type === 'function') {
-
     console.log(`✅ Calling tool ${response.choices[0].message.tool_calls[0].function.name}`);
   }
   const result = await composio.provider.handleToolCalls('default', response);

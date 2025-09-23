@@ -1,3 +1,4 @@
+import { McpServerGetResponse } from '../types/mcp.types';
 import { Tool } from '../types/tool.types';
 import { BaseNonAgenticProvider } from './BaseProvider';
 
@@ -16,6 +17,10 @@ export class ComposioProvider extends BaseNonAgenticProvider<Array<CustomTool>, 
 
   constructor() {
     super();
+  }
+
+  override wrapMcpServers(data: McpServerGetResponse) {
+    return data;
   }
 
   wrapTool = (tool: Tool): CustomTool => {

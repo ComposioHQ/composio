@@ -48,15 +48,36 @@ import { ToolkitAuthFieldsResponse } from '../types/toolkit.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 
 /**
+ * Extract the MCP response type from a provider.
+ */
+type ExtractMcpResponseType<T> =
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp, unknown>
+    ? TMcp
+    : /* @default */ McpServerGetResponse;
+
+/**
+ * Extract the experimental MCP response type from a provider.
+ */
+type ExtractExperimentalMcpResponseType<T> =
+  T extends BaseComposioProvider<unknown, unknown, unknown, infer TMcpExperimental>
+    ? TMcpExperimental
+    : /* @default */ McpServerGetResponse;
+
+/**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations
  */
-export class MCP<T = McpServerGetResponse> {
+export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
   private client: ComposioClient;
-  private provider?: BaseComposioProvider<unknown, unknown, unknown>;
   private toolkits: Toolkits;
+  protected provider: TProvider;
 
-  constructor(client: ComposioClient, provider?: BaseComposioProvider<unknown, unknown, unknown>) {
+  // Trick to store types derived from a generic parameter inside the class.
+  // It's similar to `using type` declarations in C++.
+  // See: https://stackoverflow.com/questions/76017389/type-or-interface-inside-class-in-typescript.
+  declare readonly TMcpResponse: ExtractMcpResponseType<TProvider>;
+
+  constructor(client: ComposioClient, provider: TProvider) {
     this.client = client;
     this.provider = provider;
     this.toolkits = new Toolkits(client);
@@ -97,7 +118,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {Object} params.options - Server creation options
    * @param {string} params.options.name - Unique name for the MCP server
    * @param {boolean} [params.options.isChatAuth] - Whether to use chat-based authentication
-   * @returns {Promise<McpServerCreateResponse<T>>} Created server details with instance getter
+   * @returns {Promise<McpServerCreateResponse<TMcpResponse>>} Created server details with instance getter
    *
    * @example
    * ```typescript
@@ -127,7 +148,7 @@ export class MCP<T = McpServerGetResponse> {
     options: {
       isChatAuth?: boolean;
     }
-  ): Promise<McpServerCreateResponse<T>> {
+  ): Promise<McpServerCreateResponse<typeof this.TMcpResponse>> {
     // Validate inputs using Zod schemas
     if (!serverConfig || serverConfig.length === 0) {
       throw new ValidationError('At least one auth config is required', {});
@@ -184,12 +205,12 @@ export class MCP<T = McpServerGetResponse> {
       return {
         ...camelCaseResponse,
         toolkits,
-        getServer: async (params: MCPGetServerParams): Promise<T> => {
+        getServer: async (params: MCPGetServerParams): Promise<typeof this.TMcpResponse> => {
           return this.getServer(camelCaseResponse.id, params.userId || '', {
             isChatAuth: options.isChatAuth,
           });
         },
-      } as McpServerCreateResponse<T>;
+      } as McpServerCreateResponse<typeof this.TMcpResponse>;
     } catch (error) {
       // If error is not about server not found, re-throw it
       if (error instanceof ValidationError && !error.message.includes('not found')) {
@@ -236,13 +257,13 @@ export class MCP<T = McpServerGetResponse> {
     return {
       ...camelCaseResponse,
       toolkits,
-      getServer: async (params: MCPGetServerParams): Promise<T> => {
+      getServer: async (params: MCPGetServerParams): Promise<typeof this.TMcpResponse> => {
         // Delegate to the standalone getServer method
         return this.getServer(camelCaseResponse.id, params.userId || '', {
           isChatAuth: options.isChatAuth,
         });
       },
-    } as McpServerCreateResponse<T>;
+    } as McpServerCreateResponse<typeof this.TMcpResponse>;
   }
 
   /**
@@ -414,7 +435,7 @@ export class MCP<T = McpServerGetResponse> {
    * @param {Object} [options] - Additional options for server configuration
    * @param {string[]} [options.limitTools] - Subset of tools to limit (from MCP config)
    * @param {boolean} [options.isChatAuth] - Whether to use chat-based authentication
-   * @returns {Promise<T>} Transformed server URLs in provider-specific format
+   * @returns {Promise<TMcpResponse>} Transformed server URLs in provider-specific format
    *
    * @example
    * ```typescript
@@ -427,6 +448,7 @@ export class MCP<T = McpServerGetResponse> {
    *   isChatAuth: true
    * });
    * ```
+   *
    */
   async getServer(
     serverId: string,
@@ -435,7 +457,7 @@ export class MCP<T = McpServerGetResponse> {
       limitTools?: string[];
       isChatAuth?: boolean;
     }
-  ): Promise<T> {
+  ): Promise<typeof this.TMcpResponse> {
     // Get server details first
     const serverDetails = await this.get(serverId);
 
@@ -760,7 +782,7 @@ export class MCP<T = McpServerGetResponse> {
     connectedAccountIds?: string[],
     userIds?: string[],
     toolkits?: string[]
-  ): T {
+  ): typeof this.TMcpResponse {
     // Check if provider has a custom transform method
     if (this.provider && typeof this.provider.wrapMcpServerResponse === 'function') {
       // Convert to array of name and url based on connected accounts or user ids
@@ -786,8 +808,11 @@ export class MCP<T = McpServerGetResponse> {
       }
 
       const transformed = this.provider.wrapMcpServerResponse(snakeCaseData);
-      return transformed as T;
+      return transformed as typeof this.TMcpResponse;
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
 
     // Default transformation
     if (connectedAccountIds?.length && data.connectedAccountUrls) {
@@ -795,18 +820,18 @@ export class MCP<T = McpServerGetResponse> {
         url: new URL(url),
         name: `${serverName}-${connectedAccountIds[index]}`,
         toolkit: toolkits?.[index],
-      })) as T;
+      })) as typeof self.TMcpResponse;
     } else if (userIds?.length && data.userIdsUrl) {
       return data.userIdsUrl.map((url: string, index: number) => ({
         url: new URL(url),
         name: `${serverName}-${userIds[index]}`,
         toolkit: toolkits?.[index],
-      })) as T;
+      })) as typeof self.TMcpResponse;
     }
     return {
       url: new URL(data.mcpUrl),
       name: serverName,
-    } as T;
+    } as typeof self.TMcpResponse;
   }
 
   /**
@@ -858,5 +883,84 @@ export class MCP<T = McpServerGetResponse> {
 
     // Get the full server details using the server ID
     return this.get(servers[0].id);
+  }
+}
+
+/**
+ * MCP (Model Control Protocol) class
+ * Handles MCP server operations.
+ * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
+ */
+export class ExperimentalMCP<
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>,
+> {
+  mcp: MCP<TProvider>;
+  provider: TProvider;
+  declare readonly TMcpExperimentalResponse: ExtractExperimentalMcpResponseType<TProvider>;
+
+  constructor(client: ComposioClient, provider: TProvider) {
+    this.mcp = new MCP(client, provider);
+    this.provider = provider;
+    telemetry.instrument(this);
+  }
+
+  /**
+   * Get server URLs for an existing MCP server.
+   * The response is wrapped according to the provider's specifications.
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from "@composio/code";
+   *
+   * const composio = new Composio();
+   * const server = await composio.experimental.mcp.getServer("default", "<mcp_config_id>");
+   * ```
+   *
+   * @param userId {string} external user id from your database for whom you want the server for
+   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
+   * @param options {object} additional options
+   * @param options.limitTools {string[]} limit the tools to the ones specified
+   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
+   */
+  async getServer(
+    userId: string,
+    mcpConfigId: string,
+    options?: {
+      limitTools?: string[];
+      isChatAuth?: boolean;
+    }
+  ): Promise<ReturnType<TProvider['wrapMcpServers']>> {
+    return this.mcp.getServer(mcpConfigId, userId, options).then(res => {
+      // TODO: investigate why this cast is needed in the first place.
+      // Without it, this type is always inferred as `unknown`.
+      return this.provider.wrapMcpServers(res) as ReturnType<TProvider['wrapMcpServers']>;
+    });
+  }
+
+  /**
+   * Get server URLs for an existing MCP server.
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from "@composio/code";
+   *
+   * const composio = new Composio();
+   * const server = await composio.experimental.mcp.getRawMCPServer("default", "<mcp_config_id>");
+   * ```
+   *
+   * @param userId {string} external user id from your database for whom you want the server for
+   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
+   * @param options.limitTools {string[]} limit the tools to the ones specified
+   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
+   */
+  async getRawMCPServer(
+    userId: string,
+    mcpConfigId: string,
+    options?: {
+      limitTools?: string[];
+      isChatAuth?: boolean;
+    }
+  ) {
+    return await this.getServer(mcpConfigId, userId, options);
   }
 }
