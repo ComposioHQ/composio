@@ -906,16 +906,30 @@ export class ExperimentalMCP<
   /**
    * Get server URLs for an existing MCP server.
    * The response is wrapped according to the provider's specifications.
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from "@composio/code";
+   *
+   * const composio = new Composio();
+   * const server = await composio.experimental.mcp.getServer("default", "<mcp_config_id>");
+   * ```
+   *
+   * @param userId {string} external user id from your database for whom you want the server for
+   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
+   * @param options {object} additional options
+   * @param options.limitTools {string[]} limit the tools to the ones specified
+   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
    */
   async getServer(
     userId: string,
-    mcpConfigurationId: string,
+    mcpConfigId: string,
     options?: {
       limitTools?: string[];
       isChatAuth?: boolean;
     }
   ): Promise<ReturnType<TProvider['wrapMcpServers']>> {
-    return this.mcp.getServer(mcpConfigurationId, userId, options).then(res => {
+    return this.mcp.getServer(mcpConfigId, userId, options).then(res => {
       // TODO: investigate why this cast is needed in the first place.
       // Without it, this type is always inferred as `unknown`.
       return this.provider.wrapMcpServers(res) as ReturnType<TProvider['wrapMcpServers']>;
@@ -924,15 +938,28 @@ export class ExperimentalMCP<
 
   /**
    * Get server URLs for an existing MCP server.
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from "@composio/code";
+   *
+   * const composio = new Composio();
+   * const server = await composio.experimental.mcp.getRawMCPServer("default", "<mcp_config_id>");
+   * ```
+   *
+   * @param userId {string} external user id from your database for whom you want the server for
+   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
+   * @param options.limitTools {string[]} limit the tools to the ones specified
+   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
    */
   async getRawMCPServer(
     userId: string,
-    mcpConfigurationId: string,
+    mcpConfigId: string,
     options?: {
       limitTools?: string[];
       isChatAuth?: boolean;
     }
   ) {
-    return await this.getServer(mcpConfigurationId, userId, options);
+    return await this.getServer(mcpConfigId, userId, options);
   }
 }

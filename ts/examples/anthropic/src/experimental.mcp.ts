@@ -1,14 +1,11 @@
-import { create as createComposio } from '@composio/core';
+import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
 import Anthropic from '@anthropic-ai/sdk';
 
 // 1. Initialize Composio.
-const composio = createComposio({
+const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider({ cacheTools: true }),
-  experimental: {
-    mcp: true,
-  },
+  provider: new AnthropicProvider({ cacheTools: true })
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
@@ -16,7 +13,7 @@ const connectedAccountId = '<connected_account_id>'; // Replace it with the conn
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.mcpConfig.create(
+const mcpConfig = await composio.experimental.mcpConfig.create(
   `${Date.now()}`,
   [
     {
@@ -28,7 +25,7 @@ const mcpConfig = await composio.mcpConfig.create(
 );
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.mcp.experimental.getServer(mcpConfig.id, connectedAccountId, {
+const servers = await composio.experimental.mcp.getServer(mcpConfig.id, connectedAccountId, {
   limitTools: allowedTools,
 });
 
