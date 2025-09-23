@@ -7,7 +7,12 @@ import { FORCE_CONFIG } from 'src/effects/force-config';
 import { ComposioToolkitsRepository } from './composio-clients';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON } from 'src/models/toolkits';
-import { toolsFromJSON, toolsToJSON } from 'src/models/tools';
+import {
+  toolsAsEnumsFromJSON,
+  toolsAsEnumsToJSON,
+  ToolsFromJSON,
+  ToolsToJSON,
+} from 'src/models/tools';
 import {
   TriggerTypesAsEnumsFromJSON,
   TriggerTypesAsEnumsToJSON,
@@ -22,6 +27,7 @@ import { ConfigLive } from './config';
 export const CACHE_FILES = {
   toolkits: 'toolkits.json',
   tools: 'tools.json',
+  toolsAsEnums: 'tools-as-enums.json',
   triggerTypesAsEnums: 'trigger-types-as-enums.json',
   triggerTypes: 'trigger-types.json',
 } as const;
@@ -118,12 +124,12 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
-      getTools: () => {
+      getToolsAsEnums: () => {
         return createCachedEffect(
-          CACHE_FILES.tools,
-          toolsFromJSON,
-          toolsToJSON,
-          underlyingRepository.getTools()
+          CACHE_FILES.toolsAsEnums,
+          toolsAsEnumsFromJSON,
+          toolsAsEnumsToJSON,
+          underlyingRepository.getToolsAsEnums()
         );
       },
 
@@ -143,6 +149,16 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           TriggerTypesFromJSON,
           TriggerTypesToJSON,
           underlyingRepository.getTriggerTypes(limit)
+        );
+      },
+
+      getTools: (limit: number) => {
+        return createCachedEffect(
+          // We don't care about the limit in the cache file name
+          CACHE_FILES.tools,
+          ToolsFromJSON,
+          ToolsToJSON,
+          underlyingRepository.getTools(limit)
         );
       },
     });

@@ -4,10 +4,10 @@ import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import path from 'path';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
-import { TOOLS_GITHUB } from 'test/__mocks__/tools_github';
+import { TOOLS_GITHUB } from 'test/__mocks__/tools-github';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
 import { Effect } from 'effect';
 
 describe('generateTypeScriptSources', () => {
@@ -29,7 +29,7 @@ describe('generateTypeScriptSources', () => {
         Effect.fn(function* () {
           const index = createToolkitIndex({
             toolkits: [],
-            tools: [],
+            typeableTools: { withTypes: false, tools: [] },
             triggerTypes: [],
           });
 
@@ -82,7 +82,7 @@ describe('generateTypeScriptSources', () => {
 
           const index = createToolkitIndex({
             toolkits,
-            tools: [],
+            typeableTools: { withTypes: false, tools: [] },
             triggerTypes: [],
           });
 
@@ -91,26 +91,32 @@ describe('generateTypeScriptSources', () => {
           expect(sources[0]).toHaveLength(2);
           expect(sources[0][0]).toBe(path.join(params.outputDir, 'slack.ts'));
           expect(sources[0][1]).toMatchInlineSnapshot(`
-          "/**
-           * Map of Composio's SLACK toolkit.
-           */
-          export const SLACK = {
-            slug: "slack",
-            tools: {},
-            triggerTypes: {},
-          }
+            "// ------------------- //
+            //    Trigger types    //
+            // ------------------- //
 
-          /**
-           * Type map of all available trigger payloads for toolkit "SLACK".
-           */
-          export type SLACK_TRIGGER_PAYLOADS = {}
 
-          /**
-           * Type map of all available trigger events for toolkit "SLACK".
-           */
-          export type SLACK_TRIGGER_EVENTS = {}
-          "
-        `);
+
+            /**
+             * Map of Composio's SLACK toolkit.
+             */
+            export const SLACK = {
+              slug: "slack",
+              tools: {},
+              triggerTypes: {},
+            }
+
+            /**
+             * Type map of all available trigger payloads for toolkit "SLACK".
+             */
+            export type SLACK_TRIGGER_PAYLOADS = {}
+
+            /**
+             * Type map of all available trigger events for toolkit "SLACK".
+             */
+            export type SLACK_TRIGGER_EVENTS = {}
+            "
+          `);
           assertTypeScriptIsValid({ files: { './slack.ts': sources[0][1] } });
 
           expect(sources[1]).toHaveLength(2);
@@ -165,7 +171,10 @@ describe('generateTypeScriptSources', () => {
 
           const index = createToolkitIndex({
             toolkits,
-            tools: [...TOOLS_GMAIL.slice(0, 3), ...TOOLS_GITHUB.slice(0, 3)],
+            typeableTools: {
+              withTypes: false,
+              tools: [...TOOLS_GMAIL.slice(0, 3), ...TOOLS_GITHUB.slice(0, 3)],
+            },
             triggerTypes: [...TRIGGER_TYPES_GMAIL, ...TRIGGER_TYPES_GITHUB],
           });
 
@@ -174,26 +183,32 @@ describe('generateTypeScriptSources', () => {
           expect(sources[0]).toHaveLength(2);
           expect(sources[0][0]).toBe(path.join(params.outputDir, './slack.ts'));
           expect(sources[0][1]).toMatchInlineSnapshot(`
-          "/**
-           * Map of Composio's SLACK toolkit.
-           */
-          export const SLACK = {
-            slug: "slack",
-            tools: {},
-            triggerTypes: {},
-          }
+            "// ------------------- //
+            //    Trigger types    //
+            // ------------------- //
 
-          /**
-           * Type map of all available trigger payloads for toolkit "SLACK".
-           */
-          export type SLACK_TRIGGER_PAYLOADS = {}
 
-          /**
-           * Type map of all available trigger events for toolkit "SLACK".
-           */
-          export type SLACK_TRIGGER_EVENTS = {}
-          "
-        `);
+
+            /**
+             * Map of Composio's SLACK toolkit.
+             */
+            export const SLACK = {
+              slug: "slack",
+              tools: {},
+              triggerTypes: {},
+            }
+
+            /**
+             * Type map of all available trigger payloads for toolkit "SLACK".
+             */
+            export type SLACK_TRIGGER_PAYLOADS = {}
+
+            /**
+             * Type map of all available trigger events for toolkit "SLACK".
+             */
+            export type SLACK_TRIGGER_EVENTS = {}
+            "
+          `);
           assertTypeScriptIsValid({ files: { './slack.ts': sources[0][1] } });
 
           expect(sources[1]).toHaveLength(2);

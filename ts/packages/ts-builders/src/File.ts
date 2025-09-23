@@ -1,12 +1,13 @@
 import type { AnyDeclarationBuilder } from './AnyDeclarationBuilder';
 import type { BasicBuilder } from './BasicBuilder';
+import type { DocSectionComment } from './DocSectionComment';
 import { Export } from './Export';
 import type { ExportFrom } from './ExportFrom';
 import type { Import } from './Import';
 import { Writer } from './Writer';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FileItem = AnyDeclarationBuilder | Export<any> | ExportFrom;
+export type FileItem = AnyDeclarationBuilder | Export<any> | ExportFrom | DocSectionComment;
 export class File implements BasicBuilder {
   private imports: Import[] = [];
   private declarations: FileItem[] = [];

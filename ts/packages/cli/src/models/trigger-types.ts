@@ -1,7 +1,6 @@
 import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 import { extractActual } from './utils/extract-actual';
-import { Toolkit } from './toolkits';
 
 /**
  * TriggerType as Enums

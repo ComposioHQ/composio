@@ -17,7 +17,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
@@ -25,11 +25,11 @@
     "@openai/agents": "^0.1.1",
     "dotenv": "^16.4.1",
     "openai": "^5.16.0",
-    "zod": "^3.24.2",
+    "zod": "catalog:",
     "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }

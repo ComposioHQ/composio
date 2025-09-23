@@ -17,7 +17,30 @@ import { MCPClient } from '@mastra/mcp';
 import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
 import type { MastraMCPServerDefinition } from '@mastra/mcp';
+import type { ToolAction } from '@mastra/core';
 import 'dotenv/config';
+
+function wrapTools(
+  servers: Record<string, unknown>,
+  tools: Record<string, ToolAction<any, any, any>>
+): Record<string, ToolAction<any, any, any>> {
+  const prefixes = Object.keys(servers);
+
+  function removePrefix(str: string): string {
+    for (const prefix of prefixes) {
+      if (str.startsWith(prefix)) {
+        return str.slice(prefix.length + 1);
+      }
+    }
+    return str;
+  }
+
+  return Object.fromEntries(
+    Object.entries(tools).map(([key, tool]) => {
+      return [removePrefix(key), tool] as const;
+    })
+  );
+}
 
 /**
  * Initialize Composio
@@ -27,16 +50,17 @@ const composio = new Composio({
   provider: new MastraProvider(),
 });
 
+const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const connectedAccountId = 'alberto.schiabel@gmail.com'; // "<connected_account_id>"; // Replace it with the connected account id
+const allowedTools = ['GMAIL_FETCH_EMAILS'];
+
 // Create an MCP server with Gmail toolkit
 const mcpConfig = await composio.mcp.create(
   "gmail-mcp-" + Date.now(),
   [
     {
-      toolkit: "gmail",
-      authConfigId: "<auth_config_id>", // Use your auth config ID
-      allowedTools: [
-        "GMAIL_FETCH_EMAILS"
-      ]
+      authConfigId,
+      allowedTools,
     }
   ],
   { isChatAuth: true }
@@ -47,15 +71,17 @@ console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 
 // Get server instance with connected accounts (using convenience method)
 const serverInstance = await mcpConfig.getServer({
+  userId: connectedAccountId,
   connectedAccountIds: {
-    "gmail": "<connected_account_id>" // Replace it with the connected account id
+    "gmail": connectedAccountId,
   }
 });
 
 // Alternative: You can also use the standalone method
-// const serverInstance = await composio.mcp.getServer(mcpConfig.id, {
+// const serverInstances = await composio.mcp.getServer(mcpConfig.id, {
+//   userId: connectedAccountId,
 //   connectedAccountIds: {
-//     "gmail": "<connected_account_id>"
+//     "gmail": connectedAccountId,
 //   }
 // });
 
@@ -84,15 +110,17 @@ const gmailAgent = new Agent({
     Be concise and provide actionable information based on the email content.
   `,
   model: openai('gpt-4o-mini'),
-  tools,
+  tools: wrapTools(serverInstance, tools),
 });
 
 // Fetch and summarize recent emails
 console.log('\n=== Fetching and Summarizing Recent Emails ===');
 const emailResponse = await gmailAgent.generate(
-  'Fetch the latest 10 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email'
+  'Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email'
 );
 console.log('\n📬 Email Summary:');
 console.log(emailResponse.text);
 
 console.log('\n✅ Gmail MCP Example completed successfully!');
+
+await mcpClient.disconnect();

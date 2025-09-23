@@ -17,6 +17,7 @@
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
 import { Console, Effect, Option, pipe } from 'effect';
+import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { NodeProcess } from 'src/services/node-process';
@@ -46,10 +47,16 @@ export const transpiled = Options.boolean('transpiled').pipe(
   Options.withDescription('Whether to emit transpiled JavaScript alongside TypeScript files')
 );
 
+export const typeTools = Options.boolean('type-tools').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Whether to emit type stubs for tools')
+);
+
 const _tsCmd$Generate = Command.make('generate', {
   outputOpt,
   compact,
   transpiled: transpiled,
+  typeTools,
 }).pipe(Command.withDescription('Updates the local type stubs with the latest app data.'));
 
 /**
@@ -89,6 +96,7 @@ export const tsCmd$Generate = _tsCmd$Generate.pipe(
 export function generateTypescriptTypeStubs({
   outputOpt,
   compact,
+  typeTools,
   transpiled = false,
 }: GetCmdParams<typeof _tsCmd$Generate> & { transpiled?: boolean }) {
   return Effect.gen(function* () {
@@ -116,14 +124,16 @@ export function generateTypescriptTypeStubs({
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API...');
 
-    const triggerTypesAsEnums = yield* Effect.logDebug('Fetching trigger types...').pipe(
-      Effect.flatMap(() => client.getTriggerTypesAsEnums())
-    );
+    const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
+      Effect.logDebug('Fetching trigger types...').pipe(
+        Effect.flatMap(() => client.getTriggerTypesAsEnums())
+      ),
+      Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
+    ]);
 
-    const [toolkits, tools, triggerTypes] = yield* Effect.all(
+    const [toolkits, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
-        Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getTools())),
         Effect.logDebug('Fetching trigger types payloads...').pipe(
           Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
         ),
@@ -131,7 +141,27 @@ export function generateTypescriptTypeStubs({
       { concurrency: 'unbounded' }
     );
 
-    const index = createToolkitIndex({ toolkits, tools, triggerTypes });
+    // Only fetch tools if `--type-tools` was specified
+    const typeableTools = yield* Match.value(typeTools).pipe(
+      Match.when(true, typePredicate =>
+        Effect.logDebug('Fetching tools...').pipe(
+          Effect.flatMap(() => client.getTools(toolsAsEnums.length)),
+          Effect.map(tools => ({
+            withTypes: typePredicate,
+            tools,
+          }))
+        )
+      ),
+      Match.when(false, typePredicate =>
+        Effect.succeed({
+          withTypes: typePredicate,
+          tools: toolsAsEnums,
+        })
+      ),
+      Match.exhaustive
+    );
+
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
 
     // Generate TypeScript sources
     const sources = yield* generateTypeScriptSources({

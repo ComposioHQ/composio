@@ -1,6 +1,6 @@
 ---
 title: Authenticating Tools
-image: 'https://og.composio.dev/api/og?title=Authenticating%20Tools' # image for socials
+image: "https://og.composio.dev/api/og?title=Authenticating%20Tools"   # image for socials
 keywords: 'auth config, authentication, oauth, api key, user authentication'
 subtitle: 'Create auth configs and connect user accounts'
 hide-nav-links: false
@@ -97,9 +97,8 @@ auth_config_id = "your_auth_config_id"
 # Use a unique identifier for each user in your application
 user_id = 'user-1349-129-12'
 
-connection_request = composio.connected_accounts.link(user_id, auth_config_id, {
-  'callback_url': 'https://your-app.com/callback'
-})
+connection_request = composio.connected_accounts.link(user_id, auth_config_id, callback_url: 'https://your-app.com/callback')
+
 redirect_url = connection_request.redirect_url
 print(f"Visit: {redirect_url} to authenticate your account")
             
@@ -129,8 +128,18 @@ const connectedAccount = await composio.connectedAccounts.waitForConnection(conn
 console.log(connectedAccount.id)
 
 ````
-
 </CodeGroup>
+
+#### Customizing Connect Link
+
+By default, users will see a Composio-branded authentication experience when connecting their accounts. To customize this interface with your application's branding:
+
+1. Navigate to your Project Settings and select [Auth Screen](https://platform.composio.dev?next_page=/settings/auth-screen)
+2. Configure your **Logo** and **App Title**
+
+These settings will apply to all authentication flows using Connect Link, providing a white-labeled experience that maintains your brand identity throughout the authentication process.
+
+
 
 ### Direct SDK Integration
 

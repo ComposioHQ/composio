@@ -1,4 +1,4 @@
-import { Config, Option } from 'effect';
+import { Config } from 'effect';
 
 type FORCE_CONFIG = Config.Config.Wrap<{
   USE_CACHE: boolean;

@@ -45,6 +45,8 @@ describe('VercelProvider', () => {
       slug: 'test-tool',
       name: 'Test Tool',
       description: 'A tool for testing',
+      version: '20250909_00',
+      availableVersions: ['20250909_00', '20250901_00'],
       inputParameters: {
         type: 'object',
         properties: {
