@@ -76,7 +76,7 @@ For detailed information about the TypeScript SDK, please refer to the [TypeScri
 
 ### Python SDK (/python)
 
-The Python SDK offers a Pythonic interface to Composio's services, making it easy to integrate Composio into your Python applications. It supports Python 3.7+ and follows modern Python development practices.
+The Python SDK offers a Pythonic interface to Composio's services, making it easy to integrate Composio into your Python applications. It supports Python 3.10+ and follows modern Python development practices.
 
 For detailed information about the Python SDK, please refer to the [Python SDK Documentation](/python/README.md).
 
