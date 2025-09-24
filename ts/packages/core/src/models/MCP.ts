@@ -31,6 +31,8 @@ import {
   McpToolkitConnectionStatus,
   McpUserConnectionStatus,
   ConnectionStatus,
+  MCPServerInstance,
+  MCPServerInstanceSchema,
 } from '../types/mcp.types';
 import { CustomCreateResponse as CustomCreateResponseRaw } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -51,23 +53,15 @@ import { ConnectionRequest } from '../types/connectionRequest.types';
  * Extract the MCP response type from a provider.
  */
 type ExtractMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, infer TMcp, unknown>
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp>
     ? TMcp
-    : /* @default */ McpServerGetResponse;
-
-/**
- * Extract the experimental MCP response type from a provider.
- */
-type ExtractExperimentalMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, unknown, infer TMcpExperimental>
-    ? TMcpExperimental
     : /* @default */ McpServerGetResponse;
 
 /**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations
  */
-export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
+export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   private client: ComposioClient;
   private toolkits: Toolkits;
   protected provider: TProvider;
@@ -775,6 +769,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
    * @param serverName - Name of the MCP server
 
    * @returns Transformed response in appropriate format
+   * @deprecated
    */
   private wrapMcpServerResponse(
     data: McpUrlResponseCamelCase,
@@ -891,16 +886,15 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
  * Handles MCP server operations.
  * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
  */
-export class ExperimentalMCP<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>,
-> {
+export class ExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   mcp: MCP<TProvider>;
   provider: TProvider;
-  declare readonly TMcpExperimentalResponse: ExtractExperimentalMcpResponseType<TProvider>;
+  client: ComposioClient;
 
   constructor(client: ComposioClient, provider: TProvider) {
     this.mcp = new MCP(client, provider);
     this.provider = provider;
+    this.client = client;
     telemetry.instrument(this);
   }
 
@@ -913,54 +907,44 @@ export class ExperimentalMCP<
    * import { Composio } from "@composio/code";
    *
    * const composio = new Composio();
-   * const server = await composio.experimental.mcp.getServer("default", "<mcp_config_id>");
+   * const server = await composio.experimental.mcp.get("default", "<mcp_config_id>");
    * ```
    *
    * @param userId {string} external user id from your database for whom you want the server for
    * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
    * @param options {object} additional options
-   * @param options.limitTools {string[]} limit the tools to the ones specified
    * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
    */
-  async getServer(
+  async get(
     userId: string,
     mcpConfigId: string,
     options?: {
-      limitTools?: string[];
       isChatAuth?: boolean;
     }
-  ): Promise<ReturnType<TProvider['wrapMcpServers']>> {
-    return this.mcp.getServer(mcpConfigId, userId, options).then(res => {
-      // TODO: investigate why this cast is needed in the first place.
-      // Without it, this type is always inferred as `unknown`.
-      return this.provider.wrapMcpServers(res) as ReturnType<TProvider['wrapMcpServers']>;
+  ): Promise<MCPServerInstance> {
+    const server = await this.client.mcp.retrieve(mcpConfigId);
+    const urlResponse = await this.client.mcp.generate.url({
+      mcp_server_id: mcpConfigId,
+      user_ids: [userId],
+      managed_auth_by_composio: options?.isChatAuth ?? server.managed_auth_via_composio ?? false,
     });
-  }
+    const userIdsURL = urlResponse.user_ids_url[0];
+    const serverInstance = MCPServerInstanceSchema.safeParse({
+      id: server.id,
+      name: server.name,
+      type: 'sse',
+      url: userIdsURL,
+      userId: userId,
+      allowedTools: server.allowed_tools,
+      authConfigs: server.auth_config_ids,
+    });
 
-  /**
-   * Get server URLs for an existing MCP server.
-   *
-   * @example
-   * ```typescript
-   * import { Composio } from "@composio/code";
-   *
-   * const composio = new Composio();
-   * const server = await composio.experimental.mcp.getRawMCPServer("default", "<mcp_config_id>");
-   * ```
-   *
-   * @param userId {string} external user id from your database for whom you want the server for
-   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
-   * @param options.limitTools {string[]} limit the tools to the ones specified
-   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
-   */
-  async getRawMCPServer(
-    userId: string,
-    mcpConfigId: string,
-    options?: {
-      limitTools?: string[];
-      isChatAuth?: boolean;
+    if (serverInstance.error) {
+      throw new ValidationError('Failed to parse MCP server instance', {
+        cause: serverInstance.error,
+      });
     }
-  ) {
-    return await this.getServer(mcpConfigId, userId, options);
+
+    return serverInstance.data;
   }
 }

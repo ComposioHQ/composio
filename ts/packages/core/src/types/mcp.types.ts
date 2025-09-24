@@ -197,6 +197,17 @@ export type McpUrlResponse = {
   url: string;
 }[];
 
+export const MCPServerInstanceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.literal('sse'),
+  url: z.string(),
+  userId: z.string(),
+  allowedTools: z.array(z.string()),
+  authConfigs: z.array(z.string()),
+});
+export type MCPServerInstance = z.infer<typeof MCPServerInstanceSchema>;
+
 export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateResponseRaw) & {
   toolkits: string[];
   getServer: (params: MCPGetServerParams) => Promise<T>;

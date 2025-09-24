@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 // 1. Initialize Composio.
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider({ cacheTools: true })
+  provider: new AnthropicProvider({ cacheTools: true }),
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
@@ -25,8 +25,8 @@ const mcpConfig = await composio.experimental.mcpConfig.create(
 );
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
-  limitTools: allowedTools,
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id, {
+  isChatAuth: true,
 });
 
 // 4. Initialize Anthropic client.
@@ -38,7 +38,13 @@ const anthropic = new Anthropic({
 const stream = anthropic.beta.messages.stream({
   model: 'claude-4-sonnet-20250514',
   max_tokens: 64_000,
-  mcp_servers: servers,
+  mcp_servers: [
+    {
+      name: server.name,
+      url: server.url,
+      type: 'url',
+    },
+  ],
   messages: [
     {
       role: 'user',

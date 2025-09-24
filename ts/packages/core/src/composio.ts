@@ -18,14 +18,10 @@ import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { MCPConfig } from './models/MCPConfig';
+import { ToolRouter } from './models/ToolRouter';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<
-    unknown,
-    unknown,
-    /* TMcpResponse */ unknown,
-    /* TMcpExperimentalResponse */ unknown
-  > = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -95,7 +91,7 @@ export type ComposioConfig<
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > {
   /**
    * The Composio API client.
@@ -130,6 +126,7 @@ export class Composio<
   experimental: {
     mcp: ExperimentalMCP<TProvider>;
     mcpConfig: MCPConfig<TProvider>;
+    toolRouter: ToolRouter;
   };
 
   /**
@@ -217,6 +214,7 @@ export class Composio<
     this.experimental = {
       mcp: new ExperimentalMCP(this.client, this.provider),
       mcpConfig: new MCPConfig(this.mcp),
+      toolRouter: new ToolRouter(this.client),
     };
 
     /**

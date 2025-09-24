@@ -14,7 +14,7 @@ import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
-import { McpUrlResponse, McpServerGetResponse, McpServerUrlInfo } from '../types/mcp.types';
+import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -22,8 +22,7 @@ export type OpenAiToolCollection = Array<OpenAiTool>;
 export class OpenAIProvider extends BaseNonAgenticProvider<
   OpenAiToolCollection,
   OpenAiTool,
-  McpServerGetResponse,
-  URL
+  McpServerGetResponse
 > {
   readonly name = 'openai';
 
@@ -58,27 +57,11 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
    * @param data - The MCP URL response data
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
+  override wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
     return data.map(item => ({
       url: new URL(item.url),
       name: item.name,
     }));
-  }
-
-  override wrapMcpServers(servers: McpServerGetResponse): URL {
-    function wrapMcpServer(server: McpServerUrlInfo) {
-      return server.url;
-    }
-
-    if (Array.isArray(servers)) {
-      if (servers.length === 0) {
-        throw new Error('No servers found');
-      }
-
-      return wrapMcpServer(servers[0]);
-    }
-
-    return wrapMcpServer(servers);
   }
 
   /**

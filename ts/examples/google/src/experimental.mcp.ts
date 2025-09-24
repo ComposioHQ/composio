@@ -32,14 +32,12 @@ const mcpConfig = await composio.experimental.mcpConfig.create(
 );
 
 // 3. Retrieve the MCP server instance for the user
-const url = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
-  limitTools: allowedTools,
-});
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id);
 
 // 4. Create a generic MCP client.
 //    This client needs to remain "alive" not be dropped by the GC until
 //    the tools are retrieved from it.
-const serverParams = new SSEClientTransport(url);
+const serverParams = new SSEClientTransport(new URL(server.url));
 const mcpClient = new MCPClient({
   name: 'composio-mcp-client',
   version: '1.0.0',

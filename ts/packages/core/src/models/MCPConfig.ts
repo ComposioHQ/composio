@@ -7,7 +7,7 @@ import type { MCP } from './MCP';
  * MCPConfig (Model Control Protocol Config) class
  * Handles CRUD operations related to MCP configurations.
  */
-export class MCPConfig<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
+export class MCPConfig<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   constructor(private mcp: MCP<TProvider>) {
     telemetry.instrument(this);
   }
