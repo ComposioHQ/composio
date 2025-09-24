@@ -23,12 +23,13 @@ const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
       authConfigId,
     },
   ],
-  allowedTools,
-  manuallyManageConnections: false,
-});
+  { isChatAuth: true }
+);
 
 // 3. Retrieve the MCP server instance for the user
-const server = await composio.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id, {
+  isChatAuth: true,
+});
 
 const serverParams = new SSEClientTransport(new URL(server.url));
 

@@ -7,11 +7,11 @@ import 'dotenv/config';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new OpenAIResponsesProvider(),
-  allowTracking: false,
+  allowTracking: false
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const externalUserId = '<external_user_id>'; // Replace it with the user id from your database
+const authConfigId = 'ac_uVw3h1urnlf0'; // Use your auth config ID
+const externalUserId = 'default'; // Replace it with the user id from your database
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
@@ -27,16 +27,19 @@ const mcpConfig = await composio.mcp.create(`gmail-mcp-${Date.now()}`, {
 });
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id, {
+  isChatAuth: false
+});
+console.log({ server });
 
 const tools = [
   {
     type: 'mcp' as const,
-    server_label: mcp.name,
-    server_url: mcp.url,
+    server_label: server.name,
+    server_url: server.url,
   },
 ];
-console.log({ tools });
+console.log({ tools })
 
 // 4. Pass tools to OpenAI-specific Agent.
 const openai = new OpenAI();
@@ -51,10 +54,10 @@ const emailResponse = await openai.responses.create({
   tools: tools,
 });
 
-console.log(JSON.stringify(emailResponse, null, 2));
+console.log(JSON.stringify(emailResponse, null, 2))
 
-const result = await composio.provider.handleToolCalls('default', emailResponse.output);
-console.log({ result });
+const result = await composio.provider.handleToolCalls('default', emailResponse.output)
+console.log({ result })
 
 const output = emailResponse.output.filter(({ type }) => type === 'message').at(0);
 

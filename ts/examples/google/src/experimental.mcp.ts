@@ -31,7 +31,7 @@ const mcpConfig = await composio.experimental.mcp.create(`${Date.now()}`, {
 });
 
 // 3. Retrieve the MCP server instance for the user
-const server = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id);
 
 // 4. Create a generic MCP client.
 //    This client needs to remain "alive" not be dropped by the GC until

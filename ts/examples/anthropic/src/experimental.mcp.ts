@@ -25,7 +25,9 @@ const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
 });
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id, {
+  isChatAuth: true,
+});
 
 // 4. Initialize Anthropic client.
 const anthropic = new Anthropic({
@@ -38,8 +40,8 @@ const stream = anthropic.beta.messages.stream({
   max_tokens: 64_000,
   mcp_servers: [
     {
-      name: mcp.name,
-      url: mcp.url,
+      name: server.name,
+      url: server.url,
       type: 'url',
     },
   ],

@@ -18,7 +18,8 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { ToolRouter } from './models/ToolRouter.experimental';
+import { MCPConfig } from './models/MCPConfig';
+import { ToolRouter } from './models/ToolRouter';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -121,14 +122,9 @@ export class Composio<
    * Experimental features
    */
   experimental: {
+    mcp: ExperimentalMCP<TProvider>;
+    mcpConfig: MCPConfig<TProvider>;
     toolRouter: ToolRouter;
-  };
-
-  /**
-   * Deprecated features
-   */
-  deprecated: {
-    mcp: DeprecatedMCP<TProvider>;
   };
 
   /**
@@ -214,23 +210,9 @@ export class Composio<
      * Initialize Experimental features
      */
     this.experimental = {
-      /**
-       * Experimental tool router
-       * Helps you create a single MCP server containing all the tools with smart routing.
-       *
-       * @description Allows you to create an isolated toolRouter MCP session for a user
-       */
+      mcp: new ExperimentalMCP(this.client, this.provider),
+      mcpConfig: new MCPConfig(this.mcp),
       toolRouter: new ToolRouter(this.client),
-    };
-
-    /**
-     * Initialize Deprecated features
-     */
-    this.deprecated = {
-      /**
-       * @deprecated this feature will be removed soon, use `composio.mcp`
-       */
-      mcp: new DeprecatedMCP(this.client, this.provider),
     };
 
     /**
