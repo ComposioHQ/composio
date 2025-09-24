@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
-openai_client = ChatOpenAI(model="gpt-4-turbo")
+openai_client = ChatOpenAI(model="gpt-5")
 
 composio = Composio(provider=LangchainProvider())
 
