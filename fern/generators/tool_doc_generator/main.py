@@ -783,10 +783,16 @@ class ToolDocGenerator:
 
         # Track the generated tool for docs.yml update
         with threading.Lock():
+            # Special case for Monday - keep it lowercase in sidebar too
+            if toolkit.name == "Monday":
+                yml_display_name = "monday"
+            else:
+                yml_display_name = titleize(toolkit.name.lower())
+            
             self.generated_tools.append(
                 {
                     "name": toolkit.slug.lower(),
-                    "display_name": titleize(toolkit.name.lower()),
+                    "display_name": yml_display_name,
                     "path": f"toolkits/{filename}",
                     "category": category,
                     "tool_count": len(tools),
