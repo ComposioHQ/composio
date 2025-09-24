@@ -426,57 +426,12 @@ navigation:
     - page: Tavily
       slug: toolkits/tavily
       path: toolkits/tavily.mdx
-  - section: Productivity & Project Management
-    skip-slug: true
-    contents:
-    - page: Airtable
-      slug: toolkits/airtable
-      path: toolkits/airtable.mdx
-    - page: Clickup
-      slug: toolkits/clickup
-      path: toolkits/clickup.mdx
-    - page: Coda
-      slug: toolkits/coda
-      path: toolkits/coda.mdx
-    - page: Googledocs
-      slug: toolkits/googledocs
-      path: toolkits/googledocs.mdx
-    - page: Googleslides
-      slug: toolkits/googleslides
-      path: toolkits/googleslides.mdx
-    - page: Googletasks
-      slug: toolkits/googletasks
-      path: toolkits/googletasks.mdx
-    - page: Harvest
-      slug: toolkits/harvest
-      path: toolkits/harvest.mdx
-    - page: Linear
-      slug: toolkits/linear
-      path: toolkits/linear.mdx
-    - page: Linkhut
-      slug: toolkits/linkhut
-      path: toolkits/linkhut.mdx
-    - page: Monday
-      slug: toolkits/monday
-      path: toolkits/monday.mdx
-    - page: Onepage
-      slug: toolkits/onepage
-      path: toolkits/onepage.mdx
-    - page: Shortcut
-      slug: toolkits/shortcut
-      path: toolkits/shortcut.mdx
-    - page: Timely
-      slug: toolkits/timely
-      path: toolkits/timely.mdx
-    - page: Todoist
-      slug: toolkits/todoist
-      path: toolkits/todoist.mdx
-    - page: Wrike
-      slug: toolkits/wrike
-      path: toolkits/wrike.mdx
   - section: Collaboration & Communication
     skip-slug: true
     contents:
+    - page: Agent Mail
+      slug: toolkits/agent_mail
+      path: toolkits/agent_mail.mdx
     - page: Chatwork
       slug: toolkits/chatwork
       path: toolkits/chatwork.mdx
@@ -519,6 +474,99 @@ navigation:
     - page: Zoom
       slug: toolkits/zoom
       path: toolkits/zoom.mdx
+  - section: Productivity & Project Management
+    skip-slug: true
+    contents:
+    - page: Airtable
+      slug: toolkits/airtable
+      path: toolkits/airtable.mdx
+    - page: Clickup
+      slug: toolkits/clickup
+      path: toolkits/clickup.mdx
+    - page: Coda
+      slug: toolkits/coda
+      path: toolkits/coda.mdx
+    - page: Googledocs
+      slug: toolkits/googledocs
+      path: toolkits/googledocs.mdx
+    - page: Googleslides
+      slug: toolkits/googleslides
+      path: toolkits/googleslides.mdx
+    - page: Googletasks
+      slug: toolkits/googletasks
+      path: toolkits/googletasks.mdx
+    - page: Harvest
+      slug: toolkits/harvest
+      path: toolkits/harvest.mdx
+    - page: Linear
+      slug: toolkits/linear
+      path: toolkits/linear.mdx
+    - page: Linkhut
+      slug: toolkits/linkhut
+      path: toolkits/linkhut.mdx
+    - page: monday
+      slug: toolkits/monday
+      path: toolkits/monday.mdx
+    - page: Onepage
+      slug: toolkits/onepage
+      path: toolkits/onepage.mdx
+    - page: Shortcut
+      slug: toolkits/shortcut
+      path: toolkits/shortcut.mdx
+    - page: Timely
+      slug: toolkits/timely
+      path: toolkits/timely.mdx
+    - page: Todoist
+      slug: toolkits/todoist
+      path: toolkits/todoist.mdx
+    - page: Wrike
+      slug: toolkits/wrike
+      path: toolkits/wrike.mdx
+  - section: Email Marketing
+    skip-slug: true
+    contents:
+    - page: Benchmark Email
+      slug: toolkits/benchmark_email
+      path: toolkits/benchmark_email.mdx
+    - page: Bigmailer
+      slug: toolkits/bigmailer
+      path: toolkits/bigmailer.mdx
+    - page: Brevo
+      slug: toolkits/brevo
+      path: toolkits/brevo.mdx
+    - page: Campaign Cleaner
+      slug: toolkits/campaign_cleaner
+      path: toolkits/campaign_cleaner.mdx
+    - page: Campayn
+      slug: toolkits/campayn
+      path: toolkits/campayn.mdx
+    - page: Emailoctopus
+      slug: toolkits/emailoctopus
+      path: toolkits/emailoctopus.mdx
+    - page: Enginemailer
+      slug: toolkits/enginemailer
+      path: toolkits/enginemailer.mdx
+    - page: Hunter
+      slug: toolkits/hunter
+      path: toolkits/hunter.mdx
+    - page: Mailbluster
+      slug: toolkits/mailbluster
+      path: toolkits/mailbluster.mdx
+    - page: Mailerlite
+      slug: toolkits/mailerlite
+      path: toolkits/mailerlite.mdx
+    - page: Mailsoftly
+      slug: toolkits/mailsoftly
+      path: toolkits/mailsoftly.mdx
+    - page: Moosend
+      slug: toolkits/moosend
+      path: toolkits/moosend.mdx
+    - page: Sendloop
+      slug: toolkits/sendloop
+      path: toolkits/sendloop.mdx
+    - page: Userlist
+      slug: toolkits/userlist
+      path: toolkits/userlist.mdx
   - section: Web Scraping
     skip-slug: true
     contents:
@@ -564,48 +612,6 @@ navigation:
     - page: Zyte Api
       slug: toolkits/zyte_api
       path: toolkits/zyte_api.mdx
-  - section: Email Marketing
-    skip-slug: true
-    contents:
-    - page: Benchmark Email
-      slug: toolkits/benchmark_email
-      path: toolkits/benchmark_email.mdx
-    - page: Bigmailer
-      slug: toolkits/bigmailer
-      path: toolkits/bigmailer.mdx
-    - page: Brevo
-      slug: toolkits/brevo
-      path: toolkits/brevo.mdx
-    - page: Campaign Cleaner
-      slug: toolkits/campaign_cleaner
-      path: toolkits/campaign_cleaner.mdx
-    - page: Campayn
-      slug: toolkits/campayn
-      path: toolkits/campayn.mdx
-    - page: Emailoctopus
-      slug: toolkits/emailoctopus
-      path: toolkits/emailoctopus.mdx
-    - page: Enginemailer
-      slug: toolkits/enginemailer
-      path: toolkits/enginemailer.mdx
-    - page: Hunter
-      slug: toolkits/hunter
-      path: toolkits/hunter.mdx
-    - page: Mailerlite
-      slug: toolkits/mailerlite
-      path: toolkits/mailerlite.mdx
-    - page: Mailsoftly
-      slug: toolkits/mailsoftly
-      path: toolkits/mailsoftly.mdx
-    - page: Moosend
-      slug: toolkits/moosend
-      path: toolkits/moosend.mdx
-    - page: Sendloop
-      slug: toolkits/sendloop
-      path: toolkits/sendloop.mdx
-    - page: Userlist
-      slug: toolkits/userlist
-      path: toolkits/userlist.mdx
   - section: Marketing & Social Media
     skip-slug: true
     contents:
@@ -645,9 +651,6 @@ navigation:
     - page: Sendgrid
       slug: toolkits/sendgrid
       path: toolkits/sendgrid.mdx
-    - page: Twitter Media
-      slug: toolkits/twitter_media
-      path: toolkits/twitter_media.mdx
   - section: Developer Tools & Devops
     skip-slug: true
     contents:
@@ -756,6 +759,36 @@ navigation:
     - page: Y Gy
       slug: toolkits/y_gy
       path: toolkits/y_gy.mdx
+  - section: Communication
+    skip-slug: true
+    contents:
+    - page: Dialmycalls
+      slug: toolkits/dialmycalls
+      path: toolkits/dialmycalls.mdx
+    - page: Missive
+      slug: toolkits/missive
+      path: toolkits/missive.mdx
+    - page: Msg91
+      slug: toolkits/msg91
+      path: toolkits/msg91.mdx
+    - page: Realphonevalidation
+      slug: toolkits/realphonevalidation
+      path: toolkits/realphonevalidation.mdx
+    - page: Revolt
+      slug: toolkits/revolt
+      path: toolkits/revolt.mdx
+    - page: Sendbird
+      slug: toolkits/sendbird
+      path: toolkits/sendbird.mdx
+    - page: Sms Alert
+      slug: toolkits/sms_alert
+      path: toolkits/sms_alert.mdx
+    - page: Timelinesai
+      slug: toolkits/timelinesai
+      path: toolkits/timelinesai.mdx
+    - page: Whatsapp
+      slug: toolkits/whatsapp
+      path: toolkits/whatsapp.mdx
   - section: Email Verification
     skip-slug: true
     contents:
@@ -813,33 +846,30 @@ navigation:
     - page: Supadata
       slug: toolkits/supadata
       path: toolkits/supadata.mdx
-  - section: Communication
+  - section: Ai
     skip-slug: true
     contents:
-    - page: Dialmycalls
-      slug: toolkits/dialmycalls
-      path: toolkits/dialmycalls.mdx
-    - page: Missive
-      slug: toolkits/missive
-      path: toolkits/missive.mdx
-    - page: Msg91
-      slug: toolkits/msg91
-      path: toolkits/msg91.mdx
-    - page: Realphonevalidation
-      slug: toolkits/realphonevalidation
-      path: toolkits/realphonevalidation.mdx
-    - page: Sendbird
-      slug: toolkits/sendbird
-      path: toolkits/sendbird.mdx
-    - page: Sms Alert
-      slug: toolkits/sms_alert
-      path: toolkits/sms_alert.mdx
-    - page: Timelinesai
-      slug: toolkits/timelinesai
-      path: toolkits/timelinesai.mdx
-    - page: Whatsapp
-      slug: toolkits/whatsapp
-      path: toolkits/whatsapp.mdx
+    - page: All Images Ai
+      slug: toolkits/all_images_ai
+      path: toolkits/all_images_ai.mdx
+    - page: Aryn
+      slug: toolkits/aryn
+      path: toolkits/aryn.mdx
+    - page: Nano Nets
+      slug: toolkits/nano_nets
+      path: toolkits/nano_nets.mdx
+    - page: Openrouter
+      slug: toolkits/openrouter
+      path: toolkits/openrouter.mdx
+    - page: Replicate
+      slug: toolkits/replicate
+      path: toolkits/replicate.mdx
+    - page: Textcortex
+      slug: toolkits/textcortex
+      path: toolkits/textcortex.mdx
+    - page: Typless
+      slug: toolkits/typless
+      path: toolkits/typless.mdx
   - section: Ai & Machine Learning
     skip-slug: true
     contents:
@@ -960,6 +990,30 @@ navigation:
     - page: Yousearch
       slug: toolkits/yousearch
       path: toolkits/yousearch.mdx
+  - section: Project Management
+    skip-slug: true
+    contents:
+    - page: Breeze
+      slug: toolkits/breeze
+      path: toolkits/breeze.mdx
+    - page: Leiga
+      slug: toolkits/leiga
+      path: toolkits/leiga.mdx
+    - page: Magnetic
+      slug: toolkits/magnetic
+      path: toolkits/magnetic.mdx
+    - page: Project Bubble
+      slug: toolkits/project_bubble
+      path: toolkits/project_bubble.mdx
+    - page: Rocketlane
+      slug: toolkits/rocketlane
+      path: toolkits/rocketlane.mdx
+    - page: Streamtime
+      slug: toolkits/streamtime
+      path: toolkits/streamtime.mdx
+    - page: Teamcamp
+      slug: toolkits/teamcamp
+      path: toolkits/teamcamp.mdx
   - section: Some Category
     skip-slug: true
     contents:
@@ -984,48 +1038,30 @@ navigation:
     - page: Spondyr
       slug: toolkits/spondyr
       path: toolkits/spondyr.mdx
-  - section: Ai
+  - section: Time Tracking
     skip-slug: true
     contents:
-    - page: All Images Ai
-      slug: toolkits/all_images_ai
-      path: toolkits/all_images_ai.mdx
-    - page: Aryn
-      slug: toolkits/aryn
-      path: toolkits/aryn.mdx
-    - page: Nano Nets
-      slug: toolkits/nano_nets
-      path: toolkits/nano_nets.mdx
-    - page: Openrouter
-      slug: toolkits/openrouter
-      path: toolkits/openrouter.mdx
-    - page: Replicate
-      slug: toolkits/replicate
-      path: toolkits/replicate.mdx
-    - page: Typless
-      slug: toolkits/typless
-      path: toolkits/typless.mdx
-  - section: Artificial Intelligence
-    skip-slug: true
-    contents:
-    - page: Ai Ml Api
-      slug: toolkits/ai_ml_api
-      path: toolkits/ai_ml_api.mdx
-    - page: Astica Ai
-      slug: toolkits/astica_ai
-      path: toolkits/astica_ai.mdx
-    - page: Gemini
-      slug: toolkits/gemini
-      path: toolkits/gemini.mdx
-    - page: Mistral Ai
-      slug: toolkits/mistral_ai
-      path: toolkits/mistral_ai.mdx
-    - page: Openai
-      slug: toolkits/openai
-      path: toolkits/openai.mdx
-    - page: Veo
-      slug: toolkits/veo
-      path: toolkits/veo.mdx
+    - page: Clockify
+      slug: toolkits/clockify
+      path: toolkits/clockify.mdx
+    - page: Desktime
+      slug: toolkits/desktime
+      path: toolkits/desktime.mdx
+    - page: Everhour
+      slug: toolkits/everhour
+      path: toolkits/everhour.mdx
+    - page: Timecamp
+      slug: toolkits/timecamp
+      path: toolkits/timecamp.mdx
+    - page: Timelink
+      slug: toolkits/timelink
+      path: toolkits/timelink.mdx
+    - page: Toggl
+      slug: toolkits/toggl
+      path: toolkits/toggl.mdx
+    - page: Worksnaps
+      slug: toolkits/worksnaps
+      path: toolkits/worksnaps.mdx
   - section: Finance & Accounting
     skip-slug: true
     contents:
@@ -1068,6 +1104,24 @@ navigation:
     - page: Twelve Data
       slug: toolkits/twelve_data
       path: toolkits/twelve_data.mdx
+  - section: Artificial Intelligence
+    skip-slug: true
+    contents:
+    - page: Ai Ml Api
+      slug: toolkits/ai_ml_api
+      path: toolkits/ai_ml_api.mdx
+    - page: Astica Ai
+      slug: toolkits/astica_ai
+      path: toolkits/astica_ai.mdx
+    - page: Mistral Ai
+      slug: toolkits/mistral_ai
+      path: toolkits/mistral_ai.mdx
+    - page: Openai
+      slug: toolkits/openai
+      path: toolkits/openai.mdx
+    - page: Veo
+      slug: toolkits/veo
+      path: toolkits/veo.mdx
   - section: Design & Creative Tools
     skip-slug: true
     contents:
@@ -1104,42 +1158,6 @@ navigation:
     - page: Fixer
       slug: toolkits/fixer
       path: toolkits/fixer.mdx
-  - section: Project Management
-    skip-slug: true
-    contents:
-    - page: Breeze
-      slug: toolkits/breeze
-      path: toolkits/breeze.mdx
-    - page: Leiga
-      slug: toolkits/leiga
-      path: toolkits/leiga.mdx
-    - page: Magnetic
-      slug: toolkits/magnetic
-      path: toolkits/magnetic.mdx
-    - page: Rocketlane
-      slug: toolkits/rocketlane
-      path: toolkits/rocketlane.mdx
-    - page: Streamtime
-      slug: toolkits/streamtime
-      path: toolkits/streamtime.mdx
-  - section: Time Tracking
-    skip-slug: true
-    contents:
-    - page: Clockify
-      slug: toolkits/clockify
-      path: toolkits/clockify.mdx
-    - page: Desktime
-      slug: toolkits/desktime
-      path: toolkits/desktime.mdx
-    - page: Everhour
-      slug: toolkits/everhour
-      path: toolkits/everhour.mdx
-    - page: Timecamp
-      slug: toolkits/timecamp
-      path: toolkits/timecamp.mdx
-    - page: Worksnaps
-      slug: toolkits/worksnaps
-      path: toolkits/worksnaps.mdx
   - section: Workflow Automation
     skip-slug: true
     contents:
@@ -1158,6 +1176,36 @@ navigation:
     - page: Workiom
       slug: toolkits/workiom
       path: toolkits/workiom.mdx
+  - section: Api Management
+    skip-slug: true
+    contents:
+    - page: Anthropic Administrator
+      slug: toolkits/anthropic_administrator
+      path: toolkits/anthropic_administrator.mdx
+    - page: Apiverve
+      slug: toolkits/apiverve
+      path: toolkits/apiverve.mdx
+    - page: Svix
+      slug: toolkits/svix
+      path: toolkits/svix.mdx
+    - page: U301
+      slug: toolkits/u301
+      path: toolkits/u301.mdx
+  - section: Chatbot Development
+    skip-slug: true
+    contents:
+    - page: Botpress
+      slug: toolkits/botpress
+      path: toolkits/botpress.mdx
+    - page: Botstar
+      slug: toolkits/botstar
+      path: toolkits/botstar.mdx
+    - page: Landbot
+      slug: toolkits/landbot
+      path: toolkits/landbot.mdx
+    - page: Textit
+      slug: toolkits/textit
+      path: toolkits/textit.mdx
   - section: Collaboration
     skip-slug: true
     contents:
@@ -1173,6 +1221,21 @@ navigation:
     - page: Webvizio
       slug: toolkits/webvizio
       path: toolkits/webvizio.mdx
+  - section: Customer Support
+    skip-slug: true
+    contents:
+    - page: Plain
+      slug: toolkits/plain
+      path: toolkits/plain.mdx
+    - page: Productlane
+      slug: toolkits/productlane
+      path: toolkits/productlane.mdx
+    - page: Re Amaze
+      slug: toolkits/re_amaze
+      path: toolkits/re_amaze.mdx
+    - page: Supportbee
+      slug: toolkits/supportbee
+      path: toolkits/supportbee.mdx
   - section: Form Builder
     skip-slug: true
     contents:
@@ -1269,18 +1332,6 @@ navigation:
     - page: Skyfire
       slug: toolkits/skyfire
       path: toolkits/skyfire.mdx
-  - section: Api Management
-    skip-slug: true
-    contents:
-    - page: Anthropic Administrator
-      slug: toolkits/anthropic_administrator
-      path: toolkits/anthropic_administrator.mdx
-    - page: Apiverve
-      slug: toolkits/apiverve
-      path: toolkits/apiverve.mdx
-    - page: Svix
-      slug: toolkits/svix
-      path: toolkits/svix.mdx
   - section: Api Services
     skip-slug: true
     contents:
@@ -1317,18 +1368,6 @@ navigation:
     - page: Repairshopr
       slug: toolkits/repairshopr
       path: toolkits/repairshopr.mdx
-  - section: Chatbot Development
-    skip-slug: true
-    contents:
-    - page: Botpress
-      slug: toolkits/botpress
-      path: toolkits/botpress.mdx
-    - page: Botstar
-      slug: toolkits/botstar
-      path: toolkits/botstar.mdx
-    - page: Landbot
-      slug: toolkits/landbot
-      path: toolkits/landbot.mdx
   - section: Cryptocurrency
     skip-slug: true
     contents:
@@ -1341,18 +1380,6 @@ navigation:
     - page: Token Metrics
       slug: toolkits/token_metrics
       path: toolkits/token_metrics.mdx
-  - section: Customer Support
-    skip-slug: true
-    contents:
-    - page: Plain
-      slug: toolkits/plain
-      path: toolkits/plain.mdx
-    - page: Productlane
-      slug: toolkits/productlane
-      path: toolkits/productlane.mdx
-    - page: Supportbee
-      slug: toolkits/supportbee
-      path: toolkits/supportbee.mdx
   - section: Data Extraction
     skip-slug: true
     contents:
@@ -1581,6 +1608,15 @@ navigation:
     - page: Certifier
       slug: toolkits/certifier
       path: toolkits/certifier.mdx
+  - section: Direct Mail Automation
+    skip-slug: true
+    contents:
+    - page: Postgrid
+      slug: toolkits/postgrid
+      path: toolkits/postgrid.mdx
+    - page: Thanks Io
+      slug: toolkits/thanks_io
+      path: toolkits/thanks_io.mdx
   - section: Document Generation
     skip-slug: true
     contents:
@@ -2286,12 +2322,6 @@ navigation:
     - page: Stannp
       slug: toolkits/stannp
       path: toolkits/stannp.mdx
-  - section: Direct Mail Automation
-    skip-slug: true
-    contents:
-    - page: Thanks Io
-      slug: toolkits/thanks_io
-      path: toolkits/thanks_io.mdx
   - section: Document Automation
     skip-slug: true
     contents:
@@ -2310,6 +2340,12 @@ navigation:
     - page: Conversion Tools
       slug: toolkits/conversion_tools
       path: toolkits/conversion_tools.mdx
+  - section: Document Management
+    skip-slug: true
+    contents:
+    - page: Pdf4Me
+      slug: toolkits/pdf4me
+      path: toolkits/pdf4me.mdx
   - section: Documents
     skip-slug: true
     contents:
@@ -2508,6 +2544,12 @@ navigation:
     - page: Coassemble
       slug: toolkits/coassemble
       path: toolkits/coassemble.mdx
+  - section: License Management Software
+    skip-slug: true
+    contents:
+    - page: Labs64 Netlicensing
+      slug: toolkits/labs64_netlicensing
+      path: toolkits/labs64_netlicensing.mdx
   - section: Localization
     skip-slug: true
     contents:
@@ -2754,6 +2796,12 @@ navigation:
     - page: Dripcel
       slug: toolkits/dripcel
       path: toolkits/dripcel.mdx
+  - section: Social
+    skip-slug: true
+    contents:
+    - page: Strava
+      slug: toolkits/strava
+      path: toolkits/strava.mdx
   - section: Software
     skip-slug: true
     contents:
@@ -3180,9 +3228,6 @@ navigation:
     - page: Square
       slug: toolkits/square
       path: toolkits/square.mdx
-    - page: Strava
-      slug: toolkits/strava
-      path: toolkits/strava.mdx
     - page: Tapform
       slug: toolkits/tapform
       path: toolkits/tapform.mdx
@@ -3264,12 +3309,18 @@ navigation:
     - page: Entelligence
       slug: toolkits/entelligence
       path: toolkits/entelligence.mdx
+    - page: Gemini
+      slug: toolkits/gemini
+      path: toolkits/gemini.mdx
     - page: Hackernews
       slug: toolkits/hackernews
       path: toolkits/hackernews.mdx
     - page: Instacart
       slug: toolkits/instacart
       path: toolkits/instacart.mdx
+    - page: Seat Geek
+      slug: toolkits/seat_geek
+      path: toolkits/seat_geek.mdx
     - page: Test App
       slug: toolkits/test_app
       path: toolkits/test_app.mdx
