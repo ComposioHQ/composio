@@ -26,8 +26,8 @@ Thank you for your interest in contributing to Composio SDK! This document provi
 1. Fork and clone the repository:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/sdk-v3.git
-   cd sdk-v3
+   git clone https://github.com/YOUR_USERNAME/composio.git
+   cd composio
    ```
 
 2. Install dependencies:
