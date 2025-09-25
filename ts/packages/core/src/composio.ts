@@ -5,7 +5,8 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { ExperimentalMCP, MCP } from './models/MCP';
+import { MCP } from './models/MCP';
+import { ExperimentalMCP } from './models/MCP.experimental';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -17,8 +18,7 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { MCPConfig } from './models/MCPConfig';
-import { ToolRouter } from './models/ToolRouter';
+import { ToolRouter } from './models/ToolRouter.experimental';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -124,8 +124,7 @@ export class Composio<
    * Experimental features
    */
   experimental: {
-    mcp: ExperimentalMCP<TProvider>;
-    mcpConfig: MCPConfig<TProvider>;
+    mcp: ExperimentalMCP;
     toolRouter: ToolRouter;
   };
 
@@ -212,8 +211,7 @@ export class Composio<
      * Initialize Experimental features
      */
     this.experimental = {
-      mcp: new ExperimentalMCP(this.client, this.provider),
-      mcpConfig: new MCPConfig(this.mcp),
+      mcp: new ExperimentalMCP(this.client),
       toolRouter: new ToolRouter(this.client),
     };
 

@@ -6,7 +6,7 @@ import {
 import { z } from 'zod';
 
 /**
- * MCP Create Method Input Types
+ * @deprecated
  */
 export const MCPToolkitConfigSchema = z.object({
   toolkit: z.string().min(1, 'Toolkit name cannot be empty'),
@@ -17,7 +17,9 @@ export const MCPToolkitConfigSchema = z.object({
 });
 
 export type MCPToolkitConfig = z.infer<typeof MCPToolkitConfigSchema>;
-
+/**
+ * @deprecated
+ */
 export const MCPToolkitConfigsArraySchema = z
   .array(MCPToolkitConfigSchema)
   .min(1, 'At least one toolkit configuration is required')
@@ -27,10 +29,12 @@ export const MCPToolkitConfigsArraySchema = z
     return uniqueToolkits.size === toolkits.length;
   }, 'Duplicate toolkits are not allowed. Each toolkit must be unique.');
 
+/**
+ * @deprecated
+ */
 export const MCPAuthOptionsSchema = z.object({
   isChatAuth: z.boolean().optional(),
 });
-
 export type MCPAuthOptions = z.infer<typeof MCPAuthOptionsSchema>;
 
 export const MCPGetServerParamsSchema = z
@@ -196,17 +200,6 @@ export type McpUrlResponse = {
   name: string;
   url: string;
 }[];
-
-export const MCPServerInstanceSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.literal('sse'),
-  url: z.string(),
-  userId: z.string(),
-  allowedTools: z.array(z.string()),
-  authConfigs: z.array(z.string()),
-});
-export type MCPServerInstance = z.infer<typeof MCPServerInstanceSchema>;
 
 export type McpServerCreateResponse<T> = (McpCreateResponseRaw | CustomCreateResponseRaw) & {
   toolkits: string[];
