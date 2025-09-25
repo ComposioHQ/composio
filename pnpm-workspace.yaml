@@ -12,20 +12,21 @@ packages:
   - fern/snippets/*
 
 catalog:
-  '@cloudflare/vitest-pool-workers': ^0.9.2
-  '@cloudflare/workers-types': ^4.20250917.0
-  '@composio/client': 0.1.0-alpha.37
-  ai: 5.0.44
-  openai: ^5.20.3
-  tsup: ^8.5.0
-  tsx: ^4.20.5
-  typescript: ^5.9.2
-  uuid: ^13.0.0
-  vitest: ^3.2.4
-  wrangler: ^4.37.0
-  zod: 3.25.76
+  "@composio/client": 0.1.0-alpha.37
+  "@cloudflare/vitest-pool-workers": ^0.9.2
+  "@cloudflare/workers-types": ^4.20250917.0
+  "ai": ^5.0.44
+  "openai": ^5.20.3
+  "uuid": ^13.0.0
+  "tsup": ^8.5.0
+  "tsx": ^4.20.5
+  "typescript": ^5.9.2
+  "vitest": ^3.2.4
+  "wrangler": ^4.37.0
 
 minimumReleaseAge: 1440
 
+# See: https://pnpm.io/settings#minimumreleaseage
+minimumReleaseAge: 1440 # 1 day
 minimumReleaseAgeExclude:
-  - '@composio/client'
+  - "@composio/client"

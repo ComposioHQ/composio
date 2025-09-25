@@ -1,6 +1,6 @@
 # MCP Experimental API
 
-The Experimental MCP (Model Control Protocol) API provides advanced server management capabilities for creating, configuring, and managing MCP servers with enhanced features. When `config.experimental.mcp` is enabled, this class augments the standard `composio.mcp` functionality.
+The Experimental MCP (Model Control Protocol) API provides advanced server management capabilities for creating, configuring, and managing MCP servers with enhanced features.
 
 ## Overview
 
