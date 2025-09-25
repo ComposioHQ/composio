@@ -32,33 +32,37 @@ npm install @composio/core
 Since OpenAI is the default provider, you can initialize Composio without any additional configuration:
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/providers/python/openai-provider.py"
-  startLine={1}
-  endLine={8}
-/>
-<SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={1}
-  endLine={7}
-/>
+```python Python
+from composio import Composio
+
+# OpenAI provider is used by default
+composio = Composio()
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+// OpenAI provider is used by default
+const composio = new Composio();
+```
 </CodeGroup>
 
 ### Explicit provider initialization
 
-If you want to explicitly specify the OpenAI provider:
+If you want to explicitly specify the OpenAI provider or pass custom configuration:
 
 <CodeGroup>
 ```python Python
 from composio import Composio
 from composio_openai import OpenAIProvider
 
+# Explicitly use OpenAI provider
 composio = Composio(provider=OpenAIProvider())
 ```
 ```typescript TypeScript
 import { Composio } from '@composio/core';
 import { OpenAIProvider } from '@composio/openai';
 
+// Explicitly use OpenAI provider
 const composio = new Composio({ provider: new OpenAIProvider() });
 ```
 </CodeGroup>
