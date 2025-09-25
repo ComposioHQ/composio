@@ -13,16 +13,15 @@ dotenv.load_dotenv()
 llm = OpenAI(model="gpt-5")
 composio = Composio(provider=LlamaIndexProvider())
 
-# Get All the tools
 tools = composio.tools.get(
-    user_id="default",
+    user_id="user@acme.com",
     tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
 )
 
 workflow = FunctionAgent(
     tools=tools,
     llm=llm,
-    system_prompt="You are an agent that perform github actions.",
+    system_prompt="You are an agent that performs github actions.",
 )
 
 
