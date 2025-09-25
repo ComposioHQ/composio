@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { experimental_createMCPClient as createMCPClient, stepCountIs, streamText } from 'ai';
 import 'dotenv/config';
 
@@ -11,26 +11,23 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const externalUserId = '<extern_user_id>'; // Replace it with the user id
-const allowedTools = ['GMAIL_FETCH_EMAILS'];
+const authConfigId = 'ac__mmoU74SM1D-'; // Use your auth config ID
+const externalUserId = 'default'; // Replace it with the user id
 
-// 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcp.create(`${Date.now()}`, {
+// 2. Create an MCP session
+const mcp = await composio.experimental.toolRouter.createSession(externalUserId, {
   toolkits: [
     {
       toolkit: 'gmail',
       authConfigId,
-      allowedTools,
     },
   ],
-  manuallyManageConnections: false,
 });
 
-// 3. Retrieve the MCP server instance for the user
-const server = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
+console.log(`✅ Toolrouter session created: ${mcp.sessionId}`);
+console.log(`🔄 Connecting to MCP Server: ${mcp.url}`);
 
-const serverParams = new SSEClientTransport(new URL(server.url));
+const serverParams = new StreamableHTTPClientTransport(new URL(mcp.url));
 
 const mcpClient = await createMCPClient({
   name: 'composio-mcp-client',
@@ -38,7 +35,10 @@ const mcpClient = await createMCPClient({
 });
 
 // 5. Retrieve tools.
+console.log(`🔄 Retrieving tools...`);
 const tools = await mcpClient.tools();
+console.log(`✅ Tools Retrieved`)
+console.log(JSON.stringify(tools, null, 2));
 
 // 6. Pass tools to Vercel-specific Agent.
 const stream = streamText({

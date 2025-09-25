@@ -11,26 +11,23 @@ const composio = new Composio({
   allowTracking: false,
 });
 
-const authConfigId = 'ac_uVw3h1urnlf0'; // Use your auth config ID
-const externalUserId = 'default'; // Replace it with the userId from your database
+const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const externalUserId = '<external_user_id>'; // Replace it with the userId from your database
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcpConfig.create(
-  `gmail-mcp-${Date.now()}`,
-  [
+const mcpConfig = await composio.experimental.mcp.create(`gmail-mcp-${Date.now()}`, {
+  toolkits: [
     {
+      toolkit: 'gmail',
       authConfigId,
       allowedTools,
     },
   ],
-  { isChatAuth: true }
-);
+});
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id, {
-  isChatAuth: true,
-});
+const server = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
 
 const tools: HostedMCPTool[] = [
   hostedMcpTool({

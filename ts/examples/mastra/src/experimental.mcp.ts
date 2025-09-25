@@ -15,20 +15,19 @@ const externalUserId = '<external_user_id>'; // Replace it with the user id id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcpConfig.create(
-  `${Date.now()}`,
-  [
+const mcpConfig = await composio.experimental.mcp.create(`${Date.now()}`, {
+  toolkits: [
     {
-      // https://platform.composio.dev/alberto_schiabel/2025-09-12/auth-configs/ac_uINV_uCV87lm
+      toolkit: 'gmail',
       authConfigId,
       allowedTools,
     },
   ],
-  { isChatAuth: true }
-);
+  manuallyManageConnections: true,
+});
 
 // 3. Retrieve the MCP server instance for the user
-const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id);
+const mcp = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
 
 // 4. Create a Mastra-specific MCP client.
 //    This client needs to remain "alive" not be dropped by the GC until
@@ -36,7 +35,7 @@ const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id)
 const mcpClient = new MastraMCPClient({
   servers: {
     composio: {
-      url: new URL(server.url),
+      url: new URL(mcp.url),
     },
   },
 });
