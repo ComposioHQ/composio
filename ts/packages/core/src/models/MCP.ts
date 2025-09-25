@@ -31,8 +31,6 @@ import {
   McpToolkitConnectionStatus,
   McpUserConnectionStatus,
   ConnectionStatus,
-  MCPServerInstance,
-  MCPServerInstanceSchema,
 } from '../types/mcp.types';
 import { CustomCreateResponse as CustomCreateResponseRaw } from '@composio/client/resources/mcp';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -878,73 +876,5 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
 
     // Get the full server details using the server ID
     return this.get(servers[0].id);
-  }
-}
-
-/**
- * MCP (Model Control Protocol) class
- * Handles MCP server operations.
- * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
- */
-export class ExperimentalMCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
-  mcp: MCP<TProvider>;
-  provider: TProvider;
-  client: ComposioClient;
-
-  constructor(client: ComposioClient, provider: TProvider) {
-    this.mcp = new MCP(client, provider);
-    this.provider = provider;
-    this.client = client;
-    telemetry.instrument(this);
-  }
-
-  /**
-   * Get server URLs for an existing MCP server.
-   * The response is wrapped according to the provider's specifications.
-   *
-   * @example
-   * ```typescript
-   * import { Composio } from "@composio/code";
-   *
-   * const composio = new Composio();
-   * const server = await composio.experimental.mcp.get("default", "<mcp_config_id>");
-   * ```
-   *
-   * @param userId {string} external user id from your database for whom you want the server for
-   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
-   * @param options {object} additional options
-   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
-   */
-  async get(
-    userId: string,
-    mcpConfigId: string,
-    options?: {
-      isChatAuth?: boolean;
-    }
-  ): Promise<MCPServerInstance> {
-    const server = await this.client.mcp.retrieve(mcpConfigId);
-    const urlResponse = await this.client.mcp.generate.url({
-      mcp_server_id: mcpConfigId,
-      user_ids: [userId],
-      managed_auth_by_composio: options?.isChatAuth ?? server.managed_auth_via_composio ?? false,
-    });
-    const userIdsURL = urlResponse.user_ids_url[0];
-    const serverInstance = MCPServerInstanceSchema.safeParse({
-      id: server.id,
-      name: server.name,
-      type: 'sse',
-      url: userIdsURL,
-      userId: userId,
-      allowedTools: server.allowed_tools,
-      authConfigs: server.auth_config_ids,
-    });
-
-    if (serverInstance.error) {
-      throw new ValidationError('Failed to parse MCP server instance', {
-        cause: serverInstance.error,
-      });
-    }
-
-    return serverInstance.data;
   }
 }

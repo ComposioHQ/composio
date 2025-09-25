@@ -1,3 +1,5 @@
+import { MCP } from './MCP';
+import { BaseComposioProvider } from '../provider/BaseProvider';
 import { Composio as ComposioClient } from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
 import {
@@ -43,7 +45,7 @@ function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveRespo
  * Handles MCP server operations.
  * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
  */
-export class MCP {
+export class ExperimentalMCP {
   client: ComposioClient;
 
   constructor(client: ComposioClient) {
@@ -63,15 +65,17 @@ export class MCP {
    * @example
    * ```typescript
    * const server = await composio.mcpConfig.create("personal-mcp-server", {
-   *   toolkits: ["github", "slack"],
-   *   allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
-   *   manuallyManageConnections: false
-   *  }
-   * });
-   *
-   * const server = await composio.mcpConfig.create("personal-mcp-server", {
-   *   toolkits: [{ toolkit: "gmail", authConfigId: "ac_243434343" }],
-   *   allowedTools: ["GMAIL_FETCH_EMAILS"],
+   *     toolkits: [{
+   *       toolkit: "github",
+   *       authConfigId: "ac_xyz",
+   *       allowedTools: ["GMAIL_FETCH_EMAILS"]
+   *     },
+   *     {
+   *        toolkit: "slack",
+   *        authConfigId: "ac_abc",
+   *        allowedTools: ["SLACK_SEND_MESSAGE"]
+   *     }
+   *   ],
    *   manuallyManageConnections: false
    *  }
    * });
@@ -87,16 +91,18 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] = config.data.allowedTools ?? [];
+    const custom_tools: string[] = [];
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     config.data.toolkits.forEach(toolkit => {
-      if (typeof toolkit === 'string') {
-        toolkits.push(toolkit);
-      } else if (toolkit.toolkit) {
+      if (toolkit.toolkit) {
         toolkits.push(toolkit.toolkit);
-      } else if (toolkit.authConfigId) {
+      }
+      if (toolkit.authConfigId) {
         auth_config_ids.push(toolkit.authConfigId);
+      }
+      if (toolkit.allowedTools) {
+        custom_tools.push(...toolkit.allowedTools); // flatten the array
       }
     });
 
@@ -318,9 +324,9 @@ export class MCP {
    *     {
    *       toolkit: "gmail",
    *       authConfigId: "auth_gmail_prod",
+   *       allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
    *     }
    *   ],
-   *   allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
    *   manuallyManageConnections: false
    * });
    *
@@ -344,16 +350,18 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] | undefined = params.allowedTools ?? undefined;
+    const custom_tools: string[] = [];
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     params.toolkits?.forEach(toolkit => {
-      if (typeof toolkit === 'string') {
-        toolkits.push(toolkit);
-      } else if (toolkit.toolkit) {
+      if (toolkit.toolkit) {
         toolkits.push(toolkit.toolkit);
-      } else if (toolkit.authConfigId) {
+      }
+      if (toolkit.authConfigId) {
         auth_config_ids.push(toolkit.authConfigId);
+      }
+      if (toolkit.allowedTools) {
+        custom_tools.push(...toolkit.allowedTools); // flatten the array
       }
     });
     const response = await this.client.mcp.update(serverId, {

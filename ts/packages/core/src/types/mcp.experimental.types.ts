@@ -14,14 +14,15 @@ export type MCPServerInstance = z.infer<typeof MCPServerInstanceSchema>;
 /**
  * MCP Create Method Input Types
  */
-export const MCPConfigToolkitsSchema = z.object({
-  toolkit: z.string().describe('Id of the toolkit').optional(),
-  authConfigId: z.string().describe('Id of the auth config').optional(),
-});
-
+export const MCPConfigToolkitsSchema = z.array(
+  z.object({
+    toolkit: z.string().describe('Id of the toolkit'),
+    authConfigId: z.string().describe('Id of the auth config').optional(),
+    allowedTools: z.array(z.string()).describe('Id slugs of the toolkits').optional(),
+  })
+);
 export const MCPConfigCreationParamsSchema = z.object({
-  toolkits: z.array(z.union([MCPConfigToolkitsSchema, z.string()])),
-  allowedTools: z.array(z.string()).optional(),
+  toolkits: MCPConfigToolkitsSchema,
   manuallyManageConnections: z
     .boolean()
     .default(false)
@@ -130,8 +131,7 @@ export type MCPListResponse = z.infer<typeof MCPListResponseSchema>;
 
 export const MCPUpdateParamsSchema = z.object({
   name: z.string().optional(),
-  toolkits: z.array(z.union([MCPConfigToolkitsSchema, z.string()])).optional(),
-  allowedTools: z.array(z.string()).optional(),
+  toolkits: MCPConfigToolkitsSchema.optional(),
   manuallyManageConnections: z
     .boolean()
     .optional()
