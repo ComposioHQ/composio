@@ -27,7 +27,7 @@ const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
 });
 
 // 3. Retrieve the MCP server instance for the user
-const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.experimental.mcp.get(externalUserId, mcpConfig.id);
 
 // 4. Create a Mastra-specific MCP client.
 //    This client needs to remain "alive" not be dropped by the GC until
@@ -35,7 +35,7 @@ const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
 const mcpClient = new MastraMCPClient({
   servers: {
     composio: {
-      url: new URL(mcp.url),
+      url: new URL(server.url),
     },
   },
 });
