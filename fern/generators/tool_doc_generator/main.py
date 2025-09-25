@@ -706,6 +706,11 @@ class ToolDocGenerator:
 
         # Create content
         content = DocumentContent()
+        
+        # Special case for Monday - use lowercase everywhere
+        display_name = toolkit.name
+        if toolkit.name == "Monday":
+            display_name = "monday"
 
         # Extract category from toolkit meta
         category = None
@@ -718,14 +723,14 @@ class ToolDocGenerator:
             )
 
         # Add frontmatter
-        content.add_frontmatter(toolkit.name, category)
+        content.add_frontmatter(display_name, category)
 
         # Handle auth schemes safely
         auth_schemes = None
         try:
             auth_schemes = toolkit_model.auth_config_details
         except Exception as e:
-            logger.info(f"Could not process auth schemes for {toolkit.name}: {e}")
+            logger.info(f"Could not process auth schemes for {display_name}: {e}")
             # Continue without auth schemes
 
         no_auth = "NO_AUTH" in (toolkit.auth_schemes or [])
@@ -735,7 +740,7 @@ class ToolDocGenerator:
         # Add overview section
         # For no-auth tools, don't pass auth_schemes to avoid showing authentication details
         content.add_overview_section(
-            app_name=toolkit.name,
+            app_name=display_name,
             app_id=toolkit.slug,
             description=toolkit.meta.description,
             auth_schemes=None if no_auth else auth_schemes,
@@ -744,7 +749,7 @@ class ToolDocGenerator:
         # Only add connection section if authentication is required
         if not no_auth:
             content.add_connection_section(
-                app_name=toolkit.name, app_slug=toolkit.slug, auth_schemes=auth_schemes
+                app_name=display_name, app_slug=toolkit.slug, auth_schemes=auth_schemes
             )
 
         # Filter out problematic actions
@@ -767,7 +772,7 @@ class ToolDocGenerator:
         logger.info(f"After filtering: {len(filtered_tools)} tools remaining out of {len(tools)}")
 
         # Add actions section (only the filtered ones)
-        content.add_actions(filtered_tools, app_name=toolkit.name, app_slug=toolkit.slug)
+        content.add_actions(filtered_tools, app_name=display_name, app_slug=toolkit.slug)
 
         # Write to file
         filename = f"{toolkit.slug.lower()}.mdx"
@@ -778,10 +783,16 @@ class ToolDocGenerator:
 
         # Track the generated tool for docs.yml update
         with threading.Lock():
+            # Special case for Monday - keep it lowercase in sidebar too
+            if toolkit.name == "Monday":
+                yml_display_name = "monday"
+            else:
+                yml_display_name = titleize(toolkit.name.lower())
+            
             self.generated_tools.append(
                 {
                     "name": toolkit.slug.lower(),
-                    "display_name": titleize(toolkit.name.lower()),
+                    "display_name": yml_display_name,
                     "path": f"toolkits/{filename}",
                     "category": category,
                     "tool_count": len(tools),

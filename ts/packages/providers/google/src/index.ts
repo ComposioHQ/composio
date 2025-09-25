@@ -15,6 +15,7 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
+  McpServerUrlInfo,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -42,7 +43,12 @@ export type GoogleGenAIToolCollection = GoogleTool[];
  * Google GenAI Provider for Composio SDK
  * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
-export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
+export class GoogleProvider extends BaseNonAgenticProvider<
+  GoogleGenAIToolCollection,
+  GoogleTool,
+  McpServerGetResponse,
+  URL
+> {
   readonly name = 'google';
 
   /**
@@ -84,6 +90,22 @@ export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollec
       url: new URL(item.url),
       name: item.name,
     })) as McpServerGetResponse;
+  }
+
+  override wrapMcpServers(servers: McpServerGetResponse): URL {
+    function wrapMcpServer(server: McpServerUrlInfo) {
+      return server.url;
+    }
+
+    if (Array.isArray(servers)) {
+      if (servers.length === 0) {
+        throw new Error('No servers found');
+      }
+
+      return wrapMcpServer(servers[0]);
+    }
+
+    return wrapMcpServer(servers);
   }
 
   /**

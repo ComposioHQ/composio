@@ -5,7 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP';
+import { ExperimentalMCP, MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -14,13 +14,18 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { McpServerGetResponse } from './types/mcp.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
+import { MCPConfig } from './models/MCPConfig';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<
+    unknown,
+    unknown,
+    /* TMcpResponse */ unknown,
+    /* TMcpExperimentalResponse */ unknown
+  > = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -86,23 +91,17 @@ export type ComposioConfig<
 };
 
 /**
- * Extract the MCP response type from a provider
- */
-type ExtractMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, infer TMcp> ? TMcp : McpServerGetResponse;
-
-/**
  * This is the core class for Composio.
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
 > {
   /**
    * The Composio API client.
    * @type {ComposioClient}
    */
-  private client: ComposioClient;
+  protected client: ComposioClient;
 
   /**
    * The configuration for the Composio SDK.
@@ -123,7 +122,15 @@ export class Composio<
   // connected accounts
   connectedAccounts: ConnectedAccounts;
 
-  mcp: MCP<ExtractMcpResponseType<TProvider>>;
+  mcp: MCP<TProvider>;
+
+  /**
+   * Experimental features
+   */
+  experimental: {
+    mcp: ExperimentalMCP<TProvider>;
+    mcpConfig: MCPConfig<TProvider>;
+  };
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -198,14 +205,19 @@ export class Composio<
 
     this.tools = new Tools(this.client, this.provider, this.config);
     this.mcp = new MCP(this.client, this.provider);
-
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
     this.files = new Files(this.client);
-
-    // Initialize the connected accounts model.
     this.connectedAccounts = new ConnectedAccounts(this.client);
+
+    /**
+     * Initialize Experimental features
+     */
+    this.experimental = {
+      mcp: new ExperimentalMCP(this.client, this.provider),
+      mcpConfig: new MCPConfig(this.mcp),
+    };
 
     /**
      * Initialize the client telemetry.

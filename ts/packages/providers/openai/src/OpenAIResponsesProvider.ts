@@ -42,6 +42,7 @@ export interface OpenAIMcpServerResponse {
 export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   OpenAiToolCollection,
   OpenAiTool,
+  OpenAiMcpTool[],
   OpenAiMcpTool[]
 > {
   readonly name = 'openai';
@@ -93,6 +94,10 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
       server_url: item.url,
       require_approval: 'never',
     }));
+  }
+
+  override wrapMcpServers(servers: OpenAiMcpTool[]): OpenAiMcpTool[] {
+    return servers;
   }
 
   /**

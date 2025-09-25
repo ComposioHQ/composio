@@ -34,7 +34,9 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
     return schema;
   },
   beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
-    console.log(`🔄 Executing tool ${toolSlug}/${toolkitSlug} with input ${JSON.stringify(params)}`);
+    console.log(
+      `🔄 Executing tool ${toolSlug}/${toolkitSlug} with input ${JSON.stringify(params)}`
+    );
     return params;
   },
   afterExecute: ({ toolSlug, toolkitSlug, result }) => {

@@ -17,13 +17,9 @@ import { MCPClient } from '@mastra/mcp';
 import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
 import type { MastraMCPServerDefinition } from '@mastra/mcp';
-import type { ToolAction } from '@mastra/core';
 import 'dotenv/config';
 
-function wrapTools(
-  servers: Record<string, unknown>,
-  tools: Record<string, ToolAction<any, any, any>>
-): Record<string, ToolAction<any, any, any>> {
+function wrapTools(servers: Record<string, any>, tools: Record<string, any>): Record<string, any> {
   const prefixes = Object.keys(servers);
 
   function removePrefix(str: string): string {
@@ -56,12 +52,12 @@ const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // Create an MCP server with Gmail toolkit
 const mcpConfig = await composio.mcp.create(
-  "gmail-mcp-" + Date.now(),
+  'gmail-mcp-' + Date.now(),
   [
     {
       authConfigId,
       allowedTools,
-    }
+    },
   ],
   { isChatAuth: true }
 );
@@ -73,8 +69,8 @@ console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
 const serverInstance = await mcpConfig.getServer({
   userId: connectedAccountId,
   connectedAccountIds: {
-    "gmail": connectedAccountId,
-  }
+    gmail: connectedAccountId,
+  },
 });
 
 // Alternative: You can also use the standalone method
@@ -85,16 +81,16 @@ const serverInstance = await mcpConfig.getServer({
 //   }
 // });
 
-console.log("Server instances for connected accounts:", serverInstance);
+console.log('Server instances for connected accounts:', serverInstance);
 
 // Initialize MCPClient with the server URLs
 const mcpClient = new MCPClient({
   servers: Object.fromEntries(
     Object.entries(serverInstance as Record<string, { url: string }>).map(([key, value]) => [
       key,
-      { url: new URL(value.url) }
+      { url: new URL(value.url) },
     ])
-  ) satisfies Record<string, MastraMCPServerDefinition>
+  ) satisfies Record<string, MastraMCPServerDefinition>,
 });
 
 // Get available tools from MCP client

@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2022",
+    "target": "esnext",
     "module": "esnext",
+    "lib": ["esnext", "dom"],
     "declaration": true,
     "declarationDir": "./dist",
     "outDir": "./dist",
