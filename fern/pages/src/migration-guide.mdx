@@ -260,7 +260,7 @@ While tool processors could previously be applied during SDK initialization, too
 - **Chat Completion providers**: Modifiers are specified and applied during tool execution
 - **Agentic frameworks**: Modifiers are specified and applied during tool fetching
 
-#### [Schema Modifiers](/docs/modifiers/schema-modifiers)
+#### [Schema Modifiers](/docs/modifying-tool-schemas)
 
 The following example demonstrates schema modifier usage, applicable across all providers:
 
@@ -297,9 +297,9 @@ tools = composio.tools.get(
 />
 </CodeGroup>
 
-#### [Before Modifiers](/docs/modifiers/before-execution)
+#### [Before Modifiers](/docs/modifying-tool-inputs)
 
-The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifiers/before-execution):
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifying-tool-inputs):
 
 <CodeGroup>
 ```python Python (current)
@@ -324,9 +324,9 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
 />
 </CodeGroup>
 
-#### [After Modifiers](/docs/modifiers/after-execution)
+#### [After Modifiers](/docs/modifying-tool-outputs)
 
-The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifiers/after-execution):
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifying-tool-outputs):
 
 <CodeGroup>
 
