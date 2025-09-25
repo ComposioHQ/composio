@@ -14,5 +14,7 @@
     "@composio/openai-agents": "0.1.53",
     "@composio/vercel": "0.2.8"
   },
-  "changesets": []
+  "changesets": [
+    "huge-shoes-see"
+  ]
 }

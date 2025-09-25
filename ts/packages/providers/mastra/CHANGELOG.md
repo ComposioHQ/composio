@@ -1,5 +1,13 @@
 # @composio/mastra
 
+## 0.1.54-rc.0
+
+### Patch Changes
+
+- 6c201dd: Add support for experimental MCP
+- Updated dependencies [6c201dd]
+  - @composio/core@0.1.53-rc.0
+
 ## 0.1.53
 
 ### Patch Changes

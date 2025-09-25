@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.1.53-rc.0
+
+### Patch Changes
+
+- 6c201dd: Add support for experimental MCP
+- Updated dependencies [6c201dd]
+  - @composio/json-schema-to-zod@0.1.16-rc.0
+
 ## 0.1.52
 
 ### Patch Changes

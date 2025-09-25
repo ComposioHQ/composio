@@ -1,6 +1,6 @@
 {
   "name": "@composio/vercel",
-  "version": "0.2.8",
+  "version": "0.2.9-rc.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -30,7 +30,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
-    "@composio/core": "0.1.52",
+    "@composio/core": "0.1.53-rc.0",
     "ai": "^5.0.44"
   },
   "devDependencies": {

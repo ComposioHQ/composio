@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.16-rc.0
+
+### Patch Changes
+
+- 6c201dd: Add support for experimental MCP
+
 ## 0.1.15
 
 ### Patch Changes
