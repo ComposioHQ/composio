@@ -1,0 +1,18 @@
+{
+  "mode": "exit",
+  "tag": "rc",
+  "initialVersions": {
+    "composio-docs": "0.0.0",
+    "@composio/core": "0.1.52",
+    "@composio/json-schema-to-zod": "0.1.15",
+    "@composio/anthropic": "0.1.52",
+    "@composio/cloudflare": "0.1.52",
+    "@composio/google": "0.1.52",
+    "@composio/langchain": "0.1.52",
+    "@composio/mastra": "0.1.53",
+    "@composio/openai": "0.1.52",
+    "@composio/openai-agents": "0.1.53",
+    "@composio/vercel": "0.2.8"
+  },
+  "changesets": []
+}
