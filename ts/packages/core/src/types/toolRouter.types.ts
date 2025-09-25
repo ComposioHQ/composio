@@ -3,11 +3,11 @@ import z from 'zod';
 export const ToolRouterToolkitConfigSchema = z.object({
   toolkit: z.string(),
   authConfigId: z.string().optional(),
-  allowedTools: z.array(z.string()).optional(),
 });
 
 export const ToolRouterConfigSchema = z.object({
   toolkits: z.array(ToolRouterToolkitConfigSchema),
+  manuallyManageConnections: z.boolean().optional(),
 });
 
 export type ToolRouterConfig = z.infer<typeof ToolRouterConfigSchema>;
