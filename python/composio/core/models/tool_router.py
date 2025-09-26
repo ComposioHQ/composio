@@ -16,32 +16,37 @@ from composio.core.models.base import Resource
 from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
 
+if t.TYPE_CHECKING:
+    from composio.core.provider import TProvider
+
+TProvider = t.TypeVar("TProvider")
+
 
 # Data Types
 
-
 class ToolRouterSession(te.TypedDict):
     """Tool router session response."""
-
     session_id: str  # Unique session identifier
     url: str  # Chat session MCP URL
 
 
-class ToolRouter(Resource):
+class ToolRouter(Resource, t.Generic[TProvider]):
     """
     ToolRouter class for managing tool routing sessions.
-
+    
     Provides functionality to create sessions that route tools through
     the Composio platform with proper authentication and configuration.
     """
-
-    def __init__(self, client: HttpClient):
+    
+    def __init__(self, client: HttpClient, provider: TProvider):
         """
         Initialize ToolRouter instance.
-
+        
         :param client: HTTP client for API calls
+        :param provider: Provider instance for formatting responses
         """
         super().__init__(client)
+        self.provider = provider
 
     def create_session(
         self,
@@ -51,19 +56,19 @@ class ToolRouter(Resource):
     ) -> ToolRouterSession:
         """
         Create a new tool router session for a user.
-
+        
         :param user_id: The user ID to create the session for
         :param toolkits: List of toolkit configurations (strings or objects)
         :param manually_manage_connections: Whether to manually manage connections
         :return: Tool router session with session_id and url
-
+        
         Examples:
             >>> # Simple usage with toolkit names
             >>> session = composio.experimental.tool_router.create_session(
             ...     'user_123',
             ...     toolkits=['github', 'slack']
             ... )
-            >>>
+            >>> 
             >>> # With auth configs
             >>> session = composio.experimental.tool_router.create_session(
             ...     'user_123',
@@ -73,7 +78,7 @@ class ToolRouter(Resource):
             ...     ],
             ...     manually_manage_connections=False
             ... )
-            >>>
+            >>> 
             >>> # Access session details
             >>> print(session['session_id'])
             >>> print(session['url'])
@@ -85,26 +90,25 @@ class ToolRouter(Resource):
                 for toolkit in toolkits:
                     if isinstance(toolkit, str):
                         # Convert string to toolkit config
-                        toolkit_configs.append({"toolkit": toolkit})
+                        toolkit_configs.append({'toolkit': toolkit})
                     else:
                         # Already a config object, use as-is
                         toolkit_configs.append(toolkit)
-
+            
             # Create session using the tool router API
             session = self._client.tool_router.create_session(
                 user_id=user_id,
                 config={
-                    "toolkits": toolkit_configs,
-                    "manually_manage_connections": manually_manage_connections,
-                },
+                    'toolkits': toolkit_configs,
+                    'manually_manage_connections': manually_manage_connections,
+                }
             )
-
+            
             # Return the session response directly (no unnecessary transformations)
             return ToolRouterSession(
-                session_id=session.session_id, url=session.chat_session_mcp_url
+                session_id=session.session_id,
+                url=session.chat_session_mcp_url
             )
-
+            
         except Exception as e:
-            raise ValidationError(
-                f"Failed to create tool router session for user {user_id}"
-            ) from e
+            raise ValidationError(f"Failed to create tool router session for user {user_id}") from e
