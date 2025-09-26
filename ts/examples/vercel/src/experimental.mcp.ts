@@ -16,18 +16,19 @@ const externalUserId = '<extern_user_id>'; // Replace it with the user id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcp.create(`${Date.now()}`, {
+const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
   toolkits: [
     {
       toolkit: 'gmail',
       authConfigId,
     },
   ],
+  allowedTools,
   manuallyManageConnections: false,
 });
 
 // 3. Retrieve the MCP server instance for the user
-const server = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
+const server = await composio.mcp.generate(externalUserId, mcpConfig.id);
 
 const serverParams = new SSEClientTransport(new URL(server.url));
 
