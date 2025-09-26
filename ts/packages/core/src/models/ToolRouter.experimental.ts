@@ -45,8 +45,8 @@ export class ToolRouter {
    * })
    * ```
    */
-  async createSession(userId: string, routerConfig: ToolRouterConfig): Promise<ToolRouterSession> {
-    const config = ToolRouterConfigSchema.safeParse(routerConfig);
+  async createSession(userId: string, routerConfig?: ToolRouterConfig): Promise<ToolRouterSession> {
+    const config = ToolRouterConfigSchema.safeParse(routerConfig ?? {});
     if (config.error) {
       throw new ValidationError('Failed to parse tool router config', {
         cause: config.error,
