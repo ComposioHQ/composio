@@ -1,13 +1,13 @@
 ---
-'@composio/core': minor
-'@composio/anthropic': minor
-'@composio/cloudflare': minor
-'@composio/google': minor
-'@composio/langchain': minor
-'@composio/mastra': minor
-'@composio/openai': minor
-'@composio/openai-agents': minor
-'@composio/vercel': minor
+'@composio/core': patch
+'@composio/anthropic': patch
+'@composio/cloudflare': patch
+'@composio/google': patch
+'@composio/langchain': patch
+'@composio/mastra': patch
+'@composio/openai': patch
+'@composio/openai-agents': patch
+'@composio/vercel': patch
 ---
 
 - Adds the new experiemntal ToolRouter, Deprecates the existing MCP experience and adds the new MCP components. 
