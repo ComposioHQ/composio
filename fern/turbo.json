@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
-      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
+      "outputs": ["apis/openapi.json", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
       "cache": true
     },
     
@@ -26,7 +26,7 @@
     },
     
     "api:pull": {
-      "outputs": ["apis/openapi.yml", "apis/openapi-mcp.json"],
+      "outputs": ["apis/openapi.json", "apis/openapi-mcp.json"],
       "cache": true
     },
     

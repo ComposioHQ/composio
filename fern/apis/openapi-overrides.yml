@@ -2,6 +2,15 @@ paths:
   /api/v3/mcp/validate/{uuid}:
     get:
       x-fern-ignore: true
+  /api/v3/cli/get-session:
+    get:
+      x-fern-ignore: true
+  /api/v3/cli/create-session:
+    post:
+      x-fern-ignore: true
+  /api/v3/auth/session/logout:
+    post:
+      x-fern-ignore: true
 components:
   securitySchemes:
     ApiKeyAuth:
