@@ -1,3 +1,4 @@
+import asyncio
 from composio import Composio
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
@@ -26,5 +27,5 @@ async def langchain_mcp(message: str):
     response = await agent.ainvoke({"messages": message})
     return response
 
-mcp_response = await langchain_mcp("Show me 20 most used slack channels")
+mcp_response = asyncio.run(langchain_mcp("Show me 20 most used slack channels"))
 
