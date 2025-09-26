@@ -16,7 +16,6 @@ import pytest
 
 from composio import Composio
 from composio.exceptions import ValidationError
-from composio_client.types.mcp.custom_create_response import Commands
 
 
 # Test configuration
@@ -316,7 +315,7 @@ class TestMCPRealWorldScenarios:
             assert isinstance(server_instance['url'], str)
             assert len(server_instance['url']) > 0
             
-            print(f"✅ Full workflow successful!")
+            print("✅ Full workflow successful!")
             print(f"   Config ID: {mcp_config.id}")
             print(f"   Server URL: {server_instance['url'][:50]}...")
             
@@ -368,23 +367,23 @@ class TestMCPRealWorldScenarios:
         # Assertions after GET
         assert retrieved_server.id == mcp_server.id, "Retrieved ID should match created ID"
         assert retrieved_server.name == test_name, "Retrieved name should match"
-        print(f"✅ GET: Successfully retrieved server")
+        print("✅ GET: Successfully retrieved server")
         
         # Step 3: UPDATE MCP server
         updated_name = f'{test_name}-updated'
         print(f"🔄 Step 3: Updating MCP server to '{updated_name}' with additional toolkit")
         
         try:
-            updated_server = composio_client.mcp.update(
+            composio_client.mcp.update(
                 mcp_server.id,
                 name=updated_name,
                 toolkits=['composio_search', 'text_to_pdf'],
                 allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
             )
-            print(f"✅ UPDATE: Server updated successfully")
+            print("✅ UPDATE: Server updated successfully")
             
             # Step 4: GET updated MCP server
-            print(f"📖 Step 4: Getting updated MCP server")
+            print("📖 Step 4: Getting updated MCP server")
             final_server = composio_client.mcp.get(mcp_server.id)
             
             # Assertions after UPDATE and final GET
@@ -405,7 +404,7 @@ class TestMCPRealWorldScenarios:
             for tool in expected_tools:
                 assert tool in actual_tools, f"Updated allowed_tools should include {tool}"
             
-            print(f"✅ FINAL GET: Retrieved updated server with correct changes")
+            print("✅ FINAL GET: Retrieved updated server with correct changes")
             print(f"   Updated name: {final_server.name}")
             print(f"   Updated toolkits: {actual_toolkits}")
             print(f"   Updated allowed_tools: {actual_tools}")

@@ -59,7 +59,7 @@ def test_mcp_with_no_auth_toolkits():
         print(f"   Auth Configs: {server_instance['auth_configs']}")
         
         # Test direct generate method as well
-        print(f"\n🔄 Testing direct generate method...")
+        print("\n🔄 Testing direct generate method...")
         
         direct_instance = composio.mcp.generate(
             test_user_id + '_direct',
@@ -72,7 +72,7 @@ def test_mcp_with_no_auth_toolkits():
         print(f"   Direct Instance User ID: {direct_instance['user_id']}")
         
         # Test URL connectivity (basic check)
-        print(f"\n🌐 Testing MCP URL connectivity...")
+        print("\n🌐 Testing MCP URL connectivity...")
         
         import requests
         mcp_url = server_instance['url']
@@ -87,7 +87,7 @@ def test_mcp_with_no_auth_toolkits():
             
             response = requests.get(mcp_url, headers=headers, timeout=5, stream=True)
             
-            print(f"✅ MCP URL is accessible!")
+            print("✅ MCP URL is accessible!")
             print(f"   Status Code: {response.status_code}")
             print(f"   Content-Type: {response.headers.get('Content-Type', 'N/A')}")
             
@@ -103,10 +103,10 @@ def test_mcp_with_no_auth_toolkits():
         except Exception as e:
             print(f"⚠️  MCP URL test failed: {e}")
         
-        print(f"\n📊 Test Summary:")
+        print("\n📊 Test Summary:")
         print(f"   ✅ MCP Server Created: {mcp_server.id}")
         print(f"   ✅ Server Instance Generated: {server_instance['type']}")
-        print(f"   ✅ Direct Generate Method: Working")
+        print("   ✅ Direct Generate Method: Working")
         print(f"   ✅ Available Tools: {len(server_instance['allowed_tools'])} tools")
         print(f"   ✅ No Auth Required: {len(server_instance['auth_configs'])} auth configs")
         

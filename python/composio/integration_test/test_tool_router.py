@@ -113,7 +113,7 @@ class TestToolRouterRealWorldScenarios:
             manually_manage_connections=False
         )
         
-        print(f"✅ Session created successfully!")
+        print("✅ Session created successfully!")
         print(f"   Session ID: {session['session_id']}")
         print(f"   Session URL: {session['url']}")
         
@@ -122,4 +122,4 @@ class TestToolRouterRealWorldScenarios:
         assert session['url']
         assert 'composio' in session['url']  # Should be a Composio URL
         
-        print(f"🎉 ToolRouter workflow completed successfully!")
+        print("🎉 ToolRouter workflow completed successfully!")
