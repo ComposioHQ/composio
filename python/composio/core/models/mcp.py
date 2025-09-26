@@ -1,7 +1,7 @@
 """
 MCP (Model Control Protocol) module for Composio SDK.
 
-This module provides MCP server operations with provider-specific optimizations.
+This module provides MCP server operations
 """
 
 from __future__ import annotations
@@ -16,11 +16,6 @@ from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
-
-if t.TYPE_CHECKING:
-    from composio.core.provider import TProvider
-
-TProvider = t.TypeVar("TProvider")
 
 
 # Data Types (matching TypeScript specification)
@@ -78,23 +73,21 @@ def _add_generate_method(response: CustomCreateResponse, mcp_instance: "MCP") ->
     return response
 
 
-class MCP(Resource, t.Generic[TProvider]):
+class MCP(Resource):
     """
     MCP (Model Control Protocol) class.
-    Provides enhanced MCP server operations with provider-specific response formatting.
+    Provides enhanced MCP server operations
     
     This matches the TypeScript ExperimentalMCP class functionality.
     """
 
-    def __init__(self, client: HttpClient, provider: TProvider):
+    def __init__(self, client: HttpClient):
         """
         Initialize MCP instance.
         
         :param client: HTTP client for API calls
-        :param provider: Provider instance for formatting responses
         """
         super().__init__(client)
-        self.provider = provider
 
     def create(
         self,
@@ -401,7 +394,6 @@ class MCP(Resource, t.Generic[TProvider]):
     ) -> MCPServerInstance:
         """
         Get server URLs for an existing MCP server.
-        The response is wrapped according to the provider's specifications.
         
         This matches the TypeScript implementation exactly.
         

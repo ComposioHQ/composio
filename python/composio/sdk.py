@@ -37,10 +37,10 @@ class SDKConfig(te.TypedDict):
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
 
 
-class ExperimentalNamespace(t.Generic[TProvider]):
+class ExperimentalNamespace:
     """Namespace for experimental Composio features."""
     
-    def __init__(self, tool_router: ToolRouter[TProvider]):
+    def __init__(self, tool_router: ToolRouter):
         """
         Initialize experimental namespace.
         
@@ -104,12 +104,11 @@ class Composio(t.Generic[TProvider], WithLogger):
         self.triggers = Triggers(client=self._client)
         self.auth_configs = AuthConfigs(client=self._client)
         self.connected_accounts = ConnectedAccounts(client=self._client)
-        self.mcp = MCP(client=self._client, provider=self.provider)
+        self.mcp = MCP(client=self._client)
         
         # Initialize experimental features
-        mcp = MCP(client=self._client, provider=self.provider)
         self.experimental = ExperimentalNamespace(
-            tool_router=ToolRouter(client=self._client, provider=self.provider),
+            tool_router=ToolRouter(client=self._client),
         )
 
     @property
