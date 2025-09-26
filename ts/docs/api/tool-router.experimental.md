@@ -19,20 +19,26 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 const userId = "xxx-ooo-xxx";
 
-// Access the experimental ToolRouter
+// Access the experimental ToolRouter for specific toolkits
 const mcpSession = composio.experimental.toolRouter.createSession(userId, {
-  const toolkits: [{
+  toolkits: ["github"]
+});
+
+// Access the experimental ToolRouter for specific auth configs
+const mcpSession = composio.experimental.toolRouter.createSession(userId, {
+  toolkits: [{
     toolkit: "github",
-    authConfigId: "ac_233434343"
+    authConfigId: "ac_xyz"
   }]
 });
+
 ```
 
 ## Methods
 
 ### createSession(userId, routerConfig)
 
-Creates a new isolated session for the tool router with specified toolkits and authentication configurations.
+Creates a new isolated session for the tool router with specified toolkits and authentication configurations. If no toolkits are provided, your router will have access to all the toolkits.
 
 **Parameters:**
 
@@ -50,30 +56,13 @@ Creates a new isolated session for the tool router with specified toolkits and a
 ```typescript
 // Basic session with multiple toolkits
 const session = await composio.experimental.toolRouter.createSession('user_123456789', {
-  toolkits: [
-    {
-      toolkit: 'gmail',
-      authConfigId: 'auth_config_123',
-    },
-    {
-      toolkit: 'slack',
-      authConfigId: 'auth_config_456',
-    },
-    {
-      toolkit: 'github',
-      // No authConfigId - will use default auth
-    },
-    {
-      toolkit: 'hackernews',
-      // Public API - no auth needed
-    },
-  ],
+  toolkits: ["gmail", "slack", "github", "hackernews"]
 });
 
 console.log('Session ID:', session.sessionId);
 console.log('MCP URL:', session.url);
 
-// Session with manual connection management
+// Session with manual connection management and authConfigs
 const manualSession = await composio.experimental.toolRouter.createSession('user_789', {
   toolkits: [
     {
@@ -96,7 +85,7 @@ Configuration object for creating a tool router session:
 
 ```typescript
 interface ToolRouterConfig {
-  toolkits: ToolRouterToolkitConfig[];
+  toolkits?: string[] | ToolRouterToolkitConfig[];
   manuallyManageConnections?: boolean; // Disables automatic account management tools
 }
 ```
@@ -132,11 +121,11 @@ Create sessions that span multiple services for complex workflows:
 ```typescript
 const integrationSession = await composio.experimental.toolRouter.createSession('user_456', {
   toolkits: [
-    { toolkit: 'gmail', authConfigId: 'gmail_work' },
-    { toolkit: 'slack', authConfigId: 'slack_team' },
-    { toolkit: 'github', authConfigId: 'github_personal' },
-    { toolkit: 'notion', authConfigId: 'notion_workspace' },
-    { toolkit: 'calendar', authConfigId: 'gcal_primary' },
+    { toolkit: 'gmail', authConfigId: 'ac_gmail_work' },
+    { toolkit: 'slack', authConfigId: 'ac_slack_team' },
+    { toolkit: 'github', authConfigId: 'ac_github_personal' },
+    { toolkit: 'notion', authConfigId: 'ac_notion_workspace' },
+    { toolkit: 'calendar', authConfigId: 'ac_gcal_primary' },
   ],
 });
 
@@ -149,11 +138,7 @@ Create isolated environments for testing different tool combinations:
 
 ```typescript
 const testSession = await composio.experimental.toolRouter.createSession('test_user', {
-  toolkits: [
-    { toolkit: 'hackernews' }, // Public API for testing
-    { toolkit: 'weatherapi' }, // Weather data
-    { toolkit: 'calculator' }, // Built-in tools
-  ],
+  toolkits: ["hackernews", "weatherapi", "calculator"]
 });
 
 // Perfect for testing tool routing logic without auth complexity
@@ -195,21 +180,6 @@ async function createUserSession(userId: string, userPreferences: any) {
 }
 ```
 
-### 4. Scoped Access Sessions
-
-Create sessions with limited toolkit access for security:
-
-```typescript
-const limitedSession = await composio.experimental.toolRouter.createSession('restricted_user', {
-  toolkits: [
-    { toolkit: 'hackernews' }, // Read-only public data
-    { toolkit: 'calculator' }, // Safe computational tools
-    { toolkit: 'timer' }, // Utility tools
-  ],
-  manuallyManageConnections: true, // Extra security layer
-});
-```
-
 ## Connection Management
 
 The `manuallyManageConnections` flag controls whether Composio automatically injects account management tools into your session.
@@ -218,6 +188,10 @@ The `manuallyManageConnections` flag controls whether Composio automatically inj
 
 When `manuallyManageConnections` is `false` or omitted, Composio injects helpful account management tools:
 
+1. Connection status checking tools - agents can verify if accounts are connected
+2. Connection URL generation tools - agents can prompt users to connect accounts
+3. Account linking helpers - streamlined authentication flows
+
 ```typescript
 const autoSession = await composio.experimental.toolRouter.createSession('user_123', {
   toolkits: [
@@ -225,24 +199,6 @@ const autoSession = await composio.experimental.toolRouter.createSession('user_1
     { toolkit: 'slack', authConfigId: 'slack_config' },
   ],
   // manuallyManageConnections defaults to false
-});
-
-// Composio automatically provides these account management tools:
-// 1. Connection status checking tools - agents can verify if accounts are connected
-// 2. Connection URL generation tools - agents can prompt users to connect accounts
-// 3. Account linking helpers - streamlined authentication flows
-
-// Example: Agent can check connection status
-const connectionStatus = await agent.callTool('composio_check_connection_status', {
-  toolkit: 'gmail',
-  userId: 'user_123',
-});
-
-// Example: Agent can generate connection URL for user
-const connectionUrl = await agent.callTool('composio_generate_connection_url', {
-  toolkit: 'slack',
-  authConfigId: 'slack_config',
-  userId: 'user_123',
 });
 ```
 
@@ -264,15 +220,15 @@ const manualSession = await composio.experimental.toolRouter.createSession('user
 // Use the Composio SDK to pre-connect accounts:
 
 // Before creating the session, link accounts manually:
-await composio.connectedAccounts.link({
+const connectionRequest = await composio.connectedAccounts.link({
   userId: 'user_123',
   authConfigId: 'gmail_config',
 });
+// redirect user to the url to authenticate
+console.log(connectionRequest.redirectUrl);
 
-await composio.connectedAccounts.link({
-  userId: 'user_123',
-  authConfigId: 'slack_config',
-});
+// wait for users to connect their account
+const connectedAccount = await connectionRequest.waitForConnection();
 
 // Now the session can use these pre-connected accounts
 // But agents cannot dynamically check status or prompt for new connections

@@ -30,19 +30,12 @@ export class ToolRouter {
    * const userId = "xxx-ooo-xxxx"
    *
    * const mcpSession = await composio.experimental.toolRouter.createSession(userId, {
-   *  toolkits: [{
-   *    toolkit: "slack",
-   *    authConfigId: "ac_asdkasd"
-   *    },
-   *    {
-   *      toolkit: "hackernews"
-   *    },
-   *    {
-   *      toolkit: "github"
-   *    }
-   *  ],
-   *  }]
+   *  toolkits: ["github", "hackernews", "slack"]
    * })
+   *
+   * // with auth configs
+   * const mcpSession = await composio.experimental.toolRouter.createSession(userId, {
+   *  toolkits: [{ toolkit: "github", authConfingId: "ac_123455344"}]
    * ```
    */
   async createSession(userId: string, routerConfig?: ToolRouterConfig): Promise<ToolRouterSession> {
@@ -53,13 +46,21 @@ export class ToolRouter {
       });
     }
 
+    const toolkitConfig = config.data.toolkits?.map(config => {
+      if (typeof config === 'string') {
+        return { toolkit: config };
+      } else {
+        return {
+          toolkit: config.toolkit,
+          auth_config_id: config.authConfigId,
+        };
+      }
+    });
+
     const session = await this.client.toolRouter.createSession({
       user_id: userId,
       config: {
-        toolkits: config.data.toolkits?.map(toolkit => ({
-          toolkit: toolkit.toolkit,
-          auth_config: toolkit.authConfigId,
-        })),
+        toolkits: toolkitConfig,
         manually_manage_connections: config.data.manuallyManageConnections,
       },
     });

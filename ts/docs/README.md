@@ -43,6 +43,7 @@ The Composio SDK is built around several key concepts:
 - **Auth Configs**: Authentication configurations for external services
 - **Providers**: Adapters for AI services that can use tools (e.g., OpenAI)
 - **Custom Tools**: Tools you can create and define yourself
+- **MCP**: Create and manage MCP Servers and clients
 
 Check out the [Core Concepts](./core-concepts.md) documentation for more detailed information.
 
@@ -88,6 +89,8 @@ The complete API reference documentation is available here:
 - [Auth Configs](./api/auth-configs.md)
 - [Providers](./api/providers.md)
 - [Custom Tools](./api/custom-tools.md)
+- [MCP](./api/mcp.md)
+- [ToolRouter (experimental)](./api/tool-router.experimental.md)
 
 ## Providers
 

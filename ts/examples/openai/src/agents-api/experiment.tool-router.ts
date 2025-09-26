@@ -11,25 +11,19 @@ const composio = new Composio({
   allowTracking: false,
 });
 
-const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const toolkit = 'gmail'; // slug of the toolkit
-const externalUserId = '<external_user_id>'; // Replace it with the userId from your database
-const allowedTools = ['GMAIL_FETCH_EMAILS'];
+const externalUserId = 'default';
 
-// 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcp.create(externalUserId, {
-  toolkits: [
-    { toolkit, authConfigId, allowedTools }
-  ],
+// 2. Create an tool router session
+const mcpSession = await composio.experimental.toolRouter.createSession(externalUserId, {
+  toolkits: ["gmail", "github"],
 });
 
-// 3. Retrieve the MCP server instance for the connected accounts
-const server = await composio.experimental.mcp.generate(externalUserId, mcpConfig.id);
+// 3. Retrieve the MCP server instance for the tool router
 
 const tools: HostedMCPTool[] = [
   hostedMcpTool({
-    serverLabel: server.name,
-    serverUrl: server.url,
+    serverLabel: 'composio tool router',
+    serverUrl: mcpSession.url,
     requireApproval: {
       never: {
         toolNames: ['GMAIL_FETCH_EMAILS'],

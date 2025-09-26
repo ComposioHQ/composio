@@ -1,5 +1,3 @@
-import { MCP } from './MCP';
-import { BaseComposioProvider } from '../provider/BaseProvider';
 import { Composio as ComposioClient } from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
 import {
@@ -45,7 +43,7 @@ function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveRespo
  * Handles MCP server operations.
  * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
  */
-export class ExperimentalMCP {
+export class MCP {
   client: ComposioClient;
 
   constructor(client: ComposioClient) {
