@@ -3,7 +3,7 @@ import { version } from '../../package.json';
 import { ComposioRequestHeaders } from '../types/composio.types';
 
 export function getSessionHeaders(
-  provider: BaseComposioProvider<unknown, unknown, unknown, unknown> | undefined
+  provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
 ) {
   return {
     'x-source': provider?.name || '@composio/core',
@@ -14,7 +14,7 @@ export function getSessionHeaders(
 
 export const getDefaultHeaders = (
   headers: ComposioRequestHeaders | undefined,
-  provider: BaseComposioProvider<unknown, unknown, unknown, unknown> | undefined
+  provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
 ) => {
   const sessionHeaders = getSessionHeaders(provider);
   return {
