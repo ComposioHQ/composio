@@ -1,7 +1,8 @@
 """
 MCP (Model Control Protocol) module for Composio SDK.
 
-This module provides MCP server operations
+This module provides comprehensive MCP server management with CRUD operations,
+following the TypeScript experimental MCP API specification.
 """
 
 from __future__ import annotations
@@ -20,13 +21,52 @@ from composio.exceptions import ValidationError
 
 # Data Types (matching TypeScript specification)
 
+<<<<<<< HEAD
+=======
+class MCPToolkitConfig(te.TypedDict):
+    """Configuration for a single toolkit in MCP server."""
+    toolkit: te.NotRequired[str]  # e.g., "github", "slack"
+    auth_config_id: te.NotRequired[str]  # Auth configuration ID
+    allowed_tools: te.NotRequired[t.List[str]]  # Specific tools to enable
+
+
+class MCPConfigCreationParams(te.TypedDict):
+    """Parameters for creating MCP configuration."""
+    toolkits: t.List[MCPToolkitConfig]  # Array of toolkit configurations
+    manually_manage_connections: te.NotRequired[bool]  # Whether to manually manage account connections
+
+
+class MCPUpdateParams(te.TypedDict):
+    """Parameters for updating MCP configuration."""
+    name: te.NotRequired[str]  # New server name
+    toolkits: te.NotRequired[t.List[MCPToolkitConfig]]  # Updated toolkit configurations
+    manually_manage_connections: te.NotRequired[bool]  # Connection management setting
+
+
+class MCPListParams(te.TypedDict):
+    """Parameters for listing MCP servers."""
+    page: te.NotRequired[int]  # Page number for pagination (default: 1)
+    limit: te.NotRequired[int]  # Maximum items per page (default: 10)
+    toolkits: te.NotRequired[t.List[str]]  # Filter by toolkit names
+    auth_configs: te.NotRequired[t.List[str]]  # Filter by auth configuration IDs
+    name: te.NotRequired[str]  # Filter by server name (partial match)
+
+
+class MCPGetInstanceParams(te.TypedDict):
+    """Parameters for getting server instance."""
+    manually_manage_connections: te.NotRequired[bool]  # Whether to manually manage connections
+>>>>>>> b50c78c19 (Update according to new spec)
 
 
 class MCPServerInstance(te.TypedDict):
-    """MCP Server Instance data structure (matching TypeScript implementation)."""
+    """User-specific server instance (matching TypeScript implementation)."""
     id: str
     name: str
+<<<<<<< HEAD
     type: str
+=======
+    type: str  # Always 'sse' for streamable HTTP
+>>>>>>> b50c78c19 (Update according to new spec)
     url: str  # User-specific connection URL
     user_id: str  # Associated user ID
     allowed_tools: t.List[str]  # Available tools for the user
@@ -55,14 +95,37 @@ class MCPListResponse(te.TypedDict):
     total_pages: int  # Total number of pages
 
 
+<<<<<<< HEAD
 def _add_generate_method(response: CustomCreateResponse, mcp_instance: "MCP") -> CustomCreateResponse:
     """Add generate method to CustomCreateResponse object."""
     def generate(user_id: str, manually_manage_connections: t.Optional[bool] = None) -> MCPServerInstance:
+=======
+class MCPConfigCreateResponse:
+    """
+    Response from MCP server creation with generate method.
+    Matches the TypeScript MCPConfigCreateResponse behavior.
+    """
+    
+    def __init__(self, server_data: t.Dict[str, t.Any], mcp_instance: "MCP"):
+        self.id = server_data["id"]
+        self.name = server_data["name"]
+        self.toolkits = server_data.get("toolkits", [])
+        self.created_at = server_data.get("created_at")
+        self.updated_at = server_data.get("updated_at")
+        self._mcp = mcp_instance
+    
+    def generate(
+        self, 
+        user_id: str, 
+        options: t.Optional[MCPGetInstanceParams] = None
+    ) -> MCPServerInstance:
+>>>>>>> b50c78c19 (Update according to new spec)
         """
         Generate server instance for this MCP configuration.
         Matches TypeScript server.generate(userId) method.
         
         :param user_id: External user ID from your database
+<<<<<<< HEAD
         :param manually_manage_connections: Whether to manually manage connections (optional)
         :return: MCP server instance
         """
@@ -71,12 +134,35 @@ def _add_generate_method(response: CustomCreateResponse, mcp_instance: "MCP") ->
     # Add the generate method to the response object
     response.generate = generate
     return response
+=======
+        :param options: Additional options for instance generation
+        :return: MCP server instance
+        """
+        return self._mcp.generate(user_id, self.id, options)
+    
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        """Convert to dictionary representation."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "toolkits": self.toolkits,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+>>>>>>> b50c78c19 (Update according to new spec)
 
 
 class MCP(Resource):
     """
     MCP (Model Control Protocol) class.
-    Provides enhanced MCP server operations
+    
+    Provides comprehensive CRUD operations for MCP servers, including:
+    - Creating custom MCP configurations with toolkit-specific settings
+    - Listing and filtering servers with pagination
+    - Retrieving detailed server information
+    - Updating server configurations
+    - Deleting servers
+    - Managing server instances for users
     
     This matches the TypeScript ExperimentalMCP class functionality.
     """
@@ -90,6 +176,7 @@ class MCP(Resource):
         super().__init__(client)
 
     def create(
+<<<<<<< HEAD
         self,
         name: str,
         toolkits: t.List[t.Union[MCPToolkitConfig, str]],
@@ -392,9 +479,16 @@ class MCP(Resource):
         mcp_config_id: str,
         manually_manage_connections: t.Optional[bool] = None,
     ) -> MCPServerInstance:
+=======
+        self,
+        name: str,
+        config: MCPConfigCreationParams,
+    ) -> MCPConfigCreateResponse:
+>>>>>>> b50c78c19 (Update according to new spec)
         """
-        Get server URLs for an existing MCP server.
+        Create a new MCP server configuration with specified toolkits and authentication settings.
         
+<<<<<<< HEAD
         This matches the TypeScript implementation exactly.
         
         :param user_id: External user ID from your database
@@ -411,30 +505,293 @@ class MCP(Resource):
             >>> 
             >>> print(mcp['url'])  # Server URL for the user
             >>> print(mcp['allowed_tools'])  # Available tools
+=======
+        :param name: Unique name for the MCP configuration
+        :param config: Configuration object containing toolkits and connection management settings
+        :return: Created server details with generate method
+        
+        Example:
+            >>> server = composio.experimental.mcp.create('personal-mcp-server', {
+            ...     'toolkits': [
+            ...         {
+            ...             'toolkit': 'github',
+            ...             'auth_config_id': 'ac_xyz',
+            ...             'allowed_tools': ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+            ...         },
+            ...         {
+            ...             'toolkit': 'slack',
+            ...             'auth_config_id': 'ac_abc',
+            ...             'allowed_tools': ['SLACK_SEND_MESSAGE'],
+            ...         },
+            ...     ],
+            ...     'manually_manage_connections': False,
+            ... })
+            >>> 
+            >>> # Get server instance for a user
+            >>> mcp = server.generate('user_12345')
+        """
+        if not config.get("toolkits"):
+            raise ValidationError("At least one toolkit configuration is required")
+
+        try:
+            # Extract toolkits and prepare for API call
+            toolkit_configs = config["toolkits"]
+            
+            # Get unique toolkits and auth config IDs
+            toolkits = []
+            auth_config_ids = []
+            custom_tools = []
+            
+            for toolkit_config in toolkit_configs:
+                if "toolkit" in toolkit_config and toolkit_config["toolkit"] not in toolkits:
+                    toolkits.append(toolkit_config["toolkit"])
+                
+                if "auth_config_id" in toolkit_config and toolkit_config["auth_config_id"] not in auth_config_ids:
+                    auth_config_ids.append(toolkit_config["auth_config_id"])
+                
+                if "allowed_tools" in toolkit_config:
+                    custom_tools.extend(toolkit_config["allowed_tools"])
+            
+            # Use the custom MCP create endpoint
+            response = self._client.mcp.custom.create(
+                name=name,
+                toolkits=toolkits,
+                auth_config_ids=auth_config_ids,
+                custom_tools=custom_tools,
+                managed_auth_via_composio=not config.get("manually_manage_connections", False),
+            )
+            
+            server_data = {
+                "id": response.id,
+                "name": response.name,
+                "toolkits": getattr(response, "toolkits", toolkits),
+                "created_at": getattr(response, "created_at", None),
+                "updated_at": getattr(response, "updated_at", None),
+            }
+            
+            # Return response with generate method (matching TypeScript behavior)
+            return MCPConfigCreateResponse(
+                server_data=server_data,
+                mcp_instance=self
+            )
+            
+        except Exception as e:
+            raise ValidationError("Failed to create MCP server") from e
+
+    def list(self, options: t.Optional[MCPListParams] = None) -> MCPListResponse:
+        """
+        List MCP servers with optional filtering and pagination.
+        
+        :param options: Filtering and pagination options
+        :return: Paginated list of MCP servers
+        
+        Example:
+            >>> # List all servers
+            >>> all_servers = composio.experimental.mcp.list({})
+            >>> 
+            >>> # Paginated listing
+            >>> paged_servers = composio.experimental.mcp.list({
+            ...     'page': 2,
+            ...     'limit': 5,
+            ... })
+            >>> 
+            >>> # Filter by toolkit
+            >>> github_servers = composio.experimental.mcp.list({
+            ...     'toolkits': ['github', 'slack'],
+            ... })
+>>>>>>> b50c78c19 (Update according to new spec)
         """
         
         try:
-            # Get server details first (matching TS: this.client.mcp.retrieve)
+            # Use the MCP list endpoint with filters
+            response = self._client.mcp.list(
+                page=options.get("page", 1),
+                limit=options.get("limit", 10),
+                # Add other filters as supported by the API
+            )
+            
+            # Return items directly - no transformation needed in Python
+            items = response.items if hasattr(response, 'items') and response.items else []
+            
+            return MCPListResponse(
+                items=items,
+                current_page=getattr(response, "current_page", options.get("page", 1)),
+                total_pages=getattr(response, "total_pages", 1),
+            )
+            
+        except Exception as e:
+            raise ValidationError("Failed to list MCP servers") from e
+
+    def get(self, server_id: str):
+        """
+        Retrieve detailed information about a specific MCP server/config.
+        
+        :param server_id: The unique identifier of the MCP server/config
+        :return: Complete MCP server information
+        
+        Example:
+            >>> server = composio.experimental.mcp.get('mcp_12345')
+            >>> 
+            >>> print(server['name'])  # "My Personal MCP Server"
+            >>> print(server['allowed_tools'])  # ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+            >>> print(server['toolkits'])  # ["github", "slack"]
+            >>> print(server['server_instance_count'])  # 3
+        """
+        try:
+            response = self._client.mcp.retrieve(server_id)
+            
+            # Return response directly - no transformation needed in Python
+            return response
+            
+        except Exception as e:
+            raise ValidationError(f"Failed to retrieve MCP server {server_id}") from e
+
+    def update(self, server_id: str, config: MCPUpdateParams):
+        """
+        Update an existing MCP server configuration.
+        
+        :param server_id: The unique identifier of the MCP server to update
+        :param config: Update configuration parameters
+        :return: Updated MCP server information
+        
+        Example:
+            >>> # Update server name only
+            >>> updated_server = composio.experimental.mcp.update('mcp_12345', {
+            ...     'name': 'My Updated MCP Server',
+            ... })
+            >>> 
+            >>> # Update toolkits and tools
+            >>> server_with_new_tools = composio.experimental.mcp.update('mcp_12345', {
+            ...     'toolkits': [
+            ...         {
+            ...             'toolkit': 'github',
+            ...             'auth_config_id': 'auth_abc123',
+            ...             'allowed_tools': ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+            ...         },
+            ...     ],
+            ... })
+        """
+        try:
+            update_params = {}
+            
+            if "name" in config:
+                update_params["name"] = config["name"]
+            
+            if "toolkits" in config:
+                toolkit_configs = config["toolkits"]
+                
+                # Extract toolkits and prepare for API call
+                toolkits = []
+                auth_config_ids = []
+                custom_tools = []
+                
+                for toolkit_config in toolkit_configs:
+                    if "toolkit" in toolkit_config and toolkit_config["toolkit"] not in toolkits:
+                        toolkits.append(toolkit_config["toolkit"])
+                    
+                    if "auth_config_id" in toolkit_config and toolkit_config["auth_config_id"] not in auth_config_ids:
+                        auth_config_ids.append(toolkit_config["auth_config_id"])
+                    
+                    if "allowed_tools" in toolkit_config:
+                        custom_tools.extend(toolkit_config["allowed_tools"])
+                
+                update_params["toolkits"] = toolkits
+                update_params["auth_config_ids"] = auth_config_ids
+                update_params["custom_tools"] = custom_tools
+            
+            if "manually_manage_connections" in config:
+                update_params["managed_auth_via_composio"] = not config["manually_manage_connections"]
+            
+            # Use the MCP update endpoint
+            response = self._client.mcp.update(server_id, **update_params)
+            
+            # Return response directly - no transformation needed in Python
+            return response
+            
+        except Exception as e:
+            raise ValidationError(f"Failed to update MCP server {server_id}") from e
+
+    def delete(self, server_id: str) -> t.Dict[str, t.Any]:
+        """
+        Permanently delete an MCP server configuration.
+        
+        :param server_id: The unique identifier of the MCP server to delete
+        :return: Deletion result
+        
+        Example:
+            >>> # Delete a server
+            >>> result = composio.experimental.mcp.delete('mcp_12345')
+            >>> 
+            >>> if result['deleted']:
+            ...     print(f"Server {result['id']} has been successfully deleted")
+            >>> else:
+            ...     print(f"Failed to delete server {result['id']}")
+        """
+        try:
+            response = self._client.mcp.delete(server_id)
+            
+            return {
+                "id": server_id,
+                "deleted": getattr(response, "deleted", True),
+            }
+            
+        except Exception as e:
+            raise ValidationError(f"Failed to delete MCP server {server_id}") from e
+
+    def generate(
+        self,
+        user_id: str,
+        mcp_config_id: str,
+        options: t.Optional[MCPGetInstanceParams] = None,
+    ) -> MCPServerInstance:
+        """
+        Create a server instance for a specific user.
+        
+        :param user_id: External user ID from your database
+        :param mcp_config_id: MCP configuration ID
+        :param options: Additional options for instance generation
+        :return: MCP server instance
+        
+        Example:
+            >>> mcp = composio.experimental.mcp.generate('user_12345', 'mcp_67890', {
+            ...     'manually_manage_connections': False,
+            ... })
+            >>> 
+            >>> print(mcp['url'])  # Server URL for the user
+            >>> print(mcp['allowed_tools'])  # Available tools
+        """
+        options = options or {}
+        
+        try:
+            # Get server details first
             server_details = self._client.mcp.retrieve(mcp_config_id)
             
-            # Generate server URLs (matching TS: this.client.mcp.generate.url)
+            # Generate server URLs
             url_response = self._client.mcp.generate.url(
                 mcp_server_id=mcp_config_id,
                 user_ids=[user_id],
+<<<<<<< HEAD
                 managed_auth_by_composio=False if manually_manage_connections else True,
+=======
+                managed_auth_by_composio=False if options.get("manually_manage_connections") else True,
+>>>>>>> b50c78c19 (Update according to new spec)
             )
             
-            # Get the generated URL (matching TS: urlResponse.user_ids_url[0])
+            # Get the generated URL
             if hasattr(url_response, "user_ids_url") and url_response.user_ids_url:
                 server_url = url_response.user_ids_url[0]
             else:
                 raise ValidationError("No server URL generated")
             
-            # Create structured server instance (matching TS MCPServerInstance)
+            # Create structured server instance
             server_instance: MCPServerInstance = {
                 "id": server_details.id,
                 "name": server_details.name,
+<<<<<<< HEAD
                 "type": "streamable_http",
+=======
+                "type": "streamable_http",  # Match TypeScript implementation
+>>>>>>> b50c78c19 (Update according to new spec)
                 "url": server_url,
                 "user_id": user_id,
                 "allowed_tools": getattr(server_details, "allowed_tools", []),
@@ -446,4 +803,4 @@ class MCP(Resource):
         except Exception as e:
             if isinstance(e, ValidationError):
                 raise
-            raise ValidationError("Failed to parse MCP server instance") from e
+            raise ValidationError("Failed to generate MCP server instance") from e

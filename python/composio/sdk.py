@@ -16,7 +16,10 @@ from composio.core.models import (
 )
 from composio.core.models.base import allow_tracking
 from composio.core.models.mcp import MCP
+<<<<<<< HEAD
 from composio.core.models.tool_router import ToolRouter
+=======
+>>>>>>> b50c78c19 (Update according to new spec)
 from composio.core.provider import TProvider
 from composio.core.provider._openai import OpenAIProvider
 from composio.core.types import ToolkitVersionParam
@@ -40,13 +43,23 @@ class SDKConfig(te.TypedDict):
 class ExperimentalNamespace:
     """Namespace for experimental Composio features."""
     
-    def __init__(self, tool_router: ToolRouter):
+<<<<<<< HEAD
+    def __init__(self, tool_router: ToolRouter[TProvider]):
         """
         Initialize experimental namespace.
         
         :param tool_router: Experimental ToolRouter instance
         """
         self.tool_router = tool_router
+=======
+    def __init__(self, mcp: MCP[TProvider]):
+        """
+        Initialize experimental namespace.
+        
+        :param mcp: Experimental MCP instance
+        """
+        self.mcp = mcp
+>>>>>>> b50c78c19 (Update according to new spec)
 
 
 class Composio(t.Generic[TProvider], WithLogger):
