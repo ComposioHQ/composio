@@ -1,7 +1,6 @@
 from composio import Composio
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
-from langchain_openai import OpenAI
 
 composio = Composio()
 
