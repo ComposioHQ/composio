@@ -66,6 +66,19 @@ composio = Composio(
 
 For more detailed usage instructions and examples, please refer to each SDK's specific documentation.
 
+### Open API Specification
+
+To update the OpenAPI specifications used for generating SDK documentation:
+
+```bash
+# Pull the latest API specifications from the backend
+pnpm api:pull
+```
+
+This command pulls the OpenAPI specification from `https://backend.composio.dev/api/v3/openapi.json` (defined in `fern/scripts/pull-openapi-spec.sh`) and updates the local API documentation files.
+
+This is pulled automatically with build step.
+
 ## Available SDKs
 
 ### TypeScript SDK (/ts)

@@ -47,6 +47,7 @@ fern/toolkits/*
 !fern/tools/src/
 !fern/tools/src/**
 fern/apis/openapi.yml
+fern/apis/openapi.json
 fern/apis/openapi-mcp.json
 fern/pages/dist/
 fern/pages/sdk/
