@@ -16,10 +16,6 @@ from composio.core.models.base import Resource
 from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
 
-if t.TYPE_CHECKING:
-    from composio.core.provider import TProvider
-
-TProvider = t.TypeVar("TProvider")
 
 
 # Data Types
@@ -30,7 +26,7 @@ class ToolRouterSession(te.TypedDict):
     url: str  # Chat session MCP URL
 
 
-class ToolRouter(Resource, t.Generic[TProvider]):
+class ToolRouter(Resource):
     """
     ToolRouter class for managing tool routing sessions.
     
@@ -38,15 +34,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     the Composio platform with proper authentication and configuration.
     """
     
-    def __init__(self, client: HttpClient, provider: TProvider):
+    def __init__(self, client: HttpClient):
         """
         Initialize ToolRouter instance.
         
         :param client: HTTP client for API calls
-        :param provider: Provider instance for formatting responses
         """
         super().__init__(client)
-        self.provider = provider
 
     def create_session(
         self,
