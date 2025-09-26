@@ -32,19 +32,12 @@ def test_mcp_with_no_auth_toolkits():
         server_name = f'no-auth-test-{int(time.time()) % 1000000}'
         print(f"🚀 Creating MCP server: {server_name}")
         
-        mcp_server = composio.experimental.mcp.create(server_name, {
-            'toolkits': [
-                {
-                    'toolkit': 'composio_search',
-                    'allowed_tools': ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH']
-                },
-                {
-                    'toolkit': 'text_to_pdf', 
-                    'allowed_tools': ['TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
-                }
-            ],
-            'manually_manage_connections': False
-        })
+        mcp_server = composio.mcp.create(
+            server_name,
+            toolkits=['composio_search', 'text_to_pdf'],
+            allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF'],
+            manually_manage_connections=False
+        )
         
         print("✅ MCP server created successfully!")
         print(f"   Server ID: {mcp_server.id}")
@@ -68,7 +61,7 @@ def test_mcp_with_no_auth_toolkits():
         # Test direct generate method as well
         print(f"\n🔄 Testing direct generate method...")
         
-        direct_instance = composio.experimental.mcp.generate(
+        direct_instance = composio.mcp.generate(
             test_user_id + '_direct',
             mcp_server.id,
             {'manually_manage_connections': False}
@@ -139,6 +132,54 @@ def main():
         print("\n💥 Tests failed. Check the error messages above.")
     
     return success
+
+
+def test_mcp_with_string_toolkits():
+    """Test MCP server creation using simple string toolkit names."""
+    print("🧪 Testing MCP with string toolkit names...")
+    
+    try:
+        # Initialize Composio client
+        composio = Composio()
+        
+        # Create MCP server with string toolkit names (simplified API)
+        server_name = f'string-test-{int(time.time()) % 1000000}'
+        print(f"🚀 Creating MCP server with strings: {server_name}")
+        
+        mcp_server = composio.mcp.create(
+            server_name,
+            toolkits=['composio_search', 'text_to_pdf'],  # Simple strings
+            manually_manage_connections=False
+        )
+        
+        print("✅ MCP server created successfully with string toolkits!")
+        print(f"   Server ID: {mcp_server.id}")
+        print(f"   Server Name: {mcp_server.name}")
+        
+        # Test generate method
+        user_id = f'string_user_{int(time.time()) % 10000}'
+        server_instance = mcp_server.generate(user_id)
+        
+        print("✅ Server instance generated successfully!")
+        print(f"   Instance URL: {server_instance['url']}")
+        print(f"   User ID: {server_instance['user_id']}")
+        print(f"   Server Type: {server_instance['type']}")
+        
+        # Basic validation
+        assert server_instance['user_id'] == user_id
+        assert server_instance['type'] == 'streamable_http'
+        assert 'url' in server_instance
+        assert len(server_instance['url']) > 0
+        
+        print("🎉 String toolkit test completed successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ String toolkit test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 
 if __name__ == "__main__":
     main()
