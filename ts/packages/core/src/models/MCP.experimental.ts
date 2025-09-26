@@ -63,17 +63,15 @@ export class MCP {
    * @example
    * ```typescript
    * const server = await composio.mcpConfig.create("personal-mcp-server", {
-   *     toolkits: [{
-   *       toolkit: "github",
-   *       authConfigId: "ac_xyz",
-   *       allowedTools: ["GMAIL_FETCH_EMAILS"]
-   *     },
-   *     {
-   *        toolkit: "slack",
-   *        authConfigId: "ac_abc",
-   *        allowedTools: ["SLACK_SEND_MESSAGE"]
-   *     }
-   *   ],
+   *   toolkits: ["github", "slack"],
+   *   allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
+   *   manuallyManageConnections: false
+   *  }
+   * });
+   *
+   * const server = await composio.mcpConfig.create("personal-mcp-server", {
+   *   toolkits: [{ toolkit: "gmail", authConfigId: "ac_243434343" }],
+   *   allowedTools: ["GMAIL_FETCH_EMAILS"],
    *   manuallyManageConnections: false
    *  }
    * });
@@ -89,18 +87,16 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] = [];
+    const custom_tools: string[] = config.data.allowedTools ?? [];
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     config.data.toolkits.forEach(toolkit => {
-      if (toolkit.toolkit) {
+      if (typeof toolkit === 'string') {
+        toolkits.push(toolkit);
+      } else if (toolkit.toolkit) {
         toolkits.push(toolkit.toolkit);
-      }
-      if (toolkit.authConfigId) {
+      } else if (toolkit.authConfigId) {
         auth_config_ids.push(toolkit.authConfigId);
-      }
-      if (toolkit.allowedTools) {
-        custom_tools.push(...toolkit.allowedTools); // flatten the array
       }
     });
 
@@ -322,9 +318,9 @@ export class MCP {
    *     {
    *       toolkit: "gmail",
    *       authConfigId: "auth_gmail_prod",
-   *       allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
    *     }
    *   ],
+   *   allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
    *   manuallyManageConnections: false
    * });
    *
@@ -348,18 +344,16 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] = [];
+    const custom_tools: string[] | undefined = params.allowedTools ?? undefined;
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     params.toolkits?.forEach(toolkit => {
-      if (toolkit.toolkit) {
+      if (typeof toolkit === 'string') {
+        toolkits.push(toolkit);
+      } else if (toolkit.toolkit) {
         toolkits.push(toolkit.toolkit);
-      }
-      if (toolkit.authConfigId) {
+      } else if (toolkit.authConfigId) {
         auth_config_ids.push(toolkit.authConfigId);
-      }
-      if (toolkit.allowedTools) {
-        custom_tools.push(...toolkit.allowedTools); // flatten the array
       }
     });
     const response = await this.client.mcp.update(serverId, {
