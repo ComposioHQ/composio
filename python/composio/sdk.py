@@ -39,11 +39,11 @@ class SDKConfig(te.TypedDict):
 
 class ExperimentalNamespace:
     """Namespace for experimental Composio features."""
-    
+
     def __init__(self, tool_router: ToolRouter):
         """
         Initialize experimental namespace.
-        
+
         :param tool_router: Experimental ToolRouter instance
         """
         self.tool_router = tool_router
@@ -105,7 +105,7 @@ class Composio(t.Generic[TProvider], WithLogger):
         self.auth_configs = AuthConfigs(client=self._client)
         self.connected_accounts = ConnectedAccounts(client=self._client)
         self.mcp = MCP(client=self._client)
-        
+
         # Initialize experimental features
         self.experimental = ExperimentalNamespace(
             tool_router=ToolRouter(client=self._client),
