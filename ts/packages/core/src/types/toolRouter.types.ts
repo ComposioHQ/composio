@@ -6,7 +6,7 @@ export const ToolRouterToolkitConfigSchema = z.object({
 });
 
 export const ToolRouterConfigSchema = z.object({
-  toolkits: z.array(ToolRouterToolkitConfigSchema).optional(),
+  toolkits: z.array(z.union([z.string(), ToolRouterToolkitConfigSchema])).optional(),
   manuallyManageConnections: z.boolean().optional(),
 });
 

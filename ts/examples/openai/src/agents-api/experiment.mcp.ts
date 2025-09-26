@@ -12,17 +12,14 @@ const composio = new Composio({
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
+const toolkit = 'gmail'; // slug of the toolkit
 const externalUserId = '<external_user_id>'; // Replace it with the userId from your database
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcp.create(`gmail-mcp-${Date.now()}`, {
+const mcpConfig = await composio.experimental.mcp.create(externalUserId, {
   toolkits: [
-    {
-      toolkit: 'gmail',
-      authConfigId,
-      allowedTools,
-    },
+    { toolkit, authConfigId, allowedTools }
   ],
 });
 
