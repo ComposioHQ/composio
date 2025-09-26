@@ -3,27 +3,11 @@ import { OpenAIResponsesProvider } from '@composio/openai';
 import OpenAI from 'openai';
 import 'dotenv/config';
 
-function sanitizeString(input: string): string {
-  return input.replace(/[^a-zA-Z0-9_-]+/g, '-');
-}
-
-function wrapTools(servers: Array<OpenAI.Responses.Tool.Mcp>): Array<OpenAI.Responses.Tool.Mcp> {
-  return servers.map(server => {
-    const { server_label, ...rest } = server;
-    return {
-      ...rest,
-      /**
-       * 'server_label' must start with a letter and consist of only letters, digits, '-' and '_'
-       */
-      server_label: sanitizeString(server_label),
-    };
-  });
-}
-
 // 1. Initialize Composio.
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new OpenAIResponsesProvider(),
+  allowTracking: false,
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
@@ -31,21 +15,28 @@ const externalUserId = '<external_user_id>'; // Replace it with the user id from
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcpConfig.create(
-  `gmail-mcp-${Date.now()}`,
-  [
+const mcpConfig = await composio.mcp.create(`gmail-mcp-${Date.now()}`, {
+  toolkits: [
     {
+      toolkit: 'gmail',
       authConfigId,
-      allowedTools,
     },
   ],
-  { isChatAuth: true }
-);
+  allowedTools,
+  manuallyManageConnections: true,
+});
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
-  limitTools: allowedTools,
-});
+const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
+
+const tools = [
+  {
+    type: 'mcp' as const,
+    server_label: mcp.name,
+    server_url: mcp.url,
+  },
+];
+console.log({ tools });
 
 // 4. Pass tools to OpenAI-specific Agent.
 const openai = new OpenAI();
@@ -57,8 +48,13 @@ const emailResponse = await openai.responses.create({
     Be concise and provide actionable information based on the email content.
   `,
   input: `Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email.`,
-  tools: wrapTools(servers),
+  tools: tools,
 });
+
+console.log(JSON.stringify(emailResponse, null, 2));
+
+const result = await composio.provider.handleToolCalls('default', emailResponse.output);
+console.log({ result });
 
 const output = emailResponse.output.filter(({ type }) => type === 'message').at(0);
 

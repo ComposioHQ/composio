@@ -1,429 +1,413 @@
+# MCP API
 
-# MCP (Model Control Protocol) API
-
-The `MCP` class provides methods to manage Model Control Protocol servers, enabling AI models to interact with external tools and services through a standardized protocol. MCP servers act as bridges between AI agents and various toolkits, providing secure and managed access to external capabilities.
+The MCP (Model Control Protocol) API provides advanced server management capabilities for creating, configuring, and managing MCP servers with enhanced features.
 
 ## Overview
 
-MCP (Model Control Protocol) is a protocol for exposing tools and capabilities to AI models in a standardized way. With Composio's MCP integration, you can:
+The MCP class offers comprehensive CRUD operations for MCP servers, including:
 
-- Create MCP servers that expose specific toolkits and tools
-- Manage authentication for MCP servers
-- Generate secure URLs for AI agents to connect to MCP servers
-- Support multiple AI frameworks through provider-specific transformations
+- Creating custom MCP configurations with toolkit-specific settings
+- Listing and filtering servers with pagination
+- Retrieving detailed server information
+- Updating server configurations
+- Deleting servers
+- Managing server instances for users
+
+## Getting Started
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const userId = "xxx-oooo-xxx";
+
+// create an MCP Server Config
+const server = await composio.mcp.create('my-mcp-server', {
+  toolkits: [
+    {
+      toolkit: 'slack',
+      authConfigId: 'ac_12324343',
+      allowedTools: ['SLACK_SEND_MESSAGE'],
+    },
+  ],
+});
+
+// get an instance for a user
+const mcp = await server.generate(userId);
+
+// using the global api
+const mcp = await composio.mcp.generate(userId, server.id);
+
+/** mcp
+ * {
+ *   ...
+ *   id: "serverid",
+ *   url: "mcp-server.com/mcp",
+ *   ...
+ * }
+ * /
+
+// use the mcp with your mcp-client
+```
 
 ## Methods
 
-### create(name, toolkitConfigs, authOptions?)
+### create(name, config)
 
-Creates a new MCP server with specified toolkit configurations.
+Creates a new MCP server configuration with specified toolkits and authentication settings.
+
+**Parameters:**
+
+- `name` (string): Unique name for the MCP configuration
+- `config` (MCPConfigCreationParams): Configuration object containing:
+  - `toolkits` (Array): Array of toolkit configurations
+    - `toolkit` (string, optional): Toolkit identifier (e.g., "github", "slack")
+    - `authConfigId` (string, optional): Auth configuration ID
+    - `allowedTools` (string[], optional): Specific tools to enable
+  - `manuallyManageConnections` (boolean, optional): Whether to manually manage account connections (default: false)
+
+**Returns:** `Promise<MCPConfigCreateResponse>`
+
+**Example:**
 
 ```typescript
-// Create an MCP server with Gmail toolkit
-const server = await composio.mcp.create(
-  "my-gmail-server",
-  [
+const server = await composio.mcp.create('personal-mcp-server', {
+  toolkits: [
     {
-      toolkit: "gmail",
-      authConfigId: "ac_sdhkjfhjksdk",
-      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
-    }
-  ],
-  { isChatAuth: true }
-);
-
-// Create an MCP server with multiple toolkits
-const multiToolServer = await composio.mcp.create(
-  "multi-tool-server",
-  [
-    {
-      toolkit: "github",
-      authConfigId: "ac_github123",
-      allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_GET_REPO"]
+      toolkit: 'github',
+      authConfigId: 'ac_xyz',
+      allowedTools: ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
     },
     {
-      toolkit: "slack",
-      authConfigId: "ac_slack456", 
-      allowedTools: ["SLACK_SEND_MESSAGE"]
-    }
-  ]
-);
-
-// Use the convenience method to get server URLs
-const urls = await server.getServer({
-  connectedAccountIds: { gmail: "connected_account_id" }
+      toolkit: 'slack',
+      authConfigId: 'ac_abc',
+      allowedTools: ['SLACK_SEND_MESSAGE'],
+    },
+  ],
+  manuallyManageConnections: false,
 });
+
+// Get server instance for a user
+const mcp = await server.generate('user_12345');
 ```
-
-**Parameters:**
-
-- `name` (string): Unique name for the MCP server
-- `toolkitConfigs` (MCPToolkitConfig[]): Array of toolkit configurations
-  - `toolkit`: The toolkit slug (e.g., "gmail", "github")
-  - `authConfigId`: The auth configuration ID to use
-  - `allowedTools`: Array of specific tool IDs to expose
-- `authOptions` (MCPAuthOptions): Optional authentication options
-  - `isChatAuth`: Whether to use Composio-managed authentication
-
-**Returns:** Promise<McpServerCreateResponse> - Created server details with convenience `getServer` method
-
-**Throws:** ValidationError if configurations are invalid or server creation fails
-
-### getServer(id, params, authOptions?)
-
-Retrieves server URLs for an existing MCP server. This method generates secure URLs that AI agents can use to connect to the MCP server.
-
-```typescript
-// Get URLs for a server using connected account IDs
-const urls = await composio.mcp.getServer("server-uuid", {
-  connectedAccountIds: {
-    gmail: "connected_account_123",
-    github: "connected_account_456"
-  }
-});
-
-// Get URLs for a server using user ID
-const userUrls = await composio.mcp.getServer("server-uuid", {
-  userId: "user_123"
-});
-
-// Override authentication options
-const customAuthUrls = await composio.mcp.getServer(
-  "server-uuid",
-  { userId: "user_123" },
-  { isChatAuth: false }
-);
-```
-
-**Parameters:**
-
-- `id` (string): Server UUID
-- `params` (MCPGetServerParams): Parameters for getting server URLs
-  - Either `connectedAccountIds` (object mapping toolkit names to account IDs) OR `userId` (string)
-- `authOptions` (MCPAuthOptions): Optional authentication options to override server defaults
-
-**Returns:** Promise<T> - Transformed server URLs in provider-specific format
-
-**Throws:** ValidationError if parameters are invalid or URL generation fails
 
 ### list(options)
 
-Lists MCP server configurations with filtering options.
-
-```typescript
-// List all servers with pagination
-const servers = await composio.mcp.list({
-  page: 1,
-  limit: 10
-});
-
-// List servers for specific toolkits
-const gmailServers = await composio.mcp.list({
-  toolkits: ['gmail', 'google-calendar'],
-  limit: 20
-});
-
-// List servers by auth config
-const authFilteredServers = await composio.mcp.list({
-  authConfigs: ['auth_123', 'auth_456'],
-  name: 'production'
-});
-```
+Lists MCP servers with optional filtering and pagination.
 
 **Parameters:**
 
-- `options` (object): Filtering and pagination options
-  - `page`: Page number for pagination (default: 1)
-  - `limit`: Number of items per page (default: 10)
-  - `toolkits`: Filter by toolkit names
-  - `authConfigs`: Filter by auth config IDs
-  - `name`: Filter by server name
+- `options` (MCPListParams): Filtering and pagination options
+  - `page` (number, optional): Page number for pagination (default: 1)
+  - `limit` (number, optional): Maximum items per page (default: 10)
+  - `toolkits` (string[], optional): Filter by toolkit names
+  - `authConfigs` (string[], optional): Filter by auth configuration IDs
+  - `name` (string, optional): Filter by server name (partial match)
 
-**Returns:** Promise<McpListResponse> - List of MCP servers
+**Returns:** `Promise<MCPListResponse>`
 
-### get(id)
-
-Retrieves details of a specific MCP server.
+**Example:**
 
 ```typescript
-const serverDetails = await composio.mcp.get('server-uuid');
-console.log(serverDetails.name);
-console.log(serverDetails.toolkits);
-console.log(serverDetails.status);
+// List all servers
+const allServers = await composio.mcp.list({});
+
+// Paginated listing
+const pagedServers = await composio.mcp.list({
+  page: 2,
+  limit: 5,
+});
+
+// Filter by toolkit
+const githubServers = await composio.mcp.list({
+  toolkits: ['github', 'slack'],
+});
+
+// Filter by name
+const personalServers = await composio.mcp.list({
+  name: 'personal',
+});
 ```
+
+### get(serverId)
+
+Retrieves detailed information about a specific MCP server/config.
 
 **Parameters:**
 
-- `id` (string): Server UUID
+- `serverId` (string): The unique identifier of the MCP server/config
 
-**Returns:** Promise<McpRetrieveResponse> - Server details including configuration and metadata
+**Returns:** `Promise<MCPItem>`
 
-### update(id, name, toolkitConfigs, authOptions?)
-
-Updates an MCP server configuration.
+**Example:**
 
 ```typescript
-const updatedServer = await composio.mcp.update(
-  "server-uuid",
-  "updated-server-name",
-  [
+const server = await composio.mcp.get('mcp_12345');
+
+console.log(server.name); // "My Personal MCP Server"
+console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+console.log(server.toolkits); // ["github", "slack"]
+console.log(server.serverInstanceCount); // 3
+
+// Access setup commands for different clients
+console.log(server.commands.claude); // Claude setup command
+console.log(server.commands.cursor); // Cursor setup command
+console.log(server.commands.windsurf); // Windsurf setup command
+```
+
+### update(serverId, config)
+
+Updates an existing MCP server configuration.
+
+**Parameters:**
+
+- `serverId` (string): The unique identifier of the MCP server to update
+- `config` (MCPUpdateParams): Update configuration parameters
+  - `name` (string, optional): New server name
+  - `toolkits` (Array, optional): Updated toolkit configurations
+  - `manuallyManageConnections` (boolean, optional): Connection management setting
+
+**Returns:** `Promise<MCPItem>`
+
+**Example:**
+
+```typescript
+// Update server name only
+const updatedServer = await composio.mcp.update('mcp_12345', {
+  name: 'My Updated MCP Server',
+});
+
+// Update toolkits and tools
+const serverWithNewTools = await composio.mcp.update('mcp_12345', {
+  toolkits: [
     {
-      toolkit: "gmail",
-      authConfigId: "ac_new_auth_config",
-      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL", "GMAIL_CREATE_DRAFT"]
-    }
-  ],
-  { isChatAtuh: true }
-);
-```
-
-**Parameters:**
-
-- `id` (string): Server UUID
-- `name` (string): New name for the server
-- `toolkitConfigs` (MCPToolkitConfig[]): Updated toolkit configurations
-- `authOptions` (MCPAuthOptions): Updated authentication options
-
-**Returns:** Promise<McpUpdateResponse> - Updated server details
-
-### delete(id)
-
-Deletes an MCP server.
-
-```typescript
-const result = await composio.mcp.delete('server-uuid');
-console.log(result.deleted); // true
-```
-
-**Parameters:**
-
-- `id` (string): Server UUID
-
-**Returns:** Promise<McpDeleteResponse> - Deletion confirmation
-
-### generateUrl(params)
-
-Generates URLs for MCP server access. This is a lower-level method primarily used internally.
-
-```typescript
-const urlResponse = await composio.mcp.generateUrl({
-  userIds: ['user123'],
-  connectedAccountIds: ['account456'],
-  mcpServerId: 'server-uuid',
-  managedAuthByComposio: true
-});
-```
-
-**Parameters:**
-
-- `params` (GenerateURLParams): URL generation parameters
-  - `userIds`: Array of user IDs
-  - `connectedAccountIds`: Array of connected account IDs
-  - `mcpServerId`: MCP server ID
-  - `managedAuthByComposio`: Whether to use Composio-managed auth
-
-**Returns:** Promise<GenerateURLResponse> - Generated URLs
-
-## Provider Integration
-
-Different AI frameworks expect MCP server URLs in different formats. Composio automatically handles these transformations through provider-specific implementations.
-
-### Using with Providers
-
-```typescript
-import { Composio } from '@composio/core';
-import { MastraProvider } from '@composio/mastra';
-import { AnthropicProvider } from '@composio/anthropic';
-
-// With Mastra provider - returns key-value URL mapping
-const composioMastra = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider()
-});
-
-const mastraServer = await composioMastra.mcp.create(...);
-const mastraUrls = await mastraServer.getServer({
-  connectedAccountIds: { gmail: "account_id" }
-});
-// Returns: { "server-0": { url: "..." } }
-
-// With Anthropic provider - returns array of server info
-const composioAnthropic = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider()
-});
-
-const anthropicServer = await composioAnthropic.mcp.create(...);
-const anthropicUrls = await anthropicServer.getServer({
-  connectedAccountIds: { gmail: "account_id" }
-});
-// Returns: [{ url: URL, name: "...", toolkit: "gmail" }]
-```
-
-### Supported Providers
-
-- **Anthropic** - Returns McpServerUrlInfo[]
-- **OpenAI** - Returns McpServerUrlInfo[]
-- **LangChain** - Returns McpServerUrlInfo[]
-- **Vercel** - Returns McpServerUrlInfo[]
-- **Google** - Returns McpServerUrlInfo[]
-- **CloudFlare** - Returns McpServerUrlInfo[]
-- **Mastra** - Returns custom key-value URL mapping
-
-## Types
-
-### MCPToolkitConfig
-
-```typescript
-interface MCPToolkitConfig {
-  toolkit: string;          // Toolkit slug (e.g., "gmail", "github")
-  authConfigId: string;     // Auth configuration ID
-  allowedTools: string[];   // Array of allowed tool IDs
-}
-```
-
-### MCPAuthOptions
-
-```typescript
-interface MCPAuthOptions {
-  isChatAuth?: boolean;  // Use Composio-managed authentication
-}
-```
-
-### MCPGetServerParams
-
-```typescript
-interface MCPGetServerParams {
-  userId?: string;                                  // User ID (XOR with connectedAccountIds)
-  connectedAccountIds?: Record<string, string>;     // Toolkit to account ID mapping
-}
-```
-
-### McpServerCreateResponse
-
-```typescript
-interface McpServerCreateResponse<T> {
-  id: string;                                      // Server UUID
-  name: string;                                    // Server name
-  createdAt?: string;                             // Creation timestamp
-  updatedAt?: string;                             // Last update timestamp
-  status?: string;                                // Server status
-  toolkits: string[];                             // List of enabled toolkits
-  getServer: (params: MCPGetServerParams) => Promise<T>;  // Convenience method
-}
-```
-
-### McpListResponse
-
-```typescript
-interface McpListResponse {
-  items?: Array<{
-    id: string;
-    name: string;
-    createdAt?: string;
-    updatedAt?: string;
-    status?: string;
-  }>;
-}
-```
-
-### McpServerUrlInfo
-
-```typescript
-interface McpServerUrlInfo {
-  url: URL;           // MCP server URL
-  name: string;       // Server instance name
-  toolkit?: string;   // Associated toolkit
-}
-```
-
-## Complete Example
-
-Here's a complete example of using MCP with an AI agent:
-
-```typescript
-import { Composio } from '@composio/core';
-import { MastraProvider } from '@composio/mastra';
-import { MCPClient } from '@mastra/mcp';
-import { Agent } from '@mastra/core/agent';
-import { openai } from '@ai-sdk/openai';
-
-// Initialize Composio with Mastra provider
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
-});
-
-// Create an MCP server with Gmail toolkit
-const mcpServer = await composio.mcp.create(
-  "gmail-assistant",
-  [
+      toolkit: 'github',
+      authConfigId: 'auth_abc123',
+      allowedTools: ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+    },
     {
-      toolkit: "gmail",
-      authConfigId: "ac_your_auth_config",
-      allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
-    }
+      toolkit: 'slack',
+      authConfigId: 'auth_xyz789',
+      allowedTools: ['SLACK_SEND_MESSAGE', 'SLACK_LIST_CHANNELS'],
+    },
   ],
-  { isChatAuth: true }
-);
+});
 
-// Get server URLs for connected accounts
-const serverUrls = await mcpServer.getServer({
-  connectedAccountIds: {
-    "gmail": "your_connected_account_id"
+// Complete update
+const fullyUpdatedServer = await composio.mcp.update('mcp_12345', {
+  name: 'Production MCP Server',
+  toolkits: [
+    {
+      toolkit: 'gmail',
+      authConfigId: 'auth_gmail_prod',
+      allowedTools: ['GMAIL_SEND_EMAIL', 'GMAIL_FETCH_EMAILS'],
+    },
+  ],
+  manuallyManageConnections: false,
+});
+```
+
+### delete(serverId)
+
+Permanently deletes an MCP server configuration.
+
+**Parameters:**
+
+- `serverId` (string): The unique identifier of the MCP server to delete
+
+**Returns:** `Promise<{id: string; deleted: boolean}>`
+
+**Example:**
+
+```typescript
+// Delete a server
+const result = await composio.mcp.delete('mcp_12345');
+
+if (result.deleted) {
+  console.log(`Server ${result.id} has been successfully deleted`);
+} else {
+  console.log(`Failed to delete server ${result.id}`);
+}
+
+// With error handling
+try {
+  const result = await composio.mcp.delete('mcp_12345');
+  console.log('Deletion successful:', result);
+} catch (error) {
+  console.error('Failed to delete MCP server:', error.message);
+}
+
+// Verify deletion
+await composio.mcp.delete('mcp_12345');
+const servers = await composio.mcp.list({});
+const serverExists = servers.items.some(server => server.id === 'mcp_12345');
+console.log('Server still exists:', serverExists); // Should be false
+```
+
+### generate(userId, mcpConfigId, options?)
+
+Creates a server instance for a specific user.
+
+**Parameters:**
+
+- `userId` (string): External user ID from your database
+- `mcpConfigId` (string): MCP configuration ID
+- `options` (MCPGetInstanceParams, optional): Additional options
+  - `manuallyManageConnections` (boolean, optional): Whether to manually manage connections
+
+**Returns:** `Promise<MCPServerInstance>`
+
+**Example:**
+
+```typescript
+const mcp = await composio.mcp.generate('user_12345', 'mcp_67890', {
+  manuallyManageConnections: false,
+});
+
+console.log(mcp.url); // Server URL for the user
+console.log(mcp.allowedTools); // Available tools
+```
+
+## Data Types
+
+### MCPItem
+
+Complete MCP server information including:
+
+- `id`: Unique server identifier
+- `name`: Human-readable server name
+- `allowedTools`: Array of enabled tool identifiers
+- `authConfigIds`: Array of auth configuration IDs
+- `toolkits`: Array of toolkit names
+- `commands`: Setup commands for different clients (Claude, Cursor, Windsurf)
+- `MCPUrl`: Server connection URL
+- `toolkitIcons`: Map of toolkit icons
+- `serverInstanceCount`: Number of active instances
+
+### MCPListResponse
+
+Paginated list response containing:
+
+- `items`: Array of MCPItem objects
+- `currentPage`: Current page number
+- `totalPages`: Total number of pages
+
+### MCPServerInstance
+
+User-specific server instance containing:
+
+- `id`: Server identifier
+- `name`: Server name
+- `type`: Connection type (always 'streamable_http')
+- `url`: User-specific connection URL
+- `userId`: Associated user ID
+- `allowedTools`: Available tools for the user
+- `authConfigs`: Associated auth configurations
+
+## Error Handling
+
+All methods can throw the following exceptions:
+
+- **ValidationError**: When input parameters are invalid or malformed
+- **Error**: When API operations fail (server not found, network issues, etc.)
+
+### Example Error Handling
+
+```typescript
+try {
+  const server = await composio.mcp.create('test-server', config);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.error('Invalid configuration:', error.message);
+  } else {
+    console.error('API error:', error.message);
   }
-});
-
-// Initialize MCP client with the server URLs
-const mcpClient = new MCPClient({
-  servers: Object.fromEntries(
-    Object.entries(serverUrls).map(([key, value]) => [
-      key,
-      { url: new URL(value.url) }
-    ])
-  )
-});
-
-// Get available tools from MCP
-const tools = await mcpClient.getTools();
-
-// Create an AI agent with MCP tools
-const gmailAgent = new Agent({
-  name: 'Gmail Assistant',
-  instructions: 'You are a helpful Gmail assistant.',
-  model: openai('gpt-4'),
-  tools,
-});
-
-// Use the agent
-const response = await gmailAgent.generate('Fetch my latest emails');
-console.log(response.text);
+}
 ```
 
 ## Best Practices
 
-1. **Toolkit Selection**: Only expose the tools that your AI agent needs to minimize the attack surface
-2. **Authentication**: Use Composio-managed authentication when possible for better security
-3. **Error Handling**: Always handle validation errors when creating or updating servers
-4. **Provider Choice**: Choose the appropriate provider based on your AI framework
-5. **Server Naming**: Use descriptive names that indicate the server's purpose
-6. **Tool Allowlisting**: Be specific about which tools to expose rather than exposing entire toolkits
+### 1. Server Naming
 
-## Error Handling
-
-All MCP methods throw `ValidationError` when:
-- Input parameters fail Zod schema validation
-- API responses don't match expected schemas
-- Server operations fail (create, update, delete)
-- URL generation fails
+Use descriptive, unique names for your MCP servers:
 
 ```typescript
-try {
-  const server = await composio.mcp.create("my-server", toolkitConfigs);
-} catch (error) {
-  if (error instanceof ValidationError) {
-    console.error('Validation failed:', error.message);
-    console.error('Cause:', error.cause);
-  }
+// Good
+'production-github-slack-server';
+'dev-testing-environment';
+'user-personal-tools';
+
+// Avoid
+'server1';
+'test';
+'mcp';
+```
+
+### 2. Toolkit Configuration
+
+Be specific about allowed tools to maintain security:
+
+```typescript
+// Specific tools (recommended)
+{
+  toolkit: "github",
+  allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS"]
 }
-``` 
+
+// Avoid allowing all tools unless necessary
+{
+  toolkit: "github"
+  // No allowedTools = all tools enabled
+}
+```
+
+### 3. Connection Management
+
+Choose the appropriate connection management strategy:
+
+```typescript
+// For chat based agents
+{
+  manuallyManageConnections: false;
+}
+
+// For background agents, where you have to pre connect all the accounts
+{
+  manuallyManageConnections: true;
+}
+```
+
+### 4. Pagination
+
+Use pagination for large server lists:
+
+```typescript
+let page = 1;
+let allServers = [];
+
+while (true) {
+  const response = await composio.mcp.list({
+    page,
+    limit: 50,
+  });
+
+  allServers.push(...response.items);
+
+  if (page >= response.totalPages) break;
+  page++;
+}
+```
+
+## Limitations
+- Toolkit updates replace the entire configuration (no merging)
+- Deleted servers cannot be recovered
+- Server instances are tied to specific user IDs
+
+## Support
+
+For issues with the MCP API:
+
+1. Check the error message for validation issues
+2. Verify your server configurations are valid
+3. Ensure you have proper permissions for the requested operations
+4. Contact support with specific error details and reproduction steps

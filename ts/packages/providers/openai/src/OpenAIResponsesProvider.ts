@@ -34,15 +34,9 @@ export type OpenAIResponsesProviderOptions = {
 /**
  * OpenAI-specific MCP server response format
  */
-export interface OpenAIMcpServerResponse {
-  type: 'mcp';
-  server_label: string;
-  server_url: string;
-}
 export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
   OpenAiToolCollection,
   OpenAiTool,
-  OpenAiMcpTool[],
   OpenAiMcpTool[]
 > {
   readonly name = 'openai';
@@ -86,7 +80,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @param serverName - Name of the MCP server
    * @returns OpenAI-specific MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
+  override wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
     console.log('Wrapping MCP server response', data);
     return data.map(item => ({
       type: 'mcp',
@@ -94,10 +88,6 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
       server_url: item.url,
       require_approval: 'never',
     }));
-  }
-
-  override wrapMcpServers(servers: OpenAiMcpTool[]): OpenAiMcpTool[] {
-    return servers;
   }
 
   /**

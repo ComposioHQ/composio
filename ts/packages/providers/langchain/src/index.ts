@@ -23,7 +23,6 @@ export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainProvider extends BaseAgenticProvider<
   LangChainToolCollection,
   DynamicStructuredTool,
-  McpServerGetResponse,
   McpServerGetResponse
 > {
   readonly name = 'langchain';
@@ -67,10 +66,6 @@ export class LangchainProvider extends BaseAgenticProvider<
       url: new URL(item.url),
       name: item.name,
     })) as McpServerGetResponse;
-  }
-
-  override wrapMcpServers(data: McpServerGetResponse): McpServerGetResponse {
-    return data;
   }
 
   /**
