@@ -42,7 +42,7 @@
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
-		"@composio/google": "^0.1.53",
+		"@composio/google": "workspace:*",
 		"@composio/langchain": "workspace:*",
 		"@composio/openai": "workspace:*",
 		"@composio/vercel": "workspace:*",
