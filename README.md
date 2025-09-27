@@ -1,10 +1,19 @@
-![Composio Banner](https://github.com/user-attachments/assets/9ba0e9c1-85a4-4b51-ae60-f9fe7992e819)
+
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/ComposioHQ/composio/next/public/logo.png" alt="Composio Logo" width="200" height="auto" style="margin-bottom: 20px;"/>
+
 
 # Composio SDK
 
-| This is the preview for our next generation sdk, you can learn more about them here and how to move here https://v3.docs.composio.dev/docs/migration
+Skills that evolve for your Agents
 
-_if you are looking for the older sdk, you can find them [here](https://github.com/ComposioHQ/composio/tree/master)_
+[🌐 Website](https://composio.dev) • [📚 Documentation](https://docs.composio.dev)
+
+[![GitHub Stars](https://img.shields.io/github/stars/ComposioHQ/composio?style=social)](https://github.com/ComposioHQ/composio/stargazers)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/composio?label=PyPI%20Downloads)](https://pypi.org/project/composio/)
+[![NPM Downloads](https://img.shields.io/npm/dt/@composio/core?label=NPM%20Downloads)](https://www.npmjs.com/package/@composio/core)
+</div>
 
 This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities across multiple programming languages.
 
@@ -33,7 +42,7 @@ yarn add @composio/core@next
 pnpm add @composio/core@next
 ```
 
-Quick start:
+#### Quick start:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -41,6 +50,44 @@ import { Composio } from '@composio/core';
 const composio = new Composio({
   // apiKey: 'your-api-key',
 });
+```
+
+#### Simple Agent with OpenAI
+
+```bash
+npm install @composio/openai
+```
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIResponsesProvider, OpenAIProvider } from '@composio/openai';
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI();
+
+const composioForCompletions = new Composio({ provider: new OpenAIProvider() });
+
+const userId = 'user@acme.org'
+
+const toolsForCompletions = await composioForCompletions.tools.get(userId, {
+  toolkits: ['HACKERNEWS'],
+});
+
+const completion = await openai.chat.completions.create({
+  model: 'gpt-5',
+  messages: [
+    {
+      role: 'user',
+      content: 'What is the latest hackernews post about?',
+    },
+  ],
+  tools: toolsForCompletions,
+});
+
+const newResult = await composioForCompletions.provider.handleToolCalls(userId, completion);
+
+console.log(JSON.stringify(newResult, null, 2));
+// will return the raw response from the HACKERNEWS API.
 ```
 
 ### Python SDK Installation
@@ -53,7 +100,7 @@ pip install composio
 poetry add composio
 ```
 
-Quick start:
+#### Quick start:
 
 ```python
 from composio import Composio
@@ -62,6 +109,38 @@ from composio import Composio
 composio = Composio(
   # api_key="your-api-key",
 )
+```
+
+#### Simple Agent with OpenAI
+
+```bash
+pip install composio_openai>=0.8.0
+```
+
+```python
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+# Initialize Composio client with OpenAI Provider
+composio = Composio(provider=OpenAIProvider())
+openai = OpenAI()
+
+user_id = "user@acme.org"
+tools = composio.tools.get(user_id=user_id, toolkits=["HACKERNEWS"])
+
+response = openai.chat.completions.create(
+    model="gpt-5",
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "What's the latest Hackernews post about?"},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(response=response, user_id=user_id)
+print(result)
+# will return the raw response from the HACKERNEWS API.
 ```
 
 For more detailed usage instructions and examples, please refer to each SDK's specific documentation.
@@ -93,6 +172,7 @@ The Python SDK offers a Pythonic interface to Composio's services, making it eas
 
 For detailed information about the Python SDK, please refer to the [Python SDK Documentation](/python/README.md).
 
+_if you are looking for the older sdk, you can find them [here](https://github.com/ComposioHQ/composio/tree/master)_
 
 ## Contributing
 
