@@ -1,3 +1,3 @@
-from composio_openai.provider import OpenAIProvider
+from composio_openai.provider import OpenAIProvider, OpenAIResponsesProvider
 
-__all__ = ("OpenAIProvider",)
+__all__ = ("OpenAIProvider", "OpenAIResponsesProvider")
