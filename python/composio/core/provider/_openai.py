@@ -155,8 +155,8 @@ class OpenAIProvider(
 
 
 class OpenAIResponsesProvider(
-    NonAgenticProvider[OpenAIResponsesTool, OpenAIResponsesToolCollection], 
-    name="openai_responses"
+    NonAgenticProvider[OpenAIResponsesTool, OpenAIResponsesToolCollection],
+    name="openai_responses",
 ):
     """OpenAI Responses API Provider class definition"""
 
@@ -166,7 +166,7 @@ class OpenAIResponsesProvider(
 
     def wrap_tool(self, tool: Tool) -> OpenAIResponsesTool:
         parameters = tool.input_parameters if tool.input_parameters else {}
-        
+
         return FunctionTool(
             name=tool.slug,
             description=tool.description,
@@ -200,7 +200,7 @@ class OpenAIResponsesProvider(
     def handle_tool_calls(
         self,
         user_id: str,
-        tool_calls: t.List[ResponseOutputItem],
+        tool_calls: t.Sequence[ResponseOutputItem],
         modifiers: t.Optional[Modifiers] = None,
     ) -> t.List[ToolExecutionResponse]:
         """
