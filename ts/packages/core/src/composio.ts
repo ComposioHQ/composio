@@ -5,7 +5,8 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { ExperimentalMCP, MCP } from './models/MCP';
+import { MCP } from './models/MCP.experimental';
+import { MCP as DeprecatedMCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -17,15 +18,10 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { MCPConfig } from './models/MCPConfig';
+import { ToolRouter } from './models/ToolRouter.experimental';
 
 export type ComposioConfig<
-  TProvider extends BaseComposioProvider<
-    unknown,
-    unknown,
-    /* TMcpResponse */ unknown,
-    /* TMcpExperimentalResponse */ unknown
-  > = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   /**
    * The API key for the Composio API.
@@ -95,7 +91,7 @@ export type ComposioConfig<
  * It is used to initialize the Composio SDK and provide a global configuration.
  */
 export class Composio<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown> = OpenAIProvider,
+  TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > {
   /**
    * The Composio API client.
@@ -117,19 +113,22 @@ export class Composio<
   triggers: Triggers;
   provider: TProvider;
   files: Files;
-  // auth configs
   authConfigs: AuthConfigs;
-  // connected accounts
   connectedAccounts: ConnectedAccounts;
-
-  mcp: MCP<TProvider>;
+  mcp: MCP;
 
   /**
    * Experimental features
    */
   experimental: {
-    mcp: ExperimentalMCP<TProvider>;
-    mcpConfig: MCPConfig<TProvider>;
+    toolRouter: ToolRouter;
+  };
+
+  /**
+   * Deprecated features
+   */
+  deprecated: {
+    mcp: DeprecatedMCP<TProvider>;
   };
 
   /**
@@ -204,7 +203,7 @@ export class Composio<
     });
 
     this.tools = new Tools(this.client, this.provider, this.config);
-    this.mcp = new MCP(this.client, this.provider);
+    this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client);
     this.authConfigs = new AuthConfigs(this.client);
@@ -215,8 +214,23 @@ export class Composio<
      * Initialize Experimental features
      */
     this.experimental = {
-      mcp: new ExperimentalMCP(this.client, this.provider),
-      mcpConfig: new MCPConfig(this.mcp),
+      /**
+       * Experimental tool router
+       * Helps you create a single MCP server containing all the tools with smart routing.
+       *
+       * @description Allows you to create an isolated toolRouter MCP session for a user
+       */
+      toolRouter: new ToolRouter(this.client),
+    };
+
+    /**
+     * Initialize Deprecated features
+     */
+    this.deprecated = {
+      /**
+       * @deprecated this feature will be removed soon, use `composio.mcp`
+       */
+      mcp: new DeprecatedMCP(this.client, this.provider),
     };
 
     /**

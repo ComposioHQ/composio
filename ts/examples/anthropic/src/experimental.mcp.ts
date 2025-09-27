@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 // 1. Initialize Composio.
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider({ cacheTools: true })
+  provider: new AnthropicProvider({ cacheTools: true }),
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
@@ -13,21 +13,19 @@ const externalUserId = '<external_user_id>'; // Replace it with the your user id
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // 2. Create an MCP config
-const mcpConfig = await composio.experimental.mcpConfig.create(
-  `${Date.now()}`,
-  [
+const mcpConfig = await composio.mcp.create(`${Date.now()}`, {
+  toolkits: [
     {
+      toolkit: 'gmail',
       authConfigId,
-      allowedTools,
     },
   ],
-  { isChatAuth: true }
-);
+  allowedTools,
+  manuallyManageConnections: true,
+});
 
 // 3. Retrieve the MCP server instance for the connected accounts
-const servers = await composio.experimental.mcp.getServer(externalUserId, mcpConfig.id, {
-  limitTools: allowedTools,
-});
+const mcp = await composio.mcp.generate(externalUserId, mcpConfig.id);
 
 // 4. Initialize Anthropic client.
 const anthropic = new Anthropic({
@@ -38,7 +36,13 @@ const anthropic = new Anthropic({
 const stream = anthropic.beta.messages.stream({
   model: 'claude-4-sonnet-20250514',
   max_tokens: 64_000,
-  mcp_servers: servers,
+  mcp_servers: [
+    {
+      name: mcp.name,
+      url: mcp.url,
+      type: 'url',
+    },
+  ],
   messages: [
     {
       role: 'user',

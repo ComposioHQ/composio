@@ -16,18 +16,15 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
-  McpServerUrlInfo,
 } from '@composio/core';
-import type { HostedMCPTool, Tool as OpenAIAgentTool } from '@openai/agents';
-import { tool as createOpenAIAgentTool, hostedMcpTool } from '@openai/agents';
+import type { Tool as OpenAIAgentTool } from '@openai/agents';
+import { tool as createOpenAIAgentTool } from '@openai/agents';
 
 type OpenAIAgentsToolCollection = Array<OpenAIAgentTool>;
-type TMcpExperimentalResponse = Array<HostedMCPTool<unknown>>;
 export class OpenAIAgentsProvider extends BaseAgenticProvider<
   OpenAIAgentsToolCollection,
   OpenAIAgentTool,
-  McpServerGetResponse,
-  TMcpExperimentalResponse
+  McpServerGetResponse
 > {
   readonly name = 'openai-agents';
   private strict: boolean | null;
@@ -72,32 +69,6 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
       url: new URL(item.url),
       name: item.name,
     })) as McpServerGetResponse;
-  }
-
-  override wrapMcpServers(servers: McpServerGetResponse): TMcpExperimentalResponse {
-    const prefixes = Object.keys(servers);
-
-    function removePrefix(str: string): string {
-      for (const prefix of prefixes) {
-        if (str.startsWith(prefix)) {
-          return str.slice(prefix.length + 1);
-        }
-      }
-      return str;
-    }
-
-    function wrapMcpServer({ name, url }: McpServerUrlInfo) {
-      return hostedMcpTool({
-        serverLabel: removePrefix(name),
-        serverUrl: url.toString(),
-      });
-    }
-
-    if (Array.isArray(servers)) {
-      return servers.map(server => wrapMcpServer(server));
-    }
-
-    return [wrapMcpServer(servers)];
   }
 
   /**
