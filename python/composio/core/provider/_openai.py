@@ -213,9 +213,10 @@ class OpenAIResponsesProvider(
         outputs = []
         for output_item in tool_calls:
             if output_item.type == "function_call":
+                item_id = output_item.id or "unknown"
                 tool_call = ResponseFunctionToolCall(
-                    id=output_item.id,
-                    call_id=output_item.id,
+                    id=item_id,
+                    call_id=item_id,
                     name=output_item.name,
                     arguments=output_item.arguments,
                     type="function_call",
@@ -243,7 +244,6 @@ class OpenAIResponsesProvider(
         :return: A list of output objects from the function calls.
         """
         tool_calls = [
-            output for output in response.output
-            if output.type == "function_call"
+            output for output in response.output if output.type == "function_call"
         ]
         return self.handle_tool_calls(user_id, tool_calls, modifiers)
