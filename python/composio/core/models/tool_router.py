@@ -16,7 +16,6 @@ from composio.core.models.base import Resource
 from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
 
-
 # Data Types
 
 
