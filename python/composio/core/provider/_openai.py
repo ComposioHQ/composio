@@ -16,6 +16,12 @@ from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
+from openai.types.responses import (
+    FunctionTool,
+    Response,
+    ResponseFunctionToolCall,
+    ResponseOutputItem,
+)
 from openai.types.shared_params.function_definition import FunctionDefinition
 from openai.types.shared_params.function_parameters import FunctionParameters
 
@@ -24,6 +30,9 @@ from composio.types import Modifiers, Tool, ToolExecutionResponse
 
 OpenAITool: t.TypeAlias = ChatCompletionToolParam
 OpenAIToolCollection: t.TypeAlias = t.List[OpenAITool]
+
+OpenAIResponsesTool: t.TypeAlias = FunctionTool
+OpenAIResponsesToolCollection: t.TypeAlias = t.List[OpenAIResponsesTool]
 
 
 class OpenAIProvider(
@@ -143,3 +152,96 @@ class OpenAIProvider(
                 ),
             )
         return run
+
+
+class OpenAIResponsesProvider(
+    NonAgenticProvider[OpenAIResponsesTool, OpenAIResponsesToolCollection], 
+    name="openai_responses"
+):
+    """OpenAI Responses API Provider class definition"""
+
+    def __init__(self, strict: bool = False):
+        super().__init__()
+        self.strict = strict
+
+    def wrap_tool(self, tool: Tool) -> OpenAIResponsesTool:
+        parameters = tool.input_parameters if tool.input_parameters else {}
+        
+        return FunctionTool(
+            name=tool.slug,
+            description=tool.description,
+            parameters=t.cast(FunctionParameters, parameters),
+            strict=self.strict,
+            type="function",
+        )
+
+    def wrap_tools(self, tools: t.Sequence[Tool]) -> OpenAIResponsesToolCollection:
+        return [self.wrap_tool(tool) for tool in tools]
+
+    def execute_tool_call(
+        self,
+        user_id: str,
+        tool_call: ResponseFunctionToolCall,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> ToolExecutionResponse:
+        """Execute a tool call from OpenAI Responses API.
+
+        :param tool_call: Tool call metadata from Responses API.
+        :param user_id: User ID to use for executing the function call.
+        :return: Object containing output data from the tool call.
+        """
+        return self.execute_tool(
+            slug=tool_call.name,
+            arguments=json.loads(tool_call.arguments),
+            modifiers=modifiers,
+            user_id=user_id,
+        )
+
+    def handle_tool_calls(
+        self,
+        user_id: str,
+        tool_calls: t.List[ResponseOutputItem],
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> t.List[ToolExecutionResponse]:
+        """
+        Handle tool calls from OpenAI Responses API output items.
+
+        :param tool_calls: List of response output items from Responses API
+        :param user_id: User ID to use for executing the function calls.
+        :return: A list of output objects from the function calls.
+        """
+        outputs = []
+        for output_item in tool_calls:
+            if output_item.type == "function_call":
+                tool_call = ResponseFunctionToolCall(
+                    id=output_item.id,
+                    name=output_item.name,
+                    arguments=output_item.arguments,
+                )
+                outputs.append(
+                    self.execute_tool_call(
+                        user_id=user_id,
+                        tool_call=tool_call,
+                        modifiers=modifiers,
+                    )
+                )
+        return outputs
+
+    def handle_response(
+        self,
+        user_id: str,
+        response: Response,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> t.List[ToolExecutionResponse]:
+        """
+        Handle tool calls from OpenAI Responses API response.
+
+        :param response: Response object from OpenAI Responses API
+        :param user_id: User ID to use for executing the function calls.
+        :return: A list of output objects from the function calls.
+        """
+        tool_calls = [
+            output for output in response.output 
+            if output.type == "function_call"
+        ]
+        return self.handle_tool_calls(user_id, tool_calls, modifiers)
