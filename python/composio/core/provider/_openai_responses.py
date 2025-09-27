@@ -1,8 +1,5 @@
 """
 OpenAI Responses API provider implementation.
-
-This provider wraps tools for the new OpenAI Responses API which uses
-a flattened tool structure compared to the Chat Completions API.
 """
 
 from __future__ import annotations
