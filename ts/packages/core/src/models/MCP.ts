@@ -51,23 +51,15 @@ import { ConnectionRequest } from '../types/connectionRequest.types';
  * Extract the MCP response type from a provider.
  */
 type ExtractMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, infer TMcp, unknown>
+  T extends BaseComposioProvider<unknown, unknown, infer TMcp>
     ? TMcp
-    : /* @default */ McpServerGetResponse;
-
-/**
- * Extract the experimental MCP response type from a provider.
- */
-type ExtractExperimentalMcpResponseType<T> =
-  T extends BaseComposioProvider<unknown, unknown, unknown, infer TMcpExperimental>
-    ? TMcpExperimental
     : /* @default */ McpServerGetResponse;
 
 /**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations
  */
-export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>> {
+export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   private client: ComposioClient;
   private toolkits: Toolkits;
   protected provider: TProvider;
@@ -775,6 +767,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
    * @param serverName - Name of the MCP server
 
    * @returns Transformed response in appropriate format
+   * @deprecated
    */
   private wrapMcpServerResponse(
     data: McpUrlResponseCamelCase,
@@ -883,84 +876,5 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
 
     // Get the full server details using the server ID
     return this.get(servers[0].id);
-  }
-}
-
-/**
- * MCP (Model Control Protocol) class
- * Handles MCP server operations.
- * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
- */
-export class ExperimentalMCP<
-  TProvider extends BaseComposioProvider<unknown, unknown, unknown, unknown>,
-> {
-  mcp: MCP<TProvider>;
-  provider: TProvider;
-  declare readonly TMcpExperimentalResponse: ExtractExperimentalMcpResponseType<TProvider>;
-
-  constructor(client: ComposioClient, provider: TProvider) {
-    this.mcp = new MCP(client, provider);
-    this.provider = provider;
-    telemetry.instrument(this);
-  }
-
-  /**
-   * Get server URLs for an existing MCP server.
-   * The response is wrapped according to the provider's specifications.
-   *
-   * @example
-   * ```typescript
-   * import { Composio } from "@composio/code";
-   *
-   * const composio = new Composio();
-   * const server = await composio.experimental.mcp.getServer("default", "<mcp_config_id>");
-   * ```
-   *
-   * @param userId {string} external user id from your database for whom you want the server for
-   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
-   * @param options {object} additional options
-   * @param options.limitTools {string[]} limit the tools to the ones specified
-   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
-   */
-  async getServer(
-    userId: string,
-    mcpConfigId: string,
-    options?: {
-      limitTools?: string[];
-      isChatAuth?: boolean;
-    }
-  ): Promise<ReturnType<TProvider['wrapMcpServers']>> {
-    return this.mcp.getServer(mcpConfigId, userId, options).then(res => {
-      // TODO: investigate why this cast is needed in the first place.
-      // Without it, this type is always inferred as `unknown`.
-      return this.provider.wrapMcpServers(res) as ReturnType<TProvider['wrapMcpServers']>;
-    });
-  }
-
-  /**
-   * Get server URLs for an existing MCP server.
-   *
-   * @example
-   * ```typescript
-   * import { Composio } from "@composio/code";
-   *
-   * const composio = new Composio();
-   * const server = await composio.experimental.mcp.getRawMCPServer("default", "<mcp_config_id>");
-   * ```
-   *
-   * @param userId {string} external user id from your database for whom you want the server for
-   * @param mcpConfigId {string} config id of the MCPConfig for which you want to create a server for
-   * @param options.limitTools {string[]} limit the tools to the ones specified
-   * @param options.isChatAuth {boolean} Authenticate the users via chat when they use the MCP Server
-   */
-  async getRawMCPServer(
-    userId: string,
-    mcpConfigId: string,
-    options?: {
-      limitTools?: string[];
-      isChatAuth?: boolean;
-    }
-  ) {
-    return await this.getServer(mcpConfigId, userId, options);
   }
 }

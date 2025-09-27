@@ -18,7 +18,6 @@ import {
   McpServerGetResponse,
   removeNonRequiredProperties,
   jsonSchemaToZodSchema,
-  McpServerUrlInfo,
 } from '@composio/core';
 import type { Tool as VercelTool } from 'ai';
 import { tool } from 'ai';
@@ -27,8 +26,7 @@ export type VercelToolCollection = Record<string, VercelTool>;
 export class VercelProvider extends BaseAgenticProvider<
   VercelToolCollection,
   VercelTool,
-  McpServerGetResponse,
-  URL
+  McpServerGetResponse
 > {
   readonly name = 'vercel';
   private strict: boolean | null;
@@ -56,22 +54,6 @@ export class VercelProvider extends BaseAgenticProvider<
   constructor({ strict = false }: { strict?: boolean } = {}) {
     super();
     this.strict = strict;
-  }
-
-  override wrapMcpServers(servers: McpServerGetResponse): URL {
-    function wrapMcpServer(server: McpServerUrlInfo) {
-      return server.url;
-    }
-
-    if (Array.isArray(servers)) {
-      if (servers.length === 0) {
-        throw new Error('No servers found');
-      }
-
-      return wrapMcpServer(servers[0]);
-    }
-
-    return wrapMcpServer(servers);
   }
 
   /**

@@ -1,6 +1,6 @@
 [project]
 name = "composio-openai-agents"
-version = "0.8.13"
+version = "0.8.15"
 description = "Use Composio to get array of strongly typed tools for OpenAI Agents"
 readme = "README.md"
 requires-python = ">=3.9,<4"
