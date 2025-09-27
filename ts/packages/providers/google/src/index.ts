@@ -15,7 +15,6 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
-  McpServerUrlInfo,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -46,8 +45,7 @@ export type GoogleGenAIToolCollection = GoogleTool[];
 export class GoogleProvider extends BaseNonAgenticProvider<
   GoogleGenAIToolCollection,
   GoogleTool,
-  McpServerGetResponse,
-  URL
+  McpServerGetResponse
 > {
   readonly name = 'google';
 
@@ -90,22 +88,6 @@ export class GoogleProvider extends BaseNonAgenticProvider<
       url: new URL(item.url),
       name: item.name,
     })) as McpServerGetResponse;
-  }
-
-  override wrapMcpServers(servers: McpServerGetResponse): URL {
-    function wrapMcpServer(server: McpServerUrlInfo) {
-      return server.url;
-    }
-
-    if (Array.isArray(servers)) {
-      if (servers.length === 0) {
-        throw new Error('No servers found');
-      }
-
-      return wrapMcpServer(servers[0]);
-    }
-
-    return wrapMcpServer(servers);
   }
 
   /**

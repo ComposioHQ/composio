@@ -19,10 +19,6 @@ export class ComposioProvider extends BaseNonAgenticProvider<Array<CustomTool>, 
     super();
   }
 
-  override wrapMcpServers(data: McpServerGetResponse) {
-    return data;
-  }
-
   wrapTool = (tool: Tool): CustomTool => {
     return tool as CustomTool;
   };

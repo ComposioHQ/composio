@@ -58,8 +58,10 @@ export type ToolKitListResponse = z.infer<typeof ToolKitListResponseSchema>;
  * Toolkit retrieve response
  */
 export const ToolkitAuthFieldSchema = z.object({
-  name: z.string(),
+  description: z.string(),
   displayName: z.string(),
+  required: z.boolean(),
+  name: z.string(),
   type: z.string(),
   default: z.string().nullable().optional(),
 });
