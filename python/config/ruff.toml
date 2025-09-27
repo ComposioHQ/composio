@@ -4,3 +4,6 @@ indent-width = 4
 
 [lint]
 ignore = [ "E741" ]
+
+[lint.per-file-ignores]
+"examples/mcp.py" = ["F401", "F704"]
