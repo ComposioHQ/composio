@@ -1,51 +1,50 @@
+"""Composio Google AI Python SDK Integration."""
+
 import types
 import typing as t
-from inspect import Signature
 
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
-from composio.utils.openapi import function_signature_from_jsonschema
 
 # Import Google GenAI types for native tool declaration
-try:
-    from google.genai import types as genai_types
-except ImportError:
-    genai_types = None  # type: ignore
+from google.genai import types as genai_types
 
 
-class GeminiToolWrapper:
-    """Wrapper that acts as both a FunctionDeclaration and a callable function."""
+class CallableGeminiTool:
+    """
+    A wrapper that acts as both a Gemini Tool and a callable function.
+    This enables automatic function calling while maintaining compatibility.
+    """
     
-    def __init__(self, function_declaration, execute_fn, tool_slug, annotations=None):
-        self.declaration = function_declaration
-        self.execute_fn = execute_fn
+    def __init__(self, function_declaration, execute_fn, tool_slug):
+        # Store the actual Tool object for Gemini
+        self._tool = genai_types.Tool(function_declarations=[function_declaration])
+        
+        # Store execution function
+        self._execute_fn = execute_fn
+        
+        # Make it look like a Tool to Gemini
+        self.function_declarations = [function_declaration]
+        
+        # Make it inspectable like a function
         self.__name__ = tool_slug
         self.__doc__ = function_declaration.description
         
-        # Make it look like a FunctionDeclaration to Gemini
-        self.name = function_declaration.name
-        self.description = function_declaration.description
-        self.parameters = function_declaration.parameters
-        
-        # Add annotations for inspection
-        self.__annotations__ = annotations or {}
-        
-        # Create a simple signature for inspection
-        from inspect import Parameter, Signature
-        params = [Parameter(name="kwargs", kind=Parameter.VAR_KEYWORD)]
-        self.__signature__ = Signature(parameters=params)
-        
     def __call__(self, **kwargs):
-        """Make it callable for automatic function execution."""
-        return self.execute_fn(**kwargs)
+        """This makes automatic function calling work!"""
+        return self._execute_fn(**kwargs)
+    
+    def _execute(self, **kwargs):
+        """Manual execution method for backward compatibility."""
+        return self._execute_fn(**kwargs)
     
     def to_proto(self):
-        """Convert to proto for Gemini API - delegate to the declaration."""
-        return self.declaration.to_proto()
+        """Convert to proto for Gemini API."""
+        return self._tool.to_proto()
     
     def __repr__(self):
-        return f"<GeminiToolWrapper: {self.name}>"
+        return f"<CallableGeminiTool: {self.__name__}>"
 
 
 class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini"):
@@ -54,6 +53,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     """
 
     __schema_skip_defaults__ = True
+    
+    # Note: We always use native Tools for compatibility with gemini-2.5-pro
+    # Python functions don't work due to missing schema details (items field for arrays)
 
     def _convert_schema_to_genai_schema(self, json_schema: dict) -> dict:
         """Convert JSON schema to Google GenAI compatible schema format."""
@@ -105,7 +107,7 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         execute_tool: AgenticProviderExecuteFn,
     ) -> t.Callable:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
-        # If genai_types is available, use native declaration
+        # Always use native Tools for gemini-2.5-pro compatibility
         if genai_types is not None:
             # Convert tool parameters to GenAI schema format
             properties = {}
@@ -129,79 +131,18 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                 )
             )
             
-            # Create simple annotations for the wrapper
-            annotations = {}
-            for param_name in properties.keys():
-                # Use simple types for annotations
-                param_type = properties[param_name].get("type", "STRING")
-                if param_type == "STRING":
-                    annotations[param_name] = str
-                elif param_type == "INTEGER":
-                    annotations[param_name] = int
-                elif param_type == "NUMBER":
-                    annotations[param_name] = float
-                elif param_type == "BOOLEAN":
-                    annotations[param_name] = bool
-                elif param_type == "ARRAY":
-                    annotations[param_name] = list
-                elif param_type == "OBJECT":
-                    annotations[param_name] = dict
-                else:
-                    annotations[param_name] = t.Any
-            annotations["return"] = dict
+            # Create our callable wrapper
+            def execute_fn(**kwargs):
+                return execute_tool(slug=tool.slug, arguments=kwargs)
             
-            # Wrap the FunctionDeclaration in a Tool object as required by Gemini
-            genai_tool = genai_types.Tool(function_declarations=[function_declaration])
-            
-            # Add attributes for compatibility and inspection
-            setattr(genai_tool, "_execute", lambda **kwargs: execute_tool(slug=tool.slug, arguments=kwargs))
-            setattr(genai_tool, "__name__", tool.slug)
-            setattr(genai_tool, "__doc__", tool.description)
-            setattr(genai_tool, "__annotations__", annotations)
-            
-            # Add a __call__ method for automatic execution (if supported)
-            def call_method(self, **kwargs):
-                return self._execute(**kwargs)
-            setattr(genai_tool, "__call__", types.MethodType(call_method, genai_tool))
-            
-            # Add signature for inspection
-            from inspect import Parameter, Signature
-            params = [Parameter(name="kwargs", kind=Parameter.VAR_KEYWORD)]
-            setattr(genai_tool, "__signature__", Signature(parameters=params))
-            
-            return genai_tool
+            # Return the callable wrapper that acts as both Tool and function
+            return CallableGeminiTool(function_declaration, execute_fn, tool.slug)
         
-        # Fallback to original implementation for backward compatibility
-        docstring = tool.description
-        docstring += "\nArgs:"
-        for _param, _schema in tool.input_parameters["properties"].items():  # type: ignore
-            docstring += "\n    "
-            docstring += _param + ": " + _schema.get("description", _param.title())
-
-        docstring += "\nReturns:"
-        docstring += "\n    A dictionary containing response from the action"
-
-        def _execute(**kwargs: t.Any) -> t.Dict:
-            return execute_tool(slug=tool.slug, arguments=kwargs)
-
-        function = types.FunctionType(
-            code=_execute.__code__,
-            name=tool.slug,
-            globals=globals(),
-            closure=_execute.__closure__,
+        # Fallback if genai_types is not available (should not happen with current SDK)
+        raise ImportError(
+            "google.genai.types is required for Gemini provider. "
+            "Please ensure you have the latest google-genai SDK installed."
         )
-        parameters = function_signature_from_jsonschema(
-            schema=tool.input_parameters,
-            skip_default=self.skip_default,
-        )
-        setattr(function, "__signature__", Signature(parameters=parameters))
-        setattr(
-            function,
-            "__annotations__",
-            {p.name: p.annotation for p in parameters} | {"return": dict},
-        )
-        function.__doc__ = docstring
-        return function
 
     def wrap_tools(
         self,
