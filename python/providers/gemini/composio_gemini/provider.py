@@ -1,13 +1,12 @@
-import types
+"""Gemini provider for Composio SDK."""
+
 import typing as t
-from inspect import Signature
 
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
-from composio.utils.openapi import function_signature_from_jsonschema
 
-# Try to import genai types for native support
+# Try to import Google GenAI types
 try:
     from google.genai import types as genai_types
 
@@ -20,221 +19,190 @@ except ImportError:
 class GeminiTool:
     """
     Enhanced Gemini Tool wrapper that handles automatic function execution.
-    Acts as a drop-in replacement for genai_types.Tool but with execution support.
+    Acts as a drop-in replacement for genai_types.Tool with execution support.
     """
 
     def __init__(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
-        function: t.Callable,
-        function_declaration: t.Any,
+        function_declaration: t.Optional[t.Any] = None,
     ):
         self.tool = tool
         self.execute_tool = execute_tool
-        self.function = function
         self.function_declaration = function_declaration
 
-        # Create the actual Gemini Tool
+        # Create the actual Gemini Tool if we have genai support
+        self._genai_tool = None
         if HAS_GENAI and function_declaration:
             self._genai_tool = genai_types.Tool(
                 function_declarations=[function_declaration]
             )
-        else:
-            self._genai_tool = None
 
-        # Store executors for easy access
+        # Store executor for easy access
         self._executors = {tool.slug: self}
 
         # Copy function attributes for compatibility
-        self.__name__ = function.__name__
-        self.__module__ = function.__module__
-        self.__doc__ = function.__doc__
+        self.__name__ = tool.slug
+        self.__module__ = "composio_gemini"
+        self.__doc__ = tool.description
 
     def __call__(self, **kwargs: t.Any) -> t.Dict:
         """Execute the tool when called."""
         result = self.execute_tool(slug=self.tool.slug, arguments=kwargs)
 
         # Process the result for Gemini
-        if isinstance(result, dict):
-            if "data" in result and result.get("successful", True):
-                return (
-                    result["data"]
-                    if isinstance(result["data"], dict)
-                    else {"result": result["data"]}
-                )
-            if not result.get("successful", True):
-                return {
-                    "error": result.get("error", "Tool execution failed"),
-                    "details": result,
-                }
-            return result
-        return {"result": result}
+        if not isinstance(result, dict):
+            return {"result": result}
+
+        # Extract data field if present and successful
+        if result.get("successful", True) and "data" in result:
+            data = result["data"]
+            return data if isinstance(data, dict) else {"result": data}
+
+        # Return error info if failed
+        if not result.get("successful", True):
+            return {
+                "error": result.get("error", "Tool execution failed"),
+                "details": result,
+            }
+
+        return result
 
     @property
     def function_declarations(self):
         """Pass through to the underlying Gemini tool."""
-        if self._genai_tool:
-            return self._genai_tool.function_declarations
-        return []
+        return self._genai_tool.function_declarations if self._genai_tool else []
 
     def to_dict(self):
         """Convert to dict for Gemini API."""
-        if self._genai_tool:
-            return self._genai_tool.to_dict()
-        return {}
+        return self._genai_tool.to_dict() if self._genai_tool else {}
 
 
 class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
     """
     Composio toolset for Google AI Python Gemini framework.
-    Supports both automatic function calling and manual execution.
+    Supports automatic function calling with native Gemini tools.
     """
 
     __schema_skip_defaults__ = True
 
-    def _convert_schema_to_genai_schema(self, json_schema: dict) -> t.Any:
-        """Convert JSON Schema to GenAI Schema format."""
+    def _json_to_genai_schema(self, json_schema: dict) -> t.Optional[t.Any]:
+        """Convert JSON Schema to GenAI Schema format, handling composite types."""
         if not HAS_GENAI:
             return None
 
+        # Handle composite types (patterns from openapi.py)
+        if "oneOf" in json_schema:
+            # Gemini doesn't support unions directly, use first valid schema
+            # This is a limitation but better than failing
+            return self._json_to_genai_schema(json_schema["oneOf"][0])
+
+        if "anyOf" in json_schema:
+            # Similar to oneOf
+            return self._json_to_genai_schema(json_schema["anyOf"][0])
+
+        if "allOf" in json_schema:
+            # Merge all schemas (pattern from openapi.py's _all_of_to_parameter)
+            merged = {}
+            for subschema in json_schema["allOf"]:
+                merged.update(subschema)
+            return self._json_to_genai_schema(merged)
+
+        # Handle enum independently (can appear with or without type)
+        if "enum" in json_schema:
+            return self._handle_enum_schema(json_schema)
+
         schema_type = json_schema.get("type", "string")
 
-        # Handle different types
-        if schema_type == "array":
-            items = json_schema.get("items", {})
-            return genai_types.Schema(
-                type=genai_types.Type.ARRAY,
-                items=self._convert_schema_to_genai_schema(items)
-                if items
-                else genai_types.Schema(type=genai_types.Type.STRING),
-            )
-        elif schema_type == "object":
-            properties = {}
-            for prop_name, prop_schema in json_schema.get("properties", {}).items():
-                properties[prop_name] = self._convert_schema_to_genai_schema(
-                    prop_schema
-                )
+        # Map type handlers
+        type_handlers = {
+            "array": self._handle_array_schema,
+            "object": self._handle_object_schema,
+            "string": self._handle_string_schema,
+            "number": lambda _: genai_types.Schema(type=genai_types.Type.NUMBER),
+            "integer": lambda _: genai_types.Schema(type=genai_types.Type.INTEGER),
+            "boolean": lambda _: genai_types.Schema(type=genai_types.Type.BOOLEAN),
+            "null": lambda _: genai_types.Schema(
+                type=genai_types.Type.STRING
+            ),  # Gemini doesn't have null type
+        }
 
-            return genai_types.Schema(
-                type=genai_types.Type.OBJECT,
-                properties=properties,
-                required=json_schema.get("required", []),
+        handler = type_handlers.get(
+            schema_type, lambda _: genai_types.Schema(type=genai_types.Type.STRING)
+        )
+        return handler(json_schema)
+
+    def _handle_array_schema(self, json_schema: dict) -> t.Any:
+        """Handle array type schema conversion."""
+        items = json_schema.get("items", {})
+        return genai_types.Schema(
+            type=genai_types.Type.ARRAY,
+            items=self._json_to_genai_schema(items)
+            if items
+            else genai_types.Schema(type=genai_types.Type.STRING),
+        )
+
+    def _handle_object_schema(self, json_schema: dict) -> t.Any:
+        """Handle object type schema conversion."""
+        properties = {
+            name: self._json_to_genai_schema(schema)
+            for name, schema in json_schema.get("properties", {}).items()
+        }
+        return genai_types.Schema(
+            type=genai_types.Type.OBJECT,
+            properties=properties,
+            required=json_schema.get("required", []),
+        )
+
+    def _handle_string_schema(self, json_schema: dict) -> t.Any:
+        """Handle string type schema conversion."""
+        schema_dict = {"type": genai_types.Type.STRING}
+        if enum_values := json_schema.get("enum"):
+            schema_dict["enum"] = enum_values
+        return genai_types.Schema(**schema_dict)
+
+    def _handle_enum_schema(self, json_schema: dict) -> t.Any:
+        """Handle enum schema conversion (pattern from openapi.py)."""
+        # Enum can be of any type, default to string if no type specified
+        base_type = json_schema.get("type", "string")
+        type_map = {
+            "string": genai_types.Type.STRING,
+            "integer": genai_types.Type.INTEGER,
+            "number": genai_types.Type.NUMBER,
+        }
+        schema_type = type_map.get(base_type, genai_types.Type.STRING)
+        return genai_types.Schema(type=schema_type, enum=json_schema["enum"])
+
+    def _create_function_declaration(self, tool: Tool) -> t.Optional[t.Any]:
+        """Create a native Gemini FunctionDeclaration if possible."""
+        if not HAS_GENAI:
+            return None
+
+        try:
+            genai_schema = self._json_to_genai_schema(tool.input_parameters)
+            return genai_types.FunctionDeclaration(
+                name=tool.slug,
+                description=tool.description or f"Execute {tool.slug}",
+                parameters=genai_schema,
             )
-        elif schema_type == "string":
-            enum_values = json_schema.get("enum")
-            schema_dict = {"type": genai_types.Type.STRING}
-            if enum_values:
-                schema_dict["enum"] = enum_values
-            return genai_types.Schema(**schema_dict)
-        elif schema_type == "number":
-            return genai_types.Schema(type=genai_types.Type.NUMBER)
-        elif schema_type == "integer":
-            return genai_types.Schema(type=genai_types.Type.INTEGER)
-        elif schema_type == "boolean":
-            return genai_types.Schema(type=genai_types.Type.BOOLEAN)
-        else:
-            # Default to string for unknown types
-            return genai_types.Schema(type=genai_types.Type.STRING)
+        except Exception as e:
+            print(f"Warning: Could not create FunctionDeclaration for {tool.slug}: {e}")
+            return None
 
     def wrap_tool(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
-    ) -> t.Any:
-        """Wraps composio tool as Google Genai SDK compatible function calling object."""
-
-        tool_slug = tool.slug
-
-        # Build the docstring
-        docstring = tool.description or f"Execute {tool_slug}"
-        docstring += "\n\nArgs:"
-
-        properties = tool.input_parameters.get("properties", {})
-        required = set(tool.input_parameters.get("required", []))
-
-        for param_name, param_schema in properties.items():
-            param_desc = param_schema.get("description", "")
-            is_required = param_name in required
-            req_str = " (required)" if is_required else ""
-            docstring += f"\n    {param_name}: {param_desc}{req_str}"
-
-        docstring += "\n\nReturns:\n    dict: Response from the action"
-
-        # Create the Python function for manual calling
-        def tool_function(**kwargs: t.Any) -> t.Dict:
-            """Execute the Composio tool."""
-            result = execute_tool(slug=tool_slug, arguments=kwargs)
-
-            if isinstance(result, dict):
-                if "data" in result and result.get("successful", True):
-                    return (
-                        result["data"]
-                        if isinstance(result["data"], dict)
-                        else {"result": result["data"]}
-                    )
-                if not result.get("successful", True):
-                    return {
-                        "error": result.get("error", "Tool execution failed"),
-                        "details": result,
-                    }
-                return result
-            return {"result": result}
-
-        # Create the function with proper metadata
-        function = types.FunctionType(
-            tool_function.__code__,
-            tool_function.__globals__,
-            tool_slug,
-            tool_function.__defaults__,
-            tool_function.__closure__,
-        )
-
-        function.__module__ = "composio_gemini"
-        function.__name__ = tool_slug
-        function.__qualname__ = tool_slug
-        function.__doc__ = docstring
-
-        # Get proper parameter signatures
-        parameters = function_signature_from_jsonschema(
-            schema=tool.input_parameters,
-            skip_default=self.skip_default,
-        )
-
-        function.__signature__ = Signature(parameters=parameters)
-
-        annotations = {}
-        for param in parameters:
-            annotations[param.name] = param.annotation
-        annotations["return"] = t.Dict[str, t.Any]
-        function.__annotations__ = annotations
-
-        # Create native FunctionDeclaration if genai is available
-        function_declaration = None
-        if HAS_GENAI:
-            try:
-                # Convert the schema to GenAI format
-                genai_schema = self._convert_schema_to_genai_schema(
-                    tool.input_parameters
-                )
-
-                function_declaration = genai_types.FunctionDeclaration(
-                    name=tool_slug,
-                    description=tool.description or f"Execute {tool_slug}",
-                    parameters=genai_schema,
-                )
-            except Exception as e:
-                # Fallback to function-only mode if declaration fails
-                print(
-                    f"Warning: Could not create FunctionDeclaration for {tool_slug}: {e}"
-                )
-                pass
+    ) -> GeminiTool:
+        """Wrap a Composio tool for Gemini compatibility."""
+        # Create native FunctionDeclaration
+        function_declaration = self._create_function_declaration(tool)
 
         # Return the GeminiTool wrapper
         return GeminiTool(
             tool=tool,
             execute_tool=execute_tool,
-            function=function,
             function_declaration=function_declaration,
         )
 
@@ -242,12 +210,12 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
         self,
         tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn,
-    ) -> list[t.Any]:
-        """Get composio tools wrapped as Google Genai SDK compatible function calling objects."""
+    ) -> list[GeminiTool]:
+        """Wrap multiple tools for Gemini compatibility."""
         return [self.wrap_tool(tool, execute_tool) for tool in tools]
 
     @staticmethod
-    def handle_response(response, tools):
+    def handle_response(response, tools: list[GeminiTool]) -> tuple[list, bool]:
         """
         Automatically handle function calls in a Gemini response.
 
@@ -256,9 +224,10 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
             tools: The list of GeminiTool objects passed to the chat
 
         Returns:
-            tuple: (function_responses, executed) where function_responses are ready to send back
-                   and executed is True if functions were executed
+            tuple: (function_responses, executed) where function_responses are ready
+                   to send back and executed is True if functions were executed
         """
+        # Check if we have a valid response with candidates
         if not (hasattr(response, "candidates") and response.candidates):
             return [], False
 
@@ -272,27 +241,31 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
             if isinstance(tool, GeminiTool):
                 executors.update(tool._executors)
 
+        # Process function calls
         function_responses = []
         executed = False
 
         for part in candidate.content.parts:
-            if hasattr(part, "function_call") and part.function_call:
-                fc = part.function_call
+            if not (hasattr(part, "function_call") and part.function_call):
+                continue
 
-                # Execute the function
-                if fc.name in executors:
-                    executor = executors[fc.name]
-                    result = executor(**fc.args)
+            fc = part.function_call
+            if fc.name not in executors:
+                continue
 
-                    # Create function response
-                    if HAS_GENAI:
-                        function_responses.append(
-                            genai_types.Part(
-                                function_response=genai_types.FunctionResponse(
-                                    name=fc.name, response=result
-                                )
-                            )
+            # Execute the function
+            executor = executors[fc.name]
+            result = executor(**fc.args)
+
+            # Create function response
+            if HAS_GENAI:
+                function_responses.append(
+                    genai_types.Part(
+                        function_response=genai_types.FunctionResponse(
+                            name=fc.name, response=result
                         )
-                    executed = True
+                    )
+                )
+            executed = True
 
         return function_responses, executed
