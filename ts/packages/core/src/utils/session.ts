@@ -1,6 +1,5 @@
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { version } from '../../package.json';
-import { ComposioConfig } from '../composio';
 import { ComposioRequestHeaders } from '../types/composio.types';
 
 export function getSessionHeaders(

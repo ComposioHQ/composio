@@ -1,5 +1,43 @@
 # @composio/vercel
 
+## 0.2.9
+
+### Patch Changes
+
+- 9a1b0e9: - Adds the new experiemntal ToolRouter, Deprecates the existing MCP experience and adds the new MCP components.
+  - The old MCP components can be accessed via `deprecated.mcp` until the next release, where it will get removed.
+  - Fixes `toolkits.list` and `toolkits.get` methods to add `description` to connection fields
+- Updated dependencies [9a1b0e9]
+  - @composio/core@0.1.53
+
+## 0.2.8
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+- Updated dependencies [7077cee]
+  - @composio/core@0.1.52
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [b9b005a]
+  - @composio/core@0.1.51
+
+## 0.2.6
+
+### Patch Changes
+
+- @composio/core@0.1.50
+
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [5027e18]
+  - @composio/core@0.1.49
+
 ## 0.2.4
 
 ### Patch Changes

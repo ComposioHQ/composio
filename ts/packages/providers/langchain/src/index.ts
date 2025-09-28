@@ -22,7 +22,8 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 export type LangChainToolCollection = Array<DynamicStructuredTool>;
 export class LangchainProvider extends BaseAgenticProvider<
   LangChainToolCollection,
-  DynamicStructuredTool
+  DynamicStructuredTool,
+  McpServerGetResponse
 > {
   readonly name = 'langchain';
 
@@ -134,6 +135,9 @@ export class LangchainProvider extends BaseAgenticProvider<
       throw new Error('Tool input parameters are not defined');
     }
     const parameters = jsonSchemaToZodSchema(tool.inputParameters);
+
+    // See https://github.com/langchain-ai/langchainjs/issues/8468 and pnpm-workspace.yaml.
+    // @ts-ignore: error TS2589: Type instantiation is excessively deep and possibly infinite.
     return new DynamicStructuredTool({
       name: toolName,
       description: description || '',

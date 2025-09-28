@@ -1,5 +1,17 @@
 # @composio/json-schema-to-zod
 
+## 0.1.15
+
+### Patch Changes
+
+- 51033d8: Fix additional properties in nested structures
+
+## 0.1.14
+
+### Patch Changes
+
+- 5027e18: Fix openai responses schema parsing
+
 ## 0.1.13
 
 ### Patch Changes

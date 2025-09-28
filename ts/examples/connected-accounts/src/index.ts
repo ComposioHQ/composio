@@ -20,7 +20,7 @@ console.log(`🔄 Createting a connection request`);
 /**
  * Create a new connected account
  */
-const ConnectionRequest = await composio.connectedAccounts.initiate('default', authConfig.id);
+const ConnectionRequest = await composio.connectedAccounts.link('default', authConfig.id);
 
 console.log(ConnectionRequest);
 

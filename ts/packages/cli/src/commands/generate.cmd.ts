@@ -11,17 +11,24 @@ export const outputOpt = Options.optional(
   })
 ).pipe(Options.withAlias('o'), Options.withDescription('Output directory for type stubs'));
 
+export const typeTools = Options.boolean('type-tools').pipe(
+  Options.withDefault(false),
+  Options.withDescription(
+    'Whether to emit type stubs for tools. This only applies to TypeScript projects.'
+  )
+);
+
 /**
  * @example
  * ```bash
  * composio generate <command>
  * ```
  */
-export const generateCmd = Command.make('generate', { outputOpt }).pipe(
+export const generateCmd = Command.make('generate', { outputOpt, typeTools }).pipe(
   Command.withDescription(
     'Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).'
   ),
-  Command.withHandler(({ outputOpt }) =>
+  Command.withHandler(({ outputOpt, typeTools }) =>
     Effect.gen(function* () {
       const process = yield* NodeProcess;
       const cwd = process.cwd;
@@ -34,7 +41,7 @@ export const generateCmd = Command.make('generate', { outputOpt }).pipe(
       // Redirect to either `ts generate` or `py generate` commands
       yield* Match.value(envLang).pipe(
         Match.when('TypeScript', () =>
-          generateTypescriptTypeStubs({ outputOpt, compact: false, transpiled: false })
+          generateTypescriptTypeStubs({ outputOpt, compact: false, transpiled: false, typeTools })
         ),
         Match.when('Python', () => generatePythonTypeStubs({ outputOpt })),
         Match.exhaustive

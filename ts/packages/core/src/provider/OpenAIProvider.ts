@@ -19,7 +19,11 @@ import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
 
-export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection, OpenAiTool> {
+export class OpenAIProvider extends BaseNonAgenticProvider<
+  OpenAiToolCollection,
+  OpenAiTool,
+  McpServerGetResponse
+> {
   readonly name = 'openai';
 
   /**
@@ -53,7 +57,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<OpenAiToolCollection,
    * @param data - The MCP URL response data
    * @returns Standard MCP server response format
    */
-  wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
+  override wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
     return data.map(item => ({
       url: new URL(item.url),
       name: item.name,

@@ -4,7 +4,7 @@ import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
 import { parseOneOf } from './parse-one-of';
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs } from '../types';
+import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object' }, refs: Refs) {
@@ -39,8 +39,33 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
       'default' in propJsonSchema
     ) {
       // If default is null, make the field nullable with the null default
+      // But don't make it nullable if it's already an anyOf/oneOf that includes null
       if (propJsonSchema.default === null) {
-        properties[key] = propZodSchema.nullable().optional().default(null);
+        const hasAnyOfWithNull =
+          propJsonSchema.anyOf &&
+          Array.isArray(propJsonSchema.anyOf) &&
+          propJsonSchema.anyOf.some(
+            (schema: JsonSchema) =>
+              typeof schema === 'object' && schema !== null && schema.type === 'null'
+          );
+        const hasOneOfWithNull =
+          propJsonSchema.oneOf &&
+          Array.isArray(propJsonSchema.oneOf) &&
+          propJsonSchema.oneOf.some(
+            (schema: JsonSchema) =>
+              typeof schema === 'object' && schema !== null && schema.type === 'null'
+          );
+        const isNullable =
+          'nullable' in propJsonSchema &&
+          (propJsonSchema as JsonSchemaObject & { nullable?: boolean }).nullable === true;
+
+        if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
+          // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
+          properties[key] = propZodSchema.optional().default(null);
+        } else {
+          // Make the field nullable with the null default
+          properties[key] = propZodSchema.nullable().optional().default(null);
+        }
       } else {
         properties[key] = propZodSchema.optional().default(propJsonSchema.default);
       }
@@ -70,6 +95,9 @@ export function parseObject(
           path: [...refs.path, 'additionalProperties'],
         })
       : undefined;
+
+  // Track if additionalProperties was explicitly set to true
+  const isAdditionalPropertiesTrue = objectSchema.additionalProperties === true;
 
   if (objectSchema.patternProperties) {
     const parsedPatternProperties = Object.fromEntries(
@@ -148,7 +176,6 @@ export function parseObject(
       }
     });
   }
-
   let output: z.ZodTypeAny;
   if (propertiesSchema) {
     if (hasPatternProperties) {
@@ -156,6 +183,9 @@ export function parseObject(
     } else if (additionalProperties) {
       if (additionalProperties instanceof z.ZodNever) {
         output = propertiesSchema.strict();
+      } else if (isAdditionalPropertiesTrue) {
+        // When additionalProperties was explicitly true, use passthrough
+        output = propertiesSchema.passthrough();
       } else {
         // Check if propertiesSchema is an empty object
         const isEmptyObject = Object.keys(propertiesSchema._def.shape()).length === 0;
@@ -173,10 +203,18 @@ export function parseObject(
     if (hasPatternProperties) {
       output = zodSchema!;
     } else if (additionalProperties) {
-      output = z.record(additionalProperties);
+      if (additionalProperties instanceof z.ZodNever) {
+        // When additionalProperties is false, create strict empty object
+        output = z.object({}).strict();
+      } else if (isAdditionalPropertiesTrue) {
+        // When additionalProperties was explicitly true, use empty object with passthrough
+        output = z.object({}).passthrough();
+      } else {
+        output = z.record(additionalProperties);
+      }
     } else {
-      // When no properties and no additionalProperties specified, create empty object
-      output = z.object({});
+      // When no properties and no additionalProperties specified, default to allowing additional properties
+      output = z.object({}).passthrough();
     }
   }
 

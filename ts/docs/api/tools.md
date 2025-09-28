@@ -6,39 +6,58 @@ The `Tools` class provides methods to list, retrieve, and execute tools from var
 
 ### get(userId, filters, options?)
 
-Retrieves tools based on the provided filters.
+Retrieves and wraps tools based on the provided filters. Tool versions are controlled at the Composio SDK initialization level through the `toolkitVersions` configuration.
+
+#### Overload 1: Get multiple tools with filters
 
 ```typescript
 // Get tools from a specific toolkit
 const githubTools = await composio.tools.get('default', {
   toolkits: ['github'],
-  limit: 10,
+  limit: 10
 });
 
 // Get tools with search
 const searchTools = await composio.tools.get('default', {
-  search: 'user',
+  search: 'user'
 });
 
-// Get a specific tool by slug
-const tool = await composio.tools.get('default', 'GITHUB_GET_REPO');
-
-// Get a tool with schema modifications
-const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
-  modifySchema: (toolSlug, toolkitSlug, schema) => {
-    // Customize the tool schema
+// Get tools with schema modifications
+const customizedTools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 5
+}, {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
     return { ...schema, description: 'Custom description' };
-  },
+  }
 });
 ```
 
 **Parameters:**
-
 - `userId` (string): The user ID to get the tools for
-- `filters` (ToolListParams | string): Either a slug string or filters object
+- `filters` (ToolListParams): Filters object to specify which tools to retrieve
 - `options` (ProviderOptions): Optional provider options including modifiers
 
-**Returns:** The wrapped tools collection, formatted according to the provider
+#### Overload 2: Get a specific tool by slug
+
+```typescript
+// Get a specific tool by slug
+const tool = await composio.tools.get('default', 'GITHUB_GET_REPO');
+
+// Get a tool with schema modifications
+const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    return { ...schema, description: 'Enhanced GitHub repository tool' };
+  }
+});
+```
+
+**Parameters:**
+- `userId` (string): The user ID to get the tool for
+- `slug` (string): The slug of the specific tool to fetch
+- `options` (ProviderOptions): Optional provider options including modifiers
+
+**Returns:** The wrapped tools collection, formatted according to the provider being used
 
 ### execute(slug, body, modifiers?)
 
@@ -118,48 +137,99 @@ const customTool = await composio.tools.createCustomTool({
 
 **Returns:** Promise<Tool> - The created custom tool
 
-### getRawComposioTools(query?, modifier?)
+### getRawComposioTools(query, options?)
 
-Lists all tools available in the Composio SDK including custom tools.
+Lists all tools available in the Composio SDK including custom tools. This method provides direct access to tool data without provider-specific wrapping.
 
 ```typescript
-// Get all tools
-const tools = await composio.tools.getRawComposioTools();
-
-// Get tools with filters
+// Get tools from specific toolkits
 const githubTools = await composio.tools.getRawComposioTools({
   toolkits: ['github'],
-  important: true,
+  limit: 10
+});
+
+// Get specific tools by slug
+const specificTools = await composio.tools.getRawComposioTools({
+  tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
+});
+
+// Get tools from specific toolkits
+const githubTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 10
 });
 
 // Get tools with schema transformation
-const tools = await composio.tools.getRawComposioTools({}, (toolSlug, toolkitSlug, tool) => {
-  // Add custom properties to tool schema
-  return { ...tool, customProperty: 'value' };
+const customizedTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 5
+}, {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    return {
+      ...schema,
+      customProperty: `Modified ${toolSlug} from ${toolkitSlug}`,
+      tags: [...(schema.tags || []), 'customized']
+    };
+  }
+});
+
+// Search for tools
+const searchResults = await composio.tools.getRawComposioTools({
+  search: 'user management'
 });
 ```
 
 **Parameters:**
 
-- `query` (ToolListParams): Optional query parameters to filter the tools
-- `modifier` (TransformToolSchemaModifier): Optional function to transform tool schemas
+- `query` (ToolListParams): Query parameters to filter the tools (required)
+- `options` (GetRawComposioToolsOptions): Optional configuration for tool retrieval
+  - `modifySchema` (TransformToolSchemaModifier): Function to transform tool schemas
 
 **Returns:** Promise<ToolList> - List of tools matching the query criteria
 
-### getRawComposioToolBySlug(slug, modifier?)
+### getRawComposioToolBySlug(slug, options?)
 
-Retrieves a tool by its Slug.
+Retrieves a specific tool by its slug from the Composio API. This method provides direct access to tool schema and metadata without provider-specific wrapping.
 
 ```typescript
-const tool = await composio.tools.getRawComposioToolBySlug('HACKERNEWS_GET_USER');
+// Get a tool by slug
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
+
+// Get a tool with schema transformation
+const customizedTool = await composio.tools.getRawComposioToolBySlug(
+  'SLACK_SEND_MESSAGE',
+  {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+      return {
+        ...schema,
+        description: `Enhanced ${schema.description} with custom modifications`,
+        customMetadata: {
+          lastModified: new Date().toISOString(),
+          toolkit: toolkitSlug
+        }
+      };
+    }
+  }
+);
+
+// Access tool properties
+const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+console.log({
+  slug: githubTool.slug,
+  name: githubTool.name,
+  toolkit: githubTool.toolkit?.name,
+  version: githubTool.version,
+  availableVersions: githubTool.availableVersions
+});
 ```
 
 **Parameters:**
 
-- `slug` (string): The ID of the tool to be retrieved
-- `modifier` (TransformToolSchemaModifier): Optional function to transform tool schema
+- `slug` (string): The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
+- `options` (GetRawComposioToolBySlugOptions): Optional configuration for tool retrieval
+  - `modifySchema` (TransformToolSchemaModifier): Function to transform the tool schema
 
-**Returns:** Promise<Tool> - The tool
+**Returns:** Promise<Tool> - The requested tool with its complete schema and metadata
 
 ## Types
 
@@ -282,3 +352,4 @@ interface CustomToolOptions {
   handler: (params: ToolExecuteParams, context: ExecuteMetadata) => Promise<ToolExecuteResponse>; // Handler function
 }
 ```
+

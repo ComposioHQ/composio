@@ -288,6 +288,7 @@ Composio supports various authentication schemes:
 - `COMPOSIO_BASE_URL`: Custom API base URL
 - `COMPOSIO_LOGGING_LEVEL`: Logging level (silent, error, warn, info, debug)
 - `DEVELOPMENT`: Development mode flag
+- `COMPOSIO_TOOLKIT_VERSION_<TOOLKITNAME>`: Version of the specific tool
 - `CI`: CI environment flag
 
 ## Contributing

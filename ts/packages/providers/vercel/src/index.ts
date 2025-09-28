@@ -23,7 +23,11 @@ import type { Tool as VercelTool } from 'ai';
 import { tool } from 'ai';
 
 export type VercelToolCollection = Record<string, VercelTool>;
-export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, VercelTool> {
+export class VercelProvider extends BaseAgenticProvider<
+  VercelToolCollection,
+  VercelTool,
+  McpServerGetResponse
+> {
   readonly name = 'vercel';
   private strict: boolean | null;
   /**
@@ -120,6 +124,7 @@ export class VercelProvider extends BaseAgenticProvider<VercelToolCollection, Ve
     return tool({
       description: composioTool.description,
       inputSchema: inputParametersSchema,
+
       execute: async params => {
         const input = typeof params === 'string' ? JSON.parse(params) : params;
         return await executeTool(composioTool.slug, input);

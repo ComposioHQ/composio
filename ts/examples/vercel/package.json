@@ -13,16 +13,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.16",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
-    "ai": "^5.0.16",
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "ai": "catalog:",
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }

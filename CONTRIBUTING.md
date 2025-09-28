@@ -352,7 +352,7 @@ describe('ToolExecution', () => {
 
 - Join our [Discord Community](https://discord.gg/composio)
 - Check our [Documentation](https://docs.composio.dev)
-- File issues on [GitHub](https://github.com/ComposioHQ/sdk-v3/issues)
+- File issues on [GitHub](https://github.com/ComposioHQ/composio/issues)
 
 ## License
 

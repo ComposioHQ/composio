@@ -24,7 +24,8 @@ type AiToolCollection = Record<string, AiTextGenerationToolInput>;
 
 export class CloudflareProvider extends BaseNonAgenticProvider<
   AiToolCollection,
-  AiTextGenerationToolInput
+  AiTextGenerationToolInput,
+  McpServerGetResponse
 > {
   readonly name = 'cloudflare';
 

@@ -1,6 +1,6 @@
 ---
 title: Executing Tools
-image: 'https://og.composio.dev/api/og?title=Executing%20Tools' # image for socials
+image: "https://og.composio.dev/api/og?title=Executing%20Tools"   # image for socials
 keywords: ''
 subtitle: "Learn how to execute Composio's tools with different providers and frameworks"
 hide-nav-links: false
@@ -12,8 +12,7 @@ In Composio, every **tool** is a single API action—fully described with schema
 
 <Tip icon="info">
   **User Scoping**: All tools are scoped to a specific user - that's why every example includes a
-  `user_id`. Each user must authenticate with their respective services (Gmail, Calendar, etc.)
-  before executing tools. [Learn more about authentication →](./authenticating-tools)
+  `user_id`. Learn how to structure User IDs in [User Management](./user-management). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](./authenticating-tools)
 </Tip>
 
 ## Using Chat Completions
@@ -49,7 +48,7 @@ Composio provides support for frameworks like this by making sure the tools are 
   />
   <SnippetCode
     src="fern/snippets/tool-calling/typescript/exec-tool-agentic.ts"
-    title="TypeScript (Anthropic)"
+    title="TypeScript (Vercel AI SDK)"
     highlightStart={22}
     highlightEnd={31}
   />

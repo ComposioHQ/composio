@@ -52,7 +52,7 @@ This step involves configuring and executing the agent to carry out actions, suc
 my_task = "Star a repo composiohq/composio on GitHub"
 
 # Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(model="gpt-4-turbo-preview",
+response = openai_client.chat.completions.create(model="gpt-5",
     tools=actions, # Passing actions we fetched earlier.
     messages=[
             {"role": "system", "content": "You are a helpful assistant."},

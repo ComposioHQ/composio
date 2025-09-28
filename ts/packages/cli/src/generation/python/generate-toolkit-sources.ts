@@ -31,7 +31,7 @@
  * ```
  */
 
-import { pipe, Record } from 'effect';
+import { Match, pipe, Record } from 'effect';
 import type { ToolkitName } from 'src/models/toolkits';
 import type { ToolkitIndex, ToolkitIndexData } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
@@ -120,8 +120,18 @@ function generatePythonToolkitSource(banner: string) {
     const toolsEntries = (spacing: number) => {
       const spacePad = ' '.repeat(spacing);
 
-      if (Record.size(toolkit.tools) > 0) {
-        return Object.entries(toolkit.tools)
+      if (Object.keys(toolkit.typeableTools.value).length > 0) {
+        const tools = Match.value(toolkit.typeableTools).pipe(
+          Match.when({ withTypes: true }, ({ value }) =>
+            Record.mapEntries(value, (toolValue, toolName) => [toolName, toolValue.slug])
+          ),
+          Match.when({ withTypes: false }, ({ value }) =>
+            Record.mapEntries(value, (toolValue, toolName) => [toolName, toolValue])
+          ),
+          Match.exhaustive
+        );
+
+        return Object.entries(tools)
           .map(([toolName, toolValue]) => `${spacePad}${toolName} = "${toolValue}"`)
           .join('\n');
       }

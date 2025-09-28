@@ -1,7 +1,7 @@
 {
   "type": "module",
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@composio/core": "link:../../../../core"

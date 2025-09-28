@@ -1,5 +1,40 @@
 # @composio/core
 
+## 0.1.53
+
+### Patch Changes
+
+- 9a1b0e9: - Adds the new experiemntal ToolRouter, Deprecates the existing MCP experience and adds the new MCP components.
+  - The old MCP components can be accessed via `deprecated.mcp` until the next release, where it will get removed.
+  - Fixes `toolkits.list` and `toolkits.get` methods to add `description` to connection fields
+
+## 0.1.52
+
+### Patch Changes
+
+- 7077cee: Add tool versioning support
+
+## 0.1.51
+
+### Patch Changes
+
+- b9b005a: Add support for composio connect links
+
+## 0.1.50
+
+### Patch Changes
+
+- Updated dependencies [51033d8]
+  - @composio/json-schema-to-zod@0.1.15
+
+## 0.1.49
+
+### Patch Changes
+
+- 5027e18: Fix openai responses schema parsing
+- Updated dependencies [5027e18]
+  - @composio/json-schema-to-zod@0.1.14
+
 ## 0.1.48
 
 ### Patch Changes

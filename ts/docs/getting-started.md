@@ -42,6 +42,7 @@ const composio = new Composio({
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
   provider: new OpenAIProvider(), // Optional: Custom provider
+  toolkitVersions: { github: '20250909_00', slack: 'latest' }, // Optional: Toolkit versions
 });
 ```
 
@@ -159,7 +160,7 @@ const tools = await composio.tools.get('default', {
 
 // Create a chat completion with OpenAI using the tools
 const completion = await openai.chat.completions.create({
-  model: 'gpt-4-turbo',
+  model: 'gpt-5',
   messages: [
     { role: 'system', content: 'You are a helpful assistant with access to GitHub tools.' },
     { role: 'user', content: 'List the repositories in the Composio organization' },

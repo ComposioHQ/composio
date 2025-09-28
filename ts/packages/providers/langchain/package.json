@@ -1,6 +1,6 @@
 {
   "name": "@composio/langchain",
-  "version": "0.1.48",
+  "version": "0.1.53",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -28,16 +28,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
-    "@composio/core": "0.1.48",
+    "@composio/core": "0.1.53",
     "@langchain/core": "^0.3.63"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.4"
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }

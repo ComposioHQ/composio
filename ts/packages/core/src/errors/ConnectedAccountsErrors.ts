@@ -3,6 +3,7 @@ import { ComposioError, ComposioErrorOptions } from './ComposioError';
 export const ConnectedAccountErrorCodes = {
   CONNECTED_ACCOUNT_NOT_FOUND: 'CONNECTED_ACCOUNT_NOT_FOUND',
   MULTIPLE_CONNECTED_ACCOUNTS: 'MULTIPLE_CONNECTED_ACCOUNTS',
+  FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK: 'FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK',
 } as const;
 
 export class ComposioConnectedAccountNotFoundError extends ComposioError {
@@ -31,5 +32,18 @@ export class ComposioMultipleConnectedAccountsError extends ComposioError {
       ],
     });
     this.name = 'ComposioMultipleConnectedAccountsError';
+  }
+}
+
+export class ComposioFailedToCreateConnectedAccountLink extends ComposioError {
+  constructor(
+    message: string = 'Failed to create connected account link',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK,
+    });
+    this.name = 'ComposioFailedToCreateConnectedAccountLink';
   }
 }
