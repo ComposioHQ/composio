@@ -16,17 +16,7 @@ Skills that evolve for your Agents
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/composio)
 </div>
 
-This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities across multiple programming languages.
-
-## Repository Structure
-
-```
-composio/
-├── python/         # Python SDK
-└── ts/         # TypeScript SDK
-```
-
-
+This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities for Python and Typescript Agentic Frameowrks and Libraries.
 
 ## Getting Started
 
@@ -34,13 +24,13 @@ composio/
 
 ```bash
 # Using npm
-npm install @composio/core@next
+npm install @composio/core
 
 # Using yarn
-yarn add @composio/core@next
+yarn add @composio/core
 
 # Using pnpm
-pnpm add @composio/core@next
+pnpm add @composio/core
 ```
 
 #### Quick start:
@@ -105,7 +95,6 @@ poetry add composio
 
 ```python
 from composio import Composio
-
 
 composio = Composio(
   # api_key="your-api-key",
