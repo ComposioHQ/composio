@@ -235,6 +235,8 @@ navigation:
       path: pages/dist/providers/google.mdx
     - page: LangChain Provider
       path: pages/dist/providers/langchain.mdx
+    - page: LlamaIndex Provider
+      path: pages/dist/providers/llamaindex.mdx
     - page: CrewAI Provider
       path: pages/dist/providers/crewai.mdx
     - page: Vercel AI SDK Provider

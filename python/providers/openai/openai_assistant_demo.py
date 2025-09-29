@@ -25,7 +25,7 @@ assistant_instruction = (
 assistant = openai_client.beta.assistants.create(
     name="Personal Assistant",
     instructions=assistant_instruction,
-    model="gpt-4-turbo-preview",
+    model="gpt-5",
     tools=actions,  # type: ignore
 )
 
