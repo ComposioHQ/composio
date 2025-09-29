@@ -79,7 +79,6 @@ def json_schema_to_pydantic_type(
             return nested_model
         return t.Dict
 
-
     pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
     if pytype is not None:
         return pytype
@@ -124,11 +123,7 @@ def json_schema_to_pydantic_field(
         "alias": alias,
     }
     if not skip_default:
-        field["default"] = (
-            ...
-            if name in required
-            else default
-        )
+        field["default"] = ... if name in required else default
 
     return (
         name,

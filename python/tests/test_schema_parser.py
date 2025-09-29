@@ -5,7 +5,6 @@ This module tests the core schema parsing functionality in composio.utils.shared
 particularly focusing on the required field propagation bug that was fixed.
 """
 
-
 import pytest
 from pydantic import BaseModel
 from pydantic.fields import PydanticUndefined
@@ -30,7 +29,7 @@ class TestJsonSchemaToPydanticField:
         json_schema = {
             "type": "string",
             "description": "A test field",
-            "title": "Test Field"
+            "title": "Test Field",
         }
         required = ["test_field"]
 
@@ -49,7 +48,7 @@ class TestJsonSchemaToPydanticField:
             "type": "string",
             "description": "An optional field",
             "title": "Optional Field",
-            "default": "default_value"
+            "default": "default_value",
         }
         required = []
 
@@ -67,20 +66,15 @@ class TestJsonSchemaToPydanticField:
         """
         CRITICAL TEST: Ensure nested object's internal required array
         does NOT make the parent object required.
-        
+
         This tests the specific bug that was fixed.
         """
         name = "nested_object"
         json_schema = {
             "type": "object",
             "title": "NestedObject",
-            "properties": {
-                "inner_field": {
-                    "type": "string",
-                    "title": "Inner Field"
-                }
-            },
-            "required": ["inner_field"]  # This should NOT make nested_object required
+            "properties": {"inner_field": {"type": "string", "title": "Inner Field"}},
+            "required": ["inner_field"],  # This should NOT make nested_object required
         }
         required = []  # nested_object is not in parent's required list
 
@@ -98,13 +92,8 @@ class TestJsonSchemaToPydanticField:
         json_schema = {
             "type": "object",
             "title": "NestedObject",
-            "properties": {
-                "inner_field": {
-                    "type": "string",
-                    "title": "Inner Field"
-                }
-            },
-            "required": ["inner_field"]
+            "properties": {"inner_field": {"type": "string", "title": "Inner Field"}},
+            "required": ["inner_field"],
         }
         required = ["nested_object"]  # Explicitly in parent's required list
 
@@ -121,7 +110,7 @@ class TestJsonSchemaToPydanticField:
         json_schema = {
             "type": "string",
             "description": "A field with reserved name",
-            "title": "Validate"
+            "title": "Validate",
         }
         required = []
 
@@ -139,7 +128,7 @@ class TestJsonSchemaToPydanticField:
             "type": "string",
             "description": "A field with examples",
             "title": "Example Field",
-            "examples": ["example1", "example2"]
+            "examples": ["example1", "example2"],
         }
         required = []
 
@@ -156,7 +145,7 @@ class TestJsonSchemaToPydanticField:
         json_schema = {
             "oneOf": [
                 {"type": "string", "description": "String option"},
-                {"type": "integer", "description": "Integer option"}
+                {"type": "integer", "description": "Integer option"},
             ]
         }
         required = []
@@ -171,10 +160,7 @@ class TestJsonSchemaToPydanticField:
     def test_skip_default_parameter(self):
         """Test that skip_default parameter works correctly."""
         name = "test_field"
-        json_schema = {
-            "type": "string",
-            "default": "should_be_skipped"
-        }
+        json_schema = {"type": "string", "default": "should_be_skipped"}
         required = []
 
         field_name, field_type, field_info = json_schema_to_pydantic_field(
@@ -194,16 +180,10 @@ class TestJsonSchemaToModel:
             "title": "SimpleModel",
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "title": "Name"
-                },
-                "age": {
-                    "type": "integer",
-                    "title": "Age"
-                }
+                "name": {"type": "string", "title": "Name"},
+                "age": {"type": "integer", "title": "Age"},
             },
-            "required": ["name"]
+            "required": ["name"],
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -223,23 +203,17 @@ class TestJsonSchemaToModel:
             "title": "ParentModel",
             "type": "object",
             "properties": {
-                "basic_field": {
-                    "type": "string",
-                    "title": "Basic Field"
-                },
+                "basic_field": {"type": "string", "title": "Basic Field"},
                 "nested_object": {
                     "type": "object",
                     "title": "NestedObject",
                     "properties": {
-                        "inner_field": {
-                            "type": "string",
-                            "title": "Inner Field"
-                        }
+                        "inner_field": {"type": "string", "title": "Inner Field"}
                     },
-                    "required": ["inner_field"]
-                }
+                    "required": ["inner_field"],
+                },
             },
-            "required": ["basic_field"]
+            "required": ["basic_field"],
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -251,8 +225,7 @@ class TestJsonSchemaToModel:
 
         # Test that nested object validation works when provided
         instance_with_nested = model_class(
-            basic_field="test",
-            nested_object={"inner_field": "nested_value"}
+            basic_field="test", nested_object={"inner_field": "nested_value"}
         )
         assert instance_with_nested.nested_object.inner_field == "nested_value"
 
@@ -261,7 +234,7 @@ class TestJsonSchemaToModel:
     def test_working_location_properties_bug_scenario(self):
         """
         CRITICAL TEST: Reproduce the exact scenario that caused the bug.
-        
+
         This tests the workingLocationProperties scenario that was incorrectly
         marked as required.
         """
@@ -269,10 +242,7 @@ class TestJsonSchemaToModel:
             "title": "CreateEventRequest",
             "type": "object",
             "properties": {
-                "start_datetime": {
-                    "type": "string",
-                    "title": "Start Datetime"
-                },
+                "start_datetime": {"type": "string", "title": "Start Datetime"},
                 "workingLocationProperties": {
                     "type": "object",
                     "title": "WorkingLocationProperties",
@@ -280,24 +250,21 @@ class TestJsonSchemaToModel:
                         "type": {
                             "type": "string",
                             "title": "Type",
-                            "enum": ["homeOffice", "officeLocation", "customLocation"]
+                            "enum": ["homeOffice", "officeLocation", "customLocation"],
                         },
                         "customLocation": {
                             "type": "object",
                             "title": "WorkingLocationCustom",
                             "properties": {
-                                "label": {
-                                    "type": "string",
-                                    "title": "Label"
-                                }
+                                "label": {"type": "string", "title": "Label"}
                             },
-                            "required": ["label"]
-                        }
+                            "required": ["label"],
+                        },
                     },
-                    "required": ["type"]
-                }
+                    "required": ["type"],
+                },
             },
-            "required": ["start_datetime"]
+            "required": ["start_datetime"],
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -312,10 +279,13 @@ class TestJsonSchemaToModel:
             start_datetime="2025-01-01T10:00:00",
             workingLocationProperties={
                 "type": "customLocation",
-                "customLocation": {"label": "Client Office"}
-            }
+                "customLocation": {"label": "Client Office"},
+            },
         )
-        assert instance_with_working_location.workingLocationProperties.type == "customLocation"
+        assert (
+            instance_with_working_location.workingLocationProperties.type
+            == "customLocation"
+        )
 
     def test_array_type_handling(self):
         """Test handling of array types in schema."""
@@ -323,14 +293,8 @@ class TestJsonSchemaToModel:
             "title": "ArrayModel",
             "type": "object",
             "properties": {
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "title": "Tags"
-                }
-            }
+                "tags": {"type": "array", "items": {"type": "string"}, "title": "Tags"}
+            },
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -346,17 +310,12 @@ class TestPydanticModelFromParamSchema:
         param_schema = {
             "title": "SimpleParam",
             "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "title": "Name"
-                }
-            },
-            "required": ["name"]
+            "properties": {"name": {"type": "string", "title": "Name"}},
+            "required": ["name"],
         }
 
         model_class = pydantic_model_from_param_schema(param_schema)
-        
+
         # Should be able to create instance with required field
         instance = model_class(name="test")
         assert instance.name == "test"
@@ -370,23 +329,19 @@ class TestPydanticModelFromParamSchema:
             "title": "ParentParam",
             "type": "object",
             "properties": {
-                "required_field": {
-                    "type": "string",
-                    "title": "Required Field"
-                },
+                "required_field": {"type": "string", "title": "Required Field"},
                 "optional_nested": {
                     "type": "object",
                     "title": "Optional Nested",
                     "properties": {
-                        "inner_required": {
-                            "type": "string",
-                            "title": "Inner Required"
-                        }
+                        "inner_required": {"type": "string", "title": "Inner Required"}
                     },
-                    "required": ["inner_required"]  # Should NOT make optional_nested required
-                }
+                    "required": [
+                        "inner_required"
+                    ],  # Should NOT make optional_nested required
+                },
             },
-            "required": ["required_field"]
+            "required": ["required_field"],
         }
 
         model_class = pydantic_model_from_param_schema(param_schema)
@@ -401,22 +356,19 @@ class TestPydanticModelFromParamSchema:
         param_schema = {
             "title": "ArrayParam",
             "type": "array",
-            "items": {
-                "type": "string",
-                "title": "String Item"
-            }
+            "items": {"type": "string", "title": "String Item"},
         }
 
         result = pydantic_model_from_param_schema(param_schema)
         # Should return List[str] type
-        assert hasattr(result, '__origin__')  # Generic type
+        assert hasattr(result, "__origin__")  # Generic type
         assert result.__origin__ is list
 
     def test_missing_title_error(self):
         """Test that missing title raises appropriate error."""
         param_schema = {
             "type": "object",
-            "properties": {}
+            "properties": {},
             # Missing "title"
         }
 
@@ -442,13 +394,10 @@ class TestJsonSchemaToPydanticType:
 
     def test_array_type(self):
         """Test array type conversion."""
-        json_schema = {
-            "type": "array",
-            "items": {"type": "string"}
-        }
+        json_schema = {"type": "array", "items": {"type": "string"}}
 
         result = json_schema_to_pydantic_type(json_schema)
-        assert hasattr(result, '__origin__')
+        assert hasattr(result, "__origin__")
         assert result.__origin__ is list
 
     def test_object_type_creates_nested_model(self):
@@ -456,9 +405,7 @@ class TestJsonSchemaToPydanticType:
         json_schema = {
             "type": "object",
             "title": "NestedModel",
-            "properties": {
-                "field": {"type": "string", "title": "Field"}
-            }
+            "properties": {"field": {"type": "string", "title": "Field"}},
         }
 
         result = json_schema_to_pydantic_type(json_schema)
@@ -467,16 +414,11 @@ class TestJsonSchemaToPydanticType:
 
     def test_oneof_union_types(self):
         """Test oneOf schemas create union types."""
-        json_schema = {
-            "oneOf": [
-                {"type": "string"},
-                {"type": "integer"}
-            ]
-        }
+        json_schema = {"oneOf": [{"type": "string"}, {"type": "integer"}]}
 
         result = json_schema_to_pydantic_type(json_schema)
         # Should create a Union type
-        assert hasattr(result, '__origin__')
+        assert hasattr(result, "__origin__")
 
     def test_fallback_to_string(self):
         """Test that missing type defaults to string."""
@@ -500,16 +442,10 @@ class TestJsonSchemaToFieldsDict:
         """Test creating fields dictionary from JSON schema."""
         json_schema = {
             "properties": {
-                "name": {
-                    "type": "string",
-                    "title": "Name"
-                },
-                "age": {
-                    "type": "integer",
-                    "title": "Age"
-                }
+                "name": {"type": "string", "title": "Name"},
+                "age": {"type": "integer", "title": "Age"},
             },
-            "required": ["name"]
+            "required": ["name"],
         }
 
         fields_dict = json_schema_to_fields_dict(json_schema)
@@ -550,19 +486,19 @@ class TestRegressionScenarios:
                                     "properties": {
                                         "deep_field": {
                                             "type": "string",
-                                            "title": "Deep Field"
+                                            "title": "Deep Field",
                                         }
                                     },
-                                    "required": ["deep_field"]
+                                    "required": ["deep_field"],
                                 }
                             },
-                            "required": ["level3"]
+                            "required": ["level3"],
                         }
                     },
-                    "required": ["level2"]
+                    "required": ["level2"],
                 }
             },
-            "required": []  # level1 should NOT be required
+            "required": [],  # level1 should NOT be required
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -580,25 +516,18 @@ class TestRegressionScenarios:
                 "config1": {
                     "type": "object",
                     "title": "Config1",
-                    "properties": {
-                        "setting1": {"type": "string", "title": "Setting1"}
-                    },
-                    "required": ["setting1"]
+                    "properties": {"setting1": {"type": "string", "title": "Setting1"}},
+                    "required": ["setting1"],
                 },
                 "config2": {
                     "type": "object",
                     "title": "Config2",
-                    "properties": {
-                        "setting2": {"type": "string", "title": "Setting2"}
-                    },
-                    "required": ["setting2"]
+                    "properties": {"setting2": {"type": "string", "title": "Setting2"}},
+                    "required": ["setting2"],
                 },
-                "required_field": {
-                    "type": "string",
-                    "title": "Required Field"
-                }
+                "required_field": {"type": "string", "title": "Required Field"},
             },
-            "required": ["required_field"]
+            "required": ["required_field"],
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -616,9 +545,9 @@ class TestRegressionScenarios:
             "type": "object",
             "properties": {
                 "optional1": {"type": "string", "title": "Optional1"},
-                "optional2": {"type": "string", "title": "Optional2"}
+                "optional2": {"type": "string", "title": "Optional2"},
             },
-            "required": []
+            "required": [],
         }
 
         model_class = json_schema_to_model(json_schema)
@@ -635,8 +564,8 @@ class TestRegressionScenarios:
             "type": "object",
             "properties": {
                 "field1": {"type": "string", "title": "Field1"},
-                "field2": {"type": "string", "title": "Field2"}
-            }
+                "field2": {"type": "string", "title": "Field2"},
+            },
             # No "required" key at all
         }
 
@@ -685,9 +614,9 @@ class TestEdgeCases:
                 "name": {"type": "string", "title": "Name"},
                 "children": {
                     "type": "array",
-                    "items": {"$ref": "#"}  # Self-reference
-                }
-            }
+                    "items": {"$ref": "#"},  # Self-reference
+                },
+            },
         }
 
         # This might not work perfectly but shouldn't crash
