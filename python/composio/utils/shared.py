@@ -58,17 +58,8 @@ def json_schema_to_pydantic_type(
         ]
         if len(pydantic_types) == 1:
             return pydantic_types[0]
-        if len(pydantic_types) == 2:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])
-            ]
-        if len(pydantic_types) == 3:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]),
-                t.cast(t.Type, pydantic_types[1]),
-                t.cast(t.Type, pydantic_types[2]),
-            ]
-        raise ValueError("Invalid 'oneOf' schema")
+        # Create Union with any number of types
+        return t.Union[tuple(t.cast(t.Type, ptype) for ptype in pydantic_types)]
 
     # Add fallback type - string
     if "type" not in json_schema:
