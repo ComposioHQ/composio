@@ -125,18 +125,15 @@ navigation:
     - page: Executing Tools
       path: pages/dist/tool-calling/executing-tools.mdx
       slug: executing-tools
-    - section: Modifiers
-      slug: modifiers
-      contents:
-      - page: Schema Modifiers
-        path: pages/dist/tool-calling/schema-modifiers.mdx
-        slug: schema-modifiers
-      - page: Before Tool Execution
-        path: pages/dist/tool-calling/before-execution-modifiers.mdx
-        slug: before-execution
-      - page: After Tool Execution
-        path: pages/dist/tool-calling/after-execution-modifiers.mdx
-        slug: after-execution
+    - page: Modifying tool schemas
+      path: pages/dist/tool-calling/schema-modifiers.mdx
+      slug: modifying-tool-schemas
+    - page: Modifying tool inputs
+      path: pages/dist/tool-calling/before-execution-modifiers.mdx
+      slug: modifying-tool-inputs
+    - page: Modifying tool outputs
+      path: pages/dist/tool-calling/after-execution-modifiers.mdx
+      slug: modifying-tool-outputs
     - page: Custom tools
       path: pages/dist/tool-calling/custom-tools.mdx
       slug: custom-tools
@@ -238,6 +235,8 @@ navigation:
       path: pages/dist/providers/google.mdx
     - page: LangChain Provider
       path: pages/dist/providers/langchain.mdx
+    - page: LlamaIndex Provider
+      path: pages/dist/providers/llamaindex.mdx
     - page: CrewAI Provider
       path: pages/dist/providers/crewai.mdx
     - page: Vercel AI SDK Provider

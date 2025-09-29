@@ -11,7 +11,7 @@ from composio import Composio
 dotenv.load_dotenv()
 
 # Setup client
-llm = OpenAI(model="gpt-4-turbo")
+llm = OpenAI(model="gpt-5")
 composio = Composio(provider=LlamaIndexProvider())
 
 # Get All the tools

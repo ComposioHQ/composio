@@ -1,5 +1,15 @@
 # @composio/langchain
 
+## 0.1.53
+
+### Patch Changes
+
+- 9a1b0e9: - Adds the new experiemntal ToolRouter, Deprecates the existing MCP experience and adds the new MCP components.
+  - The old MCP components can be accessed via `deprecated.mcp` until the next release, where it will get removed.
+  - Fixes `toolkits.list` and `toolkits.get` methods to add `description` to connection fields
+- Updated dependencies [9a1b0e9]
+  - @composio/core@0.1.53
+
 ## 0.1.52
 
 ### Patch Changes

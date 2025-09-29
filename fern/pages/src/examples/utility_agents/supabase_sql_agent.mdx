@@ -36,7 +36,7 @@ def create_agent(user_id: str, composio_client: Composio[LlamaIndexProvider]):
    """
 
    # Setup client
-   llm = OpenAI(model="gpt-4-turbo")
+   llm = OpenAI(model="gpt-5")
 
    # Get All the tools
    tools = composio_client.tools.get(

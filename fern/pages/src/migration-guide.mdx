@@ -91,7 +91,7 @@ All operations are now scoped to a user ID, including:
 
 This change provides explicit specification of the user for whom the action is being performed. When a user may have multiple accounts (such as work and personal Gmail connections), you can use the more specific connected account ID.
 
-### Replacing ToolSets with [Providers](/get-started/providers)
+### Replacing ToolSets with [Providers](/docs/providers)
 
 We have deprecated "toolsets" in favor of "providers". This change allows Composio to provide deeper standardization for tool implementation across different frameworks.
 
@@ -133,7 +133,7 @@ The SDK structure is now framework-agnostic and includes the OpenAI provider out
 
 You can now use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't yet support.
 
-Read more about [providers in our documentation](/get-started/providers) and explore the [complete list of available providers](/providers).
+Read more about [providers in our documentation](/docs/providers) and explore the [complete list of available providers](/providers/openai).
 
 ### Fetching and filtering tools
 
@@ -260,7 +260,7 @@ While tool processors could previously be applied during SDK initialization, too
 - **Chat Completion providers**: Modifiers are specified and applied during tool execution
 - **Agentic frameworks**: Modifiers are specified and applied during tool fetching
 
-#### [Schema Modifiers](/docs/modifiers/schema-modifiers)
+#### [Schema Modifiers](/docs/modifying-tool-schemas)
 
 The following example demonstrates schema modifier usage, applicable across all providers:
 
@@ -297,9 +297,9 @@ tools = composio.tools.get(
 />
 </CodeGroup>
 
-#### [Before Modifiers](/docs/modifiers/before-execution)
+#### [Before Modifiers](/docs/modifying-tool-inputs)
 
-The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifiers/before-execution):
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifying-tool-inputs):
 
 <CodeGroup>
 ```python Python (current)
@@ -324,9 +324,9 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
 />
 </CodeGroup>
 
-#### [After Modifiers](/docs/modifiers/after-execution)
+#### [After Modifiers](/docs/modifying-tool-outputs)
 
-The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifiers/after-execution):
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifying-tool-outputs):
 
 <CodeGroup>
 
@@ -454,7 +454,7 @@ Creating auth configs programmatically in the current SDK:
 />
 </CodeGroup>
 
-For using custom authentication credentials, refer to the [Programmatic Auth Configs](/programmatic-auth-configs#using-custom-auth) documentation.
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/programmatic-auth-configs) documentation.
 
 <Note>The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/auth/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.</Note>
 

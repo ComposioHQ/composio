@@ -17,7 +17,6 @@ import {
   McpUrlResponse,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
-import { type MastraMCPServerDefinition } from '@mastra/mcp';
 import { AnthropicTool, InputSchema } from './types';
 
 export type AnthropicMcpServerGetResponse = {
@@ -55,7 +54,6 @@ export type AnthropicContentBlock = {
 export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicToolCollection,
   AnthropicTool,
-  AnthropicMcpServerGetResponse,
   AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
@@ -130,15 +128,6 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       }) as InputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
-  }
-
-  /**
-   * Note(jkomyno): right now, there's a strict dependency between the return type of this method
-   * and the expected MCP client that will be used to retrieve the tools from it (`MCPClient` from `@mastra/mcp`).
-   * Do we want to keep this for Anthropic?
-   */
-  override wrapMcpServers(servers: AnthropicMcpServerGetResponse): AnthropicMcpServerGetResponse {
-    return servers;
   }
 
   /**
