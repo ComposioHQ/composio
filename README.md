@@ -1,7 +1,7 @@
 
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/ComposioHQ/composio/next/public/logo.png" alt="Composio Logo" width="200" height="auto" style="margin-bottom: 20px;"/>
+<img src="https://raw.githubusercontent.com/ComposioHQ/composio/next/public/cover.png" alt="Composio Logo" width="auto" height="auto" style="margin-bottom: 20px;"/>
 
 
 # Composio SDK
@@ -13,6 +13,7 @@ Skills that evolve for your Agents
 [![GitHub Stars](https://img.shields.io/github/stars/ComposioHQ/composio?style=social)](https://github.com/ComposioHQ/composio/stargazers)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/composio?label=PyPI%20Downloads)](https://pypi.org/project/composio/)
 [![NPM Downloads](https://img.shields.io/npm/dt/@composio/core?label=NPM%20Downloads)](https://www.npmjs.com/package/@composio/core)
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/composio)
 </div>
 
 This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities across multiple programming languages.
@@ -174,9 +175,16 @@ For detailed information about the Python SDK, please refer to the [Python SDK D
 
 _if you are looking for the older sdk, you can find them [here](https://github.com/ComposioHQ/composio/tree/master)_
 
+## Rube
+
+[Rube](https://rube.app) is a Model Context Protocol (MCP) server built with Composio. It connects your AI tools to 500+ apps like Gmail, Slack, GitHub, and Notion. Simply install it in your AI client, authenticate once with your apps, and start asking your AI to perform real actions like "Send an email" or "Create a task." 
+
+It integrates with major AI clients like Cursor, Claude Desktop, VS Code, Claude Code and any custom MCP‑compatible client. You can switch between these clients and your integrations follow you.
+
+
 ## Contributing
 
-We welcome contributions to both SDKs! Please read our contribution guidelines before submitting pull requests.
+We welcome contributions to both SDKs! Please read our [contribution guidelines](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md) before submitting pull requests.
 
 ## License
 
