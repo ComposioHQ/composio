@@ -247,6 +247,11 @@ class InvalidConnectedAccount(ValidationError, ConnectedAccountError):
     pass
 
 
+class ComposioMultipleConnectedAccountsError(ConnectedAccountError):
+    """Raised when multiple connected accounts are found for a user and auth config."""
+    pass
+
+
 class ErrorProcessingToolExecutionRequest(PluginError):
     pass
 

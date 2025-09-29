@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import logging
 import time
 import typing as t
 
@@ -15,6 +16,8 @@ from composio.client.types import (
 )
 
 from .base import Resource
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionRequest(Resource):
@@ -320,6 +323,7 @@ class ConnectedAccounts:
         *,
         callback_url: t.Optional[str] = None,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
+        allow_multiple: bool = False,
     ) -> ConnectionRequest:
         """
         Compound function to create a new connected account. This function creates
@@ -331,9 +335,27 @@ class ConnectedAccounts:
         :param user_id: The user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
         :param callback_url: Callback URL to use for OAuth apps.
-        :param options: The options to create the connected account with.
+        :param config: The configuration to create the connected account with.
+        :param allow_multiple: Whether to allow multiple connected accounts for the same user and auth config.
         :return: The connection request.
         """
+        # Check if there are multiple connected accounts for the authConfig of the user
+        connected_accounts = self.list(
+            user_ids=[user_id],
+            auth_config_ids=[auth_config_id],
+        )
+        if connected_accounts.items and not allow_multiple:
+            raise exceptions.ComposioMultipleConnectedAccountsError(
+                f"Multiple connected accounts found for user {user_id} in auth config {auth_config_id}. "
+                "Please use the allow_multiple option to allow multiple connected accounts."
+            )
+        elif connected_accounts.items:
+            logger.warning(
+                "[Warn:AllowMultiple] Multiple connected accounts found for user %s in auth config %s",
+                user_id,
+                auth_config_id,
+            )
+
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
             connection["callback_url"] = callback_url
