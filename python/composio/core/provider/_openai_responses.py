@@ -24,12 +24,10 @@ ResponsesToolCollection = t.List[ResponsesTool]
 class OpenAIResponsesProvider(
     NonAgenticProvider[ResponsesTool, ResponsesToolCollection], name="openai_responses"
 ):
-    """OpenAI Responses API Provider class definition.
-    """
+    """OpenAI Responses API Provider class definition."""
 
     def wrap_tool(self, tool: Tool) -> ResponsesTool:
-        """Wrap a tool for the Responses API format.
-        """
+        """Wrap a tool for the Responses API format."""
         return {
             "type": "function",
             "name": tool.slug,
@@ -56,7 +54,7 @@ class OpenAIResponsesProvider(
         """
         slug = tool_call.name
         arguments = json.loads(tool_call.arguments)
-        
+
         return self.execute_tool(
             slug=slug,
             arguments=arguments,
@@ -79,7 +77,7 @@ class OpenAIResponsesProvider(
         :return: List[ToolExecutionResponse] with tool execution results
         """
         outputs = []
-        
+
         if response.output:
             for item in response.output:
                 if isinstance(item, ResponseFunctionToolCall):
@@ -89,5 +87,5 @@ class OpenAIResponsesProvider(
                         modifiers=modifiers,
                     )
                     outputs.append(result)
-        
+
         return outputs
