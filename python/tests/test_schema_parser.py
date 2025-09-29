@@ -5,8 +5,6 @@ This module tests the core schema parsing functionality in composio.utils.shared
 particularly focusing on the required field propagation bug that was fixed.
 """
 
-import json
-import typing as t
 
 import pytest
 from pydantic import BaseModel
@@ -41,7 +39,7 @@ class TestJsonSchemaToPydanticField:
         )
 
         assert field_name == "test_field"
-        assert field_type == str
+        assert field_type is str
         assert field_info.default is PydanticUndefined  # Required field marker
 
     def test_simple_optional_field(self):
@@ -60,7 +58,7 @@ class TestJsonSchemaToPydanticField:
         )
 
         assert field_name == "optional_field"
-        assert field_type == str
+        assert field_type is str
         assert field_info.default == "default_value"
 
     @pytest.mark.unit
@@ -485,7 +483,7 @@ class TestJsonSchemaToPydanticType:
         json_schema = {}  # No type specified
 
         result = json_schema_to_pydantic_type(json_schema)
-        assert result == str
+        assert result is str
 
     def test_unsupported_type_error(self):
         """Test that unsupported types raise appropriate error."""
@@ -523,8 +521,8 @@ class TestJsonSchemaToFieldsDict:
         name_type, name_field = fields_dict["name"]
         age_type, age_field = fields_dict["age"]
 
-        assert name_type == str
-        assert age_type == int
+        assert name_type is str
+        assert age_type is int
         assert name_field.default is PydanticUndefined  # Required
         assert age_field.default is None  # Optional
 

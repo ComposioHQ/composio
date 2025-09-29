@@ -32,7 +32,7 @@ def test_basic_functionality():
     )
     
     assert field_name == "test_field"
-    assert field_type == str
+    assert field_type is str
     assert field_info.default is PydanticUndefined  # Required field marker
     print("✅ Test 1 passed: Simple required field")
     
