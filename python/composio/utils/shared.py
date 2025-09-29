@@ -50,6 +50,26 @@ def json_schema_to_pydantic_type(
     :param json_schema: The JSON schema to convert.
     :return: A Pydantic type.
     """
+    # Handle oneOf schemas first
+    if "oneOf" in json_schema:
+        one_of_options = json_schema["oneOf"]
+        pydantic_types: t.List[t.Type] = [  # type: ignore
+            json_schema_to_pydantic_type(option) for option in one_of_options
+        ]
+        if len(pydantic_types) == 1:
+            return pydantic_types[0]
+        if len(pydantic_types) == 2:
+            return t.Union[
+                t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])
+            ]
+        if len(pydantic_types) == 3:
+            return t.Union[
+                t.cast(t.Type, pydantic_types[0]),
+                t.cast(t.Type, pydantic_types[1]),
+                t.cast(t.Type, pydantic_types[2]),
+            ]
+        raise ValueError("Invalid 'oneOf' schema")
+
     # Add fallback type - string
     if "type" not in json_schema:
         json_schema["type"] = "string"
@@ -68,24 +88,6 @@ def json_schema_to_pydantic_type(
             return nested_model
         return t.Dict
 
-    if type_ is None and "oneOf" in json_schema:
-        one_of_options = json_schema["oneOf"]
-        pydantic_types: t.List[t.Type] = [  # type: ignore
-            json_schema_to_pydantic_type(option) for option in one_of_options
-        ]
-        if len(pydantic_types) == 1:
-            return pydantic_types[0]
-        if len(pydantic_types) == 2:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])
-            ]
-        if len(pydantic_types) == 3:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]),
-                t.cast(t.Type, pydantic_types[1]),
-                t.cast(t.Type, pydantic_types[2]),
-            ]
-        raise ValueError("Invalid 'oneOf' schema")
 
     pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
     if pytype is not None:

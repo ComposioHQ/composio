@@ -9,7 +9,7 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
-from composio_client import omit
+from composio_client import Omit
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
 from composio.client import HttpClient
@@ -183,7 +183,7 @@ class MCP(Resource):
                     auth_config_ids.append(toolkit_config["auth_config_id"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
-            custom_tools = allowed_tools if allowed_tools is not None else omit
+            custom_tools = allowed_tools if allowed_tools is not None else Omit
 
             # Use the custom MCP create endpoint
             response = self._client.mcp.custom.create(
