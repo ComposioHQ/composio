@@ -1,0 +1,46 @@
+name: Close Stale Issues and PRs
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close Stale Issues
+        uses: actions/stale@v10.0.0
+        with:
+          # General settings
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 60
+          days-before-close: 2
+          ascending: true
+
+          # Issue settings
+          stale-issue-label: "stale"
+          exempt-issue-labels: "pinned,security,bug,needs-triage,roadmap,enhancement,good first issue"
+          stale-issue-message: |
+            beep boop inactive for 60 days, closing in 48 hours
+          close-issue-message: |
+            closed due to inactivity. feel free to reopen if the issue persists.
+
+          # Pull request settings
+          stale-pr-label: "stale"
+          exempt-pr-labels: "pinned,security,needs-review,work-in-progress,dependencies"
+          stale-pr-message: |
+            beep boop inactive for 60 days, closing in 48 hours
+          close-pr-message: |
+            closed due to inactivity. feel free to reopen if still relevant.
+
+          # Optional: Remove stale label when updated
+          remove-stale-when-updated: true
+
+          # Enable debug logs (set to false in production)
+          debug-only: false
