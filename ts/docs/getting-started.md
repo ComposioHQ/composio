@@ -160,7 +160,7 @@ const tools = await composio.tools.get('default', {
 
 // Create a chat completion with OpenAI using the tools
 const completion = await openai.chat.completions.create({
-  model: 'gpt-4-turbo',
+  model: 'gpt-5',
   messages: [
     { role: 'system', content: 'You are a helpful assistant with access to GitHub tools.' },
     { role: 'user', content: 'List the repositories in the Composio organization' },
