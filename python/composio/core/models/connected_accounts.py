@@ -322,8 +322,8 @@ class ConnectedAccounts:
         auth_config_id: str,
         *,
         callback_url: t.Optional[str] = None,
-        config: t.Optional[connected_account_create_params.ConnectionState] = None,
         allow_multiple: bool = False,
+        config: t.Optional[connected_account_create_params.ConnectionState] = None,
     ) -> ConnectionRequest:
         """
         Compound function to create a new connected account. This function creates
