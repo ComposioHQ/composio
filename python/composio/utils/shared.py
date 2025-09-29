@@ -133,13 +133,7 @@ def json_schema_to_pydantic_field(
     if not skip_default:
         field["default"] = (
             ...
-            if (
-                name in required
-                or json_schema.get(
-                    "required",
-                    False,
-                )
-            )
+            if name in required
             else default
         )
 
@@ -263,7 +257,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         else:
             field_kwargs["title"] = prop_title
 
-        if prop_name in required_props or prop_info.get("required", False):
+        if prop_name in required_props:
             required_fields[prop_name] = (
                 signature_prop_type,
                 Field(..., **field_kwargs),
