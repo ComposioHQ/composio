@@ -8,13 +8,13 @@ hide-nav-links: true
 
 Many toolkits support a level of customization for the auth config, specifically OAuth applications.
 
-This guide will walk you through the process of customizing the auth config for toolkits where you can configure the developer app.
+This guide will walk you through the process of customizing the auth config for toolkits where you can configure your own developer app.
 
 ## Creating a custom auth config
 
-Some apps, like PostHog, Hubspot, Linear, etc. allow customizing the auth config for your usage.
+To create a custom auth config, click **Create Auth Config** in your dashboard, then navigate to **Authentication management** → **Manage authentication with custom credentials**.
 
-You'll need to customize the auth config in cases where you want to add in a different field than the default. This could be the subdomain, base URL, client ID, client secret, etc.
+You'll need to customize the auth config when you want to use different values than the defaults - such as your own subdomain, base URL, client ID, client secret, etc.
 
 <Tabs>
 <Tab title="Example: PostHog">
@@ -80,14 +80,13 @@ Once you have the OAuth credentials, you can add them to the auth config in the 
 
 1. Select the OAuth2 scheme.
 2. Select the scopes to request from users. Default scopes are pre-filled for most apps.
-3. Add the OAuth client ID and client secret. Keep the redirect URL as is for now!
-4. Click **"Create Integration"** once done!
+3. Add the OAuth client ID and client secret for your developer app.
+4. Click **Create**!
 
 <Frame background="subtle" title="Auth Config Settings">
   <img src="../../../assets/images/integration-step-3-0.png" />
 </Frame>
 
-As usual, copy and use the auth config ID starting with `ac_` in your application code via a secret manager.
 
 </Step>
 </Steps>
