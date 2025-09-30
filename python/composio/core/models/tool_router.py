@@ -11,9 +11,10 @@ import typing as t
 
 import typing_extensions as te
 
+from composio_client.types.tool_router_create_session_params import ConfigToolkit
+
 from composio.client import HttpClient
 from composio.core.models.base import Resource
-from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
 
 # Data Types
@@ -45,7 +46,7 @@ class ToolRouter(Resource):
     def create_session(
         self,
         user_id: str,
-        toolkits: t.Optional[t.List[t.Union[MCPToolkitConfig, str]]] = None,
+        toolkits: t.Optional[t.List[t.Union[ConfigToolkit, str]]] = None,
         manually_manage_connections: t.Optional[bool] = None,
     ) -> ToolRouterSession:
         """
@@ -67,7 +68,7 @@ class ToolRouter(Resource):
             >>> session = composio.experimental.tool_router.create_session(
             ...     'user_123',
             ...     toolkits=[
-            ...         {'toolkit': 'github', 'auth_config_id': 'ac_123'},
+            ...         {'toolkit': 'github', 'auth_config': 'ac_123'},
             ...         'hackernews'
             ...     ],
             ...     manually_manage_connections=False
@@ -79,12 +80,12 @@ class ToolRouter(Resource):
         """
         try:
             # Normalize toolkits to the format expected by the API
-            toolkit_configs = []
+            toolkit_configs: t.List[ConfigToolkit] = []
             if toolkits:
                 for toolkit in toolkits:
                     if isinstance(toolkit, str):
                         # Convert string to toolkit config
-                        toolkit_configs.append({"toolkit": toolkit})
+                        toolkit_configs.append(ConfigToolkit(toolkit=toolkit))
                     else:
                         # Already a config object, use as-is
                         toolkit_configs.append(toolkit)

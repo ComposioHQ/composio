@@ -11,13 +11,19 @@ import typing as t
 import typing_extensions as te
 from composio_client import omit
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
+from composio_client.types.tool_router_create_session_params import ConfigToolkit
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
-from composio.core.types import MCPToolkitConfig
 from composio.exceptions import ValidationError
 
 # Data Types (matching TypeScript specification)
+
+
+class MCPCreateResponse(CustomCreateResponse):
+    """MCP Create Response with generate method (extends CustomCreateResponse)."""
+    
+    generate: t.Callable[[str, t.Optional[bool]], "MCPServerInstance"]
 
 
 class MCPServerInstance(te.TypedDict):
@@ -58,7 +64,7 @@ class MCPListResponse(te.TypedDict):
 
 def _add_generate_method(
     response: CustomCreateResponse, mcp_instance: "MCP"
-) -> CustomCreateResponse:
+) -> MCPCreateResponse:
     """Add generate method to CustomCreateResponse object."""
 
     def generate(
@@ -74,9 +80,9 @@ def _add_generate_method(
         """
         return mcp_instance.generate(user_id, response.id, manually_manage_connections)
 
-    # Add the generate method to the response object
-    response.generate = generate
-    return response
+    # Add the generate method to the response object and cast to MCPCreateResponse
+    response.generate = generate  # type: ignore
+    return t.cast(MCPCreateResponse, response)
 
 
 class MCP(Resource):
@@ -98,10 +104,10 @@ class MCP(Resource):
     def create(
         self,
         name: str,
-        toolkits: t.List[t.Union[MCPToolkitConfig, str]],
+        toolkits: t.List[t.Union[ConfigToolkit, str]],
         manually_manage_connections: bool = False,
         allowed_tools: t.Optional[t.List[str]] = None,
-    ) -> CustomCreateResponse:
+    ) -> MCPCreateResponse:
         """
         Create a new MCP server configuration with specified toolkits and authentication settings.
 
@@ -120,11 +126,11 @@ class MCP(Resource):
             ...     toolkits=[
             ...         {
             ...             'toolkit': 'github',
-            ...             'auth_config_id': 'ac_xyz',
+            ...             'auth_config': 'ac_xyz',
             ...         },
             ...         {
             ...             'toolkit': 'slack',
-            ...             'auth_config_id': 'ac_abc',
+            ...             'auth_config': 'ac_abc',
             ...         },
             ...     ],
             ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS', 'SLACK_SEND_MESSAGE'],
@@ -153,11 +159,11 @@ class MCP(Resource):
 
         try:
             # Normalize toolkits to MCPToolkitConfig format
-            normalized_toolkit_configs = []
+            normalized_toolkit_configs: t.List[ConfigToolkit] = []
             for toolkit in toolkits:
                 if isinstance(toolkit, str):
                     # Convert string to MCPToolkitConfig
-                    normalized_toolkit_configs.append({"toolkit": toolkit})
+                    normalized_toolkit_configs.append(ConfigToolkit(toolkit=toolkit))
                 else:
                     # Already MCPToolkitConfig, use as-is
                     normalized_toolkit_configs.append(toolkit)
@@ -177,10 +183,10 @@ class MCP(Resource):
                     toolkit_names.append(toolkit_config["toolkit"])
 
                 if (
-                    "auth_config_id" in toolkit_config
-                    and toolkit_config["auth_config_id"] not in auth_config_ids
+                    "auth_config" in toolkit_config
+                    and toolkit_config["auth_config"] not in auth_config_ids
                 ):
-                    auth_config_ids.append(toolkit_config["auth_config_id"])
+                    auth_config_ids.append(toolkit_config["auth_config"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
             custom_tools = allowed_tools if allowed_tools is not None else omit
@@ -207,8 +213,8 @@ class MCP(Resource):
         toolkits: t.Optional[str] = None,
         auth_config_ids: t.Optional[str] = None,
         name: t.Optional[str] = None,
-        order_by: t.Optional[str] = None,
-        order_direction: t.Optional[str] = None,
+        order_by: t.Optional[te.Literal["created_at", "updated_at"]] = None,
+        order_direction: t.Optional[te.Literal["asc", "desc"]] = None,
     ) -> MCPListResponse:
         """
         List MCP servers with optional filtering and pagination.
@@ -238,11 +244,11 @@ class MCP(Resource):
             response = self._client.mcp.list(
                 page_no=page_no,
                 limit=limit,
-                toolkits=toolkits,
-                auth_config_ids=auth_config_ids,
-                name=name,
-                order_by=order_by,
-                order_direction=order_direction,
+                toolkits=toolkits if toolkits is not None else omit,
+                auth_config_ids=auth_config_ids if auth_config_ids is not None else omit,
+                name=name if name is not None else omit,
+                order_by=order_by if order_by is not None else omit,
+                order_direction=order_direction if order_direction is not None else omit,
             )
 
             items = (
@@ -285,7 +291,7 @@ class MCP(Resource):
         self,
         server_id: str,
         name: t.Optional[str] = None,
-        toolkits: t.Optional[t.List[t.Union[MCPToolkitConfig, str]]] = None,
+        toolkits: t.Optional[t.List[t.Union[ConfigToolkit, str]]] = None,
         manually_manage_connections: t.Optional[bool] = None,
         allowed_tools: t.Optional[t.List[str]] = None,
     ):
@@ -317,28 +323,28 @@ class MCP(Resource):
             >>> server_with_auth = composio.experimental.mcp.update(
             ...     'mcp_12345',
             ...     toolkits=[
-            ...         {'toolkit': 'github', 'auth_config_id': 'auth_abc123'},
-            ...         {'toolkit': 'slack', 'auth_config_id': 'auth_def456'}
+            ...         {'toolkit': 'github', 'auth_config': 'auth_abc123'},
+            ...         {'toolkit': 'slack', 'auth_config': 'auth_def456'}
             ...     ],
             ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
             ...     manually_manage_connections=False
             ... )
         """
         try:
-            update_params = {}
+            update_params: t.Dict[str, t.Any] = {}
 
             if name is not None:
                 update_params["name"] = name
 
             if toolkits is not None:
-                # Normalize toolkits to MCPToolkitConfig format (same as create method)
-                normalized_toolkit_configs = []
+                # Normalize toolkits to ConfigToolkit format (same as create method)
+                normalized_toolkit_configs: t.List[ConfigToolkit] = []
                 for toolkit in toolkits:
                     if isinstance(toolkit, str):
-                        # Convert string to MCPToolkitConfig
-                        normalized_toolkit_configs.append({"toolkit": toolkit})
+                        # Convert string to ConfigToolkit
+                        normalized_toolkit_configs.append(ConfigToolkit(toolkit=toolkit))
                     else:
-                        # Already MCPToolkitConfig, use as-is
+                        # Already ConfigToolkit, use as-is
                         normalized_toolkit_configs.append(toolkit)
 
                 # Extract toolkits and prepare for API call
@@ -353,10 +359,10 @@ class MCP(Resource):
                         toolkit_names.append(toolkit_config["toolkit"])
 
                     if (
-                        "auth_config_id" in toolkit_config
-                        and toolkit_config["auth_config_id"] not in auth_config_ids
+                        "auth_config" in toolkit_config
+                        and toolkit_config["auth_config"] not in auth_config_ids
                     ):
-                        auth_config_ids.append(toolkit_config["auth_config_id"])
+                        auth_config_ids.append(toolkit_config["auth_config"])
 
                 update_params["toolkits"] = toolkit_names
                 update_params["auth_config_ids"] = auth_config_ids
