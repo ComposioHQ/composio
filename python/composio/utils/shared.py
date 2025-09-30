@@ -4,6 +4,7 @@ Shared utils.
 
 import typing as t
 import uuid
+from functools import reduce
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
@@ -59,10 +60,10 @@ def json_schema_to_pydantic_type(
         if len(pydantic_types) == 1:
             return pydantic_types[0]
         # Create Union with any number of types
-        # Cast all types and create tuple
-        cast_types = tuple(t.cast(t.Type, ptype) for ptype in pydantic_types)
-        # typing.Union[tuple] works in Python 3.8+ and maintains __origin__ attribute
-        return t.Union[cast_types]
+        # Cast all types and use functools.reduce to create proper Union
+        cast_types = [t.cast(t.Type, ptype) for ptype in pydantic_types]
+        # Use reduce to create Union[Type1, Type2, ...] properly
+        return reduce(lambda a, b: t.Union[a, b], cast_types)
 
     # Add fallback type - string
     if "type" not in json_schema:
