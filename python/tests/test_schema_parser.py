@@ -5,6 +5,8 @@ This module tests the core schema parsing functionality in composio.utils.shared
 particularly focusing on the required field propagation bug that was fixed.
 """
 
+import typing as t
+
 import pytest
 from pydantic import BaseModel
 from pydantic.fields import PydanticUndefined
@@ -419,6 +421,125 @@ class TestJsonSchemaToPydanticType:
         result = json_schema_to_pydantic_type(json_schema)
         # Should create a Union type
         assert hasattr(result, "__origin__")
+
+    def test_oneof_unlimited_types(self):
+        """Test oneOf schemas with unlimited number of types (fixes the 3-type limit bug)."""
+        # Test 4 types (previously would fail)
+        json_schema_4 = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "integer"},
+                {"type": "boolean"},
+                {"type": "number"},
+            ]
+        }
+        result_4 = json_schema_to_pydantic_type(json_schema_4)
+        assert hasattr(result_4, "__origin__")
+        assert result_4.__origin__ is t.Union
+        assert len(result_4.__args__) == 4
+        assert str in result_4.__args__
+        assert int in result_4.__args__
+        assert bool in result_4.__args__
+        assert float in result_4.__args__
+
+        # Test 5 types
+        json_schema_5 = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "integer"},
+                {"type": "boolean"},
+                {"type": "number"},
+                {"type": "array"},
+            ]
+        }
+        result_5 = json_schema_to_pydantic_type(json_schema_5)
+        assert hasattr(result_5, "__origin__")
+        assert result_5.__origin__ is t.Union
+        assert len(result_5.__args__) == 5
+
+        # Test 6 types (stress test, avoiding null which expands to Optional[Any])
+        json_schema_6 = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "integer"},
+                {"type": "boolean"},
+                {"type": "number"},
+                {"type": "array"},
+                {"type": "object"},
+            ]
+        }
+        result_6 = json_schema_to_pydantic_type(json_schema_6)
+        assert hasattr(result_6, "__origin__")
+        assert result_6.__origin__ is t.Union
+        assert len(result_6.__args__) == 6
+
+    def test_oneof_single_type(self):
+        """Test oneOf with single type returns the type directly."""
+        json_schema = {"oneOf": [{"type": "string"}]}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result is str
+        # Single type should not create a Union
+        assert not hasattr(result, "__origin__")
+
+    def test_oneof_with_complex_types(self):
+        """Test oneOf with complex types like objects and arrays."""
+        json_schema = {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "array", "items": {"type": "integer"}},
+                {
+                    "type": "object",
+                    "title": "ComplexObject",
+                    "properties": {"field": {"type": "string"}},
+                },
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+        assert len(result.__args__) == 3
+        # Check that we have string, List[int], and a BaseModel subclass
+        args = result.__args__
+        assert str in args
+        # One should be a List type
+        list_types = [arg for arg in args if hasattr(arg, "__origin__") and arg.__origin__ is list]
+        assert len(list_types) == 1
+        # One should be a BaseModel subclass
+        model_types = [arg for arg in args if isinstance(arg, type) and issubclass(arg, BaseModel)]
+        assert len(model_types) >= 1
+
+    def test_oneof_nested_in_object(self):
+        """Test oneOf field within an object schema."""
+        json_schema = {
+            "type": "object",
+            "title": "ObjectWithOneOf",
+            "properties": {
+                "flexible_field": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "integer"},
+                        {"type": "boolean"},
+                        {"type": "number"},
+                    ]
+                },
+                "normal_field": {"type": "string"},
+            },
+            "required": ["flexible_field"],
+        }
+        
+        # Test that the model can be created
+        model_class = json_schema_to_model(json_schema)
+        
+        # Test with different oneOf values
+        instance1 = model_class(flexible_field="hello", normal_field="world")
+        instance2 = model_class(flexible_field=42, normal_field="world")
+        instance3 = model_class(flexible_field=True, normal_field="world")
+        instance4 = model_class(flexible_field=3.14, normal_field="world")
+        
+        assert instance1.flexible_field == "hello"
+        assert instance2.flexible_field == 42
+        assert instance3.flexible_field is True
+        assert instance4.flexible_field == 3.14
 
     def test_fallback_to_string(self):
         """Test that missing type defaults to string."""

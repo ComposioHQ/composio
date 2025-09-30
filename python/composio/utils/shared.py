@@ -59,7 +59,10 @@ def json_schema_to_pydantic_type(
         if len(pydantic_types) == 1:
             return pydantic_types[0]
         # Create Union with any number of types
-        return t.Union[tuple(t.cast(t.Type, ptype) for ptype in pydantic_types)]
+        # Cast all types and create tuple
+        cast_types = tuple(t.cast(t.Type, ptype) for ptype in pydantic_types)
+        # typing.Union[tuple] works in Python 3.8+ and maintains __origin__ attribute
+        return t.Union[cast_types]
 
     # Add fallback type - string
     if "type" not in json_schema:
