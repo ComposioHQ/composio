@@ -54,16 +54,20 @@ def json_schema_to_pydantic_type(
     # Handle oneOf schemas first
     if "oneOf" in json_schema:
         one_of_options = json_schema["oneOf"]
-        pydantic_types: t.List[t.Type] = [  # type: ignore
+        pydantic_types = [
             json_schema_to_pydantic_type(option) for option in one_of_options
         ]
-        if len(pydantic_types) == 1:
-            return pydantic_types[0]
+        # Filter out None values and ensure we have valid types
+        valid_types = [ptype for ptype in pydantic_types if ptype is not None]
+        if len(valid_types) == 1:
+            return valid_types[0]
+        if len(valid_types) == 0:
+            return str  # fallback to string type
         # Create Union with any number of types
         # Cast all types and use functools.reduce to create proper Union
-        cast_types = [t.cast(t.Type, ptype) for ptype in pydantic_types]
+        cast_types = [t.cast(t.Type, ptype) for ptype in valid_types]
         # Use reduce to create Union[Type1, Type2, ...] properly
-        return reduce(lambda a, b: t.Union[a, b], cast_types)
+        return reduce(lambda a, b: t.Union[a, b], cast_types)  # type: ignore
 
     # Add fallback type - string
     if "type" not in json_schema:

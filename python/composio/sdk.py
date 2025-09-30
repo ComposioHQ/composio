@@ -55,7 +55,7 @@ class Composio(t.Generic[TProvider], WithLogger):
     """
 
     tools: Tools[TProvider]
-    experimental: ExperimentalNamespace[TProvider]
+    experimental: ExperimentalNamespace
 
     def __init__(
         self,
