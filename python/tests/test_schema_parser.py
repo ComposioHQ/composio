@@ -502,10 +502,14 @@ class TestJsonSchemaToPydanticType:
         args = result.__args__
         assert str in args
         # One should be a List type
-        list_types = [arg for arg in args if hasattr(arg, "__origin__") and arg.__origin__ is list]
+        list_types = [
+            arg for arg in args if hasattr(arg, "__origin__") and arg.__origin__ is list
+        ]
         assert len(list_types) == 1
         # One should be a BaseModel subclass
-        model_types = [arg for arg in args if isinstance(arg, type) and issubclass(arg, BaseModel)]
+        model_types = [
+            arg for arg in args if isinstance(arg, type) and issubclass(arg, BaseModel)
+        ]
         assert len(model_types) >= 1
 
     def test_oneof_nested_in_object(self):
@@ -526,16 +530,16 @@ class TestJsonSchemaToPydanticType:
             },
             "required": ["flexible_field"],
         }
-        
+
         # Test that the model can be created
         model_class = json_schema_to_model(json_schema)
-        
+
         # Test with different oneOf values
         instance1 = model_class(flexible_field="hello", normal_field="world")
         instance2 = model_class(flexible_field=42, normal_field="world")
         instance3 = model_class(flexible_field=True, normal_field="world")
         instance4 = model_class(flexible_field=3.14, normal_field="world")
-        
+
         assert instance1.flexible_field == "hello"
         assert instance2.flexible_field == 42
         assert instance3.flexible_field is True
