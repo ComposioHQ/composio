@@ -21,13 +21,17 @@ This repository contains the official Software Development Kits (SDKs) for Compo
 <h3 align="center">Python</h3>
 
 <div align="center">
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wkqlR8322F4?si=1NXQv1ShTj7hqDuQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<a href="https://youtu.be/wkqlR8322F4">
+  <img src="https://img.youtube.com/vi/wkqlR8322F4/hqdefault.jpg" alt="Watch the Python demo video" width="560" />
+  </a>
 </div>
 
 <h3 align="center">TypeScript</h3>
 
 <div align="center">
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZRGb4xGl-kc?si=s6XBDO4nrmj7Dt5G" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<a href="https://youtu.be/ZRGb4xGl-kc">
+  <img src="https://img.youtube.com/vi/ZRGb4xGl-kc/hqdefault.jpg" alt="Watch the TypeScript demo video" width="560" />
+  </a>
 </div>
 
 ## Repository Structure
