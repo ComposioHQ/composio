@@ -160,6 +160,16 @@ navigation:
     - page: Using Triggers
       path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
+  - section: Tool Router (Experimental)
+    icon: route
+    skip-slug: true
+    contents:
+    - page: Overview
+      path: pages/dist/tool-router/overview.mdx
+      slug: tool-router-overview
+    - page: Getting started
+      path: pages/dist/tool-router/getting-started.mdx
+      slug: tool-router-getting-started
   - section: MCP
     icon: server
     skip-slug: true

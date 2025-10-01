@@ -1,0 +1,109 @@
+---
+title: Getting started with Tool Router
+subtitle: Create your first isolated tool routing session
+image: "https://og.composio.dev/api/og?title=Getting%20Started%20with%20Tool%20Router"
+keywords: "tool router, getting started, session creation, toolkit configuration"
+hide-nav-links: true
+---
+
+This guide walks you through creating and using Tool Router sessions for isolated tool execution.
+
+<Note>
+Tool Router is currently in experimental phase and only available in typescript. APIs and functionality may change as we continue to improve the feature based on user feedback.
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have:
+- Composio API key 
+- Latest Composio typescript SDK installed
+- Basic understanding of [tool authentication](/docs/authenticating-tools)
+
+
+## Session creation with toolkits from muliple services
+
+The simplest way to create a Tool Router session for muliple toolkits:
+
+<CodeGroup>
+```typescript TypeScript
+const session = await composio.experimental.toolRouter.createSession('your-user-id', {
+  toolkits: [
+    { toolkit: 'gmail', authConfigId: 'your-gmail-auth-config-id' },
+    { toolkit: 'slack', authConfigId: 'your-slack-auth-config-id' },
+    { toolkit: 'outloook', authConfigId: 'your-outlook-auth-config-id' }
+  ],
+});
+```
+</CodeGroup>
+
+## Session creation for experimental and testing purposes
+
+For development and testing you can use toolkits which require no auth configuration
+
+<CodeGroup>
+```typescript TypeScript
+const testSession = await composio.experimental.toolRouter.createSession('test_user', {
+  toolkits: [
+    { toolkit: 'hackernews' }, // Public API for testing
+    { toolkit: 'weatherapi' }, // Weather data
+    { toolkit: 'calculator' }, // Built-in tools
+  ],
+});
+```
+</CodeGroup>
+
+## Session creation for user-specific auth configuration
+
+You can also create personalised sessions with user-specific auth configurations. For this you will need to create an auth configuration for each user. 
+
+<CodeGroup>
+```typescript TypeScript
+const userId = 'your_user_id';
+const session = composio.experimental.toolRouter.createSession(userId, {
+  toolkits: [
+    {toolkit: 'gmail', authConfigId: `gmail_${userId}`}, 
+    {toolkit: 'slack', authConfigId: `slack_${userId}`}],
+});
+```
+
+
+## Connection management
+
+Tool Router supports two connection management modes:
+
+### Automatic connections (default)
+
+Composio automatically manages user connections:
+
+<CodeGroup>
+```typescript TypeScript
+const session = await composio.experimental.toolRouter.createSession('your_user_id', {
+  toolkits: ['github', 'gmail'],
+  manuallyManageConnections: false // Default
+});
+
+// Composio handles connection creation and management
+```
+</CodeGroup>
+
+### Manual connections
+
+You manage connections explicitly:
+
+<CodeGroup>
+```typescript TypeScript
+const session = await composio.experimental.toolRouter.createSession('user_123', {
+  toolkits: ['github', 'gmail'],
+  manuallyManageConnections: true
+});
+
+// You must create connections before using tools
+const connection = await composio.connections.create({
+  toolkit: 'github',
+  authConfigId: 'ac_github_123',
+  userId: 'user_123'
+});
+```
+</CodeGroup>
+
+

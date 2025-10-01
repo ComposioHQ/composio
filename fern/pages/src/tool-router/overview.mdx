@@ -1,0 +1,69 @@
+---
+title: Tool router overview
+subtitle: Tool routing
+image: ""
+keywords: "tool router, session management, MCP, isolated environments, multi-service workflows"
+hide-nav-links: true
+---
+
+Tool Router provides session-based tool routing for executing tools across different toolkits. 
+
+<Note>
+Tool Router is currently in experimental phase and only available in typescript. APIs and functionality may change as we continue to improve the feature based on user feedback.
+</Note>
+
+## What is Tool Router?
+
+Tool Router creates isolated, scoped sessions for executing tools across different services. Each session:
+- Has its own unique MCP server endpoint 
+- Has isolated Auth configurations that is scoped to a session
+- Controls which tools are accessible
+- Routes tool calls across services
+
+
+## When to use Tool Router
+
+Tool Router is ideal for orchestrating tools across multiple services (GitHub, Gmail, Slack, etc.) within a single scoped session.
+
+## Core concepts
+
+### Sessions
+A session has:
+- Unique session ID
+- MCP-compatible server URL
+- Specific toolkit configurations
+- User authentication 
+
+### Toolkit configuration
+Each session can configure multiple toolkits with:
+- Simple toolkit names (using default auth)
+- Custom auth config IDs per toolkit
+- Manual or automatic connection management
+
+### MCP compatibility
+Every Tool Router session provides:
+- Standard MCP server endpoint
+- Compatible with all MCP clients
+- SSE transport support
+- Tool discovery and execution
+
+## Quick example
+
+<CodeGroup>
+  <SnippetCode
+    src="fern/snippets/tool-router/quickstart.ts"
+    title="Typescript"
+  />
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Getting started"
+    icon="rocket"
+    href="/docs/tool-router/getting-started"
+  >
+    Learn how to create your first Tool Router session
+  </Card>
+</CardGroup>
