@@ -59,7 +59,7 @@ You can also create personalised sessions with user-specific auth configurations
 <CodeGroup>
 ```typescript TypeScript
 const userId = 'your_user_id';
-const session = composio.experimental.toolRouter.createSession(userId, {
+const session = await composio.experimental.toolRouter.createSession(userId, {
   toolkits: [
     {toolkit: 'gmail', authConfigId: `gmail_${userId}`}, 
     {toolkit: 'slack', authConfigId: `slack_${userId}`}],
