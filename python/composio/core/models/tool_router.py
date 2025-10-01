@@ -8,6 +8,7 @@ following Python conventions and avoiding unnecessary data transformations.
 from __future__ import annotations
 
 import typing as t
+from types import SimpleNamespace
 
 import typing_extensions as te
 from composio_client.types.tool_router_create_session_params import ConfigToolkit
@@ -19,11 +20,19 @@ from composio.exceptions import ValidationError
 # Data Types
 
 
-class ToolRouterSession(te.TypedDict):
-    """Tool router session response."""
+class ToolRouterSession(SimpleNamespace):
+    """Tool router session response with both dot notation and dict-style access."""
 
-    session_id: str  # Unique session identifier
-    url: str  # Chat session MCP URL
+    def __init__(self, session_id: str, url: str):
+        super().__init__(session_id=session_id, url=url)
+
+    def __getitem__(self, key: str) -> str:
+        """Support dict-style access like session['url']"""
+        return getattr(self, key)
+
+    def __setitem__(self, key: str, value: str) -> None:
+        """Support dict-style assignment like session['url'] = 'new_url'"""
+        setattr(self, key, value)
 
 
 class ToolRouter(Resource):
@@ -73,9 +82,11 @@ class ToolRouter(Resource):
             ...     manually_manage_connections=False
             ... )
             >>>
-            >>> # Access session details
-            >>> print(session['session_id'])
-            >>> print(session['url'])
+            >>> # Access session details (both ways work!)
+            >>> print(session.session_id)      # Dot notation (preferred)
+            >>> print(session['session_id'])   # Dict-style access
+            >>> print(session.url)             # Dot notation (preferred)
+            >>> print(session['url'])          # Dict-style access
         """
         try:
             # Normalize toolkits to the format expected by the API
