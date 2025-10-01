@@ -9,13 +9,13 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
-from composio_client import omit
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 from composio_client.types.tool_router_create_session_params import ConfigToolkit
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.exceptions import ValidationError
+from composio.utils.pydantic import none_to_omit
 
 # Data Types (matching TypeScript specification)
 
@@ -189,7 +189,7 @@ class MCP(Resource):
                     auth_config_ids.append(toolkit_config["auth_config"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
-            custom_tools = allowed_tools if allowed_tools is not None else omit
+            custom_tools = none_to_omit(allowed_tools)
 
             # Use the custom MCP create endpoint
             response = self._client.mcp.custom.create(
@@ -244,15 +244,11 @@ class MCP(Resource):
             response = self._client.mcp.list(
                 page_no=page_no,
                 limit=limit,
-                toolkits=toolkits if toolkits is not None else omit,
-                auth_config_ids=auth_config_ids
-                if auth_config_ids is not None
-                else omit,
-                name=name if name is not None else omit,
-                order_by=order_by if order_by is not None else omit,
-                order_direction=order_direction
-                if order_direction is not None
-                else omit,
+                toolkits=none_to_omit(toolkits),
+                auth_config_ids=none_to_omit(auth_config_ids),
+                name=none_to_omit(name),
+                order_by=none_to_omit(order_by),
+                order_direction=none_to_omit(order_direction),
             )
 
             items = (
