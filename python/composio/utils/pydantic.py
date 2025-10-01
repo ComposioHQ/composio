@@ -4,7 +4,7 @@ import pydantic
 from composio_client import omit
 
 
-def none_to_omit(value: t.Optional[t.Any]) -> t.Union[t.Any, type(omit)]:
+def none_to_omit(value: t.Optional[t.Any]) -> t.Any:
     """Convert None to omit for composio_client API calls.
     
     This utility function helps convert Python's None values to composio_client's
