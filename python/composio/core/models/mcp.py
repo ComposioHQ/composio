@@ -22,7 +22,7 @@ from composio.exceptions import ValidationError
 
 class MCPCreateResponse(CustomCreateResponse):
     """MCP Create Response with generate method (extends CustomCreateResponse)."""
-    
+
     generate: t.Callable[[str, t.Optional[bool]], "MCPServerInstance"]
 
 
@@ -245,10 +245,14 @@ class MCP(Resource):
                 page_no=page_no,
                 limit=limit,
                 toolkits=toolkits if toolkits is not None else omit,
-                auth_config_ids=auth_config_ids if auth_config_ids is not None else omit,
+                auth_config_ids=auth_config_ids
+                if auth_config_ids is not None
+                else omit,
                 name=name if name is not None else omit,
                 order_by=order_by if order_by is not None else omit,
-                order_direction=order_direction if order_direction is not None else omit,
+                order_direction=order_direction
+                if order_direction is not None
+                else omit,
             )
 
             items = (
@@ -342,7 +346,9 @@ class MCP(Resource):
                 for toolkit in toolkits:
                     if isinstance(toolkit, str):
                         # Convert string to ConfigToolkit
-                        normalized_toolkit_configs.append(ConfigToolkit(toolkit=toolkit))
+                        normalized_toolkit_configs.append(
+                            ConfigToolkit(toolkit=toolkit)
+                        )
                     else:
                         # Already ConfigToolkit, use as-is
                         normalized_toolkit_configs.append(toolkit)

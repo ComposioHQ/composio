@@ -10,7 +10,6 @@ from __future__ import annotations
 import typing as t
 
 import typing_extensions as te
-
 from composio_client.types.tool_router_create_session_params import ConfigToolkit
 
 from composio.client import HttpClient

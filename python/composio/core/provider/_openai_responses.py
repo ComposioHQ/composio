@@ -7,11 +7,11 @@ from __future__ import annotations
 import json
 import typing as t
 
-from openai.types.responses.response import Response
-from openai.types.responses.response_output_item import ResponseFunctionToolCall
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
+from openai.types.responses.response import Response
+from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
