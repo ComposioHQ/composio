@@ -102,7 +102,8 @@ class Tools(Resource, t.Generic[TProvider]):
             return t.cast(
                 Tool,
                 self._client.tools.retrieve(
-                    tool_slug=slug, toolkit_versions=none_to_omit(self._toolkit_versions)
+                    tool_slug=slug,
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
 
@@ -414,7 +415,8 @@ class Tools(Resource, t.Generic[TProvider]):
             tool = t.cast(
                 Tool,
                 self._client.tools.retrieve(
-                    tool_slug=slug, toolkit_versions=none_to_omit(effective_toolkit_versions)
+                    tool_slug=slug,
+                    toolkit_versions=none_to_omit(effective_toolkit_versions),
                 ),
             )
             self._tool_schemas[slug] = tool
@@ -488,13 +490,9 @@ class Tools(Resource, t.Generic[TProvider]):
             endpoint=options["endpoint"],
             method=options["method"],
             body=options.get("body", omit),
-            connected_account_id=options.get(
-                "connected_account_id", omit
-            ),
+            connected_account_id=options.get("connected_account_id", omit),
             parameters=options.get("parameters", omit),
-            custom_connection_data=options.get(
-                "custom_connection_data", omit
-            ),
+            custom_connection_data=options.get("custom_connection_data", omit),
         )
 
 
