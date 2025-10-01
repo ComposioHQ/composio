@@ -137,6 +137,16 @@ navigation:
     - page: Custom tools
       path: pages/dist/tool-calling/custom-tools.mdx
       slug: custom-tools
+  - section: Tool Router
+    icon: route
+    skip-slug: true
+    contents:
+    - page: Overview
+      path: pages/dist/tool-router/overview.mdx
+      slug: tool-router-overview
+    - page: Getting started
+      path: pages/dist/tool-router/using-tool-router.mdx
+      slug: tool-router-using-tool-router
   - section: Authentication
     icon: lock
     skip-slug: true
@@ -160,16 +170,7 @@ navigation:
     - page: Using Triggers
       path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
-  - section: Tool Router (Experimental)
-    icon: route
-    skip-slug: true
-    contents:
-    - page: Overview
-      path: pages/dist/tool-router/overview.mdx
-      slug: tool-router-overview
-    - page: Getting started
-      path: pages/dist/tool-router/getting-started.mdx
-      slug: tool-router-getting-started
+
   - section: MCP
     icon: server
     skip-slug: true
