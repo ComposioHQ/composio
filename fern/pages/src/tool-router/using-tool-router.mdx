@@ -20,9 +20,9 @@ Before you begin, ensure you have:
 - Basic understanding of [tool authentication](/docs/authenticating-tools)
 
 
-## Session creation with toolkits from muliple services
+## Session creation with toolkits from multiple services
 
-The simplest way to create a Tool Router session for muliple toolkits:
+The simplest way to create a Tool Router session for multiple toolkits:
 
 <CodeGroup>
 ```typescript TypeScript
@@ -30,7 +30,7 @@ const session = await composio.experimental.toolRouter.createSession('your-user-
   toolkits: [
     { toolkit: 'gmail', authConfigId: 'your-gmail-auth-config-id' },
     { toolkit: 'slack', authConfigId: 'your-slack-auth-config-id' },
-    { toolkit: 'outloook', authConfigId: 'your-outlook-auth-config-id' }
+    { toolkit: 'outlook', authConfigId: 'your-outlook-auth-config-id' }
   ],
 });
 ```
