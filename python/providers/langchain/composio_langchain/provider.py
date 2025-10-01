@@ -65,7 +65,7 @@ def _reinstate_reserved_python_keywords(request: dict, keywords: dict) -> dict:
     return request
 
 
-class StructuredTool(BaseStructuredTool):
+class StructuredTool(BaseStructuredTool):  # type: ignore[misc]
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
