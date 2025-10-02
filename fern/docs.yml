@@ -199,7 +199,7 @@ navigation:
       - page: API
         path: pages/dist/troubleshooting/api.mdx
         slug: api
-      - page: Connections & Authentication
+      - page: Authentication
         path: pages/dist/troubleshooting/authentication.mdx
         slug: authentication
       - page: Dashboard
@@ -208,18 +208,15 @@ navigation:
       - page: MCP
         path: pages/dist/troubleshooting/mcp.mdx
         slug: mcp
-      - page: Python SDK
-        path: pages/dist/troubleshooting/python-sdk.mdx
-        slug: python-sdk
+      - page: SDKs
+        path: pages/dist/troubleshooting/sdks.mdx
+        slug: sdks
       - page: Tools & Toolkits
         path: pages/dist/troubleshooting/tools.mdx
         slug: tools
       - page: Triggers
         path: pages/dist/troubleshooting/triggers.mdx
         slug: triggers
-      - page: TypeScript SDK
-        path: pages/dist/troubleshooting/typescript-sdk.mdx
-        slug: typescript-sdk
 - tab: examples
   layout:
   - section: Getting Started
