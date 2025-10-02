@@ -1,0 +1,28 @@
+---
+title: TypeScript SDK
+subtitle: Debugging and troubleshooting TypeScript SDK issues
+image: "https://og.composio.dev/api/og?title=TypeScript%20SDK%20Troubleshooting"
+keywords: 'typescript, javascript, sdk, troubleshooting, npm, node'
+hide-nav-links: true
+---
+
+## Debug network issues
+
+Set `COMPOSIO_LOG_LEVEL=debug` to see API calls and identify if issues are SDK or API related. Look for the `requestId` in logs to share with support.
+
+## Check SDK version
+
+Ensure you're using the latest version:
+
+```bash
+npm install @composio/core@latest
+```
+
+Check current version on [npm](https://www.npmjs.com/package/@composio/core)
+
+## Common issues
+
+- **Type errors or parameter confusion**: Search [DeepWiki](https://deepwiki.com/ComposioHQ/composio) or use the Ask AI assistant
+- **Tool-specific issues**: Check the specific tool's documentation  
+- **Bug reporting**: Create a [GitHub issue](https://github.com/ComposioHQ/composio/issues/new?labels=bug) with debug logs and reproduction steps
+- **Need help?**: Post in our [Discord #support-form](https://discord.com/channels/1170785031560646836/1268871288156323901) channel or email support@composio.dev

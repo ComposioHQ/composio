@@ -190,9 +190,18 @@ navigation:
     - page: Migration Guide
       path: pages/dist/migration-guide.mdx
       slug: migration
-    - page: Troubleshooting
-      path: pages/dist/troubleshooting.mdx
+    - section: Troubleshooting
       slug: troubleshooting
+      contents:
+      - page: Overview
+        path: pages/dist/troubleshooting/overview.mdx
+        slug: overview
+      - page: Python SDK
+        path: pages/dist/troubleshooting/python-sdk.mdx
+        slug: python-sdk
+      - page: TypeScript SDK
+        path: pages/dist/troubleshooting/typescript-sdk.mdx
+        slug: typescript-sdk
 - tab: examples
   layout:
   - section: Getting Started
