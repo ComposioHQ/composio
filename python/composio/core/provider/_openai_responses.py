@@ -7,11 +7,11 @@ from __future__ import annotations
 import json
 import typing as t
 
-from openai.types.responses.response import Response
-from openai.types.responses.response_output_item import ResponseFunctionToolCall
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
+from openai.types.responses.response import Response
+from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
@@ -52,8 +52,12 @@ class OpenAIResponsesProvider(
         :param modifiers: Optional modifiers for tool execution.
         :return: Object containing output data from the tool call.
         """
-        slug = tool_call.name
-        arguments = json.loads(tool_call.arguments)
+        if isinstance(tool_call, ChatCompletionMessageToolCall):
+            slug = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
+        else:  # ResponseFunctionToolCall
+            slug = tool_call.name
+            arguments = json.loads(tool_call.arguments)
 
         return self.execute_tool(
             slug=slug,

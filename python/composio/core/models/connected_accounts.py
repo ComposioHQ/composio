@@ -128,16 +128,19 @@ class AuthScheme:
         """
         Create a new connected account using Composio Link.
         """
-        return {
-            "auth_scheme": "COMPOSIO_LINK",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember2Val,
-                {
-                    **options,
-                    "status": "INITIALIZING",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "COMPOSIO_LINK",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember2Val,
+                    {
+                        **options,
+                        "status": "INITIALIZING",
+                    },
+                ),
+            },
+        )
 
     def api_key(
         self, options: connected_account_create_params.ConnectionStateUnionMember3Val
@@ -145,16 +148,19 @@ class AuthScheme:
         """
         Create a new connected account using an API key.
         """
-        return {
-            "auth_scheme": "API_KEY",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember3Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "API_KEY",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember3Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def basic(
         self, options: connected_account_create_params.ConnectionStateUnionMember4Val
@@ -162,16 +168,19 @@ class AuthScheme:
         """
         Create a new connected account using basic auth.
         """
-        return {
-            "auth_scheme": "BASIC",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember4Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BASIC",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember4Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def bearer_token(
         self, options: connected_account_create_params.ConnectionStateUnionMember5Val
@@ -179,16 +188,19 @@ class AuthScheme:
         """
         Create a new connected account using a bearer token.
         """
-        return {
-            "auth_scheme": "BEARER_TOKEN",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember5Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BEARER_TOKEN",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember5Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def google_service_account(
         self, options: connected_account_create_params.ConnectionStateUnionMember6Val
@@ -196,16 +208,19 @@ class AuthScheme:
         """
         Create a new connected account using a Google service account.
         """
-        return {
-            "auth_scheme": "GOOGLE_SERVICE_ACCOUNT",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember6Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "GOOGLE_SERVICE_ACCOUNT",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember6Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def no_auth(
         self, options: connected_account_create_params.ConnectionStateUnionMember7Val
@@ -247,16 +262,19 @@ class AuthScheme:
         """
         Create a new connected account using Bill.com auth.
         """
-        return {
-            "auth_scheme": "BILLCOM_AUTH",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember9Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BILLCOM_AUTH",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember9Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def basic_with_jwt(
         self, options: connected_account_create_params.ConnectionStateUnionMember10Val
@@ -264,16 +282,19 @@ class AuthScheme:
         """
         Create a new connected account using basic auth with JWT.
         """
-        return {
-            "auth_scheme": "BASIC_WITH_JWT",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember10Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BASIC_WITH_JWT",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember10Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
 
 class ConnectedAccounts:

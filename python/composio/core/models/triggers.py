@@ -8,6 +8,7 @@ import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
+from composio_client import omit
 
 import typing_extensions as te
 from pysher import Pusher
@@ -676,8 +677,8 @@ class Triggers(Resource):
             query_auth_config_ids_1=auth_config_ids,
             query_connected_account_ids_1=connected_account_ids,
             query_show_disabled_1=show_disabled,
-            limit=limit if limit is not None else self._client.not_given,
-            page=page if page is not None else self._client.not_given,
+            limit=limit if limit is not None else omit,
+            page=page if page is not None else omit,
         )
 
     @t.overload
@@ -729,7 +730,7 @@ class Triggers(Resource):
             slug=slug,
             connected_account_id=connected_account_id,
             body_trigger_config_1=(
-                trigger_config if trigger_config is not None else self._client.not_given
+                trigger_config if trigger_config is not None else omit
             ),
         )
 
