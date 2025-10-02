@@ -190,6 +190,9 @@ navigation:
     - page: Migration Guide
       path: pages/dist/migration-guide.mdx
       slug: migration
+    - page: Troubleshooting
+      path: pages/dist/troubleshooting.mdx
+      slug: troubleshooting
 - tab: examples
   layout:
   - section: Getting Started
