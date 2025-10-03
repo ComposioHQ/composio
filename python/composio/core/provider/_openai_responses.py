@@ -7,9 +7,6 @@ from __future__ import annotations
 import json
 import typing as t
 
-from openai.types.chat.chat_completion_message_tool_call import (
-    ChatCompletionMessageToolCall,
-)
 from openai.types.responses.response import Response
 from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
@@ -42,7 +39,7 @@ class OpenAIResponsesProvider(
     def execute_tool_call(
         self,
         user_id: str,
-        tool_call: t.Union[ChatCompletionMessageToolCall, ResponseFunctionToolCall],
+        tool_call: t.Union[ResponseFunctionToolCall],
         modifiers: t.Optional[Modifiers] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool call from the Responses API.
@@ -52,12 +49,8 @@ class OpenAIResponsesProvider(
         :param modifiers: Optional modifiers for tool execution.
         :return: Object containing output data from the tool call.
         """
-        if isinstance(tool_call, ChatCompletionMessageToolCall):
-            slug = tool_call.function.name
-            arguments = json.loads(tool_call.function.arguments)
-        else:  # ResponseFunctionToolCall
-            slug = tool_call.name
-            arguments = json.loads(tool_call.arguments)
+        slug = tool_call.name
+        arguments = json.loads(tool_call.arguments)
 
         return self.execute_tool(
             slug=slug,
