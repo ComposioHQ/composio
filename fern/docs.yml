@@ -1,11 +1,6 @@
 instances:
 - url: v3composio.docs.buildwithfern.com
   custom-domain: docs.composio.dev
-  edit-this-page:
-    github:
-      owner: ComposioHQ
-      repo: composio
-      branch: next
 title: Composio Docs
 default-language: python
 logo:
@@ -16,8 +11,6 @@ logo:
 favicon: assets/favicon.png
 js:
 - path: js/search.js
-  strategy: afterInteractive
-- path: js/edit-page-fix.js
   strategy: afterInteractive
 typography:
   bodyFont:
