@@ -1,11 +1,6 @@
 instances:
 - url: v3composio.docs.buildwithfern.com
   custom-domain: docs.composio.dev
-  edit-this-page:
-    github:
-      owner: ComposioHQ
-      repo: composio
-      branch: next
 title: Composio Docs
 default-language: python
 logo:

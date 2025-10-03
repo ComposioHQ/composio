@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_openai",
-    version="0.8.19",
+    version="0.8.20",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your OpenAI Function Call.",
