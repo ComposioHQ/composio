@@ -4,6 +4,7 @@ Shared utils.
 
 import typing as t
 import uuid
+from functools import reduce
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
@@ -50,6 +51,24 @@ def json_schema_to_pydantic_type(
     :param json_schema: The JSON schema to convert.
     :return: A Pydantic type.
     """
+    # Handle oneOf schemas first
+    if "oneOf" in json_schema:
+        one_of_options = json_schema["oneOf"]
+        pydantic_types = [
+            json_schema_to_pydantic_type(option) for option in one_of_options
+        ]
+        # Filter out None values and ensure we have valid types
+        valid_types = [ptype for ptype in pydantic_types if ptype is not None]
+        if len(valid_types) == 1:
+            return valid_types[0]
+        if len(valid_types) == 0:
+            return str  # fallback to string type
+        # Create Union with any number of types
+        # Cast all types and use functools.reduce to create proper Union
+        cast_types = [t.cast(t.Type, ptype) for ptype in valid_types]
+        # Use reduce to create Union[Type1, Type2, ...] properly
+        return reduce(lambda a, b: t.Union[a, b], cast_types)  # type: ignore
+
     # Add fallback type - string
     if "type" not in json_schema:
         json_schema["type"] = "string"
@@ -67,25 +86,6 @@ def json_schema_to_pydantic_type(
             nested_model = json_schema_to_model(json_schema)
             return nested_model
         return t.Dict
-
-    if type_ is None and "oneOf" in json_schema:
-        one_of_options = json_schema["oneOf"]
-        pydantic_types: t.List[t.Type] = [  # type: ignore
-            json_schema_to_pydantic_type(option) for option in one_of_options
-        ]
-        if len(pydantic_types) == 1:
-            return pydantic_types[0]
-        if len(pydantic_types) == 2:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])
-            ]
-        if len(pydantic_types) == 3:
-            return t.Union[
-                t.cast(t.Type, pydantic_types[0]),
-                t.cast(t.Type, pydantic_types[1]),
-                t.cast(t.Type, pydantic_types[2]),
-            ]
-        raise ValueError("Invalid 'oneOf' schema")
 
     pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
     if pytype is not None:
@@ -131,17 +131,7 @@ def json_schema_to_pydantic_field(
         "alias": alias,
     }
     if not skip_default:
-        field["default"] = (
-            ...
-            if (
-                name in required
-                or json_schema.get(
-                    "required",
-                    False,
-                )
-            )
-            else default
-        )
+        field["default"] = ... if name in required else default
 
     return (
         name,
@@ -263,7 +253,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         else:
             field_kwargs["title"] = prop_title
 
-        if prop_name in required_props or prop_info.get("required", False):
+        if prop_name in required_props:
             required_fields[prop_name] = (
                 signature_prop_type,
                 Field(..., **field_kwargs),
