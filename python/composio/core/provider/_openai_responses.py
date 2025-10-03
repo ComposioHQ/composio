@@ -49,12 +49,8 @@ class OpenAIResponsesProvider(
         :param modifiers: Optional modifiers for tool execution.
         :return: Object containing output data from the tool call.
         """
-        if isinstance(tool_call, ChatCompletionMessageToolCall):
-            slug = tool_call.function.name
-            arguments = json.loads(tool_call.function.arguments)
-        else:  # ResponseFunctionToolCall
-            slug = tool_call.name
-            arguments = json.loads(tool_call.arguments)
+        slug = tool_call.name
+        arguments = json.loads(tool_call.arguments)
 
         return self.execute_tool(
             slug=slug,
