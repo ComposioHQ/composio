@@ -16,7 +16,7 @@ from composio.utils.shared import (
 )
 
 
-class StructuredTool(BaseStructuredTool):
+class StructuredTool(BaseStructuredTool):  # type: ignore[misc]
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
