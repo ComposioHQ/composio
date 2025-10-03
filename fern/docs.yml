@@ -190,6 +190,33 @@ navigation:
     - page: Migration Guide
       path: pages/dist/migration-guide.mdx
       slug: migration
+    - section: Troubleshooting
+      slug: troubleshooting
+      contents:
+      - page: Overview
+        path: pages/src/troubleshooting/overview.mdx
+        slug: overview
+      - page: API
+        path: pages/src/troubleshooting/api.mdx
+        slug: api
+      - page: Authentication
+        path: pages/src/troubleshooting/authentication.mdx
+        slug: authentication
+      - page: Dashboard
+        path: pages/src/troubleshooting/dashboard.mdx
+        slug: dashboard
+      - page: MCP
+        path: pages/src/troubleshooting/mcp.mdx
+        slug: mcp
+      - page: SDKs
+        path: pages/src/troubleshooting/sdks.mdx
+        slug: sdks
+      - page: Tools & Toolkits
+        path: pages/src/troubleshooting/tools.mdx
+        slug: tools
+      - page: Triggers
+        path: pages/src/troubleshooting/triggers.mdx
+        slug: triggers
 - tab: examples
   layout:
   - section: Getting Started
