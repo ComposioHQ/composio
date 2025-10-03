@@ -17,6 +17,8 @@ favicon: assets/favicon.png
 js:
 - path: js/search.js
   strategy: afterInteractive
+- path: js/edit-page-fix.js
+  strategy: afterInteractive
 typography:
   bodyFont:
     name: Inter
