@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import logging
 import time
 import typing as t
 
@@ -15,6 +16,8 @@ from composio.client.types import (
 )
 
 from .base import Resource
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionRequest(Resource):
@@ -125,16 +128,19 @@ class AuthScheme:
         """
         Create a new connected account using Composio Link.
         """
-        return {
-            "auth_scheme": "COMPOSIO_LINK",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember2Val,
-                {
-                    **options,
-                    "status": "INITIALIZING",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "COMPOSIO_LINK",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember2Val,
+                    {
+                        **options,
+                        "status": "INITIALIZING",
+                    },
+                ),
+            },
+        )
 
     def api_key(
         self, options: connected_account_create_params.ConnectionStateUnionMember3Val
@@ -142,16 +148,19 @@ class AuthScheme:
         """
         Create a new connected account using an API key.
         """
-        return {
-            "auth_scheme": "API_KEY",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember3Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "API_KEY",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember3Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def basic(
         self, options: connected_account_create_params.ConnectionStateUnionMember4Val
@@ -159,16 +168,19 @@ class AuthScheme:
         """
         Create a new connected account using basic auth.
         """
-        return {
-            "auth_scheme": "BASIC",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember4Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BASIC",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember4Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def bearer_token(
         self, options: connected_account_create_params.ConnectionStateUnionMember5Val
@@ -176,16 +188,19 @@ class AuthScheme:
         """
         Create a new connected account using a bearer token.
         """
-        return {
-            "auth_scheme": "BEARER_TOKEN",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember5Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BEARER_TOKEN",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember5Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def google_service_account(
         self, options: connected_account_create_params.ConnectionStateUnionMember6Val
@@ -193,16 +208,19 @@ class AuthScheme:
         """
         Create a new connected account using a Google service account.
         """
-        return {
-            "auth_scheme": "GOOGLE_SERVICE_ACCOUNT",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember6Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "GOOGLE_SERVICE_ACCOUNT",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember6Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def no_auth(
         self, options: connected_account_create_params.ConnectionStateUnionMember7Val
@@ -244,16 +262,19 @@ class AuthScheme:
         """
         Create a new connected account using Bill.com auth.
         """
-        return {
-            "auth_scheme": "BILLCOM_AUTH",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember9Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BILLCOM_AUTH",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember9Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
     def basic_with_jwt(
         self, options: connected_account_create_params.ConnectionStateUnionMember10Val
@@ -261,16 +282,19 @@ class AuthScheme:
         """
         Create a new connected account using basic auth with JWT.
         """
-        return {
-            "auth_scheme": "BASIC_WITH_JWT",
-            "val": t.cast(
-                connected_account_create_params.ConnectionStateUnionMember10Val,
-                {
-                    **options,
-                    "status": "ACTIVE",
-                },
-            ),
-        }
+        return t.cast(
+            connected_account_create_params.ConnectionState,
+            {
+                "auth_scheme": "BASIC_WITH_JWT",
+                "val": t.cast(
+                    connected_account_create_params.ConnectionStateUnionMember10Val,
+                    {
+                        **options,
+                        "status": "ACTIVE",
+                    },
+                ),
+            },
+        )
 
 
 class ConnectedAccounts:
@@ -319,6 +343,7 @@ class ConnectedAccounts:
         auth_config_id: str,
         *,
         callback_url: t.Optional[str] = None,
+        allow_multiple: bool = False,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
     ) -> ConnectionRequest:
         """
@@ -331,9 +356,27 @@ class ConnectedAccounts:
         :param user_id: The user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
         :param callback_url: Callback URL to use for OAuth apps.
-        :param options: The options to create the connected account with.
+        :param config: The configuration to create the connected account with.
+        :param allow_multiple: Whether to allow multiple connected accounts for the same user and auth config.
         :return: The connection request.
         """
+        # Check if there are multiple connected accounts for the authConfig of the user
+        connected_accounts = self.list(
+            user_ids=[user_id],
+            auth_config_ids=[auth_config_id],
+        )
+        if connected_accounts.items and not allow_multiple:
+            raise exceptions.ComposioMultipleConnectedAccountsError(
+                f"Multiple connected accounts found for user {user_id} in auth config {auth_config_id}. "
+                "Please use the allow_multiple option to allow multiple connected accounts."
+            )
+        elif connected_accounts.items:
+            logger.warning(
+                "[Warn:AllowMultiple] Multiple connected accounts found for user %s in auth config %s",
+                user_id,
+                auth_config_id,
+            )
+
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
             connection["callback_url"] = callback_url

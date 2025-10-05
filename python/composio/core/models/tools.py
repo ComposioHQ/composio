@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import typing as t
 
+from composio_client import omit
 import typing_extensions as te
 
 from composio.client import HttpClient
@@ -25,6 +26,7 @@ from composio.core.provider.none_agentic import (
 )
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError
+from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 
 from ._modifiers import (
@@ -100,7 +102,8 @@ class Tools(Resource, t.Generic[TProvider]):
             return t.cast(
                 Tool,
                 self._client.tools.retrieve(
-                    tool_slug=slug, toolkit_versions=self._toolkit_versions
+                    tool_slug=slug,
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
 
@@ -128,7 +131,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 tools_list.extend(
                     self._client.tools.list(
                         tool_slugs=",".join(tools),
-                        toolkit_versions=self._toolkit_versions,
+                        toolkit_versions=none_to_omit(self._toolkit_versions),
                     ).items
                 )
 
@@ -136,13 +139,11 @@ class Tools(Resource, t.Generic[TProvider]):
         if toolkits is not None or search is not None:
             tools_list.extend(
                 self._client.tools.list(
-                    toolkit_slug=(
-                        ",".join(toolkits) if toolkits else self._client.not_given
-                    ),
-                    search=search if search else self._client.not_given,
+                    toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
+                    search=none_to_omit(search),
                     scopes=scopes,
                     limit=limit,
-                    toolkit_versions=self._toolkit_versions,
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ).items
             )
         return tools_list
@@ -352,24 +353,12 @@ class Tools(Resource, t.Generic[TProvider]):
             self._client.tools.execute(
                 tool_slug=slug,
                 arguments=arguments,
-                connected_account_id=(
-                    connected_account_id
-                    if connected_account_id is not None
-                    else self._client.not_given
-                ),
-                custom_auth_params=(
-                    custom_auth_params
-                    if custom_auth_params is not None
-                    else self._client.not_given
-                ),
-                custom_connection_data=(
-                    custom_connection_data
-                    if custom_connection_data is not None
-                    else self._client.not_given
-                ),
-                user_id=user_id if user_id is not None else self._client.not_given,
-                text=text if text is not None else self._client.not_given,
-                version=version if version is not None else self._client.not_given,
+                connected_account_id=none_to_omit(connected_account_id),
+                custom_auth_params=none_to_omit(custom_auth_params),
+                custom_connection_data=none_to_omit(custom_connection_data),
+                user_id=none_to_omit(user_id),
+                text=none_to_omit(text),
+                version=none_to_omit(version),
                 # Note: We don't pass toolkit_versions to the API, we resolve the specific version above
             ).model_dump(
                 exclude={
@@ -426,7 +415,8 @@ class Tools(Resource, t.Generic[TProvider]):
             tool = t.cast(
                 Tool,
                 self._client.tools.retrieve(
-                    tool_slug=slug, toolkit_versions=effective_toolkit_versions
+                    tool_slug=slug,
+                    toolkit_versions=none_to_omit(effective_toolkit_versions),
                 ),
             )
             self._tool_schemas[slug] = tool
@@ -475,7 +465,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id,
                 text=text,
                 version=version,
-                toolkit_versions=effective_toolkit_versions,
+                toolkit_versions=none_to_omit(effective_toolkit_versions),
             )
         )
         response = self._file_helper.substitute_file_downloads(
@@ -499,14 +489,10 @@ class Tools(Resource, t.Generic[TProvider]):
         return self._client.tools.proxy(
             endpoint=options["endpoint"],
             method=options["method"],
-            body=options.get("body", self._client.not_given),
-            connected_account_id=options.get(
-                "connected_account_id", self._client.not_given
-            ),
-            parameters=options.get("parameters", self._client.not_given),
-            custom_connection_data=options.get(
-                "custom_connection_data", self._client.not_given
-            ),
+            body=options.get("body", omit),
+            connected_account_id=options.get("connected_account_id", omit),
+            parameters=options.get("parameters", omit),
+            custom_connection_data=options.get("custom_connection_data", omit),
         )
 
 

@@ -101,8 +101,10 @@ if [[ $target = darwin-x64 ]]; then
     fi
 fi
 
-GITHUB=${GITHUB-"https://github.com"}
-github_repo="$GITHUB/ComposioHQ/composio"
+COMPOSIO_GITHUB_OWNER=${COMPOSIO_GITHUB_OWNER-"ComposioHQ"}
+COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-"composio"}
+COMPOSIO_GITHUB_URL=${COMPOSIO_GITHUB_URL-"https://github.com"}
+github_repo="$COMPOSIO_GITHUB_URL/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
 
 exe_name=composio
 
@@ -110,27 +112,31 @@ exe_name=composio
 if [[ $# = 0 ]]; then
     info "Finding latest CLI release..."
     
-    # Get the last 20 releases and find the latest one with CLI binaries
-    releases_json=$(curl -s "https://api.github.com/repos/ComposioHQ/composio/releases?per_page=20")
-    if [[ -z "$releases_json" ]]; then
-        error "Failed to fetch releases from GitHub"
-    fi
-    
-    version=""
-    # Extract tag names and check each release for CLI binaries
-    for tag in $(echo "$releases_json" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -20); do
-        # Check if this release has CLI binaries by testing download URL
-        test_url="$github_repo/releases/download/$tag/composio-$target.zip"
-        if curl -s --head "$test_url" | grep -qE "(200 OK|302)"; then
-            version="$tag"
-            info "Found CLI release: $version"
-            break
-        fi
-    done
+    # Get the latest version tag using OS-specific grep patterns
+    case $platform in
+    'Darwin'*)
+        # BSD/MacOS: Use extended regex with -E
+        version=$(git ls-remote --tags "$github_repo" \
+            | awk -F'/' '{print $3}' \
+            | grep -E "^v\d+\.\d+\.\d+.*" \
+            | sort -V \
+            | tail -n1)
+        ;;
+    *)
+        # Unix/Linux: Use Perl-compatible regex with -P
+        version=$(git ls-remote --tags "$github_repo" \
+            | awk -F'/' '{print $3}' \
+            | grep -P "^v\d+\.\d+\.\d+.*" \
+            | sort -V \
+            | tail -n1)
+        ;;
+    esac
     
     if [[ -z "$version" ]]; then
-        error "No CLI release found in the last 20 releases. Please specify a version manually."
+        error "Failed to determine the latest version. Please specify a version manually."
     fi
+    
+    info "Found latest version: $version"
     
     composio_uri="$github_repo/releases/download/$version/composio-$target.zip"
 else
@@ -140,35 +146,31 @@ fi
 
 info "Installing Composio CLI $version for $target"
 
-# Set up installation directory
-install_env=COMPOSIO_INSTALL
-bin_env=\$COMPOSIO_INSTALL/bin
+COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-$HOME/.composio}
+exe=$COMPOSIO_INSTALL_DIR/composio
 
-install_dir=${!install_env:-$HOME/.composio}
-bin_dir=$install_dir/bin
-exe=$bin_dir/composio
-
-if [[ ! -d $bin_dir ]]; then
-    mkdir -p "$bin_dir" ||
-        error "Failed to create install directory \"$bin_dir\""
+if [[ ! -d $COMPOSIO_INSTALL_DIR ]]; then
+    mkdir -p "$COMPOSIO_INSTALL_DIR" ||
+        error "Failed to create install directory \"$COMPOSIO_INSTALL_DIR\""
 fi
 
-# Download and extract
+# Download
 info "Downloading Composio CLI..."
 curl --fail --location --progress-bar --output "$exe.zip" "$composio_uri" ||
     error "Failed to download Composio CLI from \"$composio_uri\""
 
+# Extract
 info "Extracting Composio CLI..."
-unzip -oqd "$bin_dir" "$exe.zip" ||
+unzip -oqd "$COMPOSIO_INSTALL_DIR" "$exe.zip" ||
     error 'Failed to extract Composio CLI'
 
 # Move binary to final location
-if [[ -f "$bin_dir/composio-$target/$exe_name" ]]; then
-    mv "$bin_dir/composio-$target/$exe_name" "$exe" ||
+if [[ -f "$COMPOSIO_INSTALL_DIR/composio-$target/$exe_name" ]]; then
+    mv "$COMPOSIO_INSTALL_DIR/composio-$target/$exe_name" "$exe" ||
         error 'Failed to move extracted binary to destination'
-    rm -r "$bin_dir/composio-$target"
-elif [[ -f "$bin_dir/$exe_name" ]]; then
-    mv "$bin_dir/$exe_name" "$exe" ||
+    rm -r "$COMPOSIO_INSTALL_DIR/composio-$target"
+elif [[ -f "$COMPOSIO_INSTALL_DIR/$exe_name" ]]; then
+    mv "$COMPOSIO_INSTALL_DIR/$exe_name" "$exe" ||
         error 'Failed to move extracted binary to destination'
 else
     error 'Binary not found in extracted archive'
@@ -190,19 +192,13 @@ tildify() {
 
 success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
 
-# Check if composio is already in PATH
-if command -v composio >/dev/null; then
-    echo "Run 'composio --help' to get started"
-    exit
-fi
-
 refresh_command=''
 
-tilde_bin_dir=$(tildify "$bin_dir")
-quoted_install_dir=\"${install_dir//\"/\\\"}\"
+tilde_bin_dir=$(tildify "$COMPOSIO_INSTALL_DIR")
+quoted_install_dir=\"${COMPOSIO_INSTALL_DIR//\"/\\\"}\"
 
 if [[ $quoted_install_dir = \"$HOME/* ]]; then
-    quoted_install_dir=${quoted_install_dir/$HOME\//\$HOME/}
+    quoted_install_dir=${COMPOSIO_INSTALL_DIR/$HOME\//\$HOME/}
 fi
 
 echo
@@ -211,31 +207,28 @@ echo
 case $(basename "$SHELL") in
 fish)
     commands=(
-        "set --export $install_env $quoted_install_dir"
-        "set --export PATH $bin_env \$PATH"
+        "set --export COMPOSIO_INSTALL_DIR $COMPOSIO_INSTALL_DIR"
+        "set --export PATH $COMPOSIO_INSTALL_DIR \$PATH"
     )
 
     fish_config=$HOME/.config/fish/config.fish
     tilde_fish_config=$(tildify "$fish_config")
 
-    # Create fish config directory and file if they don't exist
-    if [[ ! -f $fish_config && -w $(dirname "$(dirname "$fish_config")") ]]; then
-        mkdir -p "$(dirname "$fish_config")"
-        touch "$fish_config"
-    fi
-
     if [[ -w $fish_config ]]; then
         {
             echo -e '\n# Composio CLI'
+
             for command in "${commands[@]}"; do
                 echo "$command"
             done
         } >>"$fish_config"
 
         info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_fish_config\""
+
         refresh_command="source $tilde_fish_config"
     else
         echo "Manually add the directory to $tilde_fish_config (or similar):"
+
         for command in "${commands[@]}"; do
             info_bold "  $command"
         done
@@ -243,8 +236,8 @@ fish)
     ;;
 zsh)
     commands=(
-        "export $install_env=$quoted_install_dir"
-        "export PATH=\"$bin_env:\$PATH\""
+        "export COMPOSIO_INSTALL_DIR=$COMPOSIO_INSTALL_DIR"
+        "export PATH=\"$COMPOSIO_INSTALL_DIR:\$PATH\""
     )
 
     zsh_config=$HOME/.zshrc
@@ -258,15 +251,18 @@ zsh)
     if [[ -w $zsh_config ]]; then
         {
             echo -e '\n# Composio CLI'
+
             for command in "${commands[@]}"; do
                 echo "$command"
             done
         } >>"$zsh_config"
 
         info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_zsh_config\""
+
         refresh_command="exec $SHELL"
     else
         echo "Manually add the directory to $tilde_zsh_config (or similar):"
+
         for command in "${commands[@]}"; do
             info_bold "  $command"
         done
@@ -296,32 +292,17 @@ bash)
     for bash_config in "${bash_configs[@]}"; do
         tilde_bash_config=$(tildify "$bash_config")
 
-        # Check if file is writable OR if parent directory is writable (so we can create the file)
-        if [[ -w "$bash_config" ]] || [[ ! -e "$bash_config" && -w "$(dirname "$bash_config")" ]]; then
-            # For .bashrc, prepend the exports before any interactive checks
-            if [[ "$bash_config" == *".bashrc" ]] && [[ -f "$bash_config" ]] && grep -q "case.*-.*in" "$bash_config"; then
-                # Create a temporary file with our exports at the top
-                temp_file=$(mktemp)
-                {
-                    echo '# Composio CLI'
-                    for command in "${commands[@]}"; do
-                        echo "$command"
-                    done
-                    echo
-                    cat "$bash_config"
-                } > "$temp_file"
-                mv "$temp_file" "$bash_config"
-            else
-                # For other configs or if no interactive check found, append as before
-                {
-                    echo -e '\n# Composio CLI'
-                    for command in "${commands[@]}"; do
-                        echo "$command"
-                    done
-                } >>"$bash_config"
-            fi
+        if [[ -w $bash_config ]]; then
+            {
+                echo -e '\n# Composio CLI'
+
+                for command in "${commands[@]}"; do
+                    echo "$command"
+                done
+            } >>"$bash_config"
 
             info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_bash_config\""
+
             refresh_command="source $bash_config"
             set_manually=false
             break
@@ -329,12 +310,14 @@ bash)
     done
 
     if [[ $set_manually = true ]]; then
-        echo "Manually add the directory to ~/.bashrc (or similar):"
+        echo "Manually add the directory to $tilde_bash_config (or similar):"
+
         for command in "${commands[@]}"; do
             info_bold "  $command"
         done
     fi
     ;;
+
 *)
     echo 'Manually add the directory to ~/.bashrc (or similar):'
     info_bold "  export $install_env=$quoted_install_dir"
@@ -352,4 +335,3 @@ fi
 
 info_bold "  composio --help"
 info_bold "  composio login"
-
