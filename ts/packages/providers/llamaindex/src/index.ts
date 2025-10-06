@@ -36,9 +36,9 @@ export class LlamaindexProvider extends BaseAgenticProvider<
     const inputParametersSchema = jsonSchemaToZodSchema(inputParams ?? {});
     return createLlamaindexTool({
       name: tool.slug,
-      description: tool.description ?? '',
+      description: tool.description ?? tool.name ?? '',
       parameters: inputParametersSchema,
-      execute: async (input: unknown): Promise<JSONValue> => {
+      execute: async input => {
         const result = await executeTool(tool.slug, input as Record<string, unknown>);
         return JSON.stringify(result);
       },
