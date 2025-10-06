@@ -121,7 +121,21 @@ describe('LlamaindexProvider', () => {
       const wrappedTool = provider.wrapTool(toolWithoutDescription, executeToolFn);
 
       expect(wrappedTool.metadata.name).toBe(toolWithoutDescription.slug);
-      expect(wrappedTool.metadata.description).toBe('');
+      expect(wrappedTool.metadata.description).toBe(toolWithoutDescription.name); // Falls back to tool name
+      expect(wrappedTool.metadata).toHaveProperty('parameters');
+    });
+
+    it('should handle tools without description and name', () => {
+      const toolWithoutDescriptionAndName = {
+        ...sampleTool,
+        description: undefined,
+        name: '', // Empty name to test final fallback
+      };
+
+      const wrappedTool = provider.wrapTool(toolWithoutDescriptionAndName, executeToolFn);
+
+      expect(wrappedTool.metadata.name).toBe(toolWithoutDescriptionAndName.slug);
+      expect(wrappedTool.metadata.description).toBe(''); // Final fallback to empty string
       expect(wrappedTool.metadata).toHaveProperty('parameters');
     });
   });
