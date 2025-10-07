@@ -187,6 +187,9 @@ navigation:
     icon: book
     skip-slug: true
     contents:
+    - page: Debugging Info
+      path: pages/dist/debugging-info.mdx
+      slug: resources/debugging-info
     - page: Migration Guide
       path: pages/dist/migration-guide.mdx
       slug: migration
