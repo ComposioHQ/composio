@@ -290,14 +290,20 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: t.Optional[str] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
-        return t.cast(
-            AgenticProviderExecuteFn,
-            functools.partial(
-                self.execute,
-                modifiers=modifiers,
-                user_id=user_id,
-            ),
-        )
+        def wrapper(
+            slug: str,
+            arguments: t.Dict,
+            **kwargs: t.Any,
+        ) -> ToolExecutionResponse:
+            return self.execute(
+                slug=slug,
+                arguments=arguments,
+                modifiers=kwargs.get("modifiers", modifiers),
+                user_id=kwargs.get("user_id", user_id),
+                **{k: v for k, v in kwargs.items() if k not in ["modifiers", "user_id"]},
+            )
+
+        return t.cast(AgenticProviderExecuteFn, wrapper)
 
     def _execute_custom_tool(
         self,

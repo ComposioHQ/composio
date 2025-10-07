@@ -16,9 +16,14 @@ class NoneAgenticProviderExecuteFn(t.Protocol):
         arguments: t.Dict,
         modifiers: t.Optional[Modifiers] = None,
         user_id: t.Optional[str] = None,
+        **kwargs: t.Any,
     ) -> ToolExecutionResponse:
         """
         Execute a wrapped tool by slug, passing an arbitrary input dict.
+        
+        Additional keyword arguments can be passed (e.g., connected_account_id,
+        custom_auth_params, etc.) and will be forwarded to the execute method.
+        
         Returns a dict with the following keys:
             - data: The data returned by the tool.
             - error: The error returned by the tool.
