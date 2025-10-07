@@ -13,44 +13,49 @@ By default, the OpenAI Provider is installed when you install the Composio SDK. 
 
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio_openai==0.8.0
+pip install composio_openai
 ```
 ```bash title="TypeScript" for="typescript"
 npm install @composio/openai
 ```
 </CodeGroup>
-The OpenAI Provider is used by default when you initialize the Composio SDK but you can explicitly specify it.
+
+## Responses API
+The Responses API is the recommended way to build more agentic flows with the OpenAI API. 
+Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/api-reference/responses)
+
+<Note>
+Before executing any tools that require authentication (like Gmail), you'll need to:
+1. [Create an Auth Configuration](/docs/authenticating-tools#creating-an-auth-config) for your integration
+2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user
+This ensures proper authorization and access to the external service.
+</Note>
 
 <CodeGroup>
 <SnippetCode
-  src="fern/snippets/providers/python/openai-provider.py"
-  startLine={1}
-  endLine={8}
-/>
-<SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={1}
-  endLine={7}
-/>
-</CodeGroup>
-
-{/* ## Responses API
-The Responses API is the recommended way to build more agentic flows with the OpenAI API. Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/guides/responses-vs-chat-completions)
-
-<CodeGroup>
-```python
-
-```
-<SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={5}
+  src="fern/snippets/providers/python/openairesponses-provider.py"
+  startLine={9}
   endLine={24}
 />
-</CodeGroup> */}
+<SnippetCode
+  src="fern/snippets/providers/typescript/openai.ts"
+  startLine={26}
+  endLine={45}
+/>
+
+</CodeGroup>
 
 ## Chat Completion API
-Chat Completion API is the industry standard for building LLM-powered applications. Chat completions are also adopted and used by many other LLM providers apart from OpenAI.
+The Chat Completion API generates a model response from a list of messages. Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/api-reference/chat).
+The OpenAI Chat Provider is the default provider used by Composio SDK, but you can also explicitly initialise it.
 
+<Note>
+Before executing any tools that require authentication (like Gmail), you'll need to:
+1. [Create an Auth Configuration](/docs/authenticating-tools#creating-an-auth-config) for your integration
+2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user
+This ensures proper authorization and access to the external service.
+
+</Note>
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/providers/python/openai-provider.py"
@@ -65,44 +70,6 @@ Chat Completion API is the industry standard for building LLM-powered applicatio
 
 </CodeGroup>
 
-{/* The tools can also be called manually:
-
-<CodeGroup>
-```typescript {20-27} maxLines={60}
-const userId = "your@example.com";
-const tools = await composio.tools.get(userId, {
-  toolkits: ["HACKERNEWS"],
-});
-
-const completion = await openai.chat.completions.create({
-  model: "gpt-4o",
-  messages: [
-    {
-      role: "user",
-      content: "What is the latest hackernews post about?",
-    },
-  ],
-  tools: tools,
-});
-
-const toolCall = completion.choices[0]?.message.tool_calls?.[0];
-if (toolCall) {
-  console.log(`✅ Calling tool ${toolCall.function.name}`);
-  const result = await composio.tools.execute(
-    toolCall.function.name,
-    {
-      userId,
-      arguments: JSON.parse(toolCall.function.arguments),
-    }
-  );
-  console.log(JSON.stringify(result, null, 2));
-}
-```
-
-```python
-
-```
-</CodeGroup> */}
 
 ## Modifiers
 Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
