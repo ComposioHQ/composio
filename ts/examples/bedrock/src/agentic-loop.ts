@@ -71,7 +71,7 @@ async function main() {
 
       // Send request to Claude
       const response = await bedrockClient.send(new ConverseCommand({
-        modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+        modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0',
         messages,
         toolConfig: { tools: bedrockTools }
       }));

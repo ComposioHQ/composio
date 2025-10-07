@@ -63,7 +63,7 @@ const bedrockTools = bedrockProvider.wrapTools(tools);
 // Make a request to Claude via Bedrock
 const response = await bedrockClient.send(
   new ConverseCommand({
-    modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0', // Claude Sonnet 4.5
     messages: [
       {
         role: 'user',
@@ -85,7 +85,7 @@ if (response.stopReason === 'tool_use') {
   // Continue the conversation with tool results
   const followUpResponse = await bedrockClient.send(
     new ConverseCommand({
-      modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0', // Claude Sonnet 4.5
       messages: [
         {
           role: 'user',
@@ -159,7 +159,7 @@ async function main() {
 
       const response = await bedrockClient.send(
         new ConverseCommand({
-          modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+          modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0', // Claude Sonnet 4.5
           messages,
           toolConfig: { tools: bedrockTools },
         })
@@ -201,7 +201,15 @@ main();
 
 This provider supports all Anthropic Claude models available on AWS Bedrock, including:
 
-- `anthropic.claude-3-5-sonnet-20241022-v2:0` (Claude 3.5 Sonnet v2) - **Recommended**
+### Claude 4.x Models (Latest)
+
+- `anthropic.claude-sonnet-4-5-20250514-v1:0` (Claude Sonnet 4.5) - **Latest & Recommended**
+- `anthropic.claude-4-sonnet-20250514-v1:0` (Claude 4 Sonnet)
+- `anthropic.claude-4-opus-20250514-v1:0` (Claude 4 Opus - when available)
+
+### Claude 3.x Models
+
+- `anthropic.claude-3-5-sonnet-20241022-v2:0` (Claude 3.5 Sonnet v2)
 - `anthropic.claude-3-5-sonnet-20240620-v1:0` (Claude 3.5 Sonnet v1)
 - `anthropic.claude-3-opus-20240229-v1:0` (Claude 3 Opus)
 - `anthropic.claude-3-sonnet-20240229-v1:0` (Claude 3 Sonnet)
@@ -214,7 +222,8 @@ For production workloads, use [inference profiles](https://docs.aws.amazon.com/b
 ```typescript
 const response = await bedrockClient.send(
   new ConverseCommand({
-    modelId: 'us.anthropic.claude-3-5-sonnet-v2:0', // Inference profile ID
+    modelId: 'us.anthropic.claude-sonnet-4-5-v1:0', // Inference profile ID for Claude 4.5
+    // Or use: 'us.anthropic.claude-3-5-sonnet-v2:0' for Claude 3.5
     // ... rest of configuration
   })
 );

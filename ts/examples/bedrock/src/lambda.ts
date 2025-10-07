@@ -62,7 +62,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
 
     // Make request to Claude via Bedrock
     const response = await bedrockClient.send(new ConverseCommand({
-      modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0',
       messages: [
         {
           role: 'user',
@@ -90,7 +90,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
 
       // Get final response with tool results
       const followUpResponse = await bedrockClient.send(new ConverseCommand({
-        modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+        modelId: 'anthropic.claude-sonnet-4-5-20250514-v1:0',
         messages: [
           {
             role: 'user',
