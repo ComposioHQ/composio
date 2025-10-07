@@ -361,16 +361,15 @@ class ConnectedAccounts:
         :return: The connection request.
         """
         # Check if there are multiple connected accounts for the authConfig of the user
-        connected_accounts = self.list(
-            user_ids=[user_id],
-            auth_config_ids=[auth_config_id],
-        )
-        if connected_accounts.items and not allow_multiple:
+        connected_accounts = self.list(user_ids=[user_id], auth_config_ids=[auth_config_id])
+        count = len(connected_accounts.items) if connected_accounts.items else 0
+
+        if count > 1 and not allow_multiple:
             raise exceptions.ComposioMultipleConnectedAccountsError(
                 f"Multiple connected accounts found for user {user_id} in auth config {auth_config_id}. "
                 "Please use the allow_multiple option to allow multiple connected accounts."
             )
-        elif connected_accounts.items:
+        elif count > 1:
             logger.warning(
                 "[Warn:AllowMultiple] Multiple connected accounts found for user %s in auth config %s",
                 user_id,
