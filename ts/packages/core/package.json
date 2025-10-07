@@ -29,7 +29,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsup",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json"
   },
   "keywords": [],
   "author": "",
