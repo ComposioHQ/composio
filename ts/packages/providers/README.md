@@ -2,6 +2,24 @@
 
 This directory contains various providers that implement the Composio SDK for different platforms and frameworks. Each provider provides a way to interact with the Composio Platform using the specific platform's conventions and requirements.
 
+## Available Providers
+
+### AI Model Providers
+
+- **[OpenAI](./openai/)** - OpenAI GPT models (GPT-4, GPT-3.5)
+- **[Anthropic](./anthropic/)** - Anthropic Claude models via direct API
+- **[AWS Bedrock](./bedrock/)** - Anthropic Claude models via AWS Bedrock (Lambda-friendly) ⭐ NEW
+- **[Google](./google/)** - Google Gemini models
+- **[Cloudflare](./cloudflare/)** - Cloudflare Workers AI
+
+### Framework Providers
+
+- **[LangChain](./langchain/)** - LangChain framework integration
+- **[LlamaIndex](./llamaindex/)** - LlamaIndex framework integration
+- **[Vercel AI](./vercel/)** - Vercel AI SDK integration
+- **[Mastra](./mastra/)** - Mastra framework integration
+- **[OpenAI Agents](./openai-agents/)** - OpenAI Agents API
+
 ## Types of Providers
 
 Composio SDK supports two types of providers, each with different modifier capabilities:

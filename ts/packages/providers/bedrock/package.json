@@ -1,0 +1,45 @@
+{
+  "name": "@composio/bedrock",
+  "version": "0.1.0",
+  "description": "Non-Agentic Provider for AWS Bedrock (Anthropic Claude models) in Composio SDK",
+  "main": "src/index.ts",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "composio",
+    "provider",
+    "bedrock"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "peerDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0",
+    "@composio/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.901.0",
+    "@composio/core": "workspace:*",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

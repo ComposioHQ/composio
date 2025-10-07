@@ -1,0 +1,28 @@
+{
+  "name": "bedrock-example",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Example for using AWS Bedrock provider with Composio SDK",
+  "main": "index.js",
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "start": "tsx src/index.ts",
+    "lambda": "tsx src/lambda.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.901.0",
+    "@composio/bedrock": "workspace:*",
+    "@composio/core": "workspace:*",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
