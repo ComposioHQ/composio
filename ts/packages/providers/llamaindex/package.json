@@ -33,7 +33,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
-    "@composio/core": "^0.1.0",
+    "@composio/core": "0.1.53",
     "llamaindex": "^0.12.0"
   },
   "devDependencies": {
