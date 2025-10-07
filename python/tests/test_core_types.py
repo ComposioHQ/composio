@@ -56,7 +56,6 @@ class TestCoreTypes:
         from composio.core.types import __all__
 
         expected_exports = {
-            "MCPToolkitConfig",
             "ToolkitLatestVersion",
             "ToolkitVersion",
             "ToolkitVersions",
