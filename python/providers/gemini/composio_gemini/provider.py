@@ -146,8 +146,9 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
     def _handle_object_schema(self, json_schema: dict) -> t.Any:
         """Handle object type schema conversion."""
         properties = {
-            name: self._json_to_genai_schema(schema)
+            name: schema_obj
             for name, schema in json_schema.get("properties", {}).items()
+            if (schema_obj := self._json_to_genai_schema(schema)) is not None
         }
         return genai_types.Schema(
             type=genai_types.Type.OBJECT,
@@ -157,10 +158,9 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
 
     def _handle_string_schema(self, json_schema: dict) -> t.Any:
         """Handle string type schema conversion."""
-        schema_dict = {"type": genai_types.Type.STRING}
         if enum_values := json_schema.get("enum"):
-            schema_dict["enum"] = enum_values
-        return genai_types.Schema(**schema_dict)
+            return genai_types.Schema(type=genai_types.Type.STRING, enum=enum_values)
+        return genai_types.Schema(type=genai_types.Type.STRING)
 
     def _handle_enum_schema(self, json_schema: dict) -> t.Any:
         """Handle enum schema conversion (pattern from openapi.py)."""

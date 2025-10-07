@@ -9,9 +9,6 @@ import typing as t
 
 from openai.types.responses.response import Response
 from openai.types.responses.response_output_item import ResponseFunctionToolCall
-from openai.types.chat.chat_completion_message_tool_call import (
-    ChatCompletionMessageToolCall,
-)
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
@@ -42,7 +39,7 @@ class OpenAIResponsesProvider(
     def execute_tool_call(
         self,
         user_id: str,
-        tool_call: t.Union[ChatCompletionMessageToolCall, ResponseFunctionToolCall],
+        tool_call: t.Union[ResponseFunctionToolCall],
         modifiers: t.Optional[Modifiers] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool call from the Responses API.
