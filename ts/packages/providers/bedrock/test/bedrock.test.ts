@@ -112,7 +112,7 @@ describe('BedrockProvider', () => {
             json: {
               type: 'object',
               properties: {},
-              required: [],
+              // Note: required field is omitted when not present (semantically correct)
             },
           },
         },

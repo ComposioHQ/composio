@@ -133,15 +133,36 @@ export class BedrockProvider extends BaseNonAgenticProvider<BedrockToolCollectio
    * ```
    */
   override wrapTool(tool: ComposioTool): BedrockTool {
+    // Create default schema without optional fields to avoid semantic inconsistencies
+    const defaultSchema: InputSchema = {
+      type: 'object',
+      properties: {},
+    };
+
+    // Safely construct inputSchema from tool.inputParameters
+    // tool.inputParameters is already validated as ParametersSchema by Zod
+    const inputSchema: InputSchema = tool.inputParameters
+      ? {
+          type: 'object',
+          properties: tool.inputParameters.properties || {},
+          // Only include required if it exists and has items
+          ...(tool.inputParameters.required && tool.inputParameters.required.length > 0
+            ? { required: tool.inputParameters.required }
+            : {}),
+          // Preserve other JSON Schema fields like additionalProperties, anyOf, etc.
+          ...Object.fromEntries(
+            Object.entries(tool.inputParameters).filter(
+              ([key]) => !['type', 'properties', 'required'].includes(key)
+            )
+          ),
+        }
+      : defaultSchema;
+
     const toolSpec: BedrockToolSpec = {
       name: tool.slug,
       description: tool.description || '',
       inputSchema: {
-        json: (tool.inputParameters || {
-          type: 'object',
-          properties: {},
-          required: [],
-        }) as InputSchema,
+        json: inputSchema,
       },
     };
 
@@ -342,9 +363,29 @@ export class BedrockProvider extends BaseNonAgenticProvider<BedrockToolCollectio
     for (const contentBlock of messageContent) {
       if ('toolUse' in contentBlock && contentBlock.toolUse) {
         const toolUse = contentBlock.toolUse;
+
+        // Validate required fields from Bedrock
+        if (!toolUse.toolUseId || !toolUse.name) {
+          logger.error('Invalid tool use block: missing required fields', {
+            toolUseId: toolUse.toolUseId,
+            name: toolUse.name,
+          });
+          // Push error result instead of skipping to maintain response structure
+          toolResults.push({
+            toolUseId: toolUse.toolUseId || 'unknown',
+            content: [
+              {
+                text: 'Error: Invalid tool call received from Bedrock (missing toolUseId or name)',
+              },
+            ],
+            status: 'error',
+          });
+          continue;
+        }
+
         const bedrockToolUse: BedrockToolUseBlock = {
-          toolUseId: toolUse.toolUseId || '',
-          name: toolUse.name || '',
+          toolUseId: toolUse.toolUseId,
+          name: toolUse.name,
           input: (toolUse.input as Record<string, unknown>) || {},
         };
 

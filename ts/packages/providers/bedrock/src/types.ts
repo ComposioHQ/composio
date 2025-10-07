@@ -42,11 +42,13 @@ export interface BedrockTool {
 
 /**
  * JSON schema for tool input parameters
+ * Matches AWS Bedrock's expected JSON Schema format
  */
 export interface InputSchema {
   type: 'object';
   properties?: Record<string, unknown>;
   required?: string[];
+  additionalProperties?: boolean;
   [key: string]: unknown;
 }
 

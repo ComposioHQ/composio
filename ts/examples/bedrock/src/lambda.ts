@@ -145,12 +145,21 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
   }
 }
 
-// For local testing
-if (require.main === module) {
-  handler({
-    message: 'List my GitHub repositories',
-    toolkits: ['github']
-  }).then(response => {
-    console.log('Response:', JSON.stringify(response, null, 2));
-  }).catch(console.error);
-}
+/**
+ * For local testing, you can invoke the handler directly:
+ *
+ * @example
+ * ```typescript
+ * import { handler } from './lambda';
+ *
+ * handler({
+ *   message: 'List my GitHub repositories',
+ *   toolkits: ['github']
+ * }).then(console.log).catch(console.error);
+ * ```
+ *
+ * Or use AWS SAM CLI for local Lambda testing:
+ * ```bash
+ * sam local invoke -e event.json
+ * ```
+ */
