@@ -32,13 +32,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
+
       - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: uv-${{ hashFiles('python/pyproject.toml') }}
+          key: uv-0.8.19-${{ hashFiles('python/pyproject.toml') }}
           restore-keys: |
-            uv-
+            uv-0.8.19-
 
       - name: Install Python Dependencies
         working-directory: ./python
