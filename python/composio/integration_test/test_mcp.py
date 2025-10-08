@@ -110,7 +110,7 @@ class TestMCPOperations:
     def test_create_mcp_config(self, composio_client):
         """Test creating MCP configuration with new API using non-auth toolkits."""
         # Server name must be ≤30 chars and only contain letters, numbers, spaces, hyphens
-        test_name = f'pytest-create-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-create')
         
         mcp_config = composio_client.mcp.create(
             test_name,
@@ -157,7 +157,7 @@ class TestMCPOperations:
     def test_generate_method_directly(self, composio_client):
         """Test the generate method directly on MCP class using non-auth toolkits."""
         # First create a config
-        test_name = f'pytest-generate-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-generate')
         
         mcp_config = composio_client.mcp.create(
             test_name,
@@ -184,7 +184,7 @@ class TestMCPOperations:
     
     def test_create_with_string_toolkits(self, composio_client):
         """Test creating MCP configuration using simple string toolkit names."""
-        test_name = f'pytest-strings-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-strings')
         
         # Test with simple string toolkit names
         mcp_config = composio_client.mcp.create(
@@ -200,7 +200,7 @@ class TestMCPOperations:
     
     def test_create_with_mixed_toolkits(self, composio_client):
         """Test creating MCP configuration with mixed string and object formats."""
-        test_name = f'pytest-mixed-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-mixed')
         
         # Test with mixed formats (string and object with auth_config_id)
         mcp_config = composio_client.mcp.create(
@@ -223,7 +223,7 @@ class TestMCPOperations:
     
     def test_create_response_structure(self, composio_client):
         """Test that create response has all required fields."""
-        test_name = f'pytest-structure-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-structure')
         
         mcp_config = composio_client.mcp.create(
             test_name,
@@ -294,7 +294,7 @@ class TestMCPNoAuthToolkits:
         print("=" * 50)
         
         # Create MCP server with non-auth toolkits
-        server_name = f'no-auth-test-{int(time.time()) % 1000000}'
+        server_name = generate_unique_name('no-auth-test')
         print(f"🚀 Creating MCP server: {server_name}")
         
         mcp_server = composio_client.mcp.create(
@@ -387,7 +387,7 @@ class TestMCPNoAuthToolkits:
         print("🧪 Testing MCP with string toolkit names...")
         
         # Create MCP server with string toolkit names (simplified API)
-        server_name = f'string-test-{int(time.time()) % 1000000}'
+        server_name = generate_unique_name('string-test')
         print(f"🚀 Creating MCP server with strings: {server_name}")
         
         mcp_server = composio_client.mcp.create(
@@ -401,7 +401,7 @@ class TestMCPNoAuthToolkits:
         print(f"   Server Name: {mcp_server.name}")
         
         # Test generate method
-        user_id = f'string_user_{int(time.time()) % 10000}'
+        user_id = f'string_user_{str(uuid.uuid4())[:8]}'
         server_instance = mcp_server.generate(user_id)
         
         print("✅ Server instance generated successfully!")
@@ -424,7 +424,7 @@ class TestMCPRealWorldScenarios:
     def test_full_workflow_with_no_auth_toolkits(self, composio_client):
         """Test complete workflow: create -> generate -> use with non-auth toolkits."""
         # Server name must be ≤30 chars and only contain letters, numbers, spaces, hyphens
-        test_name = f'pytest-work-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-work')
         
         # Step 1: Create MCP config
         mcp_config = composio_client.mcp.create(
@@ -474,7 +474,7 @@ class TestMCPRealWorldScenarios:
     
     def test_full_crud_cycle(self, composio_client):
         """Test complete CRUD cycle: create -> get -> update -> get with assertions at each step."""
-        test_name = f'pytest-crud-{int(time.time()) % 1000000}'
+        test_name = generate_unique_name('pytest-crud')
         
         # Step 1: CREATE MCP server
         print(f"🏗️  Step 1: Creating MCP server '{test_name}'")
