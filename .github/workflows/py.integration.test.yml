@@ -1,0 +1,120 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, next]
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.integration.test.yml"
+      - "python/pyproject.toml"
+      - "python/composio/integration_test/**"
+  pull_request:
+    branches: [main, next]
+    paths:
+      - "python/**/*.py"
+      - ".github/workflows/py.integration.test.yml"
+      - "python/pyproject.toml"
+      - "python/composio/integration_test/**"
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+    
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+      fail-fast: false # Continue with other versions even if one fails
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            uv-${{ matrix.python-version }}-
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Install Python Dependencies
+        working-directory: ./python
+        run: |
+          uv sync --group dev
+          uv pip install -e .
+
+      - name: Verify API Key
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ COMPOSIO_API_KEY is configured"
+
+      - name: Run Integration Tests
+        working-directory: ./python
+        run: |
+          echo "🧪 Running Integration Tests..."
+          uv run pytest composio/integration_test/ -v --tb=short --maxfail=3
+        timeout-minutes: 15
+
+
+      - name: Generate Test Report
+        if: always()
+        working-directory: ./python
+        run: |
+          echo "📊 Generating test report..."
+          uv run pytest composio/integration_test/ --tb=short --quiet --no-header > test_report.txt 2>&1 || true
+          
+          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tail -20 test_report.txt >> $GITHUB_STEP_SUMMARY || echo "No test report generated" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results-python-${{ matrix.python-version }}
+          path: |
+            python/test_report.txt
+            python/composio/integration_test/
+          retention-days: 7
+
+  test-summary:
+    name: Integration Test Summary
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    
+    steps:
+      - name: Check Integration Test Results
+        run: |
+          if [ "${{ needs.integration-tests.result }}" == "success" ]; then
+            echo "✅ All integration tests passed successfully!"
+            echo "## ✅ Integration Tests Passed" >> $GITHUB_STEP_SUMMARY
+            echo "All integration tests completed successfully across all Python versions." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Integration tests failed or were cancelled"
+            echo "## ❌ Integration Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Some integration tests failed. Please check the test results above." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

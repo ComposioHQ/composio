@@ -18,7 +18,7 @@ def test_mcp_with_no_auth_toolkits():
     api_key = os.getenv('COMPOSIO_API_KEY')
     if not api_key:
         print("❌ COMPOSIO_API_KEY environment variable not set")
-        return False
+        assert False, "COMPOSIO_API_KEY environment variable not set"
     
     print("🔧 Testing MCP with Non-Auth Toolkits")
     print("=" * 50)
@@ -110,13 +110,14 @@ def test_mcp_with_no_auth_toolkits():
         print(f"   ✅ Available Tools: {len(server_instance['allowed_tools'])} tools")
         print(f"   ✅ No Auth Required: {len(server_instance['auth_configs'])} auth configs")
         
-        return True
+        # Test passed successfully
+        assert True
         
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"Test failed: {e}"
 
 def main():
     """Main test function."""
@@ -172,13 +173,14 @@ def test_mcp_with_string_toolkits():
         assert len(server_instance['url']) > 0
         
         print("🎉 String toolkit test completed successfully!")
-        return True
+        # Test passed successfully
+        assert True
         
     except Exception as e:
         print(f"❌ String toolkit test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"String toolkit test failed: {e}"
 
 
 if __name__ == "__main__":
