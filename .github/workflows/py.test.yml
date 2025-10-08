@@ -200,7 +200,6 @@ jobs:
         run: |
           # Let UV manage Python version to satisfy workspace requirements
           uv sync --group dev --python 3.12
-          uv pip install -e .
 
       - name: Verify API Key
         run: |
