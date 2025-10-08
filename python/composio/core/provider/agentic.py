@@ -13,10 +13,10 @@ class AgenticProviderExecuteFn(t.Protocol):
     ) -> t.Dict:
         """
         Execute a wrapped tool by slug, passing an arbitrary input dict.
-        
-        Additional keyword arguments can be passed (e.g., connected_account_id, 
+
+        Additional keyword arguments can be passed (e.g., connected_account_id,
         user_id, modifiers, etc.) and will be forwarded to the execute method.
-        
+
         Returns a dict with the following keys:
             - data: The data returned by the tool.
             - error: The error returned by the tool.
