@@ -67,27 +67,12 @@ jobs:
         timeout-minutes: 15
 
 
-      - name: Generate Test Report
-        if: always()
-        working-directory: ./python
-        run: |
-          echo "📊 Generating test report..."
-          uv run pytest composio/integration_test/ --tb=short --quiet --no-header > test_report.txt 2>&1 || true
-          
-          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Test Summary" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          tail -20 test_report.txt >> $GITHUB_STEP_SUMMARY || echo "No test report generated" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-results
           path: |
-            python/test_report.txt
             python/composio/integration_test/
           retention-days: 7
 
