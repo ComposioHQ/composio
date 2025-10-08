@@ -23,9 +23,7 @@ API_KEY = os.getenv("COMPOSIO_API_KEY")
 TEST_CONFIG_PREFIX = "pytest_integration_test"
 
 if not API_KEY:
-    pytest.skip(
-        "COMPOSIO_API_KEY environment variable not set", allow_module_level=True
-    )
+    pytest.fail("COMPOSIO_API_KEY environment variable not set", pytrace=False)
 
 
 def generate_unique_name(prefix: str = "pytest") -> str:

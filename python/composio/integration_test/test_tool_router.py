@@ -16,9 +16,7 @@ from composio.exceptions import ValidationError
 API_KEY = os.getenv("COMPOSIO_API_KEY")
 
 if not API_KEY:
-    pytest.skip(
-        "COMPOSIO_API_KEY environment variable not set", allow_module_level=True
-    )
+    pytest.fail("COMPOSIO_API_KEY environment variable not set", pytrace=False)
 
 
 @pytest.fixture
