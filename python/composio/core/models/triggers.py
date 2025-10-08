@@ -8,9 +8,9 @@ import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
-from composio_client import omit
 
 import typing_extensions as te
+from composio_client import omit
 from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
