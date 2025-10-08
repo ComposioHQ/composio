@@ -170,3 +170,64 @@ jobs:
           cd python/
           source .venv/bin/activate
           ruff format --check --config config/ruff.toml composio/ tests/
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/composiohq/dev-base:latest
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # Pin to stable Python version to avoid compatibility issues
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-0.8.19-py3.11-${{ hashFiles('python/pyproject.toml') }}
+          restore-keys: |
+            uv-0.8.19-py3.11-
+
+      - name: Install Python Dependencies
+        working-directory: ./python
+        run: |
+          uv sync --group dev
+          uv pip install -e .
+
+      - name: Verify API Key
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ COMPOSIO_API_KEY is configured"
+
+      - name: Run Integration Tests
+        working-directory: ./python
+        run: |
+          echo "🧪 Running Integration Tests..."
+          uv run pytest composio/integration_test/ -v --tb=short --maxfail=3
+        timeout-minutes: 15
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            python/composio/integration_test/
+          retention-days: 7
