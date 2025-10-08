@@ -10,11 +10,11 @@ const openai = new OpenAI({});
 
 // Make sure to create an auth config and a connected account for the user with gmail toolkit
 // Make sure to replace "your-user-id" with the actual user ID
-const userId ="sush";
+const userId = "your-user-id";
 
 async function main() {
     try {
-        const tools = await composio.tools.get(userId, "GMAIL_SEND_EMAIL");
+        const tools = await composio.tools.get(userId, {tools: ["GMAIL_SEND_EMAIL"]});
 
         const response = await openai.responses.create({
             model: "gpt-5",

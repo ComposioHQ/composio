@@ -27,20 +27,19 @@ Read more about it in the [OpenAI documentation](https://platform.openai.com/doc
 <Note>
 Before executing any tools that require authentication (like Gmail), you'll need to:
 1. [Create an Auth Configuration](/docs/authenticating-tools#creating-an-auth-config) for your integration
-2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user
-This ensures proper authorization and access to the external service.
+2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user.
 </Note>
 
 <CodeGroup>
-<SnippetCode
-  src="fern/snippets/providers/python/openairesponses-provider.py"
-  startLine={9}
-  endLine={24}
+<SnippetCode 
+  src="fern/snippets/providers/python/openai-responses-provider.py"
+  startLine={1}
+  endLine={39}
 />
 <SnippetCode
-  src="fern/snippets/providers/typescript/openai.ts"
-  startLine={26}
-  endLine={45}
+  src="fern/snippets/providers/typescript/openairesponses.ts"
+  startLine={1}
+  endLine={38}
 />
 
 </CodeGroup>
@@ -52,20 +51,19 @@ The OpenAI Chat Provider is the default provider used by Composio SDK, but you c
 <Note>
 Before executing any tools that require authentication (like Gmail), you'll need to:
 1. [Create an Auth Configuration](/docs/authenticating-tools#creating-an-auth-config) for your integration
-2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user
-This ensures proper authorization and access to the external service.
+2. [Set up a Connected Account](/docs/authenticating-tools#connecting-an-account) for the user.
 
 </Note>
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/providers/python/openai-provider.py"
-  startLine={9}
-  endLine={24}
+  startLine={1}
+  endLine={25}
 />
 <SnippetCode
   src="fern/snippets/providers/typescript/openai.ts"
-  startLine={26}
-  endLine={45}
+  startLine={1}
+  endLine={40}
 />
 
 </CodeGroup>
