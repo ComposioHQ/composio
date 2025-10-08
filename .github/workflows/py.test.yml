@@ -184,15 +184,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install UV
-        uses: astral-sh/setup-uv@v6
-        with:
-          uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'  # Pin to stable Python version to avoid compatibility issues
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
+        env:
+          UV_PYTHON_DOWNLOADS: never  # Disable UV's Python downloads, use system Python
 
       - name: Cache UV dependencies
         uses: actions/cache@v4
@@ -205,8 +207,10 @@ jobs:
       - name: Install Python Dependencies
         working-directory: ./python
         run: |
-          uv sync --group dev
+          uv sync --group dev --python $(which python)
           uv pip install -e .
+        env:
+          UV_PYTHON_DOWNLOADS: never  # Ensure UV doesn't download Python
 
       - name: Verify API Key
         run: |
@@ -222,6 +226,8 @@ jobs:
           echo "🧪 Running Integration Tests..."
           uv run pytest composio/integration_test/ -v --tb=short --maxfail=3
         timeout-minutes: 15
+        env:
+          UV_PYTHON_DOWNLOADS: never  # Ensure UV doesn't download Python
 
       - name: Upload Test Results
         if: always()
