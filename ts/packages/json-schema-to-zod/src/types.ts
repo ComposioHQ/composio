@@ -1,4 +1,4 @@
-import type { ZodTypeAny } from 'zod';
+import type { ZodTypeAny } from 'zod/v3';
 import type { JSONSchema7 } from 'json-schema';
 
 export type Serializable =
