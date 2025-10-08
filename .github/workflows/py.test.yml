@@ -184,36 +184,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check Python Version
-        run: |
-          echo "Available Python versions in container:"
-          python3 --version || echo "python3 not found"
-          python --version || echo "python not found"
-          which python3 || echo "python3 path not found"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Use Python 3.12 to satisfy workspace requirements
 
       - name: Install UV
         uses: astral-sh/setup-uv@v6
         with:
           uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
-        env:
-          UV_PYTHON_DOWNLOADS: never  # Disable UV's Python downloads, use container Python
 
       - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: uv-0.8.19-py3.11-${{ hashFiles('python/pyproject.toml') }}
+          key: uv-0.8.19-py3.12-${{ hashFiles('python/pyproject.toml') }}
           restore-keys: |
-            uv-0.8.19-py3.11-
+            uv-0.8.19-py3.12-
 
       - name: Install Python Dependencies
         working-directory: ./python
         run: |
-          # Use container's Python and disable UV's Python downloads
-          uv sync --group dev --python python3
+          # Use the Python 3.12 we just installed
+          uv sync --group dev --python $(which python)
           uv pip install -e .
-        env:
-          UV_PYTHON_DOWNLOADS: never  # Ensure UV doesn't download Python
 
       - name: Verify API Key
         run: |
@@ -229,8 +223,6 @@ jobs:
           echo "🧪 Running Integration Tests..."
           uv run pytest composio/integration_test/ -v --tb=short --maxfail=3
         timeout-minutes: 15
-        env:
-          UV_PYTHON_DOWNLOADS: never  # Ensure UV doesn't download Python
 
       - name: Upload Test Results
         if: always()

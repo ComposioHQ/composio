@@ -505,46 +505,40 @@ class TestMCPRealWorldScenarios:
         # Step 3: UPDATE MCP server
         updated_name = f'{test_name}-updated'
         print(f"🔄 Step 3: Updating MCP server to '{updated_name}' with additional toolkit")
+        composio_client.mcp.update(
+            mcp_server.id,
+            name=updated_name,
+            toolkits=['composio_search', 'text_to_pdf'],
+            allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
+        )
+        print("✅ UPDATE: Server updated successfully")
         
-        try:
-            composio_client.mcp.update(
-                mcp_server.id,
-                name=updated_name,
-                toolkits=['composio_search', 'text_to_pdf'],
-                allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
-            )
-            print("✅ UPDATE: Server updated successfully")
-            
-            # Step 4: GET updated MCP server
-            print("📖 Step 4: Getting updated MCP server")
-            final_server = composio_client.mcp.get(mcp_server.id)
-            
-            # Assertions after UPDATE and final GET
-            assert final_server.id == mcp_server.id, "ID should remain the same"
-            
-            # Verify that updates took effect
-            assert final_server.name == updated_name, f"Name should be updated to {updated_name}"
-            
-            # Check that toolkits were updated (should now include both composio_search and text_to_pdf)
-            expected_toolkits = ['composio_search', 'text_to_pdf']
-            actual_toolkits = getattr(final_server, 'toolkits', [])
-            for toolkit in expected_toolkits:
-                assert toolkit in actual_toolkits, f"Updated toolkits should include {toolkit}"
-            
-            # Check that allowed_tools were updated
-            expected_tools = ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
-            actual_tools = getattr(final_server, 'allowed_tools', [])
-            for tool in expected_tools:
-                assert tool in actual_tools, f"Updated allowed_tools should include {tool}"
-            
-            print("✅ FINAL GET: Retrieved updated server with correct changes")
-            print(f"   Updated name: {final_server.name}")
-            print(f"   Updated toolkits: {actual_toolkits}")
-            print(f"   Updated allowed_tools: {actual_tools}")
-            
-        except Exception as e:
-            print(f"⚠️  UPDATE/GET failed (API may not fully support updates yet): {e}")
-            print("📝 But the method signatures and structure are correct!")
+        # Step 4: GET updated MCP server
+        print("📖 Step 4: Getting updated MCP server")
+        final_server = composio_client.mcp.get(mcp_server.id)
+        
+        # Assertions after UPDATE and final GET
+        assert final_server.id == mcp_server.id, "ID should remain the same"
+        
+        # Verify that updates took effect
+        assert final_server.name == updated_name, f"Name should be updated to {updated_name}"
+        
+        # Check that toolkits were updated (should now include both composio_search and text_to_pdf)
+        expected_toolkits = ['composio_search', 'text_to_pdf']
+        actual_toolkits = getattr(final_server, 'toolkits', [])
+        for toolkit in expected_toolkits:
+            assert toolkit in actual_toolkits, f"Updated toolkits should include {toolkit}"
+        
+        # Check that allowed_tools were updated
+        expected_tools = ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
+        actual_tools = getattr(final_server, 'allowed_tools', [])
+        for tool in expected_tools:
+            assert tool in actual_tools, f"Updated allowed_tools should include {tool}"
+        
+        print("✅ FINAL GET: Retrieved updated server with correct changes")
+        print(f"   Updated name: {final_server.name}")
+        print(f"   Updated toolkits: {actual_toolkits}")
+        print(f"   Updated allowed_tools: {actual_tools}")
         
         print(f"🎉 CRUD cycle test completed for server {mcp_server.id}")
 
