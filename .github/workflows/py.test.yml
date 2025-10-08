@@ -173,7 +173,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
@@ -181,11 +181,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'  # Use Python 3.12 to satisfy workspace requirements
 
       - name: Install UV
         uses: astral-sh/setup-uv@v6
@@ -203,8 +198,8 @@ jobs:
       - name: Install Python Dependencies
         working-directory: ./python
         run: |
-          # Use the Python 3.12 we just installed
-          uv sync --group dev --python $(which python)
+          # Let UV manage Python version to satisfy workspace requirements
+          uv sync --group dev --python 3.12
           uv pip install -e .
 
       - name: Verify API Key
