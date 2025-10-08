@@ -28,6 +28,13 @@ if not API_KEY:
     pytest.skip("COMPOSIO_API_KEY environment variable not set", allow_module_level=True)
 
 
+def generate_unique_name(prefix: str = "pytest") -> str:
+    """Generate a unique test name using UUID to avoid collisions."""
+    # Use first 8 characters of UUID for readability while maintaining uniqueness
+    unique_id = str(uuid.uuid4())[:8]
+    return f'{prefix}-{unique_id}'
+
+
 @pytest.fixture
 def composio_client():
     """Fixture providing Composio client instance."""
@@ -38,7 +45,7 @@ def composio_client():
 def test_mcp_config_data():
     """Fixture providing test data for MCP config creation."""
     return {
-        'name': f'pytest-data-{int(time.time()) % 1000000}',
+        'name': generate_unique_name('pytest-data'),
         'toolkits': ['composio_search', 'text_to_pdf'],
         'allowed_tools': ['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF'],
         'manually_manage_connections': False
