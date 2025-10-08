@@ -53,8 +53,10 @@ events = runner.run(
     new_message=content,
 )
 for event in events:
-    if (event.is_final_response() 
-        and event.content is not None 
-        and event.content.parts 
-        and len(event.content.parts) > 0):
+    if (
+        event.is_final_response()
+        and event.content is not None
+        and event.content.parts
+        and len(event.content.parts) > 0
+    ):
         print("Agent Response: ", event.content.parts[0].text)
