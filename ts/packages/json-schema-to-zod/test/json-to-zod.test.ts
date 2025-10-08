@@ -292,7 +292,7 @@ describe('jsonSchemaToZod', () => {
       ).toThrow();
     });
 
-    it('should allow any additional properties when additionalProperties is not specified', () => {
+    it('should reject additional properties when additionalProperties is not specified', () => {
       const schema: JsonSchema = {
         type: 'object',
         properties: {
@@ -301,10 +301,7 @@ describe('jsonSchemaToZod', () => {
       };
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
-        name: 'John',
-        extra: 'field',
-      });
+      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should handle additionalProperties with patternProperties', () => {
@@ -1289,7 +1286,7 @@ describe('jsonSchemaToZod', () => {
           count: { type: 'number' },
         },
         required: ['value'],
-        additionalProperties: true,
+        additionalProperties: false,
       });
 
       // Test parsing behavior
@@ -1309,13 +1306,13 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
       const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
 
-      // When additionalProperties is undefined, it should default to true behavior
-      expect(convertedBack.additionalProperties).toBe(true);
+      // When additionalProperties is undefined, it should default to false behavior (strict)
+      expect(convertedBack.additionalProperties).toBe(false);
       expect(convertedBack.type).toBe('object');
 
-      // Test parsing behavior - should allow any additional properties
+      // Test parsing behavior - should reject additional properties
       expect(zodSchema.parse({})).toEqual({});
-      expect(zodSchema.parse({ any: 'value', number: 123 })).toEqual({ any: 'value', number: 123 });
+      expect(() => zodSchema.parse({ any: 'value', number: 123 })).toThrow();
     });
 
     it('should handle objects with properties and additionalProperties undefined (default behavior)', () => {
@@ -1329,16 +1326,13 @@ describe('jsonSchemaToZod', () => {
       const zodSchema = jsonSchemaToZod(schema);
       const convertedBack = zodToJsonSchema(zodSchema, { target: 'jsonSchema7' }) as any;
 
-      // When additionalProperties is undefined, it should default to true behavior
-      expect(convertedBack.additionalProperties).toBe(true);
+      // When additionalProperties is undefined, it should default to false behavior (strict)
+      expect(convertedBack.additionalProperties).toBe(false);
       expect(convertedBack.properties).toBeDefined();
 
-      // Test parsing behavior - should allow any additional properties
+      // Test parsing behavior - should reject additional properties
       expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
-      expect(zodSchema.parse({ name: 'John', extra: 'field' })).toEqual({
-        name: 'John',
-        extra: 'field',
-      });
+      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
     });
 
     it('should handle nested objects with different additionalProperties settings', () => {
