@@ -76,22 +76,3 @@ jobs:
             python/composio/integration_test/
           retention-days: 7
 
-  test-summary:
-    name: Integration Test Summary
-    runs-on: ubuntu-latest
-    needs: integration-tests
-    if: always()
-    
-    steps:
-      - name: Check Integration Test Results
-        run: |
-          if [ "${{ needs.integration-tests.result }}" == "success" ]; then
-            echo "✅ All integration tests passed successfully!"
-            echo "## ✅ Integration Tests Passed" >> $GITHUB_STEP_SUMMARY
-            echo "All integration tests completed successfully." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Integration tests failed or were cancelled"
-            echo "## ❌ Integration Tests Failed" >> $GITHUB_STEP_SUMMARY
-            echo "Some integration tests failed. Please check the test results above." >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
