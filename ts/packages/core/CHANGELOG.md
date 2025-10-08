@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.1.54
+
+### Patch Changes
+
+- e5b9db3: Fix exports for experimental tool router
+
 ## 0.1.53
 
 ### Patch Changes
