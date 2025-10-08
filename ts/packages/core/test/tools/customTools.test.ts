@@ -3,7 +3,7 @@ import { CustomTools } from '../../src/models/CustomTools';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import ComposioClient from '@composio/client';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { ComposioToolNotFoundError } from '../../src/errors/ToolErrors';
 import { ComposioConnectedAccountNotFoundError } from '../../src/errors/ConnectedAccountsErrors';
 import { ValidationError } from '../../src/errors';

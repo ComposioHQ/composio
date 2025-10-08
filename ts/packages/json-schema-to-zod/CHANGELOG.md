@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.16
+
+### Patch Changes
+
+- 8741165: Add zod 4 support via zod/v3 and fix zod schema parsing
+
 ## 0.1.15
 
 ### Patch Changes

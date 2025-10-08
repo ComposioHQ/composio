@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/v3';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
@@ -9,7 +9,8 @@ import { its } from '../utils/its';
 
 function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object' }, refs: Refs) {
   if (!objectSchema.properties) {
-    return undefined;
+    // leave it as an empty object or else this will break openai responses
+    return z.object({});
   }
 
   const propertyKeys = Object.keys(objectSchema.properties);
@@ -187,17 +188,11 @@ export function parseObject(
         // When additionalProperties was explicitly true, use passthrough
         output = propertiesSchema.passthrough();
       } else {
-        // Check if propertiesSchema is an empty object
-        const isEmptyObject = Object.keys(propertiesSchema._def.shape()).length === 0;
-        if (isEmptyObject) {
-          output = propertiesSchema.passthrough();
-        } else {
-          output = propertiesSchema.catchall(additionalProperties);
-        }
+        output = propertiesSchema.catchall(additionalProperties);
       }
     } else {
-      // When additionalProperties is not specified, treat it as true
-      output = propertiesSchema.passthrough();
+      // When additionalProperties is not specified, treat it as false
+      output = propertiesSchema.strict();
     }
   } else {
     if (hasPatternProperties) {

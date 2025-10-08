@@ -3,7 +3,7 @@ import {
   McpCreateResponse as McpCreateResponseRaw,
   GenerateURLResponse as GenerateURLResponseRaw,
 } from '@composio/client/resources/mcp';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 /**
  * @deprecated

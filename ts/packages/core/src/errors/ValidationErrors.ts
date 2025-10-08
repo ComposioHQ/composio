@@ -1,6 +1,6 @@
 // packages/core/src/errors/ValidationError.ts
 
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 /**

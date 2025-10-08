@@ -9,7 +9,7 @@
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error}
  */
 import chalk from 'chalk';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import { BadRequestError } from '@composio/client';
 import logger from '../utils/logger';
 
