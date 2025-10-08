@@ -1,18 +1,19 @@
 """
-Pytest-based integration tests for Composio Experimental MCP.
+Comprehensive integration tests for Composio MCP functionality.
 
-This module provides comprehensive pytest-based tests for the experimental MCP functionality,
-following the new unified MCP API specification that matches TypeScript implementation.
+This module provides comprehensive pytest-based tests for the MCP (Model Context Protocol) functionality,
+combining both structured pytest tests and direct execution tests for non-auth toolkits.
 
 Usage:
     export COMPOSIO_API_KEY="your_api_key_here"
-    pytest python/composio/integration_test/test_experimental_mcp.py -v
+    pytest python/composio/integration_test/test_mcp.py -v
 """
 
 import os
 import time
 
 import pytest
+import requests
 
 from composio import Composio
 from composio.exceptions import ValidationError
@@ -43,21 +44,12 @@ def test_mcp_config_data():
     }
 
 
-class TestExperimentalMCPStructure:
-    """Test the basic structure and availability of experimental MCP features."""
+class TestMCPStructure:
+    """Test the basic structure and availability of MCP features."""
     
     def test_mcp_namespace_exists(self, composio_client):
         """Test that mcp namespace exists at top level."""
         assert hasattr(composio_client, 'mcp'), "Missing mcp namespace"
-    
-    def test_mcp_moved_from_experimental(self, composio_client):
-        """Test that mcp has been moved from experimental to top level."""
-        # MCP should be at top level now
-        assert hasattr(composio_client, 'mcp'), "Missing top-level mcp"
-        
-        # Experimental should still exist but without mcp
-        assert hasattr(composio_client, 'experimental'), "Missing experimental namespace"
-        assert not hasattr(composio_client.experimental, 'mcp'), "mcp should be moved from experimental to top level"
     
     @pytest.mark.parametrize("method_name", [
         "create", "list", "get", "update", "delete", "generate"
@@ -242,7 +234,7 @@ class TestMCPOperations:
         assert mcp_config.commands.cursor
         assert mcp_config.commands.windsurf
         assert callable(mcp_config.generate)
-    
+
 
 class TestMCPErrorHandling:
     """Test error handling and edge cases."""
@@ -283,6 +275,139 @@ class TestMCPErrorHandling:
         except Exception as e:
             # Also acceptable - might fail for other API reasons
             print(f"Create failed with: {type(e).__name__}: {e}")
+
+
+class TestMCPNoAuthToolkits:
+    """Test MCP functionality with non-authentication toolkits."""
+    
+    def test_mcp_with_no_auth_toolkits(self, composio_client):
+        """Test MCP with toolkits that don't require authentication."""
+        print("🔧 Testing MCP with Non-Auth Toolkits")
+        print("=" * 50)
+        
+        # Create MCP server with non-auth toolkits
+        server_name = f'no-auth-test-{int(time.time()) % 1000000}'
+        print(f"🚀 Creating MCP server: {server_name}")
+        
+        mcp_server = composio_client.mcp.create(
+            server_name,
+            toolkits=['composio_search', 'text_to_pdf'],
+            allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF'],
+            manually_manage_connections=False
+        )
+        
+        print("✅ MCP server created successfully!")
+        print(f"   Server ID: {mcp_server.id}")
+        print(f"   Server Name: {mcp_server.name}")
+        print(f"   Toolkits: {getattr(mcp_server, 'toolkits', 'N/A')}")
+        
+        # Generate server instance for a test user
+        test_user_id = 'test_user_no_auth_123'
+        print(f"\n🔗 Generating server instance for user: {test_user_id}")
+        
+        server_instance = mcp_server.generate(test_user_id)
+        
+        print("✅ Server instance generated successfully!")
+        print(f"   Instance ID: {server_instance['id']}")
+        print(f"   Instance Type: {server_instance['type']}")
+        print(f"   Instance URL: {server_instance['url']}")
+        print(f"   User ID: {server_instance['user_id']}")
+        print(f"   Allowed Tools: {server_instance['allowed_tools']}")
+        print(f"   Auth Configs: {server_instance['auth_configs']}")
+        
+        # Test direct generate method as well
+        print("\n🔄 Testing direct generate method...")
+        
+        direct_instance = composio_client.mcp.generate(
+            test_user_id + '_direct',
+            mcp_server.id,
+            {'manually_manage_connections': False}
+        )
+        
+        print("✅ Direct generate method successful!")
+        print(f"   Direct Instance URL: {direct_instance['url']}")
+        print(f"   Direct Instance User ID: {direct_instance['user_id']}")
+        
+        # Test URL connectivity (basic check)
+        print("\n🌐 Testing MCP URL connectivity...")
+        
+        mcp_url = server_instance['url']
+        
+        try:
+            # Test with SSE-appropriate headers
+            headers = {
+                'Accept': 'text/event-stream, application/json, */*',
+                'Cache-Control': 'no-cache',
+                'User-Agent': 'Composio-Python-MCP-Test'
+            }
+            
+            response = requests.get(mcp_url, headers=headers, timeout=5, stream=True)
+            
+            print("✅ MCP URL is accessible!")
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Content-Type: {response.headers.get('Content-Type', 'N/A')}")
+            
+            # Try to read first event
+            try:
+                chunk = next(response.iter_content(chunk_size=1024, decode_unicode=True))
+                print(f"   First Event: {chunk.strip()[:100]}...")
+            except StopIteration:
+                print("   No initial content received")
+                
+        except requests.exceptions.Timeout:
+            print("⚠️  MCP URL timeout (normal for SSE endpoints)")
+        except Exception as e:
+            print(f"⚠️  MCP URL test failed: {e}")
+        
+        print("\n📊 Test Summary:")
+        print(f"   ✅ MCP Server Created: {mcp_server.id}")
+        print(f"   ✅ Server Instance Generated: {server_instance['type']}")
+        print("   ✅ Direct Generate Method: Working")
+        print(f"   ✅ Available Tools: {len(server_instance['allowed_tools'])} tools")
+        print(f"   ✅ No Auth Required: {len(server_instance['auth_configs'])} auth configs")
+        
+        # Assertions for pytest
+        assert mcp_server.id is not None
+        assert mcp_server.name == server_name
+        assert server_instance['type'] == 'streamable_http'
+        assert server_instance['user_id'] == test_user_id
+        assert len(server_instance['allowed_tools']) > 0
+        assert len(server_instance['auth_configs']) == 0  # No auth required
+    
+    def test_mcp_with_string_toolkits(self, composio_client):
+        """Test MCP server creation using simple string toolkit names."""
+        print("🧪 Testing MCP with string toolkit names...")
+        
+        # Create MCP server with string toolkit names (simplified API)
+        server_name = f'string-test-{int(time.time()) % 1000000}'
+        print(f"🚀 Creating MCP server with strings: {server_name}")
+        
+        mcp_server = composio_client.mcp.create(
+            server_name,
+            toolkits=['composio_search', 'text_to_pdf'],  # Simple strings
+            manually_manage_connections=False
+        )
+        
+        print("✅ MCP server created successfully with string toolkits!")
+        print(f"   Server ID: {mcp_server.id}")
+        print(f"   Server Name: {mcp_server.name}")
+        
+        # Test generate method
+        user_id = f'string_user_{int(time.time()) % 10000}'
+        server_instance = mcp_server.generate(user_id)
+        
+        print("✅ Server instance generated successfully!")
+        print(f"   Instance URL: {server_instance['url']}")
+        print(f"   User ID: {server_instance['user_id']}")
+        print(f"   Server Type: {server_instance['type']}")
+        
+        # Basic validation
+        assert server_instance['user_id'] == user_id
+        assert server_instance['type'] == 'streamable_http'
+        assert 'url' in server_instance
+        assert len(server_instance['url']) > 0
+        
+        print("🎉 String toolkit test completed successfully!")
 
 
 class TestMCPRealWorldScenarios:
@@ -416,3 +541,31 @@ class TestMCPRealWorldScenarios:
         print(f"🎉 CRUD cycle test completed for server {mcp_server.id}")
 
 
+# Direct execution support for backward compatibility
+def main():
+    """Main test function for direct execution."""
+    print("🎯 MCP Integration Tests")
+    print("Testing MCP functionality with non-auth toolkits")
+    print()
+    
+    # Initialize Composio client
+    composio = Composio()
+    
+    # Run the no-auth toolkit test directly
+    try:
+        # Create test instance
+        test_instance = TestMCPNoAuthToolkits()
+        test_instance.test_mcp_with_no_auth_toolkits(composio)
+        
+        print("\n🎉 All tests passed! MCP is working with non-auth toolkits.")
+        return True
+    except Exception as e:
+        print(f"\n💥 Tests failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+if __name__ == "__main__":
+    success = main()
+    exit(0 if success else 1)

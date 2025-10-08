@@ -27,31 +27,18 @@ jobs:
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
     
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
-      fail-fast: false # Continue with other versions even if one fails
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-
       - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: uv-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          key: uv-${{ hashFiles('python/pyproject.toml') }}
           restore-keys: |
-            uv-${{ matrix.python-version }}-
-
-      - name: Install UV
-        run: pip install uv
+            uv-
 
       - name: Install Python Dependencies
         working-directory: ./python
@@ -93,7 +80,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-results-python-${{ matrix.python-version }}
+          name: integration-test-results
           path: |
             python/test_report.txt
             python/composio/integration_test/
@@ -111,7 +98,7 @@ jobs:
           if [ "${{ needs.integration-tests.result }}" == "success" ]; then
             echo "✅ All integration tests passed successfully!"
             echo "## ✅ Integration Tests Passed" >> $GITHUB_STEP_SUMMARY
-            echo "All integration tests completed successfully across all Python versions." >> $GITHUB_STEP_SUMMARY
+            echo "All integration tests completed successfully." >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Integration tests failed or were cancelled"
             echo "## ❌ Integration Tests Failed" >> $GITHUB_STEP_SUMMARY

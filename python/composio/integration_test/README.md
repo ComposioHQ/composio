@@ -23,8 +23,11 @@ export COMPOSIO_API_KEY="your_api_key_here"
 ### Using pytest (Recommended)
 
 #### Run All Integration Tests
+
+**Option 1: From project root directory**
 ```bash
-cd /Users/equinox/composio
+# Navigate to the project root directory
+cd /path/to/composio
 
 # Run all integration tests
 python -m pytest python/composio/integration_test/ -v
@@ -33,6 +36,22 @@ python -m pytest python/composio/integration_test/ -v
 python -m pytest python/composio/integration_test/ -q  # Quiet
 python -m pytest python/composio/integration_test/ -v  # Verbose
 python -m pytest python/composio/integration_test/ -s  # Show print statements
+```
+
+**Option 2: From python directory**
+```bash
+# Navigate to the python subdirectory
+cd /path/to/composio/python
+
+# Run all integration tests
+python -m pytest composio/integration_test/ -v
+```
+
+**Option 3: Using uv (if available)**
+```bash
+# From python directory
+cd /path/to/composio/python
+uv run pytest composio/integration_test/ -v
 ```
 
 #### Run Specific Test Suites
@@ -63,9 +82,17 @@ python -m pytest python/composio/integration_test/test_tool_router.py::TestToolR
 
 ### Using Direct Python Execution
 ```bash
-# Run MCP non-auth toolkit tests directly
-cd /Users/equinox/composio
+# Option 1: From project root
+cd /path/to/composio
 python python/composio/integration_test/test_mcp_no_auth_toolkits.py
+
+# Option 2: From python directory  
+cd /path/to/composio/python
+python composio/integration_test/test_mcp_no_auth_toolkits.py
+
+# Option 3: From integration_test directory
+cd /path/to/composio/python/composio/integration_test
+python test_mcp_no_auth_toolkits.py
 ```
 
 ## Test Coverage
@@ -201,7 +228,7 @@ Testing composio_search and text_to_pdf toolkits
 export COMPOSIO_API_KEY="your_api_key_here"
 
 # Install Composio SDK in development mode (if testing local changes)
-cd /Users/equinox/composio/python
+cd /path/to/composio/python
 pip install -e .
 ```
 
