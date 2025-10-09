@@ -94,4 +94,5 @@ class HttpClient(BaseComposio, WithLogger):
         """
         ctx = self.request_ctx.get()
         request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
-        request.headers["x-framework-provider"] = ctx["provider"]
+        request.headers["x-framework"] = ctx["provider"]
+        request.headers["x-source"] = 'python'
