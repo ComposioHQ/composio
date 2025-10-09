@@ -7,8 +7,8 @@ const userId = 'hey@example.com';
 const session = await composio.experimental.toolRouter.createSession(userId);
 // Returns:
 // {
-//   sessionId: "dKDoDWAGUf-hPM-Bw39pJ",
-//   url: "https://apollo.composio.dev/v3/mcp/tool-router/dKDoDWAGUf-hPM-Bw39pJ/mcp"
+//   sessionId: "<session_id>",
+//   url: "<mcp_url>"
 // }
 
 const mcpUrl = session.url;
