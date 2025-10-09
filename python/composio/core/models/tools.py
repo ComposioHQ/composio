@@ -3,8 +3,8 @@ from __future__ import annotations
 import functools
 import typing as t
 
-from composio_client import omit
 import typing_extensions as te
+from composio_client import omit
 
 from composio.client import HttpClient
 from composio.client.types import (

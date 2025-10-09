@@ -11,7 +11,7 @@
  *   .using((raw) => ({ ... }))
  * ```
  */
-import { ZodTypeAny, z } from 'zod';
+import { ZodTypeAny, z } from 'zod/v3';
 import { ValidationError } from '../errors';
 import { logger } from '..';
 

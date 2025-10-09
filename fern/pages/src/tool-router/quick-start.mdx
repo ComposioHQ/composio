@@ -32,13 +32,6 @@ Create a presigned URL for each user session. This URL exposes Tool Router capab
 />
 </CodeGroup>
 
-Now you can use the MCP URL in any MCP client, you can see how it lists tools inside the inspector here
-
-<Frame>
-  <img src="../../../assets/images/tool-router/inspector.jpeg"  alt="Tool Router Inspector" />
-</Frame>
-
-
 <Tip icon="info">
 **What are sessions?**
 
@@ -46,6 +39,53 @@ A session encapsulates a single conversation between a user and the language mod
 
 Sessions are designed for security. Each presigned URL contains user authentication credentials and should never be stored long-term or exposed to the client. Generate a new URL for each conversation.
 </Tip>
+
+The URL you get here is an MCP [StreamableHTTP URL](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http). You can use this URL in any MCP client, you can see how it lists tools inside the inspector here.
+
+<Frame>
+  <img src="../../../assets/images/tool-router/inspector.jpeg"  alt="Tool Router Inspector" />
+</Frame>
+
+### Building on top of this URL with providers
+
+_The necessary scaffolding will be integrated into existing providers abstraction before `toolRouter` is generally available._
+
+Use the presigned URL with any frameworks that support MCP directly, few examples below:
+
+<CardGroup cols={2}>
+  <Card
+    title="OpenAI"
+    icon={<img src="../../../assets/images/openai-logo.svg" width="24" height="24" />}
+    href="https://platform.openai.com/docs/guides/tools-connectors-mcp"
+  >
+    Connect via OpenAI's MCP connector to use Tool Router with GPT models
+  </Card>
+  <Card
+    title="Vercel AI SDK"
+    icon={<img src="../../../assets/images/vercel-logo.svg" width="24" height="24" />}
+    href="https://ai-sdk.dev/cookbook/next/mcp-tools#mcp-tools"
+  >
+    Use experimental_createMCPClient with StreamableHTTPClientTransport to integrate with Next.js apps
+  </Card>
+  <Card
+    title="Claude"
+    icon={<img src="../../../assets/images/anthropic-logo.svg" width="24" height="24" />}
+    href="https://docs.claude.com/en/docs/agents-and-tools/remote-mcp-servers"
+  >
+    Connect remote MCP servers through Anthropic's MCP connector API
+  </Card>
+  <Card
+    title="LangChain"
+    icon={<img src="../../../assets/images/langgraph-logo.svg" width="24" height="24" />}
+    href="https://docs.langchain.com/oss/python/langchain/mcp"
+  >
+    Load Tool Router tools using langchain_mcp_adapters for Python workflows
+  </Card>
+</CardGroup>
+
+
+
+
 
 ## How Tool Router Works
 
@@ -59,6 +99,14 @@ Checks if the user has an active connection to the required toolkit. If not, cre
 
 **3. Execution**  
 Loads authenticated tools into context and executes them. Supports parallel execution across multiple tools for efficiency.
+
+### Context Management
+
+The Tool Router intelligently manages context to avoid overwhelming the LLM with unnecessary information. Tools are only loaded into context when needed—search discovers relevant tools, and multi execute loads them just-in-time for execution. When working with large outputs, the remote workbench stores them as files in persistent storage, allowing iteration without consuming context windows. The system also segments tools within each MCP server, exposing only the subset required for the current task.
+
+<Info>
+The tool router currently consumes about ~20k tokens of context on modern models like `gpt-5` and `claude-4.5-sonnet`. This number can vary based on the model's tokenizer, we will work towards reducing this number in the future.
+</Info>
 
 ### Available Tools
 

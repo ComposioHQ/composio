@@ -6,5 +6,10 @@ userId = "hey@example.com"
 session = composio.experimental.tool_router.create_session(
     user_id=userId,
 )
+# Returns:
+# {
+#   'session_id': '<session_id>',
+#   'url': '<mcp_url>'
+# }
 
 mcpUrl = session['url']

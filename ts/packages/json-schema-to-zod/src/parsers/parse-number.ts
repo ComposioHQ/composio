@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 import type { JsonSchemaObject } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
