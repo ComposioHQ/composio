@@ -88,10 +88,8 @@ const ai = new GoogleGenAI({
 
 ## Supported Models
 
-- `gemini-2.0-flash-001` - Fast, efficient model for most use cases
-- `gemini-2.0-pro-001` - Advanced model with enhanced capabilities
-- `gemini-1.5-flash-001` - Legacy model for backward compatibility
-- `gemini-1.5-pro-001` - Legacy model with advanced capabilities
+- `gemini-2.5-flash` - Fast, efficient model for most use cases
+- `gemini-2.0-pro` - Advanced model with enhanced capabilities
 
 ## Function Calling
 
