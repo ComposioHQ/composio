@@ -8,8 +8,8 @@ session = composio.experimental.tool_router.create_session(
 )
 # Returns:
 # {
-#   'session_id': 'dKDoDWAGUf-hPM-Bw39pJ',
-#   'url': 'https://apollo.composio.dev/v3/mcp/tool-router/dKDoDWAGUf-hPM-Bw39pJ/mcp'
+#   'session_id': '<session_id>',
+#   'url': '<mcp_url>'
 # }
 
 mcpUrl = session['url']
