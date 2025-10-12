@@ -41,6 +41,9 @@ layout:
   searchbar-placement: header-tabs
   header-height: 50px
   sidebar-width: 298px
+settings:
+  hide-404-page: true
+  http-snippets: true
 colors:
   accent-primary:
     light: '#FF782F'
