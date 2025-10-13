@@ -88,8 +88,8 @@ const productionServers = await composio.mcp.list({
 ```python
 # Get by ID
 server = composio.mcp.get("mcp_server_id")
-print(f"Server: {server['name']}")
-print(f"Toolkits: {server['toolkits']}")
+print(f"Server name: {server.name}")
+print(f"Toolkits: {server.toolkits}")
 ```
 </CodeGroupItem>
 <CodeGroupItem title="TypeScript">
@@ -214,6 +214,13 @@ instance = server.generate("user@example.com")
 
 print(f"URL: {instance['url']}")
 print(f"Tools: {instance['allowed_tools']}")
+
+# Chat-based authentication is enabled by default
+# Set manually_manage_connections=True to disable it:
+instance_manual = server.generate(
+    "user@example.com", 
+    manually_manage_connections=True
+)
 ```
 </CodeGroupItem>
 <CodeGroupItem title="TypeScript">
@@ -230,9 +237,20 @@ const urls2 = await server.getServer({
 });
 
 console.log("URL:", urls);
+
+// Note: URLs include include_composio_helper_actions=true when 
+// isChatAuth is enabled, allowing agents to guide authentication
 ```
 </CodeGroupItem>
 </CodeGroup>
+
+<Note>
+**Chat-based authentication:**
+- **TypeScript**: Set `isChatAuth: true` during server creation to enable
+- **Python**: Enabled by default (set `manually_manage_connections=False` or omit it)
+
+When enabled, the agent can authenticate users dynamically during conversation if they're missing required connections.
+</Note>
 
 ## Best practices
 
@@ -241,41 +259,3 @@ console.log("URL:", urls);
 - **Reuse servers** - Don't create duplicates for same configuration
 - **Store server IDs** - Keep track of created server IDs
 
-## API reference
-
-### Python methods
-
-| Method | Description |
-|--------|-------------|
-| `create()` | Create new server |
-| `list()` | List servers |
-| `get()` | Get server by ID |
-| `update()` | Update server |
-| `delete()` | Delete server |
-| `generate()` | Generate user URL |
-
-### TypeScript methods  
-
-| Method | Description |
-|--------|-------------|
-| `create()` | Create new server |
-| `list()` | List servers |
-| `get()` | Get server by ID |
-| `getByName()` | Find server by name |
-| `update()` | Update server |
-| `delete()` | Delete server |
-| `getServer()` | Generate user URL |
-
-## Next steps
-
-<Cards>
-  <Card title="Authentication" href="/docs/mcp-authentication" icon="lock">
-    Handle user authentication
-  </Card>
-  <Card title="Providers" href="/docs/mcp-providers" icon="code">
-    Framework integrations
-  </Card>
-  <Card title="Troubleshooting" href="/docs/troubleshooting/mcp" icon="wrench">
-    Common issues
-  </Card>
-</Cards>

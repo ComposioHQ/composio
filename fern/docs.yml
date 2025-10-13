@@ -174,15 +174,6 @@ navigation:
     - page: Partner Program
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api
-    - page: Developers (old)
-      path: pages/dist/mcp/developers.mdx
-      slug: mcp-developers-old
-    - page: Introduction (old)
-      path: pages/dist/mcp/introduction.mdx
-      slug: mcp-introduction-old
-    - page: Implementation (old)
-      path: pages/dist/mcp/implementation.mdx
-      slug: mcp-implementation-old
   - section: Tool Router (Beta)
     icon: tools
     skip-slug: true
