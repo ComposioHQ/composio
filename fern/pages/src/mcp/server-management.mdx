@@ -26,11 +26,16 @@ print(f"Created server: {server.id}")
 ```typescript
 const server = await composio.mcp.create(
   "my-gmail-server",
-  [{
-    authConfigId: "ac_xyz123",
-    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
-  }],
-  { isChatAuth: true }
+  {
+    toolkits: [
+      {
+        authConfigId: "ac_xyz123",
+        toolkit: "gmail"
+      }
+    ],
+    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+    manuallyManageConnections: false
+  }
 );
 
 console.log(`Created server: ${server.id}`);
@@ -64,17 +69,28 @@ production_servers = composio.mcp.list(
 <CodeGroupItem title="TypeScript">
 ```typescript
 // List all servers
-const servers = await composio.mcp.list();
+const servers = await composio.mcp.list({
+  limit: 10,
+  page: 1,
+  authConfigs: [],
+  toolkits: []
+});
 console.log(`Found ${servers.items.length} servers`);
 
 // Filter by toolkit
 const gmailServers = await composio.mcp.list({
-  toolkits: ["gmail"],
-  limit: 20
+  limit: 20,
+  page: 1,
+  authConfigs: [],
+  toolkits: ["gmail"]
 });
 
 // Filter by name
 const productionServers = await composio.mcp.list({
+  limit: 10,
+  page: 1,
+  authConfigs: [],
+  toolkits: [],
   name: "production"
 });
 ```
@@ -96,9 +112,6 @@ print(f"Toolkits: {server.toolkits}")
 ```typescript
 // Get by ID
 const server = await composio.mcp.get("mcp_server_id");
-
-// Get by name (TypeScript only)
-const namedServer = await composio.mcp.getByName("my-gmail-server");
 
 console.log(`Server: ${server.name}`);
 console.log(`Toolkits: ${server.toolkits}`);
@@ -124,14 +137,20 @@ updated = composio.mcp.update(
 ```typescript
 const updated = await composio.mcp.update(
   "mcp_server_id",
-  "updated-name",
-  [{
-    toolkit: "gmail",
-    authConfigId: "ac_new_config",
-    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"]
-  }],
-  { isChatAuth: true }
+  {
+    name: "updated-name",
+    toolkits: [
+      {
+        toolkit: "gmail",
+        authConfigId: "ac_new_config"
+      }
+    ],
+    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"],
+    manuallyManageConnections: false
+  }
 );
+
+console.log(updated);
 ```
 </CodeGroupItem>
 </CodeGroup>
@@ -182,21 +201,28 @@ server = composio.mcp.create(
 ```typescript
 const server = await composio.mcp.create(
   "productivity-suite",
-  [
-    { 
-      authConfigId: "ac_gmail", 
-      allowedTools: ["GMAIL_FETCH_EMAILS"] 
-    },
-    { 
-      authConfigId: "ac_slack", 
-      allowedTools: ["SLACK_SEND_MESSAGE"] 
-    },
-    { 
-      authConfigId: "ac_github", 
-      allowedTools: ["GITHUB_CREATE_ISSUE"] 
-    }
-  ],
-  { isChatAuth: true }
+  {
+    toolkits: [
+      { 
+        authConfigId: "ac_gmail",
+        toolkit: "gmail"
+      },
+      { 
+        authConfigId: "ac_slack",
+        toolkit: "slack"
+      },
+      { 
+        authConfigId: "ac_github",
+        toolkit: "github"
+      }
+    ],
+    allowedTools: [
+      "GMAIL_FETCH_EMAILS",
+      "SLACK_SEND_MESSAGE",
+      "GITHUB_CREATE_ISSUE"
+    ],
+    manuallyManageConnections: false
+  }
 );
 ```
 </CodeGroupItem>
@@ -225,31 +251,29 @@ instance_manual = server.generate(
 </CodeGroupItem>
 <CodeGroupItem title="TypeScript">
 ```typescript
-// Generate URLs for user
-const urls = await composio.mcp.getServer(
+// Generate instance for user
+const instance = await server.generate("user@example.com");
+
+console.log("URL:", instance.url);
+console.log("Tools:", instance.allowedTools);
+
+// Chat-based authentication is enabled by default
+// Set manuallyManageConnections: true to disable it:
+const instanceManual = await composio.mcp.generate(
+  "user@example.com",
   server.id,
-  "user@example.com"
+  { manuallyManageConnections: true }
 );
-
-// Or use convenience method from create response
-const urls2 = await server.getServer({
-  userId: "user@example.com"
-});
-
-console.log("URL:", urls);
-
-// Note: URLs include include_composio_helper_actions=true when 
-// isChatAuth is enabled, allowing agents to guide authentication
 ```
 </CodeGroupItem>
 </CodeGroup>
 
 <Note>
 **Chat-based authentication:**
-- **TypeScript**: Set `isChatAuth: true` during server creation to enable
+- **TypeScript**: Enabled by default (set `manuallyManageConnections=False` or omit it)
 - **Python**: Enabled by default (set `manually_manage_connections=False` or omit it)
 
-When enabled, the agent can authenticate users dynamically during conversation if they're missing required connections.
+When enabled, the agent can authenticate users dynamically during conversation if they're missing required connections. Set `manuallyManageConnections=True` (TypeScript) or `manually_manage_connections=True` (Python) to disable it.
 </Note>
 
 ## Best practices
