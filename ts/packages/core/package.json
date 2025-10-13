@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.1.54",
+  "version": "0.1.55",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -45,7 +45,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "3.25.76"
+    "zod": ">=3.25.76 <5"
   },
   "dependencies": {
     "@composio/client": "catalog:",

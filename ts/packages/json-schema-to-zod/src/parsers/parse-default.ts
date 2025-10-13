@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 import type { JsonSchemaObject } from '../types';
 
 export const parseDefault = (_jsonSchema: JsonSchemaObject) => {
-	return z.any();
+  return z.any();
 };

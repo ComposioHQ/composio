@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/v3';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';

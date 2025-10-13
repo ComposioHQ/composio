@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthConfigs } from '../../src/models/AuthConfigs';
 import ComposioClient from '@composio/client';
 import { ValidationError } from '../../src/errors/ValidationErrors';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import {
   AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,

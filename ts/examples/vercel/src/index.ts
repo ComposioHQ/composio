@@ -19,7 +19,7 @@ const composio = new Composio({
  * Alternatively, you can use the `composio.getToolBySlug` method
  */
 async function run() {
-  const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_FRONTPAGE', {
+  const tools = await composio.tools.get('test-user-id', 'HUBSPOT_CREATE_LINE_ITEMS', {
     beforeExecute: ({ params, toolSlug }) => {
       console.log(`🔄 Executing ${toolSlug} with params:`, { params });
       return params;
@@ -33,12 +33,14 @@ async function run() {
   const messages: ModelMessage[] = [
     {
       role: MessageRoles.USER,
-      content: 'Summarize the front page of HackerNews',
+      content: 'What tools do you have access to?',
     },
   ];
 
+  // const schema = tools[0].inputSchema;
+
   const { text } = await generateText({
-    model: openai('gpt-4o-mini'),
+    model: openai.responses('gpt-4.1'),
     tools: tools,
     messages,
     stopWhen: stepCountIs(5),

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
-from composio_client import omit
 import typing_extensions as te
+from composio_client import omit
 
 from composio.client import HttpClient
 from composio.client.types import (
@@ -491,16 +491,28 @@ class Tools(Resource, t.Generic[TProvider]):
         return response
 
     def proxy(
-        self, **options: te.Unpack[tool_proxy_params.ToolProxyParams]
+        self,
+        endpoint: str,
+        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"],
+        body: t.Optional[object] = None,
+        connected_account_id: t.Optional[str] = None,
+        parameters: t.Optional[t.List[tool_proxy_params.Parameter]] = None,
+        custom_connection_data: t.Optional[
+            tool_proxy_params.CustomConnectionData
+        ] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
         """Proxy a tool call to the Composio API"""
         return self._client.tools.proxy(
-            endpoint=options["endpoint"],
-            method=options["method"],
-            body=options.get("body", omit),
-            connected_account_id=options.get("connected_account_id", omit),
-            parameters=options.get("parameters", omit),
-            custom_connection_data=options.get("custom_connection_data", omit),
+            endpoint=endpoint,
+            method=method,
+            body=body if body is not None else omit,
+            connected_account_id=connected_account_id
+            if connected_account_id is not None
+            else omit,
+            parameters=parameters if parameters is not None else omit,
+            custom_connection_data=custom_connection_data
+            if custom_connection_data is not None
+            else omit,
         )
 
 

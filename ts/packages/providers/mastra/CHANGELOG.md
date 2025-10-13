@@ -1,5 +1,12 @@
 # @composio/mastra
 
+## 0.1.56
+
+### Patch Changes
+
+- Updated dependencies [8741165]
+  - @composio/core@0.1.55
+
 ## 0.1.55
 
 ### Patch Changes

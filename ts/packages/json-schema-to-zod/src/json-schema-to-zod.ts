@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { z } from 'zod/v3';
 
 import { parseSchema } from './parsers/parse-schema';
 import type { JsonSchemaToZodOptions, JsonSchema } from './types';
