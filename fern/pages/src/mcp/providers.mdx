@@ -1,151 +1,42 @@
 ---
-title: MCP providers
-subtitle: Using MCP servers with AI frameworks
+title: Provider integrations
+subtitle: Connect MCP servers to AI frameworks
 ---
 
-Connect your MCP servers to popular AI frameworks and agents.
+Integrate your MCP servers with popular AI SDKs and frameworks.
 
-## Anthropic (Claude)
+## Anthropic SDK
 
-Use MCP servers with Claude API and Claude Desktop.
+Use MCP servers with the Anthropic Claude API.
 
 <CodeGroup>
 <CodeGroupItem title="Python">
-```python
-# Python SDK - Anthropic integration coming soon
-# Use the standard MCP server URL generation for now
-instance = server.generate("user@example.com")
-print(f"MCP URL for Claude: {instance['url']}")
-```
+<SnippetCode src="fern/snippets/mcp/python/anthropic-provider.py" />
 </CodeGroupItem>
 <CodeGroupItem title="TypeScript">
-```typescript
-import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// Get MCP server URL
-const serverUrls = await composio.mcp.getServer(
-  server.id,
-  "user@example.com"
-);
-
-// Use with Claude (when MCP support is available)
-const stream = await anthropic.beta.messages.stream({
-  model: "claude-3-5-sonnet-20241022",
-  mcp_servers: serverUrls,
-  messages: [{
-    role: "user",
-    content: "Fetch my latest emails"
-  }]
-});
-```
+<SnippetCode src="fern/snippets/mcp/typescript/anthropic-provider.ts" />
 </CodeGroupItem>
 </CodeGroup>
 
-## OpenAI
+## OpenAI SDK
 
 Integrate MCP servers with OpenAI GPT models.
 
 <CodeGroup>
 <CodeGroupItem title="Python">
-```python
-from openai import OpenAI
-
-client = OpenAI()
-
-# Get MCP server instance
-instance = server.generate("user@example.com")
-
-# Use the MCP URL with OpenAI (hypothetical integration)
-# OpenAI MCP support details coming soon
-```
+<SnippetCode src="fern/snippets/mcp/python/openai-provider.py" />
 </CodeGroupItem>
 <CodeGroupItem title="TypeScript">
-```typescript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Get MCP server URL
-const serverUrls = await composio.mcp.getServer(
-  server.id,
-  "user@example.com"
-);
-
-// Integration with OpenAI (when available)
-// Use serverUrls with OpenAI's MCP support
-```
+<SnippetCode src="fern/snippets/mcp/typescript/openai-provider.ts" />
 </CodeGroupItem>
 </CodeGroup>
 
-## Vercel AI SDK
+## Mastra
 
-Use MCP servers with Vercel's AI SDK.
+Use MCP servers with Mastra framework.
 
-```typescript
-import { experimental_createMCPClient as createMCPClient } from 'ai';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+<SnippetCode src="fern/snippets/mcp/typescript/mastra-provider.ts" />
 
-// Get server URL
-const serverUrls = await composio.mcp.getServer(
-  server.id,
-  "user@example.com"
-);
-
-// Create MCP client
-const mcpClient = await createMCPClient({
-  name: 'composio-mcp-client',
-  transport: new SSEClientTransport(new URL(serverUrls.url)),
-});
-
-// Use with Vercel AI
-const tools = await mcpClient.tools();
-```
-
-## Cursor IDE
-
-Configure MCP servers in Cursor settings.
-
-```json
-{
-  "mcpServers": {
-    "composio": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-compose",
-        "YOUR_MCP_SERVER_URL"
-      ]
-    }
-  }
-}
-```
-
-## Claude Desktop
-
-Add to Claude Desktop configuration:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "composio-gmail": {
-      "command": "node",
-      "args": [
-        "/path/to/mcp-server.js",
-        "YOUR_MCP_SERVER_URL"
-      ]
-    }
-  }
-}
-```
 
 ## Quick integration guide
 
@@ -167,23 +58,15 @@ Add to Claude Desktop configuration:
   </Step>
 </Steps>
 
-## Supported clients
+## Supported frameworks
 
-- **Claude Desktop** - Native MCP support
-- **Cursor IDE** - Built-in MCP integration
-- **Vercel AI SDK** - Experimental MCP support
-- **Custom clients** - Any MCP-compatible client
+- **Anthropic SDK** - Claude API integration (coming soon)
+- **OpenAI SDK** - GPT models integration (coming soon)
+- **Mastra** - Framework with native MCP client support
+- **Custom integrations** - Any MCP-compatible SDK
 
 ## Next steps
 
-<Cards>
-  <Card title="Quickstart" href="/docs/mcp-quickstart" icon="rocket">
-    Get started with MCP servers
-  </Card>
-  <Card title="Implementation guide" href="/docs/mcp-implementation" icon="book">
-    Complete development guide
-  </Card>
-  <Card title="Troubleshooting" href="/docs/troubleshooting/mcp" icon="wrench">
-    Common issues and solutions
-  </Card>
-</Cards>
+- [Quickstart](/docs/mcp-quickstart) - Get started with MCP servers
+- [Server management](/docs/mcp-server-management) - Manage your MCP servers
+- [Troubleshooting](/docs/troubleshooting/mcp) - Common issues and solutions
