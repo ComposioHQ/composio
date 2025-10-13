@@ -8,7 +8,7 @@ mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?include_com
 
 # Use MCP with Anthropic (beta feature)
 response = client.beta.messages.create(
-    model="claude-3-5-sonnet-20241022",
+    model="claude-sonnet-4-5",
     max_tokens=1000,
     messages=[{
         "role": "user",
@@ -19,7 +19,7 @@ response = client.beta.messages.create(
         "url": mcp_server_url,
         "name": "composio-gmail-calendar-mcp-server"
     }],
-    betas=["mcp-client-2025-01-15"]  # Enable MCP beta
+    betas=["mcp-client-2025-04-04"]  # Enable MCP beta
 )
 
 print(response.content)

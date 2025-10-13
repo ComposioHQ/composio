@@ -23,7 +23,7 @@ const instance = await server.generate("user@example.com");
 
 // Use MCP with Anthropic for spreadsheet operations
 const response = await anthropic.beta.messages.create({
-  model: "claude-3-5-sonnet-20241022",
+  model: "claude-sonnet-4-5",
   max_tokens: 1000,
   messages: [{
     role: "user",
@@ -34,7 +34,7 @@ const response = await anthropic.beta.messages.create({
     url: instance.url,
     name: "composio-mcp-server"
   }],
-  betas: ["mcp-client-2025-01-15"]  // Enable MCP beta
+  betas: ["mcp-client-2025-04-04"]  // Enable MCP beta
 });
 
 console.log(response.content);
