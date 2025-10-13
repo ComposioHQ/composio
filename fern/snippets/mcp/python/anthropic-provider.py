@@ -21,6 +21,7 @@ instance = server.generate("user@example.com")
 # Use MCP with Anthropic to manage development workflow
 response = anthropic.beta.messages.create(
     model="claude-sonnet-4-5",
+    system="You are a helpful assistant with access to GitHub and Linear tools. Use these tools to help manage development workflows. Do not ask for confirmation before using the tools.",
     max_tokens=1000,
     messages=[{
         "role": "user",

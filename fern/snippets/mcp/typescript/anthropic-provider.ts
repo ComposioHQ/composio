@@ -24,6 +24,7 @@ const instance = await server.generate("user@example.com");
 // Use MCP with Anthropic for spreadsheet operations
 const response = await anthropic.beta.messages.create({
   model: "claude-sonnet-4-5",
+  system: "You are a helpful assistant with access to Google Sheets tools. Use these tools to analyze and manage spreadsheet data. Do not ask for confirmation before using the tools.",
   max_tokens: 1000,
   messages: [{
     role: "user",
