@@ -162,9 +162,6 @@ navigation:
     - page: Quickstart
       path: pages/dist/mcp/quickstart.mdx
       slug: mcp-quickstart
-    - page: Authentication
-      path: pages/dist/mcp/authentication.mdx
-      slug: mcp-authentication
     - page: Server management
       path: pages/dist/mcp/server-management.mdx
       slug: mcp-server-management

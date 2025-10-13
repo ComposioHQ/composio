@@ -5,6 +5,10 @@ subtitle: Connect MCP servers to AI frameworks
 
 Integrate your MCP servers with popular AI SDKs and frameworks.
 
+<Note>
+Composio MCP servers only support Streamable HTTP transport. 
+</Note>
+
 ## Anthropic SDK
 
 Use MCP servers with the Anthropic Claude API.
@@ -36,37 +40,3 @@ Integrate MCP servers with OpenAI GPT models.
 Use MCP servers with Mastra framework.
 
 <SnippetCode src="fern/snippets/mcp/typescript/mastra-provider.ts" />
-
-
-## Quick integration guide
-
-<Steps>
-  <Step title="Create MCP server">
-    Create your server with the required toolkits and auth configs.
-  </Step>
-  
-  <Step title="Generate URLs">
-    Generate user-specific URLs for your MCP server.
-  </Step>
-  
-  <Step title="Configure client">
-    Add the MCP server URL to your AI framework or client configuration.
-  </Step>
-  
-  <Step title="Start using">
-    The AI can now access the tools exposed by your MCP server.
-  </Step>
-</Steps>
-
-## Supported frameworks
-
-- **Anthropic SDK** - Claude API integration (coming soon)
-- **OpenAI SDK** - GPT models integration (coming soon)
-- **Mastra** - Framework with native MCP client support
-- **Custom integrations** - Any MCP-compatible SDK
-
-## Next steps
-
-- [Quickstart](/docs/mcp-quickstart) - Get started with MCP servers
-- [Server management](/docs/mcp-server-management) - Manage your MCP servers
-- [Troubleshooting](/docs/troubleshooting/mcp) - Common issues and solutions
