@@ -159,18 +159,30 @@ navigation:
     icon: server
     skip-slug: true
     contents:
-    - page: Overview
-      path: pages/dist/mcp/overview.mdx
-      slug: mcp-overview
-    - page: Developers
-      path: pages/dist/mcp/developers.mdx
-      slug: mcp-developers
-    - page: Partner Program
-      path: pages/dist/mcp/partner-api.mdx
-      slug: mcp-partner-api
+    - page: Quickstart
+      path: pages/dist/mcp/quickstart.mdx
+      slug: mcp-quickstart
+    - page: Authentication
+      path: pages/dist/mcp/authentication.mdx
+      slug: mcp-authentication
+    - page: Server management
+      path: pages/dist/mcp/server-management.mdx
+      slug: mcp-server-management
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
+    - page: Partner Program
+      path: pages/dist/mcp/partner-api.mdx
+      slug: mcp-partner-api
+    - page: Developers (old)
+      path: pages/dist/mcp/developers.mdx
+      slug: mcp-developers-old
+    - page: Introduction (old)
+      path: pages/dist/mcp/introduction.mdx
+      slug: mcp-introduction-old
+    - page: Implementation (old)
+      path: pages/dist/mcp/implementation.mdx
+      slug: mcp-implementation-old
   - section: Tool Router (Beta)
     icon: tools
     skip-slug: true

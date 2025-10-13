@@ -1,0 +1,169 @@
+---
+title: MCP authentication
+subtitle: Managing user authentication for MCP servers
+---
+
+Before users can access tools through your MCP server, they need to authenticate with the external services.
+
+## Check connection status
+
+Verify if a user has the required connections before generating server URLs.
+
+<CodeGroup>
+<CodeGroupItem title="Python">
+```python
+# Python SDK - connection checking coming soon
+# For now, the generate method handles auth automatically
+instance = server.generate("user@example.com")
+```
+</CodeGroupItem>
+<CodeGroupItem title="TypeScript">
+```typescript
+const status = await composio.mcp.getUserConnectionStatus(
+  "user@example.com",
+  server.id
+);
+
+if (status.connected) {
+  console.log("✅ All toolkits connected");
+} else {
+  console.log("❌ Missing connections:");
+  
+  for (const [toolkit, toolkitStatus] of Object.entries(status.connectedToolkits)) {
+    if (!toolkitStatus.connected) {
+      console.log(`- ${toolkit}: Not connected`);
+    }
+  }
+}
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Authentication flows
+
+### Pre-authentication (Recommended)
+
+Authenticate users before they use the MCP server for a smoother experience.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+// 1. Check what's needed
+const authParams = await composio.mcp.getConnectionParams(
+  server.id,
+  "gmail"
+);
+
+console.log("Required fields:", authParams.required_fields);
+
+// 2. Start authentication
+const authRequest = await composio.mcp.authorize(
+  "user@example.com",
+  server.id,
+  "gmail"
+);
+
+if (authRequest.redirectUrl) {
+  // 3. Send user to authenticate
+  console.log("Authenticate here:", authRequest.redirectUrl);
+  
+  // 4. After completion, verify
+  const status = await composio.mcp.getUserConnectionStatus(
+    "user@example.com",
+    server.id
+  );
+  
+  if (status.connected) {
+    console.log("✅ Ready to generate URLs");
+  }
+}
+```
+</CodeGroupItem>
+</CodeGroup>
+
+### Chat-based authentication
+
+Let the AI agent guide users through authentication when needed.
+
+```typescript
+// Enable chat auth when creating the server
+const server = await composio.mcp.create(
+  "assistant-server",
+  [{ authConfigId: "ac_xyz", allowedTools: ["GMAIL_FETCH_EMAILS"] }],
+  { isChatAuth: true }  // Agent handles auth prompts
+);
+
+// Generate URLs directly - agent will handle missing auth
+const urls = await composio.mcp.getServer(
+  server.id,
+  "user@example.com"
+);
+```
+
+## Auth config setup
+
+Auth configs define how users authenticate with external services. Create them in the [Composio dashboard](https://platform.composio.dev).
+
+### Types of auth
+
+- **OAuth** - Redirect-based flow (Gmail, Slack, GitHub)
+- **API Key** - Direct credential entry (OpenAI, Anthropic)  
+- **Basic Auth** - Username/password
+
+### Creating auth configs
+
+1. Go to [Composio dashboard](https://platform.composio.dev)
+2. Navigate to Settings → Authentication
+3. Click "Create Auth Config"
+4. Select toolkit and auth type
+5. Configure scopes and permissions
+6. Save and copy the `authConfigId`
+
+## Handle authentication errors
+
+<CodeGroup>
+<CodeGroupItem title="Python">
+```python
+try:
+    instance = server.generate("user@example.com")
+except Exception as e:
+    if "authentication" in str(e).lower():
+        print("User needs to authenticate first")
+        # Guide user to auth flow
+```
+</CodeGroupItem>
+<CodeGroupItem title="TypeScript">
+```typescript
+try {
+  const urls = await composio.mcp.getServer(
+    server.id,
+    "user@example.com"
+  );
+} catch (error) {
+  if (error.message.includes("not connected")) {
+    // Handle missing authentication
+    const auth = await composio.mcp.authorize(
+      "user@example.com",
+      server.id,
+      "gmail"
+    );
+    console.log(`Please authenticate: ${auth.redirectUrl}`);
+  }
+}
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Next steps
+
+<Cards>
+  <Card title="Server management" href="/docs/mcp-server-management" icon="server">
+    Create and manage MCP servers
+  </Card>
+  <Card title="Quickstart" href="/docs/mcp-quickstart" icon="rocket">
+    Get started quickly
+  </Card>
+  <Card title="Troubleshooting" href="/docs/troubleshooting/mcp" icon="wrench">
+    Common auth issues
+  </Card>
+</Cards>

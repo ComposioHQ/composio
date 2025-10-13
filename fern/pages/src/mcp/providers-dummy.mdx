@@ -1,0 +1,360 @@
+---
+
+title: MCP Providers
+subtitle: "Guide to Using Composio MCP Servers with Your Agent Framework"
+image: "https://og.composio.dev/api/og?title=MCP%20Providers"   # image for socials
+keywords: ""
+hide-nav-links: true
+
+---
+
+<Warning title="Only available for TypeScript SDK" icon="warning">At this time, MCP providers using the Composio SDK are only supported in the TypeScript SDK. Support for the Python SDK is coming soon.</Warning>
+
+Integrating external tools into agent frameworks can be a complex and time-consuming process. Composio MCP (Model Context Protocol) servers simplify this workflow, enabling you to connect your framework to a wide array of tools and services with minimal configuration.
+
+This guide introduces the primary MCP providers, each optimized for a popular agent framework. With these providers, you can focus on developing intelligent agent logic while Composio handles the integration details.
+
+---
+
+## 1. Anthropic Provider
+
+The **Anthropic Provider** is purpose-built for use with the Anthropic Claude API. It supports Model Context Protocol (MCP) tools via a lightweight client that exposes a `getServer` method for retrieving the appropriate Composio MCP Server URL, preconfigured for your user. This provider ensures seamless compatibility between Composio tools and Anthropic's function calling APIs.
+
+<CodeGroup>
+  <CodeGroupItem title="TypeScript">
+
+```typescript
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Initialize Composio with the Anthropic provider
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new AnthropicProvider({ cacheTools: true }),
+});
+
+// Create MCP server with the new API structure
+const mcpConfig = await composio.mcp.create({
+  name: "Gmail Readonly Server",
+  serverConfig: [
+    {
+      authConfigId: "<auth_config_id>", // Your auth config ID
+      allowedTools: ["GMAIL_FETCH_EMAILS"]
+    }
+  ],
+  options: {
+    isChatAuth: true
+  }
+});
+
+console.log(`✅ MCP server created: ${mcpConfig.id}`);
+console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(", ")}`);
+
+// Check user connection status before proceeding
+const connectionStatus = await composio.mcp.getUserConnectionStatus({
+  id: mcpConfig.id,
+  userId: "utkarsh-dixit"
+});
+
+if (!connectionStatus.connected) {
+  console.log("❌ User needs to connect required accounts");
+  // Handle authentication as needed
+  return;
+}
+
+// Retrieve server instances for connected accounts
+const serverInstances = await mcpConfig.getServer({
+  userId: "utkarsh-dixit",
+});
+
+console.log("Server instances for connected accounts:", serverInstances);
+
+console.log("\n=== Fetching and Summarizing Recent Emails ===");
+
+const stream = await anthropic.beta.messages.stream(
+{
+  model: "claude-3-5-sonnet-20241022",
+  max_tokens: 1000,
+  mcp_servers: serverInstances,
+  messages: [
+    {
+      role: "user",
+      content:
+        "Please fetch the latest 10 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email. Format the response in a clear, organized way.",
+    },
+  ],
+},
+{
+  headers: {
+    "anthropic-beta": "mcp-client-2025-04-04",
+  },
+}
+);
+
+console.log("\n📬 Email Summary:");
+for await (const event of stream) {
+  if (
+      event.type === "content_block_delta" &&
+      event.delta.type === "text_delta"
+  ) {
+      process.stdout.write(event.delta.text);
+  }
+}
+process.stdout.write("\n");
+
+console.log("\n✅ Anthropic MCP example completed successfully!");
+```
+
+  </CodeGroupItem>
+</CodeGroup>
+
+---
+
+## 2. Mastra Provider
+
+The **Mastra Provider** is tailored for the [Mastra](https://mastra.ai/en/docs/tools-mcp/overview#creating-tools) TypeScript-native agent framework. This client provides a getServer method to obtain the Composio MCP Server URL, configured for your user.
+
+<CodeGroup>
+  <CodeGroupItem title="Mastra">
+
+```typescript
+import { MastraProvider } from '@composio/mastra';
+import { Composio } from '@composio/core';
+import { MCPClient } from '@mastra/mcp';
+import { Agent } from '@mastra/core/agent';
+import { openai } from '@ai-sdk/openai';
+import type { MastraMCPServerDefinition } from '@mastra/mcp';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new MastraProvider(),
+});
+
+// Create an MCP server with the Gmail toolkit using new API structure
+const mcpConfig = await composio.mcp.create({
+  name: "Gmail Readonly Server",
+  serverConfig: [
+    {
+      authConfigId: "<auth_config_id>", // Your auth config ID
+      allowedTools: ["GMAIL_FETCH_EMAILS"]
+    }
+  ],
+  options: {
+    isChatAuth: true
+  }
+});
+
+console.log(`✅ MCP server created: ${mcpConfig.id}`);
+console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(", ")}`);
+
+// Check user connection status
+const connectionStatus = await composio.mcp.getUserConnectionStatus({
+  id: mcpConfig.id,
+  userId: "utkarsh-dixit"
+});
+
+console.log("Connection status:", connectionStatus.connected);
+
+if (!connectionStatus.connected) {
+  console.log("❌ User needs to authenticate with required services");
+  // Handle authentication flow
+  Object.entries(connectionStatus.connectedToolkits).forEach(([toolkit, status]) => {
+    if (!status.connected) {
+      console.log(`Please connect ${toolkit}`);
+    }
+  });
+  return;
+}
+
+// Retrieve server instance for connected accounts
+const serverInstance = await mcpConfig.getServer({
+  userId: "utkarsh-dixit"
+});
+
+console.log("Server instance for connected accounts:", serverInstance);
+
+// Initialize MCPClient with the server URLs
+const mcpClient = new MCPClient({
+servers: Object.fromEntries(
+  Object.entries(serverInstance as Record<string, { url: string }>).map(
+    ([key, value]) => [key, { url: new URL(value.url) }]
+  )
+) satisfies Record<string, MastraMCPServerDefinition>,
+});
+
+// List available tools from MCP client
+const tools = await mcpClient.getTools();
+console.log(`🔧 Available tools: ${Object.keys(tools).join(", ")}`);
+
+// Create a Gmail agent using the MCP tools
+const gmailAgent = new Agent({
+  name: "Gmail Assistant",
+  instructions: `
+      You are a helpful Gmail assistant that fetches and summarizes emails.
+      When fetching emails, provide a clear summary of the results including sender, subject, and date.
+      Be concise and provide actionable information based on the email content.
+  `,
+  model: openai("gpt-4o-mini"),
+  tools,
+});
+
+// Fetch and summarize recent emails
+console.log("\n=== Fetching and Summarizing Recent Emails ===");
+const emailResponse = await gmailAgent.generate(
+"Fetch the latest 10 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email"
+);
+console.log("\n📬 Email Summary:");
+console.log(emailResponse.text);
+
+console.log("\n✅ Gmail MCP example completed successfully!");
+```
+
+  </CodeGroupItem>
+</CodeGroup>
+
+---
+
+## 3. OpenAI SDK Provider
+
+The **OpenAI SDK Provider** is designed for use with the OpenAI SDK and supports MCP tools through a streamlined client. This client provides a `getServer` method to obtain the Composio MCP Server URL, configured for your user.
+
+<CodeGroup>
+  <CodeGroupItem title="TypeScript">
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new OpenAIProvider(),
+});
+
+// Create MCP server with new API structure
+const mcpConfig = await composio.mcp.create({
+  name: "Gmail Readonly Server",
+  serverConfig: [
+    {
+      authConfigId: "<auth_config_id>", // Your auth config ID
+      allowedTools: ["GMAIL_FETCH_EMAILS"]
+    }
+  ],
+  options: {
+    isChatAuth: true
+  }
+});
+
+console.log(`✅ MCP server created: ${mcpConfig.id}`);
+console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(", ")}`);
+
+// Check if user has necessary connections
+const connectionStatus = await composio.mcp.getUserConnectionStatus({
+  id: mcpConfig.id,
+  userId: "utkarsh-dixit"
+});
+
+if (!connectionStatus.connected) {
+  console.log("❌ User authentication required");
+  // Handle missing connections
+  for (const [toolkit, status] of Object.entries(connectionStatus.connectedToolkits)) {
+    if (!status.connected) {
+      const authParams = await composio.mcp.getConnectionParams({
+        id: mcpConfig.id,
+        toolkit
+      });
+      
+      const authRequest = await composio.mcp.authorize({
+        id: mcpConfig.id,
+        userId: "utkarsh-dixit",
+        toolkit
+      });
+      
+      if (authRequest.redirectUrl) {
+        console.log(`Please authenticate with ${toolkit}: ${authRequest.redirectUrl}`);
+      }
+    }
+  }
+  return;
+}
+
+// Retrieve server URLs for connected accounts
+const serverUrls = await mcpConfig.getServer({
+  userId: "utkarsh-dixit",
+  options: {
+    limitTools: ["GMAIL_FETCH_EMAILS"] // Optional: limit to specific tools
+  }
+});
+
+console.log("Server URLs for your MCP server:", serverUrls);
+
+// Use with OpenAI (example with hypothetical OpenAI MCP integration)
+const completion = await openai.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages: [
+    {
+      role: "user",
+      content: "I've connected to Gmail and I want to fetch the latest email from my inbox and summarize it"
+    }
+  ],
+  // Note: This is a hypothetical integration - actual OpenAI MCP support may differ
+  tools: serverUrls,
+});
+
+console.log("\n📬 Email Summary:");
+console.log(completion.choices[0].message.content);
+
+console.log("\n✅ OpenAI MCP example completed successfully!");
+console.log("\n💡 Note: The MCP server URLs can also be used to connect from other MCP-compatible clients.");
+console.log(`📍 Server ID for future reference: ${mcpConfig.id}`);
+```
+
+  </CodeGroupItem>
+</CodeGroup>
+
+---
+
+## Managing Existing Servers
+
+You can also work with previously created MCP servers:
+
+```typescript
+// Find a server by name
+const existingServer = await composio.mcp.getByName("Gmail Readonly Server");
+
+// Check connection status for the existing server
+const status = await composio.mcp.getUserConnectionStatus({
+  id: existingServer.id,
+  userId: "user123@example.com"
+});
+
+// Generate URLs for the existing server
+const urls = await composio.mcp.getServer({
+  id: existingServer.id,
+  userId: "user123@example.com",
+  options: {
+    isChatAuth: true
+  }
+});
+```
+
+## Best Practices for Providers
+
+1. **Always check connection status** before using MCP servers to ensure users are authenticated
+2. **Handle authentication gracefully** by providing clear instructions and redirect URLs
+3. **Use meaningful server names** to make management easier
+4. **Limit tools appropriately** to only what your application needs
+5. **Cache server configurations** when possible to reduce API calls
+6. **Monitor connection health** and provide re-authentication flows when needed
+
+By using Composio MCP Servers with these providers, you can quickly connect your agent framework to a wide range of external tools with minimal effort. This lets you streamline integration, reduce setup time, and focus more on building your AI agent.
