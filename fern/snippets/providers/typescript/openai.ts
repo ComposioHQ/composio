@@ -1,45 +1,39 @@
+import OpenAI from 'openai';
 import { Composio } from '@composio/core';
-import { OpenAIResponsesProvider, OpenAIProvider } from '@composio/openai';
-import { OpenAI } from 'openai';
+import { OpenAIProvider } from '@composio/openai';
 
-// Initialise Composio client with the OpenAI provider.
-const composioForResponses = new Composio({ provider: new OpenAIResponsesProvider() });
+// Initialize Composio client with OpenAI Provider
+const composio = new Composio({ 
+    provider: new OpenAIProvider(), 
+});
+
 const openai = new OpenAI();
 
-const userId = 'your@example.com';
-const toolsForResponses = await composioForResponses.tools.get(userId, {
-  toolkits: ['HACKERNEWS'],
-});
+// Make sure to create an auth config and a connected account for the user with gmail toolkit
+// Make sure to replace "your-user-id" with the actual user ID
+const userId = "your-user-id";
 
-const response = await openai.responses.create({
-  model: 'gpt-4.1',
-  input: "What's the lates Hackernews post about?",
-  tools: toolsForResponses,
-});
+async function main() {
+    try {
+        const tools = await composio.tools.get(userId, {tools: ["GMAIL_SEND_EMAIL"]});
 
-const result = await composioForResponses.provider.handleResponse(userId, response);
+        const response = await openai.chat.completions.create({
+            model: "gpt-5",
+            tools: tools,
+            messages: [
+                {
+                    role: "user", 
+                    content: "Send an email to soham.g@composio.dev with the subject 'Running OpenAI Provider snippet' and body 'Hello from the code snippet in openai docs'"
+                },
+            ],
+        });
 
-console.log('RESPONSE API');
-console.log(JSON.stringify(result, null, 2));
-// will return the raw response from the HACKERNEWS API.
+        // Execute the function calls
+        const result = await composio.provider.handleToolCalls(userId, response);
+        console.log(result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
 
-const composioForCompletions = new Composio({ provider: new OpenAIProvider() });
-const toolsForCompletions = await composioForCompletions.tools.get(userId, {
-  toolkits: ['HACKERNEWS'],
-});
-
-const completion = await openai.chat.completions.create({
-  model: 'gpt-4o',
-  messages: [
-    {
-      role: 'user',
-      content: 'What is the latest hackernews post about?',
-    },
-  ],
-  tools: toolsForCompletions,
-});
-
-const newResult = await composioForCompletions.provider.handleToolCalls(userId, completion);
-
-console.log(JSON.stringify(newResult, null, 2));
-// will return the raw response from the HACKERNEWS API.
+main();

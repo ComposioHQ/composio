@@ -23,7 +23,8 @@ import { tool as createOpenAIAgentTool } from '@openai/agents';
 type OpenAIAgentsToolCollection = Array<OpenAIAgentTool>;
 export class OpenAIAgentsProvider extends BaseAgenticProvider<
   OpenAIAgentsToolCollection,
-  OpenAIAgentTool
+  OpenAIAgentTool,
+  McpServerGetResponse
 > {
   readonly name = 'openai-agents';
   private strict: boolean | null;

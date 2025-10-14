@@ -1,3 +1,4 @@
+import { McpServerGetResponse } from '../types/mcp.types';
 import { Tool } from '../types/tool.types';
 import { BaseNonAgenticProvider } from './BaseProvider';
 

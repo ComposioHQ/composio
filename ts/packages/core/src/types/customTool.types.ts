@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { Tool, ToolProxyParams } from './tool.types';
 import { ToolExecuteResponse } from '@composio/client/resources/tools';
 import { ConnectionData } from './connectedAccountAuthStates.types';

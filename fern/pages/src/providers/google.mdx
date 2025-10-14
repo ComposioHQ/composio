@@ -10,26 +10,48 @@ The Google provider transforms Composio tools into a format compatible with Gemi
 ## Setup
 The Google Gen AI SDK and theprovider can only be installed for the Python SDK.
 
-```bash title="pip" for="python"
+<CodeGroup>
+
+```bash title="python" for="python"
 pip install google-genai composio_google
 ```
+```bash title="typescript" for="typescript"
+npm install @google/genai
+npm i @composio/core @composio/gemini
+```
+
+</CodeGroup>
+
+<CodeGroup>
 <SnippetCode
   src="fern/snippets/providers/python/google.py"
   startLine={1}
   endLine={9}
 />
+<SnippetCode
+  src="fern/snippets/providers/typescript/google.ts"
+  startLine={1}
+  endLine={12}
+/>
+</CodeGroup>
 
 ## Usage
+<CodeGroup>
 <SnippetCode
   src="fern/snippets/providers/python/google.py"
   startLine={10}
   endLine={21}
 />
-
+<SnippetCode
+  src="fern/snippets/providers/typescript/google.ts"
+  startLine={14}
+  endLine={39}
+/>
+</CodeGroup>
 
 ## Modifiers
 Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
 
 OpenAI provider modifiers are the standard framework modifiers.
-Read more here: [Framework Modifiers](/docs/modifiers/schema-modifiers)
+Read more here: [Modifying tool schemas](/docs/modifying-tool-schemas)
 

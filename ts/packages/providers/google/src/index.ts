@@ -42,7 +42,11 @@ export type GoogleGenAIToolCollection = GoogleTool[];
  * Google GenAI Provider for Composio SDK
  * Implements the BaseNonAgenticProvider to wrap Composio tools for use with Google's GenAI API
  */
-export class GoogleProvider extends BaseNonAgenticProvider<GoogleGenAIToolCollection, GoogleTool> {
+export class GoogleProvider extends BaseNonAgenticProvider<
+  GoogleGenAIToolCollection,
+  GoogleTool,
+  McpServerGetResponse
+> {
   readonly name = 'google';
 
   /**

@@ -1,5 +1,27 @@
 # @composio/core
 
+## 0.1.55
+
+### Patch Changes
+
+- 8741165: Add zod 4 support via zod/v3 and fix zod schema parsing
+- Updated dependencies [8741165]
+  - @composio/json-schema-to-zod@0.1.16
+
+## 0.1.54
+
+### Patch Changes
+
+- e5b9db3: Fix exports for experimental tool router
+
+## 0.1.53
+
+### Patch Changes
+
+- 9a1b0e9: - Adds the new experiemntal ToolRouter, Deprecates the existing MCP experience and adds the new MCP components.
+  - The old MCP components can be accessed via `deprecated.mcp` until the next release, where it will get removed.
+  - Fixes `toolkits.list` and `toolkits.get` methods to add `description` to connection fields
+
 ## 0.1.52
 
 ### Patch Changes

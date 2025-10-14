@@ -73,10 +73,10 @@ type RequiredLayer = Layer.Layer<any, any, never>;
 export const TestLayer = (input?: TestLiveInput) =>
   Effect.gen(function* () {
     const defaultAppClientData = {
-      toolkits: [],
-      tools: [],
-      triggerTypesAsEnums: [],
-      triggerTypes: [],
+      toolkits: [] as Toolkits,
+      tools: [] as Tools,
+      triggerTypesAsEnums: [] as TriggerTypesAsEnums,
+      triggerTypes: [] as TriggerTypes,
     } satisfies TestLiveInput['toolkitsData'];
     const { fixture, toolkitsData } = Object.assign(
       { fixture: undefined, toolkitsData: defaultAppClientData },
@@ -90,9 +90,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
-        getTools: () => Effect.succeed(toolkitsData.tools),
+        getToolsAsEnums: () => Effect.succeed(toolkitsData.tools.map(tool => tool.slug)),
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
         getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
+        getTools: limit => Effect.succeed(toolkitsData.tools.slice(0, limit)),
       })
     );
 

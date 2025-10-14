@@ -55,7 +55,7 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
     const [toolkits, tools, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
-        Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getTools())),
+        Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
         Effect.logDebug('Fetching trigger types payloads...').pipe(
           Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
         ),
@@ -63,7 +63,9 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
       { concurrency: 'unbounded' }
     );
 
-    const index = createToolkitIndex({ toolkits, tools, triggerTypes });
+    const typeableTools = { withTypes: false as const, tools };
+
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
 
     // Generate Python sources
     const sources = generatePythonSources({

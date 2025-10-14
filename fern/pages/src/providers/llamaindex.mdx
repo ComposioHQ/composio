@@ -1,0 +1,43 @@
+---
+title: LlamaIndex Provider
+slug: /providers/llamaindex
+image: "https://og.composio.dev/api/og?title=LlamaIndex%20Provider"   # image for socials
+keywords: ""
+hide-nav-links: false
+---
+
+The LlamaIndex Provider transforms Composio tools into a format compatible with LlamaIndex's function calling capabilities.
+
+## Setup
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio_llamaindex==0.8.0 llama-index
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/llamaindex @llamaindex/openai @llamaindex/workflow
+```
+</CodeGroup>
+
+## Usage
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/providers/python/llamaindex-provider.py"
+  title="Python"
+/>
+<SnippetCode
+  src="fern/snippets/providers/typescript/llamaindex-provider.ts"
+  title="TypeScript"
+/>
+</CodeGroup>
+
+## Advanced Usage
+
+### Streaming Agent with Multiple Toolkits
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/providers/typescript/llamaindex-streaming.ts"
+  title="TypeScript"
+/>
+</CodeGroup>

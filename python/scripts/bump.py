@@ -8,7 +8,7 @@ import tomli
 from semver import VersionInfo
 
 CWD = Path.cwd()
-SKIPDIR = (".venv", ".nox", ".tox", "temp")
+SKIPDIR = (".venv", "venv", ".nox", ".tox", "temp", "node_modules", "site-packages")
 PYPROJECT = "pyproject.toml"
 SETUP = "setup.py"
 

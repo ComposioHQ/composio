@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
 import { TransformToolSchemaModifier } from './modifiers.types';
 

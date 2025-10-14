@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 export const AuthConfigTypes = {
   CUSTOM: 'use_custom_auth',
@@ -17,6 +17,7 @@ export const AuthSchemeTypes = {
   NO_AUTH: 'NO_AUTH',
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
   CALCOM_AUTH: 'CALCOM_AUTH',
+  SERVICE_ACCOUNT: 'SERVICE_ACCOUNT',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
@@ -40,6 +41,7 @@ export const AuthSchemeEnum = z.enum([
   'NO_AUTH',
   'BASIC_WITH_JWT',
   'CALCOM_AUTH',
+  'SERVICE_ACCOUNT',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),

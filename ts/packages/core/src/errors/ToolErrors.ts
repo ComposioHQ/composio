@@ -91,11 +91,14 @@ export class ComposioToolExecutionError extends ComposioError {
       ],
     });
 
-    this.error = 
-      originalError || 
-      (options.cause instanceof Error ? options.cause : 
-        (options.cause ? new Error(String(options.cause)) : new Error('Unknown error')));
-    
+    this.error =
+      originalError ||
+      (options.cause instanceof Error
+        ? options.cause
+        : options.cause
+          ? new Error(String(options.cause))
+          : new Error('Unknown error'));
+
     this.name = 'ComposioToolExecutionError';
   }
 }

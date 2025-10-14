@@ -22,7 +22,7 @@ def main():
         system_message="Reply TERMINATE when the task is done or when user's content is empty",
         llm_config={
             "config_list": [
-                {"model": "gpt-4-turbo", "api_key": os.environ["OPENAI_API_KEY"]},
+                {"model": "gpt-5", "api_key": os.environ["OPENAI_API_KEY"]},
             ]
         },
     )

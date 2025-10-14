@@ -4,19 +4,37 @@ on:
   push:
     branches:
       - next
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to publish docs from'
+        required: false
+        default: 'next'
+        type: string
+  repository_dispatch:
+    types: [apollo-production-deploy]
 
 jobs:
   run:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/composiohq/dev-base:latest
-    if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1 }}
+    if: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1) || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
     permissions: write-all
     env:
       COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Log trigger source
+        run: |
+          echo "Workflow triggered by: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "Triggered by Apollo production deployment"
+            echo "Hermes commit: ${{ github.event.client_payload.hermes_commit }}"
+            echo "Timestamp: ${{ github.event.client_payload.timestamp }}"
+          fi
 
       - name: Install git
         run: apt-get update && apt-get install -y git

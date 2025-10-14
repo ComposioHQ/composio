@@ -8,7 +8,7 @@ import { NodeProcess } from 'src/services/node-process';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
-import { TOOLS_GMAIL } from 'test/__mocks__/tools_gmail';
+import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
 
 describe('CLI: composio py generate', () => {
   const appClientData = {
@@ -22,7 +22,7 @@ describe('CLI: composio py generate', () => {
         slug: 'slack',
       },
     ]),
-    tools: [...TOOLS_GMAIL.slice(0, 3)],
+    tools: [...TOOLS_TYPES_GMAIL.slice(0, 3)],
     triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
     triggerTypes: [...TRIGGER_TYPES_GMAIL.slice(0, 3)],
   } satisfies TestLiveInput['toolkitsData'];
@@ -127,9 +127,7 @@ describe('CLI: composio py generate', () => {
                 slug: str = "gmail"
 
                 class tools:
-                    ADD_LABEL_TO_EMAIL = "GMAIL_ADD_LABEL_TO_EMAIL"
-                    CREATE_EMAIL_DRAFT = "GMAIL_CREATE_EMAIL_DRAFT"
-                    CREATE_LABEL = "GMAIL_CREATE_LABEL"
+                    pass
 
                 class triggers:
                     NEW_GMAIL_MESSAGE = {

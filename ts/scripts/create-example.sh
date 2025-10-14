@@ -36,14 +36,14 @@ cat > "$EXAMPLE_PATH/package.json" << EOL
   "keywords": ["composio", "example", "${EXAMPLE_NAME}"],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@composio/core": "workspace:*",
     "dotenv": "^16.4.1"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }
 EOL
@@ -52,15 +52,15 @@ EOL
 cat > "$EXAMPLE_PATH/tsconfig.json" << EOL
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "es2022",
+    "module": "esnext",
     "declaration": true,
     "declarationDir": "./dist",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
