@@ -23,7 +23,10 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "tsup",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
   },
   "keywords": [],
   "author": "",
@@ -35,10 +38,9 @@
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod-to-json-schema": "^3.24.5",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": ">=3.25.76 <5"
+    "zod": ">=3.25.76 <4 || >=4.1 <5"
   }
 }
