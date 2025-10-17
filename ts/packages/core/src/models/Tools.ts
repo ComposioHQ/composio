@@ -608,96 +608,29 @@ export class Tools<
 
   /**
    * @internal
-   * Handles the execution of a custom tool
+   * Executes a composio tool via API without modifiers
    * @param tool - The tool to execute
    * @param body - The body of the tool execution
-   * @param modifiers - The modifiers to be applied to the tool execution
    * @returns The response from the tool execution
    */
-  private async handleCustomToolExecution(
+  private async executeComposioTool(
     tool: Tool,
-    body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
-  ): Promise<ToolExecuteResponse> {
-    if (modifiers?.beforeExecute) {
-      if (typeof modifiers.beforeExecute === 'function') {
-        body = await modifiers.beforeExecute({
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          params: body,
-        });
-      } else {
-        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
-      }
-    }
-
-    let result = await this.customTools.executeCustomTool(tool.slug, body);
-
-    if (modifiers?.afterExecute) {
-      if (typeof modifiers.afterExecute === 'function') {
-        result = await modifiers.afterExecute({
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          result,
-        });
-      } else {
-        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * @internal
-   * Handles the execution of a composio tool
-   * @param tool - The tool to execute
-   * @param body - The body of the tool execution
-   * @param modifiers - The modifiers to be applied to the tool execution
-   * @returns The response from the tool execution
-   */
-  private async handleComposioToolExecution(
-    tool: Tool,
-    body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
+    body: ToolExecuteParams
   ): Promise<ToolExecuteResponse> {
     try {
-      // apply before execute modifiers
-      const params = await this.applyBeforeExecuteModifiers(
-        tool,
-        {
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          params: body,
-        },
-        modifiers?.beforeExecute
-      );
-
-      let result = await this.client.tools.execute(tool.slug, {
-        allow_tracing: params.allowTracing,
-        connected_account_id: params.connectedAccountId,
-        custom_auth_params: params.customAuthParams,
-        custom_connection_data: params.customConnectionData,
-        arguments: params.arguments,
-        user_id: params.userId,
+      const result = await this.client.tools.execute(tool.slug, {
+        allow_tracing: body.allowTracing,
+        connected_account_id: body.connectedAccountId,
+        custom_auth_params: body.customAuthParams,
+        custom_connection_data: body.customConnectionData,
+        arguments: body.arguments,
+        user_id: body.userId,
         version:
-          params.version ??
-          getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
-        text: params.text,
+          body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
+        text: body.text,
       });
       // transform the response to the ToolExecuteResponse format
-      result = this.transformToolExecuteResponse(result);
-      // apply after execute modifiers
-      result = await this.applyAfterExecuteModifiers(
-        tool,
-        {
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          result,
-        },
-        modifiers?.afterExecute
-      );
-      return result;
+      return this.transformToolExecuteResponse(result);
     } catch (error) {
       const toolError = handleToolExecutionError(tool.slug, error as Error);
       throw toolError;
@@ -759,15 +692,39 @@ export class Tools<
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
+    // Determine if it's a custom tool or composio tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
-    if (customTool) {
-      // handle custom tool execution
-      return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
-    }
+    const tool = customTool ?? (await this.getRawComposioToolBySlug(slug));
+    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
 
-    // handle composio tool execution
-    const composioTool = await this.getRawComposioToolBySlug(slug);
-    return this.handleComposioToolExecution(composioTool, executeParams.data, modifiers);
+    // Apply before execute modifiers
+    const params = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        params: executeParams.data,
+      },
+      modifiers?.beforeExecute
+    );
+
+    // Execute the tool (custom or composio)
+    let result = customTool
+      ? await this.customTools.executeCustomTool(customTool.slug, params)
+      : await this.executeComposioTool(tool, params);
+
+    // Apply after execute modifiers
+    result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        result,
+      },
+      modifiers?.afterExecute
+    );
+
+    return result;
   }
 
   /**
