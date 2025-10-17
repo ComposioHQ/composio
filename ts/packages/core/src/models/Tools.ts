@@ -40,16 +40,15 @@ import { ExecuteToolFn } from '../types/provider.types';
 import {
   ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
-  ComposioToolExecutionError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
-import { AuthSchemeTypes } from '../types/authConfigs.types';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
+import { handleToolExecutionError } from '../errors/ToolErrors';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -130,51 +129,6 @@ export class Tools<
       logId: response.log_id,
       sessionInfo: response.session_info,
     });
-  }
-
-  /**
-   * Get the connected account id for a given tool
-   * @param {string} userId - The user id
-   * @param {string} toolSlug - The tool slug
-   * @returns {Promise<string | null>} The connected account id or null if the toolkit is a no auth app
-   */
-  private async getConnectedAccountIdForTool(
-    userId: string,
-    toolSlug: string
-  ): Promise<string | null> {
-    const tool = await this.getRawComposioToolBySlug(toolSlug);
-    if (!tool.toolkit) {
-      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
-    }
-
-    const toolkit = await this.client.toolkits.retrieve(tool.toolkit.slug);
-    if (!toolkit) {
-      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
-    }
-
-    // check if the toolkit is a no auth app
-    const isNoAuthApp = toolkit.auth_config_details?.some(
-      authConfigDetails => authConfigDetails.mode === AuthSchemeTypes.NO_AUTH
-    );
-    // if the toolkit is not a no auth app, fetch connected accounts
-    if (!isNoAuthApp) {
-      const connectedAccounts = await this.client.connectedAccounts.list({
-        user_ids: [userId],
-        toolkit_slugs: [tool.toolkit.slug],
-      });
-      // if no connected accounts, throw an error
-      if (connectedAccounts.items.length === 0) {
-        throw new Error('No connected accounts found');
-      }
-      // by default, use the first connected account
-      // @TODO: Add support for multiple connected accounts
-      logger.warn(
-        `Using the first connected account for tool ${toolSlug}. To change this behaviour please explicitly pass a connectedAccountId for the tool`
-      );
-      return connectedAccounts.items[0].id;
-    }
-    // if the toolkit is a no auth app, return null
-    return null;
   }
 
   /**
@@ -707,47 +661,47 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    // apply before execute modifiers
-    body = await this.applyBeforeExecuteModifiers(
-      tool,
-      {
-        toolSlug: tool.slug,
-        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-        params: body,
-      },
-      modifiers?.beforeExecute
-    );
+    try {
+      // apply before execute modifiers
+      const params = await this.applyBeforeExecuteModifiers(
+        tool,
+        {
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          params: body,
+        },
+        modifiers?.beforeExecute
+      );
 
-    // fetch connected accounts if exists
-    let connectedAccountId = body.connectedAccountId;
-    if (!connectedAccountId && body.userId) {
-      connectedAccountId =
-        (await this.getConnectedAccountIdForTool(body.userId, tool.slug)) || undefined;
+      let result = await this.client.tools.execute(tool.slug, {
+        allow_tracing: params.allowTracing,
+        connected_account_id: params.connectedAccountId,
+        custom_auth_params: params.customAuthParams,
+        custom_connection_data: params.customConnectionData,
+        arguments: params.arguments,
+        user_id: params.userId,
+        version:
+          params.version ??
+          getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
+        text: params.text,
+      });
+      // transform the response to the ToolExecuteResponse format
+      result = this.transformToolExecuteResponse(result);
+      // apply after execute modifiers
+      result = await this.applyAfterExecuteModifiers(
+        tool,
+        {
+          toolSlug: tool.slug,
+          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+          result,
+        },
+        modifiers?.afterExecute
+      );
+      return result;
+    } catch (error) {
+      const toolError = handleToolExecutionError(tool.slug, error as Error);
+      throw toolError;
     }
-
-    let result = await this.client.tools.execute(tool.slug, {
-      allow_tracing: body.allowTracing,
-      connected_account_id: body.connectedAccountId,
-      custom_auth_params: body.customAuthParams,
-      custom_connection_data: body.customConnectionData,
-      arguments: body.arguments,
-      user_id: body.userId,
-      version:
-        body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
-      text: body.text,
-    });
-    // apply transformations to the response
-    result = this.transformToolExecuteResponse(result);
-    result = await this.applyAfterExecuteModifiers(
-      tool,
-      {
-        toolSlug: tool.slug,
-        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-        result,
-      },
-      modifiers?.afterExecute
-    );
-    return result;
   }
 
   /**
@@ -805,33 +759,15 @@ export class Tools<
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
-    try {
-      const customTool = await this.customTools.getCustomToolBySlug(slug);
-      if (customTool) {
-        // handle custom tool execution
-        return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
-      } else {
-        // handle composio tool execution
-        const composioTool = await this.getRawComposioToolBySlug(slug);
-        if (!composioTool) {
-          throw new ComposioToolNotFoundError(
-            `Tool with slug ${slug} version:${executeParams.data.version} not found`
-          );
-        }
-        return this.handleComposioToolExecution(composioTool, executeParams.data, modifiers);
-      }
-    } catch (error) {
-      throw new ComposioToolExecutionError(
-        `Error executing tool ${slug} version:${executeParams.data.version}`,
-        {
-          originalError: error as Error,
-          meta: {
-            toolSlug: slug,
-            body,
-          },
-        }
-      );
+    const customTool = await this.customTools.getCustomToolBySlug(slug);
+    if (customTool) {
+      // handle custom tool execution
+      return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
     }
+
+    // handle composio tool execution
+    const composioTool = await this.getRawComposioToolBySlug(slug);
+    return this.handleComposioToolExecution(composioTool, executeParams.data, modifiers);
   }
 
   /**
