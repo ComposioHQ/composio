@@ -1,4 +1,6 @@
+import { APIError } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
+import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
@@ -75,29 +77,16 @@ export class ComposioCustomToolsNotInitializedError extends ComposioError {
 }
 
 export class ComposioToolExecutionError extends ComposioError {
-  public readonly error: Error;
-  constructor(
-    message: string = 'Tool execution error',
-    options: ComposioErrorOptions & { originalError?: Error } = {}
-  ) {
-    const { originalError, ...restOptions } = options;
-
+  constructor(message: string = 'Tool execution error', options: ComposioErrorOptions = {}) {
     super(message, {
-      ...restOptions,
+      ...options,
       code: options.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
-      cause: options.cause || originalError,
+      cause: options.cause,
       possibleFixes: options.possibleFixes || [
         'Ensure the tool is correctly configured and the input is valid',
+        'Ensure the userId is correct and has an active connected account for the user in case of non NoAuth toolkits',
       ],
     });
-
-    this.error =
-      originalError ||
-      (options.cause instanceof Error
-        ? options.cause
-        : options.cause
-          ? new Error(String(options.cause))
-          : new Error('Unknown error'));
 
     this.name = 'ComposioToolExecutionError';
   }
@@ -134,3 +123,40 @@ export class ComposioGlobalExecuteToolFnNotSetError extends ComposioError {
     this.name = 'ComposioGlobalExecuteToolFnNotSetError';
   }
 }
+
+export interface ComposioAPIServerErrorBody {
+  error: {
+    message: string;
+    code: number;
+    status: number;
+    request_id: string;
+    suggested_fix: string;
+  };
+}
+
+// Map of error codes to their corresponding error constructors
+const ERROR_CODE_HANDLERS = new Map<number, (message: string) => ComposioError>([
+  [1803, msg => new ComposioConnectedAccountNotFoundError(msg)],
+  // Add more error code handlers here as needed
+]);
+
+export const handleToolExecutionError = (tool: string, actualError: Error): ComposioError => {
+  // Handle specific API error codes
+  if (actualError instanceof APIError && actualError.error) {
+    const errorBody = actualError.error as ComposioAPIServerErrorBody;
+    const errorCode = errorBody?.error?.code;
+    const errorMessage = errorBody?.error?.message;
+
+    if (errorCode && ERROR_CODE_HANDLERS.has(errorCode)) {
+      return ERROR_CODE_HANDLERS.get(errorCode)!(errorMessage || 'An error occurred');
+    }
+  }
+
+  // Default error for all other cases
+  return new ComposioToolExecutionError(`Error executing the tool ${tool}`, {
+    cause: actualError,
+    possibleFixes: [
+      'Ensure the tool slug is correct and the input arguments for the tool is valid',
+    ],
+  });
+};
