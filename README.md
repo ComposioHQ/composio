@@ -43,42 +43,36 @@ const composio = new Composio({
 });
 ```
 
-#### Simple Agent with OpenAI
+#### Simple Agent with OpenAI Agents
 
 ```bash
-npm install @composio/openai
+npm install @composio/openai-agents @openai/agents
 ```
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAIResponsesProvider, OpenAIProvider } from '@composio/openai';
-import { OpenAI } from 'openai';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+import { Agent, run } from '@openai/agents';
 
-const openai = new OpenAI();
+const composio = new Composio({
+  provider: new OpenAIAgentsProvider(),
+});
 
-const composioForCompletions = new Composio({ provider: new OpenAIProvider() });
+const userId = 'user@acme.org';
 
-const userId = 'user@acme.org'
-
-const toolsForCompletions = await composioForCompletions.tools.get(userId, {
+const tools = await composio.tools.get(userId, {
   toolkits: ['HACKERNEWS'],
 });
 
-const completion = await openai.chat.completions.create({
-  model: 'gpt-5',
-  messages: [
-    {
-      role: 'user',
-      content: 'What is the latest hackernews post about?',
-    },
-  ],
-  tools: toolsForCompletions,
+const agent = new Agent({
+  name: 'Hackernews assistant',
+  tools: tools,
 });
 
-const newResult = await composioForCompletions.provider.handleToolCalls(userId, completion);
+const result = await run(agent, 'What is the latest hackernews post about?');
 
-console.log(JSON.stringify(newResult, null, 2));
-// will return the raw response from the HACKERNEWS API.
+console.log(JSON.stringify(result.finalOutput, null, 2));
+// will return the response from the agent with data from HACKERNEWS API.
 ```
 
 ### Python SDK Installation
@@ -101,36 +95,41 @@ composio = Composio(
 )
 ```
 
-#### Simple Agent with OpenAI
+#### Simple Agent with OpenAI Agents
 
 ```bash
-pip install composio_openai>=0.8.0
+pip install composio_openai_agents openai-agents
 ```
 
 ```python
-from openai import OpenAI
+import asyncio
+from agents import Agent, Runner
 from composio import Composio
-from composio_openai import OpenAIProvider
+from composio_openai_agents import OpenAIAgentsProvider
 
-# Initialize Composio client with OpenAI Provider
-composio = Composio(provider=OpenAIProvider())
-openai = OpenAI()
+# Initialize Composio client with OpenAI Agents Provider
+composio = Composio(provider=OpenAIAgentsProvider())
 
 user_id = "user@acme.org"
 tools = composio.tools.get(user_id=user_id, toolkits=["HACKERNEWS"])
 
-response = openai.chat.completions.create(
-    model="gpt-5",
+# Create an agent with the tools
+agent = Agent(
+    name="Hackernews Agent",
+    instructions="You are a helpful assistant.",
     tools=tools,
-    messages=[
-        {"role": "user", "content": "What's the latest Hackernews post about?"},
-    ],
 )
 
-# Execute the function calls.
-result = composio.provider.handle_tool_calls(response=response, user_id=user_id)
-print(result)
-# will return the raw response from the HACKERNEWS API.
+# Run the agent
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input="What's the latest Hackernews post about?",
+    )
+    print(result.final_output)
+
+asyncio.run(main())
+# will return the response from the agent with data from HACKERNEWS API.
 ```
 
 For more detailed usage instructions and examples, please refer to each SDK's specific documentation.
