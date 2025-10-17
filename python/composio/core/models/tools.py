@@ -25,7 +25,7 @@ from composio.core.provider.none_agentic import (
     NoneAgenticProviderExecuteFn,
 )
 from composio.core.types import ToolkitVersionParam
-from composio.exceptions import InvalidParams, NotFoundError
+from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 
@@ -296,6 +296,9 @@ class Tools(Resource, t.Generic[TProvider]):
                 self.execute,
                 modifiers=modifiers,
                 user_id=user_id,
+                # Dangerously skip version check for agentic and non-agentic tool execution via providers
+                # This can be safe because most agentic flows users fetch latest version and then execute the tool
+                dangerously_skip_version_check=True,
             ),
         )
 
@@ -336,17 +339,23 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
-        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
+        dangerously_skip_version_check: t.Optional[bool] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool"""
         # Get the tool to determine its toolkit
         tool = self.get_raw_composio_tool_by_slug(slug)
 
-        # If version is not explicitly provided, resolve it from toolkit versions
-        # This matches the TypeScript behavior
-        if version is None and toolkit_versions is not None:
+        # If version is not explicitly provided, resolve it from instance-level toolkit versions
+        # This matches the TypeScript behavior - always resolve version when None
+        if version is None:
             toolkit_slug = tool.toolkit.slug if tool.toolkit else "unknown"
-            version = get_toolkit_version(toolkit_slug, toolkit_versions)
+            # Use instance-level toolkit versions configuration
+            version = get_toolkit_version(toolkit_slug, self._toolkit_versions)
+
+        # Check if the version is 'latest' and dangerously_skip_version_check is not True
+        # If so, raise an error to prevent unexpected behavior
+        if version == "latest" and not dangerously_skip_version_check:
+            raise ToolVersionRequiredError()
 
         return t.cast(
             ToolExecutionResponse,
@@ -359,7 +368,6 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=none_to_omit(user_id),
                 text=none_to_omit(text),
                 version=none_to_omit(version),
-                # Note: We don't pass toolkit_versions to the API, we resolve the specific version above
             ).model_dump(
                 exclude={
                     "log_id",
@@ -381,7 +389,7 @@ class Tools(Resource, t.Generic[TProvider]):
         user_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         version: t.Optional[str] = None,
-        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
+        dangerously_skip_version_check: t.Optional[bool] = None,
         modifiers: t.Optional[Modifiers] = None,
     ) -> ToolExecutionResponse:
         """
@@ -398,13 +406,11 @@ class Tools(Resource, t.Generic[TProvider]):
         :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
         :param user_id: The ID of the user to execute the tool for.
         :param text: The text to pass to the tool.
-        :param version: The version of the tool to execute.
-        :param toolkit_versions: Toolkit versions to use for execution, overrides the SDK-level configuration.
+        :param version: The version of the tool to execute (overrides the SDK-level toolkit versions for this execution).
+        :param dangerously_skip_version_check: Skip the version check for 'latest' version. This might cause unexpected behavior when new versions are released.
         :param modifiers: The modifiers to apply to the tool.
         :return: The response from the tool.
         """
-        # Use provided toolkit_versions or fall back to instance-level versions
-        effective_toolkit_versions = toolkit_versions or self._toolkit_versions
 
         tool = self._tool_schemas.get(slug)
         if tool is None and self._custom_tools.get(slug=slug) is not None:
@@ -416,7 +422,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 Tool,
                 self._client.tools.retrieve(
                     tool_slug=slug,
-                    toolkit_versions=none_to_omit(effective_toolkit_versions),
+                    toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
             self._tool_schemas[slug] = tool
@@ -435,6 +441,7 @@ class Tools(Resource, t.Generic[TProvider]):
                     "text": text,
                     "user_id": user_id,
                     "arguments": arguments,
+                    "dangerously_skip_version_check": dangerously_skip_version_check,
                 },
             )
             connected_account_id = processed_params["connected_account_id"]
@@ -444,6 +451,7 @@ class Tools(Resource, t.Generic[TProvider]):
             version = processed_params["version"]
             user_id = processed_params["user_id"]
             arguments = processed_params["arguments"]
+            dangerously_skip_version_check = processed_params.get("dangerously_skip_version_check")
 
         arguments = self._file_helper.substitute_file_uploads(
             tool=tool,
@@ -465,7 +473,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 user_id=user_id,
                 text=text,
                 version=version,
-                toolkit_versions=none_to_omit(effective_toolkit_versions),
+                dangerously_skip_version_check=dangerously_skip_version_check,
             )
         )
         response = self._file_helper.substitute_file_downloads(

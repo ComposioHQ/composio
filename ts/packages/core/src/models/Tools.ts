@@ -43,6 +43,7 @@ import {
   ComposioToolExecutionError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
+  ComposioToolVersionRequiredError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
@@ -645,6 +646,9 @@ export class Tools<
         {
           userId,
           arguments: input,
+          // dangerously skip version check for agentic and non agentic tool execution via providers
+          // this can be safe because most agentic flows users fetch latest version and then execute the tool
+          dangerouslySkipVersionCheck: true,
         },
         modifiers
       );
@@ -725,6 +729,13 @@ export class Tools<
         (await this.getConnectedAccountIdForTool(body.userId, tool.slug)) || undefined;
     }
 
+    const toolkitVersion =
+      body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
+    // if the version is latest and dangerouslySkipVersionCheck is not true, throw an error
+    if (toolkitVersion === 'latest' && !body.dangerouslySkipVersionCheck) {
+      throw new ComposioToolVersionRequiredError();
+    }
+
     let result = await this.client.tools.execute(tool.slug, {
       allow_tracing: body.allowTracing,
       connected_account_id: body.connectedAccountId,
@@ -732,8 +743,7 @@ export class Tools<
       custom_connection_data: body.customConnectionData,
       arguments: body.arguments,
       user_id: body.userId,
-      version:
-        body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
+      version: toolkitVersion,
       text: body.text,
     });
     // apply transformations to the response
@@ -756,34 +766,67 @@ export class Tools<
    * This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
    * It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
    *
+   * **Version Control:**
+   * By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
+   * the execution will throw a `ComposioToolVersionRequiredError` unless `dangerouslySkipVersionCheck` is set to `true`.
+   * This helps prevent unexpected behavior when new toolkit versions are released.
+   *
    * @param {string} slug - The slug/ID of the tool to be executed
    * @param {ToolExecuteParams} body - The parameters to be passed to the tool
+   * @param {string} [body.version] - The specific version of the tool to execute (e.g., "20250909_00")
+   * @param {boolean} [body.dangerouslySkipVersionCheck] - Skip version validation for "latest" version (use with caution)
+   * @param {string} [body.userId] - The user ID to execute the tool for
+   * @param {string} [body.connectedAccountId] - The connected account ID to use for authenticated tools
+   * @param {Record<string, unknown>} [body.arguments] - The arguments to pass to the tool
    * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    *
    * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
+   * @throws {ComposioToolVersionRequiredError} If version resolves to "latest" and dangerouslySkipVersionCheck is not true
    * @throws {ComposioToolExecutionError} If there is an error during tool execution
    *
-   * @example
+   * @example Execute with a specific version (recommended for production)
    * ```typescript
-   * // Execute a Composio API tool
+   * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *   userId: 'default',
+   *   version: '20250909_00',
+   *   arguments: { owner: 'composio' }
+   * });
+   * ```
+   *
+   * @example Execute with dangerouslySkipVersionCheck (not recommended for production)
+   * ```typescript
    * const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
    *   userId: 'default',
-   *   arguments: { userId: 'pg' }
+   *   arguments: { userId: 'pg' },
+   *   dangerouslySkipVersionCheck: true // Allows execution with "latest" version
    * });
+   * ```
    *
-   * // Execute with modifiers
+   * @example Execute with SDK-level toolkit versions configuration
+   * ```typescript
+   * // If toolkitVersions are set during Composio initialization, no need to pass version
+   * const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
+   * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *   userId: 'default',
+   *   arguments: { owner: 'composio' }
+   * });
+   * ```
+   *
+   * @example Execute with modifiers
+   * ```typescript
    * const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
    *   userId: 'default',
+   *   version: '20250909_00',
    *   arguments: { owner: 'composio', repo: 'sdk' }
    * }, {
-   *   beforeExecute: (toolSlug, toolkitSlug, params) => {
-   *     // Modify params before execution
+   *   beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
+   *     console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
    *     return params;
    *   },
-   *   afterExecute: (toolSlug, toolkitSlug, result) => {
-   *     // Transform result after execution
+   *   afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+   *     console.log(`Completed ${toolSlug}`);
    *     return result;
    *   }
    * });

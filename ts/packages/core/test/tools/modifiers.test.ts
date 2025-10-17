@@ -74,6 +74,7 @@ describe('Tools Modifiers', () => {
       const body = {
         userId: 'test-user',
         arguments: { limit: 5 },
+        dangerouslySkipVersionCheck: true,
       };
 
       const { beforeExecute } = createExecutionModifiers({
@@ -103,7 +104,7 @@ describe('Tools Modifiers', () => {
 
     it('should apply afterExecute modifier after executing a tool', async () => {
       const slug = 'COMPOSIO_TOOL';
-      const body = { userId: 'test-user', arguments: {} };
+      const body = { userId: 'test-user', arguments: {}, dangerouslySkipVersionCheck: true };
 
       const { afterExecute } = createExecutionModifiers({
         afterModifications: {
