@@ -835,7 +835,6 @@ class TestToolExecution:
     def test_execute_with_environment_variable_toolkit_version(self):
         """Test that execute uses environment variable for toolkit version."""
         import os
-        from unittest.mock import patch
 
         # Mock client and provider
         mock_client = Mock()
