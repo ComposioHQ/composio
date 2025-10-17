@@ -7,7 +7,7 @@ import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
-function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object' }, refs: Refs) {
+function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object' }, refs: Refs) {
   if (!objectSchema.properties) {
     // leave it as an empty object or else this will break openai responses
     return z.object({});
@@ -79,30 +79,34 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type: 'object'
 }
 
 export function parseObject(
-  objectSchema: JsonSchemaObject & { type: 'object' },
+  objectSchema: JsonSchemaObject & { type?: 'object' },
   refs: Refs
 ): z.ZodTypeAny {
   const hasPatternProperties = Object.keys(objectSchema.patternProperties ?? {}).length > 0;
 
+  // Ensure type is set to 'object' if not already
+  const normalizedSchema =
+    objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
+
   const propertiesSchema:
     | z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny>
-    | undefined = parseObjectProperties(objectSchema, refs);
+    | undefined = parseObjectProperties(normalizedSchema, refs);
   let zodSchema: z.ZodTypeAny | undefined = propertiesSchema;
 
   const additionalProperties =
-    objectSchema.additionalProperties !== undefined
-      ? parseSchema(objectSchema.additionalProperties, {
+    normalizedSchema.additionalProperties !== undefined
+      ? parseSchema(normalizedSchema.additionalProperties, {
           ...refs,
           path: [...refs.path, 'additionalProperties'],
         })
       : undefined;
 
   // Track if additionalProperties was explicitly set to true
-  const isAdditionalPropertiesTrue = objectSchema.additionalProperties === true;
+  const isAdditionalPropertiesTrue = normalizedSchema.additionalProperties === true;
 
-  if (objectSchema.patternProperties) {
+  if (normalizedSchema.patternProperties) {
     const parsedPatternProperties = Object.fromEntries(
-      Object.entries(objectSchema.patternProperties).map(([key, value]) => {
+      Object.entries(normalizedSchema.patternProperties).map(([key, value]) => {
         return [
           key,
           parseSchema(value, {
@@ -138,12 +142,12 @@ export function parseObject(
       }
     }
 
-    const objectPropertyKeys = new Set(Object.keys(objectSchema.properties ?? {}));
+    const objectPropertyKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
     zodSchema = zodSchema.superRefine((value: Record<string, unknown>, ctx) => {
       for (const key in value) {
         let wasMatched = objectPropertyKeys.has(key);
 
-        for (const patternPropertyKey in objectSchema.patternProperties) {
+        for (const patternPropertyKey in normalizedSchema.patternProperties) {
           const regex = new RegExp(patternPropertyKey);
           if (key.match(regex)) {
             wasMatched = true;
