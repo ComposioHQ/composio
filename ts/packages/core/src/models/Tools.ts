@@ -635,8 +635,7 @@ export class Tools<
         custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
-        version:
-          body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
+        version: toolkitVersion,
         text: body.text,
       });
       // transform the response to the ToolExecuteResponse format
@@ -669,6 +668,7 @@ export class Tools<
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    *
    * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
+   * @throws {ComposioConnectedAccountNotFoundError} If the connected account is not found
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
    * @throws {ComposioToolVersionRequiredError} If version resolves to "latest" and dangerouslySkipVersionCheck is not true
    * @throws {ComposioToolExecutionError} If there is an error during tool execution
