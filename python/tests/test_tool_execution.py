@@ -262,9 +262,19 @@ class TestToolExecution:
         # Test cases matching TypeScript behavior
         test_cases = [
             ("GITHUB_GET_REPOS", "github", "20251201_01", False),
-            ("SLACK_SEND_MESSAGE", "slack", "latest", True),  # Need skip flag for latest
+            (
+                "SLACK_SEND_MESSAGE",
+                "slack",
+                "latest",
+                True,
+            ),  # Need skip flag for latest
             ("NOTION_CREATE_PAGE", "notion", "20251201_05", False),
-            ("CUSTOM_TOOL", "unknown_toolkit", "latest", True),  # Unknown toolkit fallback to latest
+            (
+                "CUSTOM_TOOL",
+                "unknown_toolkit",
+                "latest",
+                True,
+            ),  # Unknown toolkit fallback to latest
         ]
 
         for tool_slug, toolkit_slug, expected_version, needs_skip in test_cases:
