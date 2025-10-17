@@ -451,7 +451,9 @@ class Tools(Resource, t.Generic[TProvider]):
             version = processed_params["version"]
             user_id = processed_params["user_id"]
             arguments = processed_params["arguments"]
-            dangerously_skip_version_check = processed_params.get("dangerously_skip_version_check")
+            dangerously_skip_version_check = processed_params.get(
+                "dangerously_skip_version_check"
+            )
 
         arguments = self._file_helper.substitute_file_uploads(
             tool=tool,
