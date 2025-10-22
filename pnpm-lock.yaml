@@ -40,6 +40,8 @@ catalogs:
       specifier: ^4.1.0
       version: 4.1.12
 
+pnpmfileChecksum: sha256-qa2FxUigWfUZ2Ug6qlTJxC5QYOXtigTnTBguG0OK50Q=
+
 importers:
 
   .:
@@ -244,8 +246,8 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.6(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -383,8 +385,8 @@ importers:
         specifier: ^16.4.1
         version: 16.5.0
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.5(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -560,8 +562,8 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.5(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -623,8 +625,8 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.5(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -670,8 +672,8 @@ importers:
         specifier: ^16.5.0
         version: 16.5.0
       zod-to-json-schema:
-        specifier: ^3.24.6
-        version: 3.24.6(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -820,8 +822,8 @@ importers:
         specifier: 'catalog:'
         version: 13.0.0
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.5(zod@4.1.12)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     devDependencies:
       '@type-challenges/utils':
         specifier: ^0.1.1
@@ -875,8 +877,8 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.24.6(zod@3.25.76)
+        specifier: npm:@finom/zod-to-json-schema@3.24.11
+        version: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     devDependencies:
       vitest:
         specifier: 'catalog:'
@@ -6877,11 +6879,6 @@ packages:
   zod-from-json-schema@0.5.0:
     resolution: {integrity: sha512-W1v1YIoimOJfvuorGGp1QroizLL3jEGELJtgrHiVg/ytxVZdh/BTTVyPypGB7YK30LHrCkkebbjuyHIjBGCEzw==}
 
-  zod-to-json-schema@3.24.5:
-    resolution: {integrity: sha512-/AuWwMP+YqiPbsJx5D6TfgRTc4kTLjsh5SOcd4bLsfUg2RcEXrFMJl1DGgdHy2aCfsIA/cr/1JM0xcB2GZji8g==}
-    peerDependencies:
-      zod: ^3.24.1
-
   zod-to-json-schema@3.24.6:
     resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
     peerDependencies:
@@ -6999,7 +6996,7 @@ snapshots:
       '@standard-schema/spec': 1.0.0
       eventsource-parser: 3.0.3
       zod: 4.1.12
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
 
   '@ai-sdk/provider-utils@3.0.5(zod@4.1.12)':
     dependencies:
@@ -7007,7 +7004,7 @@ snapshots:
       '@standard-schema/spec': 1.0.0
       eventsource-parser: 3.0.6
       zod: 4.1.12
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
 
   '@ai-sdk/provider-utils@3.0.7(zod@4.1.12)':
     dependencies:
@@ -7046,7 +7043,7 @@ snapshots:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@4.1.12)
       zod: 4.1.12
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
 
   '@ai-sdk/xai@2.0.23(zod@4.1.12)':
     dependencies:
@@ -7630,6 +7627,10 @@ snapshots:
       '@eslint/core': 0.15.0
       levn: 0.4.1
 
+  '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)':
+    dependencies:
+      zod: 3.25.76
+
   '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)':
     dependencies:
       zod: 4.1.12
@@ -7659,7 +7660,7 @@ snapshots:
       google-auth-library: 9.15.1
       ws: 8.18.2
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.18.0
     transitivePeerDependencies:
@@ -8009,7 +8010,7 @@ snapshots:
       p-retry: 4.6.2
       uuid: 10.0.0
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     transitivePeerDependencies:
       - openai
 
@@ -8026,7 +8027,7 @@ snapshots:
       p-retry: 4.6.2
       uuid: 10.0.0
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     transitivePeerDependencies:
       - openai
 
@@ -8043,7 +8044,7 @@ snapshots:
       p-retry: 4.6.2
       uuid: 10.0.0
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     transitivePeerDependencies:
       - openai
 
@@ -8267,7 +8268,7 @@ snapshots:
       sift: 17.1.3
       xstate: 5.20.2
       zod: 4.1.12
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     transitivePeerDependencies:
       - '@hono/arktype-validator'
       - '@hono/effect-validator'
@@ -8332,7 +8333,7 @@ snapshots:
       sift: 17.1.3
       xstate: 5.20.2
       zod: 4.1.12
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
     transitivePeerDependencies:
       - '@hono/arktype-validator'
       - '@hono/effect-validator'
@@ -8389,7 +8390,7 @@ snapshots:
       zod: 4.1.12
       zod-from-json-schema: 0.5.0
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
 
   '@mastra/schema-compat@0.11.4(ai@4.3.19(react@18.3.1)(zod@4.1.12))(zod@4.1.12)':
     dependencies:
@@ -8398,7 +8399,7 @@ snapshots:
       zod: 4.1.12
       zod-from-json-schema: 0.5.0
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.24.6(zod@4.1.12)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@4.1.12)'
 
   '@modelcontextprotocol/sdk@1.18.0':
     dependencies:
@@ -8413,7 +8414,7 @@ snapshots:
       pkce-challenge: 5.0.0
       raw-body: 3.0.0
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     transitivePeerDependencies:
       - supports-color
 
@@ -10231,7 +10232,7 @@ snapshots:
       resolve-package-path: 4.0.3
       uuid: 10.0.0
       zod: 3.25.76
-      zod-to-json-schema: 3.24.6(zod@3.25.76)
+      zod-to-json-schema: '@finom/zod-to-json-schema@3.24.11(zod@3.25.76)'
     transitivePeerDependencies:
       - debug
 
@@ -13399,17 +13400,15 @@ snapshots:
     dependencies:
       zod: 4.1.12
 
-  zod-to-json-schema@3.24.5(zod@4.1.12):
-    dependencies:
-      zod: 4.1.12
-
   zod-to-json-schema@3.24.6(zod@3.25.76):
     dependencies:
       zod: 3.25.76
+    optional: true
 
   zod-to-json-schema@3.24.6(zod@4.1.12):
     dependencies:
       zod: 4.1.12
+    optional: true
 
   zod@3.22.3: {}
 
