@@ -18,6 +18,7 @@ class ToolExecuteParams(te.TypedDict):
     user_id: t.Optional[str]
     text: t.Optional[str]
     version: t.Optional[str]
+    dangerously_skip_version_check: te.NotRequired[t.Optional[bool]]
 
 
 ModifierInOut = t.Union["ToolExecuteParams", "ToolExecutionResponse", "Tool"]

@@ -257,7 +257,40 @@ export const CustomAuthParamsSchema = z.object({
 export type CustomAuthParams = z.infer<typeof CustomAuthParamsSchema>;
 
 /**
- * ToolExecuteParams is the parameters for the tool execution.
+ * Parameters for tool execution.
+ *
+ * @property {boolean} [allowTracing] - Enable tracing for this tool execution
+ * @property {string} [connectedAccountId] - The connected account ID to use for authenticated tools
+ * @property {CustomAuthParams} [customAuthParams] - Custom authentication parameters
+ * @property {CustomConnectionData} [customConnectionData] - Custom connection data (takes priority over customAuthParams)
+ * @property {Record<string, unknown>} [arguments] - The arguments to pass to the tool
+ * @property {string} [userId] - The user ID to execute the tool for (required for no-auth apps)
+ * @property {string} [version] - The specific version of the tool to execute (e.g., "20250909_00" or "latest")
+ * @property {boolean} [dangerouslySkipVersionCheck] - Skip version validation when using "latest" version.
+ *   **Warning:** This may cause unexpected behavior when new toolkit versions are released.
+ *   Only use this if you understand the risks. Recommended alternatives:
+ *   - Specify a concrete version in the `version` parameter
+ *   - Configure toolkit versions at SDK initialization level
+ *   - Set toolkit version via environment variable (COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_SLUG>)
+ * @property {string} [text] - Additional text input for the tool
+ *
+ * @example Recommended: Execute with a specific version
+ * ```typescript
+ * const params: ToolExecuteParams = {
+ *   userId: 'default',
+ *   version: '20250909_00',
+ *   arguments: { owner: 'composio', repo: 'sdk' }
+ * };
+ * ```
+ *
+ * @example With dangerouslySkipVersionCheck (use with caution)
+ * ```typescript
+ * const params: ToolExecuteParams = {
+ *   userId: 'default',
+ *   dangerouslySkipVersionCheck: true,
+ *   arguments: { userId: 'pg' }
+ * };
+ * ```
  */
 export const ToolExecuteParamsSchema = z.object({
   allowTracing: z.boolean().optional(),
@@ -265,8 +298,9 @@ export const ToolExecuteParamsSchema = z.object({
   customAuthParams: CustomAuthParamsSchema.optional(),
   customConnectionData: CustomConnectionDataSchema.optional(),
   arguments: z.record(z.string(), z.unknown()).optional(),
-  userId: z.string().optional(), // we have no auth apps which can be execute
+  userId: z.string().optional(),
   version: z.union([z.literal('latest'), z.string()]).optional(),
+  dangerouslySkipVersionCheck: z.boolean().optional(),
   text: z.string().optional(),
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
