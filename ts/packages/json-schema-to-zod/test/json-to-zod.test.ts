@@ -1108,4 +1108,386 @@ describe('jsonSchemaToZod', () => {
       expect(zodSchema.description).toBe('Various numbers\nExamples:\n  42\n  3.14\n  0\n  -5');
     });
   });
+
+  describe('Object Detection Without Explicit Type', () => {
+    it('should detect object schema with only properties defined', () => {
+      const schema: JsonSchema = {
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+        required: ['name'],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should parse as an object
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(zodSchema.parse({ name: 'Jane' })).toEqual({ name: 'Jane' });
+      expect(() => zodSchema.parse({ age: 30 })).toThrow(); // Missing required field
+      expect(() => zodSchema.parse('not an object')).toThrow();
+    });
+
+    it('should detect object schema with only additionalProperties defined', () => {
+      const schema: JsonSchema = {
+        additionalProperties: { type: 'string' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should parse as an object with string additional properties
+      expect(zodSchema.parse({})).toEqual({});
+      expect(zodSchema.parse({ key1: 'value1', key2: 'value2' })).toEqual({
+        key1: 'value1',
+        key2: 'value2',
+      });
+      expect(() => zodSchema.parse({ key1: 123 })).toThrow(); // Wrong type
+      expect(() => zodSchema.parse('not an object')).toThrow();
+    });
+
+    it('should detect object schema with only patternProperties defined', () => {
+      const schema: JsonSchema = {
+        patternProperties: {
+          '^prefix_': { type: 'string' },
+          '^num_': { type: 'number' },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should parse as an object
+      expect(zodSchema.parse({})).toEqual({});
+      expect(zodSchema.parse({ prefix_one: 'value', num_one: 123 })).toEqual({
+        prefix_one: 'value',
+        num_one: 123,
+      });
+      expect(() => zodSchema.parse({ prefix_one: 123 })).toThrow(); // Wrong type for pattern
+      expect(() => zodSchema.parse('not an object')).toThrow();
+    });
+
+    it('should detect object schema with properties and additionalProperties but no type', () => {
+      const schema: JsonSchema = {
+        properties: {
+          name: { type: 'string' },
+        },
+        additionalProperties: { type: 'number' },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+    });
+
+    it('should detect object schema with properties and patternProperties but no type', () => {
+      const schema: JsonSchema = {
+        properties: {
+          name: { type: 'string' },
+        },
+        patternProperties: {
+          '^data_': { type: 'number' },
+        },
+        additionalProperties: false,
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', data_age: 30 })).toEqual({
+        name: 'John',
+        data_age: 30,
+      });
+      expect(() => zodSchema.parse({ name: 'John', data_age: 'not a number' })).toThrow();
+      expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
+    });
+
+    it('should detect nested objects without explicit type', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          user: {
+            // No type specified, but has properties
+            properties: {
+              name: { type: 'string' },
+              email: { type: 'string', format: 'email' },
+            },
+            required: ['name'],
+          },
+          metadata: {
+            // No type specified, but has additionalProperties
+            additionalProperties: { type: 'string' },
+          },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      const validData = {
+        user: { name: 'John', email: 'john@example.com' },
+        metadata: { key1: 'value1', key2: 'value2' },
+      };
+      expect(zodSchema.parse(validData)).toEqual(validData);
+
+      // Test nested validation
+      expect(() =>
+        zodSchema.parse({
+          user: { email: 'john@example.com' }, // Missing required name
+        })
+      ).toThrow();
+
+      expect(() =>
+        zodSchema.parse({
+          metadata: { key1: 123 }, // Wrong type
+        })
+      ).toThrow();
+    });
+
+    it('should handle arrays containing objects without explicit type', () => {
+      const schema: JsonSchema = {
+        type: 'array',
+        items: {
+          // No type specified, but has properties
+          properties: {
+            id: { type: 'number' },
+            name: { type: 'string' },
+          },
+          required: ['id'],
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse([{ id: 1, name: 'Item 1' }, { id: 2 }])).toEqual([
+        { id: 1, name: 'Item 1' },
+        { id: 2 },
+      ]);
+
+      expect(() => zodSchema.parse([{ name: 'Item without ID' }])).toThrow();
+    });
+
+    it('should handle complex nested structure without explicit types', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          config: {
+            // No type, but has properties
+            properties: {
+              settings: {
+                // No type, but has additionalProperties
+                additionalProperties: {
+                  // No type, but has properties
+                  properties: {
+                    enabled: { type: 'boolean' },
+                    value: { type: 'string' },
+                  },
+                },
+              },
+              tags: {
+                type: 'array',
+                items: {
+                  // No type, but has properties
+                  properties: {
+                    key: { type: 'string' },
+                    value: { type: 'string' },
+                  },
+                  required: ['key'],
+                },
+              },
+            },
+          },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      const validData = {
+        config: {
+          settings: {
+            feature1: { enabled: true, value: 'on' },
+            feature2: { enabled: false, value: 'off' },
+          },
+          tags: [{ key: 'env', value: 'production' }, { key: 'region' }],
+        },
+      };
+      expect(zodSchema.parse(validData)).toEqual(validData);
+    });
+
+    it('should handle anyOf with objects without explicit type', () => {
+      const schema: JsonSchema = {
+        anyOf: [
+          {
+            // No type, but has properties
+            properties: {
+              name: { type: 'string' },
+            },
+          },
+          {
+            type: 'string',
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
+      expect(zodSchema.parse('just a string')).toBe('just a string');
+    });
+
+    it('should handle oneOf with objects without explicit type', () => {
+      const schema: JsonSchema = {
+        oneOf: [
+          {
+            // No type, but has properties
+            properties: {
+              type: { type: 'string', enum: ['user'] },
+              name: { type: 'string' },
+            },
+            required: ['type'],
+          },
+          {
+            // No type, but has properties
+            properties: {
+              type: { type: 'string', enum: ['admin'] },
+              role: { type: 'string' },
+            },
+            required: ['type'],
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ type: 'user', name: 'John' })).toEqual({
+        type: 'user',
+        name: 'John',
+      });
+      expect(zodSchema.parse({ type: 'admin', role: 'superadmin' })).toEqual({
+        type: 'admin',
+        role: 'superadmin',
+      });
+    });
+
+    it('should handle allOf with explicit object types (requires additionalProperties for merging)', () => {
+      // Note: allOf with strict objects (without additionalProperties) creates strict intersections
+      // Each object must allow additional properties for the intersection to accept merged fields
+      const schema: JsonSchema = {
+        allOf: [
+          {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+            },
+            required: ['name'],
+            additionalProperties: true, // Required for allOf to work with merged fields
+          },
+          {
+            type: 'object',
+            properties: {
+              age: { type: 'number' },
+            },
+            additionalProperties: true, // Required for allOf to work with merged fields
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(zodSchema.parse({ name: 'Jane' })).toEqual({ name: 'Jane' });
+      expect(() => zodSchema.parse({ age: 30 })).toThrow(); // Missing required name
+    });
+
+    it('should handle allOf with implicit object detection (note: creates strict intersections)', () => {
+      // When objects in allOf don't have explicit types, they are detected as objects
+      // but the intersection behavior is strict
+      const schema: JsonSchema = {
+        allOf: [
+          {
+            // No type, but has properties - will be detected as object
+            properties: {
+              name: { type: 'string' },
+            },
+            required: ['name'],
+            additionalProperties: true, // Need to allow additional properties for intersection to work
+          },
+          {
+            // No type, but has properties - will be detected as object
+            properties: {
+              age: { type: 'number' },
+            },
+            additionalProperties: true, // Need to allow additional properties for intersection to work
+          },
+        ],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // With additionalProperties: true, the intersection allows all properties
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(zodSchema.parse({ name: 'Jane' })).toEqual({ name: 'Jane' });
+      expect(() => zodSchema.parse({ age: 30 })).toThrow(); // Missing required name
+    });
+
+    it('should correctly identify objects in its.an.object utility', () => {
+      const schema: JsonSchema = {
+        type: 'object',
+        properties: {
+          explicit: {
+            type: 'object',
+            properties: { a: { type: 'string' } },
+          },
+          implicitFromProperties: {
+            properties: { b: { type: 'number' } },
+          },
+          implicitFromAdditionalProperties: {
+            additionalProperties: { type: 'boolean' },
+          },
+          implicitFromPatternProperties: {
+            patternProperties: {
+              '^[a-z]+$': { type: 'string' },
+            },
+          },
+          notAnObject: {
+            type: 'string',
+          },
+        },
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      const validData = {
+        explicit: { a: 'test' },
+        implicitFromProperties: { b: 123 },
+        implicitFromAdditionalProperties: { any: true, keys: false },
+        implicitFromPatternProperties: { abc: 'value' },
+        notAnObject: 'just a string',
+      };
+      expect(zodSchema.parse(validData)).toEqual(validData);
+
+      // Test each property type validation
+      expect(() => zodSchema.parse({ ...validData, explicit: 'not an object' })).toThrow();
+      expect(() =>
+        zodSchema.parse({ ...validData, implicitFromProperties: { b: 'wrong' } })
+      ).toThrow();
+      expect(() =>
+        zodSchema.parse({ ...validData, implicitFromAdditionalProperties: { key: 'wrong' } })
+      ).toThrow();
+      expect(() =>
+        zodSchema.parse({ ...validData, implicitFromPatternProperties: { abc: 123 } })
+      ).toThrow();
+    });
+
+    it('should handle empty object schemas without explicit type', () => {
+      const schema: JsonSchema = {
+        properties: {},
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      // Should be treated as an object
+      expect(zodSchema.parse({})).toEqual({});
+      expect(() => zodSchema.parse('not an object')).toThrow();
+    });
+
+    it('should handle objects with only required field but no type', () => {
+      const schema: JsonSchema = {
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+        },
+        required: ['name', 'age'],
+      };
+      const zodSchema = jsonSchemaToZod(schema);
+
+      expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
+      expect(() => zodSchema.parse({ name: 'John' })).toThrow();
+      expect(() => zodSchema.parse({ age: 30 })).toThrow();
+    });
+  });
 });

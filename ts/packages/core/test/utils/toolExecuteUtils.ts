@@ -48,22 +48,12 @@ export const mockToolExecution = async (
   const getRawComposioToolBySlugSpy = vi.spyOn(tools, 'getRawComposioToolBySlug');
   getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
 
-  // Mock connected account
-  const getConnectedAccountIdForToolSpy = vi.spyOn(
-    tools as unknown as {
-      getConnectedAccountIdForTool: (typeof tools)['getConnectedAccountIdForTool'];
-    },
-    'getConnectedAccountIdForTool'
-  );
-  getConnectedAccountIdForToolSpy.mockResolvedValueOnce(connectedAccountId);
-
   // Mock tool execution
   mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
 
   return {
     getCustomToolBySlugSpy,
     getRawComposioToolBySlugSpy,
-    getConnectedAccountIdForToolSpy,
   };
 };
 

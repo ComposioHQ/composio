@@ -167,10 +167,6 @@ export class CustomTools {
    * ```
    */
   async getCustomToolBySlug(slug: string): Promise<Tool | undefined> {
-    if (!slug) {
-      throw new Error('Tool slug is required');
-    }
-
     try {
       const tool = this.customToolsRegistry.get(slug.toLowerCase());
       return tool?.schema;

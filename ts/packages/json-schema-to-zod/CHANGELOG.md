@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.17
+
+### Patch Changes
+
+- 157bf7b: Fix array parsing
+
 ## 0.1.16
 
 ### Patch Changes
