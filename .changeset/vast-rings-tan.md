@@ -8,7 +8,7 @@
 '@composio/mastra': minor
 '@composio/openai': minor
 '@composio/openai-agents': minor
-'@composio/vercel': minor
+'@composio/vercel': patch
 '@composio/json-schema-to-zod': patch
 ---
 
