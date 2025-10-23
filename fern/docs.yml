@@ -171,6 +171,9 @@ navigation:
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
+    - page: Improving agent performance
+      path: pages/dist/mcp/improving-agent-performance.mdx
+      slug: mcp-improving-agent-performance
     - page: Partner Program
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api

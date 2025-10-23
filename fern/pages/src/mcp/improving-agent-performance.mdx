@@ -1,0 +1,63 @@
+---
+title: Improving agent performance with accessibility
+subtitle: Enhance ChatGPT agent understanding through WAI-ARIA best practices
+---
+
+Making your website more accessible helps ChatGPT Agent in Atlas understand it better. By following accessibility standards, you enable agents to more accurately interpret page structure and interact with your site's elements.
+
+## Understanding ARIA tags
+
+ChatGPT Atlas uses ARIA tags—the same labels and roles that support screen readers—to interpret page structure and interactive elements. These semantic markers help agents understand what each element does and how to interact with it correctly.
+
+## Implementing WAI-ARIA best practices
+
+To improve compatibility with ChatGPT agents, follow [WAI-ARIA best practices](https://www.w3.org/WAI/ARIA/apg/) by adding descriptive roles, labels, and states to interactive elements like buttons, menus, and forms.
+
+### Key improvements
+
+**Add semantic roles**: Use ARIA roles to identify the purpose of elements.
+
+```html
+<button role="button" aria-label="Submit form">Submit</button>
+<nav role="navigation" aria-label="Main navigation">...</nav>
+```
+
+**Provide descriptive labels**: Include `aria-label` or `aria-labelledby` attributes to describe elements clearly.
+
+```html
+<input type="text" aria-label="Search products" />
+<div role="region" aria-labelledby="section-title">
+  <h2 id="section-title">Product Details</h2>
+</div>
+```
+
+**Indicate element states**: Use ARIA states to communicate the current status of interactive elements.
+
+```html
+<button aria-pressed="true">Active Filter</button>
+<div role="alert" aria-live="polite">Form submitted successfully</div>
+```
+
+## Benefits for agent interaction
+
+When you implement these accessibility practices, ChatGPT agents can:
+
+- Accurately identify interactive elements and their purposes
+- Understand the current state of dynamic content
+- Navigate complex interfaces more reliably
+- Provide more accurate responses about your site's functionality
+
+<Tip>
+These improvements benefit both AI agents and users with assistive technologies, making your site more accessible to everyone.
+</Tip>
+
+## Next steps
+
+<Cards>
+  <Card title="WAI-ARIA Authoring Practices" href="https://www.w3.org/WAI/ARIA/apg/" icon="book">
+    Comprehensive guide to implementing ARIA patterns
+  </Card>
+  <Card title="MCP Quickstart" href="/docs/mcp-quickstart" icon="rocket">
+    Get started with Model Context Protocol
+  </Card>
+</Cards>
