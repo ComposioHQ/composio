@@ -270,8 +270,8 @@ zsh)
     ;;
 bash)
     commands=(
-        "export $install_env=$quoted_install_dir"
-        "export PATH=\"$bin_env:\$PATH\""
+        "export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+        "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
     )
 
     bash_configs=(
@@ -320,8 +320,8 @@ bash)
 
 *)
     echo 'Manually add the directory to ~/.bashrc (or similar):'
-    info_bold "  export $install_env=$quoted_install_dir"
-    info_bold "  export PATH=\"$bin_env:\$PATH\""
+    info_bold "  export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+    info_bold "  export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
     ;;
 esac
 

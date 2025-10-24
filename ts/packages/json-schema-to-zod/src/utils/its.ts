@@ -3,7 +3,11 @@ import type { JsonSchema, JsonSchemaObject, Serializable } from '../types';
 export const its = {
   an: {
     object: (x: JsonSchemaObject): x is JsonSchemaObject & { type: 'object' } =>
-      x.type === 'object',
+      x.type === 'object' ||
+      (!x.type &&
+        (x.properties !== undefined ||
+          x.additionalProperties !== undefined ||
+          x.patternProperties !== undefined)),
     array: (x: JsonSchemaObject): x is JsonSchemaObject & { type: 'array' } => x.type === 'array',
     anyOf: (
       x: JsonSchemaObject
