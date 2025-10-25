@@ -1,4 +1,5 @@
 import asyncio
+import os
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 from agents import Agent, Runner, HostedMCPTool
@@ -6,7 +7,7 @@ from agents import Agent, Runner, HostedMCPTool
 async def main() -> None:
     # Initialize Composio and create Tool Router session
     composio = Composio(
-        # api_key="your-api-key",
+        api_key=os.getenv("COMPOSIO_API_KEY"),  # Uses env var by default
         provider=OpenAIAgentsProvider()
     )
     session = composio.experimental.tool_router.create_session(
