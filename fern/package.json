@@ -34,13 +34,13 @@
 		"llms:deploy": "turbo run deploy --filter=@composio/llms-txt-worker"
 	},
 	"dependencies": {
-		"@composio/openai-agents": "^0.2.0",
-		"@openai/agents": "^0.2.1",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@composio/openai-agents": "^0.2.0",
+		"@openai/agents": "^0.2.1",
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
