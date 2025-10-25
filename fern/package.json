@@ -34,6 +34,8 @@
 		"llms:deploy": "turbo run deploy --filter=@composio/llms-txt-worker"
 	},
 	"dependencies": {
+		"@composio/openai-agents": "^0.2.0",
+		"@openai/agents": "^0.2.1",
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
 		"supergateway": "^2.8.3"
