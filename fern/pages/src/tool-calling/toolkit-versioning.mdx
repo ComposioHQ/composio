@@ -1,0 +1,304 @@
+---
+title: Toolkit versioning
+image: "https://og.composio.dev/api/og?title=Toolkit%20versioning"
+keywords: "toolkit versioning, tool version, version pinning, stable tools"
+subtitle: "Pin specific tool versions for consistent, predictable behavior in production"
+hide-nav-links: false
+---
+
+Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back easily when needed.
+
+## Quick start
+
+Configure toolkit versions using one of three methods, listed in order of precedence:
+
+### Method 1: SDK initialization (Recommended)
+
+Set versions when initializing the SDK. This applies to all tool operations.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/sdk-initialization.py"
+  title="Python"
+  startLine={1}
+  endLine={16}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/sdk-initialization.ts"
+  title="TypeScript"
+  startLine={1}
+  endLine={15}
+/>
+</CodeGroup>
+
+### Method 2: Environment variables
+
+Set toolkit versions through environment variables. Useful for deployment configurations.
+
+```bash
+# Set versions for specific toolkits
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20250116_00"
+export COMPOSIO_TOOLKIT_VERSION_SLACK="20250115_01"
+
+# Or set one version for all toolkits
+export COMPOSIO_TOOLKIT_VERSION="20250116_00"
+```
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/environment-variables.py"
+  title="Python"
+  startLine={11}
+  endLine={18}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/environment-variables.ts"
+  title="TypeScript"
+  startLine={11}
+  endLine={18}
+/>
+</CodeGroup>
+
+### Method 3: Per-execution override
+
+Override versions for specific tool executions. Takes precedence over SDK and environment settings.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/per-execution-override.py"
+  title="Python"
+  startLine={11}
+  endLine={21}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/per-execution-override.ts"
+  title="TypeScript"
+  startLine={11}
+  endLine={19}
+/>
+</CodeGroup>
+
+## Version formats
+
+### Version identifiers
+
+Toolkit versions follow the format `YYYYMMDD_NN`:
+- `YYYYMMDD`: Release date
+- `NN`: Sequential release number for that day
+
+```python
+# Production: Use specific version
+toolkit_versions = {
+    "github": "20250116_00"  # Released January 16, 2025, first version
+}
+
+# Development: Use latest
+toolkit_versions = {
+    "github": "latest"  # Always use newest version
+}
+```
+
+### Version resolution
+
+Versions are resolved in this order:
+1. **Per-execution version** (if specified)
+2. **SDK initialization version** (if configured)
+3. **Environment variable** for specific toolkit
+4. **Global environment variable** (applies to all)
+5. **Default**: `latest`
+
+<Warning>
+Never use `latest` in production. It can introduce breaking changes without warning.
+</Warning>
+
+## Configuration patterns
+
+### Multi-environment setup
+
+Manage different versions across development, staging, and production environments:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/multi-environment.py"
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/multi-environment.ts"
+  title="TypeScript"
+/>
+</CodeGroup>
+
+### CI/CD pipeline
+
+```yaml
+# .github/workflows/deploy.yml
+env:
+  COMPOSIO_TOOLKIT_VERSION_GITHUB: "20250110_00"
+  COMPOSIO_TOOLKIT_VERSION_SLACK: "20250110_00"
+  COMPOSIO_TOOLKIT_VERSION_GMAIL: "20250109_00"
+```
+
+## Managing versions
+
+### List available versions
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/list-versions.py"
+  title="Python"
+  startLine={5}
+  endLine={14}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/list-versions.ts"
+  title="TypeScript"
+  startLine={5}
+  endLine={14}
+/>
+</CodeGroup>
+
+### Test new versions
+
+Test updates in isolated environments before production deployment:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/test-new-version.py"
+  title="Python"
+  startLine={4}
+  endLine={29}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/test-new-version.ts"
+  title="TypeScript"
+  startLine={3}
+  endLine={40}
+/>
+</CodeGroup>
+
+### Roll back versions
+
+If issues arise, immediately revert to a previous stable version:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/rollback.py"
+  title="Python"
+  startLine={4}
+  endLine={22}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/rollback.ts"
+  title="TypeScript"
+  startLine={3}
+  endLine={22}
+/>
+</CodeGroup>
+
+## Breaking changes
+
+### Manual execution requires version
+
+As of October 22, 2025, manual tool execution requires explicit version specification:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/python/breaking-changes.py"
+  title="Python"
+  startLine={21}
+  endLine={61}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/versioning/typescript/breaking-changes.ts"
+  title="TypeScript"
+  startLine={20}
+  endLine={54}
+/>
+</CodeGroup>
+
+<Warning>
+The `dangerouslySkipVersionCheck` flag bypasses version validation. Use only during migration or debugging.
+</Warning>
+
+### Migration checklist
+
+1. **Audit current usage**: Identify all `tools.execute()` calls
+2. **Choose strategy**:
+   - Set toolkit versions in SDK initialization (recommended)
+   - Add version parameter to each execute call
+   - Use environment variables for deployment config
+3. **Test in staging**: Verify tools work with pinned versions
+4. **Deploy gradually**: Roll out to production incrementally
+5. **Monitor errors**: Watch for version-related failures
+
+## Best practices
+
+### Version pinning strategy
+
+```python
+# Development: Latest for rapid iteration
+dev_versions = {"github": "latest", "slack": "latest"}
+
+# Staging: Test specific new versions
+staging_versions = {"github": "20250116_00", "slack": "20250115_00"}
+
+# Production: Pin stable versions
+prod_versions = {"github": "20250110_00", "slack": "20250110_00"}
+```
+
+### Update workflow
+
+1. **Development**: Test with `latest`
+2. **Staging**: Pin specific version for testing
+3. **Validation**: Run automated tests
+4. **Production**: Deploy tested version
+5. **Monitor**: Track errors and performance
+
+
+## Reference
+
+### SDK parameters
+
+<CodeGroup>
+```python Python
+Composio(
+    api_key="YOUR_API_KEY",
+    toolkit_versions={
+        "toolkit_name": "version"  # Dict[str, str]
+    }
+)
+```
+
+```typescript TypeScript
+new Composio({
+    apiKey: "YOUR_API_KEY",
+    toolkitVersions: {
+        toolkitName: "version"  // Record<string, string>
+    }
+})
+```
+</CodeGroup>
+
+### Environment variables
+
+```bash
+# Specific toolkit version
+COMPOSIO_TOOLKIT_VERSION_[TOOLKIT_NAME]="version"
+
+# Global version (all toolkits)
+COMPOSIO_TOOLKIT_VERSION="version"
+
+# Examples
+COMPOSIO_TOOLKIT_VERSION_GITHUB="20250116_00"
+COMPOSIO_TOOLKIT_VERSION_SLACK="20250115_01"
+COMPOSIO_TOOLKIT_VERSION="20250110_00"
+```
+
+### Error codes
+
+| Error | Description | Solution |
+|-------|-------------|----------|
+| `TOOLKIT_VERSION_REQUIRED` | Manual execution without version | Specify toolkit_version parameter |
+| `INVALID_TOOLKIT_VERSION` | Version format incorrect | Use YYYYMMDD_NN format |
+| `VERSION_NOT_FOUND` | Specified version doesn't exist | Check available versions |
+| `TOOLKIT_NOT_VERSIONED` | Toolkit doesn't support versioning | Contact support |

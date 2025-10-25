@@ -58,14 +58,84 @@ Composio provides support for frameworks like this by making sure the tools are 
 
 In case you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
 
+<Warning>
+As of October 22, 2025, manual tool execution requires explicit version specification. Either configure toolkit versions in your SDK initialization or pass the version with each execution. See [toolkit versioning](/tool-calling/toolkit-versioning) for details.
+</Warning>
+
 <Tip icon="lightbulb">
   **Finding tool arguments**: In the [Auth Configs
   tab](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools &
   Triggers → Select the tool to see its required and optional parameters, types, and descriptions.
 </Tip>
+
 <CodeGroup>
-  <SnippetCode src="fern/snippets/tool-calling/python/direct-tool-call.py" title="Python" />
-  <SnippetCode src="fern/snippets/tool-calling/typescript/direct-tool-call.ts" title="TypeScript" />
+```python Python
+# Method 1: Configure version at SDK level
+composio = Composio(
+    api_key="YOUR_API_KEY",
+    toolkit_versions={"github": "20250116_00"}
+)
+
+result = composio.tools.execute(
+    "GITHUB_CREATE_ISSUE",
+    {
+        "user_id": "user-123",
+        "arguments": {
+            "repo": "composio",
+            "owner": "composiohq",
+            "title": "Bug Report",
+            "body": "Issue description"
+        }
+    }
+)
+
+# Method 2: Pass version with execution
+result = composio.tools.execute(
+    "GITHUB_CREATE_ISSUE",
+    {
+        "user_id": "user-123",
+        "arguments": {
+            "repo": "composio",
+            "owner": "composiohq",
+            "title": "Bug Report",
+            "body": "Issue description"
+        },
+        "toolkit_version": "20250116_00"
+    }
+)
+```
+
+```typescript TypeScript
+// Method 1: Configure version at SDK level
+const composio = new Composio({
+    apiKey: "YOUR_API_KEY",
+    toolkitVersions: { github: "20250116_00" }
+});
+
+const result = await composio.tools.execute({
+    toolSlug: "GITHUB_CREATE_ISSUE",
+    userId: "user-123",
+    arguments: {
+        repo: "composio",
+        owner: "composiohq",
+        title: "Bug Report",
+        body: "Issue description"
+    }
+});
+
+// Method 2: Pass version with execution
+const result = await composio.tools.execute({
+    toolSlug: "GITHUB_CREATE_ISSUE",
+    userId: "user-123",
+    arguments: {
+        repo: "composio",
+        owner: "composiohq",
+        title: "Bug Report",
+        body: "Issue description"
+    },
+    toolkitVersion: "20250116_00"
+});
+```
 </CodeGroup>
 
 ### Proxy Execute -- Manually calling toolkit APIs
