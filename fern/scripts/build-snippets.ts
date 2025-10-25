@@ -127,43 +127,13 @@ async function fetchGitHubContent(parsedUrl: ParsedGitHubUrl): Promise<{ content
   }
 }
 
-// Normalize indentation by removing the minimum common indentation
-function normalizeIndentation(content: string): string {
-  const lines = content.split('\n');
-  
-  // Find the minimum indentation level (ignoring empty lines)
-  let minIndent = Infinity;
-  for (const line of lines) {
-    if (line.trim().length > 0) {
-      const leadingSpaces = line.match(/^[ \t]*/)?.[0].length || 0;
-      minIndent = Math.min(minIndent, leadingSpaces);
-    }
-  }
-  
-  // If all lines have some common indentation, remove it
-  if (minIndent > 0 && minIndent < Infinity) {
-    return lines.map(line => {
-      // Preserve empty lines as-is
-      if (line.trim().length === 0) return line.trimEnd();
-      // Remove the minimum indentation from non-empty lines
-      return line.substring(minIndent);
-    }).join('\n');
-  }
-  
-  return content;
-}
-
 // Extract lines from content
-function extractLinesFromContent(content: string, startLine?: number, endLine?: number, preserveIndent: boolean = false): string {
+function extractLinesFromContent(content: string, startLine?: number, endLine?: number): string {
   const lines = content.split('\n');
   const start = startLine ? startLine - 1 : 0;
   const end = endLine ? endLine : Math.min(lines.length, 100); // Default to first 100 lines
   
-  const extracted = lines.slice(start, end).join('\n');
-  
-  // Don't normalize indentation - preserve the original formatting
-  // This ensures Python code maintains its correct indentation structure
-  return extracted;
+  return lines.slice(start, end).join('\n');
 }
 
 function ensureDistDir() {
@@ -279,18 +249,13 @@ function readFileLines(
       fullPath = path.resolve(PROJECT_ROOT, filePath);
     }
 
-    // Read file preserving exact formatting including indentation
     const content = fs.readFileSync(fullPath, 'utf8');
     const lines = content.split('\n');
 
     const start = startLine ? startLine - 1 : 0;
     const end = endLine ? endLine : lines.length;
 
-    const extracted = lines.slice(start, end).join('\n');
-    
-    // Return the content exactly as it is in the file
-    // This preserves Python indentation which is critical for syntax
-    return extracted;
+    return lines.slice(start, end).join('\n');
   } catch (error) {
     console.warn(`⚠️  Failed to read file: ${filePath} (resolved to: ${fullPath})`, error);
     return `// File not found: ${filePath}`;
@@ -478,11 +443,8 @@ async function parseSnippetCodeTags(content: string, contextDir: string): Promis
     const title = props.title || props.path || displayName;
     const titleComment = ` title="${title}"`;
 
-    // Ensure code content doesn't have trailing newline that would create empty line at the end
-    const cleanCodeContent = codeContent.endsWith('\n') ? codeContent.slice(0, -1) : codeContent;
-
     // Create the code block with syntax, display name, and maxLines
-    const codeBlock = `\`\`\`${syntax} ${displayName}${highlightString ? ` ${highlightString}` : ''}${titleComment} maxLines=40 ${props.wordWrap ? 'wordWrap' : ''}\n${cleanCodeContent}\n\`\`\``;
+    const codeBlock = `\`\`\`${syntax} ${displayName}${highlightString ? ` ${highlightString}` : ''}${titleComment} maxLines=40 ${props.wordWrap ? 'wordWrap' : ''}\n${codeContent}\n\`\`\``;
 
     return codeBlock;
     })();
