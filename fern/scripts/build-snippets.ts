@@ -161,12 +161,8 @@ function extractLinesFromContent(content: string, startLine?: number, endLine?: 
   
   const extracted = lines.slice(start, end).join('\n');
   
-  // For code snippets extracted from the middle of files, normalize indentation
-  // unless explicitly told to preserve it
-  if (!preserveIndent && startLine && startLine > 1) {
-    return normalizeIndentation(extracted);
-  }
-  
+  // Don't normalize indentation - preserve the original formatting
+  // This ensures Python code maintains its correct indentation structure
   return extracted;
 }
 
@@ -292,12 +288,8 @@ function readFileLines(
 
     const extracted = lines.slice(start, end).join('\n');
     
-    // For code snippets extracted from the middle of files, normalize indentation
-    // to remove common leading whitespace
-    if (startLine && startLine > 1) {
-      return normalizeIndentation(extracted);
-    }
-    
+    // Return the content exactly as it is in the file
+    // This preserves Python indentation which is critical for syntax
     return extracted;
   } catch (error) {
     console.warn(`⚠️  Failed to read file: ${filePath} (resolved to: ${fullPath})`, error);
