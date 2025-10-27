@@ -1,255 +1,94 @@
 ---
 title: CLI
-description: Troubleshooting common CLI issues
+subtitle: Troubleshooting common CLI issues
+image: "https://og.composio.dev/api/og?title=CLI%20Troubleshooting"
+keywords: 'cli, command line, troubleshooting, installation, authentication'
+hide-nav-links: true
 ---
-
-Common issues and solutions for the Composio CLI.
 
 ## Command not found
 
-If you're getting "command not found" when trying to run `composio`:
-
-### Verify installation
-
-Check if the CLI is installed:
+Verify the CLI is installed and in your PATH:
 
 ```bash
 which composio
 ```
 
-This should return the path to the composio executable, typically `~/.composio/composio`.
-
-### Check PATH
-
-Ensure your PATH includes the Composio installation directory:
+If not found, reinstall:
 
 ```bash
-echo $PATH | grep .composio
-```
-
-If not present, add it to your shell configuration:
-
-```bash
-# For bash
-echo 'export PATH="$HOME/.composio:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# For zsh  
-echo 'export PATH="$HOME/.composio:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-### Reinstall
-
-If the CLI isn't installed or PATH issues persist:
-
-```bash
-# Remove existing installation
-rm -f ~/.composio/composio
-
-# Reinstall
 curl -fsSL https://composio.dev/install | bash
 ```
 
-Or using wget:
+Or add to PATH:
+
 ```bash
-wget -qO- https://composio.dev/install | bash
+echo 'export PATH="$HOME/.composio:$PATH"' >> ~/.bashrc && source ~/.bashrc
 ```
 
 ## Authentication errors
 
-### Invalid API key
+Check current authentication:
 
-If you're getting authentication errors:
-
-1. Check your current authentication status:
 ```bash
 composio whoami
 ```
 
-2. If no API key is found or it's invalid, re-authenticate:
+Re-authenticate if needed:
+
 ```bash
 composio logout
 composio login
 ```
 
-### CI/CD authentication
-
-For automated environments, set the API key via environment variable:
+For CI/CD, use environment variable:
 
 ```bash
 export COMPOSIO_API_KEY="your-api-key"
 ```
 
-Common issues:
-- Ensure the API key is properly exported
-- Check for typos in the environment variable name
-- Verify the API key hasn't expired
-
-## Generate command issues
+## Type generation issues
 
 ### Project type not detected
 
-The CLI auto-detects project type by looking for:
-- **TypeScript**: `package.json`, `tsconfig.json`
-- **Python**: `requirements.txt`, `setup.py`, `pyproject.toml`
+Use language-specific commands:
 
-If auto-detection fails:
-
-1. Use language-specific commands:
 ```bash
-composio ts generate  # For TypeScript
-composio py generate  # For Python
+composio ts generate  # TypeScript
+composio py generate  # Python
 ```
 
-2. Ensure you're in the project root directory:
-```bash
-cd /path/to/your/project
-composio generate
-```
+### Output directory missing
 
-### Output directory issues
+Specify output directory explicitly:
 
-If generated files aren't appearing where expected:
-
-1. Specify output directory explicitly:
 ```bash
 composio generate --output-dir ./my-types
 ```
 
-2. Check write permissions:
-```bash
-ls -la ./  # Unix/Linux/macOS
-dir       # Windows
-```
+## Debug CLI issues
 
-### Cache issues
-
-If you're getting stale or outdated type definitions:
-
-1. Clear the cache:
-```bash
-rm -rf ~/.composio/*.json
-```
-
-2. Force fresh generation:
-```bash
-FORCE_USE_CACHE=false composio generate
-```
-
-## Network issues
-
-### Behind a proxy
-
-Configure proxy settings:
-
-```bash
-export HTTP_PROXY=http://proxy.company.com:8080
-export HTTPS_PROXY=http://proxy.company.com:8080
-```
-
-### API connection errors
-
-If you can't connect to Composio API:
-
-1. Check base URL configuration:
-```bash
-echo $COMPOSIO_BASE_URL
-```
-
-2. Reset to default if needed:
-```bash
-unset COMPOSIO_BASE_URL
-composio login
-```
-
-## Version issues
-
-### Outdated CLI
-
-Check your current version:
-```bash
-composio version
-```
-
-Upgrade to latest:
-```bash
-composio upgrade
-```
-
-### Version mismatch with SDK
-
-Ensure CLI and SDK versions are compatible:
-
-```bash
-# Check CLI version
-composio version
-
-# Check SDK version (TypeScript)
-npm list @composio/core
-
-# Check SDK version (Python)
-pip show composio
-```
-
-## Logging and debugging
-
-### Enable debug logging
-
-For detailed output during troubleshooting:
+Enable debug logging:
 
 ```bash
 composio --log-level debug [command]
 ```
 
-Available log levels:
-- `all` - Most verbose
-- `trace`
-- `debug`
-- `info`
-- `warning`
-- `error`
-- `fatal`
-- `none` - Silent
-
-### View configuration
-
-Check current configuration and environment:
+Check version compatibility:
 
 ```bash
-# View stored user data
-cat ~/.composio/user_data.json
-
-# Check all Composio environment variables
-env | grep COMPOSIO
+composio version
 ```
 
-## Common error messages
+## Common issues
 
-### "API key not found"
-
-Run `composio login` to authenticate.
-
-### "Failed to detect project type"
-
-Ensure you're in a valid Python or TypeScript project directory, or use language-specific commands.
-
-### "Permission denied"
-
-Check write permissions for the output directory or use `sudo` if necessary (not recommended for global installs).
-
-### "Network timeout"
-
-Check your internet connection and proxy settings if applicable.
+- **API key not found**: Run `composio login`
+- **Project type detection fails**: Use language-specific commands or ensure you're in project root
+- **Network timeout**: Check internet connection and proxy settings
+- **Permission denied**: Check directory write permissions
 
 ## Getting help
 
-If you're still experiencing issues:
-
-1. Check the [GitHub issues](https://github.com/ComposioHQ/composio/issues)
-2. Join the [Discord community](https://discord.gg/composio)
-3. Contact support with:
-   - CLI version (`composio version`)
-   - Error message
-   - Steps to reproduce
-   - Environment details (OS, Node.js/Python version)
+- **Email**: support@composio.dev
+- **Discord**: [#support-form](https://discord.com/channels/1170785031560646836/1268871288156323901)
+- **GitHub**: [Create an issue](https://github.com/ComposioHQ/composio/issues/new?labels=bug)

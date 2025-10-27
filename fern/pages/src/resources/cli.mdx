@@ -35,6 +35,14 @@ composio login
 
 This opens your browser to complete authentication and stores your API key locally.
 
+To authenticate without opening a browser (useful for SSH/remote sessions):
+
+```bash
+composio login --no-browser
+```
+
+This displays a URL to manually open in your browser.
+
 ### Check authentication status
 
 Verify your current authentication:
@@ -71,10 +79,9 @@ For TypeScript projects only, include individual tool types:
 composio generate --type-tools
 ```
 
-The CLI will:
-1. Detect your project type (Python or TypeScript)
-2. Generate appropriate type stubs
-3. Place them in the correct location
+The CLI automatically:
+- Detects your project type (Python or TypeScript)
+- Generates appropriate type definitions
 
 ### Specify output directory
 
