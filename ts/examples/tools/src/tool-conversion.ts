@@ -5,7 +5,9 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tool = await composio.tools.getRawComposioToolBySlug('HUBSPOT_CREATE_LINE_ITEMS');
+const tool = await composio.tools.getRawComposioToolBySlug(
+  'GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND'
+);
 const inputParams = tool.inputParameters;
 console.log(`---------- Original Input Parameters ----------`);
 console.log(JSON.stringify(inputParams, null, 2));

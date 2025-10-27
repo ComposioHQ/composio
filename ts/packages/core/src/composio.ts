@@ -76,12 +76,40 @@ export type ComposioConfig<
    */
   disableVersionCheck?: boolean;
   /**
-   * The versions of the toolkits to fetch.
-   * Defaults to latest is nothing is provided.
-   * Alternatively you can specify individual toolkit versions in the env `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`
-   * @example
-   * { 'github': 'latest', 'slack': '20250902_00' }
-   * 'latest'
+   * The versions of the toolkits to use for tool execution and retrieval.
+   *
+   * **Version Control:**
+   * When executing tools manually (via `tools.execute()`), if this resolves to "latest",
+   * you must either:
+   * - Set `dangerouslySkipVersionCheck: true` in the execute params (not recommended for production)
+   * - Specify a concrete version here or in environment variables
+   * - Pass a specific `version` parameter to the execute call
+   *
+   * Defaults to 'latest' if nothing is provided.
+   * You can specify individual toolkit versions via environment variables: `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`
+   *
+   * @example Global version for all toolkits
+   * ```typescript
+   * const composio = new Composio({ toolkitVersions: 'latest' });
+   * ```
+   *
+   * @example Specific versions for different toolkits (recommended for production)
+   * ```typescript
+   * const composio = new Composio({
+   *   toolkitVersions: {
+   *     github: '20250909_00',
+   *     slack: '20250902_00'
+   *   }
+   * });
+   * ```
+   *
+   * @example Set via environment variables
+   * ```typescript
+   * // Set environment variables:
+   * // COMPOSIO_TOOLKIT_VERSION_GITHUB=20250909_00
+   * // COMPOSIO_TOOLKIT_VERSION_SLACK=20250902_00
+   * const composio = new Composio(); // Will use env variables
+   * ```
    */
   toolkitVersions?: ToolkitVersionParam;
 };

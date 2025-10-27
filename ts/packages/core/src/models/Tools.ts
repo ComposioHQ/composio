@@ -40,16 +40,16 @@ import { ExecuteToolFn } from '../types/provider.types';
 import {
   ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
-  ComposioToolExecutionError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
+  ComposioToolVersionRequiredError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
-import { AuthSchemeTypes } from '../types/authConfigs.types';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
+import { handleToolExecutionError } from '../errors/ToolErrors';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -130,51 +130,6 @@ export class Tools<
       logId: response.log_id,
       sessionInfo: response.session_info,
     });
-  }
-
-  /**
-   * Get the connected account id for a given tool
-   * @param {string} userId - The user id
-   * @param {string} toolSlug - The tool slug
-   * @returns {Promise<string | null>} The connected account id or null if the toolkit is a no auth app
-   */
-  private async getConnectedAccountIdForTool(
-    userId: string,
-    toolSlug: string
-  ): Promise<string | null> {
-    const tool = await this.getRawComposioToolBySlug(toolSlug);
-    if (!tool.toolkit) {
-      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
-    }
-
-    const toolkit = await this.client.toolkits.retrieve(tool.toolkit.slug);
-    if (!toolkit) {
-      throw new Error(`Unable to find toolkit for tool ${toolSlug}`);
-    }
-
-    // check if the toolkit is a no auth app
-    const isNoAuthApp = toolkit.auth_config_details?.some(
-      authConfigDetails => authConfigDetails.mode === AuthSchemeTypes.NO_AUTH
-    );
-    // if the toolkit is not a no auth app, fetch connected accounts
-    if (!isNoAuthApp) {
-      const connectedAccounts = await this.client.connectedAccounts.list({
-        user_ids: [userId],
-        toolkit_slugs: [tool.toolkit.slug],
-      });
-      // if no connected accounts, throw an error
-      if (connectedAccounts.items.length === 0) {
-        throw new Error('No connected accounts found');
-      }
-      // by default, use the first connected account
-      // @TODO: Add support for multiple connected accounts
-      logger.warn(
-        `Using the first connected account for tool ${toolSlug}. To change this behaviour please explicitly pass a connectedAccountId for the tool`
-      );
-      return connectedAccounts.items[0].id;
-    }
-    // if the toolkit is a no auth app, return null
-    return null;
   }
 
   /**
@@ -645,6 +600,9 @@ export class Tools<
         {
           userId,
           arguments: input,
+          // dangerously skip version check for agentic and non agentic tool execution via providers
+          // this can be safe because most agentic flows users fetch latest version and then execute the tool
+          dangerouslySkipVersionCheck: true,
         },
         modifiers
       );
@@ -654,100 +612,38 @@ export class Tools<
 
   /**
    * @internal
-   * Handles the execution of a custom tool
+   * Executes a composio tool via API without modifiers
    * @param tool - The tool to execute
    * @param body - The body of the tool execution
-   * @param modifiers - The modifiers to be applied to the tool execution
    * @returns The response from the tool execution
    */
-  private async handleCustomToolExecution(
+  private async executeComposioTool(
     tool: Tool,
-    body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
+    body: ToolExecuteParams
   ): Promise<ToolExecuteResponse> {
-    if (modifiers?.beforeExecute) {
-      if (typeof modifiers.beforeExecute === 'function') {
-        body = await modifiers.beforeExecute({
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          params: body,
-        });
-      } else {
-        throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
-      }
+    const toolkitVersion =
+      body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
+    // if the version is latest and dangerouslySkipVersionCheck is not true, throw an error
+    if (toolkitVersion === 'latest' && !body.dangerouslySkipVersionCheck) {
+      throw new ComposioToolVersionRequiredError();
     }
-
-    let result = await this.customTools.executeCustomTool(tool.slug, body);
-
-    if (modifiers?.afterExecute) {
-      if (typeof modifiers.afterExecute === 'function') {
-        result = await modifiers.afterExecute({
-          toolSlug: tool.slug,
-          toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-          result,
-        });
-      } else {
-        throw new ComposioInvalidModifierError('Invalid afterExecute modifier. Not a function.');
-      }
+    try {
+      const result = await this.client.tools.execute(tool.slug, {
+        allow_tracing: body.allowTracing,
+        connected_account_id: body.connectedAccountId,
+        custom_auth_params: body.customAuthParams,
+        custom_connection_data: body.customConnectionData,
+        arguments: body.arguments,
+        user_id: body.userId,
+        version: toolkitVersion,
+        text: body.text,
+      });
+      // transform the response to the ToolExecuteResponse format
+      return this.transformToolExecuteResponse(result);
+    } catch (error) {
+      const toolError = handleToolExecutionError(tool.slug, error as Error);
+      throw toolError;
     }
-
-    return result;
-  }
-
-  /**
-   * @internal
-   * Handles the execution of a composio tool
-   * @param tool - The tool to execute
-   * @param body - The body of the tool execution
-   * @param modifiers - The modifiers to be applied to the tool execution
-   * @returns The response from the tool execution
-   */
-  private async handleComposioToolExecution(
-    tool: Tool,
-    body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
-  ): Promise<ToolExecuteResponse> {
-    // apply before execute modifiers
-    body = await this.applyBeforeExecuteModifiers(
-      tool,
-      {
-        toolSlug: tool.slug,
-        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-        params: body,
-      },
-      modifiers?.beforeExecute
-    );
-
-    // fetch connected accounts if exists
-    let connectedAccountId = body.connectedAccountId;
-    if (!connectedAccountId && body.userId) {
-      connectedAccountId =
-        (await this.getConnectedAccountIdForTool(body.userId, tool.slug)) || undefined;
-    }
-
-    let result = await this.client.tools.execute(tool.slug, {
-      allow_tracing: body.allowTracing,
-      connected_account_id: body.connectedAccountId,
-      custom_auth_params: body.customAuthParams,
-      custom_connection_data: body.customConnectionData,
-      arguments: body.arguments,
-      user_id: body.userId,
-      version:
-        body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions),
-      text: body.text,
-    });
-    // apply transformations to the response
-    result = this.transformToolExecuteResponse(result);
-    result = await this.applyAfterExecuteModifiers(
-      tool,
-      {
-        toolSlug: tool.slug,
-        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
-        result,
-      },
-      modifiers?.afterExecute
-    );
-    return result;
   }
 
   /**
@@ -756,34 +652,68 @@ export class Tools<
    * This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
    * It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
    *
+   * **Version Control:**
+   * By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
+   * the execution will throw a `ComposioToolVersionRequiredError` unless `dangerouslySkipVersionCheck` is set to `true`.
+   * This helps prevent unexpected behavior when new toolkit versions are released.
+   *
    * @param {string} slug - The slug/ID of the tool to be executed
    * @param {ToolExecuteParams} body - The parameters to be passed to the tool
+   * @param {string} [body.version] - The specific version of the tool to execute (e.g., "20250909_00")
+   * @param {boolean} [body.dangerouslySkipVersionCheck] - Skip version validation for "latest" version (use with caution)
+   * @param {string} [body.userId] - The user ID to execute the tool for
+   * @param {string} [body.connectedAccountId] - The connected account ID to use for authenticated tools
+   * @param {Record<string, unknown>} [body.arguments] - The arguments to pass to the tool
    * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    *
    * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
+   * @throws {ComposioConnectedAccountNotFoundError} If the connected account is not found
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
+   * @throws {ComposioToolVersionRequiredError} If version resolves to "latest" and dangerouslySkipVersionCheck is not true
    * @throws {ComposioToolExecutionError} If there is an error during tool execution
    *
-   * @example
+   * @example Execute with a specific version (recommended for production)
    * ```typescript
-   * // Execute a Composio API tool
+   * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *   userId: 'default',
+   *   version: '20250909_00',
+   *   arguments: { owner: 'composio' }
+   * });
+   * ```
+   *
+   * @example Execute with dangerouslySkipVersionCheck (not recommended for production)
+   * ```typescript
    * const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
    *   userId: 'default',
-   *   arguments: { userId: 'pg' }
+   *   arguments: { userId: 'pg' },
+   *   dangerouslySkipVersionCheck: true // Allows execution with "latest" version
    * });
+   * ```
    *
-   * // Execute with modifiers
+   * @example Execute with SDK-level toolkit versions configuration
+   * ```typescript
+   * // If toolkitVersions are set during Composio initialization, no need to pass version
+   * const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
+   * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *   userId: 'default',
+   *   arguments: { owner: 'composio' }
+   * });
+   * ```
+   *
+   * @example Execute with modifiers
+   * ```typescript
    * const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
    *   userId: 'default',
+   *   version: '20250909_00',
    *   arguments: { owner: 'composio', repo: 'sdk' }
    * }, {
-   *   beforeExecute: (toolSlug, toolkitSlug, params) => {
-   *     // Modify params before execution
+   *   beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
+   *     console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
    *     return params;
    *   },
-   *   afterExecute: (toolSlug, toolkitSlug, result) => {
-   *     // Transform result after execution
+   *   afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+   *     console.log(`Completed ${toolSlug}`);
    *     return result;
    *   }
    * });
@@ -805,33 +735,39 @@ export class Tools<
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
-    try {
-      const customTool = await this.customTools.getCustomToolBySlug(slug);
-      if (customTool) {
-        // handle custom tool execution
-        return this.handleCustomToolExecution(customTool, executeParams.data, modifiers);
-      } else {
-        // handle composio tool execution
-        const composioTool = await this.getRawComposioToolBySlug(slug);
-        if (!composioTool) {
-          throw new ComposioToolNotFoundError(
-            `Tool with slug ${slug} version:${executeParams.data.version} not found`
-          );
-        }
-        return this.handleComposioToolExecution(composioTool, executeParams.data, modifiers);
-      }
-    } catch (error) {
-      throw new ComposioToolExecutionError(
-        `Error executing tool ${slug} version:${executeParams.data.version}`,
-        {
-          originalError: error as Error,
-          meta: {
-            toolSlug: slug,
-            body,
-          },
-        }
-      );
-    }
+    // Determine if it's a custom tool or composio tool
+    const customTool = await this.customTools.getCustomToolBySlug(slug);
+    const tool = customTool ?? (await this.getRawComposioToolBySlug(slug));
+    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
+
+    // Apply before execute modifiers
+    const params = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        params: executeParams.data,
+      },
+      modifiers?.beforeExecute
+    );
+
+    // Execute the tool (custom or composio)
+    let result = customTool
+      ? await this.customTools.executeCustomTool(customTool.slug, params)
+      : await this.executeComposioTool(tool, params);
+
+    // Apply after execute modifiers
+    result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: slug,
+        toolkitSlug,
+        result,
+      },
+      modifiers?.afterExecute
+    );
+
+    return result;
   }
 
   /**

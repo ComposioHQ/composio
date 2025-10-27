@@ -1,0 +1,98 @@
+---
+title: MCP quickstart
+subtitle: Create your first MCP server
+---
+[Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) is an open-source standard for connecting AI applications to external tools. All the 500+ tools available in Composio are also available as MCP servers. 
+
+Composio lets you create MCP servers that handle authentication (OAuth, API keys), generate unique URLs for each user, and control which tools are exposed. You can combine multiple toolkits in a single server. 
+
+<Note>
+Composio MCP servers only support Streamable HTTP transport. 
+</Note>
+
+## Install the SDK
+First, install the Composio SDK for your preferred language:
+
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core
+```
+</CodeGroup>
+
+## Create an MCP server
+
+<Steps>
+  <Step title="Initialize Composio">
+    <CodeGroup>
+    <SnippetCode src="fern/snippets/mcp/python/quickstart.py" title="Python" startLine={1} endLine={4} />
+    <SnippetCode src="fern/snippets/mcp/typescript/quickstart.ts" title="TypeScript" startLine={1} endLine={6} />
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create server configuration">
+    <Warning>
+    **Before you begin:** [Create an auth configuration](/docs/authenticating-tools#creating-an-auth-config) for your toolkit.
+    </Warning>
+    
+    Create an MCP server with your auth config. You can also set list of specific tools to enable across all toolkits
+    
+    <CodeGroup>
+    <SnippetCode src="fern/snippets/mcp/python/quickstart.py" title="Python" startLine={6} endLine={22} />
+    <SnippetCode src="fern/snippets/mcp/typescript/quickstart.ts" title="TypeScript" startLine={8} endLine={23} />
+    </CodeGroup>
+    
+    <Note>
+    **Alternative:** You can also create and manage MCP configs directly from the [Composio dashboard → MCP Configs](https://platform.composio.dev?next_page=/mcp-configs).
+    </Note>
+    
+  </Step>
+
+  <Step title="Generate user URLs">
+    <Warning>
+    **Before generating URLs:** Users must authenticate with the toolkits configured in your MCP server. See [hosted authentication](/docs/authenticating-tools#hosted-authentication-connect-link) for how to connect user accounts.
+    </Warning>
+    
+    Get server URLs for your users to connect:
+    
+    <CodeGroup>
+    <SnippetCode src="fern/snippets/mcp/python/quickstart.py" title="Python" startLine={24} endLine={28} />
+    <SnippetCode src="fern/snippets/mcp/typescript/quickstart.ts" title="TypeScript" startLine={25} endLine={29} />
+    </CodeGroup>
+    
+    <Note>
+    If users haven't authenticated, the MCP server will still generate a URL but tools requiring authentication won't work until the user connects their accounts.
+    </Note>
+  </Step>
+
+  <Step title="Use with AI providers">
+    Use the MCP server URL with your AI provider:
+    
+    <CodeGroup>
+    <SnippetCode src="fern/snippets/mcp/python/openai-client.py" title="OpenAI (Python)" />
+    <SnippetCode src="fern/snippets/mcp/python/anthropic-client.py" title="Anthropic (Python)" />
+    <SnippetCode src="fern/snippets/mcp/typescript/mastra-client.ts" title="Mastra (TypeScript)" />
+    </CodeGroup>
+    
+  </Step>
+</Steps>
+
+## Next steps
+
+<Cards>
+  <Card title="Authentication" href="/docs/mcp-authentication" icon="lock">
+    Handle user authentication and connections
+  </Card>
+  <Card title="Server management" href="/docs/mcp-server-management" icon="server">
+    Create and manage MCP servers
+  </Card>
+  <Card title="Providers" href="/docs/mcp-providers" icon="code">
+    Use with Anthropic, OpenAI, and other frameworks
+  </Card>
+</Cards>
+
+<Tip>
+Need help? Join our [Discord](https://discord.com/invite/composio) or [raise an issue on GitHub](https://github.com/ComposioHQ/composio/issues/new?labels=bug).
+</Tip>
