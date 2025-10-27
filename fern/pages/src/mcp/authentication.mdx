@@ -1,0 +1,234 @@
+---
+title: Authentication
+image: "https://og.composio.dev/api/og?title=MCP%20Authentication"
+keywords: 'mcp, mcp authentication, mcp user auth, model context protocol'
+subtitle: Authenticate users with MCP servers
+---
+
+MCP servers require users to authenticate with configured toolkits before using tools.
+
+<Note>
+Python SDK support for these authentication methods is coming soon.
+</Note>
+
+## Authentication modes
+
+### Chat-based (default)
+
+AI handles authentication automatically during conversation.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const server = await composio.mcp.create(
+  "my-server",
+  {
+    toolkits: [{
+      toolkit: "gmail",
+      authConfigId: "ac_xyz123"
+    }]
+  }
+  // isChatAuth: true (default)
+);
+
+// Generate URL - AI prompts for auth if needed
+const instance = await server.getServer({
+  userId: "user@example.com"
+});
+```
+</CodeGroupItem>
+</CodeGroup>
+
+### Manual
+
+Ensure authentication before providing MCP URL.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const server = await composio.mcp.create(
+  "my-server",
+  {
+    toolkits: [{
+      toolkit: "gmail",
+      authConfigId: "ac_xyz123"
+    }]
+  },
+  { isChatAuth: false }
+);
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Check connection status
+
+Verify which toolkits a user has connected.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const status = await composio.mcp.getUserConnectionStatus(
+  "user@example.com",
+  "mcp_server_id"
+);
+
+if (!status.connected) {
+  // Check individual toolkits
+  Object.entries(status.connectedToolkits).forEach(([toolkit, info]) => {
+    console.log(`${toolkit}: ${info.connected ? "✓" : "✗"}`);
+  });
+}
+```
+</CodeGroupItem>
+</CodeGroup>
+
+Response structure:
+```typescript
+{
+  connected: boolean,
+  connectedToolkits: {
+    GMAIL: {
+      connected: boolean,
+      toolkit: "GMAIL",
+      connectedAccountId?: string
+    }
+  }
+}
+```
+
+## Authenticate users
+
+Connect users to specific toolkits.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const connection = await composio.mcp.authorize(
+  "user@example.com",
+  "mcp_server_id",
+  "gmail"
+);
+
+console.log(`Auth URL: ${connection.redirectUrl}`);
+
+// Wait for completion
+await connection.waitForConnection();
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Get authentication parameters
+
+Retrieve required fields for toolkit authentication.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const params = await composio.mcp.getConnectionParams(
+  "mcp_server_id",
+  "gmail"
+);
+
+console.log(params.requiredFields);
+// OAuth: []
+// API key: [{name: "api_key", type: "string", required: true}]
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Complete flow
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+// 1. Create server with manual auth
+const server = await composio.mcp.create(
+  "my-server",
+  {
+    toolkits: [
+      { toolkit: "gmail", authConfigId: "ac_gmail" },
+      { toolkit: "slack", authConfigId: "ac_slack" }
+    ]
+  },
+  { isChatAuth: false }
+);
+
+// 2. Check connection status
+const userId = "user@example.com";
+const status = await composio.mcp.getUserConnectionStatus(
+  userId, 
+  server.id
+);
+
+// 3. Authenticate missing toolkits
+if (!status.connected) {
+  for (const [toolkit, info] of Object.entries(status.connectedToolkits)) {
+    if (!info.connected) {
+      const connection = await composio.mcp.authorize(
+        userId,
+        server.id,
+        toolkit.toLowerCase()
+      );
+      
+      console.log(`Connect ${toolkit}: ${connection.redirectUrl}`);
+      await connection.waitForConnection();
+    }
+  }
+}
+
+// 4. Generate MCP URL
+const instance = await server.getServer({ userId });
+console.log(`MCP URL: ${instance.url}`);
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Caching
+
+Reduce API calls by caching connection status.
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+const cache = new Map();
+
+async function getCachedStatus(userId: string, serverId: string) {
+  const key = `${userId}:${serverId}`;
+  const cached = cache.get(key);
+  
+  if (cached && Date.now() - cached.time < 300000) {
+    return cached.status;
+  }
+  
+  const status = await composio.mcp.getUserConnectionStatus(userId, serverId);
+  cache.set(key, { status, time: Date.now() });
+  return status;
+}
+```
+</CodeGroupItem>
+</CodeGroup>
+
+## Error handling
+
+<CodeGroup>
+<CodeGroupItem title="TypeScript">
+```typescript
+try {
+  const connection = await composio.mcp.authorize(
+    userId, 
+    serverId, 
+    toolkit
+  );
+  
+  await connection.waitForConnection(300000); // 5 min timeout
+  
+} catch (error) {
+  if (error.message.includes("timeout")) {
+    console.error("Authentication timeout");
+  } else {
+    console.error("Authentication failed:", error);
+  }
+}
+```
+</CodeGroupItem>
+</CodeGroup>
