@@ -131,6 +131,98 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     );
   });
 
+// Schema constraint for paginated responses
+type PaginatedSchema = Schema.Schema<
+  {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items: ReadonlyArray<any>;
+    next_cursor: string | null;
+    total_pages: number;
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+>;
+
+// Utility function for calling paginated Composio API endpoints.
+// Automatically fetches all pages until the specified limit is reached.
+const callClientWithPagination = <T, S extends PaginatedSchema>(
+  clientSingleton: ComposioClientSingleton,
+  apiCall: (client: _RawComposioClient, cursor?: string) => Promise<T>,
+  responseSchema: S,
+  limit: number
+): Effect.Effect<Schema.Schema.Type<S>, HttpError | NoSuchElementException> =>
+  Effect.gen(function* () {
+    const client = yield* clientSingleton.get();
+
+    const fetchPage = (cursor?: string): Effect.Effect<T, HttpServerError> =>
+      Effect.tryPromise({
+        try: () => apiCall(client, cursor),
+        catch: e => {
+          const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
+
+          if (Option.isNone(decodedOpt)) {
+            return new HttpServerError({
+              cause: e,
+            });
+          }
+
+          const {
+            status,
+            error: { error },
+          } = decodedOpt.value;
+          const pretty = renderPrettyError([
+            ['code', error.code],
+            ['message', error.message],
+            ['suggested fix', error.suggested_fix],
+          ]);
+
+          return new HttpServerError({
+            cause: `HTTP ${status}\n${pretty}`,
+          });
+        },
+      });
+
+    type DecodedPage = Schema.Schema.Type<S>;
+
+    const decodeResponse = (json: unknown): Effect.Effect<DecodedPage, HttpDecodingError> =>
+      pipe(
+        Schema.decodeUnknown(responseSchema)(json),
+        Effect.catchTag('ParseError', e => {
+          const message = ParseResult.TreeFormatter.formatErrorSync(e);
+
+          return new HttpDecodingError({
+            cause: `ParseError\n   ${message}`,
+          });
+        })
+      ) as Effect.Effect<DecodedPage, HttpDecodingError>;
+
+    let allItems: ReadonlyArray<unknown> = [];
+    let currentCursor: string | null = null;
+    let totalPages = 0;
+
+    while (allItems.length < limit) {
+      const json: T = yield* fetchPage(currentCursor ?? undefined);
+      const decoded: DecodedPage = yield* decodeResponse(json);
+
+      allItems = allItems.concat(decoded.items);
+      totalPages = decoded.total_pages;
+      currentCursor = decoded.next_cursor;
+
+      yield* Effect.logDebug(`  Total items fetched: ${allItems.length}/${limit}`);
+
+      // Stop if no more pages
+      if (currentCursor === null) {
+        break;
+      }
+    }
+
+    return {
+      items: allItems.slice(0, limit),
+      total_pages: totalPages,
+      next_cursor: currentCursor,
+    } as DecodedPage;
+  });
+
 /**
  * Services
  */
@@ -180,9 +272,17 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
         toolkits: {
           /**
            * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
+           * If limit is provided, automatically handles pagination to fetch up to that many items.
            */
-          list: () =>
-            callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse),
+          list: (params?: { limit?: number }) =>
+            params?.limit
+              ? callClientWithPagination(
+                  clientSingleton,
+                  (client, cursor) => client.toolkits.list({ cursor }),
+                  ToolkitsResponse,
+                  params.limit
+                )
+              : callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse),
         },
         tools: {
           /**
@@ -195,11 +295,15 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               ToolsAsEnumsResponse
             ),
           /**
-           * Retrieve a list of $limit trigger types, containing their payload.
-           * Usually, you would call this with a limit matching the length of the list returned by `retrieveEnum`.
+           * Retrieve a list of tools, automatically handling pagination to fetch up to $limit items.
            */
           list: (params: { limit: number }) =>
-            callClient(clientSingleton, client => client.tools.list(params), ToolsResponse),
+            callClientWithPagination(
+              clientSingleton,
+              (client, cursor) => client.tools.list({ cursor, limit: params.limit }),
+              ToolsResponse,
+              params.limit
+            ),
         },
         triggersTypes: {
           /**
@@ -212,14 +316,14 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               TriggerTypesAsEnumsResponse
             ),
           /**
-           * Retrieve a list of $limit trigger types, containing their payload.
-           * Usually, you would call this with a limit matching the length of the list returned by `retrieveEnum`.
+           * Retrieve a list of trigger types, automatically handling pagination to fetch up to $limit items.
            */
           list: (params: { limit: number }) =>
-            callClient(
+            callClientWithPagination(
               clientSingleton,
-              client => client.triggersTypes.list(params),
-              TriggerTypesResponse
+              (client, cursor) => client.triggersTypes.list({ cursor, limit: params.limit }),
+              TriggerTypesResponse,
+              params.limit
             ),
         },
         cli: {
@@ -256,8 +360,8 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
       const client = yield* ComposioClientLive;
 
       return {
-        getToolkits: () =>
-          client.toolkits.list().pipe(
+        getToolkits: (limit?: number) =>
+          client.toolkits.list({ limit }).pipe(
             Effect.map(response => response.items),
             Effect.flatMap(
               Effect.fn(function* (toolkits) {
