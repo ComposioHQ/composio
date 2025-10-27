@@ -161,6 +161,7 @@ export const TriggerTypeSchema = z.object({
   }),
   payload: z.record(z.unknown()),
   config: z.record(z.unknown()),
+  version: z.string(),
 });
 
 export type TriggerType = z.infer<typeof TriggerTypeSchema>;

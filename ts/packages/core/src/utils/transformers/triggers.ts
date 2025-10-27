@@ -63,6 +63,7 @@ export function transformTriggerTypeRetrieveResponse(
         slug: response.toolkit.slug,
         name: response.toolkit.name,
       },
+      version: response.version,
       payload: response.payload,
       config: response.config,
     }));

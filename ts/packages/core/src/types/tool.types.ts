@@ -116,12 +116,14 @@ export const ToolSchema = z.object({
   tags: z.array(z.string()).describe('The tags of the tool. eg: Important').default([]).optional(),
   toolkit: ToolkitSchema.describe('The toolkit of the tool').optional(),
   version: z.string().describe('The version of the tool, e.g. "20250909_00"').optional(),
+  isDeprecated: z.boolean().describe('Whether the tool is deprecated').optional(),
   availableVersions: z
     .array(z.string())
     .describe('Available versions of the tool.')
     .default([])
     .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
+  isNoAuth: z.boolean().describe('Do the tool support no auth?').optional(),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
