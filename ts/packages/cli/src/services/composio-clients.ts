@@ -41,7 +41,7 @@ export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliGetSession
 export const ToolkitsResponse = Schema.Struct({
   items: Toolkits,
   total_pages: Schema.Int,
-  next_cursor: Schema.NullOr(Schema.Int),
+  next_cursor: Schema.NullOr(Schema.String),
 }).annotations({ identifier: 'ToolkitsResponse' });
 export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 
@@ -51,7 +51,7 @@ export type ToolsAsEnumsResponse = Schema.Schema.Type<typeof ToolsAsEnumsRespons
 export const ToolsResponse = Schema.Struct({
   items: Tools,
   total_pages: Schema.Int,
-  next_cursor: Schema.NullOr(Schema.Int),
+  next_cursor: Schema.NullOr(Schema.String),
 }).annotations({ identifier: 'ToolsResponse' });
 export type ToolsResponse = Schema.Schema.Type<typeof ToolsResponse>;
 
@@ -61,7 +61,7 @@ export type TriggerTypesAsEnumsResponse = Schema.Schema.Type<typeof TriggerTypes
 export const TriggerTypesResponse = Schema.Struct({
   items: TriggerTypes,
   total_pages: Schema.Int,
-  next_cursor: Schema.NullOr(Schema.Int),
+  next_cursor: Schema.NullOr(Schema.String),
 }).annotations({ identifier: 'TriggerTypesResponse' });
 
 /**
