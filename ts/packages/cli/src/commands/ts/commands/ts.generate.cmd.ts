@@ -120,7 +120,7 @@ export function generateTypescriptTypeStubs({
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
     // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API...');
+    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
     const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
       Effect.logDebug('Fetching trigger types...').pipe(
@@ -159,6 +159,7 @@ export function generateTypescriptTypeStubs({
       Match.exhaustive
     );
 
+    yield* Console.log('Writing TypeScript type stubs to disk...');
     const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
 
     // Generate TypeScript sources
