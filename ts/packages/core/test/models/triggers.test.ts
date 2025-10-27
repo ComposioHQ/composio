@@ -109,6 +109,7 @@ const mockTriggerTypes = {
         name: 'github',
         logo: 'https://example.com/github.png',
       },
+      version: '20250101_00',
     },
   ],
   total_pages: 1,
@@ -133,6 +134,7 @@ const mockTriggerType = {
     name: 'github',
     logo: 'https://example.com/github.png',
   },
+  version: '20250101_00',
 };
 
 const mockTriggerEnum = {
