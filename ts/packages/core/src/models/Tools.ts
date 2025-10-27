@@ -108,6 +108,8 @@ export class Tools<
       inputParameters: tool.input_parameters,
       outputParameters: tool.output_parameters,
       availableVersions: tool.available_versions,
+      isDeprecated: tool.is_deprecated,
+      isNoAuth: tool.no_auth,
     });
   }
 

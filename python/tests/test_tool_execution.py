@@ -1,11 +1,12 @@
 """Test tool execution with toolkit versions."""
 
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
 from composio.client.types import Tool, tool_list_response
-from composio.core.models.tools import Tools
 from composio.core.models.base import allow_tracking
+from composio.core.models.tools import Tools
 from composio.exceptions import ToolVersionRequiredError
 
 
