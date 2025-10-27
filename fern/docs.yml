@@ -185,38 +185,44 @@ navigation:
     icon: book
     skip-slug: true
     contents:
+    - page: CLI
+      path: pages/dist/resources/cli.mdx
+      slug: cli
     - page: Debugging Info
-      path: pages/dist/debugging-info.mdx
+      path: pages/dist/resources/debugging-info.mdx
       slug: resources/debugging-info
     - page: Migration Guide
-      path: pages/dist/migration-guide.mdx
+      path: pages/dist/resources/migration-guide.mdx
       slug: migration
     - section: Troubleshooting
       slug: troubleshooting
       contents:
       - page: Overview
-        path: pages/dist/troubleshooting/overview.mdx
+        path: pages/dist/resources/troubleshooting/overview.mdx
         slug: overview
       - page: API
-        path: pages/dist/troubleshooting/api.mdx
+        path: pages/dist/resources/troubleshooting/api.mdx
         slug: api
       - page: Authentication
-        path: pages/dist/troubleshooting/authentication.mdx
+        path: pages/dist/resources/troubleshooting/authentication.mdx
         slug: authentication
+      - page: CLI
+        path: pages/dist/resources/troubleshooting/cli.mdx
+        slug: cli
       - page: Dashboard
-        path: pages/dist/troubleshooting/dashboard.mdx
+        path: pages/dist/resources/troubleshooting/dashboard.mdx
         slug: dashboard
       - page: MCP
-        path: pages/dist/troubleshooting/mcp.mdx
+        path: pages/dist/resources/troubleshooting/mcp.mdx
         slug: mcp
       - page: SDKs
-        path: pages/dist/troubleshooting/sdks.mdx
+        path: pages/dist/resources/troubleshooting/sdks.mdx
         slug: sdks
       - page: Tools & Toolkits
-        path: pages/dist/troubleshooting/tools.mdx
+        path: pages/dist/resources/troubleshooting/tools.mdx
         slug: tools
       - page: Triggers
-        path: pages/dist/troubleshooting/triggers.mdx
+        path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
 - tab: examples
   layout:
