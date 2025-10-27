@@ -130,8 +130,8 @@ importers:
         specifier: workspace:*
         version: link:../ts/packages/providers/openai
       '@composio/openai-agents':
-        specifier: ^0.2.0
-        version: 0.2.0(@composio/core@ts+packages+core)(@openai/agents@0.2.1(ws@8.18.2)(zod@4.1.12))(zod@4.1.12)
+        specifier: workspace:*
+        version: link:../ts/packages/providers/openai-agents
       '@composio/vercel':
         specifier: workspace:*
         version: link:../ts/packages/providers/vercel
@@ -1335,13 +1335,6 @@ packages:
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
     hasBin: true
-
-  '@composio/openai-agents@0.2.0':
-    resolution: {integrity: sha512-hoHW0eAo1xUqf8OAn/gs9xOj4nQKLrG6AYJp4FlDia+9H+/zZ2rj22s03skiQoEAYTvI93qvPLkzyVcu/apsMA==}
-    peerDependencies:
-      '@composio/core': 0.2.0
-      '@openai/agents': ^0.1.3
-      zod: 3.25.76
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -7257,12 +7250,6 @@ snapshots:
   '@composio/client@0.1.0-alpha.38': {}
 
   '@composio/mcp@1.0.3-0': {}
-
-  '@composio/openai-agents@0.2.0(@composio/core@ts+packages+core)(@openai/agents@0.2.1(ws@8.18.2)(zod@4.1.12))(zod@4.1.12)':
-    dependencies:
-      '@composio/core': link:ts/packages/core
-      '@openai/agents': 0.2.1(ws@8.18.2)(zod@4.1.12)
-      zod: 4.1.12
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
