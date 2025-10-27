@@ -4,8 +4,8 @@ This module is a light wrapper around the auto-generated composio client.
 
 import contextvars
 import typing as t
-from uuid import uuid4
 from importlib.metadata import version
+from uuid import uuid4
 
 import typing_extensions as te
 from composio_client import (
@@ -96,7 +96,7 @@ class HttpClient(BaseComposio, WithLogger):
         ctx = self.request_ctx.get()
         request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
         request.headers["x-framework"] = ctx["provider"]
-        request.headers["x-source"] = 'python'
+        request.headers["x-source"] = "python"
         try:
             request.headers["x-sdk-version"] = version("composio")
         except Exception:
