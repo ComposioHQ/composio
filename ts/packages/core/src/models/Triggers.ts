@@ -31,18 +31,23 @@ import {
   transformTriggerTypeListResponse,
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
+import { ToolkitVersionParam } from '../types/tool.types';
+import { ComposioConfig } from '../composio';
+import { BaseComposioProvider } from '../provider/BaseProvider';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
  *
  */
-export class Triggers {
+export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, unknown>> {
   private client: ComposioClient;
   private pusherService: PusherService;
+  private toolkitVersions: ToolkitVersionParam;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     this.client = client;
     this.pusherService = new PusherService(client);
+    this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     telemetry.instrument(this);
   }
 
@@ -271,6 +276,7 @@ export class Triggers {
       cursor: parsedQuery.cursor,
       limit: parsedQuery.limit,
       toolkit_slugs: parsedQuery.toolkits,
+      toolkit_versions: this.toolkitVersions,
     });
 
     return transformTriggerTypeListResponse(result);
