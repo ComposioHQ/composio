@@ -36,6 +36,7 @@ export const ToolKitMetaSchema = z.object({
   toolsCount: z.number().optional(),
   triggersCount: z.number().optional(),
   updatedAt: z.string().optional(),
+  availableVersions: z.array(z.string()).optional(),
 });
 
 export const ToolKitItemSchema = z.object({

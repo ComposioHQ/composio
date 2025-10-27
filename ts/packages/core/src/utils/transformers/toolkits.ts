@@ -62,6 +62,7 @@ export const transformToolkitRetrieveResponse = (
           slug: category.slug,
           name: category.name,
         })),
+        availableVersions: response.meta.available_versions,
         // appUrl: response.meta.app_url, @TODO Update the client type to include this
       },
       isLocalToolkit: response.is_local_toolkit,
