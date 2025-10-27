@@ -39,7 +39,7 @@
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
-		"@composio/openai-agents": "^0.2.0",
+		"@composio/openai-agents": "^0.2.1",
 		"@openai/agents": "^0.2.1",
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
