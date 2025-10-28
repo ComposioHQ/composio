@@ -29,9 +29,6 @@ typography:
     - path: assets/IBMPlexMono-Light.ttf
       weight: '400'
 navbar-links:
-- type: primary
-  text: V1 Docs
-  url: https://v1.docs.composio.dev
 - type: filled
   text: LOG IN
   url: https://platform.composio.dev/auth
