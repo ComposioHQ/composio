@@ -1,35 +1,62 @@
 ---
 title: Welcome to Composio
-image: "https://og.composio.dev/api/og?title=Welcome%20to%20Composio"   # image for socials
+subtitle: Composio is the simplest way to connect AI agents to external tools and services.
+image: "https://og.composio.dev/api/og?title=Welcome%20to%20Composio"
 keywords: ''
-# subtitle: 'Our API and SDKs enable developers to build AI applications and experiences that are a step above the rest.'
 hide-nav-links: false
 ---
 
-<Frame>
-  <img src="../../../assets/images/hero.png" alt="Composio introduction image" />
-</Frame>
+<CardGroup cols={2}>
+  <Card
+    icon="tools"
+    title="Tool execution"
+    href="/docs/executing-tools"
+  >
+    Execute actions across 500+ tools with support for most AI frameworks
+  </Card>
 
-Composio is the fastest way to enable your AI agents to take real-world actions—without dealing with individual API integrations, authentication flows, or complex tool formatting.
+  <Card
+    icon="server"
+    title="MCP server"
+    href="/docs/mcp-quickstart"
+  >
+    Hosted MCP servers for all the 500+ tools.
+  </Card>
 
-- **Access 3000+ tools** out of the box across popular apps like Slack, GitHub, Notion, and more. [Browse tools →](/toolkits/introduction)
-- **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
-- **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
-- **Customize tools** for your proprietary APIs or internal functions via [modifiers](/docs/modifying-tool-schemas).
-- **Integrate seamlessly** with frameworks like OpenAI, Anthropic, LangChain, Vercel AI SDK, and more.
-- **Enhance reliability** with [input/output processing hooks](/docs/modifying-tool-inputs) to clean or transform data on the fly.
+  <Card
+    icon="bolt"
+    title="Event triggers"
+    href="/docs/using-triggers"
+  >
+    Subscribe to external events and trigger workflows automatically
+  </Card>
 
-No more writing dozens of integrations. Composio handles auth, tool normalization, and execution—so your agents can focus on reasoning, not plumbing.
+  <Card
+    icon="lock"
+    title="Managed authentication"
+    href="/docs/authenticating-tools"
+  >
+    Handle OAuth, API keys, and custom auth flows automatically
+  </Card>
+</CardGroup>
 
-**We even optimize tool calls automatically for better accuracy**
+***
 
-## Get started in minutes
+## Get started
 
-Watch our step-by-step implementation tutorials:
+<CardGroup cols={2}>
+  <Card icon="rocket" title="Quickstart" href="/quickstart">
+    Build your first agent
+  </Card>
+
+  <Card icon="cube" title="Providers" href="/providers/openai">
+    Integrate with OpenAI, Anthropic, Vercel AI SDK, and more
+  </Card>
+</CardGroup>
 
 <Tabs>
 <Tab title="Python">
-<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', marginBottom: '20px'}}>
+<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', marginBottom: '20px', marginTop: '20px'}}>
   <iframe 
     style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
     src="https://www.youtube.com/embed/wkqlR8322F4" 
@@ -41,7 +68,7 @@ Watch our step-by-step implementation tutorials:
 </div>
 </Tab>
 <Tab title="TypeScript">
-<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', marginBottom: '20px'}}>
+<div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', marginBottom: '20px', marginTop: '20px'}}>
   <iframe 
     style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
     src="https://www.youtube.com/embed/ZRGb4xGl-kc" 
@@ -53,3 +80,31 @@ Watch our step-by-step implementation tutorials:
 </div>
 </Tab>
 </Tabs>
+
+***
+
+## Why Composio?
+
+Composio is the fastest way to enable your AI agents to take real-world actions—without dealing with individual API integrations, authentication flows, or complex tool formatting.
+
+- **Access 500+ tools** out of the box across popular apps like Slack, GitHub, Notion, and more. [Browse tools →](/toolkits/introduction)
+- **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
+- **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
+- **Use MCP servers** for all 500+ tools, compatible with any [MCP client](/docs/mcp-quickstart).
+- **Automatic tool discovery** with [Tool Router](/tool-router/quick-start) that finds, authenticates, and executes the right tools for any task.
+- **Customize tools** for your proprietary APIs or internal functions via [modifiers](/docs/modifying-tool-schemas).
+- **Integrate seamlessly** with frameworks like [OpenAI](/providers/openai), [Anthropic](/providers/anthropic), [LangChain](/providers/langchain), [Vercel AI SDK](/providers/vercel), and more.
+
+***
+
+## Experimental
+
+<Tip icon="flask" title="Tool Router">
+  Search, plan, and handle authentication across all the tools. [Try it →](/tool-router/quick-start)
+</Tip>
+
+***
+
+## Community
+
+Join our [Discord](https://discord.gg/composio) community!
