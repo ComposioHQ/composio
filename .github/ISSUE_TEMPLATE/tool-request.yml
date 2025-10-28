@@ -24,4 +24,11 @@ body:
         ---
         
         _This GitHub issue template is for bug reports and feature requests only. Tool requests should be submitted through the request board above._
-
+  
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: "Confirmation"
+      options:
+        - label: "I understand that I need to submit tool requests on the request board"
+          required: true
