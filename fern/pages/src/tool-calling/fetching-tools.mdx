@@ -94,58 +94,6 @@ const tools = await composio.tools.get(userId, {
 ```
 </CodeGroup>
 
-## Fetching versioned tools
-
-Control which version of tools you fetch by specifying toolkit versions. This ensures consistent tool behavior across different environments.
-
-<CodeGroup>
-```python Python maxLines=60 wordWrap
-# Fetch tools with specific versions
-composio = Composio(
-    api_key="YOUR_API_KEY",
-    toolkit_versions={
-        "github": "20250116_00",
-        "slack": "20250115_01"
-    }
-)
-
-tools = composio.tools.get(
-    user_id,
-    toolkits=["GITHUB", "SLACK"]
-)
-
-# Inspect tool version
-for tool in tools:
-    print(f"Tool: {tool.slug}")
-    print(f"Version: {tool.toolkit_version}")
-```
-
-```typescript TypeScript maxLines=60 wordWrap
-// Fetch tools with specific versions
-const composio = new Composio({
-    apiKey: "YOUR_API_KEY",
-    toolkitVersions: {
-        github: "20250116_00",
-        slack: "20250115_01"
-    }
-});
-
-const tools = await composio.tools.get(userId, {
-    toolkits: ["GITHUB", "SLACK"]
-});
-
-// Inspect tool version
-tools.forEach(tool => {
-    console.log(`Tool: ${tool.slug}`);
-    console.log(`Version: ${tool.toolkitVersion}`);
-});
-```
-</CodeGroup>
-
-<Note>
-Tools fetched with specific versions will maintain consistent schemas and behavior. Learn more about [toolkit versioning](/tool-calling/toolkit-versioning).
-</Note>
-
 ## Filtering by tool
 You may specify the list of tools to fetch by directly providing the tool names. Browse the list of tools [here](/tools) to view and inspect the tools for each toolkit.
 

@@ -205,93 +205,6 @@ To examine the raw schema definition of a tool for understanding input/output pa
 />
 </CodeGroup>
 
-### Toolkit versioning
-
-As of October 22, 2025, Composio enforces toolkit versioning to ensure consistent tool behavior across environments. This is a breaking change for manual tool execution.
-
-#### Version requirement for manual execution
-
-Manual tool execution now requires explicit version specification:
-
-<CodeGroup>
-```python Python
-# Will fail without version (breaking change)
-result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
-    {"user_id": "user-123", "arguments": {...}}
-)
-
-# Option 1: Configure version at SDK level
-composio = Composio(
-    api_key="YOUR_API_KEY",
-    toolkit_versions={"github": "20250116_00"}
-)
-
-# Option 2: Pass version with execution
-result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
-    {
-        "user_id": "user-123",
-        "arguments": {...},
-        "toolkit_version": "20250116_00"
-    }
-)
-
-# Option 3: Skip version check (not recommended)
-result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
-    {
-        "user_id": "user-123",
-        "arguments": {...},
-        "dangerously_skip_version_check": True
-    }
-)
-```
-
-```typescript TypeScript
-// Will fail without version (breaking change)
-const result = await composio.tools.execute({
-    toolSlug: "GITHUB_CREATE_ISSUE",
-    userId: "user-123",
-    arguments: {...}
-});
-
-// Option 1: Configure version at SDK level
-const composio = new Composio({
-    apiKey: "YOUR_API_KEY",
-    toolkitVersions: { github: "20250116_00" }
-});
-
-// Option 2: Pass version with execution
-const result = await composio.tools.execute({
-    toolSlug: "GITHUB_CREATE_ISSUE",
-    userId: "user-123",
-    arguments: {...},
-    toolkitVersion: "20250116_00"
-});
-
-// Option 3: Skip version check (not recommended)
-const result = await composio.tools.execute({
-    toolSlug: "GITHUB_CREATE_ISSUE",
-    userId: "user-123",
-    arguments: {...},
-    dangerouslySkipVersionCheck: true
-});
-```
-</CodeGroup>
-
-#### Migration steps
-
-1. **Audit your code**: Find all `tools.execute()` calls
-2. **Choose a strategy**:
-   - Set toolkit versions globally in SDK initialization (recommended)
-   - Add version parameter to each execute call
-   - Use environment variables for deployment configuration
-3. **Test thoroughly**: Verify tools work with pinned versions
-4. **Deploy gradually**: Roll out changes incrementally
-
-For complete documentation, see [Toolkit versioning](/tool-calling/toolkit-versioning).
-
 ### Executing tools
 
 Tool execution remains largely unchanged, with `user_id` now explicitly required.
@@ -673,7 +586,7 @@ For development, you can also [listen to triggers through the SDK](/docs/using-t
 />
 </CodeGroup>
 
-## Coming Soon
+## 🚧 Coming Soon
 
 ### Local tools
 
