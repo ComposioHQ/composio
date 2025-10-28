@@ -8,7 +8,15 @@ hide-nav-links: false
 
 <CardGroup cols={2}>
   <Card
-    icon="tools"
+    icon="key"
+    title="Managed authentication"
+    href="/docs/authenticating-tools"
+  >
+    Handle OAuth, API keys, and custom auth flows automatically
+  </Card>
+
+  <Card
+    icon="wrench"
     title="Tool execution"
     href="/docs/executing-tools"
   >
@@ -16,7 +24,7 @@ hide-nav-links: false
   </Card>
 
   <Card
-    icon="server"
+    icon="database"
     title="MCP server"
     href="/docs/mcp-quickstart"
   >
@@ -25,18 +33,10 @@ hide-nav-links: false
 
   <Card
     icon="bolt"
-    title="Event triggers"
+    title="Triggers"
     href="/docs/using-triggers"
   >
     Subscribe to external events and trigger workflows automatically
-  </Card>
-
-  <Card
-    icon="lock"
-    title="Managed authentication"
-    href="/docs/authenticating-tools"
-  >
-    Handle OAuth, API keys, and custom auth flows automatically
   </Card>
 </CardGroup>
 
@@ -95,13 +95,9 @@ Composio is the fastest way to enable your AI agents to take real-world actionsâ
 - **Customize tools** for your proprietary APIs or internal functions via [modifiers](/docs/modifying-tool-schemas).
 - **Integrate seamlessly** with frameworks like [OpenAI](/providers/openai), [Anthropic](/providers/anthropic), [LangChain](/providers/langchain), [Vercel AI SDK](/providers/vercel), and more.
 
-***
-
-## Experimental
-
-<Tip icon="flask" title="Tool Router">
-  Search, plan, and handle authentication across all the tools. [Try it â†’](/tool-router/quick-start)
-</Tip>
+<Card icon="flask" title="Tool Router (Beta)" href="/docs/tool-router/quick-start">
+  Search, plan, and handle authentication across all the tools.
+</Card>
 
 ***
 
