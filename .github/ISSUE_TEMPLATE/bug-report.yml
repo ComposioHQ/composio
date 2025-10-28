@@ -1,0 +1,136 @@
+name: "🐞 Bug Report"
+description: "Report a bug or unexpected behavior in the Composio TypeScript or Python SDK"
+title: "[Bug]: <Short description>"
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐞 Bug Report
+        Thanks for taking the time to report a bug! Please provide as much detail as possible to help us investigate and fix it quickly.
+
+  - type: dropdown
+    id: sdk_language
+    attributes:
+      label: "SDK Language"
+      description: "Which Composio SDK are you using?"
+      options:
+        - TypeScript / Node.js SDK (`@composio/core`)
+        - Python SDK (`composio` package)
+        - Both
+        - Not sure
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: sdk_version
+    attributes:
+      label: "SDK Version"
+      description: "Version of the SDK (e.g., @composio/core@0.1.55 or composio==0.1.7)"
+      placeholder: "@composio/core@0.1.55 or composio==0.1.7"
+    validations:
+      required: true
+
+  - type: input
+    id: runtime_env
+    attributes:
+      label: "Runtime Environment"
+      description: "Specify Node.js or Python version, plus platform if relevant"
+      placeholder: |
+        Node.js v20.10.0 on macOS 14.2
+        or
+        Python 3.11 on Ubuntu 22.04
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Where did this issue occur?"
+      options:
+        - Local Development
+        - Production Deployment
+        - Cloudflare Worker
+        - Vercel / Serverless Function
+        - Other
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe the Bug"
+      description: "What happened? What did you expect to happen instead?"
+      placeholder: |
+        When executing `composio.tools.execute('GITHUB_GET_REPO')`, it throws a 401 even with a valid token.
+        Expected: repository details to be returned.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Please include exact steps or code to reproduce the issue"
+      placeholder: |
+        1. Initialize Composio
+        2. Authorize GitHub
+        3. Call `composio.tools.execute('GITHUB_GET_REPO', {...})`
+        4. Observe 401 error
+    validations:
+      required: true
+
+  - type: textarea
+    id: code_snippet
+    attributes:
+      label: "Minimal Reproducible Example"
+      description: "Paste code or commands to reproduce (use correct language block)"
+      placeholder: |
+        ```typescript
+        import { Composio } from '@composio/core';
+
+        const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+        const result = await composio.tools.execute('GITHUB_GET_REPO', {
+          userId: 'default',
+          arguments: { owner: 'composio', repo: 'sdk' },
+        });
+        ```
+        ```python
+        from composio import Composio
+
+        composio = Composio(api_key="YOUR_API_KEY")
+        result = composio.tools.execute("GITHUB_GET_REPO", user_id="default", arguments={"owner": "composio", "repo": "sdk"})
+        ```
+      render: shell
+
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: "Error Output / Stack Trace"
+      description: "Paste the full error output or traceback"
+      render: shell
+      placeholder: |
+        Error: [ComposioError] Unauthorized request
+        File "sdk/tools.py", line 82, in execute
+        raise ExecutionFailed("Unauthorized request")
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: reproducibility
+    attributes:
+      label: "Reproducibility"
+      description: "How consistently does the bug occur?"
+      options:
+        - label: "Always reproducible"
+        - label: "Intermittent / Sometimes"
+        - label: "Happened once, can’t reproduce"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context or Screenshots"
+      description: "Add logs, screenshots, or related issues if available"
