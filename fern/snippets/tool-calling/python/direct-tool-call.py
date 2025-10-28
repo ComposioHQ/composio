@@ -1,7 +1,11 @@
 from composio import Composio
 
 user_id = "user-k7334"
-composio = Composio(api_key="your_composio_key")
+# Configure toolkit versions at SDK level
+composio = Composio(
+    api_key="your_composio_key",
+    toolkit_versions={"github": "20250116_00"}
+)
 
 # Find available arguments for any tool in the Composio dashboard
 result = composio.tools.execute(
