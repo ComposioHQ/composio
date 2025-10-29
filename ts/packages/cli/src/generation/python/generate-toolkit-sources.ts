@@ -15,7 +15,7 @@
  *
  *     class triggers:
  *         NEW_GMAIL_MESSAGE = {
- *           config: {
+ *           'config': {
  *             # ...
  *           },
  *           description: "Triggers when a new message is received in Gmail.",
@@ -79,7 +79,7 @@ function jsToPython(value: unknown, indent = 0): string {
     }
 
     const formattedEntries = entries.map(([key, val]) => {
-      const formattedKey = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) ? key : JSON.stringify(key);
+      const formattedKey = JSON.stringify(key);
       const formattedValue = jsToPython(val, indent + 2);
       return `${spacePad}  ${formattedKey}: ${formattedValue}`;
     });
