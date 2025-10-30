@@ -138,7 +138,7 @@ export class Composio<
    */
   tools: Tools<unknown, unknown, TProvider>;
   toolkits: Toolkits;
-  triggers: Triggers;
+  triggers: Triggers<TProvider>;
   provider: TProvider;
   files: Files;
   authConfigs: AuthConfigs;
@@ -233,7 +233,7 @@ export class Composio<
     this.tools = new Tools(this.client, this.provider, this.config);
     this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);
-    this.triggers = new Triggers(this.client);
+    this.triggers = new Triggers(this.client, this.config);
     this.authConfigs = new AuthConfigs(this.client);
     this.files = new Files(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);

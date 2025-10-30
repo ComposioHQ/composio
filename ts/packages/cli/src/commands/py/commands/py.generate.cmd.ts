@@ -46,7 +46,7 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
     // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API...');
+    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
     const triggerTypesAsEnums = yield* Effect.logDebug('Fetching trigger types...').pipe(
       Effect.flatMap(() => client.getTriggerTypesAsEnums())

@@ -109,6 +109,7 @@ const mockTriggerTypes = {
         name: 'github',
         logo: 'https://example.com/github.png',
       },
+      version: '20250101_00',
     },
   ],
   total_pages: 1,
@@ -133,6 +134,7 @@ const mockTriggerType = {
     name: 'github',
     logo: 'https://example.com/github.png',
   },
+  version: '20250101_00',
 };
 
 const mockTriggerEnum = {
@@ -199,7 +201,7 @@ const mockIncomingTriggerPayload: IncomingTriggerPayload = {
 };
 
 describe('Triggers', () => {
-  let triggers: Triggers;
+  let triggers: Triggers<any>;
   let mockClient: ReturnType<typeof createMockClient>;
   let mockPusherService: {
     subscribe: Mock;
@@ -455,7 +457,12 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes();
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({});
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
+        cursor: undefined,
+        limit: undefined,
+        toolkit_slugs: undefined,
+        toolkit_versions: 'latest',
+      });
       expect(result).toEqual({
         items: mockTriggerTypes.items.map(item => ({
           ...item,
@@ -473,8 +480,10 @@ describe('Triggers', () => {
       const result = await triggers.listTypes(query);
 
       expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
+        cursor: undefined,
         limit: query.limit,
         toolkit_slugs: query.toolkits,
+        toolkit_versions: 'latest',
       });
       expect(result).toEqual({
         items: mockTriggerTypes.items,

@@ -1,0 +1,101 @@
+name: "🚀 Feature Request"
+description: "Suggest a new feature or improvement for the Composio SDKs, Dashboard, or Integrations"
+title: "[Feature]: <Short description>"
+labels: ["feature-request", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 Feature Request
+        Have an idea that can make Composio better? Please describe it below as clearly as possible.  
+        The more context you give, the easier it is for us to prioritize and implement!
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Area of Improvement"
+      description: "Which part of Composio does this request relate to?"
+      options:
+        - TypeScript / Node.js SDK
+        - Python SDK
+        - Dashboard (app.composio.dev)
+        - Integrations / Toolkits
+        - MCP Server / Agentic Providers
+        - Other
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: feature_title
+    attributes:
+      label: "Feature Name"
+      description: "Short descriptive name for the feature"
+      placeholder: "Add support for GitLab toolkit"
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature_description
+    attributes:
+      label: "Describe the Feature"
+      description: "What would you like to see added or improved?"
+      placeholder: |
+        I’d love to see a GitLab toolkit added to Composio SDK so I can list projects, issues, and merge requests directly from my AI agent.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: "Use Case / Motivation"
+      description: "Explain why this feature is valuable. What problem does it solve?"
+      placeholder: |
+        - My AI agent needs to interact with GitLab repositories.
+        - I want to automate PR creation and review workflows.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: "Proposed Solution or API Design (Optional)"
+      description: "How would you like this to work? Feel free to propose SDK methods or UI ideas."
+      placeholder: |
+        Example (TypeScript):
+        ```typescript
+        const gitlabTools = await composio.tools.get('default', { toolkits: ['gitlab'] });
+        await composio.tools.execute('GITLAB_CREATE_ISSUE', { userId, arguments: {...} });
+        ```
+
+  - type: checkboxes
+    id: impact_scope
+    attributes:
+      label: "Who does this impact?"
+      options:
+        - label: "Developers using the SDK"
+        - label: "AI Agent frameworks (LangChain, OpenAI, etc.)"
+        - label: "Dashboard users"
+        - label: "End users of connected apps"
+
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: "Related Issues / References"
+      description: "Link any related GitHub issues, docs, or external resources"
+      placeholder: "#42, https://developers.gitlab.com/api/reference"
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: "Would you like to contribute to this feature?"
+      options:
+        - label: "Yes, I can help implement it"
+        - label: "Maybe, I can help test or review"
+        - label: "No, just sharing the idea"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context"
+      description: "Any extra information, mockups, or screenshots"

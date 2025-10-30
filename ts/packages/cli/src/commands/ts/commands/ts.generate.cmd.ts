@@ -108,21 +108,19 @@ export function generateTypescriptTypeStubs({
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(
       Option.match({
-        // If no output directory is specified, use the default
+        // If no output directory is specified, use the default, and make sure it exists
         onNone: () => jsFindComposioCoreGenerated(cwd),
 
         // If an output directory is specified, validate and create it
-        onSome: outputDir =>
-          validateOutputDir(outputDir).pipe(
-            Effect.tap(fs.makeDirectory(outputDir, { recursive: true }))
-          ),
+        onSome: outputDir => validateOutputDir(outputDir),
       })
     );
 
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
+    yield* fs.makeDirectory(outputDir, { recursive: true });
 
     // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API...');
+    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
     const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
       Effect.logDebug('Fetching trigger types...').pipe(
@@ -161,6 +159,7 @@ export function generateTypescriptTypeStubs({
       Match.exhaustive
     );
 
+    yield* Console.log('Writing TypeScript type stubs to disk...');
     const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
 
     // Generate TypeScript sources
@@ -197,7 +196,7 @@ export function generateTypescriptTypeStubs({
     yield* Option.isNone(outputOpt)
       ? Console.log(
           '✅ Type stubs generated successfully.\n' +
-            'You can now import generated types via `import { composio } from "@composio/core/generated"`'
+            'You can now import generated types via `import { Toolkits } from "@composio/core/generated"`'
         )
       : Console.log(
           `✅ Type stubs generated successfully.\n` +

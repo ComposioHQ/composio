@@ -1,0 +1,35 @@
+name: "🔧 Tool Request"
+description: "Request a new toolkit or tool integration"
+title: "[Tool Request]: <Tool/Integration Name>"
+labels: ["tool-request", "integrations"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🔧 Tool Request
+        
+        Thank you for your interest in requesting a new tool or integration!
+        
+        **Please submit your tool request on our dedicated request board:**
+        
+        👉 **[https://request.composio.dev/boards/tool-requests](https://request.composio.dev/boards/tool-requests)**
+        
+        This helps us:
+        - Track all tool requests in one place
+        - Allow the community to upvote popular requests
+        - Keep you updated on the status of your request
+        
+        Before submitting, please check existing apps and pending requests to avoid duplicates.
+        
+        ---
+        
+        _This GitHub issue template is for bug reports and feature requests only. Tool requests should be submitted through the request board above._
+  
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: "Confirmation"
+      options:
+        - label: "I understand that I need to submit tool requests on the request board"
+          required: true
+
