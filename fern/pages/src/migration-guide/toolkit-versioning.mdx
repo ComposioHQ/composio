@@ -2,7 +2,7 @@
 title: Toolkit versioning migration
 subtitle: Migrate to the new toolkit versioning system
 image: "https://og.composio.dev/api/og?title=Toolkit%20versioning%20migration"
-keywords: "toolkit versioning, migration, breaking changes"
+keywords: "toolkit versioning, migration"
 hide-nav-links: false
 ---
 
@@ -41,11 +41,11 @@ Choose one of three migration strategies:
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/sdk-initialization.py"
+  src="fern/snippets/tool-calling/python/versioning-sdk-init.py"
   title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/sdk-initialization.ts"
+  src="fern/snippets/tool-calling/typescript/versioning-sdk-init.ts"
   title="TypeScript"
 />
 </CodeGroup>
@@ -54,14 +54,14 @@ Choose one of three migration strategies:
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/per-execution-override.py"
-  startLine={5}
-  endLine={16}
+  src="fern/snippets/tool-calling/python/versioning-per-execution.py"
+  startLine={6}
+  endLine={15}
   title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/per-execution-override.ts"
-  startLine={5}
+  src="fern/snippets/tool-calling/typescript/versioning-per-execution.ts"
+  startLine={6}
   endLine={14}
   title="TypeScript"
 />
@@ -70,27 +70,8 @@ Choose one of three migration strategies:
 #### Option 3: Use environment variables
 
 ```bash
-export COMPOSIO_TOOLKIT_VERSION_GITHUB="20250116_00"
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
 ```
-
-Then execute normally:
-
-<CodeGroup>
-```python Python
-result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
-    {"user_id": "user-123", "arguments": {...}}
-)
-```
-
-```typescript TypeScript
-const result = await composio.tools.execute({
-    toolSlug: "GITHUB_CREATE_ISSUE",
-    userId: "user-123",
-    arguments: {...}
-});
-```
-</CodeGroup>
 
 ## Migration checklist
 

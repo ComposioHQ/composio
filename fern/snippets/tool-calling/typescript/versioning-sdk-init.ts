@@ -4,8 +4,8 @@ import { Composio } from "@composio/core";
 const composio = new Composio({
     apiKey: "YOUR_API_KEY",
     toolkitVersions: {
-        github: "20250116_00",
-        slack: "20250115_01",
-        gmail: "20250115_00"
+        github: "20251027_00",
+        slack: "20251027_00",
+        gmail: "20251027_00"
     }
 });

@@ -20,11 +20,11 @@ Configure toolkit versions using one of three methods:
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/sdk-initialization.py"
+  src="fern/snippets/tool-calling/python/versioning-sdk-init.py"
   title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/sdk-initialization.ts"
+  src="fern/snippets/tool-calling/typescript/versioning-sdk-init.ts"
   title="TypeScript"
 />
 </CodeGroup>
@@ -33,20 +33,20 @@ Configure toolkit versions using one of three methods:
 
 ```bash
 # Set versions for specific toolkits
-export COMPOSIO_TOOLKIT_VERSION_GITHUB="20250116_00"
-export COMPOSIO_TOOLKIT_VERSION_SLACK="20250115_01"
-export COMPOSIO_TOOLKIT_VERSION_GMAIL="20250115_00"
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_SLACK="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_GMAIL="20251027_00"
 ```
 
 ### Per-execution override
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/per-execution-override.py"
+  src="fern/snippets/tool-calling/python/versioning-per-execution.py"
   title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/per-execution-override.ts"
+  src="fern/snippets/tool-calling/typescript/versioning-per-execution.ts"
   title="TypeScript"
 />
 </CodeGroup>
@@ -59,7 +59,7 @@ Versions follow the format `YYYYMMDD_NN`:
 
 ```python
 # Production
-toolkit_versions = {"github": "20250116_00"}
+toolkit_versions = {"github": "20251027_00"}
 
 # Development  
 toolkit_versions = {"github": "latest"}
@@ -77,40 +77,19 @@ Never use `latest` in production. It can introduce breaking changes.
 
 ## Managing versions
 
-### List available versions
-
-Check what versions are available for a toolkit:
+Check available versions and inspect what your tools are using:
 
 <CodeGroup>
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/manage-versions.py"
-  startLine={8}
+  src="fern/snippets/tool-calling/python/versioning-manage.py"
+  startLine={5}
   endLine={11}
   title="Python"
 />
 <SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/manage-versions.ts"
-  startLine={8}
+  src="fern/snippets/tool-calling/typescript/versioning-manage.ts"
+  startLine={5}
   endLine={12}
-  title="TypeScript"
-/>
-</CodeGroup>
-
-### Inspect current versions
-
-Check which version your tools are actually using:
-
-<CodeGroup>
-<SnippetCode 
-  src="fern/snippets/tool-calling/versioning/python/manage-versions.py"
-  startLine={13}
-  endLine={16}
-  title="Python"
-/>
-<SnippetCode 
-  src="fern/snippets/tool-calling/versioning/typescript/manage-versions.ts"
-  startLine={14}
-  endLine={20}
   title="TypeScript"
 />
 </CodeGroup>

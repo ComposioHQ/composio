@@ -4,8 +4,8 @@ from composio import Composio
 composio = Composio(
     api_key="YOUR_API_KEY",
     toolkit_versions={
-        "github": "20250116_00",
-        "slack": "20250115_01",
-        "gmail": "20250115_00"
+        "github": "20251027_00",
+        "slack": "20251027_00",
+        "gmail": "20251027_00"
     }
 )
