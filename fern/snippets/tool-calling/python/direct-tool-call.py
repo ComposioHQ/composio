@@ -4,7 +4,7 @@ user_id = "user-k7334"
 # Configure toolkit versions at SDK level
 composio = Composio(
     api_key="your_composio_key",
-    toolkit_versions={"github": "20250116_00"}
+    toolkit_versions={"github": "20251027_00"}
 )
 
 # Find available arguments for any tool in the Composio dashboard
