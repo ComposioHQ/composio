@@ -3,7 +3,11 @@ name: Build Typescript SDK
 on:
   push:
     branches: [main]
+    paths:
+      - "ts/**"
   pull_request:
+    paths:
+      - "ts/**"
 
 jobs:
   build:
