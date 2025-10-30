@@ -135,6 +135,9 @@ navigation:
     - page: Custom tools
       path: pages/dist/tool-calling/custom-tools.mdx
       slug: custom-tools
+    - page: Toolkit Versioning
+      path: pages/dist/tool-calling/toolkit-versioning.mdx
+      slug: toolkit-versioning
   - section: Authentication
     icon: lock
     skip-slug: true
@@ -188,9 +191,18 @@ navigation:
     - page: Debugging Info
       path: pages/dist/debugging-info.mdx
       slug: resources/debugging-info
-    - page: Migration Guide
-      path: pages/dist/migration-guide.mdx
-      slug: migration
+    - section: Migration Guides
+      slug: migration-guide
+      contents:
+        - page: Overview
+          path: pages/dist/migration-guide/index.mdx
+          slug: overview
+        - page: New SDK Migration
+          path: pages/dist/migration-guide/new-sdk.mdx
+          slug: new-sdk
+        - page: Toolkit Versioning Migration
+          path: pages/dist/migration-guide/toolkit-versioning.mdx
+          slug: toolkit-versioning
     - section: Troubleshooting
       slug: troubleshooting
       contents:
