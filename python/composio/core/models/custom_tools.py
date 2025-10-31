@@ -103,6 +103,7 @@ class CustomTool:
                 toolkit=tool_list_response.ItemDeprecatedToolkit(logo=str()),
                 is_deprecated=False,
             ),
+            is_deprecated=False,
             no_auth=False,
             tags=[],
         )
