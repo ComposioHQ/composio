@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.18
+
+### Patch Changes
+
+- cfc2c50: Update zod version to 4
+
 ## 0.1.17
 
 ### Patch Changes

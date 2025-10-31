@@ -1,5 +1,13 @@
 # @composio/langchain
 
+## 0.2.2
+
+### Patch Changes
+
+- cfc2c50: Update zod version to 4
+- Updated dependencies [cfc2c50]
+  - @composio/core@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
