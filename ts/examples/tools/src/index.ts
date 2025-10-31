@@ -17,7 +17,7 @@ import path from 'path';
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  allowTracking: false
+  allowTracking: false,
 });
 
 /**
@@ -29,6 +29,7 @@ async function main() {
 
     console.log('🔄 Uploading file...');
     const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+      dangerouslySkipVersionCheck: true,
       arguments: {
         file_to_upload: path.join(__dirname, 'image.png'),
       },
@@ -39,6 +40,7 @@ async function main() {
 
     console.log('🔄 Downloading file...');
     const result2 = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+      dangerouslySkipVersionCheck: true,
       arguments: {
         file_id: (result.data.response_data as unknown as { id: string }).id,
       },
@@ -46,7 +48,6 @@ async function main() {
     });
     console.log('✅ File downloaded successfully...');
     console.log(JSON.stringify(result2, null, 2));
-
   } catch (error) {
     console.error('❌ Error running example:', error);
   }

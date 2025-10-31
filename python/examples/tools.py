@@ -16,6 +16,7 @@ response = composio.tools.execute(
     user_id="default",
     slug="HACKERNEWS_GET_USER",
     arguments={"username": "pg"},
+    version="20251023_00",
 )
 print(response)
 

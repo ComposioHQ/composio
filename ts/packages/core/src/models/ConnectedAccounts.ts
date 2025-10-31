@@ -49,7 +49,7 @@ export class ConnectedAccounts {
 
   constructor(client: ComposioClient) {
     this.client = client;
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'ConnectedAccounts');
   }
 
   /**

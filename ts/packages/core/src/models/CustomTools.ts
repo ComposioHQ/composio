@@ -44,7 +44,7 @@ export class CustomTools {
     }
     this.client = client;
     this.customToolsRegistry = new Map();
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'CustomTools');
   }
 
   /**

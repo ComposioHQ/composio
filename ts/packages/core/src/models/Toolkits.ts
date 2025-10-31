@@ -34,7 +34,7 @@ export class Toolkits {
   constructor(client: ComposioClient) {
     this.client = client;
     this.authorize = this.authorize.bind(this);
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Toolkits');
   }
   /**
    * Retrieves a list of toolkits based on the provided query parameters.
