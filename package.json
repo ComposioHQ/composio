@@ -62,7 +62,8 @@
       "prettier --write"
     ],
     "python/**/*.py": [
-      "ruff check --fix --config python/config/ruff.toml"
+      "ruff check --fix --config python/config/ruff.toml",
+      "ruff format --config python/config/ruff.toml"
     ]
   }
 }
