@@ -5,7 +5,6 @@ This module is a light wrapper around the auto-generated composio client.
 import contextvars
 import os
 import platform
-import sys
 import typing as t
 from importlib.metadata import version
 from uuid import uuid4
