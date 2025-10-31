@@ -12,7 +12,7 @@ import { telemetry } from '../telemetry/Telemetry';
 
 export class Files {
   constructor(private readonly client: ComposioClient) {
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Files');
   }
 
   /**

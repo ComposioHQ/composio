@@ -26,7 +26,7 @@ export class PusherService {
     this.composioClient = client;
     this.pusherBaseURL = client.baseURL;
     this.apiKey = client.apiKey ?? process.env.COMPOSIO_API_KEY ?? '';
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'PusherService');
   }
 
   /**

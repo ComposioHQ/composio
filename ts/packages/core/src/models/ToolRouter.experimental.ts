@@ -12,7 +12,7 @@ import { transform } from '../utils/transform';
 export class ToolRouter {
   constructor(private client: ComposioClient) {
     this.client = client;
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'ToolRouter');
   }
 
   /**
