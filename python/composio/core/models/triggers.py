@@ -632,7 +632,9 @@ class Triggers(Resource):
     """Disables a trigger given its id"""
 
     def __init__(
-        self, client: HttpClient, toolkit_versions: t.Optional[ToolkitVersionParam] = None
+        self,
+        client: HttpClient,
+        toolkit_versions: t.Optional[ToolkitVersionParam] = None,
     ):
         """
         Initialize the triggers resource.
