@@ -39,6 +39,7 @@
 		"supergateway": "^2.8.3"
 	},
 	"devDependencies": {
+		"@openai/agents": "^0.2.1",
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
@@ -46,6 +47,7 @@
 		"@composio/langchain": "workspace:*",
 		"@composio/llamaindex": "workspace:*",
 		"@composio/openai": "workspace:*",
+		"@composio/openai-agents": "workspace:*",
 		"@composio/vercel": "workspace:*",
 		"@google/genai": "^1.1.0",
 		"@langchain/langgraph": "^0.2.72",
