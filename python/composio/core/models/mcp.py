@@ -183,10 +183,10 @@ class MCP(Resource):
                     toolkit_names.append(toolkit_config["toolkit"])
 
                 if (
-                    "auth_config" in toolkit_config
-                    and toolkit_config["auth_config"] not in auth_config_ids
+                    "auth_config_id" in toolkit_config
+                    and toolkit_config["auth_config_id"] not in auth_config_ids
                 ):
-                    auth_config_ids.append(toolkit_config["auth_config"])
+                    auth_config_ids.append(toolkit_config["auth_config_id"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
             custom_tools = none_to_omit(allowed_tools)
@@ -361,10 +361,10 @@ class MCP(Resource):
                         toolkit_names.append(toolkit_config["toolkit"])
 
                     if (
-                        "auth_config" in toolkit_config
-                        and toolkit_config["auth_config"] not in auth_config_ids
+                        "auth_config_id" in toolkit_config
+                        and toolkit_config["auth_config_id"] not in auth_config_ids
                     ):
-                        auth_config_ids.append(toolkit_config["auth_config"])
+                        auth_config_ids.append(toolkit_config["auth_config_id"])
 
                 update_params["toolkits"] = toolkit_names
                 update_params["auth_config_ids"] = auth_config_ids
