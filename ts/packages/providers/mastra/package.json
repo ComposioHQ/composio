@@ -35,7 +35,7 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.2.1",
-    "@mastra/core": "^0.16.2",
+    "@mastra/core": "^0.21.1",
     "@mastra/mcp": "^0.12.0"
   },
   "devDependencies": {

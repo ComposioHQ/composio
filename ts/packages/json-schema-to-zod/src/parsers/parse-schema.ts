@@ -65,7 +65,13 @@ const addDefaults = (
       const inAnyOfOrOneOf = refs?.path.some(segment => segment === 'anyOf' || segment === 'oneOf');
 
       // If we're in anyOf/oneOf and this is a non-nullable type, skip the default
-      if (inAnyOfOrOneOf && jsonSchema.type && jsonSchema.type !== 'null' && !jsonSchema.nullable) {
+      if (
+        inAnyOfOrOneOf &&
+        jsonSchema.type &&
+        jsonSchema.type !== 'null' &&
+        // @ts-ignore: `nullable` is not publicly available in Zod 4
+        !jsonSchema.nullable
+      ) {
         return zodSchema;
       }
     }

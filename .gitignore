@@ -67,3 +67,6 @@ __pycache__/
 temp/
 fern/llms-txt-worker/public/*
 !fern/llms-txt-worker/public/.keepFolder
+
+# E2E test node_modules
+test/e2e/*/node_modules
