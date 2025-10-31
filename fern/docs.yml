@@ -29,9 +29,6 @@ typography:
     - path: assets/IBMPlexMono-Light.ttf
       weight: '400'
 navbar-links:
-- type: primary
-  text: V1 Docs
-  url: https://v1.docs.composio.dev
 - type: filled
   text: LOG IN
   url: https://platform.composio.dev/auth
@@ -111,7 +108,7 @@ navigation:
       path: pages/dist/get-started/providers.mdx
       slug: providers
   - section: Tools
-    icon: tools
+    icon: wrench
     skip-slug: true
     contents:
     - page: Authenticating Tools
@@ -139,7 +136,7 @@ navigation:
       path: pages/dist/tool-calling/toolkit-versioning.mdx
       slug: toolkit-versioning
   - section: Authentication
-    icon: lock
+    icon: key
     skip-slug: true
     contents:
     - page: Custom Auth Configs
@@ -162,7 +159,7 @@ navigation:
       path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
   - section: MCP
-    icon: server
+    icon: database
     skip-slug: true
     contents:
     - page: Quickstart
@@ -178,7 +175,7 @@ navigation:
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api
   - section: Tool Router (Beta)
-    icon: tools
+    icon: flask
     skip-slug: true
     contents:
     - page: Quick Start
