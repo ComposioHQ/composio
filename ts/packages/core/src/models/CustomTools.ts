@@ -81,9 +81,9 @@ export class CustomTools {
       throw new Error('Invalid tool options');
     }
     // generate the input parameters schema
-    const paramsSchema: InputParamsSchema = (await zodToJsonSchema(inputParams, {
+    const paramsSchema: InputParamsSchema = zodToJsonSchema(inputParams, {
       name: 'input',
-    })) as InputParamsSchema;
+    }) as InputParamsSchema;
     const paramsSchemaJson = paramsSchema.definitions.input;
     const toolSchema: Tool = {
       name: name,

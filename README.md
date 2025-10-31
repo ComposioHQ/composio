@@ -16,7 +16,7 @@ Skills that evolve for your Agents
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/composio)
 </div>
 
-This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities for Python and Typescript Agentic Frameowrks and Libraries.
+This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities for Python and Typescript Agentic Frameworks and Libraries.
 
 ## Getting Started
 

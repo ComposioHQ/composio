@@ -2,6 +2,7 @@ packages:
   - ts/packages/core
   - ts/packages/cli
   - ts/packages/json-schema-to-zod
+  - ts/packages/json-schema-to-zod/test/e2e/*
   - ts/packages/providers/*
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
@@ -23,7 +24,7 @@ catalog:
   uuid: ^13.0.0
   vitest: ^3.2.4
   wrangler: ^4.37.0
-  zod: 3.25.76
+  zod: ^4.1.0
 
 minimumReleaseAge: 1440
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [next]
-
+    
 env:
   GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
 

@@ -65,10 +65,21 @@ In case you just want to call a tool without using any framework or LLM provider
   
   **CLI**: For python and typescript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
 </Tip>
+
 <CodeGroup>
-  <SnippetCode src="fern/snippets/tool-calling/python/direct-tool-call.py" title="Python" />
-  <SnippetCode src="fern/snippets/tool-calling/typescript/direct-tool-call.ts" title="TypeScript" />
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/direct-tool-call.py"
+    title="Python"
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/direct-tool-call.ts"
+    title="TypeScript"
+  />
 </CodeGroup>
+
+<Note>
+The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/toolkit-versioning) for all configuration options.
+</Note>
 
 ### Proxy Execute -- Manually calling toolkit APIs
 

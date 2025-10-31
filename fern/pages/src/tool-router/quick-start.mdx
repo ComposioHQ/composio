@@ -11,142 +11,55 @@ Tool Router automatically discovers, authenticates, and executes the right tools
 
 This is what powers complex agentic products like [Rube](https://rube.app).
 
-## Quick start
 
-<Steps toc={true}>
-  <Step title="Install SDKs">
-    Install the Composio SDK and OpenAI Agents SDK:
+### Quick Start
 
-    <CodeGroup>
+Create a presigned URL for each user session. This URL exposes Tool Router capabilities through the Model Context Protocol (MCP).
 
-    ```bash Python  
-    pip install composio_openai_agents openai-agents
-    ```
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/tool-router/python/quick-start.py"
+  startLine={1}
+  endLine={17}
+  title="Python"
+/>
 
-    ```bash TypeScript
-    pnpm install @composio/core @composio/openai-agents @openai/agents
-    ```
+<SnippetCode
+  src="fern/snippets/tool-router/typescript/quick-start.ts"
+  startLine={1}
+  endLine={25}
+  title="TypeScript"
+/>
+</CodeGroup>
 
-    </CodeGroup>
+<Tip icon="info">
+**What are sessions?**
 
-    Get your Composio API key from [settings](https://platform.composio.dev/?next_page=/settings) and set it as an environment variable:
+A session encapsulates a single conversation between a user and the language model.
 
-    ```bash
-    export COMPOSIO_API_KEY="your-api-key"
-    ```
-  </Step>
+Sessions are designed for security. Each presigned URL contains user authentication credentials and should never be stored long-term or exposed to the client. Generate a new URL for each conversation.
+</Tip>
 
-  <Step title="Create Tool Router session">
-    Initialize Composio and create a session for your user:
-
-    <Tip icon="info">
-    **Authentication is handled automatically**
-    
-    Tool Router provides auth URLs when needed. For production, consider [pre-configuring authentication](/docs/authenticating-tools).
-    </Tip>
-
-    <CodeGroup>
-
-    <SnippetCode
-      src="fern/snippets/tool-router/python/quickstart.py"
-      startLine={1}
-      endLine={16}
-      title="Python"
-    />
-
-    <SnippetCode
-      src="fern/snippets/tool-router/typescript/quickstart.ts"
-      startLine={1}
-      endLine={17}
-      title="TypeScript"
-    />
-
-    </CodeGroup>
-
-    This generates a secure MCP endpoint URL that your AI agent will use to access Tool Router.
-  </Step>
-
-  <Step title="Set up your agent">
-    Configure an OpenAI agent with the Tool Router MCP endpoint:
-
-    <CodeGroup>
-
-    <SnippetCode
-      src="fern/snippets/tool-router/python/quickstart.py"
-      startLine={17}
-      endLine={33}
-      title="Python"
-    />
-
-    <SnippetCode
-      src="fern/snippets/tool-router/typescript/quickstart.ts"
-      startLine={20}
-      endLine={30}
-      title="TypeScript"
-    />
-
-    </CodeGroup>
-  </Step>
-  
-  <Step title="Run your agent">
-    Execute the agent with a task:
-
-    <CodeGroup>
-
-    <SnippetCode
-      src="fern/snippets/tool-router/python/quickstart.py"
-      startLine={34}
-      endLine={42}
-      title="Python"
-    />
-
-    <SnippetCode
-      src="fern/snippets/tool-router/typescript/quickstart.ts"
-      startLine={32}
-      endLine={41}
-      title="TypeScript"
-    />
-
-    </CodeGroup>
-  </Step>
-</Steps>
-
-### Visualizing Tool Router in MCP Inspector
-
-You can inspect the session URL in any MCP client. Here's what it looks like in the MCP Inspector:
+The URL you get here is an MCP [StreamableHTTP URL](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http). You can use this URL in any MCP client, you can see how it lists tools inside the inspector here.
 
 <Frame>
   <img src="../../../assets/images/tool-router/inspector.jpeg"  alt="Tool Router Inspector" />
 </Frame>
 
-## How Tool Router works
+### Building on top of this URL with providers
 
-The Tool Router executes a three-phase workflow:
+_The necessary scaffolding will be integrated into existing providers abstraction before `toolRouter` is generally available._
 
-**1. Discovery**  
-Searches across all available tools to find ones matching your task. Returns relevant toolkits with their descriptions, schemas, and connection status.
-
-**2. Authentication**  
-Checks if the user has an active connection to the required toolkit. If not, creates an auth config and returns a connection URL using [Auth Link](/docs/authenticating-tools#hosted-authentication-connect-link). The user completes authentication through this link.
-
-**3. Execution**  
-Loads authenticated tools into context and executes them. Supports parallel execution across multiple tools for efficiency.
-
-<Tip icon="info">
-**What are sessions?**
-
-Sessions are designed for security. Each presigned URL contains user authentication credentials and should never be stored long-term or exposed to the client. Generate a new URL for each conversation.
-</Tip>
-
-## Works with any MCP client
-
-The session URL you created is a standard MCP endpoint. Use it with any framework that supports MCP:
-
-<Info>
-Tool Router uses Streamable HTTP transport for MCP communication. Make sure your MCP client supports HTTP transport (most do).
-</Info>
+Use the presigned URL with any frameworks that support MCP directly, few examples below:
 
 <CardGroup cols={2}>
+  <Card
+    title="OpenAI"
+    icon={<img src="../../../assets/images/openai-logo.svg" width="24" height="24" />}
+    href="https://platform.openai.com/docs/guides/tools-connectors-mcp"
+  >
+    Connect via OpenAI's MCP connector to use Tool Router with GPT models
+  </Card>
   <Card
     title="Vercel AI SDK"
     icon={<img src="../../../assets/images/vercel-logo.svg" width="24" height="24" />}
@@ -170,11 +83,32 @@ Tool Router uses Streamable HTTP transport for MCP communication. Make sure your
   </Card>
 </CardGroup>
 
-<Note>
-The necessary scaffolding will be integrated into existing provider abstractions before Tool Router is generally available.
-</Note>
 
-## Available meta tools
+
+
+
+## How Tool Router Works
+
+The Tool Router executes a three-phase workflow:
+
+**1. Discovery**  
+Searches across all available tools to find ones matching your task. Returns relevant toolkits with their descriptions, schemas, and connection status.
+
+**2. Authentication**  
+Checks if the user has an active connection to the required toolkit. If not, creates an auth config and returns a connection URL using [Auth Link](/docs/authenticating-tools#hosted-authentication-connect-link). The user completes authentication through this link.
+
+**3. Execution**  
+Loads authenticated tools into context and executes them. Supports parallel execution across multiple tools for efficiency.
+
+### Context Management
+
+The Tool Router intelligently manages context to avoid overwhelming the LLM with unnecessary information. Tools are only loaded into context when needed—search discovers relevant tools, and multi execute loads them just-in-time for execution. When working with large outputs, the remote workbench stores them as files in persistent storage, allowing iteration without consuming context windows. The system also segments tools within each MCP server, exposing only the subset required for the current task.
+
+<Info>
+The tool router currently consumes about ~20k tokens of context on modern models like `gpt-5` and `claude-4.5-sonnet`. This number can vary based on the model's tokenizer, we will work towards reducing this number in the future.
+</Info>
+
+### Available Tools
 
 The router exposes six meta tools through MCP. These tools orchestrate the complete workflow from discovery to execution:
 
@@ -217,59 +151,50 @@ The router exposes six meta tools through MCP. These tools orchestrate the compl
 </AccordionGroup>
 
 
-## Customization
+## Customizing the Tool Router
 
-### Restricting toolkits
+### Restricting Toolkits
 
 Control which toolkits are available by specifying them during session creation. This limits which apps your users can access.
 
 <CodeGroup>
 ```python
-session = composio.experimental.tool_router.create_session(
-    user_id="user@example.com",
-    toolkits=["github", "slack", "gmail"]
-)
+session = composio.experimental.toolRouter.createSession("hey@example.com", {
+  toolkits: ["github", "slack"],
+})
 ```
 
 ```typescript
-const session = await composio.experimental.toolRouter.createSession(
-  "user@example.com", 
-  {
-    toolkits: ["github", "slack", "gmail"]
-  }
-);
+const session = await composio.experimental.toolRouter.createSession("hey@example.com", {
+  toolkits: ["github", "slack"],
+})
+
 ```
 </CodeGroup>
 
 
-### Manual connection management
+### Manual Connection Management
 
-For advanced use cases, you can manually manage connections:
+You can manually manage connections, this is advanced and still a bit of work in progress.
+
+To manually manage connections, you can set `manuallyManageConnections` to `true` and limit the toolkits you want to use.
+
+Once you pass the auth config id, you can use our regular functions to connect accounts and check authentication status.
 
 <CodeGroup>
-```python
-session = composio.experimental.tool_router.create_session(
-    user_id="user@example.com",
-    toolkits=[{"toolkit": "gmail", "auth_config_id": "ac_nnn"}],
-    manually_manage_connections=True
-)
-```
 
 ```typescript
-const session = await composio.experimental.toolRouter.createSession(
-  "user@example.com",
-  {
-    toolkits: [{ toolkit: 'gmail', authConfigId: 'ac_nnn' }],
-    manuallyManageConnections: true
-  }
-);
+// Access the experimental ToolRouter
+const session = await composio.experimental.toolRouter.createSession("hey@example.com", {
+  toolkits: [{ toolkit: 'gmail', authConfigId: 'ac_nnn' }],
+  manuallyManageConnections: true,
+});
 ```
-</CodeGroup>
 
-When you pass the auth config ID, you can use regular Composio functions to connect accounts and check authentication status.
+</CodeGroup>
 
 ## Feedback
 
-This is still very experimental and work in progress, and you can expect the contracts to change and improve as we iterate on this. That said, we would love to hear your feedback on this.
+This is still very experimental and work in progress, you can expect the contracts to change and improve as we iterate on this. That said we would love to hear your feedback on this
 
-Give us feedback on this GitHub discussion [here](https://github.com/ComposioHQ/composio/discussions/2011).
+Give us feedback on this github discussion [here](https://github.com/ComposioHQ/composio/discussions/2011)
