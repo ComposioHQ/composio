@@ -141,7 +141,7 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(undefined);
 
       expect(headers).toEqual({
-        'x-framework': 'openai',
+        'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
         'x-sdk-version': version,
@@ -155,7 +155,7 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(mockProvider);
 
       expect(headers).toEqual({
-        'x-framework': 'openai',
+        'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
         'x-sdk-version': version,
@@ -255,7 +255,7 @@ describe('Session Headers Generation', () => {
 
       expect(headers).toEqual({
         'x-request-id': '1234567890',
-        'x-framework': 'openai',
+        'x-framework': 'unknown',
         'x-source': 'TYPESCRIPT_SDK',
         'x-runtime': 'NODEJS',
         'x-sdk-version': version,
