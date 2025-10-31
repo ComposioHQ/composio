@@ -20,7 +20,6 @@ from composio_client import (
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Timeout
 
-from composio.__version__ import __version__
 from composio.utils.logging import WithLogger
 
 ComposioAPIError = APIError
@@ -197,4 +196,4 @@ class HttpClient(BaseComposio, WithLogger):
         try:
             request.headers["x-sdk-version"] = version("composio")
         except Exception:
-            request.headers["x-sdk-version"] = __version__
+            request.headers["x-sdk-version"] = "unknwon"

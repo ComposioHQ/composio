@@ -95,7 +95,7 @@ export function getSessionHeaders(
   provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
 ) {
   return {
-    'x-framework': provider?.name || 'openai',
+    'x-framework': provider?.name || 'unknown',
     'x-source': 'TYPESCRIPT_SDK',
     'x-runtime': RUNTIME_ENV,
     'x-sdk-version': version,
