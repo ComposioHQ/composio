@@ -20,17 +20,17 @@ response = composio.tools.execute(
 )
 print(response)
 
-# # execute proxy call (github)
-# proxy_response = composio.tools.proxy(
-#     endpoint="/repos/composiohq/composio/issues/1",
-#     method="GET",
-#     connected_account_id="ac_1234",  # use connected account for github
-#     parameters=[
-#         {
-#             "name": "Accept",
-#             "value": "application/vnd.github.v3+json",
-#             "type": "header",
-#         },
-#     ],
-# )
-# print(proxy_response)
+# execute proxy call (github)
+proxy_response = composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ac_1234",  # use connected account for github
+    parameters=[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "type": "header",
+        },
+    ],
+)
+print(proxy_response)
