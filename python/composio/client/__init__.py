@@ -30,7 +30,7 @@ APIEnvironment = te.Literal["production", "staging", "local"]
 def _get_python_implementation() -> str:
     """
     Get the Python implementation name.
-    
+
     Returns:
         String identifier for Python implementation (CPYTHON, PYPY, JYTHON, IRONPYTHON, etc.)
     """
@@ -41,16 +41,17 @@ def _get_python_implementation() -> str:
 def _detect_runtime_environment() -> str:
     """
     Detect the runtime environment where the code is executing.
-    
+
     Returns a string identifier for the environment.
     """
     # Check for Google Colab
     try:
         import google.colab  # type: ignore # noqa: F401
+
         return "GOOGLE_COLAB"
     except ImportError:
         pass
-    
+
     # Check for Jupyter/IPython
     try:
         shell = get_ipython().__class__.__name__  # type: ignore # noqa: F821
@@ -60,47 +61,47 @@ def _detect_runtime_environment() -> str:
             return "IPYTHON"
     except NameError:
         pass
-    
+
     # Check for AWS Lambda
     if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         return "AWS_LAMBDA"
-    
+
     # Check for Google Cloud Functions
     if os.environ.get("FUNCTION_NAME") or os.environ.get("K_SERVICE"):
         return "GOOGLE_CLOUD_FUNCTION"
-    
+
     # Check for Azure Functions
     if os.environ.get("FUNCTIONS_WORKER_RUNTIME"):
         return "AZURE_FUNCTION"
-    
+
     # Check for Kaggle
     if os.environ.get("KAGGLE_KERNEL_RUN_TYPE"):
         return "KAGGLE"
-    
+
     # Check for Replit
     if os.environ.get("REPL_ID") or os.environ.get("REPLIT_DB_URL"):
         return "REPLIT"
-    
+
     # Check for GitHub Actions
     if os.environ.get("GITHUB_ACTIONS"):
         return "GITHUB_ACTIONS"
-    
+
     # Check for GitLab CI
     if os.environ.get("GITLAB_CI"):
         return "GITLAB_CI"
-    
+
     # Check for CircleCI
     if os.environ.get("CIRCLECI"):
         return "CIRCLECI"
-    
+
     # Check for Jenkins
     if os.environ.get("JENKINS_HOME"):
         return "JENKINS"
-    
+
     # Check for Docker
     if os.path.exists("/.dockerenv") or os.path.exists("/run/.containerenv"):
         return "DOCKER"
-    
+
     # Check if running in a container (generic)
     try:
         with open("/proc/1/cgroup", "r") as f:
@@ -108,7 +109,7 @@ def _detect_runtime_environment() -> str:
                 return "CONTAINER"
     except (FileNotFoundError, PermissionError):
         pass
-    
+
     # Default to LOCAL for development environments
     return "LOCAL"
 
@@ -126,9 +127,11 @@ class HttpClient(BaseComposio, WithLogger):
 
     request_ctx: contextvars.ContextVar[RequestContext]
     not_given = NOT_GIVEN
-    
+
     # Detect once at class initialization
-    _runtime_env: str = f"{_detect_runtime_environment()}_{_get_python_implementation()}"
+    _runtime_env: str = (
+        f"{_detect_runtime_environment()}_{_get_python_implementation()}"
+    )
 
     def __init__(
         self,
@@ -190,9 +193,8 @@ class HttpClient(BaseComposio, WithLogger):
         request.headers["x-framework"] = ctx["provider"]
         request.headers["x-source"] = "PYTHON_SDK"
         request.headers["x-runtime"] = HttpClient._runtime_env
-        
+
         try:
             request.headers["x-sdk-version"] = version("composio")
         except Exception:
             request.headers["x-sdk-version"] = __version__
-        
