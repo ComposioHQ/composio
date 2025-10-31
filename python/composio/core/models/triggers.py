@@ -691,20 +691,20 @@ class Triggers(Resource):
         *,
         cursor: t.Optional[str] = None,
         limit: t.Optional[int] = None,
-        toolkits: t.Optional[list[str]] = None,
+        toolkit_slugs: t.Optional[list[str]] = None,
     ):
         """
         List all the trigger types.
 
         :param cursor: The cursor for pagination
         :param limit: The maximum number of trigger types to return
-        :param toolkits: Filter by toolkit slugs
+        :param toolkit_slugs: Filter by toolkit slugs
         :return: The list of trigger types
         """
         return self._client.triggers_types.list(
             cursor=none_to_omit(cursor),
             limit=none_to_omit(limit),
-            toolkit_slugs=none_to_omit(toolkits),
+            toolkit_slugs=none_to_omit(toolkit_slugs),
             toolkit_versions=none_to_omit(self._toolkit_versions),
         )
 
