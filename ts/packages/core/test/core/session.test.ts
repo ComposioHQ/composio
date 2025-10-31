@@ -32,8 +32,9 @@ describe('Composio Session Management', () => {
       'x-request-id': '1234567890',
       'x-correlation-id': 'session-abc-123',
       'x-custom-header': 'custom-value',
-      'x-source': 'MockProvider', // from provider
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'MockProvider', // from provider
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
 
@@ -75,16 +76,18 @@ describe('Composio Session Management', () => {
     expect(headersA).toEqual({
       'x-user-id': 'user-a',
       'x-tenant-id': 'tenant-1',
-      'x-source': 'MockProvider',
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'MockProvider',
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
 
     expect(headersB).toEqual({
       'x-user-id': 'user-b',
       'x-tenant-id': 'tenant-2',
-      'x-source': 'MockProvider',
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'MockProvider',
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
 
@@ -100,8 +103,9 @@ describe('Composio Session Management', () => {
     // @ts-expect-error: access private config for test
     const defaultHeaders = session.config.defaultHeaders;
     expect(defaultHeaders).toEqual({
-      'x-source': 'MockProvider', // from provider
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'MockProvider', // from provider
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
   });
@@ -114,8 +118,9 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(openAIProvider);
 
       expect(headers).toEqual({
-        'x-source': 'openai',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -125,8 +130,9 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(mockProvider);
 
       expect(headers).toEqual({
-        'x-source': 'MockProvider',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'MockProvider',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -135,8 +141,9 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(undefined);
 
       expect(headers).toEqual({
-        'x-source': '@composio/core',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -148,8 +155,9 @@ describe('Session Headers Generation', () => {
       const headers = getSessionHeaders(mockProvider);
 
       expect(headers).toEqual({
-        'x-source': '@composio/core',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -168,8 +176,9 @@ describe('Session Headers Generation', () => {
       expect(headers).toEqual({
         'x-request-id': '1234567890',
         'x-custom-header': 'custom-value',
-        'x-source': 'openai',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -186,8 +195,9 @@ describe('Session Headers Generation', () => {
       expect(headers).toEqual({
         'x-user-id': 'user-123',
         'x-tenant-id': 'tenant-456',
-        'x-source': 'MockProvider',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'MockProvider',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -204,8 +214,9 @@ describe('Session Headers Generation', () => {
       const headers = getDefaultHeaders(customHeaders, openAIProvider);
 
       expect(headers).toEqual({
-        'x-source': 'openai', // session header takes precedence
-        'x-runtime': 'composio-v3-ts-sdk', // session header takes precedence
+        'x-framework': 'openai', // session header takes precedence
+        'x-source': 'TYPESCRIPT_SDK', // session header takes precedence
+        'x-runtime': 'NODEJS', // session header takes precedence
         'x-sdk-version': version, // session header takes precedence
         'x-custom-header': 'custom-value', // custom header preserved
       });
@@ -216,8 +227,9 @@ describe('Session Headers Generation', () => {
       const headers = getDefaultHeaders(undefined, openAIProvider);
 
       expect(headers).toEqual({
-        'x-source': 'openai',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -227,8 +239,9 @@ describe('Session Headers Generation', () => {
       const headers = getDefaultHeaders({}, openAIProvider);
 
       expect(headers).toEqual({
-        'x-source': 'openai',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -242,8 +255,9 @@ describe('Session Headers Generation', () => {
 
       expect(headers).toEqual({
         'x-request-id': '1234567890',
-        'x-source': '@composio/core',
-        'x-runtime': 'composio-v3-ts-sdk',
+        'x-framework': 'openai',
+        'x-source': 'TYPESCRIPT_SDK',
+        'x-runtime': 'NODEJS',
         'x-sdk-version': version,
       });
     });
@@ -312,8 +326,9 @@ describe('Session Headers Configuration Integration', () => {
     expect(sessionDefaultHeaders).toEqual({
       'x-request-id': '1234567890',
       'x-user-context': 'user-session',
-      'x-source': 'openai',
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'openai',
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
   });
@@ -352,10 +367,10 @@ describe('Session Headers Configuration Integration', () => {
     // @ts-expect-error: access private config for test
     const mockHeaders = sessionMock.config.defaultHeaders!;
 
-    expect(openAIHeaders['x-source']).toBe('openai');
+    expect(openAIHeaders['x-framework']).toBe('openai');
     expect(openAIHeaders['x-session']).toBe('openai-session');
 
-    expect(mockHeaders['x-source']).toBe('MockProvider');
+    expect(mockHeaders['x-framework']).toBe('MockProvider');
     expect(mockHeaders['x-session']).toBe('mock-session');
   });
 
@@ -375,8 +390,9 @@ describe('Session Headers Configuration Integration', () => {
     const sessionHeaders = session.config.defaultHeaders;
 
     expect(sessionHeaders).toEqual({
-      'x-source': 'openai',
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'openai',
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
   });
@@ -409,8 +425,9 @@ describe('Session Headers Configuration Integration', () => {
     expect(sessionHeaders).toEqual({
       'x-session-header': 'session-value',
       'x-shared-header': 'session-shared-value', // session value takes precedence
-      'x-source': 'openai', // provider-specific header
-      'x-runtime': 'composio-v3-ts-sdk',
+      'x-framework': 'openai', // provider-specific header
+      'x-source': 'TYPESCRIPT_SDK',
+      'x-runtime': 'NODEJS',
       'x-sdk-version': version,
     });
   });

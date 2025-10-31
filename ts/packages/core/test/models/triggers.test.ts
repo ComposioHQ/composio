@@ -230,7 +230,7 @@ describe('Triggers', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(triggers).toBeInstanceOf(Triggers);
-      expect(telemetry.instrument).toHaveBeenCalledWith(triggers);
+      expect(telemetry.instrument).toHaveBeenCalledWith(triggers, 'Triggers');
     });
 
     it('should store the client reference', () => {
@@ -830,7 +830,7 @@ describe('Triggers', () => {
 
   describe('telemetry integration', () => {
     it('should instrument the class for telemetry', () => {
-      expect(telemetry.instrument).toHaveBeenCalledWith(triggers);
+      expect(telemetry.instrument).toHaveBeenCalledWith(triggers, 'Triggers');
     });
   });
 
