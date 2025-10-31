@@ -29,9 +29,6 @@ typography:
     - path: assets/IBMPlexMono-Light.ttf
       weight: '400'
 navbar-links:
-- type: primary
-  text: V1 Docs
-  url: https://v1.docs.composio.dev
 - type: filled
   text: LOG IN
   url: https://platform.composio.dev/auth
@@ -111,7 +108,7 @@ navigation:
       path: pages/dist/get-started/providers.mdx
       slug: providers
   - section: Tools
-    icon: tools
+    icon: wrench
     skip-slug: true
     contents:
     - page: Authenticating Tools
@@ -139,7 +136,7 @@ navigation:
       path: pages/dist/tool-calling/toolkit-versioning.mdx
       slug: toolkit-versioning
   - section: Authentication
-    icon: lock
+    icon: key
     skip-slug: true
     contents:
     - page: Custom Auth Configs
@@ -162,7 +159,7 @@ navigation:
       path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
   - section: MCP
-    icon: server
+    icon: database
     skip-slug: true
     contents:
     - page: Quickstart
@@ -178,7 +175,7 @@ navigation:
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api
   - section: Tool Router (Beta)
-    icon: tools
+    icon: flask
     skip-slug: true
     contents:
     - page: Quick Start
@@ -188,8 +185,11 @@ navigation:
     icon: book
     skip-slug: true
     contents:
+    - page: CLI
+      path: pages/dist/resources/cli.mdx
+      slug: cli
     - page: Debugging Info
-      path: pages/dist/debugging-info.mdx
+      path: pages/dist/resources/debugging-info.mdx
       slug: resources/debugging-info
     - section: Migration Guides
       slug: migration-guide
@@ -207,28 +207,31 @@ navigation:
       slug: troubleshooting
       contents:
       - page: Overview
-        path: pages/dist/troubleshooting/overview.mdx
+        path: pages/dist/resources/troubleshooting/overview.mdx
         slug: overview
       - page: API
-        path: pages/dist/troubleshooting/api.mdx
+        path: pages/dist/resources/troubleshooting/api.mdx
         slug: api
       - page: Authentication
-        path: pages/dist/troubleshooting/authentication.mdx
+        path: pages/dist/resources/troubleshooting/authentication.mdx
         slug: authentication
+      - page: CLI
+        path: pages/dist/resources/troubleshooting/cli.mdx
+        slug: cli
       - page: Dashboard
-        path: pages/dist/troubleshooting/dashboard.mdx
+        path: pages/dist/resources/troubleshooting/dashboard.mdx
         slug: dashboard
       - page: MCP
-        path: pages/dist/troubleshooting/mcp.mdx
+        path: pages/dist/resources/troubleshooting/mcp.mdx
         slug: mcp
       - page: SDKs
-        path: pages/dist/troubleshooting/sdks.mdx
+        path: pages/dist/resources/troubleshooting/sdks.mdx
         slug: sdks
       - page: Tools & Toolkits
-        path: pages/dist/troubleshooting/tools.mdx
+        path: pages/dist/resources/troubleshooting/tools.mdx
         slug: tools
       - page: Triggers
-        path: pages/dist/troubleshooting/triggers.mdx
+        path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
 - tab: examples
   layout:
