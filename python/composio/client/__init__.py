@@ -20,7 +20,7 @@ from composio_client import (
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Request, Timeout
 
-from composio import __version__
+from composio.__version__ import __version__
 from composio.utils.logging import WithLogger
 
 ComposioAPIError = APIError
