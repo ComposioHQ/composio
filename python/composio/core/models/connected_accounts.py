@@ -328,6 +328,7 @@ class ConnectedAccounts:
         self.list = self._client.connected_accounts.list
         self.delete = self._client.connected_accounts.delete
         self.update_status = self._client.connected_accounts.update_status
+        self.refresh = self._client.connected_accounts.refresh
         self.enable = functools.partial(
             self._client.connected_accounts.update_status,
             enabled=True,

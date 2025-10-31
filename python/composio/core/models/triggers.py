@@ -20,8 +20,10 @@ from composio.client import HttpClient
 from composio.client.types import trigger_instance_upsert_response
 from composio.core.models.base import Resource
 from composio.core.models.internal import Internal
+from composio.core.types import ToolkitVersionParam
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
+from composio.utils.pydantic import none_to_omit
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
 
@@ -629,16 +631,19 @@ class Triggers(Resource):
     disable: t.Callable
     """Disables a trigger given its id"""
 
-    def __init__(self, client: HttpClient):
+    def __init__(
+        self, client: HttpClient, toolkit_versions: t.Optional[ToolkitVersionParam] = None
+    ):
         """
         Initialize the triggers resource.
 
         :param client: The client to use for the triggers resource.
+        :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
         """
         self._client = client
+        self._toolkit_versions = toolkit_versions
         self.list_enum = self._client.triggers_types.retrieve_enum
         self.get_type = self._client.triggers_types.retrieve
-        self.list = self._client.triggers_types.list
         self.delete = self._client.trigger_instances.manage.delete
         self.enable = functools.partial(
             self._client.trigger_instances.manage.update,
@@ -679,6 +684,28 @@ class Triggers(Resource):
             query_show_disabled_1=show_disabled,
             limit=limit if limit is not None else omit,
             page=page if page is not None else omit,
+        )
+
+    def list(
+        self,
+        *,
+        cursor: t.Optional[str] = None,
+        limit: t.Optional[int] = None,
+        toolkits: t.Optional[list[str]] = None,
+    ):
+        """
+        List all the trigger types.
+
+        :param cursor: The cursor for pagination
+        :param limit: The maximum number of trigger types to return
+        :param toolkits: Filter by toolkit slugs
+        :return: The list of trigger types
+        """
+        return self._client.triggers_types.list(
+            cursor=none_to_omit(cursor),
+            limit=none_to_omit(limit),
+            toolkit_slugs=none_to_omit(toolkits),
+            toolkit_versions=none_to_omit(self._toolkit_versions),
         )
 
     @t.overload
