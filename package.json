@@ -60,6 +60,9 @@
     ],
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
+    ],
+    "python/**/*.py": [
+      "ruff check --fix --config python/config/ruff.toml"
     ]
   }
 }
