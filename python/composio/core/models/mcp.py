@@ -126,11 +126,11 @@ class MCP(Resource):
             ...     toolkits=[
             ...         {
             ...             'toolkit': 'github',
-            ...             'auth_config': 'ac_xyz',
+            ...             'auth_config_id': 'ac_xyz',
             ...         },
             ...         {
             ...             'toolkit': 'slack',
-            ...             'auth_config': 'ac_abc',
+            ...             'auth_config_id': 'ac_abc',
             ...         },
             ...     ],
             ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS', 'SLACK_SEND_MESSAGE'],
@@ -323,8 +323,8 @@ class MCP(Resource):
             >>> server_with_auth = composio.experimental.mcp.update(
             ...     'mcp_12345',
             ...     toolkits=[
-            ...         {'toolkit': 'github', 'auth_config': 'auth_abc123'},
-            ...         {'toolkit': 'slack', 'auth_config': 'auth_def456'}
+            ...         {'toolkit': 'github', 'auth_config_id': 'auth_abc123'},
+            ...         {'toolkit': 'slack', 'auth_config_id': 'auth_def456'}
             ...     ],
             ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
             ...     manually_manage_connections=False
