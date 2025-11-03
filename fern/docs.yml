@@ -50,11 +50,11 @@ colors:
     light: '#F7F4F0'
     dark: '#0F0602'
   sidebar-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
+    light: '#F7F4F0'
+    dark: '#0F0602'
   header-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
+    light: '#F7F4F0'
+    dark: '#0F0602'
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}

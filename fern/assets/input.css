@@ -9,6 +9,7 @@
   --space-xl: 40px;
   --page-padding-inline: var(--space-lg);
   --section-gap: var(--space-xl);
+  --surface-background: #F7F4F0;
   --sidebar-border-color: #d9d3c2;
   --simple-card-bg-color: #f5f4f2;
   --divider-border-color: #bdbdbd;
@@ -22,19 +23,25 @@
 }
 
 .dark {
+  --surface-background: #0F0602;
   --sidebar-border-color: #2c1b13;
   --simple-card-bg-color: #1a1a1a;
   --divider-border-color: #1a1a1a;
 }
 
 /* Sidebar layout alignment */
-.fern-theme-default.fern-container .fern-sidebar-container {
-  border-right: 1px solid var(--sidebar-border-color);
-  background-color: #F3EFEB;
+.fern-theme-default.fern-container {
+  background-color: var(--surface-background);
 }
 
-.dark .fern-theme-default.fern-container .fern-sidebar-container {
-  background-color: #160F0C;
+.fern-theme-default.fern-container .fern-sidebar-container {
+  border-right: 1px solid var(--sidebar-border-color);
+  background-color: var(--surface-background);
+}
+
+.fern-theme-default.fern-container .fern-header,
+.fern-theme-default.fern-container .fern-header-tabs {
+  background-color: var(--surface-background);
 }
 
 .fern-changelog>main {
