@@ -1,5 +1,12 @@
 # @composio/openai-agents
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [f88ab99]
+  - @composio/core@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes

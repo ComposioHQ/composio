@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.3
+
+### Patch Changes
+
+- f88ab99: Fix: SDK telemetry methods and request headers
+
 ## 0.2.2
 
 ### Patch Changes
