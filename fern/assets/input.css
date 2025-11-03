@@ -10,6 +10,7 @@
   --page-padding-inline: var(--space-lg);
   --section-gap: var(--space-xl);
   --surface-background: #F7F4F0;
+  --accent-primary: #FF782F;
   --sidebar-border-color: #d9d3c2;
   --simple-card-bg-color: #f5f4f2;
   --divider-border-color: #bdbdbd;
@@ -24,6 +25,7 @@
 
 .dark {
   --surface-background: #0F0602;
+  --accent-primary: #FF9233;
   --sidebar-border-color: #2c1b13;
   --simple-card-bg-color: #1a1a1a;
   --divider-border-color: #1a1a1a;
@@ -34,13 +36,23 @@
   background-color: var(--surface-background);
 }
 
-.fern-theme-default.fern-container .fern-sidebar-container {
-  border-right: 1px solid var(--sidebar-border-color);
+.fern-theme-default.fern-container .fern-header {
   background-color: var(--surface-background);
+  border-bottom: 1px solid var(--divider-border-color);
+  padding: 0 var(--page-padding-inline);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
 }
 
-.fern-theme-default.fern-container .fern-header,
 .fern-theme-default.fern-container .fern-header-tabs {
+  background-color: var(--surface-background);
+  border-bottom: 1px solid var(--divider-border-color);
+  padding: 0 var(--page-padding-inline);
+}
+
+.fern-theme-default.fern-container .fern-sidebar-container {
+  border-right: 1px solid var(--sidebar-border-color);
   background-color: var(--surface-background);
 }
 
@@ -706,4 +718,36 @@ th {
 
 :is(.dark) .simple-card-container {
     --divider-border-color: #2c2c2c;
+}
+
+.fern-header .fern-button.minimal {
+  font-weight: 500 !important;
+}
+
+.fern-header .fern-button.minimal:hover,
+.fern-header .fern-button.minimal:focus-visible {
+  background-color: rgba(30, 27, 22, 0.08);
+}
+
+.dark .fern-header .fern-button.minimal:hover,
+.dark .fern-header .fern-button.minimal:focus-visible {
+  background-color: rgba(247, 244, 240, 0.08);
+}
+
+.fern-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.fern-header .fern-button.minimal {
+  color: var(--accent-primary) !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 120, 47, 0.4);
+}
+
+.dark .fern-header .fern-button.minimal[href*="platform.composio.dev"] {
+  color: var(--accent-primary) !important;
 }

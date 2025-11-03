@@ -29,22 +29,26 @@ typography:
     - path: assets/IBMPlexMono-Light.ttf
       weight: '400'
 navbar-links:
-- type: filled
-  text: LOG IN
+- type: minimal
+  text: STATUS
+  url: https://status.composio.dev/
+- type: outlined
+  text: DASHBOARD
+  rightIcon: fa-light fa-arrow-up-right
   url: https://platform.composio.dev/auth
 layout:
   page-width: full
   content-width: 60rem
   tabs-placement: header
   searchbar-placement: header-tabs
-  header-height: 72px
+  header-height: 64px
   sidebar-width: 298px
 settings:
   hide-404-page: true
   http-snippets: true
 colors:
   accent-primary:
-    light: '#8A2900'
+    light: '#FF782F'
     dark: '#FF9233'
   background:
     light: '#F7F4F0'
