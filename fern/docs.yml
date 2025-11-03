@@ -34,9 +34,10 @@ navbar-links:
   url: https://platform.composio.dev/auth
 layout:
   page-width: full
+  content-width: 60rem
   tabs-placement: header
   searchbar-placement: header-tabs
-  header-height: 50px
+  header-height: 72px
   sidebar-width: 298px
 settings:
   hide-404-page: true
