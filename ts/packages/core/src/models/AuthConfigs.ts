@@ -7,7 +7,6 @@
  */
 import ComposioClient from '@composio/client';
 import {
-  AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,
   AuthConfigUpdateResponse,
   AuthConfigUpdateStatusResponse,
@@ -16,19 +15,15 @@ import {
   AuthConfigListParams,
   AuthConfigListParamsSchema,
   AuthConfigListResponse,
-  AuthConfigListResponseSchema,
   AuthConfigRetrieveResponse,
-  AuthConfigRetrieveResponseSchema,
   AuthConfigUpdateParams,
   AuthConfigUpdateParamsSchema,
   CreateAuthConfigParams,
   CreateAuthConfigParamsSchema,
   CreateAuthConfigResponse,
-  CreateAuthConfigResponseSchema,
 } from '../types/authConfigs.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
-import logger from '../utils/logger';
 import {
   transformAuthConfigListResponse,
   transformAuthConfigRetrieveResponse,
@@ -45,7 +40,7 @@ export class AuthConfigs {
 
   constructor(client: ComposioClient) {
     this.client = client;
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'AuthConfigs');
   }
 
   /**

@@ -101,7 +101,7 @@ class Composio(t.Generic[TProvider], WithLogger):
             toolkit_versions=toolkit_versions,
         )
         self.toolkits = Toolkits(client=self._client)
-        self.triggers = Triggers(client=self._client)
+        self.triggers = Triggers(client=self._client, toolkit_versions=toolkit_versions)
         self.auth_configs = AuthConfigs(client=self._client)
         self.connected_accounts = ConnectedAccounts(client=self._client)
         self.mcp = MCP(client=self._client)

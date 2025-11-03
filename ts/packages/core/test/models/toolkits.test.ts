@@ -101,7 +101,7 @@ describe('Toolkits', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(toolkits).toBeInstanceOf(Toolkits);
-      expect(telemetry.instrument).toHaveBeenCalledWith(toolkits);
+      expect(telemetry.instrument).toHaveBeenCalledWith(toolkits, 'Toolkits');
     });
 
     it('should store the client reference', () => {

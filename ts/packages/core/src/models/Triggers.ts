@@ -48,7 +48,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     this.client = client;
     this.pusherService = new PusherService(client);
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Triggers');
   }
 
   /**

@@ -42,6 +42,7 @@ class TestToolExecution:
                 toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
                 is_deprecated=False,
             ),
+            is_deprecated=False,
             no_auth=False,
             tags=[],
         )

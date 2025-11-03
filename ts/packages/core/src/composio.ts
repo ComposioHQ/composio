@@ -276,9 +276,12 @@ export class Composio<
       });
     }
     // instrument the composio instance
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Composio');
     // instrument the provider since we are not using the provider class directly
-    telemetry.instrument(this.provider);
+    telemetry.instrument(
+      this.provider,
+      this.provider.name ?? this.provider.constructor.name ?? 'unknown'
+    );
 
     // Check for the latest version of the Composio SDK from NPM.
     if (!this.config.disableVersionCheck) {

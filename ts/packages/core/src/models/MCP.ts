@@ -46,6 +46,7 @@ import {
 import { Toolkits } from './Toolkits';
 import { ToolkitAuthFieldsResponse } from '../types/toolkit.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
+import logger from '../utils/logger';
 
 /**
  * Extract the MCP response type from a provider.
@@ -73,7 +74,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
     this.client = client;
     this.provider = provider;
     this.toolkits = new Toolkits(client);
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'MCP');
   }
 
   /**
@@ -169,7 +170,6 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
       // If we reach here, server exists
       const tools = mcpServer.tools?.sort()!;
       const sortedCurrentTools = serverConfig.flatMap(config => config.allowedTools).sort();
-      console.log(tools, sortedCurrentTools, 'tools');
       if (tools?.length > 0 && !tools.every((tool, index) => tool === sortedCurrentTools[index])) {
         throw new ValidationError('MCP server with this name already exists with different tools', {
           meta: { serverName: name },
@@ -852,7 +852,7 @@ export class MCP<TProvider extends BaseComposioProvider<unknown, unknown, unknow
         limit: 10,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       throw new ValidationError('Failed to search MCP servers by name', {
         cause: error,
       });

@@ -86,7 +86,7 @@ export class Tools<
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
 
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Tools');
   }
 
   /**

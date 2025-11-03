@@ -48,7 +48,7 @@ export class MCP {
 
   constructor(client: ComposioClient) {
     this.client = client;
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'MCP');
   }
 
   /**
