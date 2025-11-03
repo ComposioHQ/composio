@@ -30,17 +30,17 @@ typography:
       weight: '400'
 navbar-links:
 - type: minimal
-  text: STATUS
+  text: Status
   url: https://status.composio.dev/
 - type: outlined
-  text: DASHBOARD
+  text: Dashboard
   rightIcon: fa-light fa-arrow-up-right
   url: https://platform.composio.dev/auth
 layout:
   page-width: full
   content-width: 60rem
   tabs-placement: header
-  searchbar-placement: header-tabs
+  searchbar-placement: header
   header-height: 64px
   sidebar-width: 298px
 settings:
