@@ -12,4 +12,6 @@ def handle_github_commit(data):
     print(f"New commit detected: {data}")
     # Add your custom logic here
 
+# listen for events on the trigger
+subscription.wait_forever()
 # Note: For production use, set up webhooks instead
