@@ -44,8 +44,8 @@ settings:
   http-snippets: true
 colors:
   accent-primary:
-    light: '#FF782F'
-    dark: '#FF782F'
+    light: '#8A2900'
+    dark: '#FF9233'
   background:
     light: '#F7F4F0'
     dark: '#0F0602'
@@ -111,7 +111,6 @@ navigation:
   - section: Tools
     icon: fa-light fa-wrench
     skip-slug: true
-    collapsed: true
     contents:
     - page: Authenticating Tools
       path: pages/dist/tool-calling/authenticating-tools.mdx
@@ -124,7 +123,6 @@ navigation:
       slug: executing-tools
     - section: Modify tool behavior
       slug: tools/modify
-      collapsed: true
       contents:
       - page: Modifying tool schemas
         path: pages/dist/tool-calling/schema-modifiers.mdx
@@ -144,7 +142,6 @@ navigation:
   - section: Authentication
     icon: fa-light fa-key
     skip-slug: true
-    collapsed: true
     contents:
     - page: Custom Auth Configs
       path: pages/dist/authentication/custom-auth-configs.mdx
@@ -161,7 +158,6 @@ navigation:
   - section: Triggers
     icon: fa-light fa-bolt
     skip-slug: true
-    collapsed: true
     contents:
     - page: Using Triggers
       path: pages/dist/triggers/using-triggers.mdx
@@ -169,7 +165,6 @@ navigation:
   - section: MCP
     icon: fa-light fa-database
     skip-slug: true
-    collapsed: true
     contents:
     - page: Quickstart
       path: pages/dist/mcp/quickstart.mdx
@@ -186,7 +181,6 @@ navigation:
   - section: Tool Router (Beta)
     icon: fa-light fa-flask
     skip-slug: true
-    collapsed: true
     contents:
     - page: Quick Start
       path: pages/dist/tool-router/quick-start.mdx
@@ -194,7 +188,6 @@ navigation:
   - section: Resources
     icon: fa-light fa-book
     skip-slug: true
-    collapsed: true
     contents:
     - page: CLI
       path: pages/dist/resources/cli.mdx
@@ -204,7 +197,6 @@ navigation:
       slug: resources/debugging-info
     - section: Migration Guides
       slug: migration-guide
-      collapsed: true
       contents:
         - page: Overview
           path: pages/dist/migration-guide/index.mdx
@@ -217,7 +209,6 @@ navigation:
           slug: toolkit-versioning
     - section: Troubleshooting
       slug: troubleshooting
-      collapsed: true
       contents:
       - page: Overview
         path: pages/dist/resources/troubleshooting/overview.mdx
@@ -251,7 +242,6 @@ navigation:
   - section: Getting Started
     icon: fa-light fa-rocket
     skip-slug: true
-    collapsed: true
     contents:
     - page: Basic FastAPI Server
       path: pages/dist/examples/fast-api.mdx
@@ -262,7 +252,6 @@ navigation:
   - section: Productivity & Automation
     icon: fa-light fa-bolt
     skip-slug: true
-    collapsed: true
     contents:
     - page: Gmail Labeller
       path: pages/dist/examples/utility_agents/gmail_labeler.mdx
@@ -276,7 +265,6 @@ navigation:
   - section: Full Stack Applications
     icon: fa-light fa-globe
     skip-slug: true
-    collapsed: true
     contents:
     - page: Full Stack Chat App
       path: pages/dist/examples/chat_applications/vercel_chat.mdx
@@ -284,7 +272,6 @@ navigation:
   - section: Behind the curtain
     icon: fa-light fa-person-booth
     skip-slug: true
-    collapsed: true
     contents:
     - page: Tool Generator
       path: pages/dist/examples/tool-generator/tool-generator.mdx
@@ -293,7 +280,6 @@ navigation:
   layout:
   - section: Supported Providers
     icon: fa-light fa-code
-    collapsed: true
     contents:
     - page: OpenAI Provider
       path: pages/dist/providers/openai.mdx
@@ -316,7 +302,6 @@ navigation:
   - section: Writing your own provider
     skip-slug: true
     icon: fa-light fa-code
-    collapsed: true
     contents:
     - page: TypeScript
       path: pages/dist/providers/ts-custom.mdx
@@ -328,7 +313,6 @@ navigation:
   layout:
   - section: Toolkits
     skip-slug: true
-    collapsed: true
     contents:
     - page: Introduction
       path: toolkits/src/introduction.mdx
@@ -338,7 +322,6 @@ navigation:
       slug: toolkits/premium-tools
   - section: Important
     skip-slug: true
-    collapsed: true
     contents:
     - page: Github
       slug: toolkits/github
@@ -351,14 +334,12 @@ navigation:
       path: toolkits/notion.mdx
   - section: Scheduling & Booking
     skip-slug: true
-    collapsed: true
     contents:
     - page: Google Calendar
       slug: toolkits/googlecalendar
       path: toolkits/googlecalendar.mdx
   - section: No Auth
     skip-slug: true
-    collapsed: true
     contents:
     - page: Composio
       slug: toolkits/composio
@@ -367,17 +348,14 @@ navigation:
   layout:
   - section: Python
     icon: fa-brands fa-python
-    collapsed: true
     contents:
     - page: Python SDK Reference
       path: pages/dist/sdk/python/sdk-reference.md
   - section: TypeScript
     icon: fa-brands fa-js
-    collapsed: true
     contents:
     - section: Core Classes
       slug: core-classes
-      collapsed: true
       contents:
       - page: Composio
         path: pages/dist/sdk/typescript/composio/classes/Composio.mdx
@@ -391,7 +369,6 @@ navigation:
         path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
     - section: Models
       slug: models
-      collapsed: true
       contents:
       - page: Tools
         path: pages/dist/sdk/typescript/models/Tools/classes/Tools.mdx
