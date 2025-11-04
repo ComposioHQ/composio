@@ -67,7 +67,7 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         tool_slugs: 'TOOL1,TOOL2',
-        limit: 9999,
+        limit: 999,
         toolkit_versions: 'latest',
       });
     });
@@ -735,7 +735,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           tool_slugs: 'TEST_TOOL',
-          limit: 9999,
+          limit: 999,
           toolkit_versions: 'latest',
         });
       });
@@ -804,7 +804,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           tool_slugs: 'GITHUB_CREATE_ISSUE,SLACK_SEND_MESSAGE',
-          limit: 9999,
+          limit: 999,
           toolkit_versions: {
             github: '20251201_01',
             slack: 'latest',
