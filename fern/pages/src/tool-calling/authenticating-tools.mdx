@@ -355,6 +355,42 @@ Composio also supports a wide range of other auth schemas:
   successfully creating connections.
 </Note>
 
+## Connection Statuses
+
+After creating a connection, it will have one of the following statuses that indicates its current state:
+
+| Status | Description |
+|--------|-------------|
+| **ACTIVE** | Connection is established and working. You can execute tools with this connection. |
+| **INACTIVE** | Connection is temporarily disabled. Re-enable it to use the connection again. |
+| **PENDING** | Connection is being processed. Wait for it to become active. |
+| **INITIATED** | Connection request has started but not yet completed. User may still need to complete authentication. |
+| **EXPIRED** | Connection credentials have expired. Re-authenticate to restore access. |
+| **FAILED** | Connection attempt failed. Check error details and try creating a new connection. |
+
+### Checking Connection Status
+
+You can check the status of a connected account programmatically:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/tool-calling/python/checking-connection-status.py"
+  title="Python"
+  startLine={5}
+  endLine={16}
+/>
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/checking-connection-status.ts"
+  title="Typescript"
+  startLine={5}
+  endLine={17}
+/>
+</CodeGroup>
+
+<Note>
+Only connections with **ACTIVE** status can be used to execute tools. If a connection is in any other state, you'll need to take appropriate action (re-authenticate, wait for processing, etc.) before using it.
+</Note>
+
 ## Next Step
 
 With authentication set up, you can now fetch and execute tools. See [Executing Tools](/docs/executing-tools) to get started.
