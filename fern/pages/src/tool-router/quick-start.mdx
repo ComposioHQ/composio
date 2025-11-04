@@ -64,6 +64,12 @@ This is what powers complex agentic products like [Rube](https://rube.app).
     </CodeGroup>
 
     This generates a secure MCP endpoint URL that your AI agent will use to access Tool Router.
+
+    <Tip icon="info">
+    **What are sessions?**
+
+    Sessions are designed for security. Each presigned URL contains user authentication credentials and should never be stored long-term or exposed to the client. Generate a new URL for each conversation.
+    </Tip>
   </Step>
 
   <Step title="Set up your agent">
@@ -139,12 +145,6 @@ These phases are orchestrated through a set of meta tools, which handle search, 
 
 Tool Router is under active development. The meta tools, their schemas, parameters, and behaviors are subject to change as we iterate and improve the functionality. We recommend not using these tools individually.
 </Warning>
-
-<Tip icon="info">
-**What are sessions?**
-
-Sessions are designed for security. Each presigned URL contains user authentication credentials and should never be stored long-term or exposed to the client. Generate a new URL for each conversation.
-</Tip>
 
 ## Works with any MCP client
 
