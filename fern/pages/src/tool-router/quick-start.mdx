@@ -132,6 +132,14 @@ Checks if the user has an active connection to the required toolkit. If not, cre
 **3. Execution**  
 Loads authenticated tools into context and executes them. Supports parallel execution across multiple tools for efficiency.
 
+These phases are orchestrated through a set of meta tools, which handle search, planning, connection management, execution, and remote workbench. 
+
+<Warning>
+**Experimental Feature**
+
+Tool Router is under active development. The meta tools, their schemas, parameters, and behaviors are subject to change as we iterate and improve the functionality. We recommend not using these tools individually.
+</Warning>
+
 <Tip icon="info">
 **What are sessions?**
 
@@ -173,49 +181,6 @@ Tool Router uses Streamable HTTP transport for MCP communication. Make sure your
 <Note>
 The necessary scaffolding will be integrated into existing provider abstractions before Tool Router is generally available.
 </Note>
-
-## Available meta tools
-
-The router exposes six meta tools through MCP. These tools orchestrate the complete workflow from discovery to execution:
-
-<AccordionGroup>
-  <Accordion title="COMPOSIO_SEARCH_TOOLS">
-    Discovers tools across 500+ integrated apps based on task description.
-
-    Call this first in any workflow. Returns toolkits and tools with slugs, descriptions, input schemas, connection status, and related tools. Includes memory of previous interactions to improve future searches.
-  </Accordion>
-
-  <Accordion title="COMPOSIO_CREATE_PLAN">
-    Generates step-by-step execution plans for any workflow.
-
-    Call after `COMPOSIO_SEARCH_TOOLS`. Outputs structured plans with workflow steps, complexity assessment, decision trees for conditional logic, failure handling strategies, and output format specifications.
-  </Accordion>
-
-  <Accordion title="COMPOSIO_MANAGE_CONNECTIONS">
-    Creates and manages connections to external apps.
-
-    Call when `COMPOSIO_SEARCH_TOOLS` finds no active connection. Supports OAuth (default and custom), API keys, bearer tokens, and basic auth. Returns OAuth redirect URLs when needed and handles connection refresh.
-  </Accordion>
-
-  <Accordion title="COMPOSIO_MULTI_EXECUTE_TOOL">
-    Executes up to 20 tools in parallel across different apps.
-
-    Primary execution tool for running discovered tools. Returns structured outputs with automatic error handling and retry logic.
-  </Accordion>
-
-  <Accordion title="COMPOSIO_REMOTE_WORKBENCH">
-    Persistent Python sandbox for processing large responses and bulk operations.
-
-    Use for processing remote file data or scripting bulk executions. Provides a Jupyter notebook environment with pre-loaded helpers (run_composio_tool, invoke_llm, web_search). State persists across executions with a 4-minute timeout.
-  </Accordion>
-
-  <Accordion title="COMPOSIO_REMOTE_BASH_TOOL">
-    Executes bash commands in a remote sandbox.
-
-    Use for processing large responses saved to remote storage and file system operations. Runs from /home/user with access to shell tools (jq, awk, sed, grep). Default timeout is 300 seconds.
-  </Accordion>
-</AccordionGroup>
-
 
 ## Customization
 
