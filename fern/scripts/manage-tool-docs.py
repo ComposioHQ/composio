@@ -29,20 +29,20 @@ def process_tool_docs(file_path: Path, action: str) -> None:
         content = f.read()
     
     if action == 'uncomment':
-        # First, uncomment any commented lines in the tools section
+        # First, uncomment any commented lines in the toolkits section
         lines = content.split('\n')
         new_lines = []
         in_tools_section = False
         
         for i, line in enumerate(lines):
-            # Check if we're entering the tools tab
-            if '- tab: tools' in line:
+            # Check if we're entering the toolkits tab
+            if '- tab: toolkits' in line:
                 in_tools_section = True
-            # Check if we're leaving the tools tab
+            # Check if we're leaving the toolkits tab
             elif in_tools_section and line.strip().startswith('- tab:'):
                 in_tools_section = False
             
-            # Uncomment lines in tools section
+            # Uncomment lines in toolkits section
             if in_tools_section and line.strip().startswith('#') and ('- page:' in line or 'path:' in line):
                 # Remove comment while preserving indentation
                 uncommented = line.replace('# ', '', 1) if '# ' in line else line.replace('#', '', 1)
@@ -60,30 +60,30 @@ def process_tool_docs(file_path: Path, action: str) -> None:
         print("Error: No navigation section found in docs.yml")
         return
     
-    # Find the tools tab
+    # Find the toolkits tab
     tools_tab = None
     for tab in data['navigation']:
-        if isinstance(tab, CommentedMap) and tab.get('tab') == 'tools':
+        if isinstance(tab, CommentedMap) and tab.get('tab') == 'toolkits':
             tools_tab = tab
             break
     
     if not tools_tab:
-        print("Error: No tools tab found in navigation")
+        print("Error: No toolkits tab found in navigation")
         return
     
-    # Find the tools section within the tools tab
+    # Find the toolkits section within the toolkits tab
     if 'layout' not in tools_tab:
-        print("Error: No layout found in tools tab")
+        print("Error: No layout found in toolkits tab")
         return
     
     tools_section = None
     for section in tools_tab['layout']:
-        if isinstance(section, CommentedMap) and section.get('section') == 'Tools':
+        if isinstance(section, CommentedMap) and section.get('section') == 'Toolkits':
             tools_section = section
             break
     
     if not tools_section or 'contents' not in tools_section:
-        print("Error: No contents found in Tools section")
+        print("Error: No contents found in Toolkits section")
         return
     
     if action == 'comment':
@@ -92,7 +92,7 @@ def process_tool_docs(file_path: Path, action: str) -> None:
         yaml.dump(data, stream)
         content = stream.getvalue()
         
-        # Now manually comment out tools after the 1st one (introduction)
+        # Now manually comment out toolkits after the 1st one (introduction)
         lines = content.split('\n')
         new_lines = []
         in_tools_section = False
@@ -102,8 +102,8 @@ def process_tool_docs(file_path: Path, action: str) -> None:
         while i < len(lines):
             line = lines[i]
             
-            # Check if we're entering the tools section
-            if '- section: Tools' in line and 'tools' in '\n'.join(lines[max(0, i-10):i]):
+            # Check if we're entering the toolkits section
+            if '- section: Toolkits' in line and 'toolkits' in '\n'.join(lines[max(0, i-10):i]):
                 in_tools_section = True
                 new_lines.append(line)
                 i += 1
