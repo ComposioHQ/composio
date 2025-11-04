@@ -252,6 +252,10 @@ export class Tools<
    * any registered custom tools. The response can be filtered and modified as needed.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
+   * When fetching tools by toolkits or search, if no limit is provided, the API defaults to
+   * returning 20 tools. To fetch all available tools, explicitly specify a limit value up to
+   * the maximum of 999.
+   *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
    * @param {GetRawComposioToolsOptions} [options] - Optional configuration for tool retrieval
    * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform tool schemas
@@ -270,10 +274,15 @@ export class Tools<
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
    * });
    *
-   * // Get tools from specific toolkits
+   * // Get tools from specific toolkits (defaults to 20 if limit not provided)
    * const githubTools = await composio.tools.getRawComposioTools({
+   *   toolkits: ['github']
+   * });
+   *
+   * // Get all tools (up to maximum of 999)
+   * const allTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
-   *   limit: 10
+   *   limit: 999
    * });
    *
    * // Get tools with schema transformation
@@ -291,7 +300,7 @@ export class Tools<
    *   }
    * });
    *
-   * // Search for tools
+   * // Search for tools (defaults to 20 if limit not provided)
    * const searchResults = await composio.tools.getRawComposioTools({
    *   search: 'user management'
    * });
@@ -336,7 +345,8 @@ export class Tools<
     // if tools are provided, set the limit to 9999 so that all tools are fetched
     let limit = 'limit' in queryParams.data ? queryParams.data.limit : undefined;
     if ('tools' in queryParams.data) {
-      limit = 9999;
+      // max limit enforced by the API
+      limit = 999;
     }
 
     const filters: ComposioToolListParams = {
@@ -485,6 +495,10 @@ export class Tools<
    * Get a list of tools from Composio based on filters.
    * This method fetches the tools from the Composio API and wraps them using the provider.
    *
+   * When fetching tools by toolkits or search, if no limit is provided, the API defaults to
+   * returning 20 tools. To fetch all available tools, explicitly specify a limit value up to
+   * the maximum of 999.
+   *
    * @param {string} userId - The user id to get the tools for
    * @param {ToolListParams} filters - The filters to apply when fetching tools
    * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
@@ -498,10 +512,15 @@ export class Tools<
    *   limit: 10
    * });
    *
-   * // Get tools with search
+   * // Get tools with search (defaults to 20 if limit not provided)
    * const searchTools = await composio.tools.get('default', {
-   *   search: 'user',
-   *   limit: 10
+   *   search: 'user'
+   * });
+   *
+   * // Get all tools (up to maximum of 999)
+   * const allTools = await composio.tools.get('default', {
+   *   toolkits: ['github'],
+   *   limit: 999
    * });
    *
    * // Get a specific tool by slug

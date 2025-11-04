@@ -8,6 +8,8 @@ The `Tools` class provides methods to list, retrieve, and execute tools from var
 
 Retrieves and wraps tools based on the provided filters. Tool versions are controlled at the Composio SDK initialization level through the `toolkitVersions` configuration.
 
+**Note:** When fetching tools by `toolkits` or `search`, if no `limit` is provided, the API defaults to returning 20 tools. To fetch all available tools, explicitly specify a `limit` value up to the maximum of 999.
+
 #### Overload 1: Get multiple tools with filters
 
 ```typescript
@@ -17,9 +19,15 @@ const githubTools = await composio.tools.get('default', {
   limit: 10
 });
 
-// Get tools with search
+// Get tools with search (defaults to 20 if limit not provided)
 const searchTools = await composio.tools.get('default', {
   search: 'user'
+});
+
+// Get all tools (up to maximum of 999)
+const allTools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 999
 });
 
 // Get tools with schema modifications
@@ -36,6 +44,7 @@ const customizedTools = await composio.tools.get('default', {
 **Parameters:**
 - `userId` (string): The user ID to get the tools for
 - `filters` (ToolListParams): Filters object to specify which tools to retrieve
+  - `limit` (number, optional): Limit on the number of tools to return. Defaults to 20 if not provided when using `toolkits` or `search` filters. Maximum value is 999.
 - `options` (ProviderOptions): Optional provider options including modifiers
 
 #### Overload 2: Get a specific tool by slug
@@ -141,6 +150,8 @@ const customTool = await composio.tools.createCustomTool({
 
 Lists all tools available in the Composio SDK including custom tools. This method provides direct access to tool data without provider-specific wrapping.
 
+**Note:** When fetching tools by `toolkits` or `search`, if no `limit` is provided, the API defaults to returning 20 tools. To fetch all available tools, explicitly specify a `limit` value up to the maximum of 999.
+
 ```typescript
 // Get tools from specific toolkits
 const githubTools = await composio.tools.getRawComposioTools({
@@ -153,10 +164,15 @@ const specificTools = await composio.tools.getRawComposioTools({
   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
 });
 
-// Get tools from specific toolkits
+// Get tools from specific toolkits (defaults to 20 if limit not provided)
 const githubTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github']
+});
+
+// Get all tools (up to maximum of 999)
+const allTools = await composio.tools.getRawComposioTools({
   toolkits: ['github'],
-  limit: 10
+  limit: 999
 });
 
 // Get tools with schema transformation
@@ -173,7 +189,7 @@ const customizedTools = await composio.tools.getRawComposioTools({
   }
 });
 
-// Search for tools
+// Search for tools (defaults to 20 if limit not provided)
 const searchResults = await composio.tools.getRawComposioTools({
   search: 'user management'
 });
@@ -182,6 +198,7 @@ const searchResults = await composio.tools.getRawComposioTools({
 **Parameters:**
 
 - `query` (ToolListParams): Query parameters to filter the tools (required)
+  - `limit` (number, optional): Limit on the number of tools to return. Defaults to 20 if not provided when using `toolkits` or `search` filters. Maximum value is 999.
 - `options` (GetRawComposioToolsOptions): Optional configuration for tool retrieval
   - `modifySchema` (TransformToolSchemaModifier): Function to transform tool schemas
 
@@ -252,7 +269,7 @@ type ToolsOnlyParams = {
 type ToolkitsOnlyParams = {
   tools?: never; // Cannot be used with toolkits
   toolkits: string[]; // List of toolkit slugs to filter by
-  limit?: number; // Limit the number of results
+  limit?: number; // Limit the number of results (defaults to 20, maximum 999)
   search?: never; // Cannot be used with important flag
   scopes?: string[]; // Optional list of required OAuth scopes
 };
@@ -260,7 +277,7 @@ type ToolkitsOnlyParams = {
 type ToolkitSearchOnlyParams = {
   tools?: never; // Cannot be used with search
   toolkits?: string[]; // Optional list of toolkit slugs to filter by
-  limit?: number; // Limit the number of results
+  limit?: number; // Limit the number of results (defaults to 20, maximum 999)
   search: string; // Search term
   scopes?: string[]; // Optional list of required OAuth scopes
 };
@@ -306,6 +323,7 @@ const specificTools = await composio.tools.get('default', {
 });
 
 // Search for tools across all or specific toolkits
+// Note: If limit is not provided, defaults to 20. Maximum limit is 999.
 const searchResults = await composio.tools.get('default', {
   search: 'repository',
   toolkits: ['github'], // optional

@@ -117,6 +117,14 @@ class Tools(Resource, t.Generic[TProvider]):
     ) -> list[Tool]:
         """
         Get a list of tool schemas based on the provided filters.
+
+        :param tools: Optional list of tool slugs to retrieve.
+        :param search: Optional search term to filter tools by.
+        :param toolkits: Optional list of toolkit slugs to filter tools by.
+        :param scopes: Optional list of scopes to filter tools by.
+        :param limit: Optional limit on the number of tools to return. Defaults to 20 if not provided when using toolkits or search filters. Maximum value is 999.
+        :return: List of tool schemas matching the provided filters.
+        :raises InvalidParams: If none of `tools`, `search`, or `toolkits` are provided.
         """
         if tools is None and search is None and toolkits is None:
             raise InvalidParams(
@@ -235,7 +243,16 @@ class Tools(Resource, t.Generic[TProvider]):
         limit: t.Optional[int] = None,
         modifiers: t.Optional[Modifiers] = None,
     ):
-        """Get tools by toolkit slugs (Only important tools are returned)"""
+        """
+        Get tools by toolkit slugs (Only important tools are returned).
+
+        :param user_id: The user ID to get the tools for.
+        :param toolkits: List of toolkit slugs to filter tools by.
+        :param scopes: Optional list of scopes to filter tools by.
+        :param limit: Optional limit on the number of tools to return. Defaults to 20 if not provided. Maximum value is 999.
+        :param modifiers: Optional modifiers to apply to the tools.
+        :return: Wrapped tools collection formatted according to the provider.
+        """
 
     @t.overload
     def get(
@@ -245,7 +262,17 @@ class Tools(Resource, t.Generic[TProvider]):
         search: str,
         modifiers: t.Optional[Modifiers] = None,
     ):
-        """Search tool by search term"""
+        """
+        Search tool by search term.
+
+        Note: When using search without specifying a limit, the API defaults to returning 20 tools.
+        To fetch all matching tools, use the overload that accepts a limit parameter (maximum 999).
+
+        :param user_id: The user ID to get the tools for.
+        :param search: Search term to filter tools by.
+        :param modifiers: Optional modifiers to apply to the tools.
+        :return: Wrapped tools collection formatted according to the provider.
+        """
 
     @t.overload
     def get(
@@ -257,7 +284,16 @@ class Tools(Resource, t.Generic[TProvider]):
         limit: t.Optional[int] = None,
         modifiers: t.Optional[Modifiers] = None,
     ):
-        """Get tool by search term and/or toolkit slugs and search term"""
+        """
+        Get tool by search term and/or toolkit slugs and search term.
+
+        :param user_id: The user ID to get the tools for.
+        :param toolkits: List of toolkit slugs to filter tools by.
+        :param search: Optional search term to filter tools by.
+        :param limit: Optional limit on the number of tools to return. Defaults to 20 if not provided. Maximum value is 999.
+        :param modifiers: Optional modifiers to apply to the tools.
+        :return: Wrapped tools collection formatted according to the provider.
+        """
 
     def get(
         self,
@@ -271,7 +307,23 @@ class Tools(Resource, t.Generic[TProvider]):
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
     ):
-        """Get a tool or list of tools based on the provided arguments."""
+        """
+        Get a tool or list of tools based on the provided arguments.
+
+        When fetching tools by toolkits or search, if no limit is provided, the API
+        defaults to returning 20 tools. To fetch all available tools, explicitly
+        specify a limit value up to the maximum of 999.
+
+        :param user_id: The user ID to get the tools for.
+        :param slug: Optional slug of a specific tool to retrieve.
+        :param tools: Optional list of tool slugs to retrieve.
+        :param search: Optional search term to filter tools by.
+        :param toolkits: Optional list of toolkit slugs to filter tools by.
+        :param scopes: Optional list of scopes to filter tools by.
+        :param modifiers: Optional modifiers to apply to the tools.
+        :param limit: Optional limit on the number of tools to return. Defaults to 20 if not provided when using toolkits or search filters. Maximum value is 999.
+        :return: Wrapped tools collection formatted according to the provider.
+        """
         if slug is not None:
             return self._get(user_id=user_id, tools=[slug], modifiers=modifiers)
         return self._get(
