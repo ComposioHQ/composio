@@ -3,15 +3,41 @@
 
 import fs from 'fs';
 import path from 'path';
-import {
-  FERN_DIR,
-  LLMS_TXT_PATH,
-  loadDocsConfig,
-  ensureOutputDir,
-  type DocsConfig,
-  type ContentItem,
-  type LayoutItem,
-} from './utils';
+import yaml from 'yaml';
+
+const FERN_DIR = path.join(import.meta.dir, '..');
+const DOCS_YML_PATH = path.join(FERN_DIR, 'docs.yml');
+const LLMS_TXT_PATH = path.join(FERN_DIR, 'llms-txt-worker', 'public', 'llms.txt');
+
+interface DocsConfig {
+  title: string;
+  navigation: Array<{
+    tab: string;
+    layout?: LayoutItem[];
+  }>;
+  tabs?: {
+    [key: string]: {
+      'display-name': string;
+      'skip-slug'?: boolean;
+    };
+  };
+}
+
+interface LayoutItem {
+  section?: string;
+  contents?: ContentItem[];
+  page?: string;
+  path?: string;
+  slug?: string;
+}
+
+interface ContentItem {
+  page?: string;
+  path?: string;
+  slug?: string;
+  section?: string;
+  contents?: ContentItem[];
+}
 
 interface LlmsEntry {
   title: string;
@@ -209,14 +235,14 @@ async function main(): Promise<void> {
   console.log('Building llms.txt...');
 
   try {
-    const config = loadDocsConfig();
+    const docsYmlContent = fs.readFileSync(DOCS_YML_PATH, 'utf8');
+    const config = yaml.parse(docsYmlContent) as DocsConfig;
     const sections = processNavigation(config);
     
     const totalEntries = sections.reduce((total, [_, entries]) => total + entries.length, 0);
     console.log(`Found ${totalEntries} pages across ${sections.length} sections`);
 
     const llmsTxtContent = generateLlmsTxt(sections);
-    ensureOutputDir(LLMS_TXT_PATH);
     fs.writeFileSync(LLMS_TXT_PATH, llmsTxtContent);
     
     console.log(`Generated ${LLMS_TXT_PATH}`);

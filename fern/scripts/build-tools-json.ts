@@ -3,7 +3,16 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TOOLKITS_DIR, TOOLS_JSON_PATH, ensureOutputDir } from './utils';
+
+const FERN_DIR = path.join(import.meta.dir, '..');
+const TOOLKITS_DIR = path.join(FERN_DIR, 'toolkits');
+const TOOLS_JSON_PATH = path.join(
+  FERN_DIR,
+  'llms-txt-worker',
+  'public',
+  'robots-only',
+  'tools.json'
+);
 
 interface ToolkitInfo {
   slug: string;
@@ -124,7 +133,6 @@ async function main(): Promise<void> {
     console.log(`  - Total tools: ${totalTools}`);
 
     // Write tools.json
-    ensureOutputDir(TOOLS_JSON_PATH);
     const toolsJsonContent = JSON.stringify(toolsData, null, 2);
     fs.writeFileSync(TOOLS_JSON_PATH, toolsJsonContent);
     
