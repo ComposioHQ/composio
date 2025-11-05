@@ -31,7 +31,7 @@ import {
   transformTriggerTypeListResponse,
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
-import { ToolkitVersionParam } from '../types/tool.types';
+import { ToolkitVersion, ToolkitVersionParam } from '../types/tool.types';
 import { ComposioConfig } from '../composio';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 /**
@@ -283,14 +283,22 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   }
 
   /**
-   * Retrieve a trigger type by its slug
+   * Retrieve a trigger type by its slug for the provided version of the app
+   * If no version of the toolkit is set, this will default to latest version or the gloabl toolkit versions provided
    *
    * @param {string} slug - The slug of the trigger type
-   * @param {RequestOptions} options - request options
+   * @param {ToolkitVersion} options.version - The version of the toolkit to retrieve the trigger type for. If provided this will override the global toolkit version
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
-  async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    const result = await this.client.triggersTypes.retrieve(slug);
+  async getType(
+    slug: string,
+    options?: { version?: ToolkitVersion }
+  ): Promise<TriggersTypeRetrieveResponse> {
+    const result = await this.client.triggersTypes.retrieve(slug, {
+      version: options?.version,
+      // if the version is provided override the global version
+      toolkit_versions: options?.version ? undefined : this.toolkitVersions,
+    });
     return transformTriggerTypeRetrieveResponse(result);
   }
 
