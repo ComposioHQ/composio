@@ -9,6 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 
+from composio_client.types import TriggersTypeRetrieveResponse
 import typing_extensions as te
 from composio_client import omit
 from pysher import Pusher
@@ -645,7 +646,6 @@ class Triggers(Resource):
         self._client = client
         self._toolkit_versions = toolkit_versions
         self.list_enum = self._client.triggers_types.retrieve_enum
-        self.get_type = self._client.triggers_types.retrieve
         self.delete = self._client.trigger_instances.manage.delete
         self.enable = functools.partial(
             self._client.trigger_instances.manage.update,
@@ -654,6 +654,18 @@ class Triggers(Resource):
         self.disable = functools.partial(
             self._client.trigger_instances.manage.update,
             status="disable",
+        )
+
+    def get_type(self, slug: str) -> TriggersTypeRetrieveResponse:
+        """
+        Get a trigger type by its slug
+        Uses the global toolkit version provided when initializing composio instance to fetch trigger for specific toolkit version
+
+        :param slug: The slug of the trigger type
+        :return: The trigger type
+        """
+        return self._client.triggers_types.retrieve(
+            slug=slug, toolkit_versions=self._toolkit_versions
         )
 
     def list_active(
