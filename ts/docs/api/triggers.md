@@ -200,17 +200,74 @@ await composio.triggers.unsubscribe();
 
 ### Manage Trigger Types
 
-List and retrieve available trigger types:
+#### List Trigger Types
+
+List all available trigger types with optional filtering:
 
 ```typescript
-// List all trigger types
 const triggerTypes = await composio.triggers.listTypes({
-  toolkits: ['github']
+  toolkits: ['github'],
+  cursor: 'cursor-string',
+  limit: 10
 });
+```
 
-// Get details of a specific trigger type
-const triggerType = await composio.triggers.getType('trigger-slug');
+**Parameters:**
 
-// Get enum of all available triggers
+- `toolkits` (string[], optional): Filter trigger types by toolkit slugs
+- `cursor` (string, optional): Pagination cursor for fetching the next page
+- `limit` (number, optional): Maximum number of trigger types to return
+
+**Returns:** Promise<TriggersTypeListResponse> - A paginated list of trigger types
+
+#### Get Trigger Type
+
+Retrieve details of a specific trigger type by its slug. You can optionally specify a toolkit version to retrieve the trigger type for a specific version of the app.
+
+```typescript
+// Get trigger type with the default or globally configured toolkit version
+const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
+
+// Get trigger type for a specific toolkit version
+const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE', {
+  version: '12082025_00'
+});
+```
+
+**Parameters:**
+
+- `slug` (string, required): The slug of the trigger type to retrieve
+- `options` (object, optional): Additional options
+  - `version` (ToolkitVersion, optional): The version of the toolkit to retrieve the trigger type for (e.g., `'12082025_00'`). If provided, this will override the global toolkit version configured in the Composio client. See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for more details.
+
+**Returns:** Promise<TriggersTypeRetrieveResponse> - The trigger type object containing details such as:
+
+```typescript
+{
+  slug: string;
+  name: string;
+  description: string;
+  toolkit: {
+    slug: string;
+    name: string;
+  };
+  // ... other trigger type properties
+}
+```
+
+**Behavior:**
+
+- If no `version` is specified, the method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
+- If a `version` is provided in the options, it overrides the global toolkit version for this specific request
+- This is useful when you need to work with triggers from a specific version of a toolkit
+- Version format follows the pattern `DDMMYYYY_NN` (e.g., `12082025_00` for version 00 released on August 12, 2025)
+
+#### Get Trigger Enums
+
+Fetch the list of all available trigger enums:
+
+```typescript
 const triggerEnum = await composio.triggers.listEnum();
 ```
+
+This method returns an enumeration of all available trigger types and is primarily used by the CLI.

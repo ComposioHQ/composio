@@ -306,7 +306,6 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Fetches the list of all the available trigger enums
    *
    * This method is used by the CLI where filters are not required.
-   * @param options
    * @returns
    */
   async listEnum(): Promise<TriggersTypeRetrieveEnumResponse> {

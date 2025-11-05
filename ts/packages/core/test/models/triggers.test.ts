@@ -309,7 +309,10 @@ describe('Triggers', () => {
 
       const result = await triggers.create(userId, slug, body);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug);
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: undefined,
+        toolkit_versions: 'latest',
+      });
       expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith({
         user_ids: [userId],
         toolkit_slugs: [mockTriggerType.toolkit.slug],
@@ -494,13 +497,79 @@ describe('Triggers', () => {
   });
 
   describe('getType', () => {
-    it('should retrieve a trigger type by slug', async () => {
+    it('should retrieve a trigger type by slug with default global toolkit versions', async () => {
       const slug = 'github_webhook';
       mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug);
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: undefined,
+        toolkit_versions: 'latest', // Uses global default
+      });
+      expect(result).toEqual(mockTriggerType);
+    });
+
+    it('should retrieve a trigger type by slug with specific version', async () => {
+      const slug = 'github_webhook';
+      const version = '12082025_00';
+      mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
+
+      const result = await triggers.getType(slug, { version });
+
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: version,
+        toolkit_versions: undefined, // Overrides global version when version is provided
+      });
+      expect(result).toEqual(mockTriggerType);
+    });
+
+    it('should override global toolkit versions when version is provided', async () => {
+      // Create a new triggers instance with custom toolkit versions
+      const customTriggers = new Triggers(mockClient as unknown as ComposioClient, {
+        toolkitVersions: { github: '01012025_00' },
+      });
+      const slug = 'github_webhook';
+      const version = '12082025_00';
+      mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
+
+      const result = await customTriggers.getType(slug, { version });
+
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: version,
+        toolkit_versions: undefined, // Version parameter overrides global
+      });
+      expect(result).toEqual(mockTriggerType);
+    });
+
+    it('should use global toolkit versions when no version is provided', async () => {
+      // Create a new triggers instance with custom toolkit versions
+      const customToolkitVersions = { github: '01012025_00', slack: '15012025_01' };
+      const customTriggers = new Triggers(mockClient as unknown as ComposioClient, {
+        toolkitVersions: customToolkitVersions,
+      });
+      const slug = 'github_webhook';
+      mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
+
+      const result = await customTriggers.getType(slug);
+
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: undefined,
+        toolkit_versions: customToolkitVersions, // Uses configured global versions
+      });
+      expect(result).toEqual(mockTriggerType);
+    });
+
+    it('should handle version as "latest"', async () => {
+      const slug = 'github_webhook';
+      mockClient.triggersTypes.retrieve.mockResolvedValue(mockTriggerType);
+
+      const result = await triggers.getType(slug, { version: 'latest' });
+
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
+        version: 'latest',
+        toolkit_versions: undefined, // Overrides global version
+      });
       expect(result).toEqual(mockTriggerType);
     });
   });
