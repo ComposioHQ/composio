@@ -3,7 +3,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TOOLKITS_DIR, TOOLS_JSON_PATH, ensureOutputDir } from './lib/docs-utils';
+import { TOOLKITS_DIR, TOOLS_JSON_PATH, ensureOutputDir } from './utils';
 
 interface ToolkitInfo {
   slug: string;

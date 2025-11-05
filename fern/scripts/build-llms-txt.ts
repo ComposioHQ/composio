@@ -4,14 +4,14 @@
 import fs from 'fs';
 import path from 'path';
 import {
-  LLMS_TXT_PATH,
   FERN_DIR,
+  LLMS_TXT_PATH,
   loadDocsConfig,
   ensureOutputDir,
   type DocsConfig,
   type ContentItem,
   type LayoutItem,
-} from './lib/docs-utils';
+} from './utils';
 
 interface LlmsEntry {
   title: string;
