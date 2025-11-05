@@ -176,7 +176,7 @@ jobs:
     runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
     permissions: read-all
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
     steps:
       - name: Checkout repository
