@@ -110,11 +110,10 @@ const composio = new Composio({
 #### Version Behavior
 
 - **Tools & Triggers:** The toolkit version configuration applies to both tools and triggers
-- **Override Support:** You can override the global version for specific operations:
-  - When fetching tools: Use the version configured at initialization
-  - When fetching triggers: Call `triggers.getType(slug, { version: '12082025_00' })` to override
-  - When executing tools: Pass a `version` parameter in the execute call
+- **Override Support:** Tools can override the global version for specific operations:
+  - When executing tools: Pass a `version` parameter in the execute call to override the configured version
 - **Defaults:** If no version is specified, the SDK defaults to `'latest'`
+- **Triggers:** Trigger types always use the global toolkit version configured at initialization. To use a specific version for triggers, set it in the `toolkitVersions` configuration when creating the Composio instance.
 
 #### Best Practices
 

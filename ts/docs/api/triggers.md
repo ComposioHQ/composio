@@ -222,23 +222,16 @@ const triggerTypes = await composio.triggers.listTypes({
 
 #### Get Trigger Type
 
-Retrieve details of a specific trigger type by its slug. You can optionally specify a toolkit version to retrieve the trigger type for a specific version of the app.
+Retrieve details of a specific trigger type by its slug. The trigger type version is determined by the global `toolkitVersions` configuration set during Composio initialization.
 
 ```typescript
-// Get trigger type with the default or globally configured toolkit version
+// Get trigger type using the globally configured toolkit version
 const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
-
-// Get trigger type for a specific toolkit version
-const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE', {
-  version: '12082025_00'
-});
 ```
 
 **Parameters:**
 
 - `slug` (string, required): The slug of the trigger type to retrieve
-- `options` (object, optional): Additional options
-  - `version` (ToolkitVersion, optional): The version of the toolkit to retrieve the trigger type for (e.g., `'12082025_00'`). If provided, this will override the global toolkit version configured in the Composio client. See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for more details.
 
 **Returns:** Promise<TriggersTypeRetrieveResponse> - The trigger type object containing details such as:
 
@@ -257,10 +250,26 @@ const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE', {
 
 **Behavior:**
 
-- If no `version` is specified, the method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
-- If a `version` is provided in the options, it overrides the global toolkit version for this specific request
-- This is useful when you need to work with triggers from a specific version of a toolkit
-- Version format follows the pattern `DDMMYYYY_NN` (e.g., `12082025_00` for version 00 released on August 12, 2025)
+- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
+- To use a specific toolkit version, configure `toolkitVersions` when initializing the Composio instance
+- See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for details on setting toolkit versions
+
+**Example with Specific Toolkit Version:**
+
+```typescript
+// Configure toolkit versions at initialization
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: {
+    gmail: '12082025_00',
+    github: '10082025_01'
+  }
+});
+
+// Now getType will use the configured version for Gmail
+const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
+// This will fetch the trigger type using version '12082025_00' for Gmail
+```
 
 #### Get Trigger Enums
 
