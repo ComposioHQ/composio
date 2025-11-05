@@ -129,7 +129,7 @@ function processContentItems(
       entries.push(entry);
     }
 
-    if (item.section && item.contents) {
+    if (item.contents) {
       const nestedSlug = item.slug 
         ? (parentSlug ? `${parentSlug}/${item.slug}` : item.slug)
         : parentSlug;
@@ -139,7 +139,7 @@ function processContentItems(
         item.contents, 
         tabSlug, 
         nestedSlug, 
-        item.section
+        item.section ?? parentSection
       );
       entries.push(...nestedEntries);
     }
