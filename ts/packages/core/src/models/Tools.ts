@@ -108,7 +108,7 @@ export class Tools<
       inputParameters: tool.input_parameters,
       outputParameters: tool.output_parameters,
       availableVersions: tool.available_versions,
-      isDeprecated: tool.is_deprecated,
+      isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,
     });
   }
