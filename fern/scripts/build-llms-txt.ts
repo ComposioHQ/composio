@@ -18,7 +18,7 @@ const TOOLS_JSON_PATH = path.join(
   'tools.json'
 );
 const PAGES_DIR = path.join(FERN_DIR, 'pages');
-const TOOLS_DIR = path.join(FERN_DIR, 'tools');
+const TOOLKITS_DIR = path.join(FERN_DIR, 'toolkits');
 
 interface DocsConfig {
   title: string;
@@ -70,7 +70,7 @@ interface ToolsData {
 // Parse tool MDX files to extract toolkit information
 function parseToolMdx(toolMdxPath: string): ToolkitInfo | null {
   try {
-    const fullPath = path.join(TOOLS_DIR, toolMdxPath);
+    const fullPath = path.join(TOOLKITS_DIR, toolMdxPath);
     if (!fs.existsSync(fullPath)) {
       console.warn(`⚠️  Tool file not found: ${fullPath}`);
       return null;
@@ -224,10 +224,10 @@ function processContentItems(
 ): void {
   for (const item of items) {
     if (item.page && item.path) {
-      // Check if this is a tool page (in tools/ directory) with a SLUG
-      if (item.path.includes('tools/') && item.path.endsWith('.mdx')) {
+      // Check if this is a tool page (in toolkits/ directory) with a SLUG
+      if (item.path.includes('toolkits/') && item.path.endsWith('.mdx')) {
         // Parse tool MDX file and check if it has a SLUG (actual tool page)
-        const toolMdxFile = item.path.match(/tools\/(.+\.mdx)$/)?.[1];
+        const toolMdxFile = item.path.match(/toolkits\/(.+\.mdx)$/)?.[1];
         if (toolMdxFile) {
           const toolkitInfo = parseToolMdx(toolMdxFile);
           if (toolkitInfo) {
@@ -236,7 +236,7 @@ function processContentItems(
             toolsData[toolkitInfo.slug] = toolkitInfo;
             continue;
           }
-          // If no SLUG found, it's a documentation page in tools/ - include in main entries
+          // If no SLUG found, it's a documentation page in toolkits/ - include in main entries
         }
       }
 
@@ -414,10 +414,10 @@ function startWatchMode(): void {
     }
   });
 
-  // Watch MDX files in tools directory
-  const toolsWatcher = watch(TOOLS_DIR, { recursive: true }, async (eventType, filename) => {
+  // Watch MDX files in toolkits directory
+  const toolkitsWatcher = watch(TOOLKITS_DIR, { recursive: true }, async (eventType, filename) => {
     if (filename && (filename.endsWith('.mdx') || filename.endsWith('.md'))) {
-      console.log(`🔄 Tool doc changed: ${filename}, rebuilding...`);
+      console.log(`🔄 Toolkit doc changed: ${filename}, rebuilding...`);
       await buildLlmsTxt();
     }
   });
@@ -427,7 +427,7 @@ function startWatchMode(): void {
     console.log('\n👋 Stopping watchers...');
     docsWatcher.close();
     pagesWatcher.close();
-    toolsWatcher.close();
+    toolkitsWatcher.close();
     process.exit(0);
   });
 }

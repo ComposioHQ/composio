@@ -12,7 +12,7 @@ jobs:
       image: ghcr.io/composiohq/dev-base:latest
     permissions: write-all
     env:
-      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}
 
     steps:
       - name: Checkout repository
@@ -40,8 +40,18 @@ jobs:
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+        shell: bash
         run: |
-          URL=$(pnpm turbo run preview | grep -oP 'Published docs to \K.*(?= \()')
+          set -o pipefail
+          pnpm turbo run preview | tee preview.log
+
+          URL=$(grep -oP 'Published docs to \K.*(?= \()' preview.log | tail -n 1 || true)
+
+          if [ -z "$URL" ]; then
+            echo "::error::Failed to extract preview URL from preview.log"
+            exit 1
+          fi
+
           echo "Preview URL: $URL"
           echo "Preview your docs: $URL" > preview_url.txt
 
