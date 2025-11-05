@@ -40,6 +40,7 @@ jobs:
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+        shell: bash
         run: |
           set -o pipefail
           pnpm turbo run preview | tee preview.log
