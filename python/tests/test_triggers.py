@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch
+from composio_client import omit
 from composio.core.models.triggers import Triggers
 from composio import exceptions
 
@@ -90,10 +91,10 @@ class TestTriggers:
 
         result = triggers.get_type("GITHUB_COMMIT_EVENT")
 
-        mock_client.triggers_types.retrieve.assert_called_once_with(
-            slug="GITHUB_COMMIT_EVENT",
-            toolkit_versions=None,
-        )
+        # When toolkit_versions is None, it should be converted to omit
+        call_kwargs = mock_client.triggers_types.retrieve.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["toolkit_versions"] is omit
         assert result == mock_trigger_type
 
     def test_get_type_with_custom_versions(
@@ -222,10 +223,10 @@ class TestTriggers:
         )
 
         # Verify get_type was called to get toolkit
-        mock_client.triggers_types.retrieve.assert_called_once_with(
-            slug="GITHUB_COMMIT_EVENT",
-            toolkit_versions=None,
-        )
+        # Note: toolkit_versions=None gets converted to omit
+        call_kwargs = mock_client.triggers_types.retrieve.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["toolkit_versions"] is omit
 
         # Verify connected accounts were fetched
         mock_client.connected_accounts.list.assert_called_once_with(

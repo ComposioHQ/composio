@@ -665,7 +665,7 @@ class Triggers(Resource):
         :return: The trigger type
         """
         return self._client.triggers_types.retrieve(
-            slug=slug, toolkit_versions=self._toolkit_versions
+            slug=slug, toolkit_versions=none_to_omit(self._toolkit_versions)
         )
 
     def list_active(
