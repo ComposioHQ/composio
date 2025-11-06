@@ -1,0 +1,115 @@
+---
+title: Toolkit versioning migration
+subtitle: Migrate to the new toolkit versioning system
+image: "https://og.composio.dev/api/og?title=Toolkit%20versioning%20migration"
+keywords: "toolkit versioning, migration"
+hide-nav-links: false
+---
+
+Starting with Python SDK v0.9.0 and TypeScript SDK v0.2.0, manual tool execution requires explicit version specification. This is a breaking change from earlier versions where toolkit versioning was optional.
+
+## Breaking change
+
+Manual tool execution now requires explicit version specification. The `tools.execute()` method will fail without a version.
+
+### Before (will fail)
+
+<CodeGroup>
+```python Python
+# Raises ToolVersionRequiredError
+result = composio.tools.execute(
+    "GITHUB_CREATE_ISSUE",
+    {"user_id": "user-123", "arguments": {...}}
+)
+```
+
+```typescript TypeScript
+// Throws ComposioToolVersionRequiredError
+const result = await composio.tools.execute({
+    toolSlug: "GITHUB_CREATE_ISSUE",
+    userId: "user-123",
+    arguments: {...}
+});
+```
+</CodeGroup>
+
+### After (required)
+
+Choose one of three migration strategies:
+
+#### Option 1: Configure version at SDK level
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/versioning-sdk-init.py"
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/versioning-sdk-init.ts"
+  title="TypeScript"
+/>
+</CodeGroup>
+
+#### Option 2: Pass version with each execution
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/versioning-per-execution.py"
+  startLine={6}
+  endLine={15}
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/versioning-per-execution.ts"
+  startLine={6}
+  endLine={14}
+  title="TypeScript"
+/>
+</CodeGroup>
+
+#### Option 3: Use environment variables
+
+```bash
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
+```
+
+## Migration checklist
+
+1. **Audit your code**: Find all `tools.execute()` calls in your codebase
+2. **Choose a strategy**: Select one of the three options above based on your needs
+3. **Test thoroughly**: Verify tools work correctly with pinned versions
+4. **Deploy gradually**: Roll out changes incrementally to minimize risk
+
+## Temporary workaround
+
+During migration, you can temporarily skip version checks (not recommended for production):
+
+<CodeGroup>
+```python Python
+result = composio.tools.execute(
+    "GITHUB_CREATE_ISSUE",
+    {
+        "user_id": "user-123",
+        "arguments": {...}
+    },
+    dangerously_skip_version_check=True
+)
+```
+
+```typescript TypeScript
+const result = await composio.tools.execute({
+    toolSlug: "GITHUB_CREATE_ISSUE",
+    userId: "user-123",
+    arguments: {...},
+    dangerouslySkipVersionCheck: true
+});
+```
+</CodeGroup>
+
+<Warning>
+The `dangerouslySkipVersionCheck` flag is only for migration or debugging. Never use in production.
+</Warning>
+
+## Next steps
+
+For complete documentation on toolkit versioning, including best practices and advanced configuration, see [Toolkit versioning](/docs/toolkit-versioning).

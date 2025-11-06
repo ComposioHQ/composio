@@ -1,0 +1,17 @@
+{
+  "name": "@test-e2e/json-schema-to-zod-e2e-zod-v3",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@composio/json-schema-to-zod": "workspace:*",
+    "zod": "3.25.76",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

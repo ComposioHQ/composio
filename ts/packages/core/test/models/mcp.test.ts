@@ -239,7 +239,7 @@ describe('MCP', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(mcp).toBeInstanceOf(MCP);
-      expect(telemetry.instrument).toHaveBeenCalledWith(mcp);
+      expect(telemetry.instrument).toHaveBeenCalledWith(mcp, 'MCP');
     });
 
     it('should store the client reference', () => {

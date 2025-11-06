@@ -95,8 +95,8 @@ export class TelemetryTransport {
         descriptor.value.constructor.name === 'AsyncFunction'
       );
     });
-    // use the constructor name if available, otherwise use the file name
-    const instrumentedClassName = (instance.constructor?.name || fileName) ?? 'unknown';
+    // prioritize the explicitly passed class name, then fall back to constructor name, then 'unknown'
+    const instrumentedClassName = fileName ?? instance.constructor?.name ?? 'unknown';
 
     for (const name of methodNames) {
       const originalMethod = (instance as unknown as Record<string, Function>)[name] as (

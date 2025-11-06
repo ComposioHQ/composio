@@ -1,7 +1,7 @@
 ---
 title: Programmatic Auth Configs
 image: "https://og.composio.dev/api/og?title=Programmatic%20Auth%20Configs"   # image for socials
-subtitle: "Guide to creating auth configs programmatically"
+subtitle: "Create auth configs programmatically"
 keywords: ""
 hide-nav-links: true
 ---
@@ -69,6 +69,7 @@ auth_config = composio.auth_configs.create(
         "credentials": {
             "client_id": "1234567890",
             "client_secret": "1234567890",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
         },
     },
 )
@@ -81,6 +82,7 @@ const authConfig = await composio.authConfigs.create("NOTION", {
     credentials: {
         client_id: "1234567890",
         client_secret: "1234567890",
+        oauth_redirect_uri: "https://backend.composio.dev/api/v3/toolkits/auth/callback",
     },
     authScheme: "OAUTH2",
 });
@@ -88,6 +90,10 @@ const authConfig = await composio.authConfigs.create("NOTION", {
 console.log(authConfig);
 ```
 </CodeGroup>
+
+<Note>
+You can specify a custom redirect URI by including the `oauth_redirect_uri` parameter in the credentials object. If not provided, Composio uses the default redirect URI.
+</Note>
 
 **Specifying the authorized redirect URI**
 The process of setting up your own OAuth2 credentials usually involves generating a client ID and secret and specifying the **authorized redirect URI** in the OAuth configuration.

@@ -1,0 +1,675 @@
+---
+title: Our next generation SDKs
+subtitle: Learn more about Composio's next generation SDKs and how to migrate
+image: "https://og.composio.dev/api/og?title=New%20SDK%20migration"
+keywords: 'sdk, migration, upgrade'
+hide-nav-links: false
+---
+
+In the last few months, we have experienced very rapid growth in usage of our platform. As such, our team has been working hard to radically improve the performance and developer experience of our platform.
+
+A lot of these changes have happened in the background, but we are excited to finally share our new SDKs with you that complement our new infra.
+
+The new API features improved usability, enhanced stability, and better scalability. The SDKs built on top of it simplify the developer experience, making it easier than ever to build useful agents.
+
+## What's new?
+
+A lot of the changes are on the infra side, but from the SDK point of view, here is what you can expect:
+- Faster and more reliable tool execution
+- A simpler but more opinionated SDK
+- Much more intuitive and consistent naming conventions
+- A vastly improved TypeScript SDK that is meaningfully more type-safe and has full feature parity with the Python SDK
+
+There aren't too many new flashy features here (yet) mainly because we wanted to get the bones right — but we feel we have a solid foundation to ship incredible new experiences on top very quickly.
+
+
+## State of the new SDK and what is happening with the old SDKs?
+
+Currently, the new SDKs are in a preview release. These new SDKs come almost fully formed, we do not expect many breaking changes to them but are releasing them in a preview state to get feedback and make necessary changes before locking them in.
+
+As we lock the new SDKs in place, we will deprecate support for the old SDKs. They will continue to work for the foreseeable future but are no longer actively maintained. We will continue to push security updates and fix any critical bugs but will not support any new functionality in them.
+
+We urge you to upgrade to the new SDKs as soon as possible.
+
+
+## Nomenclature
+
+We have updated several key terms in the SDK and API to improve clarity and consistency. The following table summarizes these changes:
+
+| Previous Term | Current Term       | Definition                                                                |
+|---------------|--------------------|--------------------------------------------------------------------------|
+| Actions       | Tools              | Individual operations or capabilities that can be performed by an LLM agent |
+| Apps          | Toolkits           | A collection of tools grouped under a single application                |
+| Integration   | Auth Config        | Configuration containing developer credentials and application-level settings such as scopes and API endpoints. Scoped to a toolkit. |
+| Connection    | Connected accounts | User-linked accounts associated with a toolkit                          |
+| Entity ID     | User ID            | The identifier of the user performing the action (UUID or email)        |
+| Trigger       | Trigger            | An event that can be subscribed to                                      |
+| Toolsets      | Providers          | LLM or agent framework that can be used with Composio to create agents |
+
+## Switch to nano IDs from UUIDs
+
+We have transitioned from UUIDs to nano IDs throughout the platform for the following reasons:
+
+- **Improved readability**: UUIDs are lengthy and difficult to read
+- **Better usability**: Easier to copy with a single double-click
+- **Better organization**: Nano IDs allow us to distinguish between different resource types through prefixes
+
+| Feature           | Nano ID Prefix | Example            |
+|-------------------|----------------|--------------------|
+| Connected Account | `ca_`          | `ca_8x9w2l3k5m`    |
+| Auth Config       | `ac_`          | `ac_1234567890`    |
+| Trigger           | `ti_`          | `ti_So9EQf8XnAcy`  |
+
+> **Note:** Nano IDs are short, unique, and prefixed to indicate the resource type.
+
+
+
+## SDK Changes
+
+Upgrade to the latest SDK version using the appropriate package manager:
+
+<CodeGroup>
+```python Python
+pip install -U composio
+```
+```typescript TypeScript
+npm install @composio/core
+```
+</CodeGroup>
+
+Both SDKs now implement proper namespacing for each concept.
+
+### User ID scoping
+
+The concept of `entity_id` has been expanded and renamed to `user_id`.
+
+All operations are now scoped to a user ID, including:
+- Fetching tools
+- Initiating connections
+- Executing tools
+- Managing triggers
+
+This change provides explicit specification of the user for whom the action is being performed. When a user may have multiple accounts (such as work and personal Gmail connections), you can use the more specific connected account ID.
+
+### Replacing ToolSets with [Providers](/docs/providers)
+
+We have deprecated "toolsets" in favor of "providers". This change allows Composio to provide deeper standardization for tool implementation across different frameworks.
+
+Previously, you needed to import and use a framework-specific `ComposioToolSet` class:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/old_tools.py"
+  startLine={1}
+  endLine={3}
+  title="Python (previous)"
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/old_tools.ts"
+  startLine={1}
+  endLine={3}
+  title="TypeScript (previous)"
+/>
+</CodeGroup>
+
+The SDK structure is now framework-agnostic and includes the OpenAI provider out of the box:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/providers.py"
+  startLine={1}
+  endLine={12}
+  title="Python (current)"
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/providers.ts"
+  startLine={1}
+  endLine={12}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+You can now use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't yet support.
+
+Read more about [providers in our documentation](/docs/providers) and explore the [complete list of available providers](/providers/openai).
+
+### Fetching and filtering tools
+
+Previously, you could filter tools by:
+- Apps
+- Action names (tool names)
+- Tags
+
+You could also specify an `important` flag to retrieve the most important tools:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/old_tools.py"
+  startLine={1}
+  endLine={11}
+  title="Python (previous)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/old_tools.ts"
+  startLine={1}
+  endLine={11}
+  title="TypeScript (previous)"
+/>
+</CodeGroup>
+
+You can now filter tools by:
+- Toolkits
+- Tool slugs
+- Limit parameter
+- Search query
+
+The `important` flag has been removed. Instead, tools are returned in order of importance by default:
+
+<Note>Since `user_id` is now explicitly required, the `check_connected_accounts` flag is no longer necessary.</Note>
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_tools.py"
+  startLine={1}
+  endLine={17}
+  title="Python (current)"
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/new_tools.ts"
+  startLine={1}
+  endLine={25}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+### Fetching raw tool data
+
+To examine the raw schema definition of a tool for understanding input/output parameters or building custom logic around tool definitions, use the following methods:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/tool-calling/python/raw_tools.py"
+  startLine={1}
+  endLine={11}
+  title="Python (current)"
+/>
+
+<SnippetCode
+  src="fern/snippets/tool-calling/typescript/raw_tools.ts"
+  startLine={1}
+  endLine={11}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+### Executing tools
+
+Tool execution remains largely unchanged, with `user_id` now explicitly required.
+
+For agentic frameworks, the tool object returned from `tools.get` is now the respective framework's native tool object. Tool call execution is handled by the agentic framework itself.
+
+<Note>
+For non-agentic frameworks, Composio provides a helper function to execute tool calls.
+</Note>
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_execute_tools.py"
+  startLine={1}
+  endLine={17}
+  title="Python v3"
+  highlightStart={16}
+  highlightEnd={16}
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/new_execute_tools.ts"
+  startLine={1}
+  endLine={30}
+  title="TypeScript v3"
+  highlightStart={27}
+  highlightEnd={27}
+/>
+</CodeGroup>
+
+For more information on executing tools for different frameworks, see [Replacing ToolSets with Providers](#replacing-toolsets-with-providers).
+
+### Tool Modifiers (formerly Tool Processors)
+
+Tool processors have been renamed to *tool modifiers* and now provide an improved developer experience. The implementation is now available in TypeScript too! (previously Python-only).
+
+<SnippetCode
+  src="fern/snippets/migration/old_tool_modifiers.py"
+  startLine={1}
+  endLine={23}
+  title="Python (previous)"
+/>
+
+| Previous          | Current                 |
+|-------------------|-------------------------|
+| `pre` processor   | `beforeExecute` modifier |
+| `post` processor  | `afterExecute` modifier  |
+| `schema` processor| `schema` modifier        |
+
+The modifiers now leverage language-specific features to provide a more natural developer experience.
+
+While tool processors could previously be applied during SDK initialization, tool fetching, and tool execution, we have restructured them as follows:
+- **Chat Completion providers**: Modifiers are specified and applied during tool execution
+- **Agentic frameworks**: Modifiers are specified and applied during tool fetching
+
+#### [Schema Modifiers](/docs/modifying-tool-schemas)
+
+The following example demonstrates schema modifier usage, applicable across all providers:
+
+<CodeGroup>
+```python Python (current)
+from composio import Composio, schema_modifier
+from composio.types import Tool
+
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
+```
+<SnippetCode
+  src="fern/snippets/migration/tool_modifiers.ts"
+  startLine={1}
+  endLine={26}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+#### [Before Modifiers](/docs/modifying-tool-inputs)
+
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modifying-tool-inputs):
+
+<CodeGroup>
+```python Python (current)
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
+
+
+# Get tools
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+```
+<SnippetCode
+  src="fern/snippets/migration/tool_modifiers.ts"
+  startLine={53}
+  endLine={68}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+#### [After Modifiers](/docs/modifying-tool-outputs)
+
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modifying-tool-outputs):
+
+<CodeGroup>
+
+```python Python (current)
+@after_execute(tools=["HACKERNEWS_GET_USER"])
+def after_execute_modifier(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    return {
+        **response,
+        "data": {
+            "karma": response["data"]["karma"],
+        },
+    }
+
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
+```
+<SnippetCode
+  src="fern/snippets/migration/tool_modifiers.ts"
+  startLine={69}
+  endLine={90}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+### Custom Tools
+
+The SDK continues to support custom tools. [Creating tools from your methods](/docs/custom-tools#creating-a-custom-tool) remains possible. We recommend reviewing the [detailed custom tools documentation](/docs/custom-tools#creating-a-custom-tool) for more information.
+
+Due to changes in the SDK architecture, creating custom tools that use Composio's managed authentication has been modified. In the previous SDK, you could create a custom tool as follows:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/old_custom_tools.py"
+  startLine={1}
+  endLine={39}
+  highlightStart={14}
+  highlightEnd={17}
+  title="Python (previous)"
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/old_custom_tools.ts"
+  startLine={1}
+  endLine={39}
+  highlightStart={16}
+  highlightEnd={20}
+  title="TypeScript (previous)"
+/>
+</CodeGroup>
+
+The *execute tool request* method handles injection of the appropriate base URL and authentication credentials for the tool:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_custom_tools.py"
+  startLine={1}
+  endLine={39}
+  highlightStart={22}
+  highlightEnd={22}
+  title="Python (current)"
+/>
+
+<SnippetCode
+  src="fern/snippets/migration/new_custom_tools.ts"
+  startLine={1}
+  endLine={39}
+  highlightStart={17}
+  highlightEnd={17}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+For more information, including executing custom tools and defining custom headers and query parameters, refer to the [Custom Tools](/docs/custom-tools) documentation.
+
+### Auth configs (formerly integrations)
+
+Integrations are now called *auth configs*. While the terminology has changed, the underlying concept remains the same.
+
+Auth configs store the configuration required for authentication with a given toolkit, including OAuth developer credentials, configurable base URLs, and scopes.
+
+Auth configs now use nano IDs instead of UUIDs:
+
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ac_8x9w2l3k5m`             |
+
+We recommend storing auth config nano IDs in your database for connecting users to the appropriate auth configuration.
+
+For most use cases, you will create auth configs through the dashboard, and this process remains unchanged. Read more about [creating auth configs](/docs/authenticating-tools#creating-an-auth-config) and [customizing auth configs](/docs/custom-auth-configs).
+
+Creating auth configs programmatically in the previous SDK:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/old_auth_config.py"
+  startLine={1}
+  endLine={15}
+  title="Python (previous)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/old_auth_config.ts"
+  startLine={1}
+  endLine={15}
+  title="TypeScript (previous)"
+/>
+</CodeGroup>
+
+Creating auth configs programmatically in the current SDK:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_auth_config.py"
+  startLine={1}
+  endLine={15}
+  title="Python (current)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/new_auth_config.ts"
+  startLine={1}
+  endLine={15}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/programmatic-auth-configs) documentation.
+
+<Note>The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/auth/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.</Note>
+
+### Connected accounts / User IDs
+
+The primary change in connected accounts and user IDs is that user IDs are now a more prominent concept compared to entities in previous versions.
+
+We have simplified the process of connecting a user to a toolkit. Instead of multiple methods and parameters for initiating a connection, both the SDK and API now require only a `user_id` and `auth_config_id` to initiate a connection.
+
+This approach is more explicit and works well with the ability for developers to have multiple auth configs for a given toolkit.
+
+Connected accounts now use nano IDs instead of UUIDs:
+
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ca_8x9w2l3k5m`             |
+
+Previously, you might have initiated a connection like this:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/old_connected_acc.py"
+  startLine={1}
+  endLine={30}
+  highlightStart={11}
+  highlightEnd={16}
+  title="Python (previous)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/old_connected_acc.ts"
+  startLine={1}
+  endLine={30}
+  highlightStart={8}
+  highlightEnd={13}
+  title="TypeScript (previous)"
+/>
+</CodeGroup>
+
+The current process for initiating a connection is as follows:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_connected_acc.py"
+  startLine={1}
+  endLine={15}
+  highlightStart={8}
+  highlightEnd={11}
+  title="Python (current)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/new_connected_acc.ts"
+  startLine={1}
+  endLine={15}
+  highlightStart={8}
+  highlightEnd={11}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+### Triggers
+
+Composio continues to support listening to application events using triggers through WebSockets and webhooks.
+
+#### Creating triggers
+
+The process for creating triggers and specifying their configuration has been redesigned for improved clarity and intuitiveness.
+
+Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. The process usually follows the pattern of fetching the trigger type and then creating the trigger with the appropriate configuration.
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/migration/new_triggers.py"
+  startLine={1}
+  endLine={33}
+  title="Python (current)"
+/>
+<SnippetCode
+  src="fern/snippets/migration/new_triggers.ts"
+  startLine={1}
+  endLine={35}
+  title="TypeScript (current)"
+/>
+</CodeGroup>
+
+#### Enabling/Disabling triggers
+
+You can enable or disable triggers through either the SDK or the dashboard. The dashboard process remains unchanged.
+
+Managing triggers with the SDK:
+
+<CodeGroup>
+  ```python Python maxLines=60 wordWrap
+  # Disable a trigger instance 
+  disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+  print(disabled_instance) 
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.disable("ti_abcd123");
+  ```
+</CodeGroup>
+
+If needed, the trigger can be enabled again.
+
+<CodeGroup>
+  ```python Python maxLines=60 wordWrap
+  # Enable a trigger instance
+  enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+  print(enabled_instance)
+  ```
+  ```typescript TypeScript maxLines=60 wordWrap
+  await composio.triggers.enable("ti_abcd123");
+  ```
+</CodeGroup>
+
+#### Listening to triggers
+
+We recommend listening to triggers through webhooks. The following are example routes for Next.js and FastAPI.
+
+For development, you can also [listen to triggers through the SDK](/docs/using-triggers#subscribing-to-triggers-using-the-sdk-for-development).
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/triggers/python/trigger-webhook.py"
+  title="app/route.py (FastAPI)"
+/>
+<SnippetCode
+  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
+  title="app/api/webhook/route.ts (Next.js)"
+/>
+</CodeGroup>
+
+## 🚧 Coming Soon
+
+### Local tools
+
+Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)*. These were tools defined within the SDK and consisted of local shell and code-related tools such as "clipboard", "sqltool", and "shelltool".
+
+This feature is currently in development for both Python and TypeScript SDKs, with newly created tools built for improved agent accuracy.
+
+{/* ### Generated types
+
+In the previous Python SDK, you could generate types for tools using the CLI:
+
+```bash
+composio apps generate-types
+```
+
+This provided app slugs and tool slugs with IntelliSense support:
+
+```python Python (previous)
+from composio_openai import ComposioToolSet, App, Action
+
+print(App.GITHUB)
+print(Action.GITHUB_CREATE_ISSUE)
+``` */}
+
+This feature is currently in development for both Python and TypeScript SDKs.
+
+## API Endpoints
+
+The following table lists important API endpoints that have changed. You can use this reference to quickly find the new v3 API endpoint for migration:
+
+<Note>This list is not exhaustive. Please refer to the [API Reference](/api-reference) for the complete list of endpoints.</Note>
+
+### Toolkits (formerly Apps)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| [`GET /api/v1/apps`](https://docs.composio.dev/api-reference/api-reference/apps/get-apps) | [`GET /api/v3/toolkits`](https://docs.composio.dev/api-reference/toolkits/get-toolkits) |
+| [`GET /api/v1/apps/list/categories`](https://docs.composio.dev/api-reference/api-reference/apps/list-app-categories) | [`GET /api/v3/toolkits/categories`](https://docs.composio.dev/api-reference/toolkits/get-toolkits-categories) |
+| [`GET /api/v1/apps/{appName}`](https://docs.composio.dev/api-reference/api-reference/apps/get-app) | [`GET /api/v3/toolkits/{slug}`](https://docs.composio.dev/api-reference/toolkits/get-toolkits-by-slug) |
+
+### Tools (formerly Actions)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| [`GET /api/v2/actions`](https://docs.composio.dev/api-reference/api-reference/actions/list-actions-minimal-v-2) | [`GET /api/v3/tools`](https://docs.composio.dev/api-reference/tools/get-tools) |
+| [`GET /api/v2/actions/list/enums`](https://docs.composio.dev/api-reference/api-reference/actions/list-action-enums) | [`GET /api/v3/tools/enum`](https://docs.composio.dev/api-reference/tools/get-tools-enum) |
+| [`GET /api/v2/actions/{actionId}`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-v-2) | [`GET /api/v3/tools/{tool_slug}`](https://docs.composio.dev/api-reference/tools/get-tools-by-tool-slug) |
+| [`POST /api/v2/actions/{actionId}/execute`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-v-2) | [`POST /api/v3/tools/execute/{tool_slug}`](https://docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug)|
+| [`POST /api/v2/actions/{actionId}/execute/get.inputs`](https://docs.composio.dev/api-reference/api-reference/actions/get-action-inputs-v-2)| [`POST /api/v3/tools/execute/{tool_slug}/input`](https://docs.composio.dev/api-reference/tools/post-tools-execute-by-tool-slug-input)|
+| [`POST /api/v2/actions/proxy`](https://docs.composio.dev/api-reference/api-reference/actions/execute-action-proxy-v-2) | [`POST /api/v3/tools/execute/proxy`](https://docs.composio.dev/api-reference/tools/post-tools-execute-proxy)|
+
+### Auth Configs (formerly Integrations/Connectors)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| [`GET /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/list-all-connectors) | [`GET /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/get-auth-configs) |
+| [`POST /api/v1/integrations`](https://docs.composio.dev/api-reference/api-reference/integrations/create-connector) | [`POST /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
+| [`GET /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/get-connector-info) | [`GET /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/get-auth-configs-by-nanoid) |
+| [`PATCH /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/modify-connector) | [`PATCH /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/patch-auth-configs-by-nanoid) |
+| [`DELETE /api/v1/integrations/{integrationId}`](https://docs.composio.dev/api-reference/api-reference/integrations/delete-connector) | [`DELETE /api/v3/auth_configs/{nanoid}`](https://docs.composio.dev/api-reference/auth-configs/delete-auth-configs-by-nanoid) |
+| [`POST /api/v2/integrations/create`](https://docs.composio.dev/api-reference/api-reference/integrations-v-2/create-connector-v-2) | [`POST /api/v3/auth_configs`](https://docs.composio.dev/api-reference/auth-configs/post-auth-configs) |
+
+### Connected Accounts (formerly Connections)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| [`GET /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/get-connections) | [`GET /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/get-connected-accounts) |
+| [`POST /api/v1/connectedAccounts`](https://docs.composio.dev/api-reference/api-reference/connections/initiate-connection) | [`POST /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
+| [`POST /api/v2/connectedAccounts/initiateConnection`](https://docs.composio.dev/api-reference/api-reference/connectionsv-2/initiate-connection-v-2)| [`POST /api/v3/connected_accounts`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts) |
+| [`GET /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/get-connection)| [`GET /api/v3/connected_accounts/{nanoid}`](https://docs.composio.dev/api-reference/connected-accounts/get-connected-accounts-by-nanoid)|
+| [`DELETE /api/v1/connectedAccounts/{connectedAccountId}`](https://docs.composio.dev/api-reference/api-reference/connections/delete-connection)| [`DELETE /api/v3/connected_accounts/{nanoid}`](https://docs.composio.dev/api-reference/connected-accounts/delete-connected-accounts-by-nanoid) |
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/disable`](https://docs.composio.dev/api-reference/api-reference/connections/disable-connection)| [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/enable`](https://docs.composio.dev/api-reference/api-reference/connections/enable-connection) | [`PATCH /api/v3/connected_accounts/{nanoId}/status`](https://docs.composio.dev/api-reference/connected-accounts/patch-connected-accounts-by-nano-id-status)|
+| [`POST /api/v1/connectedAccounts/{connectedAccountId}/reinitiate`](https://docs.composio.dev/api-reference/api-reference/connections/reinitiate-connection)| [`POST /api/v3/connected_accounts/{nanoid}/refresh`](https://docs.composio.dev/api-reference/connected-accounts/post-connected-accounts-by-nanoid-refresh)|
+
+### Triggers
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| [`GET /api/v1/triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/list-triggers) | [`GET /api/v3/triggers_types`](https://docs.composio.dev/api-reference/triggers/get-triggers-types) |
+| [`GET /api/v1/triggers/list/enums`](https://docs.composio.dev/api-reference/api-reference/triggers/list-trigger-enums) | [`GET /api/v3/triggers_types/list/enum`](https://docs.composio.dev/api-reference/triggers/get-triggers-types-list-enum)|
+| [`GET /api/v2/triggers/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/get-trigger-info-v-2) | [`GET /api/v3/triggers_types/{slug}`](https://docs.composio.dev/api-reference/triggers/get-triggers-types-by-slug)|
+| [`GET /api/v1/triggers/active_triggers`](https://docs.composio.dev/api-reference/api-reference/triggers/get-active-triggers)| [`GET /api/v3/trigger_instances/active`](https://docs.composio.dev/api-reference/triggers/get-trigger-instances-active)|
+| [`POST /api/v1/triggers/enable/{connectedAccountId}/{triggerName}`](https://docs.composio.dev/api-reference/api-reference/triggers/enable-trigger)| [`POST /api/v3/trigger_instances/{slug}/upsert`](https://docs.composio.dev/api-reference/triggers/post-trigger-instances-by-slug-upsert)|
+| [`DELETE /api/v1/triggers/instance/{triggerInstanceId}`](https://docs.composio.dev/api-reference/api-reference/triggers/delete-trigger)| [`DELETE /api/v3/trigger_instances/manage/{triggerId}`](https://docs.composio.dev/api-reference/triggers/delete-trigger-instances-manage-by-trigger-id)|
+| [`PATCH /api/v1/triggers/instance/{triggerId}/status`](https://docs.composio.dev/api-reference/api-reference/triggers/switch-trigger-instance-status)| [`PATCH /api/v3/trigger_instances/manage/{triggerId}`](https://docs.composio.dev/api-reference/triggers/patch-trigger-instances-manage-by-trigger-id)|

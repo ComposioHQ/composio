@@ -73,7 +73,13 @@ export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConf
 export const ConnectedAccountRetrieveResponseSchema = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
+  /**
+   * @deprecated use connectedAccount.state instead
+   */
   data: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * @deprecated use connectedAccount.state instead
+   */
   params: z.record(z.string(), z.unknown()).optional(),
   status: ConnectedAccountStatusSchema,
   statusReason: z.string().nullable(),
