@@ -85,49 +85,32 @@ User authentication requires a User ID - a unique identifier that groups connect
 
 Redirect users to a Composio-hosted URL that handles the entire authentication process—OAuth flows, API key collection, or custom fields like subdomain. You can specify a callback URL to control where users return after authentication.
 
+<Frame caption="Connect Link authentication screen">
+  <img 
+    src="../../../assets/images/auth-screen-example.png" 
+    alt="Composio authentication screen showing Gmail connection"
+    style={{ maxWidth: '350px', maxHeight: '400px', width: 'auto', height: 'auto', margin: '0 auto', display: 'block' }}
+  />
+</Frame>
+
 <CodeGroup>
-```python Python {11-13}
-from composio import Composio
+<SnippetCode 
+  src="fern/snippets/authentication/python/connect-link.py" 
+  title="Python"
+  startLine={1} 
+  endLine={22}
+  highlightStart={11}
+  highlightEnd={15}
+/>
 
-composio = Composio(api_key="your_api_key")
-
-# Use the "AUTH CONFIG ID" from your dashboard
-auth_config_id = "your_auth_config_id"
-
-# Use a unique identifier for each user in your application
-user_id = 'user-1349-129-12'
-
-connection_request = composio.connected_accounts.link(user_id, auth_config_id, callback_url: 'https://your-app.com/callback')
-
-redirect_url = connection_request.redirect_url
-print(f"Visit: {redirect_url} to authenticate your account")
-            
-# Wait for the connection to be established
-connected_account = connection_request.wait_for_connection()
-print(connected_account.id)
-```
-```typescript Typescript {11-13}
-import { Composio } from '@composio/core';
-
-const composio = new Composio({apiKey: "your_api_key"});
-
-// Use the "AUTH CONFIG ID" from your dashboard
-const authConfigId = 'your_auth_config_id';
-
-// Use a unique identifier for each user in your application
-const userId = 'user-1349-129-12';
-
-const connectionRequest = await composio.connectedAccounts.link(userId, authConfigId, {
-  callbackUrl: 'https://your-app.com/callback'
-});
-const redirectUrl = connectionRequest.redirectUrl;
-console.log(`Visit: ${redirectUrl} to authenticate your account`);
-
-// Wait for the connection to be established
-const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequest.id);
-console.log(connectedAccount.id)
-
-````
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connect-link.ts" 
+  title="TypeScript"
+  startLine={1} 
+  endLine={19}
+  highlightStart={11}
+  highlightEnd={13}
+/>
 </CodeGroup>
 
 #### Customizing Connect Link
@@ -365,8 +348,37 @@ After creating a connection, it will have one of the following statuses that ind
 | **INACTIVE** | Connection is temporarily disabled. Re-enable it to use the connection again. |
 | **PENDING** | Connection is being processed. Wait for it to become active. |
 | **INITIATED** | Connection request has started but not yet completed. User may still need to complete authentication. |
-| **EXPIRED** | Connection credentials have expired. Re-authenticate to restore access. |
+| **EXPIRED** | Connection credentials have expired. Composio automatically attempts to refresh credentials before marking as expired. Re-authenticate to restore access. |
 | **FAILED** | Connection attempt failed. Check error details and try creating a new connection. |
+
+<Note>
+When credentials expire for OAuth connections, Composio automatically attempts to refresh them using the refresh token. The connection is only marked as **EXPIRED** after multiple refresh attempts have failed. 
+</Note>
+
+### Waiting for Connection Establishment
+
+The `waitForConnection` method allows you to poll for a connection to become active after initiating authentication. This is useful when you need to ensure a connection is ready before proceeding.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connect-link.py" 
+  title="Python"
+  startLine={20} 
+  endLine={29}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connect-link.ts" 
+  title="TypeScript"
+  startLine={17} 
+  endLine={26}
+/>
+</CodeGroup>
+
+The method continuously polls the Composio API until the connection:
+- Becomes **ACTIVE** (returns the connected account)
+- Enters a terminal state like **FAILED** or **EXPIRED** (throws an error)
+- Exceeds the specified timeout (throws a timeout error)
 
 ### Checking Connection Status
 
