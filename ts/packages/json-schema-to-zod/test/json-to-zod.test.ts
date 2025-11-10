@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod/v3';
+import { z } from '../src/zod-compat';
 import { jsonSchemaToZod } from '../src/json-schema-to-zod';
 import type { JsonSchema } from '../src/types';
 
@@ -994,7 +994,7 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test property description
-      const shape = (zodSchema as any)._def.shape();
+      const shape = (zodSchema as any)._def.shape;
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
 
