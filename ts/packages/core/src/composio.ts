@@ -18,7 +18,9 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { ToolRouter } from './models/ToolRouter.experimental';
+import { ToolRouter as ExperimentalToolRouter } from './models/ToolRouter.experimental';
+import { ToolRouter } from './models/ToolRouter';
+import { ToolRouterConfig, ToolRouterSession } from './types/toolRouter.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -144,12 +146,13 @@ export class Composio<
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
   mcp: MCP;
+  toolRouter: ToolRouter<unknown, unknown, TProvider>;
 
   /**
    * Experimental features
    */
   experimental: {
-    toolRouter: ToolRouter;
+    toolRouter: ExperimentalToolRouter;
   };
 
   /**
@@ -231,13 +234,14 @@ export class Composio<
       logLevel: COMPOSIO_LOG_LEVEL,
     });
 
-    this.tools = new Tools(this.client, this.provider, this.config);
+    this.tools = new Tools(this.client, this.config);
     this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client, this.config);
     this.authConfigs = new AuthConfigs(this.client);
     this.files = new Files(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.toolRouter = new ToolRouter(this.client, this.config);
 
     /**
      * Initialize Experimental features
@@ -249,7 +253,7 @@ export class Composio<
        *
        * @description Allows you to create an isolated toolRouter MCP session for a user
        */
-      toolRouter: new ToolRouter(this.client),
+      toolRouter: new ExperimentalToolRouter(this.client),
     };
 
     /**
@@ -349,5 +353,28 @@ export class Composio<
       ...this.config,
       defaultHeaders: sessionHeaders,
     });
+  }
+
+  /**
+   * Creates a new session of the tool router with given configuration for a user,
+   *
+   * @param {string} userId - The user id to create the session for
+   * @param {ToolRouterConfig} routerConfig - The router config to use
+   * @returns {Promise<ToolRouterSession<unknown, unknown, TProvider>>} The tool router session
+   *
+   * @example
+   * ```typescript
+   * // Create a new tool router session
+   * const session = await composio.create('user_123', {
+   *   toolkits: ['github', 'slack'],
+   *   manageConnections: true,
+   * });
+   * ```
+   */
+  async create(
+    userId: string,
+    routerConfig?: ToolRouterConfig
+  ): Promise<ToolRouterSession<unknown, unknown, TProvider>> {
+    return this.toolRouter.create(userId, routerConfig);
   }
 }
