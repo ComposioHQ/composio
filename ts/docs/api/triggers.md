@@ -33,7 +33,7 @@ const triggers = await composio.triggers.listActive({
 
 ### Create Trigger Instance
 
-Create a new trigger instance for a specific user and trigger type. If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
+Create a new trigger instance for a specific user and trigger type. The trigger instance version is determined by the global `toolkitVersions` configuration set during Composio initialization (defaults to `'latest'`). If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
 
 **With Connected Account ID:**
 
@@ -78,11 +78,41 @@ const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSA
 }
 ```
 
+**Behavior:**
+
+- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
+- To use a specific toolkit version for trigger creation, configure `toolkitVersions` when initializing the Composio instance
+- See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for details on setting toolkit versions
+
 **Throws:**
 
 - `ValidationError`: If the provided parameters are invalid
 - `ComposioTriggerTypeNotFoundError`: If the trigger type with the given slug is not found
 - `ComposioConnectedAccountNotFoundError`: If no connected account is found for the user, or if the specified connected account ID is not found
+
+**Example with Specific Toolkit Version:**
+
+```typescript
+// Configure toolkit versions at initialization
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: {
+    gmail: '12082025_00',
+    github: '10082025_01'
+  }
+});
+
+// Now create will use the configured version for Gmail
+const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSAGE', {
+  connectedAccountId: 'ca_jjYIG9L40LDIS',
+  triggerConfig: {
+    labelIds: 'INBOX',
+    userId: 'me',
+    interval: 60,
+  },
+});
+// This will create the trigger instance using version '12082025_00' for Gmail
+```
 
 **Example with Error Handling:**
 

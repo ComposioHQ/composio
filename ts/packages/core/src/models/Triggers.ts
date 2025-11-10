@@ -199,6 +199,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     const result = await this.client.triggerInstances.upsert(slug, {
       connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
+      toolkit_versions: this.toolkitVersions,
     });
 
     return {
