@@ -770,6 +770,7 @@ class Triggers(Resource):
         return self._client.trigger_instances.upsert(
             slug=slug,
             connected_account_id=connected_account_id,
+            toolkit_versions=self._toolkit_versions,
             body_trigger_config_1=(
                 trigger_config if trigger_config is not None else omit
             ),
