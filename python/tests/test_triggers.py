@@ -199,6 +199,7 @@ class TestTriggers:
         assert call_kwargs["body_trigger_config_1"] == {
             "webhook_url": "https://example.com/webhook"
         }
+        assert call_kwargs["toolkit_versions"] is None
         assert result == mock_response
 
     def test_create_with_user_id(self, triggers, mock_client, mock_trigger_type):
@@ -238,6 +239,32 @@ class TestTriggers:
         mock_client.trigger_instances.upsert.assert_called_once()
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
         assert call_kwargs["connected_account_id"] == "conn-456"
+        assert call_kwargs["toolkit_versions"] is None
+        assert result == mock_response
+
+    def test_create_with_custom_toolkit_versions(
+        self, triggers_with_versions, mock_client
+    ):
+        """Test create trigger with custom toolkit versions."""
+        mock_response = Mock()
+        mock_response.trigger_id = "trigger-123"
+        mock_client.trigger_instances.upsert.return_value = mock_response
+        custom_versions = {"github": "12082025_00", "slack": "10082025_01"}
+
+        result = triggers_with_versions.create(
+            slug="GITHUB_COMMIT_EVENT",
+            connected_account_id="conn-123",
+            trigger_config={"webhook_url": "https://example.com/webhook"},
+        )
+
+        mock_client.trigger_instances.upsert.assert_called_once()
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["connected_account_id"] == "conn-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert call_kwargs["toolkit_versions"] == custom_versions
         assert result == mock_response
 
     def test_create_without_user_id_or_connected_account_raises_error(
