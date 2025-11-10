@@ -1,4 +1,4 @@
-import { z, z3, type ZodTypeAny, detectZodVersion } from '../zod-compat';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
@@ -235,14 +235,8 @@ export function parseObject(
       // When additionalProperties is false, use strict
       output = propertiesSchema.strict();
     } else if (isAdditionalPropertiesTrue) {
-      // When additionalProperties is true, use passthrough for v3 (better round-trip support)
-      // or catchall with z.any() for v4
-      const zodVersion = detectZodVersion();
-      if (zodVersion === 'v3') {
-        output = propertiesSchema.passthrough();
-      } else {
-        output = propertiesSchema.catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
-      }
+      // When additionalProperties is true, use catchall with z.any() for both v3 and v4
+      output = propertiesSchema.catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
     } else if (additionalPropertiesSchema) {
       // When additionalProperties is a schema object, use catchall
       output = propertiesSchema.catchall(additionalPropertiesSchema as z3.ZodTypeAny) as ZodTypeAny;
@@ -257,14 +251,8 @@ export function parseObject(
       // When additionalProperties is false, create strict empty object
       output = z.object({}).strict();
     } else if (isAdditionalPropertiesTrue) {
-      // When additionalProperties is true, use passthrough for v3 (better round-trip support)
-      // or catchall with z.any() for v4
-      const zodVersion = detectZodVersion();
-      if (zodVersion === 'v3') {
-        output = z.object({}).passthrough();
-      } else {
-        output = z.object({}).catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
-      }
+      // When additionalProperties is true, use catchall with z.any() for both v3 and v4
+      output = z.object({}).catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
     } else if (additionalPropertiesSchema) {
       // When additionalProperties is a schema object, use record
       output = z.record(additionalPropertiesSchema as z3.ZodTypeAny) as ZodTypeAny;
