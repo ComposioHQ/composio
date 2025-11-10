@@ -50,7 +50,7 @@ export function isZodV4(schema: ZodTypeAny): boolean {
 }
 
 // Helper to detect which version of Zod is installed at runtime
-function detectZodVersion(): 'v3' | 'v4' {
+export function detectZodVersion(): 'v3' | 'v4' {
   // Check if z4 is available and actually works
   const z4Instance = getZ4();
   if (z4Instance) {

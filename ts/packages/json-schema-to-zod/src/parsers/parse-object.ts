@@ -1,4 +1,4 @@
-import { z, z3, type ZodTypeAny } from '../zod-compat';
+import { z, z3, type ZodTypeAny, detectZodVersion } from '../zod-compat';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
@@ -102,16 +102,22 @@ export function parseObject(
     | undefined;
   let zodSchema: ZodTypeAny | undefined = propertiesSchema;
 
-  const additionalProperties =
-    normalizedSchema.additionalProperties !== undefined
-      ? parseSchema(normalizedSchema.additionalProperties, {
-          ...refs,
-          path: [...refs.path, 'additionalProperties'],
-        })
-      : undefined;
+  // Check the original additionalProperties value type before parsing
+  const originalAdditionalProperties = normalizedSchema.additionalProperties;
+  const isAdditionalPropertiesFalse = originalAdditionalProperties === false;
+  const isAdditionalPropertiesTrue = originalAdditionalProperties === true;
+  const isAdditionalPropertiesSchema =
+    originalAdditionalProperties !== undefined &&
+    typeof originalAdditionalProperties === 'object' &&
+    originalAdditionalProperties !== null;
 
-  // Track if additionalProperties was explicitly set to true
-  const isAdditionalPropertiesTrue = normalizedSchema.additionalProperties === true;
+  // Only parse additionalProperties if it's a schema object (not boolean)
+  const additionalPropertiesSchema = isAdditionalPropertiesSchema
+    ? parseSchema(originalAdditionalProperties, {
+        ...refs,
+        path: [...refs.path, 'additionalProperties'],
+      })
+    : undefined;
 
   if (normalizedSchema.patternProperties) {
     const parsedPatternProperties = Object.fromEntries(
@@ -128,9 +134,9 @@ export function parseObject(
     const patternPropertyValues = Object.values(parsedPatternProperties);
 
     if (propertiesSchema) {
-      if (additionalProperties) {
+      if (additionalPropertiesSchema) {
         zodSchema = propertiesSchema.catchall(
-          z.union([...patternPropertyValues, additionalProperties] as unknown as [
+          z.union([...patternPropertyValues, additionalPropertiesSchema] as unknown as [
             z3.ZodTypeAny,
             z3.ZodTypeAny,
             ...z3.ZodTypeAny[],
@@ -148,9 +154,9 @@ export function parseObject(
         ) as ZodTypeAny;
       }
     } else {
-      if (additionalProperties) {
+      if (additionalPropertiesSchema) {
         zodSchema = z.record(
-          z.union([...patternPropertyValues, additionalProperties] as unknown as [
+          z.union([...patternPropertyValues, additionalPropertiesSchema] as unknown as [
             z3.ZodTypeAny,
             z3.ZodTypeAny,
             ...z3.ZodTypeAny[],
@@ -193,18 +199,29 @@ export function parseObject(
             }
           }
 
-          if (!wasMatched && additionalProperties) {
-            const result = (additionalProperties as z3.ZodTypeAny).safeParse(value[key]);
-            if (!result.success) {
+          if (!wasMatched) {
+            if (isAdditionalPropertiesFalse) {
+              // When additionalProperties is false, reject any unmatched keys
               ctx.addIssue({
                 path: [...ctx.path, key],
                 code: 'custom',
-                message: 'Invalid input: must match catchall schema',
-                params: {
-                  issues: result.error.issues,
-                },
+                message: `Invalid input: additional properties are not allowed`,
               });
+            } else if (additionalPropertiesSchema) {
+              // When additionalProperties is a schema, validate against it
+              const result = (additionalPropertiesSchema as z3.ZodTypeAny).safeParse(value[key]);
+              if (!result.success) {
+                ctx.addIssue({
+                  path: [...ctx.path, key],
+                  code: 'custom',
+                  message: 'Invalid input: must match catchall schema',
+                  params: {
+                    issues: result.error.issues,
+                  },
+                });
+              }
             }
+            // If additionalProperties is true or undefined (default), allow unmatched keys
           }
         }
       }
@@ -214,32 +231,43 @@ export function parseObject(
   if (propertiesSchema) {
     if (hasPatternProperties) {
       output = zodSchema!;
-    } else if (additionalProperties) {
-      if (additionalProperties instanceof z.ZodNever) {
-        output = propertiesSchema.strict();
-      } else if (isAdditionalPropertiesTrue) {
-        // When additionalProperties was explicitly true, use passthrough
+    } else if (isAdditionalPropertiesFalse) {
+      // When additionalProperties is false, use strict
+      output = propertiesSchema.strict();
+    } else if (isAdditionalPropertiesTrue) {
+      // When additionalProperties is true, use passthrough for v3 (better round-trip support)
+      // or catchall with z.any() for v4
+      const zodVersion = detectZodVersion();
+      if (zodVersion === 'v3') {
         output = propertiesSchema.passthrough();
       } else {
-        output = propertiesSchema.catchall(additionalProperties as z3.ZodTypeAny) as ZodTypeAny;
+        output = propertiesSchema.catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
       }
+    } else if (additionalPropertiesSchema) {
+      // When additionalProperties is a schema object, use catchall
+      output = propertiesSchema.catchall(additionalPropertiesSchema as z3.ZodTypeAny) as ZodTypeAny;
     } else {
-      // When additionalProperties is not specified, treat it as false
+      // When additionalProperties is not specified, treat it as false (strict)
       output = propertiesSchema.strict();
     }
   } else {
     if (hasPatternProperties) {
       output = zodSchema!;
-    } else if (additionalProperties) {
-      if (additionalProperties instanceof z.ZodNever) {
-        // When additionalProperties is false, create strict empty object
-        output = z.object({}).strict();
-      } else if (isAdditionalPropertiesTrue) {
-        // When additionalProperties was explicitly true, use empty object with passthrough
+    } else if (isAdditionalPropertiesFalse) {
+      // When additionalProperties is false, create strict empty object
+      output = z.object({}).strict();
+    } else if (isAdditionalPropertiesTrue) {
+      // When additionalProperties is true, use passthrough for v3 (better round-trip support)
+      // or catchall with z.any() for v4
+      const zodVersion = detectZodVersion();
+      if (zodVersion === 'v3') {
         output = z.object({}).passthrough();
       } else {
-        output = z.record(additionalProperties as z3.ZodTypeAny) as ZodTypeAny;
+        output = z.object({}).catchall(z.any() as z3.ZodTypeAny) as ZodTypeAny;
       }
+    } else if (additionalPropertiesSchema) {
+      // When additionalProperties is a schema object, use record
+      output = z.record(additionalPropertiesSchema as z3.ZodTypeAny) as ZodTypeAny;
     } else {
       // When no properties and no additionalProperties specified, default to allowing additional properties
       output = z.object({}).passthrough();
