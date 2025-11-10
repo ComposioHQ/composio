@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.4
+
+### Patch Changes
+
+- 97c4138: Update composio client version and add support for toolkit version in fetching trigger types
+
 ## 0.2.3
 
 ### Patch Changes
