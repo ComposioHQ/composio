@@ -5,7 +5,7 @@ import {
   ToolRouterConfigSchema,
   ToolRouterSession,
   ToolRouterSessionSchema,
-} from '../types/toolRouter.types';
+} from '../types/toolRouter.experimental.types';
 import { ValidationError } from '../errors';
 import { transform } from '../utils/transform';
 
