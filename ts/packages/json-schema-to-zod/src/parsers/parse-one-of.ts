@@ -1,9 +1,12 @@
-import { z } from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
 
-export const parseOneOf = (jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] }, refs: Refs) => {
+export const parseOneOf = (
+  jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] },
+  refs: Refs
+): ZodTypeAny => {
   if (!jsonSchema.oneOf.length) {
     return z.any();
   }
@@ -23,9 +26,11 @@ export const parseOneOf = (jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] 
       })
     );
 
-    const unionErrors = schemas.reduce<z.ZodError[]>(
+    const unionErrors = schemas.reduce<z3.ZodError[]>(
       (errors, schema) =>
-        (result => (result.error ? [...errors, result.error] : errors))(schema.safeParse(x)),
+        (result => (result.error ? [...errors, result.error] : errors))(
+          (schema as z3.ZodTypeAny).safeParse(x)
+        ),
       []
     );
 
@@ -37,5 +42,5 @@ export const parseOneOf = (jsonSchema: JsonSchemaObject & { oneOf: JsonSchema[] 
         message: 'Invalid input: Should pass single schema',
       });
     }
-  });
+  }) as ZodTypeAny;
 };

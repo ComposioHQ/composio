@@ -1,4 +1,4 @@
-import { z } from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
@@ -10,10 +10,10 @@ export const parseAnyOf = (jsonSchema: JsonSchemaObject & { anyOf: JsonSchema[] 
           ...refs,
           path: [...refs.path, 'anyOf', 0],
         })
-      : z.union(
+      : (z.union(
           jsonSchema.anyOf.map((schema, i) =>
             parseSchema(schema, { ...refs, path: [...refs.path, 'anyOf', i] })
-          ) as [z.ZodTypeAny, z.ZodTypeAny]
-        )
+          ) as [z3.ZodTypeAny, z3.ZodTypeAny, ...z3.ZodTypeAny[]]
+        ) as ZodTypeAny)
     : z.any();
 };

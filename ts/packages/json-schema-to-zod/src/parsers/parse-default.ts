@@ -1,4 +1,4 @@
-import { z } from 'zod/v3';
+import { z } from '../zod-compat';
 
 import type { JsonSchemaObject } from '../types';
 

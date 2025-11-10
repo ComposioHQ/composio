@@ -1,4 +1,4 @@
-import * as z from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
@@ -19,7 +19,7 @@ import { parseString } from './parse-string';
 import type { ParserSelector, Refs, JsonSchemaObject, JsonSchema } from '../types';
 import { its } from '../utils/its';
 
-const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: ZodTypeAny): ZodTypeAny => {
   let description = '';
 
   if (jsonSchema.description) {
@@ -47,7 +47,7 @@ const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.
   }
 
   if (description) {
-    zodSchema = zodSchema.describe(description);
+    zodSchema = (zodSchema as z3.ZodTypeAny).describe(description) as ZodTypeAny;
   }
 
   return zodSchema;
@@ -55,9 +55,9 @@ const addDescribes = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.
 
 const addDefaults = (
   jsonSchema: JsonSchemaObject,
-  zodSchema: z.ZodTypeAny,
+  zodSchema: ZodTypeAny,
   refs?: Refs
-): z.ZodTypeAny => {
+): ZodTypeAny => {
   if (jsonSchema.default !== undefined) {
     // Don't apply null defaults to non-nullable types within anyOf/oneOf contexts
     if (jsonSchema.default === null) {
@@ -76,15 +76,15 @@ const addDefaults = (
       }
     }
 
-    zodSchema = zodSchema.default(jsonSchema.default);
+    zodSchema = (zodSchema as z3.ZodTypeAny).default(jsonSchema.default) as ZodTypeAny;
   }
 
   return zodSchema;
 };
 
-const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: z.ZodTypeAny): z.ZodTypeAny => {
+const addAnnotations = (jsonSchema: JsonSchemaObject, zodSchema: ZodTypeAny): ZodTypeAny => {
   if (jsonSchema.readOnly) {
-    zodSchema = zodSchema.readonly();
+    zodSchema = (zodSchema as z3.ZodTypeAny).readonly() as ZodTypeAny;
   }
 
   return zodSchema;
@@ -130,13 +130,14 @@ export const parseSchema = (
   jsonSchema: JsonSchema,
   refs: Refs = { seen: new Map(), path: [] },
   blockMeta?: boolean
-): z.ZodType => {
+): ZodTypeAny => {
   if (typeof jsonSchema !== 'object') return jsonSchema ? z.any() : z.never();
 
   if (refs.parserOverride) {
     const custom = refs.parserOverride(jsonSchema, refs);
 
-    if (custom instanceof z.ZodType) {
+    // Check if it's a Zod 3 or Zod 4 schema
+    if (custom && typeof custom === 'object' && ('_def' in custom || '_zod' in custom)) {
       return custom;
     }
   }

@@ -1,4 +1,4 @@
-import { z } from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
@@ -26,7 +26,7 @@ const ensureOriginalIndex = (arr: JsonSchema[]) => {
 export function parseAllOf(
   jsonSchema: JsonSchemaObject & { allOf: JsonSchema[] },
   refs: Refs
-): z.ZodTypeAny {
+): ZodTypeAny {
   if (jsonSchema.allOf.length === 0) {
     return z.never();
   }
@@ -42,5 +42,10 @@ export function parseAllOf(
 
   const [left, right] = half(ensureOriginalIndex(jsonSchema.allOf));
 
-  return z.intersection(parseAllOf({ allOf: left }, refs), parseAllOf({ allOf: right }, refs));
+  // Type assertion needed because parseAllOf returns ZodTypeAny (union type),
+  // but z.intersection expects the specific zod version's type
+  return z.intersection(
+    parseAllOf({ allOf: left }, refs) as z3.ZodTypeAny,
+    parseAllOf({ allOf: right }, refs) as z3.ZodTypeAny
+  ) as ZodTypeAny;
 }

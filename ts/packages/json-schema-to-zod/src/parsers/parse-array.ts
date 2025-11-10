@@ -1,4 +1,5 @@
-import { z } from 'zod/v3';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
@@ -62,26 +63,30 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
     return z.tuple(
       jsonSchema.items.map((v, i) =>
         parseSchema(v, { ...refs, path: [...refs.path, 'items', i] })
-      ) as [z.ZodTypeAny]
-    );
+      ) as [z3.ZodTypeAny, ...z3.ZodTypeAny[]]
+    ) as ZodTypeAny;
   }
 
   let zodSchema = !jsonSchema.items
     ? z.array(z.any())
-    : z.array(parseSchema(jsonSchema.items, { ...refs, path: [...refs.path, 'items'] }));
+    : (z.array(
+        parseSchema(jsonSchema.items, { ...refs, path: [...refs.path, 'items'] }) as z3.ZodTypeAny
+      ) as ZodTypeAny);
 
   zodSchema = extendSchemaWithMessage(
     zodSchema,
     jsonSchema,
     'minItems',
-    (zs, minItems, errorMessage) => zs.min(minItems, errorMessage)
-  );
+    (zs, minItems, errorMessage) =>
+      (zs as z3.ZodArray<any>).min(minItems, errorMessage) as ZodTypeAny
+  ) as ZodTypeAny;
   zodSchema = extendSchemaWithMessage(
     zodSchema,
     jsonSchema,
     'maxItems',
-    (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
-  );
+    (zs, maxItems, errorMessage) =>
+      (zs as z3.ZodArray<any>).max(maxItems, errorMessage) as ZodTypeAny
+  ) as ZodTypeAny;
 
   // Handle generic 'min' property as alias for 'minItems'
   if (
@@ -92,8 +97,9 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
       zodSchema,
       { ...jsonSchema, minItems: (jsonSchema as unknown as { min?: number }).min },
       'minItems',
-      (zs, minItems, errorMessage) => zs.min(minItems, errorMessage)
-    );
+      (zs, minItems, errorMessage) =>
+        (zs as z3.ZodArray<any>).min(minItems, errorMessage) as ZodTypeAny
+    ) as ZodTypeAny;
   }
 
   // Handle generic 'max' property as alias for 'maxItems'
@@ -105,8 +111,9 @@ export const parseArray = (jsonSchema: JsonSchemaObject & { type: 'array' }, ref
       zodSchema,
       { ...jsonSchema, maxItems: (jsonSchema as unknown as { max?: number }).max },
       'maxItems',
-      (zs, maxItems, errorMessage) => zs.max(maxItems, errorMessage)
-    );
+      (zs, maxItems, errorMessage) =>
+        (zs as z3.ZodArray<any>).max(maxItems, errorMessage) as ZodTypeAny
+    ) as ZodTypeAny;
   }
 
   return zodSchema;

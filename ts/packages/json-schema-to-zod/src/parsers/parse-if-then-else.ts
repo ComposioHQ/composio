@@ -1,4 +1,4 @@
-import { z } from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
@@ -21,11 +21,15 @@ export const parseIfThenElse = (
     path: [...refs.path, 'else'],
   });
 
-  return z.union([$then, $else]).superRefine((value, ctx) => {
-    const result = $if.safeParse(value).success ? $then.safeParse(value) : $else.safeParse(value);
+  return z
+    .union([$then, $else] as [z3.ZodTypeAny, z3.ZodTypeAny, ...z3.ZodTypeAny[]])
+    .superRefine((value, ctx) => {
+      const result = ($if as z3.ZodTypeAny).safeParse(value).success
+        ? ($then as z3.ZodTypeAny).safeParse(value)
+        : ($else as z3.ZodTypeAny).safeParse(value);
 
-    if (!result.success) {
-      result.error.errors.forEach(error => ctx.addIssue(error));
-    }
-  });
+      if (!result.success) {
+        result.error.errors.forEach((error: z3.ZodIssue) => ctx.addIssue(error as z3.ZodIssue));
+      }
+    }) as ZodTypeAny;
 };

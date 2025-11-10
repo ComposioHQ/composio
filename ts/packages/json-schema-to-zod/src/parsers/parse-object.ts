@@ -1,4 +1,4 @@
-import * as z from 'zod/v3';
+import { z, z3, type ZodTypeAny } from '../zod-compat';
 
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
@@ -18,7 +18,7 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object
     return z.object({});
   }
 
-  const properties: Record<string, z.ZodTypeAny> = {};
+  const properties: Record<string, ZodTypeAny> = {};
 
   for (const key of propertyKeys) {
     const propJsonSchema = objectSchema.properties[key];
@@ -62,26 +62,33 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object
 
         if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
           // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = propZodSchema.optional().default(null);
+          properties[key] = (propZodSchema as z3.ZodTypeAny).optional().default(null) as ZodTypeAny;
         } else {
           // Make the field nullable with the null default
-          properties[key] = propZodSchema.nullable().optional().default(null);
+          properties[key] = (propZodSchema as z3.ZodTypeAny)
+            .nullable()
+            .optional()
+            .default(null) as ZodTypeAny;
         }
       } else {
-        properties[key] = propZodSchema.optional().default(propJsonSchema.default);
+        properties[key] = (propZodSchema as z3.ZodTypeAny)
+          .optional()
+          .default(propJsonSchema.default) as ZodTypeAny;
       }
     } else {
-      properties[key] = required ? propZodSchema : propZodSchema.optional();
+      properties[key] = required
+        ? propZodSchema
+        : ((propZodSchema as z3.ZodTypeAny).optional() as ZodTypeAny);
     }
   }
 
-  return z.object(properties);
+  return z.object(properties as unknown as z3.ZodRawShape);
 }
 
 export function parseObject(
   objectSchema: JsonSchemaObject & { type?: 'object' },
   refs: Refs
-): z.ZodTypeAny {
+): ZodTypeAny {
   const hasPatternProperties = Object.keys(objectSchema.patternProperties ?? {}).length > 0;
 
   // Ensure type is set to 'object' if not already
@@ -89,9 +96,11 @@ export function parseObject(
     objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
 
   const propertiesSchema:
-    | z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny>
-    | undefined = parseObjectProperties(normalizedSchema, refs);
-  let zodSchema: z.ZodTypeAny | undefined = propertiesSchema;
+    | z3.ZodObject<Record<string, z3.ZodTypeAny>, 'strip', z3.ZodTypeAny>
+    | undefined = parseObjectProperties(normalizedSchema, refs) as
+    | z3.ZodObject<Record<string, z3.ZodTypeAny>, 'strip', z3.ZodTypeAny>
+    | undefined;
+  let zodSchema: ZodTypeAny | undefined = propertiesSchema;
 
   const additionalProperties =
     normalizedSchema.additionalProperties !== undefined
@@ -121,42 +130,76 @@ export function parseObject(
     if (propertiesSchema) {
       if (additionalProperties) {
         zodSchema = propertiesSchema.catchall(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
+          z.union([...patternPropertyValues, additionalProperties] as unknown as [
+            z3.ZodTypeAny,
+            z3.ZodTypeAny,
+            ...z3.ZodTypeAny[],
+          ])
+        ) as ZodTypeAny;
       } else if (Object.keys(parsedPatternProperties).length > 1) {
         zodSchema = propertiesSchema.catchall(
-          z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny])
-        );
+          z.union(
+            patternPropertyValues as unknown as [z3.ZodTypeAny, z3.ZodTypeAny, ...z3.ZodTypeAny[]]
+          )
+        ) as ZodTypeAny;
       } else {
-        zodSchema = propertiesSchema.catchall(patternPropertyValues[0]);
+        zodSchema = propertiesSchema.catchall(
+          patternPropertyValues[0] as z3.ZodTypeAny
+        ) as ZodTypeAny;
       }
     } else {
       if (additionalProperties) {
         zodSchema = z.record(
-          z.union([...patternPropertyValues, additionalProperties] as [z.ZodTypeAny, z.ZodTypeAny])
-        );
+          z.union([...patternPropertyValues, additionalProperties] as unknown as [
+            z3.ZodTypeAny,
+            z3.ZodTypeAny,
+            ...z3.ZodTypeAny[],
+          ])
+        ) as ZodTypeAny;
       } else if (patternPropertyValues.length > 1) {
-        zodSchema = z.record(z.union(patternPropertyValues as [z.ZodTypeAny, z.ZodTypeAny]));
+        zodSchema = z.record(
+          z.union(
+            patternPropertyValues as unknown as [z3.ZodTypeAny, z3.ZodTypeAny, ...z3.ZodTypeAny[]]
+          )
+        ) as ZodTypeAny;
       } else {
-        zodSchema = z.record(patternPropertyValues[0]);
+        zodSchema = z.record(patternPropertyValues[0] as z3.ZodTypeAny) as ZodTypeAny;
       }
     }
 
     const objectPropertyKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
-    zodSchema = zodSchema.superRefine((value: Record<string, unknown>, ctx) => {
-      for (const key in value) {
-        let wasMatched = objectPropertyKeys.has(key);
+    zodSchema = (zodSchema as z3.ZodTypeAny).superRefine(
+      (value: Record<string, unknown>, ctx: z3.RefinementCtx) => {
+        for (const key in value) {
+          let wasMatched = objectPropertyKeys.has(key);
 
-        for (const patternPropertyKey in normalizedSchema.patternProperties) {
-          const regex = new RegExp(patternPropertyKey);
-          if (key.match(regex)) {
-            wasMatched = true;
-            const result = parsedPatternProperties[patternPropertyKey].safeParse(value[key]);
+          for (const patternPropertyKey in normalizedSchema.patternProperties) {
+            const regex = new RegExp(patternPropertyKey);
+            if (key.match(regex)) {
+              wasMatched = true;
+              const result = (
+                parsedPatternProperties[patternPropertyKey] as z3.ZodTypeAny
+              ).safeParse(value[key]);
+              if (!result.success) {
+                ctx.addIssue({
+                  path: [...ctx.path, key],
+                  code: 'custom',
+                  message: `Invalid input: Key matching regex /${key}/ must match schema`,
+                  params: {
+                    issues: result.error.issues,
+                  },
+                });
+              }
+            }
+          }
+
+          if (!wasMatched && additionalProperties) {
+            const result = (additionalProperties as z3.ZodTypeAny).safeParse(value[key]);
             if (!result.success) {
               ctx.addIssue({
                 path: [...ctx.path, key],
                 code: 'custom',
-                message: `Invalid input: Key matching regex /${key}/ must match schema`,
+                message: 'Invalid input: must match catchall schema',
                 params: {
                   issues: result.error.issues,
                 },
@@ -164,24 +207,10 @@ export function parseObject(
             }
           }
         }
-
-        if (!wasMatched && additionalProperties) {
-          const result = additionalProperties.safeParse(value[key]);
-          if (!result.success) {
-            ctx.addIssue({
-              path: [...ctx.path, key],
-              code: 'custom',
-              message: 'Invalid input: must match catchall schema',
-              params: {
-                issues: result.error.issues,
-              },
-            });
-          }
-        }
       }
-    });
+    );
   }
-  let output: z.ZodTypeAny;
+  let output: ZodTypeAny;
   if (propertiesSchema) {
     if (hasPatternProperties) {
       output = zodSchema!;
@@ -192,7 +221,7 @@ export function parseObject(
         // When additionalProperties was explicitly true, use passthrough
         output = propertiesSchema.passthrough();
       } else {
-        output = propertiesSchema.catchall(additionalProperties);
+        output = propertiesSchema.catchall(additionalProperties as z3.ZodTypeAny) as ZodTypeAny;
       }
     } else {
       // When additionalProperties is not specified, treat it as false
@@ -209,7 +238,7 @@ export function parseObject(
         // When additionalProperties was explicitly true, use empty object with passthrough
         output = z.object({}).passthrough();
       } else {
-        output = z.record(additionalProperties);
+        output = z.record(additionalProperties as z3.ZodTypeAny) as ZodTypeAny;
       }
     } else {
       // When no properties and no additionalProperties specified, default to allowing additional properties
@@ -218,7 +247,7 @@ export function parseObject(
   }
 
   if (its.an.anyOf(objectSchema)) {
-    output = output.and(
+    output = (output as z3.ZodTypeAny).and(
       parseAnyOf(
         {
           ...objectSchema,
@@ -231,12 +260,12 @@ export function parseObject(
           ),
         },
         refs
-      )
-    );
+      ) as z3.ZodTypeAny
+    ) as ZodTypeAny;
   }
 
   if (its.a.oneOf(objectSchema)) {
-    output = output.and(
+    output = (output as z3.ZodTypeAny).and(
       parseOneOf(
         {
           ...objectSchema,
@@ -249,12 +278,12 @@ export function parseObject(
           ),
         },
         refs
-      )
-    );
+      ) as z3.ZodTypeAny
+    ) as ZodTypeAny;
   }
 
   if (its.an.allOf(objectSchema)) {
-    output = output.and(
+    output = (output as z3.ZodTypeAny).and(
       parseAllOf(
         {
           ...objectSchema,
@@ -267,8 +296,8 @@ export function parseObject(
           ),
         },
         refs
-      )
-    );
+      ) as z3.ZodTypeAny
+    ) as ZodTypeAny;
   }
 
   return output;
