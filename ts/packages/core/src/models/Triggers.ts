@@ -132,6 +132,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
           cause: error,
           possibleFixes: [
             `Please check the trigger slug`,
+            `Please check the provided version of toolkit has the trigger`,
             `Visit the toolkit page to see the available triggers`,
           ],
         });
