@@ -468,7 +468,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python" }
 dependencies = [
     { name = "composio-client" },
@@ -486,6 +486,9 @@ dev = [
     { name = "langchain-openai" },
     { name = "nox" },
     { name = "pytest" },
+    { name = "pytest-mock" },
+    { name = "pytest-timeout" },
+    { name = "requests" },
     { name = "ruff" },
     { name = "semver" },
     { name = "tomli" },
@@ -494,7 +497,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = ">=1.11.0" },
+    { name = "composio-client", specifier = ">=1.13.0" },
     { name = "openai" },
     { name = "pydantic", specifier = ">=2.6.4" },
     { name = "pysher", specifier = ">=1.0.8" },
@@ -509,6 +512,9 @@ dev = [
     { name = "langchain-openai" },
     { name = "nox", specifier = ">=2025.5.1" },
     { name = "pytest", specifier = ">=8.4.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "pytest-timeout", specifier = ">=2.2.0" },
+    { name = "requests", specifier = ">=2.31.0" },
     { name = "ruff", specifier = ">=0.11.13" },
     { name = "semver", specifier = ">=3.0.4" },
     { name = "tomli", specifier = ">=2.2.1" },
@@ -517,7 +523,7 @@ dev = [
 
 [[package]]
 name = "composio-anthropic"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
@@ -532,7 +538,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "1.11.0"
+version = "1.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -542,14 +548,14 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/00/743270d00550134968c6189ea18d66655c7685970876321bc99e8ebcaaad/composio_client-1.11.0.tar.gz", hash = "sha256:1da2e817f24b6d51ae99ab8f54e2d2aa7286e9af811b21886241998589f3e533", size = 169798 }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/fd/44f8efd598a038ebd6ad05351ac56723cb2ade6b45ffd2252a03d3c046be/composio_client-1.13.0.tar.gz", hash = "sha256:5df08f5a1db5973811a11b2778b0d9b3e8e919d60800e1069a39ce7e478ec138", size = 169964 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/11/d25cf9981d6b0697f4e7ad2e467563960ad84be31b3b034ca7d85cb2f470/composio_client-1.11.0-py3-none-any.whl", hash = "sha256:0491a008394d1e36d936d3b8d75341a35334629b23394fa13ef2adda08ae203c", size = 179628 },
+    { url = "https://files.pythonhosted.org/packages/fc/cd/e3c2c6191dc73a6f4d265d5a9c5ab83d120dd2a5be0225a7f396b1c0d614/composio_client-1.13.0-py3-none-any.whl", hash = "sha256:e9471bcb9337c04ee5e9fa0267a1a480dc7d46ec83ed1258d92b5cb7abc7ea6d", size = 179889 },
 ]
 
 [[package]]
 name = "composio-crewai"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
@@ -564,7 +570,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-gemini"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
@@ -579,7 +585,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/google" }
 dependencies = [
     { name = "composio" },
@@ -594,7 +600,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google-adk"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
@@ -609,7 +615,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-langchain"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
@@ -624,7 +630,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
@@ -639,7 +645,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai-agents"
-version = "0.9.1"
+version = "0.9.2"
 source = { virtual = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
@@ -3145,6 +3151,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/08/ba/45911d754e8eba3d5a841a5ce61a65a685ff1798421ac054f85aa8747dfb/pytest-8.4.1.tar.gz", hash = "sha256:7c67fd69174877359ed9371ec3af8a3d2b04741818c51e5e99cc1742251fa93c", size = 1517714 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/29/16/c8a903f4c4dffe7a12843191437d7cd8e32751d5de349d45d3fe69544e87/pytest-8.4.1-py3-none-any.whl", hash = "sha256:539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7", size = 365474 },
+]
+
+[[package]]
+name = "pytest-mock"
+version = "3.15.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/14/eb014d26be205d38ad5ad20d9a80f7d201472e08167f0bb4361e251084a9/pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f", size = 34036 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d", size = 10095 },
+]
+
+[[package]]
+name = "pytest-timeout"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/82/4c9ecabab13363e72d880f2fb504c5f750433b2b6f16e99f4ec21ada284c/pytest_timeout-2.4.0.tar.gz", hash = "sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a", size = 17973 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/b6/3127540ecdf1464a00e5a01ee60a1b09175f6913f0644ac748494d9c4b21/pytest_timeout-2.4.0-py3-none-any.whl", hash = "sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2", size = 14382 },
 ]
 
 [[package]]

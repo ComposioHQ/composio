@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20250917.0
     '@composio/client':
-      specifier: 0.1.0-alpha.38
-      version: 0.1.0-alpha.38
+      specifier: 0.1.0-alpha.40
+      version: 0.1.0-alpha.40
     ai:
       specifier: 5.0.44
       version: 5.0.44
@@ -442,16 +442,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.20
-        version: 0.4.20(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.2)(zod@3.25.76)
+        version: 0.4.20(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.2)(zod@4.1.12)
       '@llamaindex/workflow':
         specifier: ^1.1.24
-        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
+        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)
       dotenv:
         specifier: ^16.4.1
         version: 16.6.1
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76)
+        version: 0.12.0(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -711,7 +711,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.38
+        version: 0.1.0-alpha.40
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -805,7 +805,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.38
+        version: 0.1.0-alpha.40
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -986,7 +986,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
+        version: 0.12.0(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1399,8 +1399,8 @@ packages:
   '@cloudflare/workers-types@4.20250917.0':
     resolution: {integrity: sha512-Lsn9dZoRYZZCXXHZNa50cMP8kWhQZG9M7WjxNSiXFzC8bk4Wh/0SYYo4YINxEjEt6h2o69LmAhFaJ+qgaJTh8Q==}
 
-  '@composio/client@0.1.0-alpha.38':
-    resolution: {integrity: sha512-+Gm5EQdFCu408YqPb9rKdVK7QD9eLS5wJTeYw1QH9eA6hfLmTBKVHFLc32tbLlY9nFwmClyF7KIB6y4NUfYcQw==}
+  '@composio/client@0.1.0-alpha.40':
+    resolution: {integrity: sha512-xkd+LseCiuFLxiXXtjFgON0bO4M/1AsBQD4omhf2nl5tXJI0sXj72wCf1EXhT2jIu5pgJqJ4H64ZzwoM0fHDvg==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7334,7 +7334,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250917.0': {}
 
-  '@composio/client@0.1.0-alpha.38': {}
+  '@composio/client@0.1.0-alpha.40': {}
 
   '@composio/mcp@1.0.3-0': {}
 
@@ -8203,15 +8203,6 @@ snapshots:
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.20(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.2)(zod@3.25.76)':
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      openai: 5.20.3(ws@8.18.2)(zod@3.25.76)
-    transitivePeerDependencies:
-      - ws
-      - zod
-
   '@llamaindex/openai@0.4.20(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.2)(zod@4.1.12)':
     dependencies:
       '@llamaindex/core': 0.6.22
@@ -8229,13 +8220,13 @@ snapshots:
       rxjs: 7.8.2
       zod: 4.1.12
 
-  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
+  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.18.0
       hono: 4.9.7
       next: 15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1)
       rxjs: 7.8.2
-      zod: 3.25.76
+      zod: 4.1.12
 
   '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.8.0)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)':
     dependencies:
@@ -8250,11 +8241,11 @@ snapshots:
       - rxjs
       - zod
 
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
+      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -11516,34 +11507,12 @@ snapshots:
       rfdc: 1.4.1
       wrap-ansi: 9.0.0
 
-  llamaindex@0.12.0(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76):
+  llamaindex@0.12.0(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12):
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
       '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
-      '@types/lodash': 4.17.20
-      '@types/node': 24.6.2
-      lodash: 4.17.21
-      magic-bytes.js: 1.12.1
-    transitivePeerDependencies:
-      - '@huggingface/transformers'
-      - '@modelcontextprotocol/sdk'
-      - gpt-tokenizer
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - tree-sitter
-      - web-tree-sitter
-      - zod
-
-  llamaindex@0.12.0(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12):
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.8.0)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.18.0)(hono@4.9.7)(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)
       '@types/lodash': 4.17.20
       '@types/node': 24.6.2
       lodash: 4.17.21
