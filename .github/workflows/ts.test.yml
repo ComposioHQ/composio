@@ -3,8 +3,12 @@ name: Test Typescript SDK
 on:
   push:
     branches: [main, next]
+    paths:
+      - "ts/**"
   pull_request:
     branches: [main, next]
+    paths:
+      - "ts/**"
 
 jobs:
   test:

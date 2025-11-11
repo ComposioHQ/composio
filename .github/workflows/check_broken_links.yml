@@ -16,7 +16,7 @@ jobs:
       image: ghcr.io/composiohq/dev-base:latest
     permissions: read-all
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
     steps:
       - name: Checkout repository

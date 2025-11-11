@@ -59,14 +59,27 @@ Composio provides support for frameworks like this by making sure the tools are 
 In case you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
 
 <Tip icon="lightbulb">
-  **Finding tool arguments**: In the [Auth Configs
-  tab](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools &
-  Triggers → Select the tool to see its required and optional parameters, types, and descriptions.
+  **Finding tool parameters and types:** 
+  
+  **Platform UI**: [Auth Configs](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools & Triggers → Select the tool to see its required and optional parameters
+  
+  **CLI**: For python and typescript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
 </Tip>
+
 <CodeGroup>
-  <SnippetCode src="fern/snippets/tool-calling/python/direct-tool-call.py" title="Python" />
-  <SnippetCode src="fern/snippets/tool-calling/typescript/direct-tool-call.ts" title="TypeScript" />
+  <SnippetCode
+    src="fern/snippets/tool-calling/python/direct-tool-call.py"
+    title="Python"
+  />
+  <SnippetCode
+    src="fern/snippets/tool-calling/typescript/direct-tool-call.ts"
+    title="TypeScript"
+  />
 </CodeGroup>
+
+<Note>
+The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/toolkit-versioning) for all configuration options.
+</Note>
 
 ### Proxy Execute -- Manually calling toolkit APIs
 

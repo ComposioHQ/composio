@@ -29,31 +29,52 @@ typography:
     - path: assets/IBMPlexMono-Light.ttf
       weight: '400'
 navbar-links:
-- type: filled
-  text: LOG IN
+- type: minimal
+  text: Status
+  url: https://status.composio.dev/
+- type: outlined
+  text: Dashboard
+  rightIcon: fa-light fa-arrow-up-right
   url: https://platform.composio.dev/auth
 layout:
   page-width: full
+  content-width: 60rem
   tabs-placement: header
-  searchbar-placement: header-tabs
-  header-height: 50px
+  searchbar-placement: header
+  header-height: 64px
   sidebar-width: 298px
+ai-search:
+  location:
+  - docs
+  - slack
+  system-prompt: |
+    You are Composio's Ask AI assistant for the Composio documentation.
+    Task: deliver precise, developer-ready answers grounded only in the indexed Composio documentation, uploaded documents, or approved website captures or github sources.
+    Response style:
+    - Lead with the direct answer. Use short paragraphs or bullet steps for procedures.
+    - Highlight any required commands or code with fenced blocks when needed.
+    Citation rules:
+    - Always include markdown citations to every source you rely on.
+    - If no indexed source supports the question, state that the information is unavailable and suggest where the user might look (e.g., support, roadmap).
+    Safety:
+    - Never fabricate features, integrations, pricing, or timelines.
+    - Decline questions outside the available sources.
 settings:
   hide-404-page: true
   http-snippets: true
 colors:
   accent-primary:
     light: '#FF782F'
-    dark: '#FF782F'
+    dark: '#FF9233'
   background:
     light: '#F7F4F0'
     dark: '#0F0602'
   sidebar-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
+    light: '#F7F4F0'
+    dark: '#0F0602'
   header-background:
-    light: '#F3EFEB'
-    dark: '#160F0C'
+    light: '#F7F4F0'
+    dark: '#0F0602'
 analytics:
   posthog:
     api-key: ${POSTHOG_API_KEY}
@@ -63,36 +84,36 @@ redirects:
 tabs:
   docs:
     display-name: Guides
-    icon: book
+    icon: fa-light fa-book
     slug: docs
   sdk-reference:
     display-name: SDK Reference
-    icon: code
+    icon: fa-light fa-code
   api-reference:
     display-name: API Reference
-    icon: server
+    icon: fa-light fa-server
     skip-slug: true
   toolkits:
     display-name: Toolkits
-    icon: tools
+    icon: fa-light fa-tools
     skip-slug: true
   providers:
     display-name: Providers
-    icon: code
+    icon: fa-light fa-code
     skip-slug: true
   examples:
     display-name: Examples
-    icon: running
+    icon: fa-light fa-running
     skip-slug: true
   changelog:
     display-name: Changelog
-    icon: history
+    icon: fa-light fa-history
     changelog: ./pages/src/changelog
 navigation:
 - tab: docs
   layout:
   - section: Get Started
-    icon: rocket
+    icon: fa-light fa-rocket
     skip-slug: true
     contents:
     - page: Welcome
@@ -111,7 +132,7 @@ navigation:
       path: pages/dist/get-started/providers.mdx
       slug: providers
   - section: Tools
-    icon: wrench
+    icon: fa-light fa-wrench
     skip-slug: true
     contents:
     - page: Authenticating Tools
@@ -123,20 +144,26 @@ navigation:
     - page: Executing Tools
       path: pages/dist/tool-calling/executing-tools.mdx
       slug: executing-tools
-    - page: Modifying tool schemas
-      path: pages/dist/tool-calling/schema-modifiers.mdx
-      slug: modifying-tool-schemas
-    - page: Modifying tool inputs
-      path: pages/dist/tool-calling/before-execution-modifiers.mdx
-      slug: modifying-tool-inputs
-    - page: Modifying tool outputs
-      path: pages/dist/tool-calling/after-execution-modifiers.mdx
-      slug: modifying-tool-outputs
+    - section: Modify tool behavior
+      slug: tools/modify
+      contents:
+      - page: Modifying tool schemas
+        path: pages/dist/tool-calling/schema-modifiers.mdx
+        slug: modifying-tool-schemas
+      - page: Modifying tool inputs
+        path: pages/dist/tool-calling/before-execution-modifiers.mdx
+        slug: modifying-tool-inputs
+      - page: Modifying tool outputs
+        path: pages/dist/tool-calling/after-execution-modifiers.mdx
+        slug: modifying-tool-outputs
     - page: Custom tools
       path: pages/dist/tool-calling/custom-tools.mdx
       slug: custom-tools
+    - page: Toolkit Versioning
+      path: pages/dist/tool-calling/toolkit-versioning.mdx
+      slug: toolkit-versioning
   - section: Authentication
-    icon: key
+    icon: fa-light fa-key
     skip-slug: true
     contents:
     - page: Custom Auth Configs
@@ -152,14 +179,14 @@ navigation:
       path: pages/dist/authentication/user-management.mdx
       slug: user-management
   - section: Triggers
-    icon: bolt
+    icon: fa-light fa-bolt
     skip-slug: true
     contents:
     - page: Using Triggers
       path: pages/dist/triggers/using-triggers.mdx
       slug: using-triggers
   - section: MCP
-    icon: database
+    icon: fa-light fa-database
     skip-slug: true
     contents:
     - page: Quickstart
@@ -175,53 +202,68 @@ navigation:
       path: pages/dist/mcp/partner-api.mdx
       slug: mcp-partner-api
   - section: Tool Router (Beta)
-    icon: flask
+    icon: fa-light fa-flask
     skip-slug: true
     contents:
     - page: Quick Start
       path: pages/dist/tool-router/quick-start.mdx
       slug: tool-router/quick-start
   - section: Resources
-    icon: book
+    icon: fa-light fa-book
     skip-slug: true
     contents:
+    - page: CLI
+      path: pages/dist/resources/cli.mdx
+      slug: cli
     - page: Debugging Info
-      path: pages/dist/debugging-info.mdx
+      path: pages/dist/resources/debugging-info.mdx
       slug: resources/debugging-info
-    - page: Migration Guide
-      path: pages/dist/migration-guide.mdx
-      slug: migration
+    - section: Migration Guides
+      slug: migration-guide
+      contents:
+        - page: Overview
+          path: pages/dist/migration-guide/index.mdx
+          slug: overview
+        - page: New SDK Migration
+          path: pages/dist/migration-guide/new-sdk.mdx
+          slug: new-sdk
+        - page: Toolkit Versioning Migration
+          path: pages/dist/migration-guide/toolkit-versioning.mdx
+          slug: toolkit-versioning
     - section: Troubleshooting
       slug: troubleshooting
       contents:
       - page: Overview
-        path: pages/dist/troubleshooting/overview.mdx
+        path: pages/dist/resources/troubleshooting/overview.mdx
         slug: overview
       - page: API
-        path: pages/dist/troubleshooting/api.mdx
+        path: pages/dist/resources/troubleshooting/api.mdx
         slug: api
       - page: Authentication
-        path: pages/dist/troubleshooting/authentication.mdx
+        path: pages/dist/resources/troubleshooting/authentication.mdx
         slug: authentication
+      - page: CLI
+        path: pages/dist/resources/troubleshooting/cli.mdx
+        slug: cli
       - page: Dashboard
-        path: pages/dist/troubleshooting/dashboard.mdx
+        path: pages/dist/resources/troubleshooting/dashboard.mdx
         slug: dashboard
       - page: MCP
-        path: pages/dist/troubleshooting/mcp.mdx
+        path: pages/dist/resources/troubleshooting/mcp.mdx
         slug: mcp
       - page: SDKs
-        path: pages/dist/troubleshooting/sdks.mdx
+        path: pages/dist/resources/troubleshooting/sdks.mdx
         slug: sdks
       - page: Tools & Toolkits
-        path: pages/dist/troubleshooting/tools.mdx
+        path: pages/dist/resources/troubleshooting/tools.mdx
         slug: tools
       - page: Triggers
-        path: pages/dist/troubleshooting/triggers.mdx
+        path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
 - tab: examples
   layout:
   - section: Getting Started
-    icon: rocket
+    icon: fa-light fa-rocket
     skip-slug: true
     contents:
     - page: Basic FastAPI Server
@@ -231,7 +273,7 @@ navigation:
       path: pages/dist/examples/hono.mdx
       slug: examples/hono
   - section: Productivity & Automation
-    icon: zap
+    icon: fa-light fa-bolt
     skip-slug: true
     contents:
     - page: Gmail Labeller
@@ -244,14 +286,14 @@ navigation:
       path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
       slug: examples/supabase-sql-agent
   - section: Full Stack Applications
-    icon: globe
+    icon: fa-light fa-globe
     skip-slug: true
     contents:
     - page: Full Stack Chat App
       path: pages/dist/examples/chat_applications/vercel_chat.mdx
       slug: examples/vercel-chat
   - section: Behind the curtain
-    icon: person-booth
+    icon: fa-light fa-person-booth
     skip-slug: true
     contents:
     - page: Tool Generator
@@ -260,7 +302,7 @@ navigation:
 - tab: providers
   layout:
   - section: Supported Providers
-    icon: code
+    icon: fa-light fa-code
     contents:
     - page: OpenAI Provider
       path: pages/dist/providers/openai.mdx
@@ -282,7 +324,7 @@ navigation:
       path: pages/dist/providers/mastra.mdx
   - section: Writing your own provider
     skip-slug: true
-    icon: code
+    icon: fa-light fa-code
     contents:
     - page: TypeScript
       path: pages/dist/providers/ts-custom.mdx
@@ -328,40 +370,54 @@ navigation:
 - tab: sdk-reference
   layout:
   - section: Python
-    icon: python
+    slug: python
+    icon: fa-brands fa-python
     contents:
     - page: Python SDK Reference
+      slug: python-sdk-reference
       path: pages/dist/sdk/python/sdk-reference.md
   - section: TypeScript
-    icon: typescript
+    slug: type-script
+    icon: fa-brands fa-js
     contents:
     - section: Core Classes
       slug: core-classes
       contents:
       - page: Composio
+        slug: composio
         path: pages/dist/sdk/typescript/composio/classes/Composio.mdx
       - page: ComposioProvider
+        slug: composio-provider
         path: pages/dist/sdk/typescript/provider/ComposioProvider/classes/ComposioProvider.mdx
       - page: OpenAIProvider
+        slug: open-ai-provider
         path: pages/dist/sdk/typescript/provider/OpenAIProvider/classes/OpenAIProvider.mdx
       - page: BaseAgenticProvider
+        slug: base-agentic-provider
         path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseAgenticProvider.mdx
       - page: BaseNonAgenticProvider
+        slug: base-non-agentic-provider
         path: pages/dist/sdk/typescript/provider/BaseProvider/classes/BaseNonAgenticProvider.mdx
     - section: Models
       slug: models
       contents:
       - page: Tools
+        slug: tools
         path: pages/dist/sdk/typescript/models/Tools/classes/Tools.mdx
       - page: Toolkits
+        slug: toolkits
         path: pages/dist/sdk/typescript/models/Toolkits/classes/Toolkits.mdx
       - page: Triggers
+        slug: triggers
         path: pages/dist/sdk/typescript/models/Triggers/classes/Triggers.mdx
       - page: AuthConfigs
+        slug: auth-configs
         path: pages/dist/sdk/typescript/AuthConfigs/classes/AuthConfigs.mdx
       - page: ConnectedAccounts
+        slug: connected-accounts
         path: pages/dist/sdk/typescript/ConnectedAccounts/classes/ConnectedAccounts.mdx
       - page: CustomTools
+        slug: custom-tools
         path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
 - tab: api-reference
   layout:

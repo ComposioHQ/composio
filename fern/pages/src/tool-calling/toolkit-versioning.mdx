@@ -1,0 +1,97 @@
+---
+title: Toolkit versioning
+image: "https://og.composio.dev/api/og?title=Toolkit%20versioning"
+keywords: "toolkit versioning, tool version, version pinning, stable tools"
+subtitle: "Pin specific tool versions for consistent behavior in production"
+hide-nav-links: false
+---
+
+Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back when needed.
+
+<Note>
+Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution.
+</Note>
+
+## Configuration methods
+
+Configure toolkit versions using one of three methods:
+
+### SDK initialization
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/versioning-sdk-init.py"
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/versioning-sdk-init.ts"
+  title="TypeScript"
+/>
+</CodeGroup>
+
+### Environment variables
+
+```bash
+# Set versions for specific toolkits
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_SLACK="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_GMAIL="20251027_00"
+```
+
+### Per-execution override
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/versioning-per-execution.py"
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/versioning-per-execution.ts"
+  title="TypeScript"
+/>
+</CodeGroup>
+
+## Version format
+
+Versions follow the format `YYYYMMDD_NN`:
+- `YYYYMMDD`: Release date
+- `NN`: Sequential release number
+
+```python
+# Production
+toolkit_versions = {"github": "20251027_00"}
+
+# Development  
+toolkit_versions = {"github": "latest"}
+```
+
+<Warning>
+Never use `latest` in production. It can introduce breaking changes.
+</Warning>
+
+## Version resolution order
+
+1. Per-execution version (highest priority)
+2. SDK initialization version
+3. Environment variable (toolkit-specific)
+
+## Managing versions
+
+Check available versions using:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/versioning-manage.py"
+  startLine={5}
+  endLine={11}
+  title="Python"
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/versioning-manage.ts"
+  startLine={5}
+  endLine={12}
+  title="TypeScript"
+/>
+</CodeGroup>
+
+

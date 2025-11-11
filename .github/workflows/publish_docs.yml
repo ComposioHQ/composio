@@ -12,7 +12,7 @@ on:
         default: 'next'
         type: string
   repository_dispatch:
-    types: [apollo-production-deploy]
+    types: [apollo-production-deploy, mercury-production-deploy]
 
 jobs:
   run:
@@ -22,7 +22,7 @@ jobs:
     if: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1) || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
     permissions: write-all
     env:
-      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,7 +31,12 @@ jobs:
         run: |
           echo "Workflow triggered by: ${{ github.event_name }}"
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "Triggered by Apollo production deployment"
+            echo "Repository dispatch action: ${{ github.event.action }}"
+            if [ "${{ github.event.action }}" = "apollo-production-deploy" ]; then
+              echo "Triggered by Apollo production deployment"
+            elif [ "${{ github.event.action }}" = "mercury-production-deploy" ]; then
+              echo "Triggered by Mercury production deployment"
+            fi
             echo "Hermes commit: ${{ github.event.client_payload.hermes_commit }}"
             echo "Timestamp: ${{ github.event.client_payload.timestamp }}"
           fi

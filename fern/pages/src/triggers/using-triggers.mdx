@@ -53,7 +53,8 @@ Some triggers require additional configuration. The dashboard will prompt you fo
 </Frame>
 
 ### Using SDK
-Create triggers programmatically by providing the trigger type and any required configuration.
+Create triggers programmatically by providing the trigger type and any required configuration. The trigger instance will be created using the toolkit version configured during Composio initialization (defaults to `'latest'`).
+
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/triggers/python/triggers.py"
@@ -73,6 +74,10 @@ Create triggers programmatically by providing the trigger type and any required 
   title="TypeScript"
 />
 </CodeGroup>
+
+<Note>
+To use a specific toolkit version when creating triggers, configure `toolkitVersions` during initialization. See [Toolkit Versioning](/docs/toolkit-versioning) for more details.
+</Note>
 
 
 ## Subscribing to triggers
@@ -212,7 +217,3 @@ await composio.triggers.enable('ti_abcd123');
 ## Troubleshooting
 
 View detailed trigger logs and debug issues on the [Composio dashboard](https://platform.composio.dev?next_page=/logs/triggers).
-
-```
-
-```

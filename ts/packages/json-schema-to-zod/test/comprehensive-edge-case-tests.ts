@@ -1,5 +1,4 @@
 import { jsonSchemaToZod } from '../src/json-schema-to-zod';
-import zodToJsonSchema from 'zod-to-json-schema';
 import type { JsonSchema } from '../src/types';
 
 console.log('=== Testing Complex Schema Edge Cases ===\n');
@@ -52,7 +51,7 @@ console.log('Original schema:');
 console.log(JSON.stringify(originalAnyOfSchema, null, 2));
 
 const zodSchema1 = jsonSchemaToZod(originalAnyOfSchema);
-const backToJson1 = zodToJsonSchema(zodSchema1, { target: 'jsonSchema7' });
+const backToJson1 = {}; // zodToJsonSchema removed - no longer compatible with zod v4
 
 console.log('\nConverted back to JSON:');
 console.log(JSON.stringify(backToJson1, null, 2));
@@ -130,10 +129,6 @@ console.log('Original schema:');
 console.log(JSON.stringify(arrayUnionSchema, null, 2));
 
 const zodSchema2 = jsonSchemaToZod(arrayUnionSchema);
-const backToJson2 = zodToJsonSchema(zodSchema2, { target: 'jsonSchema7' });
-
-console.log('\nConverted back to JSON:');
-console.log(JSON.stringify(backToJson2, null, 2));
 
 console.log('\nTesting parsing:');
 try {
@@ -229,10 +224,6 @@ console.log('Original schema:');
 console.log(JSON.stringify(complexNestedSchema, null, 2));
 
 const zodSchema3 = jsonSchemaToZod(complexNestedSchema);
-const backToJson3 = zodToJsonSchema(zodSchema3, { target: 'jsonSchema7' });
-
-console.log('\nConverted back to JSON:');
-console.log(JSON.stringify(backToJson3, null, 2));
 
 console.log('\nTesting parsing:');
 try {

@@ -31,7 +31,7 @@ import {
   transformTriggerTypeListResponse,
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
-import { ToolkitVersionParam } from '../types/tool.types';
+import { ToolkitVersion, ToolkitVersionParam } from '../types/tool.types';
 import { ComposioConfig } from '../composio';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 /**
@@ -48,7 +48,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     this.client = client;
     this.pusherService = new PusherService(client);
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
-    telemetry.instrument(this);
+    telemetry.instrument(this, 'Triggers');
   }
 
   /**
@@ -132,6 +132,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
           cause: error,
           possibleFixes: [
             `Please check the trigger slug`,
+            `Please check the provided version of toolkit has the trigger`,
             `Visit the toolkit page to see the available triggers`,
           ],
         });
@@ -199,6 +200,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     const result = await this.client.triggerInstances.upsert(slug, {
       connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
+      toolkit_versions: this.toolkitVersions,
     });
 
     return {
@@ -283,14 +285,17 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   }
 
   /**
-   * Retrieve a trigger type by its slug
+   * Retrieve a trigger type by its slug for the provided version of the app
+   * Use the global toolkit versions param when initializing composio to pass a toolkitversion
    *
    * @param {string} slug - The slug of the trigger type
-   * @param {RequestOptions} options - request options
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    const result = await this.client.triggersTypes.retrieve(slug);
+    const result = await this.client.triggersTypes.retrieve(slug, {
+      // if the version is provided override the global version
+      toolkit_versions: this.toolkitVersions,
+    });
     return transformTriggerTypeRetrieveResponse(result);
   }
 
@@ -298,7 +303,6 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Fetches the list of all the available trigger enums
    *
    * This method is used by the CLI where filters are not required.
-   * @param options
    * @returns
    */
   async listEnum(): Promise<TriggersTypeRetrieveEnumResponse> {

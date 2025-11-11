@@ -42,7 +42,7 @@ export function createConnectionRequest(
     redirectUrl,
   };
 
-  telemetry.instrument(state);
+  telemetry.instrument(state, 'ConnectionRequest');
 
   /**
    * Waits for the connection request to complete and become active.
