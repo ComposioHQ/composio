@@ -5,9 +5,9 @@ import { stepCountIs, streamText } from "ai";
 import { modifiers } from "./logger";
 
 const composio = new Composio({
-  provider: new VercelProvider()
+  provider: new VercelProvider(),
+  disableVersionCheck: true
 });
-
 
 const session = await composio.experimental.create('user_123');
 const tools = await session.tools({...modifiers});
