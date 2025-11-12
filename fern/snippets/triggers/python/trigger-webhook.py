@@ -7,8 +7,6 @@ import hashlib
 import base64
 import os
 
-app = FastAPI(title="Webhook Demo")
-
 def verify_webhook_signature(request: Request, body: bytes) -> bool:
     """Verify Composio webhook signature"""
     webhook_signature = request.headers.get("webhook-signature")

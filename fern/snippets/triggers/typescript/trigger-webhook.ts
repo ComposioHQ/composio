@@ -37,36 +37,21 @@ function verifyWebhookSignature(
 }
 
 export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      status: 'error', 
-      message: 'Method not allowed' 
-    });
+  const payload = req.body;
+
+  if (payload.type === 'github_star_added_event') {
+    const event: TriggerEvent<GitHubStarEventData> = {
+      type: payload.type,
+      timestamp: payload.timestamp,
+      data: payload.data
+    };
+    
+    console.log(`Repository ${event.data.repository_name} starred by ${event.data.starred_by}`);
+    // Add your business logic here
   }
 
-  try {
-    const payload = req.body;
-
-    if (payload.type === 'github_star_added_event') {
-      const event: TriggerEvent<GitHubStarEventData> = {
-        type: payload.type,
-        timestamp: payload.timestamp,
-        data: payload.data
-      };
-      
-      console.log(`Repository ${event.data.repository_name} starred by ${event.data.starred_by}`);
-      // Add your business logic here
-    }
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Webhook processed'
-    });
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Internal server error'
-    });
-  }
+  res.status(200).json({
+    status: 'success',
+    message: 'Webhook processed'
+  });
 }
