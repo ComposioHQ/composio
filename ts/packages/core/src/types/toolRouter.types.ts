@@ -93,15 +93,27 @@ export type ToolRouterAuthorizeFn = (
   toolkit: string,
   options?: { callbackUrl?: string }
 ) => Promise<ConnectionRequest>;
-export type ToolRouterConectionsFn = () => Promise<Record<string, ToolkitConnectionState>>;
+export type ToolRouterToolkitsFn = () => Promise<Record<string, ToolkitConnectionState>>;
 export interface ToolRouterSession<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
+  /**
+   * The session id of the tool router session.
+   */
   sessionId: string;
+  /**
+   * The MCP server config of the tool router session.
+   */
   mcp: ToolRouterMCPServerConfig;
+  /**
+   * The tools of the tool router session.
+   */
   tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
+  /**
+   * The authorize function of the tool router session.
+   */
   authorize: ToolRouterAuthorizeFn;
-  conections: ToolRouterConectionsFn;
+  toolkits: ToolRouterToolkitsFn;
 }

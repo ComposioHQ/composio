@@ -1,0 +1,34 @@
+{
+  "name": "tool-router-example",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Example project for Tool-router",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "composio",
+    "example",
+    "tool-router"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.65",
+    "@composio/core": "workspace:*",
+    "@composio/vercel": "workspace:*",
+    "ai": "catalog:",
+    "dotenv": "^16.4.1",
+    "i": "^0.3.7",
+    "ora": "^9.0.0",
+    "pnpm": "^10.21.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "typescript": "catalog:"
+  }
+}
