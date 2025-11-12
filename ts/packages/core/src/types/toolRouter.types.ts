@@ -30,28 +30,25 @@ export const ToolRouterConfigSchema = z
   .object({
     toolkits: z
       .union([ToolRouterToolkitsParamSchema, ToolRouterToolkitsConfigSchema])
-      .optional()
       .describe('The toolkits to use in the tool router session')
       .default([]),
     manageConnections: z
       .union([z.boolean(), ToolRouterManageConnectionsConfigSchema])
-      .optional()
       .default(true),
     authConfigs: z
       .record(z.string(), z.string())
-      .optional()
       .describe(
         'The auth configs to use in the tool router session. The key is the toolkit slug, the value is the auth config id.'
       )
       .default({}),
     connectedAccounts: z
       .record(z.string(), z.string())
-      .optional()
       .describe(
         'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is the connected account id.'
       )
       .default({}),
   })
+  .partial()
   .describe('The config for the tool router session');
 export type ToolRouterConfig = z.infer<typeof ToolRouterConfigSchema>;
 
