@@ -17,7 +17,9 @@ from composio.core.models import (
 )
 from composio.core.models.base import allow_tracking
 from composio.core.models.mcp import MCP
-from composio.core.models.tool_router_experimental import ToolRouter as ExperimentalToolRouter
+from composio.core.models.tool_router_experimental import (
+    ToolRouter as ExperimentalToolRouter,
+)
 from composio.core.provider import TProvider
 from composio.core.provider._openai import OpenAIProvider
 from composio.core.types import ToolkitVersionParam
@@ -41,13 +43,16 @@ class SDKConfig(te.TypedDict):
 class ExperimentalNamespace:
     """Namespace for experimental Composio features."""
 
-    def __init__(self, tool_router: ExperimentalToolRouter):
+    def __init__(
+        self, experimental_tool_router: ExperimentalToolRouter, tool_router: ToolRouter
+    ):
         """
         Initialize experimental namespace.
 
         :param tool_router: Experimental ToolRouter instance
         """
-        self.tool_router = tool_router
+        self.tool_router = experimental_tool_router
+        self.create = tool_router.create
 
 
 class Composio(t.Generic[TProvider], WithLogger):
@@ -106,7 +111,6 @@ class Composio(t.Generic[TProvider], WithLogger):
             client=self._client,
             provider=self.provider,
         )
-        self.create = self.tool_router.create
         self.toolkits = Toolkits(client=self._client)
         self.triggers = Triggers(client=self._client, toolkit_versions=toolkit_versions)
         self.auth_configs = AuthConfigs(client=self._client)
@@ -115,7 +119,8 @@ class Composio(t.Generic[TProvider], WithLogger):
 
         # Initialize experimental features
         self.experimental = ExperimentalNamespace(
-            tool_router=ExperimentalToolRouter(client=self._client),
+            experimental_tool_router=ExperimentalToolRouter(client=self._client),
+            tool_router=self.tool_router,
         )
 
     @property

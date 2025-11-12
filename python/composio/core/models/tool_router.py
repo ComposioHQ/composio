@@ -7,6 +7,7 @@ for creating isolated MCP sessions with provider-wrapped tools.
 
 from __future__ import annotations
 
+import functools
 import typing as t
 from dataclasses import dataclass
 
@@ -16,6 +17,7 @@ from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.provider import TProvider
+from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.uuid import generate_short_id
 
 if t.TYPE_CHECKING:
@@ -29,23 +31,23 @@ ConnectionsFn = t.Callable[[], t.Dict[str, t.Any]]
 
 class ToolRouterToolkitsConfig(te.TypedDict, total=False):
     """Configuration for toolkit filtering in tool router session.
-    
+
     Attributes:
         disabled: List of toolkit slugs to disable in the tool router session.
     """
-    
+
     disabled: t.List[str]
 
 
 class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     """Configuration for connection management in tool router session.
-    
+
     Attributes:
         enabled: Whether to use tools to manage connections. Defaults to True.
                 If False, you need to manage connections manually.
         callback_url: Optional callback URL to use for OAuth redirects.
     """
-    
+
     enabled: bool
     callback_url: str
 
@@ -56,6 +58,15 @@ class MCPServerConfig:
 
     type: str
     url: str
+
+
+@dataclass
+class ToolRouterResponse:
+    """Response from tool router creation."""
+
+    session_id: str
+    mcp: MCPServerConfig
+    tools: t.List[str]
 
 
 @dataclass
@@ -93,7 +104,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         tool_router = composio.tools.get_tool_router()
 
         # Create a session for a user
-        session = await tool_router.create(
+        session = tool_router.create(
             user_id='user_123',
             config={
                 'manage_connections': True
@@ -104,7 +115,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         tools = session.tools()
 
         # Authorize a toolkit
-        connection_request = await session.authorize('github')
+        connection_request = session.authorize('github')
         print(f"Redirect URL: {connection_request.redirect_url}")
         ```
     """
@@ -123,9 +134,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         super().__init__(client)
         self._provider = provider
 
-    def _create_authorize_fn(
-        self, session_id: str, user_id: str
-    ) -> AuthorizeFn:
+    def _create_authorize_fn(self, session_id: str, user_id: str) -> AuthorizeFn:
         """
         Create an authorization function for the session.
 
@@ -156,9 +165,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         return authorize_fn
 
-    def _create_connections_fn(
-        self, session_id: str, user_id: str
-    ) -> ConnectionsFn:
+    def _create_connections_fn(self, session_id: str, user_id: str) -> ConnectionsFn:
         """
         Create a connections function for the session.
 
@@ -182,7 +189,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     def _create_tools_fn(
         self,
         user_id: str,
-        tools: t.List[t.Any],
+        tools: t.List[str],
     ) -> t.Callable[[t.Optional[Modifiers]], t.Any]:
         """
         Create a tools function that wraps tools for the provider.
@@ -205,42 +212,79 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             :param modifiers: Optional execution modifiers
             :return: Provider-wrapped tools
             """
-            # Get the tool slugs
-            tool_slugs = [tool.slug for tool in tools]
-
-            # Get and wrap tools for the provider
-            return tools_model.get(
-                user_id=user_id,
-                tools=tool_slugs,
-                modifiers=modifiers,
+            router_tools = tools_model.get(
+                user_id=user_id, tools=tools, modifiers=modifiers
             )
+            return router_tools
 
         return tools_fn
 
+    def _wrap_execute_tool(
+        self,
+        tools_model: "Tools",
+        modifiers: t.Optional[Modifiers] = None,
+        user_id: t.Optional[str] = None,
+    ) -> AgenticProviderExecuteFn:
+        """Wrap the execute tool function for tool router session."""
+        return t.cast(
+            AgenticProviderExecuteFn,
+            functools.partial(
+                tools_model.execute,
+                modifiers=modifiers,
+                user_id=user_id,
+                dangerously_skip_version_check=True,
+            ),
+        )
+
     def _get_tool_router_tools(
-        self, user_id: str, tool_slugs: t.List[str]
-    ) -> t.List[t.Any]:
+        self,
+        user_id: str,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+    ) -> t.List[str]:
         """
         Get tool router tools by slugs.
 
         :param user_id: The user ID
-        :param tool_slugs: List of tool slugs to retrieve
+        :param manage_connections: Whether to include connection management tools.
+                                  Can be a boolean or config object with 'enabled' and 'callback_url'.
         :return: List of raw tool objects
         """
-        from composio.core.models.tools import Tools as ToolsModel
 
-        tools_model = ToolsModel(
-            client=self._client,
-            provider=self._provider,
-        )
+        # Define tool router tool slugs
+        # Ideally the server will response with full tool specs
+        tool_router_tool_slugs = [
+            "COMPOSIO_SEARCH_TOOLS",
+            "COMPOSIO_REMOTE_WORKBENCH",
+            "COMPOSIO_MULTI_EXECUTE_TOOL",
+            "COMPOSIO_REMOTE_BASH_TOOL",
+        ]
 
-        return tools_model.get_raw_composio_tools(tools=tool_slugs)
+        # Determine if connection management should be enabled
+        connection_management_enabled = False
+
+        if manage_connections is not None:
+            if isinstance(manage_connections, bool):
+                connection_management_enabled = manage_connections
+            else:
+                # It's a ToolRouterManageConnectionsConfig dict
+                connection_management_enabled = manage_connections.get("enabled", True)
+                # TODO: Use callback_url from manage_connections.get("callback_url") when backend API supports it
+
+        # Add connection management tool if requested
+        if connection_management_enabled:
+            tool_router_tool_slugs.append("COMPOSIO_MANAGE_CONNECTIONS")
+
+        return tool_router_tool_slugs
 
     def create(
         self,
         user_id: str,
         toolkits: t.Optional[t.Union[t.List[str], ToolRouterToolkitsConfig]] = None,
-        manage_connections: t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
     ) -> ToolRouterSession[TProvider]:
@@ -294,55 +338,36 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             connection = session.authorize('github')
             ```
         """
-        # Define tool router tool slugs 
-        # Ideally the server will response with full tool specs
-        tool_router_tool_slugs = [
-            "COMPOSIO_SEARCH_TOOLS",
-            "COMPOSIO_REMOTE_WORKBENCH",
-            "COMPOSIO_MULTI_EXECUTE_TOOL",
-            "COMPOSIO_REMOTE_BASH_TOOL",
-        ]
-
-        # Determine if connection management should be enabled
-        connection_management_enabled = False
-        callback_url: t.Optional[str] = None
-        
-        if manage_connections is not None:
-            if isinstance(manage_connections, bool):
-                connection_management_enabled = manage_connections
-            else:
-                # It's a ToolRouterManageConnectionsConfig dict
-                connection_management_enabled = manage_connections.get("enabled", True)
-                callback_url = manage_connections.get("callback_url")
-
-        # Add connection management tool if requested
-        if connection_management_enabled:
-            tool_router_tool_slugs.append("COMPOSIO_MANAGE_CONNECTIONS")
-
-        # Generate session ID
-        session_id = generate_short_id()
-
-        # Get the tools
-        tools = self._get_tool_router_tools(user_id, tool_router_tool_slugs)
-
-        # TODO: Handle toolkits filtering (enabled/disabled)
-        # TODO: Handle auth_configs mapping
-        # TODO: Handle connected_accounts mapping
+        # TODO: Make the API call to get session and tools
         # These will be implemented when backend API supports them
+        response = ToolRouterResponse(
+            session_id=generate_short_id(),
+            mcp=MCPServerConfig(
+                type="http",
+                url="https://mcp.composio.com",
+            ),
+            # this tools needs to be wrapped for the provider
+            # Right now it only returns the tool slugs, it should be the whole tool
+            tools=self._get_tool_router_tools(
+                user_id=user_id, manage_connections=manage_connections
+            ),
+        )
 
         # Create and return the session
         return ToolRouterSession(
-            session_id=session_id,
-            mcp=MCPServerConfig(type="http", url="https://mcp.composio.com"),
-            tools=self._create_tools_fn(user_id, tools),
-            authorize=self._create_authorize_fn(session_id, user_id),
-            connections=self._create_connections_fn(session_id, user_id),
+            session_id=response.session_id,
+            mcp=response.mcp,
+            # TODO: Directly pass the tools from API to be wrapped
+            tools=self._create_tools_fn(user_id, response.tools),
+            authorize=self._create_authorize_fn(response.session_id, user_id),
+            connections=self._create_connections_fn(response.session_id, user_id),
         )
 
 
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
+    "ToolRouterResponse",
     "ToolRouterToolkitsConfig",
     "ToolRouterManageConnectionsConfig",
     "MCPServerConfig",
