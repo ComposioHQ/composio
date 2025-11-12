@@ -1,22 +1,19 @@
-import { openai } from "@ai-sdk/openai";
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
-import { stepCountIs, streamText } from "ai";
-import { modifiers } from "./logger";
+import { openai } from '@ai-sdk/openai';
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
+import { stepCountIs, streamText } from 'ai';
 
 const composio = new Composio({
   provider: new VercelProvider(),
-  disableVersionCheck: true
 });
-
-const session = await composio.experimental.create('user_123');
-const tools = await session.tools({...modifiers});
+const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
+const tools = await session.tools();
 
 const stream = await streamText({
   model: openai('gpt-4o-mini'),
-  prompt: "Find my last email from gmail?",
+  prompt: 'Find my last email from gmail?',
   stopWhen: stepCountIs(10),
-  tools
+  tools,
 });
 
 for await (const textPart of stream.textStream) {
