@@ -195,9 +195,6 @@ navigation:
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
-    - page: Partner Program
-      path: pages/dist/mcp/partner-api.mdx
-      slug: mcp-partner-api
   - section: Tool Router (Beta)
     icon: fa-light fa-flask
     skip-slug: true
