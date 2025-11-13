@@ -76,9 +76,13 @@ def get_md5(file: Path):
     return obj.hexdigest()
 
 
-def upload(url: str, file: Path) -> bool:
+def upload(url: str, file: Path, is_azure: bool) -> bool:
     with file.open("rb") as data:
-        return requests.put(url=url, data=data).status_code in (200, 403)
+        return requests.put(
+            url=url,
+            data=data,
+            headers={"x-ms-blob-type": "BlockBlob"} if is_azure else {},
+        ).status_code in (200, 201, 403)
 
 
 class _FileUploadResponse(_ComposioBaseModel):
@@ -120,7 +124,7 @@ class FileUploadable(BaseModel):
             )
 
         mimetype = mimetypes.guess(file=file)
-        s3meta = client.post(
+        s3meta_response = client.post(
             path=_FILE_UPLOAD,
             body={
                 "md5": get_md5(file=file),
@@ -129,9 +133,11 @@ class FileUploadable(BaseModel):
                 "tool_slug": tool,
                 "toolkit_slug": toolkit,
             },
-            cast_to=_FileUploadResponse,
         )
-        if not upload(url=s3meta.new_presigned_url, file=file):
+
+        s3meta = s3meta_response.json()
+        is_azure = s3meta_response.headers.get("x-is-azure-storage") == "true"
+        if not upload(url=s3meta.new_presigned_url, file=file, is_azure=is_azure):
             raise ErrorUploadingFile(f"Error uploading file: {file}")
         return cls(name=file.name, mimetype=mimetype, s3key=s3meta.key)
 
