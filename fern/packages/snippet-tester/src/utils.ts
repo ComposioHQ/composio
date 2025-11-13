@@ -13,7 +13,7 @@ export const findAndReplace = async (paths: string[], find: RegExp, replace: str
 export const execCmd = async (cmd: string, cwd: string): Promise<{error: null | childProcess.ExecException, stderr: string, stdout: string}> => {
     return new Promise((resolve, reject) => {
         try {
-            childProcess.exec(cmd, {cwd}, (error, stdout, stderr) => {
+            childProcess.execFile(...parseCommand(cmd), {cwd}, (error, stdout, stderr) => {
                 if (error) {
                     resolve({error, stderr, stdout})
                 }
