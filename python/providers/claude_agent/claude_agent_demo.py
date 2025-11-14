@@ -40,7 +40,10 @@ async def main():
 
     print(f"✅ Fetched {len(tools)} tool(s):")
     for tool in tools:
-        print(f"   - {tool.slug}: {tool.description}")
+        # SdkMcpTool uses .name instead of .slug
+        tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
+        tool_desc = getattr(tool, "description", "No description available")
+        print(f"   - {tool_name}: {tool_desc}")
 
     # Create MCP server with the decorated tools
     # This makes the Composio tools available to Claude Agent SDK
@@ -60,7 +63,7 @@ async def main():
             "use the Gmail Get Profile tool."
         ),
         mcp_servers={"composio": mcp_server},
-        allowed_tools=[f"mcp__composio__{tool.slug}" for tool in tools],
+        allowed_tools=[f"mcp__composio__{tool.name}" for tool in tools],
         permission_mode="bypassPermissions",  # Auto-approve tool usage
     )
 
@@ -84,12 +87,14 @@ async def main():
 
 if __name__ == "__main__":
     # Check if ANTHROPIC_API_KEY is set (required for Claude Agent SDK)
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print(
-            "⚠️  Warning: ANTHROPIC_API_KEY environment variable is not set.\n"
-            "   Claude Agent SDK requires an Anthropic API key to function.\n"
-            "   Set it with: export ANTHROPIC_API_KEY='your-api-key'\n"
-        )
+    if os.environ.get("COMPOSIO_API_KEY") is None:
+        print("COMPOSIO_API_KEY is not set")
+        # os.environ["COMPOSIO_API_KEY"] = "Your composio api key"
+        raise Exception("COMPOSIO_API_KEY is not set")
+    if os.environ.get("ANTHROPIC_API_KEY") is None:
+        print("ANTHROPIC_API_KEY is not set")
+        # os.environ["ANTHROPIC_API_KEY"] = "Your anthropic api key"
+        raise Exception("ANTHROPIC_API_KEY is not set")
 
     # Run the async main function
     asyncio.run(main())

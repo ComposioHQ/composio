@@ -39,7 +39,7 @@ class ClaudeAgentSDKProvider(
         composio = Composio(provider=ClaudeAgentSDKProvider())
 
         # Get tools
-        tools = composio.tools.get(user_id="user123", toolkits=["GITHUB"])
+        tools = composio.tools.get(user_id="user123", tools=["GMAIL_GET_PROFILE"])
 
         # Create MCP server with tools
         mcp_server = create_sdk_mcp_server(
@@ -56,7 +56,7 @@ class ClaudeAgentSDKProvider(
 
         # Use with Claude Agent SDK
         async with ClaudeSDKClient(options=options) as client:
-            await client.query("Star the composiohq/composio repository")
+            await client.query("Get my Gmail profile using the Gmail Get Profile tool.")
         ```
     """
 
@@ -74,7 +74,7 @@ class ClaudeAgentSDKProvider(
         values for slug, description, schema, and execute function. The closure
         prevents variable capture issues when creating multiple tools dynamically.
 
-        :param slug: Tool identifier/slug (e.g., "GITHUB_STAR_REPOSITORY")
+        :param slug: Tool identifier/slug (e.g., "GMAIL_GET_PROFILE")
         :param description: Human-readable description of what the tool does
         :param input_schema: JSON schema dictionary defining tool input parameters
         :param exec_fn: Function to execute the Composio tool with given arguments
@@ -144,7 +144,7 @@ class ClaudeAgentSDKProvider(
         Example:
             ```python
             provider = ClaudeAgentSDKProvider()
-            composio_tool = composio.tools.get(user_id="user123", tools=["GITHUB_STAR_REPOSITORY"])[0]
+            composio_tool = composio.tools.get(user_id="user123", tools=["GMAIL_GET_PROFILE"])[0]
             wrapped_tool = provider.wrap_tool(composio_tool, execute_tool_fn)
             ```
         """
@@ -173,7 +173,7 @@ class ClaudeAgentSDKProvider(
         Example:
             ```python
             provider = ClaudeAgentSDKProvider()
-            composio_tools = composio.tools.get(user_id="user123", toolkits=["GITHUB"])
+            composio_tools = composio.tools.get(user_id="user123", tools=["GMAIL_GET_PROFILE"])
             wrapped_tools = provider.wrap_tools(composio_tools, execute_tool_fn)
 
             # Use with MCP server
