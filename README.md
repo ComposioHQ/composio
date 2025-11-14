@@ -1,8 +1,8 @@
 
 <div align="center">
-
+<a href="https://app.composio.dev/?utm_source=Social&utm_medium=Github&utm_campaign=2025-11&utm_content=composio">
 <img src="https://raw.githubusercontent.com/ComposioHQ/composio/next/public/cover.png" alt="Composio Logo" width="auto" height="auto" style="margin-bottom: 20px;"/>
-
+</a>
 
 # Composio SDK
 
