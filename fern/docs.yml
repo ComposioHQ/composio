@@ -135,7 +135,7 @@ navigation:
     - page: Authenticating Tools
       path: pages/dist/tool-calling/authenticating-tools.mdx
       slug: authenticating-tools
-    - page: Fetch and Filter Tools
+    - page: Fetching tools and schemas
       path: pages/dist/tool-calling/fetching-tools.mdx
       slug: fetching-tools
     - page: Executing Tools
