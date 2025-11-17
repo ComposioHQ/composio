@@ -162,7 +162,7 @@ navigation:
     - page: Custom tools
       path: pages/dist/tools-and-triggers/custom-tools.mdx
       slug: custom-tools
-    - section: Framework Providers
+    - section: Providers
       slug: providers
       path: pages/dist/tools-and-triggers/providers/index.mdx
       contents:
