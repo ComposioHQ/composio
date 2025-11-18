@@ -93,21 +93,18 @@ redirects:
   destination: /type-script
 - source: /sdk-reference/type-script/:path
   destination: /type-script/:path
-- source: /providers
-  destination: /docs/providers
-- source: /providers/:provider
-  destination: /docs/providers/:provider
-- source: /providers/custom/:language
-  destination: /docs/providers/custom/:language
 tabs:
   docs:
     display-name: Docs
     slug: docs
-  api-reference:
-    display-name: API Reference
+  providers:
+    display-name: Providers
     skip-slug: true
   toolkits:
     display-name: Toolkits
+    skip-slug: true
+  api-reference:
+    display-name: API Reference
     skip-slug: true
   examples:
     display-name: Examples
@@ -128,6 +125,9 @@ navigation:
     - page: IDE and Agent Setup
       path: pages/dist/get-started/dev-setup.mdx
       slug: dev-setup
+    - page: Providers
+      path: pages/dist/get-started/providers.mdx
+      slug: providers
     - changelog: ./pages/src/changelog
       title: Changelog
       slug: changelog
@@ -162,46 +162,6 @@ navigation:
     - page: Custom tools
       path: pages/dist/tools-and-triggers/custom-tools.mdx
       slug: custom-tools
-    - section: Providers
-      slug: providers
-      path: pages/dist/tools-and-triggers/providers/index.mdx
-      contents:
-      - page: OpenAI Provider
-        path: pages/dist/tools-and-triggers/providers/openai.mdx
-        slug: openai
-      - page: Anthropic Provider
-        path: pages/dist/tools-and-triggers/providers/anthropic.mdx
-        slug: anthropic
-      - page: Google Provider
-        path: pages/dist/tools-and-triggers/providers/google.mdx
-        slug: google
-      - page: LangChain Provider
-        path: pages/dist/tools-and-triggers/providers/langchain.mdx
-        slug: langchain
-      - page: LlamaIndex Provider
-        path: pages/dist/tools-and-triggers/providers/llamaindex.mdx
-        slug: llamaindex
-      - page: CrewAI Provider
-        path: pages/dist/tools-and-triggers/providers/crewai.mdx
-        slug: crewai
-      - page: Vercel AI SDK Provider
-        path: pages/dist/tools-and-triggers/providers/vercel.mdx
-        slug: vercel
-      - page: OpenAI Agents Provider
-        path: pages/dist/tools-and-triggers/providers/openai-agents.mdx
-        slug: openai-agents
-      - page: Mastra Provider
-        path: pages/dist/tools-and-triggers/providers/mastra.mdx
-        slug: mastra
-      - section: Custom Providers
-        slug: custom
-        contents:
-        - page: TypeScript
-          path: pages/dist/tools-and-triggers/providers/ts-custom.mdx
-          slug: typescript
-        - page: Python
-          path: pages/dist/tools-and-triggers/providers/py-custom.mdx
-          slug: python
     - page: Toolkit Versioning
       path: pages/dist/tools-and-triggers/toolkit-versioning.mdx
       slug: toolkit-versioning
@@ -293,45 +253,38 @@ navigation:
       - page: Triggers
         path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
-- tab: examples
+- tab: providers
   layout:
-  - section: Getting Started
-    icon: fa-light fa-rocket
-    skip-slug: true
+  - section: Supported Providers
     contents:
-    - page: Basic FastAPI Server
-      path: pages/dist/examples/fast-api.mdx
-      slug: examples/fast-api
-    - page: Basic Hono Server
-      path: pages/dist/examples/hono.mdx
-      slug: examples/hono
-  - section: Productivity & Automation
-    icon: fa-light fa-bolt
+    - page: OpenAI Provider
+      path: pages/dist/providers/openai.mdx
+    - page: Anthropic Provider
+      path: pages/dist/providers/anthropic.mdx
+    - page: Google Provider
+      path: pages/dist/providers/google.mdx
+    - page: LangChain Provider
+      path: pages/dist/providers/langchain.mdx
+    - page: LlamaIndex Provider
+      path: pages/dist/providers/llamaindex.mdx
+    - page: CrewAI Provider
+      path: pages/dist/providers/crewai.mdx
+    - page: Vercel AI SDK Provider
+      path: pages/dist/providers/vercel.mdx
+    - page: OpenAI Agents Provider
+      path: pages/dist/providers/openai-agents.mdx
+    - page: Mastra Provider
+      path: pages/dist/providers/mastra.mdx
+  - section: Writing your own provider
     skip-slug: true
+    icon: fa-light fa-code
     contents:
-    - page: Gmail Labeller
-      path: pages/dist/examples/utility_agents/gmail_labeler.mdx
-      slug: examples/gmail-labeler
-    - page: Slack summariser
-      path: pages/dist/examples/utility_agents/slack_summariser.mdx
-      slug: examples/slack-summariser
-    - page: Supabase SQL Agent
-      path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
-      slug: examples/supabase-sql-agent
-  - section: Full Stack Applications
-    icon: fa-light fa-globe
-    skip-slug: true
-    contents:
-    - page: Full Stack Chat App
-      path: pages/dist/examples/chat_applications/vercel_chat.mdx
-      slug: examples/vercel-chat
-  - section: Behind the curtain
-    icon: fa-light fa-person-booth
-    skip-slug: true
-    contents:
-    - page: Tool Generator
-      path: pages/dist/examples/tool-generator/tool-generator.mdx
-      slug: examples/tool-generator
+    - page: TypeScript
+      path: pages/dist/providers/ts-custom.mdx
+      slug: providers/custom/typescript
+    - page: Python
+      path: pages/dist/providers/py-custom.mdx
+      slug: providers/custom/python
 - tab: toolkits
   layout:
   - section: Toolkits
@@ -426,3 +379,42 @@ navigation:
       - page: CustomTools
         slug: custom-tools
         path: pages/dist/sdk/typescript/CustomTools/classes/CustomTools.mdx
+- tab: examples
+  layout:
+  - section: Getting Started
+    icon: fa-light fa-rocket
+    skip-slug: true
+    contents:
+    - page: Basic FastAPI Server
+      path: pages/dist/examples/fast-api.mdx
+      slug: examples/fast-api
+    - page: Basic Hono Server
+      path: pages/dist/examples/hono.mdx
+      slug: examples/hono
+  - section: Productivity & Automation
+    icon: fa-light fa-bolt
+    skip-slug: true
+    contents:
+    - page: Gmail Labeller
+      path: pages/dist/examples/utility_agents/gmail_labeler.mdx
+      slug: examples/gmail-labeler
+    - page: Slack summariser
+      path: pages/dist/examples/utility_agents/slack_summariser.mdx
+      slug: examples/slack-summariser
+    - page: Supabase SQL Agent
+      path: pages/dist/examples/utility_agents/supabase_sql_agent.mdx
+      slug: examples/supabase-sql-agent
+  - section: Full Stack Applications
+    icon: fa-light fa-globe
+    skip-slug: true
+    contents:
+    - page: Full Stack Chat App
+      path: pages/dist/examples/chat_applications/vercel_chat.mdx
+      slug: examples/vercel-chat
+  - section: Behind the curtain
+    icon: fa-light fa-person-booth
+    skip-slug: true
+    contents:
+    - page: Tool Generator
+      path: pages/dist/examples/tool-generator/tool-generator.mdx
+      slug: examples/tool-generator
