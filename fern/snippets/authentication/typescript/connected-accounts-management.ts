@@ -71,7 +71,7 @@ console.log('Account deleted successfully');
 
 // First account
 try {
-  const firstAccount = await composio.connectedAccounts.link(
+  const firstAccount = await composio.connectedAccounts.initiate(
     userId,
     authConfigId
   );
@@ -79,20 +79,23 @@ try {
   const connectedFirstAccount = await firstAccount.waitForConnection();
   console.log('First account status:', connectedFirstAccount.status);
 } catch (error) {
-  console.error('Error linking first account:', error);
+  console.error('Error initiating first account:', error);
 }
 
-// Second account - link allows multiple by default
+// Second account - must explicitly allow multiple
 try {
-  const secondAccount = await composio.connectedAccounts.link(
+  const secondAccount = await composio.connectedAccounts.initiate(
     userId,
-    authConfigId
+    authConfigId,
+    {
+      allowMultiple: true  // Required for additional accounts
+    }
   );
   console.log('Second account redirect URL:', secondAccount.redirectUrl);
   const connectedSecondAccount = await secondAccount.waitForConnection();
   console.log('Second account status:', connectedSecondAccount.status);
 } catch (error) {
-  console.error('Error linking second account:', error);
+  console.error('Error initiating second account:', error);
 }
 
 // Execute tool with a specific connected account

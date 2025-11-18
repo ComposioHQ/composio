@@ -77,19 +77,20 @@ try:
     connected_first_account = first_account.wait_for_connection()
     print(f"First account status: {connected_first_account.status}")
 except Exception as e:
-    print(f"Error linking first account: {e}")
+    print(f"Error initiating first account: {e}")
 
-# Second account - link allows multiple by default
+# Second account - must explicitly allow multiple
 try:
-    second_account = composio.connected_accounts.link(
+    second_account = composio.connected_accounts.initiate(
         user_id=user_id,
-        auth_config_id=auth_config_id
+        auth_config_id=auth_config_id,
+        allow_multiple=True  # Required for additional accounts
     )
     print(f"Second account redirect URL: {second_account.redirect_url}")
     connected_second_account = second_account.wait_for_connection()
     print(f"Second account status: {connected_second_account.status}")
 except Exception as e:
-    print(f"Error linking second account: {e}")
+    print(f"Error initiating second account: {e}")
 
 # Execute tool with a specific connected account
 result = composio.tools.execute(
