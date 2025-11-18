@@ -172,6 +172,9 @@ navigation:
     - page: Custom Auth Parameters
       path: pages/dist/authentication/custom-auth-params.mdx
       slug: custom-auth-params
+    - page: Connected Accounts
+      path: pages/dist/authentication/connected-accounts.mdx
+      slug: connected-accounts
     - page: User Management
       path: pages/dist/authentication/user-management.mdx
       slug: user-management
