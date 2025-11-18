@@ -32,9 +32,9 @@ The SDK is thoroughly documented in the [docs](./docs) directory:
 
 ### Provider Documentation
 
-- [OpenAI Provider](./providers/openai.md) - Using OpenAI with Composio
-- [Google Provider](./providers/google.md) - Using Google GenAI with Composio
-- [Custom Providers](./providers/custom.md) - Creating new providers
+- [OpenAI Provider](./docs/providers/openai.md) - Using OpenAI with Composio
+- [Google Provider](./docs/providers/google.md) - Using Google GenAI with Composio
+- [Custom Providers](./docs/providers/custom.md) - Creating new providers
 
 ### Advanced Topics
 
