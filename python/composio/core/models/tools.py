@@ -132,6 +132,7 @@ class Tools(Resource, t.Generic[TProvider]):
                     self._client.tools.list(
                         tool_slugs=",".join(tools),
                         toolkit_versions=none_to_omit(self._toolkit_versions),
+                        important=True,
                     ).items
                 )
 
@@ -144,6 +145,7 @@ class Tools(Resource, t.Generic[TProvider]):
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
+                    important=True,
                 ).items
             )
         return tools_list
