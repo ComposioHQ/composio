@@ -21,12 +21,12 @@ import {
   ToolRouterToolkitsFn,
   ToolRouterConfig,
   ToolRouterSession,
+  ToolkitConnectionState,
 } from '../types/toolRouter.types';
 import { ToolRouterConfigSchema } from '../types/toolRouter.types';
 import { Tool } from '../types/tool.types';
 import { Tools } from './Tools';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
-import { getRandomShortId } from '../utils/uuid';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
@@ -54,13 +54,11 @@ export class ToolRouter<
       toolkit: string,
       options?: { callbackUrl?: string }
     ): Promise<ConnectionRequest> => {
-      // @TODO make network request to authorize a toolkit
-      const response = {
-        link_token: '1234567890',
-        redirect_url: 'https://example.com',
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-        connected_account_id: '1234567890',
-      };
+      const response = await this.client.toolRouter.linkSession(sessionId, {
+        ...(options ?? {}),
+        toolkit,
+      });
+
       return createConnectionRequest(
         this.client,
         response.connected_account_id,
@@ -88,12 +86,47 @@ export class ToolRouter<
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const conectionsFn = async () => {
-      // @TODO make network request to get the connections
-      const response = {};
-      return {};
+    const connectionsFn = async () => {
+      // TODO: handle paginated response, right now this is capped at 20 toolkits.
+      const response = await this.client.toolRouter.listToolkits(sessionId);
+      const items = response.items;
+
+      const toolkitConnectedStates = items.reduce(
+        (acc, item) => {
+          const connectedAccount = item.connected_account
+            ? ({
+                id: item.connected_account.id,
+                status: item.connected_account.status,
+              } as const)
+            : undefined;
+
+          const connectedState: ToolkitConnectionState = {
+            meta: {
+              slug: item.slug,
+              name: item.name,
+              logo: item.meta.logo,
+            },
+            connection: {
+              isActive: item.enabled,
+              authConfig: {
+                id: item.connected_account?.auth_config.id ?? '<unknown>',
+                name: '<unknown>',
+              },
+              connectedAccount,
+            },
+          };
+
+          acc[item.slug] = connectedState;
+
+          return acc;
+        },
+        {} as Record<string, ToolkitConnectionState>
+      );
+
+      return toolkitConnectedStates;
     };
-    return conectionsFn;
+
+    return connectionsFn;
   };
 
   /**
@@ -112,31 +145,6 @@ export class ToolRouter<
     const tool = new Tools(this.client, this.config);
     return (modifiers?: ExecuteToolModifiers) =>
       tool.wrapToolsForProvider(userId, tools, modifiers);
-  };
-
-  /**
-   * @TODO remove this after implementing session fetching, the tools will be returned by the session response
-   * @returns {Promise<Tool[]>} The tool router tools
-   */
-  private getToolRouterTools = async ({
-    includeManageConnectionsTool,
-  }: {
-    includeManageConnectionsTool?: boolean;
-  }): Promise<Tool[]> => {
-    const tools = [
-      'COMPOSIO_SEARCH_TOOLS',
-      'COMPOSIO_REMOTE_WORKBENCH',
-      'COMPOSIO_MULTI_EXECUTE_TOOL',
-    ];
-    if (includeManageConnectionsTool) {
-      tools.push('COMPOSIO_MANAGE_CONNECTIONS');
-    }
-    const tool = new Tools(this.client, this.config);
-    const routerTools = await tool.getRawComposioTools({
-      tools: tools,
-    });
-
-    return routerTools;
   };
 
   /**
@@ -160,6 +168,7 @@ export class ToolRouter<
    * console.log(session.sessionId);
    * console.log(session.url);
    * console.log(session.tools());
+   * console.log(session.toolkits());
    * ```
    */
   async create(
@@ -167,30 +176,43 @@ export class ToolRouter<
     config?: ToolRouterConfig
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterConfigSchema.parse(config ?? {});
-    // @TODO remove this after implementing session fetching,
-    // Session willl automatically return the necessary tools
-    const manageConnections =
+
+    const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
-        : routerConfig.manageConnections?.enabled !== false;
-    // @TODO make network request to create a session
-    const response = {
-      session_id: '1234567890',
-      mcp: {
-        type: 'http',
-        url: 'https://mcp.composio.com',
-      },
-      tools: await this.getToolRouterTools({
-        includeManageConnectionsTool: manageConnections,
-      }),
-    };
+        : routerConfig.manageConnections?.enabled;
+
+    // `this.client.toolRouter.createSession` only supports `ToolRouterToolkitsParamSchema` for now.
+    // It the future, it may support a union with `ToolRouterToolkitsConfigSchema`.
+    const toolkits = Array.isArray(routerConfig.toolkits) ? routerConfig.toolkits : [];
+
+    const session = await this.client.toolRouter.createSession({
+      user_id: userId,
+      auth_config_override: routerConfig?.authConfigs,
+      connected_account_override: routerConfig?.connectedAccounts,
+      manage_connected_account: manageConnectedAccounts,
+      toolkits,
+      // Note: this is not yet implemented in `ToolRouterConfig`
+      auto_generate_tool_scopes: undefined,
+    });
+
+    const toolData = await this.client.tools.list({
+      tool_slugs: session.tools.join(','),
+    });
+
+    // TODO: handle paginated response, right now this is capped at 20 tools.
+    const tools = toolData.items;
 
     return {
-      sessionId: response.session_id,
-      mcp: { type: 'http', url: 'https://mcp.composio.com' },
-      tools: this.createToolsFn(userId, response.tools),
-      authorize: this.createAuthorizeFn(response.session_id),
-      toolkits: this.createToolkitsFn(response.session_id),
+      sessionId: session.session_id,
+      mcp: {
+        // @ts-ignore
+        type: session.mcp.type.toLowerCase(),
+        url: session.mcp.url,
+      },
+      tools: this.createToolsFn(userId, tools),
+      authorize: this.createAuthorizeFn(session.session_id),
+      toolkits: this.createToolkitsFn(session.session_id),
     };
   }
 }
