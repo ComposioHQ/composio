@@ -57,19 +57,30 @@ export class ToolRouter {
       }
     });
 
+    const toolkits = toolkitConfig?.map(({ toolkit }) => toolkit);
+    const authConfigOverride = toolkitConfig?.reduce(
+      (acc, curr) => {
+        if (curr.auth_config_id) {
+          acc[curr.toolkit] = curr.auth_config_id;
+        }
+
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
     const session = await this.client.toolRouter.createSession({
       user_id: userId,
-      config: {
-        toolkits: toolkitConfig,
-        manually_manage_connections: config.data.manuallyManageConnections,
-      },
+      toolkits,
+      auth_config_override: authConfigOverride,
+      manage_connected_account: !Boolean(config.data.manuallyManageConnections),
     });
 
     return transform(session)
       .with(ToolRouterSessionSchema)
       .using(raw => ({
         sessionId: raw.session_id,
-        url: raw.chat_session_mcp_url,
+        url: raw.mcp.url,
       }));
   }
 }
