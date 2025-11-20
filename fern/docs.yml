@@ -135,7 +135,7 @@ navigation:
     - page: Authenticating Tools
       path: pages/dist/tool-calling/authenticating-tools.mdx
       slug: authenticating-tools
-    - page: Fetch and Filter Tools
+    - page: Fetching tools and schemas
       path: pages/dist/tool-calling/fetching-tools.mdx
       slug: fetching-tools
     - page: Executing Tools
@@ -172,6 +172,9 @@ navigation:
     - page: Custom Auth Parameters
       path: pages/dist/authentication/custom-auth-params.mdx
       slug: custom-auth-params
+    - page: Connected Accounts
+      path: pages/dist/authentication/connected-accounts.mdx
+      slug: connected-accounts
     - page: User Management
       path: pages/dist/authentication/user-management.mdx
       slug: user-management
@@ -195,9 +198,6 @@ navigation:
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
-    - page: Partner Program
-      path: pages/dist/mcp/partner-api.mdx
-      slug: mcp-partner-api
   - section: Tool Router (Beta)
     icon: fa-light fa-flask
     skip-slug: true

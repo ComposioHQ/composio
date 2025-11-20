@@ -37,7 +37,7 @@ catalogs:
       specifier: ^4.1.0
       version: 4.1.12
 
-pnpmfileChecksum: sha256-VxUEqtS+hUKk6dY916LUQ3HGUHjzmXCWP5LZ9lIHUnE=
+pnpmfileChecksum: sha256-UfK0k7ziwvsEKsIs7tmY83c2ka0cHL5yNId8q8PzdCA=
 
 importers:
 
@@ -540,9 +540,6 @@ importers:
 
   ts/examples/openai:
     dependencies:
-      '@composio/client':
-        specifier: https://pkg.stainless.com/s/composio-sdk-typescript/4a53e1ae40ca5a0a3479727eb59d2512110c81cc
-        version: https://pkg.stainless.com/s/composio-sdk-typescript/4a53e1ae40ca5a0a3479727eb59d2512110c81cc
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
