@@ -4,7 +4,10 @@ import { OpenAIProvider } from '@composio/openai';
 
 // Initialize Composio client with OpenAI Provider
 const composio = new Composio({ 
-    provider: new OpenAIProvider(), 
+    provider: new OpenAIProvider(),
+    toolkitVersions: {
+        gmail: "20251111_00"
+    } 
 });
 
 const openai = new OpenAI();
