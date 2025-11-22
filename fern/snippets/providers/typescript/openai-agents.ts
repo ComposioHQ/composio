@@ -24,7 +24,7 @@ const agent = new Agent({
 console.log(`Running agent...`);
 const result = await run(
     agent,
-    "Send an email to sushdec6@gmail.com with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'"
+    "Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'"
 );
 
 console.log(`Received response from agent`);
