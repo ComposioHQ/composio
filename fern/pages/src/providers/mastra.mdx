@@ -17,50 +17,11 @@ More documentation [here](https://mastra.ai/en/docs/tools-mcp/overview#creating-
 
 The Mastra provider formats the Composio tools into this format along with the execution logic so that agents can call and execute the Composio tools.
 
-## Setup
-
-```typescript TypeScript maxLines=60 wordWrap
-npm install @composio/mastra
-```
-
-You can specify the provider in the constructor.
-
-```typescript TypeScript maxLines=60 wordWrap
-import { Composio } from "@composio/core";
-import { MastraProvider } from "@composio/mastra";
-import { Agent } from "@mastra/core/agent";
-import { openai } from "@ai-sdk/openai";
-
-const composio = new Composio({
-  provider: new MastraProvider(),
-});
-```
-
 ## Usage
+You can specify the provider in the constructor and then get and pass the relavent tools to the mastra agent.
 
-The tools are passed to the agent as a parameter.
-
-```typescript TypeScript maxLines=60 wordWrap
-const userId = "john doe";
-
-const tools = await composio.tools.get(
-  userId,
-  {
-    toolkits: ["SUPABASE"],
-  }
-);
-
-const agent = new Agent({
-  name: "Supabase Agent",
-  instructions: "You think therefore you are.",
-  model: openai("gpt-4.1"),
-  tools: tools,
-});
-
-const { text } = await agent.generate([
-  { role: "user", content: "Tell me about my Supabase project" },
-]);
-
-console.log("\n🤖 Agent Response:\n");
-console.log(text);
-```
+<SnippetCode
+  src="fern/snippets/providers/typescript/mastra.ts"
+  startLine={1}
+  endLine={31}
+/>
