@@ -238,7 +238,8 @@ def run_agent(user_id: str, prompt: str):
         connection_request.wait_for_connection()
 
     agent = create_slack_agent(user_id, composio_client)
-    agent.invoke({"input": prompt})
+    result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
+    print("agent >", result)
 ```
 
 To test the above function as CLI, follow the steps below

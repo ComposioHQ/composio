@@ -261,15 +261,20 @@ def create_trigger_subscription(
     def handle_event(event: TriggerEvent):
         print("> Received email with subject: ", event["payload"]["subject"])
         result = agent.invoke(
-            input={
-                "input": APPLY_NEW_LABEL.format(  # Check `gmail_labeler/prompt.py`
-                    message_id=event["payload"]["id"],
-                    message_subject=event["payload"]["subject"],
-                    message_text=event["payload"]["message_text"],
-                )
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": APPLY_NEW_LABEL.format(  # Check `gmail_labeler/prompt.py`
+                            message_id=event["payload"]["id"],
+                            message_subject=event["payload"]["subject"],
+                            message_text=event["payload"]["message_text"],
+                        )
+                    }
+                ]
             }
         )
-        print("> Result: ", result["output"])
+        print("> Result: ", result)
 
     return trigger_subscription
 ```
