@@ -24,6 +24,8 @@ You can specify and import the provider in the constructor.
 ```typescript TypeScript maxLines=60 wordWrap
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
+import { generateText } from 'ai';
+import { openai } from "@ai-sdk/openai";
 
 const composio = new Composio({
   provider: new VercelProvider(),
@@ -33,19 +35,22 @@ const composio = new Composio({
 ## Usage
 
 ```typescript TypeScript maxLines=60 wordWrap
-const tools = await composio.tools.get(userId, 'GMAIL_SEND_EMAIL');
+// create an auth config for gmail 
+// then create a connected account with an external user id that identifies the user
+const externalUserId = "your-external-user-id";
+const tools = await composio.tools.get(externalUserId, "GMAIL_SEND_EMAIL");
 
+// env: OPENAI_API_KEY
 const { text } = await generateText({
-  model: anthropic('claude-3-7-sonnet-20250219'),
+  model: openai("gpt-5"),
   messages: [
     {
-      role: 'user',
-      content: "Send an email to soham@composio.dev saying 'hi from the ether of composio'",
+      role: "user",
+      content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
     },
   ],
   tools,
-  maxSteps: 5,
 });
 
-console.log(text);
+console.log("Email sent successfully!", { text });
 ```
