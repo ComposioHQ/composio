@@ -80,8 +80,21 @@ export class Tools<
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
-    // Set the execute method for the provider
-    this.provider._setExecuteToolFn(this.execute);
+    // Set the execute method for the provider.
+    // Non-agentic providers (e.g., OpenAI/Anthropic tool calling) should default to skipping the
+    // "latest" version guard so agent responses never fail due to missing toolkit versions.
+    const providerExecuteToolFn = this.provider._isAgentic
+      ? this.execute
+      : (slug: string, body: ToolExecuteParams, modifiers?: ExecuteToolModifiers) =>
+          this.execute(
+            slug,
+            {
+              ...body,
+              dangerouslySkipVersionCheck: body.dangerouslySkipVersionCheck ?? true,
+            },
+            modifiers
+          );
+    this.provider._setExecuteToolFn(providerExecuteToolFn);
     // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
