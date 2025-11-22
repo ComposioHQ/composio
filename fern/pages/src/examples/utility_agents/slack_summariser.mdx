@@ -27,8 +27,7 @@ Let's start by building an agent that can interact with your slack workspace usi
 from composio import Composio
 from composio_langchain import LangchainProvider
 
-from langchain import hub
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
 
@@ -42,21 +41,15 @@ def create_agent(user_id: str, composio_client: Composio[LangchainProvider]):
         toolkits=["SLACK"],
     )
 
-    # Step 2: Pull relevant agent prompt.
-    prompt = hub.pull("hwchase17/openai-functions-agent")
+    # Step 2: Initialize chat model.
+    openai_client = ChatOpenAI(model="gpt-4o")
 
-    # Step 3: Initialize chat model.
-    openai_client = ChatOpenAI(model="gpt-5")
-
-    # Step 4: Define agent
-    return AgentExecutor(
-        agent=create_openai_functions_agent(
-            openai_client,
-            tools,
-            prompt,
-        ),
+    # Step 3: Define agent
+    return create_agent(
+        model=openai_client,
         tools=tools,
-        verbose=True,
+        system_prompt="You are a helpful assistant.",
+        name="Slack Agent"
     )
 ```
 

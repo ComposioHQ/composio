@@ -164,6 +164,7 @@ print(result)
 ```python
 from composio_langchain import ComposioToolSet
 from langchain_openai import ChatOpenAI
+from langchain.agents import create_agent
 
 # Initialize the toolset
 toolset = ComposioToolSet()
@@ -175,20 +176,17 @@ tools = toolset.get_tools(toolkits=["GITHUB"])
 llm = ChatOpenAI(model="gpt-4o")
 
 # Create agent with tools
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain.prompts import ChatPromptTemplate
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant"),
-    ("user", "{input}"),
-    ("assistant", "{agent_scratchpad}")
-])
-
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt="You are a helpful assistant.",
+    name="GitHub Agent"
+)
 
 # Execute task
-result = agent_executor.invoke({"input": "Star the composiohq/composio repository"})
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "Star the composiohq/composio repository"}]}
+)
 print(result)
 ```
 

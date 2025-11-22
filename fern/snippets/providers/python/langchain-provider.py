@@ -1,14 +1,10 @@
 from composio import Composio
 from composio_langchain import LangchainProvider
-from langchain import hub  # type: ignore
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
-# Pull relevant agent model.
-prompt = hub.pull("hwchase17/openai-functions-agent")
-
 # Initialize tools.
-openai_client = ChatOpenAI(model="gpt-5")
+openai_client = ChatOpenAI(model="gpt-4o")
 
 composio = Composio(provider=LangchainProvider())
 
@@ -19,8 +15,14 @@ tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 task = "Star a repo composiohq/composio on GitHub"
 
 # Define agent
-agent = create_openai_functions_agent(openai_client, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent = create_agent(
+    model=openai_client,
+    tools=tools,
+    system_prompt="You are a helpful assistant.",
+    name="GitHub Agent"
+)
 
-# Execute using agent_executor
-agent_executor.invoke({"input": task})
+# Execute using agent
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": task}]}
+)
