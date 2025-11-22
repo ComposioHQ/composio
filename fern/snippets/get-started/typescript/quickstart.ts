@@ -45,7 +45,7 @@ const msg = await anthropic.messages.create({
   messages: [
       {
       role: "user",
-      content: `Send an email to soham.g@gmail.com with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
+      content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
       },
   ],
   tools: tools,
