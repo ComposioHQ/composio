@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.5
+
+### Patch Changes
+
+- e2762f2: Fix non-agentic providers to work without specifying versions
+
 ## 0.2.4
 
 ### Patch Changes

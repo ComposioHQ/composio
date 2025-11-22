@@ -1,5 +1,13 @@
 # @composio/vercel
 
+## 0.2.17
+
+### Patch Changes
+
+- e2762f2: Fix non-agentic providers to work without specifying versions
+- Updated dependencies [e2762f2]
+  - @composio/core@0.2.5
+
 ## 0.2.16
 
 ### Patch Changes
