@@ -31,7 +31,7 @@ from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
 
-def create_agent(user_id: str, composio_client: Composio[LangchainProvider]):
+def create_slack_agent(user_id: str, composio_client: Composio[LangchainProvider]):
     """
     Create an agent for a given user id.
     """
@@ -237,7 +237,7 @@ def run_agent(user_id: str, prompt: str):
         )
         connection_request.wait_for_connection()
 
-    agent = create_agent(user_id, composio_client)
+    agent = create_slack_agent(user_id, composio_client)
     agent.invoke({"input": prompt})
 ```
 

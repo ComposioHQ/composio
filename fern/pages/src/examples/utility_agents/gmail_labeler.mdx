@@ -29,7 +29,7 @@ from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
 
-def create_agent(user_id: str, composio_client: Composio[LangchainProvider]):
+def create_gmail_agent(user_id: str, composio_client: Composio[LangchainProvider]):
     """
     Create an agent for a given user id.
     """
@@ -303,7 +303,7 @@ def run_agent(user_id: str):
         )
 
     # Create agent
-    agent = create_agent(user_id=user_id, composio_client=composio_client)
+    agent = create_gmail_agent(user_id=user_id, composio_client=composio_client)
 
     # Create trigger subscription
     trigger_subscription = create_trigger_subscription(
