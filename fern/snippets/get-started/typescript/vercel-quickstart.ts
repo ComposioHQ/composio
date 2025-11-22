@@ -16,7 +16,7 @@ const authConfigId = "your-auth-config-id";
 
 const connectionRequest = await composio.connectedAccounts.link(
   externalUserId,
-  "ac__ibF6OecUSK5"
+  authConfigId
 );
 
 // redirect the user to the OAuth flow
@@ -34,7 +34,7 @@ const { text } = await generateText({
   messages: [
     {
       role: "user",
-      content: `Send an email to soham.g@gmail.com with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
+      content: `Send an email to soham@composio.dev with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
     },
   ],
   tools: tools // cast to `any` to fix type mismatch

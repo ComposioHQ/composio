@@ -38,33 +38,12 @@ npm install @composio/core
 ```
 </CodeGroup>
 
-## Initialize the SDK
-You’ll need to initialize the SDK with your Composio API key. This allows you to authenticate requests and access tools on behalf of your users.
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(
-  api_key="your-api-key",
-)
-```
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-// Initialize the SDK
-const composio = new Composio({
-  apiKey: 'your-api-key',
-});
-```
-</CodeGroup>
-
-
 ## Authorize Tools & Run Them with an Agent
 Composio supports multiple LLM providers. Here’s how to use Composio with some of the most popular ones:
 <Tabs>
 <Tab title="OpenAI Agent(Python)">
 Install the OpenAI Agents provider!
+
 **Installation**
 ```bash
 pip install composio openai-agents composio-openai-agents
@@ -76,7 +55,7 @@ pip install composio openai-agents composio-openai-agents
   endLine={46}
 />
 </Tab>
-<Tab title="Anthropic (Typescript)">
+<Tab title="Anthropic (TypeScript)">
 Install the Composio Anthropic provider
 
 **Installation**
