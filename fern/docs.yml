@@ -9,9 +9,6 @@ logo:
   height: 16
   href: /
 favicon: assets/favicon.png
-js:
-- path: js/search.js
-  strategy: afterInteractive
 typography:
   bodyFont:
     name: Inter
