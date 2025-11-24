@@ -36,7 +36,7 @@ import {
 } from '../types/modifiers.types';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import logger from '../utils/logger';
-import { ExecuteToolFn } from '../types/provider.types';
+import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
   ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
@@ -81,20 +81,7 @@ export class Tools<
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
-    // Non-agentic providers (e.g., OpenAI/Anthropic tool calling) should default to skipping the
-    // "latest" version guard so agent responses never fail due to missing toolkit versions.
-    const providerExecuteToolFn = this.provider._isAgentic
-      ? this.execute
-      : (slug: string, body: ToolExecuteParams, modifiers?: ExecuteToolModifiers) =>
-          this.execute(
-            slug,
-            {
-              ...body,
-              dangerouslySkipVersionCheck: body.dangerouslySkipVersionCheck ?? true,
-            },
-            modifiers
-          );
-    this.provider._setExecuteToolFn(providerExecuteToolFn);
+    this.provider._setExecuteToolFn(this.createExecuteFnForProviders());
     // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
@@ -597,6 +584,22 @@ export class Tools<
       return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
     }
   }
+  /**
+   * @internal
+   * Creates a global execute tool function.
+   * This function is used by providers to execute tools.
+   * It skips the version check for provider controlled execution.
+   * @returns {GlobalExecuteToolFn} The global execute tool function
+   */
+  private createExecuteFnForProviders(): GlobalExecuteToolFn {
+    return async (slug: string, body: ToolExecuteParams, modifiers?: ExecuteToolModifiers) => {
+      return await this.execute(
+        slug,
+        { ...body, dangerouslySkipVersionCheck: body.dangerouslySkipVersionCheck ?? true },
+        modifiers
+      );
+    };
+  }
 
   /**
    * @internal
@@ -615,7 +618,7 @@ export class Tools<
         {
           userId,
           arguments: input,
-          // dangerously skip version check for agentic and non agentic tool execution via providers
+          // dangerously skip version check for agentic tool execution via providers
           // this can be safe because most agentic flows users fetch latest version and then execute the tool
           dangerouslySkipVersionCheck: true,
         },
