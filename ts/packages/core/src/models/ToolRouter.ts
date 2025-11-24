@@ -88,9 +88,9 @@ export class ToolRouter<
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
     const connectionsFn = async () => {
-      // TODO: handle paginated response, right now this is capped at 20 toolkits.
-      const response = await this.client.toolRouter.listToolkits(sessionId);
-      const items = response.items;
+      const items = await getAllPages(params =>
+        this.client.toolRouter.listToolkits(sessionId, params)
+      );
 
       const toolkitConnectedStates = items.reduce(
         (acc, item) => {
