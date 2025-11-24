@@ -190,8 +190,15 @@ class Tools(Resource, t.Generic[TProvider]):
             t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
                 t.cast(
                     NoneAgenticProviderExecuteFn,
-                    self.execute,
-                )
+                    functools.partial(
+                        self.execute,
+                        # Dangerously skip version check for non-agentic tool execution
+                        # via providers (e.g. OpenAI tool calling). This mirrors the
+                        # behavior used for agentic providers in `_wrap_execute_tool`
+                        # and keeps manual `tools.execute(...)` calls strict by default.
+                        dangerously_skip_version_check=True,
+                    ),
+                ),
             )
             return t.cast(NonAgenticProvider, self.provider).wrap_tools(
                 tools=tools_list
