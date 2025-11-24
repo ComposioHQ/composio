@@ -24,12 +24,13 @@ import {
   ToolkitConnectionState,
 } from '../types/toolRouter.types';
 import { ToolRouterConfigSchema } from '../types/toolRouter.types';
-import { Tool } from '../types/tool.types';
+import { Tool, ToolSchema } from '../types/tool.types';
 import { Tools } from './Tools';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
+import { getAllPages } from '../utils/pagination';
 
 export class ToolRouter<
   TToolCollection,
@@ -196,12 +197,21 @@ export class ToolRouter<
       auto_generate_tool_scopes: undefined,
     });
 
-    const toolData = await this.client.tools.list({
+    const rawTools = await getAllPages(params => this.client.tools.list(params), {
       tool_slugs: session.tools.join(','),
     });
 
-    // TODO: handle paginated response, right now this is capped at 20 tools.
-    const tools = toolData.items;
+    // Transform from snake_case API format to camelCase Tool type
+    const tools: Tool[] = rawTools.map(tool =>
+      ToolSchema.parse({
+        ...tool,
+        inputParameters: tool.input_parameters,
+        outputParameters: tool.output_parameters,
+        availableVersions: tool.available_versions,
+        isDeprecated: tool.deprecated?.is_deprecated ?? false,
+        isNoAuth: tool.no_auth,
+      })
+    );
 
     return {
       sessionId: session.session_id,
