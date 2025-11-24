@@ -215,7 +215,7 @@ export class Composio<
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? true,
       autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
-      provider: this.provider,
+      provider: config?.provider ?? this.provider,
     };
 
     const defaultHeaders = getDefaultHeaders(this.config.defaultHeaders, this.provider);
