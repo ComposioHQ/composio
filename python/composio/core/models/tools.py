@@ -22,12 +22,12 @@ from composio.core.provider import (
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
 from composio.core.provider.none_agentic import (
     NonAgenticProvider,
-    NoneAgenticProviderExecuteFn,
 )
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
+from python.composio.core.provider.base import ExecuteToolFn
 
 from ._modifiers import (
     Modifiers,
@@ -81,7 +81,7 @@ class Tools(Resource, t.Generic[TProvider]):
 
         self.provider.set_execute_tool_fn(
             t.cast(
-                NoneAgenticProviderExecuteFn,
+                ExecuteToolFn,
                 functools.partial(
                     self.execute,
                     # Dangerously skip version check for provider controlled tool execution
