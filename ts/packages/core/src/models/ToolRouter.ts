@@ -197,9 +197,12 @@ export class ToolRouter<
       auto_generate_tool_scopes: undefined,
     });
 
-    const rawTools = await getAllPages(params => this.client.tools.list(params), {
-      tool_slugs: session.tools.join(','),
-    });
+    const rawTools = await getAllPages(params =>
+      this.client.tools.list({
+        ...params,
+        tool_slugs: session.tools.join(','),
+      })
+    );
 
     // Transform from snake_case API format to camelCase Tool type
     const tools: Tool[] = rawTools.map(tool =>
