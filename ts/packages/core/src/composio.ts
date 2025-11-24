@@ -200,6 +200,11 @@ export class Composio<
     }
 
     /**
+     * Set the default provider, if not provided by the user.
+     */
+    this.provider = (config?.provider ?? new OpenAIProvider()) as TProvider;
+
+    /**
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
@@ -210,13 +215,8 @@ export class Composio<
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? true,
       autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
-      provider: (config?.provider ?? new OpenAIProvider()) as TProvider,
+      provider: this.provider,
     };
-
-    /**
-     * Set the default provider, if not provided by the user.
-     */
-    this.provider = this.config.provider as TProvider;
 
     const defaultHeaders = getDefaultHeaders(this.config.defaultHeaders, this.provider);
 
@@ -231,7 +231,7 @@ export class Composio<
       logLevel: COMPOSIO_LOG_LEVEL,
     });
 
-    this.tools = new Tools(this.client, this.config);
+    this.tools = new Tools(this.client, this.provider, this.config);
     this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client, this.config);

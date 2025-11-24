@@ -1,15 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FileToolModifier } from '../../src/utils/modifiers/FileToolModifier';
 import ComposioClient from '@composio/client';
-import { Tool, ToolExecuteResponse } from '../../src/types/tool.types';
+import { Tool } from '../../src/types/tool.types';
 import { ComposioFileUploadError } from '../../src/errors/FileModifierErrors';
 import * as fileUtils from '../../src/utils/fileUtils';
 import { Tools } from '../../src/models/Tools';
-import { BaseComposioProvider } from '../../src/provider/BaseProvider';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
 import { mockClient } from '../utils/mocks/client.mock';
-import { toolMocks } from '../utils/mocks/data.mock';
-import { ToolExecuteResponse as ComposioToolExecuteResponse } from '@composio/client/resources/tools';
 
 // Mock the fileUtils module
 vi.mock('../../src/utils/fileUtils', () => ({

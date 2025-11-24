@@ -65,14 +65,17 @@ export class Tools<
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
 
-  constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
+  constructor(client: ComposioClient, provider: TProvider, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
+    }
+    if (!provider) {
+      throw new ComposioProviderNotDefinedError('Provider not passed into Tools instance');
     }
 
     this.client = client;
     this.customTools = new CustomTools(client);
-    this.provider = config?.provider!;
+    this.provider = provider;
     this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     // Bind the execute method to ensure correct 'this' context
