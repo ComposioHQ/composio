@@ -19,9 +19,9 @@ import logger from '../utils/logger';
 export interface ErrorHandleOptions {
   /** Whether to include the stack trace in the output */
   includeStack?: boolean;
-  /** Whether to exit the process after handling */
+  /** Whether to throw the error after handling (for fatal errors that should stop execution) */
   exitProcess?: boolean;
-  /** The exit code to use if exiting the process */
+  /** @deprecated This option is no longer used. Errors are thrown instead of calling process.exit() */
   exitCode?: number;
 }
 
@@ -277,7 +277,7 @@ export class ComposioError extends Error {
    * @param options Options for error handling
    */
   static handle(error: unknown, options: ErrorHandleOptions = {}): void {
-    const { includeStack = false, exitProcess = false, exitCode = 1 } = options;
+    const { includeStack = false, exitProcess = false, exitCode: _exitCode = 1 } = options;
 
     if (error instanceof ComposioError) {
       // For Composio errors, use pretty printing
@@ -293,9 +293,17 @@ export class ComposioError extends Error {
       this.handleUnknownError(error);
     }
 
-    // Exit the process if requested
-    if (exitProcess && typeof process !== 'undefined') {
-      process.exit(exitCode);
+    // Throw the error if exitProcess is requested (instead of calling process.exit)
+    // This allows the error to be caught by callers and is compatible with
+    // environments that don't support process.exit (e.g., Convex, serverless functions)
+    if (exitProcess) {
+      if (error instanceof ComposioError) {
+        throw error;
+      } else if (error instanceof Error) {
+        throw new ComposioError(error.message, { cause: error });
+      } else {
+        throw new ComposioError(String(error));
+      }
     }
   }
 

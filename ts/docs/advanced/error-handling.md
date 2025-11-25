@@ -278,11 +278,10 @@ try {
   // Include stack trace
   ComposioError.handle(error, { includeStack: true });
 
-  // Exit process with code 1 after displaying the error
+  // Throw the error after displaying it (for fatal errors that should stop execution)
   ComposioError.handle(error, {
     includeStack: true,
     exitProcess: true,
-    exitCode: 1,
   });
 }
 ```
@@ -292,7 +291,7 @@ This method:
 - Automatically detects Composio errors and uses `prettyPrint` for them
 - Formats standard errors with a similar style
 - Handles unknown errors gracefully
-- Optionally exits the process with a specified code
+- Optionally throws the error after displaying it (when `exitProcess: true`)
 
 ### Creating and Printing Errors
 
