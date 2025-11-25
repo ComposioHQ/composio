@@ -25,6 +25,7 @@ catalog:
   vitest: ^3.2.4
   wrangler: ^4.37.0
   zod: ^4.1.0
+  zod-to-json-schema: ^3.25.0
 
 minimumReleaseAge: 1440
 
