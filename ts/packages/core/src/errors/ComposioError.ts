@@ -19,9 +19,9 @@ import logger from '../utils/logger';
 export interface ErrorHandleOptions {
   /** Whether to include the stack trace in the output */
   includeStack?: boolean;
-  /** Whether to throw the error after handling (for fatal errors that should stop execution) */
+  /** @deprecated Use ComposioError.handleAndThrow() instead. This option will be removed in a future version. */
   exitProcess?: boolean;
-  /** @deprecated This option is no longer used. Errors are thrown instead of calling process.exit() */
+  /** @deprecated This option is no longer used. */
   exitCode?: number;
 }
 
@@ -272,12 +272,12 @@ export class ComposioError extends Error {
 
   /**
    * Utility function to handle errors in a consistent way
-   * This properly displays the error and exits the process if needed
+   * This properly displays the error without throwing
    * @param error The error to handle
    * @param options Options for error handling
    */
   static handle(error: unknown, options: ErrorHandleOptions = {}): void {
-    const { includeStack = false, exitProcess = false, exitCode: _exitCode = 1 } = options;
+    const { includeStack = false, exitProcess = false } = options;
 
     if (error instanceof ComposioError) {
       // For Composio errors, use pretty printing
@@ -293,17 +293,37 @@ export class ComposioError extends Error {
       this.handleUnknownError(error);
     }
 
-    // Throw the error if exitProcess is requested (instead of calling process.exit)
-    // This allows the error to be caught by callers and is compatible with
-    // environments that don't support process.exit (e.g., Convex, serverless functions)
+    // @deprecated - exitProcess is deprecated, use handleAndThrow() instead
     if (exitProcess) {
-      if (error instanceof ComposioError) {
-        throw error;
-      } else if (error instanceof Error) {
-        throw new ComposioError(error.message, { cause: error });
-      } else {
-        throw new ComposioError(String(error));
-      }
+      this.throwError(error);
+    }
+  }
+
+  /**
+   * Utility function to handle errors and then throw them
+   * This properly displays the error and then throws it, allowing callers to catch it.
+   * Use this for fatal errors that should stop execution.
+   * @param error The error to handle and throw
+   * @param includeStack Whether to include the stack trace in the output
+   * @throws ComposioError - Always throws after displaying the error
+   */
+  static handleAndThrow(error: unknown, includeStack = false): never {
+    this.handle(error, { includeStack });
+    this.throwError(error);
+  }
+
+  /**
+   * Helper method to throw an error as a ComposioError
+   * @param error The error to throw
+   * @private
+   */
+  private static throwError(error: unknown): never {
+    if (error instanceof ComposioError) {
+      throw error;
+    } else if (error instanceof Error) {
+      throw new ComposioError(error.message, { cause: error });
+    } else {
+      throw new ComposioError(String(error));
     }
   }
 

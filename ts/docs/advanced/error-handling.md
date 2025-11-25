@@ -277,12 +277,6 @@ try {
 
   // Include stack trace
   ComposioError.handle(error, { includeStack: true });
-
-  // Throw the error after displaying it (for fatal errors that should stop execution)
-  ComposioError.handle(error, {
-    includeStack: true,
-    exitProcess: true,
-  });
 }
 ```
 
@@ -291,7 +285,29 @@ This method:
 - Automatically detects Composio errors and uses `prettyPrint` for them
 - Formats standard errors with a similar style
 - Handles unknown errors gracefully
-- Optionally throws the error after displaying it (when `exitProcess: true`)
+
+### Using handleAndThrow for Fatal Errors
+
+For fatal errors that should stop execution, use the `handleAndThrow` method which displays the error and then throws it:
+
+```typescript
+try {
+  // Some operation that might fail
+} catch (error) {
+  // Display the error and then throw it (for fatal errors)
+  ComposioError.handleAndThrow(error);
+
+  // Include stack trace before throwing
+  ComposioError.handleAndThrow(error, true);
+}
+```
+
+This method:
+
+- Displays the error using the same formatting as `handle()`
+- Always throws the error after displaying it
+- Returns `never` type, indicating it always throws
+- Is compatible with serverless environments (unlike `process.exit()`)
 
 ### Creating and Printing Errors
 
