@@ -289,9 +289,9 @@ navigation:
     - page: Understanding Tool Router
       path: pages/dist/tool-router/understanding-tool-router.mdx
       slug: understanding-tool-router
-    - page: Sessions
-      path: pages/dist/tool-router/sessions.mdx
-      slug: sessions
+    - page: Users and Sessions
+      path: pages/dist/tool-router/users-and-sessions.mdx
+      slug: users-and-sessions
     - page: Meta-Tools
       path: pages/dist/tool-router/meta-tools.mdx
       slug: meta-tools
@@ -302,9 +302,6 @@ navigation:
     - page: Toolkit Management
       path: pages/dist/tool-router/toolkit-management.mdx
       slug: toolkit-management
-    - page: Permissions
-      path: pages/dist/tool-router/permissions.mdx
-      slug: permissions
   - section: Authentication
     icon: fa-light fa-key
     skip-slug: true
@@ -315,19 +312,16 @@ navigation:
     - page: White-Labeling
       path: pages/dist/tool-router/white-labeling.mdx
       slug: white-labeling
-  - section: Integration
-    icon: fa-light fa-plug
+  - section: Usage
+    icon: fa-light fa-play
     skip-slug: true
     contents:
-    - page: MCP Integration
-      path: pages/dist/tool-router/mcp-integration.mdx
-      slug: mcp-integration
-    - page: Native SDK
-      path: pages/dist/tool-router/native-sdk.mdx
-      slug: native-sdk
-    - page: Framework Examples
-      path: pages/dist/tool-router/framework-examples.mdx
-      slug: framework-examples
+    - page: MCP
+      path: pages/dist/tool-router/mcp.mdx
+      slug: mcp
+    - page: Native Tools
+      path: pages/dist/tool-router/native-tools.mdx
+      slug: native-tools
 - tab: providers
   layout:
   - section: Supported Providers
