@@ -90,10 +90,16 @@ redirects:
   destination: /type-script
 - source: /sdk-reference/type-script/:path
   destination: /type-script/:path
+- source: /docs/tool-router/quick-start
+  destination: /tool-router/overview
 tabs:
   docs:
     display-name: Docs
     slug: docs
+  tool-router:
+    display-name: Tool Router
+    icon: fa-sparkles
+    slug: tool-router
   providers:
     display-name: Providers
     skip-slug: true
@@ -128,6 +134,24 @@ navigation:
     - changelog: ./pages/src/changelog
       title: Changelog
       slug: changelog
+  - section: Capabilities
+    icon: fa-layer-group
+    skip-slug: true
+    contents:
+    - link: Tool Router
+      href: /tool-router/overview
+    - page: Managed Authentication
+      path: pages/dist/capabilities/managed-authentication.mdx
+      slug: managed-authentication
+    - page: Tools
+      path: pages/dist/capabilities/tools.mdx
+      slug: tools
+    - page: MCP
+      path: pages/dist/capabilities/mcp.mdx
+      slug: mcp
+    - page: Triggers
+      path: pages/dist/capabilities/triggers.mdx
+      slug: triggers
   - section: Tools and Triggers
     icon: fa-light fa-wrench
     skip-slug: true
@@ -194,13 +218,6 @@ navigation:
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
-  - section: Tool Router (Beta)
-    icon: fa-light fa-flask
-    skip-slug: true
-    contents:
-    - page: Quick Start
-      path: pages/dist/tool-router/quick-start.mdx
-      slug: tool-router/quick-start
   - section: Resources
     icon: fa-light fa-book
     skip-slug: true
@@ -253,6 +270,64 @@ navigation:
       - page: Triggers
         path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
+- tab: tool-router
+  layout:
+  - section: Get Started
+    icon: fa-light fa-rocket
+    skip-slug: true
+    contents:
+    - page: Overview
+      path: pages/dist/tool-router/overview.mdx
+      slug: overview
+    - page: Quickstart
+      path: pages/dist/tool-router/quickstart.mdx
+      slug: quickstart
+  - section: Core Concepts
+    icon: fa-light fa-brain
+    skip-slug: true
+    contents:
+    - page: Understanding Tool Router
+      path: pages/dist/tool-router/understanding-tool-router.mdx
+      slug: understanding-tool-router
+    - page: Sessions
+      path: pages/dist/tool-router/sessions.mdx
+      slug: sessions
+    - page: Meta-Tools
+      path: pages/dist/tool-router/meta-tools.mdx
+      slug: meta-tools
+  - section: Configuration
+    icon: fa-light fa-cog
+    skip-slug: true
+    contents:
+    - page: Toolkit Management
+      path: pages/dist/tool-router/toolkit-management.mdx
+      slug: toolkit-management
+    - page: Permissions
+      path: pages/dist/tool-router/permissions.mdx
+      slug: permissions
+  - section: Authentication
+    icon: fa-light fa-key
+    skip-slug: true
+    contents:
+    - page: Authentication Flows
+      path: pages/dist/tool-router/authentication-flows.mdx
+      slug: authentication-flows
+    - page: White-Labeling
+      path: pages/dist/tool-router/white-labeling.mdx
+      slug: white-labeling
+  - section: Integration
+    icon: fa-light fa-plug
+    skip-slug: true
+    contents:
+    - page: MCP Integration
+      path: pages/dist/tool-router/mcp-integration.mdx
+      slug: mcp-integration
+    - page: Native SDK
+      path: pages/dist/tool-router/native-sdk.mdx
+      slug: native-sdk
+    - page: Framework Examples
+      path: pages/dist/tool-router/framework-examples.mdx
+      slug: framework-examples
 - tab: providers
   layout:
   - section: Supported Providers
