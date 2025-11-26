@@ -1,3 +1,26 @@
+// Auto-open Fern AI when ?open-fern-ai=true query parameter is present
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const openFernAI = urlParams.get('open-fern-ai');
+  
+  if (openFernAI === 'true') {
+    const checkAndClick = setInterval(function() {
+      // Try multiple selectors to find the Ask AI button
+      const askAIButton = document.querySelector('button[aria-label="Ask AI"]') ||
+                          Array.from(document.querySelectorAll('button')).find(function(btn) {
+                            return btn.textContent.includes('Ask AI');
+                          });
+      if (askAIButton) {
+        askAIButton.click();
+        clearInterval(checkAndClick);
+      }
+    }, 100);
+    
+    // Stop checking after 5 seconds
+    setTimeout(function() { clearInterval(checkAndClick); }, 5000);
+  }
+})();
+
 (function(d, script) {
   script = d.createElement('script');
   script.async = false;
