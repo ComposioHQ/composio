@@ -17,7 +17,7 @@ import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
-import { ToolkitVersionParam } from './types/tool.types';
+import { ToolkitVersion, ToolkitVersionParam, ToolkitVersions } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter.experimental';
 
 export type ComposioConfig<
@@ -77,6 +77,7 @@ export type ComposioConfig<
   disableVersionCheck?: boolean;
   /**
    * The versions of the toolkits to use for tool execution and retrieval.
+   * Omit to use 'latest' for all toolkits.
    *
    * **Version Control:**
    * When executing tools manually (via `tools.execute()`), if this resolves to "latest",
@@ -88,9 +89,9 @@ export type ComposioConfig<
    * Defaults to 'latest' if nothing is provided.
    * You can specify individual toolkit versions via environment variables: `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`
    *
-   * @example Global version for all toolkits
+   * @example Global version for all toolkits, omit to use 'latest'
    * ```typescript
-   * const composio = new Composio({ toolkitVersions: 'latest' });
+   * const composio = new Composio();
    * ```
    *
    * @example Specific versions for different toolkits (recommended for production)

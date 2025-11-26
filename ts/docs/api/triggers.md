@@ -280,7 +280,7 @@ const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
 
 **Behavior:**
 
-- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
+- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'` if not provided)
 - To use a specific toolkit version, configure `toolkitVersions` when initializing the Composio instance
 - See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for details on setting toolkit versions
 

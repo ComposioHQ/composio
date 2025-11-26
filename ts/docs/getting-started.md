@@ -62,20 +62,7 @@ Example: `12082025_00` represents version 00 released on August 12, 2025.
 
 #### Configuration Options
 
-**Option 1: Global Version for All Toolkits**
-
-```typescript
-const composio = new Composio({
-  toolkitVersions: 'latest' // Use latest version for all toolkits
-});
-
-// Or pin a specific version globally
-const composio = new Composio({
-  toolkitVersions: '12082025_00' // All toolkits use this version
-});
-```
-
-**Option 2: Specific Versions per Toolkit (Recommended for Production)**
+**Option 1: Specific Versions per Toolkit (Recommended for Production)**
 
 ```typescript
 const composio = new Composio({
@@ -87,7 +74,7 @@ const composio = new Composio({
 });
 ```
 
-**Option 3: Using Environment Variables**
+**Option 2: Using Environment Variables**
 
 You can set toolkit versions using environment variables:
 
@@ -105,6 +92,16 @@ const composio = new Composio({
   apiKey: 'your-api-key'
   // Will automatically use environment variables
 });
+```
+
+**Option 3: Latest version for all toolkits**
+If omitted, SDK will use `latest` version for all the toolkits
+
+```typescript
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  // since omitted, this will use `latest` for all toolkits
+})
 ```
 
 #### Version Behavior
