@@ -6,7 +6,7 @@ import typing_extensions as te
 
 # Tool versioning types
 ToolkitLatestVersion = te.Literal["latest"]
-ToolkitVersion = te.Union[
+ToolkitVersion = t.Union[
     ToolkitLatestVersion, str
 ]  # Can be "latest" or any version string like "20250906_01"
 ToolkitVersions = t.Dict[str, ToolkitVersion]

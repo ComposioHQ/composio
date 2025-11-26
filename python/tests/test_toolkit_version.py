@@ -41,7 +41,7 @@ class TestToolkitVersion:
 
     def test_get_toolkit_versions_with_string(self):
         """Test get_toolkit_versions with string parameter."""
-        result = get_toolkit_versions("v1.0.0")
+        result = get_toolkit_version("github", "v1.0.0")
         assert result == "v1.0.0"
 
     def test_get_toolkit_versions_with_dict(self):
@@ -136,7 +136,7 @@ class TestToolkitVersion:
         with pytest.MonkeyPatch().context() as m:
             # Test 1: String global version overrides everything
             m.setenv("COMPOSIO_TOOLKIT_VERSION_GITHUB", "env_version")
-            result = get_toolkit_versions("global_version")
+            result = get_toolkit_version("github", "global_version")
             assert result == "global_version"
 
             # Test 2: User dict overrides env vars
