@@ -1,8 +1,52 @@
 ---
 title: Tool Router
 image: "https://og.composio.dev/api/og?title=Tool%20Router"
-description: ""
-keywords: ""
-subtitle: ""
-hide-nav-links: false
+description: "Give your AI agent access to thousands of tools through a unified interface"
+keywords: "tool router"
 ---
+
+Tool Router is a unified interface that lets an agent **search**, **plan**, **authenticate**, and **execute** actions across thousands of Composio tools.
+
+Consider an agent that works across Gmail, Notion, Slack, Google Drive, and hundreds of other apps. The challenges:
+
+- Identifying the right tool for the task
+- Managing context for complex queries with large responses
+- Handling authentication across all of them
+
+Tool Router exposes a set of meta-tools that handle all this complexity—including search to discover the right tools, and a workbench to process results without flooding context. 
+
+This is what powers complex agentic products like [Rube](https://rube.app).
+
+## Getting started
+
+To use Tool Router, create a session for a user: 
+<CodeGroup>
+```python Python
+session = composio.create(
+    user_id='user_id_123',
+    toolkits=['github', 'slack', 'gmail']
+)
+
+# session.mcp.url → Use with any MCP client
+# session.tools() → Use with any agent  
+# session.authorize() → Authenticate users to apps
+# session.toolkits() → Get available toolkits and their connections
+```
+
+```typescript TypeScript
+const { tools, mcp, authorize, toolkits } = await composio.create('user_id_123', {
+  toolkits: ['github', 'slack', 'gmail'],
+});
+
+// mcp.url → Use with any MCP client
+// tools() → Use with any agent  
+// authorize() → Authenticate users to apps
+// toolkits() → Get available toolkits and their connections
+```
+</CodeGroup>
+
+## Next steps
+
+- **[Quickstart](/tool-router/quickstart)** - Build something end-to-end
+- **[MCP](/tool-router/mcp)** - Use with any MCP client
+- **[Native Tools](/tool-router/native-tools)** - Use with any agent
