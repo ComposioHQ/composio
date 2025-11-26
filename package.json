@@ -35,6 +35,16 @@
     "clean:workspace": "pnpm turbo clean"
   },
   "packageManager": "pnpm@10.17.0",
+  "pnpm": {
+    "overrides": {
+      "form-data": ">=4.0.4",
+      "js-yaml": ">=4.1.1",
+      "hono": ">=4.10.3",
+      "next": ">=15.4.7",
+      "ai": ">=5.0.52",
+      "@mastra/core>ai": ">=5.0.52"
+    }
+  },
   "devDependencies": {
     "@changesets/cli": "^2.29.4",
     "@composio/anthropic": "workspace:*",
