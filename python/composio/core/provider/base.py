@@ -22,6 +22,7 @@ class ExecuteToolFn(t.Protocol):
         self,
         slug: str,
         arguments: t.Dict,
+        *,
         modifiers: t.Optional[Modifiers] = None,
         user_id: t.Optional[str] = None,
     ) -> ToolExecutionResponse:
