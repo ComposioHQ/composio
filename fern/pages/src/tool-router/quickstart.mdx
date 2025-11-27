@@ -1,8 +1,287 @@
 ---
 title: Quickstart
 image: "https://og.composio.dev/api/og?title=Tool%20Router%20Quickstart"
-description: "Get started with Tool Router. Build an AI agent that uses tool router either as an MCP server or a Native tool"
+description: "Build an AI agent with access to 1000+ tools"
 keywords: "tool router quickstart, quickstart"
 hide-nav-links: false
 ---
 
+Build an agent that summarizes your Gmail inbox.
+
+<Tabs>
+<Tab title="OpenAI (Python)">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+pip install composio openai-agents composio-openai-agents
+```
+</Step>
+
+<Step title="Create session for user">
+Sessions are ephemeral, user-scoped and manage connections and tools for that user. See [Session Management](/docs/user-management) and [Configuring Toolkits](/tool-router/configuring-toolkits).
+
+<Info>
+Replace `your-api-key` with your Composio API key from the [developer dashboard](https://platform.composio.dev/?next_page=/settings). Replace `user_123` with the ID of the user in your system.
+</Info>
+```python
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your-api-key",
+    provider=OpenAIAgentsProvider()
+)
+session = composio.create(user_id="user_123")
+```
+</Step>
+
+<Step title="Run agent">
+When the agent needs authentication, it will prompt the user to connect. To pre-authenticate users, see [Manual Authentication](/tool-router/manual-authentication).
+```python
+from agents import Agent, Runner
+
+agent = Agent(
+    name="Assistant",
+    instructions="You are a helpful assistant.",
+    tools=session.tools()
+)
+
+result = Runner.run_sync(
+    agent,
+    "Summarize all the emails in my Gmail inbox today"
+)
+print(result.final_output)
+```
+
+To use OpenAI Agents SDK with Tool Router MCP instead, see [Using with MCP Clients](/tool-router/using-with-mcp-clients#openai).
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="OpenAI (TypeScript)">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+npm install @composio/core @composio/openai-agents @openai/agents
+```
+</Step>
+
+<Step title="Create session for user">
+Sessions are ephemeral, user-scoped and manage connections and tools for that user. See [Session Management](/docs/user-management) and [Configuring Toolkits](/tool-router/configuring-toolkits).
+
+<Info>
+Replace `your-api-key` with your Composio API key from the [developer dashboard](https://platform.composio.dev/?next_page=/settings). Replace `user_123` with the ID of the user in your system.
+</Info>
+```typescript
+import { Composio } from "@composio/core";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+
+const composio = new Composio({
+  apiKey: "your-api-key",
+  provider: new OpenAIAgentsProvider(),
+});
+const { tools } = await composio.create("user_123");
+```
+</Step>
+
+<Step title="Run agent">
+When the agent needs authentication, it will prompt the user to connect. To pre-authenticate users, see [Manual Authentication](/tool-router/manual-authentication).
+```typescript
+import { Agent, run } from "@openai/agents";
+
+const agent = new Agent({
+  name: "Assistant",
+  instructions: "You are a helpful assistant.",
+  tools: await tools(),
+});
+
+const result = await run(
+  agent,
+  "Summarize all the emails in my Gmail inbox today"
+);
+console.log(result.finalOutput);
+```
+
+To use OpenAI Agents SDK with Tool Router MCP instead, see [Using with MCP Clients](/tool-router/using-with-mcp-clients#openai).
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Anthropic (Python)">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+pip install composio anthropic-agents composio-anthropic
+```
+</Step>
+
+<Step title="Create session for user">
+Sessions are ephemeral, user-scoped and manage connections and tools for that user. See [Session Management](/docs/user-management) and [Configuring Toolkits](/tool-router/configuring-toolkits).
+
+<Info>
+Replace `your-api-key` with your Composio API key from the [developer dashboard](https://platform.composio.dev/?next_page=/settings). Replace `user_123` with the ID of the user in your system.
+</Info>
+```python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(
+    api_key="your-api-key",
+    provider=AnthropicProvider()
+)
+session = composio.create(user_id="user_123")
+```
+</Step>
+
+<Step title="Run agent">
+When the agent needs authentication, it will prompt the user to connect. To pre-authenticate users, see [Manual Authentication](/tool-router/manual-authentication).
+```python
+from anthropic_agents import Agent, run
+
+agent = Agent(
+    name="Assistant",
+    instructions="You are a helpful assistant.",
+    mcp_servers=[session.mcp.url]
+)
+
+result = run(
+    agent,
+    "Summarize all the emails in my Gmail inbox today"
+)
+print(result.final_output)
+```
+
+To use Anthropic Agents SDK with Tool Router as native tools instead, see [Using as Native Tools](/tool-router/using-as-native-tools#anthropic).
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Anthropic (TypeScript)">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+npm install @composio/core @composio/anthropic @anthropic-ai/agent
+```
+</Step>
+
+<Step title="Create session for user">
+Sessions are ephemeral, user-scoped and manage connections and tools for that user. See [Session Management](/docs/user-management) and [Configuring Toolkits](/tool-router/configuring-toolkits).
+
+<Info>
+Replace `your-api-key` with your Composio API key from the [developer dashboard](https://platform.composio.dev/?next_page=/settings). Replace `user_123` with the ID of the user in your system.
+</Info>
+```typescript
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+
+const composio = new Composio({
+  apiKey: "your-api-key",
+  provider: new AnthropicProvider(),
+});
+const { mcp } = await composio.create("user_123");
+```
+</Step>
+
+<Step title="Run agent">
+When the agent needs authentication, it will prompt the user to connect. To pre-authenticate users, see [Manual Authentication](/tool-router/manual-authentication).
+```typescript
+import { Agent, run } from "@anthropic-ai/agent";
+
+const agent = new Agent({
+  name: "Assistant",
+  instructions: "You are a helpful assistant.",
+  mcpServers: [mcp.url],
+});
+
+const result = await run(
+  agent,
+  "Summarize all the emails in my Gmail inbox today"
+);
+console.log(result.finalOutput);
+```
+
+To use Anthropic Agents SDK with Tool Router as native tools instead, see [Using as Native Tools](/tool-router/using-as-native-tools#anthropic).
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Vercel AI SDK">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+npm install @composio/core @composio/vercel ai @ai-sdk/openai
+```
+</Step>
+
+<Step title="Create session for user">
+Sessions are ephemeral, user-scoped and manage connections and tools for that user. See [Session Management](/docs/user-management) and [Configuring Toolkits](/tool-router/configuring-toolkits).
+
+<Info>
+Replace `your-api-key` with your Composio API key from the [developer dashboard](https://platform.composio.dev/?next_page=/settings). Replace `user_123` with the ID of the user in your system.
+</Info>
+```typescript
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+
+const composio = new Composio({
+  apiKey: "your-api-key",
+  provider: new VercelProvider(),
+});
+const { tools } = await composio.create("user_123");
+```
+</Step>
+
+<Step title="Run agent">
+When the agent needs authentication, it will prompt the user to connect. To pre-authenticate users, see [Manual Authentication](/tool-router/manual-authentication).
+```typescript
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+const result = await generateText({
+  model: openai("gpt-4o"),
+  tools: await tools(),
+  prompt: "Summarize all the emails in my Gmail inbox today",
+});
+
+console.log(result.text);
+```
+
+To use Vercel AI SDK with Tool Router MCP instead, see [Using with MCP Clients](/tool-router/using-with-mcp-clients#vercel).
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+## What just happened?
+
+When you ran this agent, Tool Router handled everything behind the scenes:
+
+1. **[Search](/tool-router/tool-search)** - Found the right Gmail tools from 1000+ available tools
+2. **[Authentication](/tool-router/authentication)** - Prompted you to connect your Gmail account
+3. **[Execution](/tool-router/tool-execution)** - Fetched your emails and processed results efficiently
+
+All you wrote was a prompt. Tool Router figured out the rest.
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Configure toolkits" href="/tool-router/configuring-toolkits">
+    Enable or disable specific apps for your session.
+  </Card>
+  <Card title="Manual authentication" href="/tool-router/manual-authentication">
+    Pre-authenticate users before running the agent.
+  </Card>
+  <Card title="Using MCP" href="/tool-router/using-with-mcp-clients">
+    Connect Tool Router to any MCP-compatible client.
+  </Card>
+</CardGroup> 
