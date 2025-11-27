@@ -286,32 +286,21 @@ navigation:
     icon: fa-light fa-brain
     skip-slug: true
     contents:
-    - page: Understanding Tool Router
-      path: pages/dist/tool-router/understanding-tool-router.mdx
-      slug: understanding-tool-router
     - page: Users and Sessions
       path: pages/dist/tool-router/users-and-sessions.mdx
       slug: users-and-sessions
-    - page: Meta-Tools
-      path: pages/dist/tool-router/meta-tools.mdx
-      slug: meta-tools
-  - section: Configuration
-    icon: fa-light fa-cog
-    skip-slug: true
-    contents:
-    - page: Toolkit Management
-      path: pages/dist/tool-router/toolkit-management.mdx
-      slug: toolkit-management
-  - section: Authentication
-    icon: fa-light fa-key
-    skip-slug: true
-    contents:
-    - page: Authentication Flows
-      path: pages/dist/tool-router/authentication-flows.mdx
-      slug: authentication-flows
-    - page: White-Labeling
-      path: pages/dist/tool-router/white-labeling.mdx
-      slug: white-labeling
+    - page: Tools and Toolkits
+      path: pages/dist/tool-router/tools-and-toolkits.mdx
+      slug: tools-and-toolkits
+    - page: Tool Search
+      path: pages/dist/tool-router/tool-search.mdx
+      slug: tool-search
+    - page: Execution and Workbench
+      path: pages/dist/tool-router/execution-and-workbench.mdx
+      slug: execution-and-workbench
+    - page: Authentication
+      path: pages/dist/tool-router/authentication.mdx
+      slug: authentication
   - section: Usage
     icon: fa-light fa-play
     skip-slug: true
