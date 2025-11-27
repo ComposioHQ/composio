@@ -18,6 +18,8 @@ export const AuthSchemeTypes = {
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
   CALCOM_AUTH: 'CALCOM_AUTH',
   SERVICE_ACCOUNT: 'SERVICE_ACCOUNT',
+  SAML: 'SAML',
+  DCR_OAUTH: 'DCR_OAUTH',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
@@ -42,6 +44,8 @@ export const AuthSchemeEnum = z.enum([
   'BASIC_WITH_JWT',
   'CALCOM_AUTH',
   'SERVICE_ACCOUNT',
+  'SAML',
+  'DCR_OAUTH',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),

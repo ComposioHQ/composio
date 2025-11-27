@@ -1,6 +1,6 @@
 import z from 'zod/v3';
 import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ExecuteToolModifiers } from './modifiers.types';
+import { ExecuteToolModifiers, ProviderOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
@@ -9,9 +9,14 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 export const ToolRouterToolkitsParamSchema = z
   .array(z.string())
   .describe('List of toolkits to enable in the tool router session');
-export const ToolRouterToolkitsConfigSchema = z.object({
+export const ToolRouterToolkitsDisabledConfigSchema = z.object({
   disabled: ToolRouterToolkitsParamSchema.describe(
     'List of toolkits to disable in the tool router session'
+  ).optional(),
+});
+export const ToolRouterToolkitsEnabledConfigSchema = z.object({
+  enabled: ToolRouterToolkitsParamSchema.describe(
+    'List of toolkits to enable in the tool router session'
   ).optional(),
 });
 
@@ -29,7 +34,11 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 export const ToolRouterConfigSchema = z
   .object({
     toolkits: z
-      .union([ToolRouterToolkitsParamSchema, ToolRouterToolkitsConfigSchema])
+      .union([
+        ToolRouterToolkitsParamSchema,
+        ToolRouterToolkitsDisabledConfigSchema,
+        ToolRouterToolkitsEnabledConfigSchema,
+      ])
       .describe('The toolkits to use in the tool router session')
       .default([]),
     manageConnections: z
@@ -64,8 +73,10 @@ export const ToolkitConnectionStateSchema = z
       authConfig: z
         .object({
           id: z.string().describe('The id of the auth config'),
-          name: z.string().describe('The name of the auth config'),
+          mode: z.string().describe('The auth scheme used by the auth config'),
+          isComposioManaged: z.boolean().describe('Whether the auth config is managed by Composio'),
         })
+        .nullish()
         .describe('The auth config of a toolkit'),
       connectedAccount: z
         .object({
@@ -81,15 +92,18 @@ export const ToolkitConnectionStateSchema = z
 export type ToolkitConnectionState = z.infer<typeof ToolkitConnectionStateSchema>;
 
 export type ToolRouterMCPServerConfig = { type: MCPServerType; url: string };
+
 export type ToolRouterToolsFn<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
-> = (modifiers?: ExecuteToolModifiers) => ReturnType<TProvider['wrapTools']>;
+> = (modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>;
+
 export type ToolRouterAuthorizeFn = (
   toolkit: string,
   options?: { callbackUrl?: string }
 ) => Promise<ConnectionRequest>;
+
 export type ToolRouterToolkitsFn = () => Promise<Record<string, ToolkitConnectionState>>;
 export interface ToolRouterSession<
   TToolCollection,

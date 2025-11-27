@@ -18,12 +18,12 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.65",
+    "@ai-sdk/mcp": "^0.0.10",
+    "@ai-sdk/openai": "^2.0.72",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "ai": "catalog:",
     "dotenv": "^16.4.1",
-    "i": "^0.3.7",
     "ora": "^9.0.0",
     "pnpm": "^10.21.0"
   },

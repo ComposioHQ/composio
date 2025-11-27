@@ -31,15 +31,15 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.2.6",
-    "ai": "^5.0.44"
+    "ai": "catalog:"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "ai": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "zod": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }

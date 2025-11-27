@@ -1,3 +1,6 @@
+/**
+ * @deprecated Please use `composio.toolRouter.create` instead.
+ */
 import { Composio as ComposioClient } from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
 import {
@@ -71,16 +74,20 @@ export class ToolRouter {
 
     const session = await this.client.toolRouter.createSession({
       user_id: userId,
-      toolkits,
-      auth_config_override: authConfigOverride,
-      manage_connected_account: !Boolean(config.data.manuallyManageConnections),
+      config: {
+        toolkits: toolkitConfig?.map(config => ({
+          toolkit: config.toolkit,
+          auth_config_id: config.auth_config_id,
+        })),
+        manually_manage_connections: !Boolean(config.data.manuallyManageConnections),
+      },
     });
 
     return transform(session)
       .with(ToolRouterSessionSchema)
       .using(raw => ({
         sessionId: raw.session_id,
-        url: raw.mcp.url,
+        url: raw.chat_session_mcp_url,
       }));
   }
 }

@@ -41,8 +41,8 @@
       "js-yaml": ">=4.1.1",
       "hono": ">=4.10.3",
       "next": ">=15.4.7",
-      "ai": ">=5.0.52",
-      "@mastra/core>ai": ">=5.0.52"
+      "ai": ">=5.0.102",
+      "@mastra/core>ai": ">=5.0.102"
     }
   },
   "devDependencies": {
