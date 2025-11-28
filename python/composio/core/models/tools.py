@@ -20,6 +20,7 @@ from composio.core.provider import (
     TProvider,
 )
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
+from composio.core.provider.base import ExecuteToolFn
 from composio.core.provider.none_agentic import (
     NonAgenticProvider,
 )
@@ -27,7 +28,6 @@ from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
-from composio.core.provider.base import ExecuteToolFn
 
 from ._modifiers import (
     Modifiers,

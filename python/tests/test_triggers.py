@@ -1,10 +1,12 @@
 """Tests for Triggers class."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 from composio_client import omit
-from composio.core.models.triggers import Triggers
+
 from composio import exceptions
+from composio.core.models.triggers import Triggers
 
 
 class TestTriggers:
