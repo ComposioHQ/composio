@@ -19,17 +19,19 @@ import { ComposioConfig } from '../composio';
 import {
   ToolRouterAuthorizeFn,
   ToolRouterToolkitsFn,
-  ToolRouterConfig,
+  ToolRouterCreateSessionConfig,
   ToolRouterSession,
   ToolkitConnectionState,
+  ToolkitConnectionStateSchema,
 } from '../types/toolRouter.types';
-import { ToolRouterConfigSchema } from '../types/toolRouter.types';
+import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
 import { ProviderOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
-import { getAllPages } from '../utils/pagination';
+import { transform } from '../utils/transform';
+import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
 
 export class ToolRouter<
   TToolCollection,
@@ -86,27 +88,20 @@ export class ToolRouter<
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const connectionsFn = async () => {
-      const items = await getAllPages(params =>
-        this.client.toolRouter.session.toolkits(sessionId, params)
-      );
+    const connectionsFn = async (options?: { nextCursor?: string; limit?: number }) => {
+      const result = await this.client.toolRouter.session.toolkits(sessionId, {
+        cursor: options?.nextCursor,
+        limit: options?.limit,
+      });
 
-      console.log(JSON.stringify({ items }, null, 2));
-      const toolkitConnectedStates = items.reduce(
-        (acc, item) => {
-          const connectedAccount = item.connected_account
-            ? ({
-                id: item.connected_account.id,
-                status: item.connected_account.status,
-              } as const)
-            : undefined;
-
-          const connectedState: ToolkitConnectionState = {
-            meta: {
-              slug: item.slug,
-              name: item.name,
-              logo: item.meta.logo,
-            },
+      const toolkitConnectedStates = result.items.map(item => {
+        const connectedState = transform(item)
+          .with(ToolkitConnectionStateSchema)
+          .using(item => ({
+            slug: item.slug,
+            name: item.name,
+            logo: item.meta.logo,
+            isNoAuth: false,
             connection: {
               isActive: item.connected_account?.status === 'ACTIVE',
               authConfig: item.connected_account && {
@@ -114,21 +109,25 @@ export class ToolRouter<
                 mode: item.connected_account?.auth_config.auth_scheme,
                 isComposioManaged: item.connected_account?.auth_config.is_composio_managed,
               },
-              connectedAccount,
+              connectedAccount: item.connected_account
+                ? {
+                    id: item.connected_account.id,
+                    status: item.connected_account.status,
+                  }
+                : undefined,
             },
-          };
+          }));
+        return connectedState;
+      });
 
-          acc[item.slug] = connectedState;
-
-          return acc;
-        },
-        {} as Record<string, ToolkitConnectionState>
-      );
-
-      return toolkitConnectedStates;
+      return {
+        items: toolkitConnectedStates,
+        nextCursor: result.next_cursor,
+        totalPages: result.total_pages,
+      };
     };
 
-    return connectionsFn;
+    return connectionsFn as ToolRouterToolkitsFn;
   };
 
   /**
@@ -183,35 +182,46 @@ export class ToolRouter<
    */
   async create(
     userId: string,
-    config?: ToolRouterConfig
+    config?: ToolRouterCreateSessionConfig
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterConfigSchema.parse(config ?? {});
+    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+
+    console.log({ routerConfig });
 
     const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
         : routerConfig.manageConnections?.enabled;
 
-    // `this.client.toolRouter.createSession` only supports `ToolRouterToolkitsParamSchema` for now.
-    // It the future, it may support a union with `ToolRouterToolkitsConfigSchema`.
     const toolkits = Array.isArray(routerConfig.toolkits)
       ? { enabled: routerConfig.toolkits }
-      : { enabled: [] };
+      : routerConfig.toolkits;
 
-    const session = await this.client.toolRouter.session.create({
+    const tools = Array.isArray(routerConfig.tools)
+      ? { enabled: routerConfig.tools }
+      : routerConfig.tools;
+
+    const inferScopesFromTools =
+      typeof routerConfig.manageConnections === 'object'
+        ? routerConfig.manageConnections.inferScopesFromTools
+        : false;
+
+    const payload: SessionCreateParams = {
       user_id: userId,
       toolkits,
+      // tools,
       connections: {
         auth_config_overrides: routerConfig?.authConfigs,
         connected_account_overrides: routerConfig?.connectedAccounts,
-        infer_scopes_from_tools: undefined,
+        infer_scopes_from_tools: inferScopesFromTools,
         auto_manage_connections: manageConnectedAccounts,
         callback_uri:
           typeof routerConfig.manageConnections === 'object'
-            ? routerConfig.manageConnections.callbackUrl
+            ? routerConfig.manageConnections.callbackUri
             : undefined,
       },
-    });
+    };
+    const session = await this.client.toolRouter.session.create(payload);
 
     return {
       sessionId: session.session_id,

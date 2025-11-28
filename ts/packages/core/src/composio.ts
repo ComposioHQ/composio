@@ -20,7 +20,7 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter as ExperimentalToolRouter } from './models/ToolRouter.experimental';
 import { ToolRouter } from './models/ToolRouter';
-import { ToolRouterConfig, ToolRouterSession } from './types/toolRouter.types';
+import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -182,7 +182,7 @@ export class Composio<
      */
     create: (
       userId: string,
-      routerConfig?: ToolRouterConfig
+      routerConfig?: ToolRouterCreateSessionConfig
     ) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
   };
 
@@ -281,7 +281,7 @@ export class Composio<
       toolRouter: new ExperimentalToolRouter(this.client),
       create: async (
         userId: string,
-        routerConfig?: ToolRouterConfig
+        routerConfig?: ToolRouterCreateSessionConfig
       ): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
         return this.toolRouter.create(userId, routerConfig);
       },

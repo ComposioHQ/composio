@@ -6,19 +6,49 @@ import { ConnectionRequest } from './connectionRequest.types';
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 
+// manage connections
+export const ToolRouterConfigManageConnectionsSchema = z
+  .object({
+    enabled: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
+      ),
+    callbackUri: z
+      .string()
+      .optional()
+      .describe('The callback uri to use in the tool router session'),
+    inferScopesFromTools: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        'Whether to infer scopes from tools in the tool router session. Defaults to false, if set to true, tool router will infer scopes from allowed tools'
+      ),
+  })
+  .strict();
+
+// toolkits
 export const ToolRouterToolkitsParamSchema = z
   .array(z.string())
   .describe('List of toolkits to enable in the tool router session');
-export const ToolRouterToolkitsDisabledConfigSchema = z.object({
-  disabled: ToolRouterToolkitsParamSchema.describe(
-    'List of toolkits to disable in the tool router session'
-  ).optional(),
-});
-export const ToolRouterToolkitsEnabledConfigSchema = z.object({
-  enabled: ToolRouterToolkitsParamSchema.describe(
-    'List of toolkits to enable in the tool router session'
-  ).optional(),
-});
+
+export const ToolRouterToolkitsDisabledConfigSchema = z
+  .object({
+    disabled: ToolRouterToolkitsParamSchema.describe(
+      'List of toolkits to disable in the tool router session'
+    ),
+  })
+  .strict();
+export const ToolRouterToolkitsEnabledConfigSchema = z
+  .object({
+    enabled: ToolRouterToolkitsParamSchema.describe(
+      'List of toolkits to enable in the tool router session'
+    ),
+  })
+  .strict();
 
 export const ToolRouterManageConnectionsConfigSchema = z.object({
   enabled: z
@@ -31,19 +61,65 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
   callbackUrl: z.string().optional().describe('The callback url to use in the tool router session'),
 });
 
-export const ToolRouterConfigSchema = z
+// Tags
+export const ToolRouterTagsParamSchema = z
+  .array(z.string())
+  .describe('The tags to use in the tool router session');
+export const ToolRouterEnabledTagsConfigSchema = z
   .object({
+    enabled: ToolRouterTagsParamSchema.describe('The tags to enable in the tool router session'),
+  })
+  .strict();
+export const ToolRouterDisabledTagsConfigSchema = z
+  .object({
+    disabled: ToolRouterTagsParamSchema.describe('The tags to disable in the tool router session'),
+  })
+  .strict();
+export const ToolRouterConfigTagsSchema = z
+  .union([
+    ToolRouterTagsParamSchema,
+    ToolRouterEnabledTagsConfigSchema,
+    ToolRouterDisabledTagsConfigSchema,
+  ])
+  .describe('The tags to use in the tool router session');
+
+// tools
+export const ToolRouterToolsParamSchema = z
+  .array(z.string())
+  .describe('The tools to use in the tool router session');
+export const ToolRouterEnabledToolsConfigSchema = z
+  .object({
+    enabled: ToolRouterToolsParamSchema.describe('The tools to enable in the tool router session'),
+  })
+  .strict();
+export const ToolRouterDisabledToolsConfigSchema = z
+  .object({
+    disabled: ToolRouterToolsParamSchema.optional().describe(
+      'The tools to disable in the tool router session'
+    ),
+    tags: ToolRouterConfigTagsSchema.optional().describe('The tags to filter the tools by'),
+  })
+  .strict();
+
+export const ToolRouterCreateSessionConfigSchema = z
+  .object({
+    tools: z
+      .union([
+        ToolRouterToolsParamSchema,
+        ToolRouterEnabledToolsConfigSchema,
+        ToolRouterDisabledToolsConfigSchema,
+      ])
+      .optional()
+      .describe('The tools to use in the tool router session'),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,
         ToolRouterToolkitsDisabledConfigSchema,
         ToolRouterToolkitsEnabledConfigSchema,
       ])
-      .describe('The toolkits to use in the tool router session')
-      .default([]),
-    manageConnections: z
-      .union([z.boolean(), ToolRouterManageConnectionsConfigSchema])
-      .default(true),
+      .optional()
+      .describe('The toolkits to use in the tool router session'),
+
     authConfigs: z
       .record(z.string(), z.string())
       .describe(
@@ -56,18 +132,37 @@ export const ToolRouterConfigSchema = z
         'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is the connected account id.'
       )
       .default({}),
+    manageConnections: z
+      .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
+      .optional()
+      .default(true)
+      .describe(
+        'The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.'
+      ),
   })
   .partial()
   .describe('The config for the tool router session');
-export type ToolRouterConfig = z.infer<typeof ToolRouterConfigSchema>;
+/**
+ * The config for the tool router session.
+ *
+ * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
+ * @param {ToolRouterToolsParamSchema | ToolRouterEnabledToolsConfigSchema | ToolRouterDisabledToolsConfigSchema} tools - The tools to use in the tool router session
+ * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - Whether to use tools to manage connections in the tool router session @default true
+ * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
+ * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
+ * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
+ * @param {boolean} [manageConnections.enabled] - Whether to use tools to manage connections in the tool router session @default true
+ * @param {string} [manageConnections.callbackUri] - The callback uri to use in the tool router session
+ * @param {boolean} [manageConnections.inferScopesFromTools] - Whether to infer scopes from tools in the tool router session @default false
+ */
+export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 
 export const ToolkitConnectionStateSchema = z
   .object({
-    meta: z.object({
-      slug: z.string().describe('The slug of a toolkit'),
-      name: z.string().describe('The name of a toolkit'),
-      logo: z.string().optional().describe('The logo of a toolkit'),
-    }),
+    slug: z.string().describe('The slug of a toolkit'),
+    name: z.string().describe('The name of a toolkit'),
+    logo: z.string().optional().describe('The logo of a toolkit'),
+    isNoAuth: z.boolean().default(false).describe('Whether the toolkit is no auth or not'),
     connection: z.object({
       isActive: z.boolean().describe('Whether the connection is active or not'),
       authConfig: z
@@ -89,6 +184,13 @@ export const ToolkitConnectionStateSchema = z
   })
   .describe('The connection state of a toolkit');
 
+export const ToolkitConnectionsDetailsSchema = z.object({
+  items: z.array(ToolkitConnectionStateSchema),
+  nextCursor: z.string().optional(),
+  totalPages: z.number(),
+});
+export type ToolkitConnectionsDetails = z.infer<typeof ToolkitConnectionsDetailsSchema>;
+
 export type ToolkitConnectionState = z.infer<typeof ToolkitConnectionStateSchema>;
 
 export type ToolRouterMCPServerConfig = { type: MCPServerType; url: string };
@@ -104,7 +206,10 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string }
 ) => Promise<ConnectionRequest>;
 
-export type ToolRouterToolkitsFn = () => Promise<Record<string, ToolkitConnectionState>>;
+export type ToolRouterToolkitsFn = (options?: {
+  nextCursor?: string;
+  limit?: number;
+}) => Promise<ToolkitConnectionsDetails>;
 export interface ToolRouterSession<
   TToolCollection,
   TTool,
