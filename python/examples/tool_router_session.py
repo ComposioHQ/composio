@@ -4,7 +4,20 @@ from agents import Agent, Runner
 import asyncio
 
 composio = Composio(provider=OpenAIAgentsProvider())
-session = composio.tool_router.create(user_id="user_123")
+
+# Create a tool router session with configuration
+session = composio.tool_router.create(
+    user_id="user_123",
+    toolkits=["gmail", "github"],
+    manage_connections=True,
+)
+
+# The session provides:
+# - session.tools() - Get provider-wrapped tools
+# - session.authorize(toolkit) - Authorize a toolkit
+# - session.toolkits() - Get toolkit connection states
+# - session.session_id - The session ID
+# - session.mcp - MCP server configuration
 
 agent = Agent(
     model="gpt-4o-mini",
