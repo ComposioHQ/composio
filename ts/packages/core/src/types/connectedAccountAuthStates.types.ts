@@ -67,6 +67,13 @@ const BaseSchemeRaw = z
     generic_api_key: z.string().optional(),
     // for bearer token
     bearer_token: z.string().optional(),
+    // for basic auth encoded
+    basic_encoded: z.string().optional(),
+    // for dcr oauth
+    long_redirect_url: z.boolean().optional(),
+    state_prefix: z.string().optional(),
+    registration_access_token: z.string().optional(),
+    registration_client_uri: z.string().optional(),
   })
   .catchall(z.unknown());
 
@@ -418,6 +425,110 @@ const CustomBasicWithJwtConnectionDataSchema = BasicWithJwtInitiatingSchema.omit
   status: true,
 });
 
+// SERVICE_ACCOUNT
+const ServiceAccountInitiatingSchema = BaseSchemeRaw.extend({
+  status: z.literal(ConnectionStatuses.INITIALIZING),
+}).catchall(z.unknown());
+const ServiceAccountConnectionDataSchema = z.discriminatedUnion('status', [
+  ServiceAccountInitiatingSchema,
+  ServiceAccountInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INITIATED),
+  }).catchall(z.unknown()),
+  ServiceAccountInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.ACTIVE),
+    application_id: z.string(),
+    installation_id: z.string(),
+    private_key: z.string(),
+  }).catchall(z.unknown()),
+  ServiceAccountInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INACTIVE),
+    application_id: z.string(),
+    installation_id: z.string(),
+    private_key: z.string(),
+  }).catchall(z.unknown()),
+]);
+const CustomServiceAccountConnectionDataSchema = z
+  .object({
+    application_id: z.string(),
+    installation_id: z.string(),
+    private_key: z.string(),
+  })
+  .merge(BaseSchemeRaw)
+  .catchall(z.unknown());
+
+// SAML
+const SamlInitiatingSchema = BaseSchemeRaw.extend({
+  status: z.literal(ConnectionStatuses.INITIALIZING),
+}).catchall(z.unknown());
+const SamlConnectionDataSchema = z.discriminatedUnion('status', [
+  SamlInitiatingSchema,
+  SamlInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INITIATED),
+  }).catchall(z.unknown()),
+  SamlInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.ACTIVE),
+  }).catchall(z.unknown()),
+  SamlInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INACTIVE),
+  }).catchall(z.unknown()),
+  SamlInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.FAILED),
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+  }).catchall(z.unknown()),
+  SamlInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.EXPIRED),
+    expired_at: z.string().optional(),
+  }).catchall(z.unknown()),
+]);
+const CustomSamlConnectionDataSchema = BaseSchemeRaw.catchall(z.unknown());
+
+// DCR_OAUTH
+const DcrOauthInitiatingSchema = BaseSchemeRaw.extend({
+  status: z.literal(ConnectionStatuses.INITIALIZING),
+}).catchall(z.unknown());
+const DcrOauthConnectionDataSchema = z.discriminatedUnion('status', [
+  DcrOauthInitiatingSchema,
+  DcrOauthInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INITIATED),
+    client_id: z.string(),
+    client_secret: z.string(),
+    redirectUrl: z.string(),
+  }).catchall(z.unknown()),
+  DcrOauthInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.ACTIVE),
+    access_token: z.string(),
+    client_id: z.string(),
+    token_type: z.string().optional(),
+    refresh_token: z.string().nullish(),
+    expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
+    scope: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
+    id_token: z.string().optional(),
+    client_secret: z.string().optional(),
+  }).catchall(z.unknown()),
+  DcrOauthInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.INACTIVE),
+    access_token: z.string(),
+    client_id: z.string(),
+  }).catchall(z.unknown()),
+  DcrOauthInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.FAILED),
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+  }).catchall(z.unknown()),
+  DcrOauthInitiatingSchema.extend({
+    status: z.literal(ConnectionStatuses.EXPIRED),
+    expired_at: z.string().optional(),
+  }).catchall(z.unknown()),
+]);
+const CustomDcrOauthConnectionDataSchema = z
+  .object({
+    access_token: z.string(),
+    client_id: z.string(),
+  })
+  .merge(BaseSchemeRaw)
+  .catchall(z.unknown());
+
 export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
   z.object({
     authScheme: z.literal(AuthSchemeTypes.OAUTH1),
@@ -496,6 +607,27 @@ export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
      */
     val: BasicWithJwtConnectionDataSchema,
   }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.SERVICE_ACCOUNT),
+    /**
+     * the main connection data discriminated by auth scheme
+     */
+    val: ServiceAccountConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.SAML),
+    /**
+     * the main connection data discriminated by auth scheme
+     */
+    val: SamlConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.DCR_OAUTH),
+    /**
+     * the main connection data discriminated by auth scheme
+     */
+    val: DcrOauthConnectionDataSchema,
+  }),
 ]);
 
 export type ConnectionData = z.infer<typeof ConnectionDataSchema>;
@@ -535,6 +667,21 @@ export const CustomConnectionDataSchema = z.discriminatedUnion('authScheme', [
     authScheme: z.literal(AuthSchemeTypes.NO_AUTH),
     toolkitSlug: z.string(),
     val: CustomNoAuthConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.SERVICE_ACCOUNT),
+    toolkitSlug: z.string(),
+    val: CustomServiceAccountConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.SAML),
+    toolkitSlug: z.string(),
+    val: CustomSamlConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.DCR_OAUTH),
+    toolkitSlug: z.string(),
+    val: CustomDcrOauthConnectionDataSchema,
   }),
 ]);
 
