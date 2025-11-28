@@ -96,7 +96,7 @@ export function getSessionHeaders(
 ) {
   return {
     'x-framework': provider?.name || 'unknown',
-    'x-source': 'TYPESCRIPT_SDK',
+    'x-source': 'COMPOSIO_SDK_TYPESCRIPT',
     'x-runtime': RUNTIME_ENV,
     'x-sdk-version': version,
   };
