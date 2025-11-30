@@ -1,7 +1,84 @@
 ---
-title: Using In-chat Authentication
+title: Using in-chat authentication
 image: "https://og.composio.dev/api/og?title=Using%20In-chat%20Authentication"
-description: "Let your agent authenticate users via MANAGE_CONNECTIONS_TOOL"
-keywords: "tool router"
+description: "Let your agent prompt users to connect accounts during conversation"
+keywords: "tool router, authentication, in-chat, MANAGE_CONNECTIONS"
 ---
+
+In-chat authentication lets your agent prompt users to connect accounts during chat. When a tool requires authentication, the agent returns a Connect Link URL. The user authenticates, confirms in chat, and the agent retries.
+
+## How it works
+
+1. User asks agent to do something (e.g., "star my repos")
+2. Agent tries to execute but user hasn't connected GitHub
+3. `COMPOSIO_MANAGE_CONNECTIONS` returns a Connect Link URL
+4. Agent shares the URL with the user
+5. User clicks, authenticates, returns to chat
+6. User confirms ("done") and agent retries successfully
+
+## Configuration
+
+In-chat auth is enabled by default. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool is included automatically.
+
+```typescript
+const session = await composio.createSession({
+  user: "pg-user-550e8400-e29b-41d4",
+  toolkits: ["github", "gmail"],
+});
+```
+
+### Custom callback URL
+
+Redirect users to a specific page after authentication:
+
+```typescript
+const session = await composio.createSession({
+  user: "pg-user-550e8400-e29b-41d4",
+  toolkits: ["github", "gmail"],
+  manageConnections: {
+    callbackUrl: "https://yourapp.com/chat",
+  },
+});
+```
+
+### Disabling in-chat auth
+
+To manage authentication outside of chat, disable the `COMPOSIO_MANAGE_CONNECTIONS` tool:
+
+```typescript
+const session = await composio.createSession({
+  user: "pg-user-550e8400-e29b-41d4",
+  toolkits: ["github", "gmail"],
+  manageConnections: false,
+});
+```
+
+See [Manually authenticating users](/tool-router/manually-authenticating-users) for the alternative approach.
+
+## Examples
+
+<CodeGroup>
+<CodeGroupItem title="Vercel AI SDK (TypeScript)">
+<SnippetCode src="fern/snippets/tool-router/typescript/in-chat-auth.ts" />
+</CodeGroupItem>
+<CodeGroupItem title="OpenAI Agents SDK (Python)">
+<SnippetCode src="fern/snippets/tool-router/python/in-chat-auth.py" />
+</CodeGroupItem>
+</CodeGroup>
+
+### Example conversation
+
+```
+You: Star the composio repo on GitHub
+
+Agent: I'll help you star the Composio repo. Let me search for the right tools.
+
+I found the tool to star repositories, but I need you to connect your GitHub 
+account first. Please click the link below to authorize:
+https://connect.composio.dev/link/ln_abc123
+
+You: Done
+
+Agent: Done! I've starred ComposioHQ/composio.
+```
 
