@@ -9,60 +9,79 @@ In-chat authentication lets your agent prompt users to connect accounts during c
 
 ## How it works
 
-1. User asks agent to do something (e.g., "star my repos")
-2. Agent tries to execute but user hasn't connected GitHub
-3. `COMPOSIO_MANAGE_CONNECTIONS` returns a Connect Link URL
-4. Agent shares the URL with the user
-5. User clicks, authenticates, returns to chat
-6. User confirms ("done") and agent retries successfully
+1. Agent searches for tools via `COMPOSIO_SEARCH_TOOLS`
+2. `COMPOSIO_MANAGE_CONNECTIONS` checks connection status, returns Connect Link URL if needed
+3. User authenticates, confirms in chat, agent continues
 
 ## Configuration
 
 In-chat auth is enabled by default. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool is included automatically.
 
+<CodeGroup>
+```python
+session = await composio.create_session(
+    user="pg-user-550e8400-e29b-41d4",
+)
+```
 ```typescript
 const session = await composio.createSession({
   user: "pg-user-550e8400-e29b-41d4",
-  toolkits: ["github", "gmail"],
 });
 ```
+</CodeGroup>
 
 ### Custom callback URL
 
 Redirect users to a specific page after authentication:
 
+<CodeGroup>
+```python
+session = await composio.create_session(
+    user="pg-user-550e8400-e29b-41d4",
+    manage_connections={
+        "callback_url": "https://yourapp.com/chat"
+    },
+)
+```
 ```typescript
 const session = await composio.createSession({
   user: "pg-user-550e8400-e29b-41d4",
-  toolkits: ["github", "gmail"],
   manageConnections: {
     callbackUrl: "https://yourapp.com/chat",
   },
 });
 ```
+</CodeGroup>
 
 ### Disabling in-chat auth
 
 To manage authentication outside of chat, disable the `COMPOSIO_MANAGE_CONNECTIONS` tool:
 
+<CodeGroup>
+```python
+session = await composio.create_session(
+    user="pg-user-550e8400-e29b-41d4",
+    manage_connections=False,
+)
+```
 ```typescript
 const session = await composio.createSession({
   user: "pg-user-550e8400-e29b-41d4",
-  toolkits: ["github", "gmail"],
   manageConnections: false,
 });
 ```
+</CodeGroup>
 
 See [Manually authenticating users](/tool-router/manually-authenticating-users) for the alternative approach.
 
 ## Examples
 
 <CodeGroup>
-<CodeGroupItem title="Vercel AI SDK (TypeScript)">
-<SnippetCode src="fern/snippets/tool-router/typescript/in-chat-auth.ts" />
-</CodeGroupItem>
 <CodeGroupItem title="OpenAI Agents SDK (Python)">
 <SnippetCode src="fern/snippets/tool-router/python/in-chat-auth.py" />
+</CodeGroupItem>
+<CodeGroupItem title="Vercel AI SDK (TypeScript)">
+<SnippetCode src="fern/snippets/tool-router/typescript/in-chat-auth.ts" />
 </CodeGroupItem>
 </CodeGroup>
 
