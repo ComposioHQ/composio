@@ -329,6 +329,9 @@ navigation:
     - page: Using as Native Tools
       path: pages/dist/tool-router/using-as-native-tools.mdx
       slug: using-as-native-tools
+    - page: Handling Files
+      path: pages/dist/tool-router/file-upload-download.mdx
+      slug: file-upload-download
 - tab: providers
   layout:
   - section: Supported Providers

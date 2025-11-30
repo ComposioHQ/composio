@@ -23,7 +23,7 @@ To use Tool Router, create a session for a user:
 <CodeGroup>
 ```python Python
 session = composio.create(
-    user_id='user_id_123',
+    user_id='pg-user-550e8400-e29b-41d4',
     toolkits=['github', 'slack', 'gmail']
 )
 
@@ -35,7 +35,7 @@ session = composio.create(
 ```
 
 ```typescript TypeScript
-const { tools, mcp, authorize, toolkits } = await composio.create('user_id_123', {
+const { tools, mcp, authorize, toolkits } = await composio.create('pg-user-550e8400-e29b-41d4', {
   toolkits: ['github', 'slack', 'gmail'],
 });
 

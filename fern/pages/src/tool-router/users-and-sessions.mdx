@@ -1,8 +1,80 @@
 ---
-title: Users and Sessions
+title: Users and sessions
 image: "https://og.composio.dev/api/og?title=Users%20and%20Sessions"
-description: ""
-keywords: ""
-subtitle: ""
+description: "Understand how Tool Router scopes tools and connections per user"
+keywords: "sessions, users, tool router, configuration"
 hide-nav-links: false
 ---
+
+Sessions are ephemeral, user-scoped configurations that define what tools are available and how authentication works.
+
+## Users
+
+A user ID is an identifier from your system (database UUID, primary key) that Composio uses to scope connected accounts and tool access.
+
+<CodeGroup>
+```python Python
+session = composio.create(user_id="pg-user-550e8400-e29b-41d4")
+```
+
+```typescript TypeScript
+const session = await composio.create("pg-user-550e8400-e29b-41d4");
+```
+</CodeGroup>
+
+User IDs can represent individuals, teams, or organizations depending on your application. For detailed patterns, see [User Management](/docs/user-management).
+
+## Sessions
+
+A session defines the execution context for Tool Router's meta-tools. It combines:
+- Which user's connected accounts to use
+- Which toolkits are available
+- Which auth configs to use
+
+Tool Router's meta-tools (search, execute, workbench, manage connections) are the same for everyone. The session determines the context they operate within - when the agent searches for tools, it searches within the session's allowed toolkits. When it executes a tool, it uses the session user's connected accounts.
+
+### Creating a session
+
+A session pulls together your user's auth state with your toolkit configuration. All options are optional - by default, all toolkits with Composio managed auth are enabled.
+
+<CodeGroup>
+```python Python
+session = composio.create(
+    user_id="pg-user-550e8400-e29b-41d4",
+    toolkits=["github", "gmail", "slack"],
+    auth_configs={
+        "github": "ac_your_github_config"
+    }
+)
+```
+
+```typescript TypeScript
+const session = await composio.create("pg-user-550e8400-e29b-41d4", {
+  toolkits: ["github", "gmail", "slack"],
+  authConfigs: {
+    github: "ac_your_github_config",
+  },
+});
+```
+</CodeGroup>
+
+For all configuration options, see [Creating sessions](/tool-router/creating-sessions).
+
+### Connections persist
+
+Connected accounts are stored in Composio and persist across sessions. When a user connects their GitHub account in one session, it remains available in future sessions.
+
+Sessions configure *which* connections to use, but don't own the connections themselves.
+
+## Connected account precedence
+
+When executing a tool, Tool Router selects the connected account in this order:
+
+1. `connectedAccounts` override if provided in session config
+2. `authConfigs` override - finds or creates connection on that config
+3. Auth config previously created by Tool Router for this toolkit
+4. Creates new auth config using Composio managed auth (tagged as Tool Router created)
+5. Error if no Composio managed auth scheme exists for the toolkit
+
+If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
+
