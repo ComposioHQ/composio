@@ -32,6 +32,7 @@ import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
 import { transform } from '../utils/transform';
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
+import { transformToolRouterToolsParams } from '../lib/toolRouterParams';
 
 export class ToolRouter<
   TToolCollection,
@@ -189,15 +190,13 @@ export class ToolRouter<
     const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
-        : routerConfig.manageConnections?.enabled;
+        : (routerConfig.manageConnections?.enabled ?? true);
 
     const toolkits = Array.isArray(routerConfig.toolkits)
       ? { enabled: routerConfig.toolkits }
       : routerConfig.toolkits;
 
-    const tools = Array.isArray(routerConfig.tools)
-      ? { enabled: routerConfig.tools }
-      : routerConfig.tools;
+    const tools = transformToolRouterToolsParams(routerConfig.tools);
 
     const inferScopesFromTools =
       typeof routerConfig.manageConnections === 'object'
@@ -207,10 +206,10 @@ export class ToolRouter<
     const payload: SessionCreateParams = {
       user_id: userId,
       toolkits,
-      // tools,
+      auth_configs: routerConfig.authConfigs,
+      connected_accounts: routerConfig.connectedAccounts,
+      tools: tools,
       connections: {
-        auth_config_overrides: routerConfig?.authConfigs,
-        connected_account_overrides: routerConfig?.connectedAccounts,
         infer_scopes_from_tools: inferScopesFromTools,
         auto_manage_connections: manageConnectedAccounts,
         callback_uri:
@@ -218,6 +217,12 @@ export class ToolRouter<
             ? routerConfig.manageConnections.callbackUri
             : undefined,
       },
+      execution: routerConfig.execution
+        ? {
+            proxy_execution_enabled: routerConfig.execution?.proxyExecutionEnabled,
+            timeout_seconds: routerConfig.execution?.timeoutSeconds,
+          }
+        : undefined,
     };
     const session = await this.client.toolRouter.session.create(payload);
 

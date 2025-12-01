@@ -83,34 +83,76 @@ export const ToolRouterConfigTagsSchema = z
   ])
   .describe('The tags to use in the tool router session');
 
-// tools
+/**
+ *  Tools config
+ * @example
+ * ```typescript
+ *  {
+ *      overrides: {
+ *          gmail: {
+ *              enabled: ['gmail_search', 'gmail_send'],
+ *              disabled: ['gmail_delete']
+ *          }
+ *      }
+ *      filters: {
+ *          tags: {
+ *              enabled: ['gmail', 'gmail_search', 'gmail_send'],
+ *              disabled: ['gmail_delete']
+ *          }
+ *      }
+ *  }
+ * ```
+ *
+ * @example
+ * ```typescript
+ *  {
+ *      overrides: {
+ *          gmail: ['gmail_search', 'gmail_send']
+ *      },
+ *      filters: {
+ *          tags: ['gmail', 'gmail_search', 'gmail_send']
+ *      }
+ *  }
+ * ```
+ */
 export const ToolRouterToolsParamSchema = z
   .array(z.string())
   .describe('The tools to use in the tool router session');
-export const ToolRouterEnabledToolsConfigSchema = z
+export const ToolRouterConfigToolsSchema = z
   .object({
-    enabled: ToolRouterToolsParamSchema.describe('The tools to enable in the tool router session'),
-  })
-  .strict();
-export const ToolRouterDisabledToolsConfigSchema = z
-  .object({
-    disabled: ToolRouterToolsParamSchema.optional().describe(
-      'The tools to disable in the tool router session'
-    ),
+    overrides: z
+      .record(
+        z.string(),
+        z.union([
+          ToolRouterToolsParamSchema,
+          z
+            .object({
+              enabled: ToolRouterToolsParamSchema.describe(
+                'The tools to enable in the tool router session'
+              ),
+            })
+            .strict(),
+          z
+            .object({
+              disabled: ToolRouterToolsParamSchema.describe(
+                'The tools to disable in the tool router session'
+              ),
+            })
+            .strict(),
+        ])
+      )
+      .describe('The tools to override in the tool router session')
+      .optional(),
     tags: ToolRouterConfigTagsSchema.optional().describe('The tags to filter the tools by'),
   })
   .strict();
+export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
 
 export const ToolRouterCreateSessionConfigSchema = z
   .object({
-    tools: z
-      .union([
-        ToolRouterToolsParamSchema,
-        ToolRouterEnabledToolsConfigSchema,
-        ToolRouterDisabledToolsConfigSchema,
-      ])
-      .optional()
-      .describe('The tools to use in the tool router session'),
+    tools: ToolRouterConfigToolsSchema.optional().describe(
+      'The tools to use in the tool router session'
+    ),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,
@@ -139,6 +181,19 @@ export const ToolRouterCreateSessionConfigSchema = z
       .describe(
         'The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.'
       ),
+    execution: z
+      .object({
+        proxyExecutionEnabled: z
+          .boolean()
+          .optional()
+          .describe('Whether to enable proxy execution in the tool router session'),
+        timeoutSeconds: z
+          .number()
+          .optional()
+          .describe('The timeout in seconds for the tool router session'),
+      })
+      .optional()
+      .describe('The execution config for the tool router session'),
   })
   .partial()
   .describe('The config for the tool router session');
