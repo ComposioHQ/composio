@@ -10,6 +10,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
+from composio_client import NotGiven
 import typing_extensions as te
 
 from composio.client import HttpClient
@@ -45,26 +46,84 @@ class ToolRouterToolkitsDisabledConfig(te.TypedDict, total=False):
     disabled: t.List[str]
 
 
-class ToolRouterToolsEnabledConfig(te.TypedDict, total=False):
-    """Configuration for enabling specific tools in tool router session.
+class ToolRouterToolsOverrideEnabledConfig(te.TypedDict, total=False):
+    """Configuration for enabling specific tools for a toolkit.
 
     Attributes:
-        enabled: List of tool slugs to enable in the tool router session.
+        enabled: List of tool slugs to enable for this toolkit.
     """
 
     enabled: t.List[str]
 
 
-class ToolRouterToolsDisabledConfig(te.TypedDict, total=False):
-    """Configuration for disabling specific tools in tool router session.
+class ToolRouterToolsOverrideDisabledConfig(te.TypedDict, total=False):
+    """Configuration for disabling specific tools for a toolkit.
 
     Attributes:
-        disabled: List of tool slugs to disable in the tool router session.
-        tags: Optional tags configuration to filter tools.
+        disabled: List of tool slugs to disable for this toolkit.
     """
 
     disabled: t.List[str]
-    tags: t.Optional[t.Union[t.List[str], t.Dict[str, t.List[str]]]]
+
+
+class ToolRouterToolsTagsEnabledConfig(te.TypedDict, total=False):
+    """Configuration for enabling tools by tags.
+
+    Attributes:
+        enabled: List of tags - tools with at least one of these tags will be included.
+    """
+
+    enabled: t.List[str]
+
+
+class ToolRouterToolsTagsDisabledConfig(te.TypedDict, total=False):
+    """Configuration for disabling tools by tags.
+
+    Attributes:
+        disabled: List of tags - tools with any of these tags will be excluded.
+    """
+
+    disabled: t.List[str]
+
+
+class ToolRouterToolsConfig(te.TypedDict, total=False):
+    """Configuration for tools in tool router session.
+
+    Attributes:
+        overrides: Per-toolkit tool overrides. Key is toolkit slug, value is list of tools
+                  or dict with 'enabled'/'disabled' key.
+                  Example: {'gmail': ['GMAIL_SEND_EMAIL'], 'github': {'enabled': [...]}}
+        tags: Tag-based filtering. Can be a list of tags to include, or dict with
+             'enabled'/'disabled' key.
+             Example: ['important', 'safe'] or {'enabled': ['important']} or {'disabled': ['dangerous']}
+    """
+
+    overrides: t.Dict[
+        str,
+        t.Union[
+            t.List[str],
+            ToolRouterToolsOverrideEnabledConfig,
+            ToolRouterToolsOverrideDisabledConfig,
+        ],
+    ]
+    tags: t.Union[
+        t.List[str],
+        ToolRouterToolsTagsEnabledConfig,
+        ToolRouterToolsTagsDisabledConfig,
+    ]
+
+
+class ToolRouterExecutionConfig(te.TypedDict, total=False):
+    """Configuration for execution settings in tool router session.
+
+    Attributes:
+        proxy_execution_enabled: Whether to allow proxy execute calls in the workbench.
+                                If False, prevents arbitrary HTTP requests.
+        timeout_seconds: Maximum execution time for workbench operations in seconds.
+    """
+
+    proxy_execution_enabled: bool
+    timeout_seconds: int
 
 
 class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
@@ -371,6 +430,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
     def create(
         self,
+        *,
         user_id: str,
         toolkits: t.Optional[
             t.Union[
@@ -379,18 +439,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 ToolRouterToolkitsDisabledConfig,
             ]
         ] = None,
-        tools: t.Optional[
-            t.Union[
-                t.List[str],
-                ToolRouterToolsEnabledConfig,
-                ToolRouterToolsDisabledConfig,
-            ]
-        ] = None,
+        tools: t.Optional[ToolRouterToolsConfig] = None,
         manage_connections: t.Optional[
             t.Union[bool, ToolRouterManageConnectionsConfig]
         ] = None,
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
+        execution: t.Optional[ToolRouterExecutionConfig] = None,
     ) -> ToolRouterSession[TProvider]:
         """
         Create a new tool router session for a user.
@@ -399,9 +454,11 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         :param toolkits: Optional list of toolkit slugs or dict with 'enabled'/'disabled' key.
                         - List: ['github', 'slack'] - enable only these toolkits
                         - Dict: {'enabled': ['github']} or {'disabled': ['linear']}
-        :param tools: Optional list of tool slugs or dict with 'enabled'/'disabled' key.
-                     - List: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER']
-                     - Dict: {'enabled': [...]} or {'disabled': [...]}
+        :param tools: Optional dict with 'overrides' and/or 'tags' for tool-level configuration.
+                     - overrides: Per-toolkit tool enable/disable
+                       Example: {'gmail': ['GMAIL_SEND_EMAIL'], 'github': {'enabled': [...]}}
+                     - tags: Tag-based filtering
+                       Example: ['important'] or {'enabled': ['safe']} or {'disabled': ['dangerous']}
         :param manage_connections: Whether to enable connection management tools.
                                   - Boolean: True/False
                                   - Dict with keys: 'enabled', 'callback_uri', 'infer_scopes_from_tools'
@@ -409,6 +466,9 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
+        :param execution: Optional execution configuration.
+                         - proxy_execution_enabled: Whether to allow proxy execute calls
+                         - timeout_seconds: Maximum execution time in seconds
         :return: Tool router session object
 
         Example:
@@ -422,25 +482,27 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 toolkits=['github', 'slack']
             )
 
-            # Create a session with enabled toolkits
+            # Create a session with tool overrides
             session = tool_router.create(
                 'user_123',
-                toolkits={'enabled': ['github', 'slack']}
+                tools={
+                    'overrides': {
+                        'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
+                        'github': {'enabled': ['GITHUB_CREATE_ISSUE']}
+                    },
+                    'tags': ['safe', 'important']
+                }
             )
 
-            # Create a session with disabled toolkits
+            # Create a session with tag filtering
             session = tool_router.create(
                 'user_123',
-                toolkits={'disabled': ['linear']}
+                tools={
+                    'tags': {'enabled': ['read_only_hint', 'non_destructive_hint']}
+                }
             )
 
             # Create a session with connection management
-            session = tool_router.create(
-                'user_123',
-                manage_connections=True
-            )
-
-            # Create a session with advanced connection management
             session = tool_router.create(
                 'user_123',
                 manage_connections={
@@ -450,11 +512,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 }
             )
 
-            # Create a session with auth configs
+            # Create a session with execution config
             session = tool_router.create(
                 'user_123',
-                toolkits=['github'],
-                auth_configs={'github': 'ac_xxx'}
+                execution={
+                    'proxy_execution_enabled': False,
+                    'timeout_seconds': 300
+                }
             )
 
             # Use the session
@@ -482,13 +546,41 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             else:
                 toolkits_payload = toolkits
 
-        # Parse tools config
+        # Parse tools config - transform to API format
         tools_payload = None
         if tools is not None:
-            if isinstance(tools, list):
-                tools_payload = {"enabled": tools}
-            else:
-                tools_payload = tools
+            tools_payload = {}
+
+            # Handle overrides
+            if "overrides" in tools:
+                overrides_dict = {}
+                for toolkit_slug, override_value in tools["overrides"].items():
+                    if isinstance(override_value, list):
+                        # Simple list means enabled tools
+                        overrides_dict[toolkit_slug] = {"enabled": override_value}
+                    else:
+                        # Already in dict format with 'enabled' or 'disabled'
+                        overrides_dict[toolkit_slug] = override_value
+
+                tools_payload["overrides"] = overrides_dict
+
+            # Handle tags
+            if "tags" in tools:
+                tags_value = tools["tags"]
+                tag_filters = {}
+
+                if isinstance(tags_value, list):
+                    # Simple list means include these tags
+                    tag_filters = {"include": tags_value}
+                elif "enabled" in tags_value:
+                    # enabled means include
+                    tag_filters = {"include": tags_value["enabled"]}
+                elif "disabled" in tags_value:
+                    # disabled means exclude
+                    tag_filters = {"exclude": tags_value["disabled"]}
+
+                if tag_filters:
+                    tools_payload["filters"] = {"tags": tag_filters}
 
         # Parse infer_scopes_from_tools
         infer_scopes_from_tools = (
@@ -501,7 +593,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         callback_uri = (
             manage_connections.get("callback_uri")
             if isinstance(manage_connections, dict)
-            else None
+            else NotGiven()
         )
 
         # Build the API payload
@@ -509,20 +601,36 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             "user_id": user_id,
             "connections": {
                 "auto_manage_connections": auto_manage_connections,
-                "auth_config_overrides": auth_configs or {},
-                "connected_account_overrides": connected_accounts or {},
                 "infer_scopes_from_tools": infer_scopes_from_tools,
+                "callback_uri": callback_uri,
             },
         }
 
+        # Add optional fields to connections
+        if auth_configs is not None:
+            payload["auth_configs"] = auth_configs
+
+        if connected_accounts is not None:
+            payload["connected_accounts"] = connected_accounts
+
+        # Add optional top-level fields
         if toolkits_payload is not None:
             payload["toolkits"] = toolkits_payload
 
-        if tools_payload is not None:
+        if tools_payload:
             payload["tools"] = tools_payload
 
-        if callback_uri is not None:
-            payload["connections"]["callback_uri"] = callback_uri
+        if execution is not None:
+            execution_payload = {}
+            if "proxy_execution_enabled" in execution:
+                execution_payload["proxy_execution_enabled"] = execution[
+                    "proxy_execution_enabled"
+                ]
+            if "timeout_seconds" in execution:
+                execution_payload["timeout_seconds"] = execution["timeout_seconds"]
+
+            if execution_payload:
+                payload["execution"] = execution_payload
 
         # Make API call to create session
         session = self._client.tool_router.session.create(**payload)
@@ -545,9 +653,13 @@ __all__ = [
     "ToolRouterSession",
     "ToolRouterToolkitsEnabledConfig",
     "ToolRouterToolkitsDisabledConfig",
-    "ToolRouterToolsEnabledConfig",
-    "ToolRouterToolsDisabledConfig",
+    "ToolRouterToolsOverrideEnabledConfig",
+    "ToolRouterToolsOverrideDisabledConfig",
+    "ToolRouterToolsTagsEnabledConfig",
+    "ToolRouterToolsTagsDisabledConfig",
+    "ToolRouterToolsConfig",
     "ToolRouterManageConnectionsConfig",
+    "ToolRouterExecutionConfig",
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
     "MCPServerConfig",

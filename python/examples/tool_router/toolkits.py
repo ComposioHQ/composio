@@ -5,7 +5,6 @@ This example demonstrates how to retrieve available toolkits
 and their connection status in a Tool Router session.
 """
 
-import json
 from composio import Composio
 
 composio = Composio()
@@ -25,4 +24,4 @@ print(f"MCP Server: {session.mcp.url}")
 toolkits = session.toolkits()
 
 print("\nAvailable toolkits:")
-print(json.dumps(toolkits, indent=2))
+print(toolkits)
