@@ -258,10 +258,10 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
             # Return connection request with redirect URL
             return ConnectionRequest(
-                connected_account_id=response.connected_account_id,
+                id=response.connected_account_id,
                 redirect_url=response.redirect_url,
                 status="INITIATED",
-                _client=self._client,
+                client=self._client,
             )
 
         return authorize_fn
@@ -293,27 +293,25 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             # Transform the result to match the expected format
             toolkit_states: t.List[ToolkitConnectionState] = []
             for item in result.items:
-                connected_account = item.get("connected_account")
+                connected_account = item.connected_account
                 auth_config: t.Optional[ToolkitConnectionAuthConfig] = None
                 connected_acc: t.Optional[ToolkitConnectedAccount] = None
 
                 if connected_account:
-                    if connected_account.get("auth_config"):
+                    if connected_account.auth_config:
                         auth_config = ToolkitConnectionAuthConfig(
-                            id=connected_account["auth_config"]["id"],
-                            mode=connected_account["auth_config"]["auth_scheme"],
-                            is_composio_managed=connected_account["auth_config"][
-                                "is_composio_managed"
-                            ],
+                            id=connected_account.auth_config.id,
+                            mode=connected_account.auth_config.auth_scheme,
+                            is_composio_managed=connected_account.auth_config.is_composio_managed,
                         )
                     connected_acc = ToolkitConnectedAccount(
-                        id=connected_account["id"],
-                        status=connected_account["status"],
+                        id=connected_account.id,
+                        status=connected_account.status,
                     )
 
                 connection = ToolkitConnection(
                     is_active=(
-                        connected_account.get("status") == "ACTIVE"
+                        connected_account.status == "ACTIVE"
                         if connected_account
                         else False
                     ),
@@ -322,9 +320,9 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 )
 
                 toolkit_state = ToolkitConnectionState(
-                    slug=item["slug"],
-                    name=item["name"],
-                    logo=item.get("meta", {}).get("logo"),
+                    slug=item.slug,
+                    name=item.name,
+                    logo=item.meta.logo,
                     is_no_auth=False,
                     connection=connection,
                 )
