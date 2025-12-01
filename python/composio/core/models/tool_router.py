@@ -10,7 +10,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
-from composio_client import NotGiven
+from composio_client import omit
 import typing_extensions as te
 
 from composio.client import HttpClient
@@ -19,7 +19,7 @@ from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.provider import TProvider
 
 if t.TYPE_CHECKING:
-    from composio.core.types import Modifiers
+    from composio.core.models._modifiers import Modifiers
 
 # Type aliases
 AuthorizeFn = t.Callable[[str, t.Optional[t.Dict[str, str]]], ConnectionRequest]
@@ -309,10 +309,12 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             :return: Connection request object
             """
             # Make API call to create authorization link
+            callback_url = options.get("callback_url") if options else None
+
             response = self._client.tool_router.session.link(
                 session_id=session_id,
                 toolkit=toolkit,
-                **(options or {}),
+                callback_url=callback_url if callback_url else omit,
             )
 
             # Return connection request with redirect URL
@@ -343,10 +345,15 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             :return: Toolkit connections details with items, next_cursor, and total_pages
             """
             options = options or {}
+            toolkits_params: t.Dict[str, t.Any] = {}
+            if "next_cursor" in options and options["next_cursor"]:
+                toolkits_params["cursor"] = options["next_cursor"]
+            if "limit" in options and options["limit"]:
+                toolkits_params["limit"] = options["limit"]
+
             result = self._client.tool_router.session.toolkits(
                 session_id=session_id,
-                cursor=options.get("next_cursor"),
-                limit=options.get("limit"),
+                **toolkits_params,
             )
 
             # Transform the result to match the expected format
@@ -390,7 +397,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             return ToolkitConnectionsDetails(
                 items=toolkit_states,
                 next_cursor=result.next_cursor,
-                total_pages=result.total_pages,
+                total_pages=int(result.total_pages),
             )
 
         return toolkits_fn
@@ -398,7 +405,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     def _create_tools_fn(
         self,
         user_id: str,
-        tool_slugs: t.List[str],
+        tool_slugs: t.Sequence[str],
     ) -> t.Callable[[t.Optional[Modifiers]], t.Any]:
         """
         Create a tools function that wraps tools for the provider.
@@ -409,7 +416,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         """
         from composio.core.models.tools import Tools as ToolsModel
 
-        tools_model = ToolsModel(
+        tools_model = ToolsModel(  # type: ignore[type-var]
             client=self._client,
             provider=self._provider,
         )
@@ -422,7 +429,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             :return: Provider-wrapped tools
             """
             router_tools = tools_model.get(
-                user_id=user_id, tools=tool_slugs, modifiers=modifiers
+                user_id=user_id, tools=list(tool_slugs), modifiers=modifiers
             )
             return router_tools
 
@@ -539,12 +546,12 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         )
 
         # Parse toolkits config
-        toolkits_payload = None
+        toolkits_payload: t.Optional[t.Dict[str, t.List[str]]] = None
         if toolkits is not None:
             if isinstance(toolkits, list):
                 toolkits_payload = {"enabled": toolkits}
             else:
-                toolkits_payload = toolkits
+                toolkits_payload = t.cast(t.Dict[str, t.List[str]], toolkits)
 
         # Parse tools config - transform to API format
         tools_payload = None
@@ -553,31 +560,34 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
             # Handle overrides
             if "overrides" in tools:
-                overrides_dict = {}
+                overrides_dict: t.Dict[str, t.Any] = {}
                 for toolkit_slug, override_value in tools["overrides"].items():
                     if isinstance(override_value, list):
                         # Simple list means enabled tools
                         overrides_dict[toolkit_slug] = {"enabled": override_value}
                     else:
                         # Already in dict format with 'enabled' or 'disabled'
-                        overrides_dict[toolkit_slug] = override_value
+                        overrides_dict[toolkit_slug] = dict(override_value)
 
                 tools_payload["overrides"] = overrides_dict
 
             # Handle tags
             if "tags" in tools:
                 tags_value = tools["tags"]
-                tag_filters = {}
+                tag_filters: t.Dict[str, t.List[str]] = {}
 
                 if isinstance(tags_value, list):
                     # Simple list means include these tags
                     tag_filters = {"include": tags_value}
-                elif "enabled" in tags_value:
-                    # enabled means include
-                    tag_filters = {"include": tags_value["enabled"]}
-                elif "disabled" in tags_value:
-                    # disabled means exclude
-                    tag_filters = {"exclude": tags_value["disabled"]}
+                elif isinstance(tags_value, dict):
+                    # Check which key exists in the dict
+                    tags_dict = t.cast(t.Dict[str, t.List[str]], tags_value)
+                    if "enabled" in tags_dict:
+                        # enabled means include
+                        tag_filters = {"include": tags_dict["enabled"]}
+                    elif "disabled" in tags_dict:
+                        # disabled means exclude
+                        tag_filters = {"exclude": tags_dict["disabled"]}
 
                 if tag_filters:
                     tools_payload["filters"] = {"tags": tag_filters}
@@ -593,47 +603,51 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         callback_uri = (
             manage_connections.get("callback_uri")
             if isinstance(manage_connections, dict)
-            else NotGiven()
+            else omit
         )
 
         # Build the API payload
-        payload = {
+        create_params: t.Dict[str, t.Any] = {
             "user_id": user_id,
-            "connections": {
-                "auto_manage_connections": auto_manage_connections,
-                "infer_scopes_from_tools": infer_scopes_from_tools,
-                "callback_uri": callback_uri,
-            },
         }
 
-        # Add optional fields to connections
+        # Build connections config
+        connections_config: t.Dict[str, t.Any] = {
+            "auto_manage_connections": auto_manage_connections,
+            "infer_scopes_from_tools": infer_scopes_from_tools,
+        }
+        if callback_uri is not None:
+            connections_config["callback_uri"] = callback_uri
+
+        create_params["connections"] = connections_config
+
+        # Add optional fields
         if auth_configs is not None:
-            payload["auth_configs"] = auth_configs
+            create_params["auth_configs"] = auth_configs
 
         if connected_accounts is not None:
-            payload["connected_accounts"] = connected_accounts
+            create_params["connected_accounts"] = connected_accounts
 
-        # Add optional top-level fields
         if toolkits_payload is not None:
-            payload["toolkits"] = toolkits_payload
+            create_params["toolkits"] = toolkits_payload
 
         if tools_payload:
-            payload["tools"] = tools_payload
+            create_params["tools"] = tools_payload
 
         if execution is not None:
-            execution_payload = {}
+            execution_payload: t.Dict[str, t.Any] = {}
             if "proxy_execution_enabled" in execution:
                 execution_payload["proxy_execution_enabled"] = execution[
                     "proxy_execution_enabled"
                 ]
             if "timeout_seconds" in execution:
-                execution_payload["timeout_seconds"] = execution["timeout_seconds"]
+                execution_payload["timeout_seconds"] = int(execution["timeout_seconds"])
 
             if execution_payload:
-                payload["execution"] = execution_payload
+                create_params["execution"] = execution_payload
 
         # Make API call to create session
-        session = self._client.tool_router.session.create(**payload)
+        session = self._client.tool_router.session.create(**create_params)
 
         # Create and return the session
         return ToolRouterSession(
