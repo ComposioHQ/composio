@@ -186,8 +186,6 @@ export class ToolRouter<
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
 
-    console.log({ routerConfig });
-
     const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
