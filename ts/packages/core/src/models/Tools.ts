@@ -919,6 +919,7 @@ export class Tools<
        * Please use custom_auth_params instead.
        *
        */
+      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     });
   }
