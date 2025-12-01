@@ -639,6 +639,11 @@ export const CustomConnectionDataSchema = z.discriminatedUnion('authScheme', [
     val: CustomOauth2ConnectionDataSchema,
   }),
   z.object({
+    authScheme: z.literal(AuthSchemeTypes.DCR_OAUTH),
+    toolkitSlug: z.string(),
+    val: CustomDcrOauthConnectionDataSchema,
+  }),
+  z.object({
     authScheme: z.literal(AuthSchemeTypes.API_KEY),
     toolkitSlug: z.string(),
     val: CustomApiKeyConnectionDataSchema,
@@ -672,16 +677,6 @@ export const CustomConnectionDataSchema = z.discriminatedUnion('authScheme', [
     authScheme: z.literal(AuthSchemeTypes.SERVICE_ACCOUNT),
     toolkitSlug: z.string(),
     val: CustomServiceAccountConnectionDataSchema,
-  }),
-  z.object({
-    authScheme: z.literal(AuthSchemeTypes.SAML),
-    toolkitSlug: z.string(),
-    val: CustomSamlConnectionDataSchema,
-  }),
-  z.object({
-    authScheme: z.literal(AuthSchemeTypes.DCR_OAUTH),
-    toolkitSlug: z.string(),
-    val: CustomDcrOauthConnectionDataSchema,
   }),
 ]);
 

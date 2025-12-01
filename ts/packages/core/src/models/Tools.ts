@@ -675,6 +675,13 @@ export class Tools<
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
         custom_auth_params: body.customAuthParams,
+        /**
+         * @deprecated: customConnectionData
+         * @description
+         * This parameter is deprecated and will be removed in the future.
+         * Please use custom_connection_data instead.
+         *
+         */
         custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
@@ -905,6 +912,14 @@ export class Tools<
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
       parameters: parameters,
+      /**
+       * @deprecated: customConnectionData
+       * @description
+       * This parameter is deprecated and will be removed in the future.
+       * Please use custom_auth_params instead.
+       *
+       */
+      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     });
   }

@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20251126.0
     '@composio/client':
-      specifier: 0.1.0-alpha.41
-      version: 0.1.0-alpha.41
+      specifier: 0.1.0-alpha.44
+      version: 0.1.0-alpha.44
     tsup:
       specifier: ^8.5.0
       version: 8.5.1
@@ -447,16 +447,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.20
-        version: 0.4.21(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.3)(zod@3.25.76)
+        version: 0.4.21(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.3)(zod@4.1.13)
       '@llamaindex/workflow':
         specifier: ^1.1.24
-        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
+        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.13)
       dotenv:
         specifier: ^16.4.1
         version: 16.6.1
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76)
+        version: 0.12.0(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.13)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -750,7 +750,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.41
+        version: 0.1.0-alpha.44
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -844,7 +844,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.41
+        version: 0.1.0-alpha.44
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1025,7 +1025,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.13)
+        version: 0.12.0(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.13)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1497,8 +1497,8 @@ packages:
   '@cloudflare/workers-types@4.20251126.0':
     resolution: {integrity: sha512-DSeI1Q7JYmh5/D/tw5eZCjrKY34v69rwj63hHt60nSQW5QLwWCbj/lLtNz9f2EPa+JCACwpLXHgCXfzJ29x66w==}
 
-  '@composio/client@0.1.0-alpha.41':
-    resolution: {integrity: sha512-HuigoNccwXfMpF/hVwwiGFKysxYfFRhgY8ErXik+dNQ/UxrmbWEJQep6e5ytsmoIPiDPw6yIbWJhEXSk/AVHmA==}
+  '@composio/client@0.1.0-alpha.44':
+    resolution: {integrity: sha512-Wc5Jmk8DTchp7okHCsKazhRB082y/d4AxP4EhbWluLEhTR4MrXYniB81AVfeMXsdn83EJWLF1MddOnw67dI0qA==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7581,7 +7581,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20251126.0': {}
 
-  '@composio/client@0.1.0-alpha.41': {}
+  '@composio/client@0.1.0-alpha.44': {}
 
   '@composio/mcp@1.0.3-0': {}
 
@@ -8536,15 +8536,6 @@ snapshots:
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.21(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.3)(zod@3.25.76)':
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      openai: 5.23.2(ws@8.18.3)(zod@3.25.76)
-    transitivePeerDependencies:
-      - ws
-      - zod
-
   '@llamaindex/openai@0.4.21(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       '@llamaindex/core': 0.6.22
@@ -8554,14 +8545,6 @@ snapshots:
       - ws
       - zod
 
-  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      hono: 4.10.6
-      next: 16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1)
-      rxjs: 7.8.2
-      zod: 3.25.76
-
   '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.13)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13)
@@ -8569,19 +8552,6 @@ snapshots:
       next: 16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1)
       rxjs: 7.8.2
       zod: 4.1.13
-
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - zod
 
   '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.13)':
     dependencies:
@@ -10235,6 +10205,14 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
+  '@vitest/mocker@3.2.4(vite@7.2.4(@types/node@20.19.25)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.2.4(@types/node@20.19.25)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1)
+
   '@vitest/mocker@3.2.4(vite@7.2.4(@types/node@22.19.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -10242,6 +10220,14 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 7.2.4(@types/node@22.19.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1)
+
+  '@vitest/mocker@3.2.4(vite@7.2.4(@types/node@24.10.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.2.4(@types/node@24.10.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -10272,7 +10258,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.19.1)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1)
+      vitest: 3.2.4(@types/node@20.19.25)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -11881,29 +11867,7 @@ snapshots:
       rfdc: 1.4.1
       wrap-ansi: 9.0.2
 
-  llamaindex@0.12.0(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76):
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
-      '@types/lodash': 4.17.21
-      '@types/node': 24.10.1
-      lodash: 4.17.21
-      magic-bytes.js: 1.12.1
-    transitivePeerDependencies:
-      - '@huggingface/transformers'
-      - '@modelcontextprotocol/sdk'
-      - gpt-tokenizer
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - tree-sitter
-      - web-tree-sitter
-      - zod
-
-  llamaindex@0.12.0(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.13):
+  llamaindex@0.12.0(@modelcontextprotocol/sdk@1.23.0(@cfworker/json-schema@4.1.1)(zod@4.1.13))(hono@4.10.6)(next@16.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.13):
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
@@ -13538,7 +13502,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.4(@types/node@22.19.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.4(@types/node@20.19.25)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -13622,7 +13586,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.4(@types/node@22.19.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.4(@types/node@24.10.1)(jiti@1.21.7)(tsx@4.20.6)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
