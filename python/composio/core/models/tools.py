@@ -515,9 +515,6 @@ class Tools(Resource, t.Generic[TProvider]):
         body: t.Optional[object] = None,
         connected_account_id: t.Optional[str] = None,
         parameters: t.Optional[t.List[tool_proxy_params.Parameter]] = None,
-        custom_connection_data: t.Optional[
-            tool_proxy_params.CustomConnectionData
-        ] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
         """Proxy a tool call to the Composio API"""
         return self._client.tools.proxy(
@@ -528,9 +525,6 @@ class Tools(Resource, t.Generic[TProvider]):
             if connected_account_id is not None
             else omit,
             parameters=parameters if parameters is not None else omit,
-            custom_connection_data=custom_connection_data
-            if custom_connection_data is not None
-            else omit,
         )
 
 
