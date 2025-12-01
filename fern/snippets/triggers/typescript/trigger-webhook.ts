@@ -1,57 +1,57 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { TriggerEvent } from '@composio/core';
+import crypto from 'crypto';
 
-// Define type-safe payload for GitHub Star Added event
-export type GitHubStarAddedEventPayload = {
-  action: "created";
-  repository_id: number;
+type GitHubStarEventData = {
   repository_name: string;
   repository_url: string;
-  starred_at: string;
   starred_by: string;
+  starred_at: string;
 };
 
-// Type-safe handler function
-function handleGitHubStarAddedEvent(event: TriggerEvent<GitHubStarAddedEventPayload>) {
-  console.log(`⭐ ${event.data.repository_name} starred by ${event.data.starred_by}`);
+function verifyWebhookSignature(
+  req: NextApiRequest,
+  body: string
+): boolean {
+  const signature = req.headers['webhook-signature'] as string | undefined;
+  const msgId = req.headers['webhook-id'] as string | undefined;
+  const timestamp = req.headers['webhook-timestamp'] as string | undefined;
+  const secret = process.env.COMPOSIO_WEBHOOK_SECRET;
+
+  if (!signature || !msgId || !timestamp || !secret) {
+    throw new Error('Missing required webhook headers or secret');
+  }
+
+  if (!signature.startsWith('v1,')) {
+    throw new Error('Invalid signature format');
+  }
+
+  const received = signature.slice(3);
+  const signingString = `${msgId}.${timestamp}.${body}`;
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(signingString)
+    .digest('base64');
+
+  return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      status: 'error', 
-      message: 'Method not allowed. Only POST requests are accepted.' 
-    });
+export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
+  const payload = req.body;
+
+  if (payload.type === 'github_star_added_event') {
+    const event: TriggerEvent<GitHubStarEventData> = {
+      type: payload.type,
+      timestamp: payload.timestamp,
+      data: payload.data
+    };
+    
+    console.log(`Repository ${event.data.repository_name} starred by ${event.data.starred_by}`);
+    // Add your business logic here
   }
 
-  try {
-    const payload = req.body;
-    
-    // Type-safe webhook payload processing
-    if (payload.triggerSlug === 'GITHUB_STAR_ADDED_EVENT') {
-      const starEvent: TriggerEvent<GitHubStarAddedEventPayload> = {
-        type: payload.triggerSlug,
-        timestamp: new Date().toISOString(),
-        data: {
-          ...payload.payload as GitHubStarAddedEventPayload,
-          connection_nano_id: payload.metadata?.connectedAccount?.id || '',
-          trigger_nano_id: payload.id || '',
-          user_id: payload.userId || '',
-        }
-      };
-      
-      handleGitHubStarAddedEvent(starEvent);
-    }
-    
-    res.status(200).json({ 
-      status: 'success', 
-      message: 'Webhook received and processed successfully'
-    });
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Internal server error while processing webhook' 
-    });
-  }
+  res.status(200).json({
+    status: 'success',
+    message: 'Webhook processed'
+  });
 }

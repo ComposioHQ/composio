@@ -13,46 +13,35 @@ The OpenAI Agents Provider is a provider that formats the Composio tools into an
 
 OpenAI Agents SDK is different from the OpenAI SDK. It helps build agentic AI apps in a lightweight, easy-to-use package with very few abstractions.
 
-## Setup
+<Tabs>
+  <Tab title="Python">
+    ### Setup
 
-```bash
-pip install composio_openai_agents==0.8.0 openai-agents
-```
+    ```bash
+    pip install composio openai-agents composio-openai-agents
+    ```
 
-### Usage
-```python Python maxLines=60 wordWrap
-import asyncio
+    ### Usage
 
-from agents import Agent, Runner
+    <SnippetCode
+      src="fern/snippets/providers/python/openai-agents.py"
+      startLine={1}
+      endLine={26}
+    />
+  </Tab>
+  <Tab title="TypeScript">
+    ### Setup
 
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
+    ```bash
+    npm install @composio/core @openai/agents @composio/openai-agents
+    ```
 
-# Initialize Composio toolset
-composio = Composio(provider=OpenAIAgentsProvider())
+    ### Usage
 
-# Get all the tools
-tools = composio.tools.get(
-    user_id="default",
-    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
-)
-
-# Create an agent with the tools
-agent = Agent(
-    name="GitHub Agent",
-    instructions="You are a helpful assistant.",
-    tools=tools,
-)
-
-# Run the agent
-async def main():
-    result = await Runner.run(
-        starting_agent=agent,
-        input=(
-            "Star the repository composiohq/composio on GitHub"
-        ),
-    )
-    print(result.final_output)
-
-asyncio.run(main())
-```
+    <SnippetCode
+      src="fern/snippets/providers/typescript/openai-agents.ts"
+      startLine={1}
+      endLine={33}
+    />
+  </Tab>
+</Tabs>

@@ -43,6 +43,10 @@ An **Auth Config** is a _blueprint_ that defines how authentication works for a 
     **For custom authentication schemes:** 
     
     You must provide your own credentials regardless of environment.
+    
+    <Tip>
+    Want to remove Composio branding from OAuth screens? See [Custom Auth Configs](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen) for white-labeling options.
+    </Tip>
   </Step>
   <Step title="**You are all set!**">
     Click "**Create Auth Configuration**" button and you have completed your first step! Now you can
@@ -64,10 +68,15 @@ You should create multiple auth configs for the same toolkit when you need:
 - **Different OAuth apps** - Using separate client credentials for different environments
 - **Different permission levels** - Limiting actions for specific use cases
 
+<CardGroup cols={2}>
 <Card title="Programmatic creation" href="/docs/programmatic-auth-configs" icon="fa-solid fa-code">
   For managing auth configs across multiple projects, you can create them programmatically via the
   API
 </Card>
+<Card title="Production white-labeling" href="/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen" icon="fa-solid fa-palette">
+  Remove Composio branding from OAuth screens for a fully white-labeled authentication experience
+</Card>
+</CardGroup>
 
 ## Connecting an account
 
@@ -121,6 +130,10 @@ By default, users will see a Composio-branded authentication experience when con
 2. Configure your **Logo** and **App Title**
 
 These settings will apply to all authentication flows using Connect Link, providing a white-labeled experience that maintains your brand identity throughout the authentication process.
+
+<Note>
+For complete white-labeling including OAuth consent screens (removing Composio's domain), see [Custom Auth Configs - White-labeling](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen).
+</Note>
 
 
 
@@ -337,6 +350,8 @@ Composio also supports a wide range of other auth schemas:
   fields required. Every toolkit has its own requirements, and understanding these is essential for
   successfully creating connections.
 </Note>
+
+Learn how to [Manage connected accounts](/docs/connected-accounts) after users authenticate.
 
 ## Connection Statuses
 
