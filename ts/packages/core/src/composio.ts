@@ -18,7 +18,6 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { ToolRouter as ExperimentalToolRouter } from './models/ToolRouter.experimental';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
 
@@ -153,11 +152,6 @@ export class Composio<
    */
   experimental: {
     /**
-     * @deprecated this feature will be removed soon, use `composio.experimental.create` instead
-     */
-    toolRouter: ExperimentalToolRouter;
-
-    /**
      * Creates a new tool router session for a user.
      *
      * @param userId {string} The user id to create the session for
@@ -278,7 +272,6 @@ export class Composio<
      * Initialize Experimental features
      */
     this.experimental = {
-      toolRouter: new ExperimentalToolRouter(this.client),
       create: async (
         userId: string,
         routerConfig?: ToolRouterCreateSessionConfig
