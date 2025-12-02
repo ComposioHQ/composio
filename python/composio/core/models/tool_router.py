@@ -22,7 +22,7 @@ from composio.utils.uuid import generate_short_id
 
 if t.TYPE_CHECKING:
     from composio.core.models.tools import Tools
-    from composio.core.types import Modifiers
+    from composio.core.models._modifiers import Modifiers
 
 # Type aliases
 AuthorizeFn = t.Callable[[str, t.Optional[str]], ConnectionRequest]
@@ -199,6 +199,12 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         :return: Function that returns provider-wrapped tools
         """
         from composio.core.models.tools import Tools as ToolsModel
+
+        if self._provider is None:
+            raise ValueError(
+                "Provider is required for tool router. "
+                "Please initialize ToolRouter with a provider."
+            )
 
         tools_model = ToolsModel(
             client=self._client,
