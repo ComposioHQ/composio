@@ -1,10 +1,7 @@
 import { Agent, run, hostedMcpTool } from '@openai/agents';
 import { Composio } from '@composio/core';
-import { OpenAIAgentsProvider } from '@composio/openai-agents';
 
-const composio = new Composio({
-  provider: new OpenAIAgentsProvider(),
-});
+const composio = new Composio();
 
 const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
 
