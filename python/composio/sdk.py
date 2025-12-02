@@ -47,6 +47,7 @@ class ExperimentalNamespace:
         :param tool_router: Experimental ToolRouter instance
         """
         self.create = tool_router.create
+        self.use = tool_router.use
 
 
 class Composio(t.Generic[TProvider], WithLogger):
