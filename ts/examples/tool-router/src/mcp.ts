@@ -9,7 +9,7 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.toolRouter.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
+const { mcp } = await composio.experimental.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
 trProgress.succeed(`Tool router session created: ${mcp.url}`);
 
 const mcpProgress = ora("Retrieving tools from MCP...").start();
