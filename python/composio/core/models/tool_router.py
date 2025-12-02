@@ -416,7 +416,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         """
         from composio.core.models.tools import Tools as ToolsModel
 
-        tools_model = ToolsModel(  # type: ignore[type-var]
+        if self._provider is None:
+            raise ValueError(
+                "Provider is required for tool router. "
+                "Please initialize ToolRouter with a provider."
+            )
+
+        tools_model = ToolsModel(
             client=self._client,
             provider=self._provider,
         )

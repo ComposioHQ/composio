@@ -3,7 +3,7 @@ import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ExecuteToolModifiers, ProviderOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 
-export const MCPServerTypeSchema = z.enum(['http', 'sse']);
+export const MCPServerTypeSchema = z.enum(['HTTP', 'SSE']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 
 // manage connections

@@ -229,11 +229,38 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: {
-        // @ts-ignore
-        type: session.mcp.type.toLowerCase(),
+        type: session.mcp.type,
         url: session.mcp.url,
       },
       tools: this.createToolsFn(userId, session.tool_router_tools),
+      authorize: this.createAuthorizeFn(session.session_id),
+      toolkits: this.createToolkitsFn(session.session_id),
+    };
+  }
+
+  /**
+   * Use an existing session
+   * @param id {string} The id of the session to use
+   * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
+   *
+   * const composio = new Composio();
+   * const id = 'session_123';
+   * const session = await composio.toolRouter.use(id);
+   *```
+   */
+  async use(id: string): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
+    const session = await this.client.toolRouter.session.retrieve(id);
+    return {
+      sessionId: session.session_id,
+      mcp: {
+        type: session.mcp.type,
+        url: session.mcp.url,
+      },
+      tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
