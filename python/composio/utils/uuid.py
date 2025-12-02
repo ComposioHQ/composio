@@ -11,8 +11,7 @@ def generate_uuid() -> str:
 def generate_short_id() -> str:
     """
     Generate a short ID (8 characters) from a UUID.
-    
+
     Returns the first 8 characters of a UUID with dashes removed.
     """
     return generate_uuid()[:8].replace("-", "")
-
