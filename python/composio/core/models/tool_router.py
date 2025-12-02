@@ -220,7 +220,7 @@ class ToolkitConnectionsDetails:
 
 
 @dataclass
-class MCPServerConfig:
+class ToolRouterMCPServerConfig:
     """Configuration for MCP server."""
 
     type: str
@@ -241,7 +241,7 @@ class ToolRouterSession(t.Generic[TProvider]):
     """
 
     session_id: str
-    mcp: MCPServerConfig
+    mcp: ToolRouterMCPServerConfig
     tools: t.Callable[[t.Optional[Modifiers]], t.Any]
     authorize: AuthorizeFn
     toolkits: ToolkitsFn
@@ -658,7 +658,48 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         # Create and return the session
         return ToolRouterSession(
             session_id=session.session_id,
-            mcp=MCPServerConfig(
+            mcp=ToolRouterMCPServerConfig(
+                type=session.mcp.type.upper(),
+                url=session.mcp.url,
+            ),
+            tools=self._create_tools_fn(user_id, session.tool_router_tools),
+            authorize=self._create_authorize_fn(session.session_id),
+            toolkits=self._create_toolkits_fn(session.session_id),
+        )
+
+    def use(self, session_id: str) -> ToolRouterSession[TProvider]:
+        """
+        Retrieve and use an existing tool router session.
+
+        :param session_id: The session ID to retrieve
+        :return: Tool router session object
+
+        Example:
+            ```python
+            from composio import Composio
+
+            composio = Composio()
+            tool_router = composio.tool_router
+
+            # Retrieve an existing session
+            session = tool_router.use('session_123')
+
+            # Use the session
+            tools = session.tools()
+            connection = session.authorize('github')
+            toolkit_states = session.toolkits()
+            ```
+        """
+        # Retrieve the session from the API
+        session = self._client.tool_router.session.retrieve(session_id)
+
+        # Extract user_id from session config
+        user_id = session.config.user_id
+
+        # Create and return the session
+        return ToolRouterSession(
+            session_id=session.session_id,
+            mcp=ToolRouterMCPServerConfig(
                 type=session.mcp.type.upper(),
                 url=session.mcp.url,
             ),
@@ -682,5 +723,5 @@ __all__ = [
     "ToolRouterExecutionConfig",
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
-    "MCPServerConfig",
+    "ToolRouterMCPServerConfig",
 ]
