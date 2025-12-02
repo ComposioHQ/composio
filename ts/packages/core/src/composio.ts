@@ -182,6 +182,14 @@ export class Composio<
       userId: string,
       routerConfig?: ToolRouterCreateSessionConfig
     ) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
+
+    /**
+     * Use an existing tool router session
+     *
+     * @param id {string} The id of the session to use
+     * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
+     */
+    use: (id: string) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
   };
 
   /**
@@ -281,6 +289,9 @@ export class Composio<
         routerConfig?: ToolRouterCreateSessionConfig
       ): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
         return this.toolRouter.create(userId, routerConfig);
+      },
+      use: async (id: string): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
+        return this.toolRouter.use(id);
       },
     };
 
