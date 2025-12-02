@@ -190,7 +190,7 @@ class HttpClient(BaseComposio, WithLogger):
         ctx = self.request_ctx.get()
         request.headers["x-request-id"] = ctx.get("id") or uuid4().hex
         request.headers["x-framework"] = ctx["provider"]
-        request.headers["x-source"] = "COMPOSIO_SDK_PYTHON"
+        request.headers["x-source"] = "PYTHON_SDK"
         request.headers["x-runtime"] = HttpClient._runtime_env
 
         try:
