@@ -116,7 +116,7 @@ describe('ToolRouter', () => {
     } = {}
   ) => ({
     infer_scopes_from_tools: overrides.inferScopesFromTools ?? false,
-    auto_manage_connections: overrides.manageConnections,
+    auto_manage_connections: overrides.manageConnections ?? true,
     callback_uri: overrides.callbackUri ?? undefined,
   });
 
