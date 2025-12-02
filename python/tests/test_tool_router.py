@@ -590,10 +590,10 @@ class TestToolRouterTypes:
         """Test ToolRouterManageConnectionsConfig type."""
         config: ToolRouterManageConnectionsConfig = {
             "enabled": True,
-            "callback_url": "https://example.com/callback",
+            "callback_uri": "https://example.com/callback",
         }
         assert config["enabled"] is True
-        assert config["callback_url"] == "https://example.com/callback"
+        assert config["callback_uri"] == "https://example.com/callback"
 
     def test_mcp_server_config(self):
         """Test ToolRouterMCPServerConfig dataclass."""
