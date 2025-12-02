@@ -145,6 +145,10 @@ export class Composio<
   authConfigs: AuthConfigs;
   connectedAccounts: ConnectedAccounts;
   mcp: MCP;
+  /**
+   * Experimental feature, use with caution
+   * @experimental
+   */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
 
   /**

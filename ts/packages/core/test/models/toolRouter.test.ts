@@ -29,6 +29,7 @@ const createMockClient = () => ({
   toolRouter: {
     session: {
       create: vi.fn(),
+      retrieve: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
     },
@@ -53,6 +54,25 @@ const mockSessionCreateResponse = {
 const mockLinkResponse = {
   connected_account_id: 'conn_456',
   redirect_url: 'https://composio.dev/auth/redirect',
+};
+
+const mockSessionRetrieveResponse = {
+  session_id: 'session_123',
+  mcp: {
+    type: 'HTTP',
+    url: 'https://mcp.example.com/session_123',
+  },
+  tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
+  config: {
+    user_id: 'user_123',
+    toolkits: { enabled: ['gmail', 'slack', 'github'] },
+    auth_configs: {},
+    connected_accounts: {},
+    connections: {
+      auto_manage_connections: true,
+      infer_scopes_from_tools: false,
+    },
+  },
 };
 
 const mockToolkitsResponse = {
@@ -166,7 +186,7 @@ describe('ToolRouter', () => {
         expect(session).toHaveProperty('sessionId', 'session_123');
         expect(session).toHaveProperty('mcp');
         expect(session.mcp).toEqual({
-          type: 'http',
+          type: 'HTTP',
           url: 'https://mcp.example.com/session_123',
         });
         expect(session).toHaveProperty('tools');
@@ -197,7 +217,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('http'); // Should be lowercase
+        expect(session.mcp.type).toBe('HTTP');
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       });
     });
@@ -999,7 +1019,7 @@ describe('ToolRouter', () => {
     });
 
     describe('response handling', () => {
-      it('should handle MCP type case transformation correctly', async () => {
+      it('should handle MCP type correctly', async () => {
         const responseWithUppercase = {
           ...mockSessionCreateResponse,
           mcp: {
@@ -1012,7 +1032,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('http');
+        expect(session.mcp.type).toBe('HTTP');
       });
 
       it('should handle SSE MCP type correctly', async () => {
@@ -1028,7 +1048,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('sse');
+        expect(session.mcp.type).toBe('SSE');
         expect(session.mcp.url).toBe('https://mcp.example.com/sse/session_123');
       });
 
@@ -1556,6 +1576,158 @@ describe('ToolRouter', () => {
       });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('use method', () => {
+    const sessionId = 'session_123';
+
+    it('should retrieve an existing session by ID', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId);
+      expect(session).toHaveProperty('sessionId', 'session_123');
+      expect(session).toHaveProperty('mcp');
+      expect(session.mcp).toEqual({
+        type: 'HTTP',
+        url: 'https://mcp.example.com/session_123',
+      });
+      expect(session).toHaveProperty('tools');
+      expect(session).toHaveProperty('authorize');
+      expect(session).toHaveProperty('toolkits');
+    });
+
+    it('should return a session with correct user ID from config', async () => {
+      const customResponse = {
+        ...mockSessionRetrieveResponse,
+        config: {
+          ...mockSessionRetrieveResponse.config,
+          user_id: 'custom_user_456',
+        },
+      };
+
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(customResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      expect(session.sessionId).toBe('session_123');
+      // The tools function should be created with the correct user ID from config
+      expect(session.tools).toBeDefined();
+    });
+
+    it('should return a session with working tools function', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      const tools = await session.tools();
+
+      expect(tools).toBe('mocked-wrapped-tools');
+      expect(Tools).toHaveBeenCalled();
+    });
+
+    it('should return a session with working authorize function', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      const connectionRequest = await session.authorize('github');
+
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
+        toolkit: 'github',
+      });
+      expect(connectionRequest).toHaveProperty('redirectUrl', 'https://composio.dev/auth/redirect');
+      expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
+    });
+
+    it('should return a session with working toolkits function', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      const toolkitsResult = await session.toolkits();
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: undefined,
+        limit: undefined,
+      });
+      expect(toolkitsResult.items).toHaveLength(3);
+      expect(toolkitsResult.items[0].slug).toBe('gmail');
+    });
+
+    it('should handle different session IDs', async () => {
+      const session1Response = {
+        ...mockSessionRetrieveResponse,
+        session_id: 'session_1',
+      };
+
+      const session2Response = {
+        ...mockSessionRetrieveResponse,
+        session_id: 'session_2',
+      };
+
+      mockClient.toolRouter.session.retrieve
+        .mockResolvedValueOnce(session1Response)
+        .mockResolvedValueOnce(session2Response);
+
+      const session1 = await toolRouter.use('session_1');
+      const session2 = await toolRouter.use('session_2');
+
+      expect(session1.sessionId).toBe('session_1');
+      expect(session2.sessionId).toBe('session_2');
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle MCP server type correctly', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      expect(session.mcp.type).toBe('HTTP');
+      expect(session.mcp.url).toBe('https://mcp.example.com/session_123');
+    });
+
+    it('should throw error if session retrieve fails', async () => {
+      const error = new Error('Session not found');
+      mockClient.toolRouter.session.retrieve.mockRejectedValueOnce(error);
+
+      await expect(toolRouter.use(sessionId)).rejects.toThrow('Session not found');
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId);
+    });
+
+    it('should handle retrieve with different tool lists', async () => {
+      const customResponse = {
+        ...mockSessionRetrieveResponse,
+        tool_router_tools: ['CUSTOM_TOOL_1', 'CUSTOM_TOOL_2'],
+      };
+
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(customResponse);
+
+      const session = await toolRouter.use(sessionId);
+
+      expect(session).toBeDefined();
+      expect(session.sessionId).toBe('session_123');
+    });
+
+    it('should be independent from create method', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      // Create a new session
+      const createdSession = await toolRouter.create('user_123');
+      expect(createdSession.sessionId).toBe('session_123');
+
+      // Use an existing session
+      const retrievedSession = await toolRouter.use('session_123');
+      expect(retrievedSession.sessionId).toBe('session_123');
+
+      // Both should have been called once
+      expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
     });
   });
 });
