@@ -98,7 +98,7 @@ tabs:
     slug: docs
   tool-router:
     display-name: Tool Router
-    icon: fa-sparkles
+    icon: fa-light fa-sparkles
     slug: tool-router
   providers:
     display-name: Providers
@@ -135,7 +135,7 @@ navigation:
       title: Changelog
       slug: changelog
   - section: Capabilities
-    icon: fa-layer-group
+    icon: fa-light fa-layer-group
     skip-slug: true
     contents:
     - link: Tool Router
