@@ -20,6 +20,12 @@ from claude_agent_sdk import (
 
 from composio import Composio
 from composio_claude_agent import ClaudeAgentSDKProvider
+from dotenv import load_dotenv
+
+ENV_FILE = (
+    ".env"  # path to env file, where COMPOSIO_API_KEY and ANTHROPIC_API_KEY are stored
+)
+load_dotenv(ENV_FILE)
 
 
 async def main():
