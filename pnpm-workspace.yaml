@@ -19,6 +19,7 @@ catalog:
   ai: 5.0.52
   openai: ^5.20.3
   tsup: ^8.5.0
+  tsdown: ^0.16.8
   tsx: ^4.20.5
   typescript: ^5.9.2
   uuid: ^13.0.0
