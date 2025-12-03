@@ -1,5 +1,13 @@
 # @composio/core
 
+## 0.2.6
+
+### Patch Changes
+
+- b5cc23f: Fix dangerously skip version check in non agentic providers, Throw error instead of process.exit when api key doesn't exist, bump zod-to-json-schema to 3.25.0, which supports "zod/3"
+- Updated dependencies [b5cc23f]
+  - @composio/json-schema-to-zod@0.1.19
+
 ## 0.2.5
 
 ### Patch Changes

@@ -46,9 +46,7 @@ export function getSDKConfig(baseUrl?: string | null, apiKey?: string | null) {
   const apiKeyParsed = apiKey || getEnvVariable('COMPOSIO_API_KEY') || apiKeyFromUserConfig || '';
 
   if (!apiKeyParsed) {
-    ComposioError.handle(new ComposioNoAPIKeyError(), {
-      exitProcess: true,
-    });
+    ComposioError.handleAndThrow(new ComposioNoAPIKeyError());
   }
 
   logger.debug('Environment', `API Key: ${apiKeyParsed}`);
