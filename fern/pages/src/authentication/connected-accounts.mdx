@@ -1,0 +1,188 @@
+---
+title: Connected Accounts
+image: "https://og.composio.dev/api/og?title=Connected%20Accounts"
+subtitle: "Manage and monitor user connections to toolkits"
+keywords: "connected accounts, manage connections, refresh tokens, account status, account credentials, disable accounts, delete accounts"
+hide-nav-links: true
+---
+
+Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/authenticating-tools)), you can manage these accounts throughout their lifecycle.
+
+Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
+
+## List accounts
+
+Retrieve all connected accounts with optional filters:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={12}
+  endLine={22}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={12}
+  endLine={22}
+/>
+</CodeGroup>
+
+
+## Get account details
+
+Retrieve a connected account by ID:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={25}
+  endLine={28}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={25}
+  endLine={28}
+/>
+</CodeGroup>
+
+### Get account credentials
+
+Get account credentials for use with your own tools:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={32}
+  endLine={39}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={32}
+  endLine={40}
+/>
+</CodeGroup>
+
+## Refresh credentials
+
+Manually refresh credentials for a connected account:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={43}
+  endLine={50}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={44}
+  endLine={52}
+/>
+</CodeGroup>
+
+
+## Enable and disable accounts
+
+Change account status without deleting. Set to INACTIVE to pause access, or ACTIVE to restore. Useful for:
+- Pausing access during subscription lapses
+- Temporary disconnection
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={54}
+  endLine={60}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={56}
+  endLine={62}
+/>
+</CodeGroup>
+
+<Warning>
+INACTIVE accounts cannot execute tools. Tool execution will fail until the status is changed.
+</Warning>
+
+## Delete accounts
+
+Permanently remove a connected account and revoke all credentials:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={64}
+  endLine={66}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={66}
+  endLine={68}
+/>
+</CodeGroup>
+
+<Warning>
+Deletion is permanent. Users must re-authenticate to reconnect.
+</Warning>
+
+## Multiple accounts
+
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
+
+<Note>
+Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/authenticating-tools#hosted-authentication-connect-link).
+</Note>
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={70}
+  endLine={93}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={72}
+  endLine={99}
+/>
+</CodeGroup>
+
+### Execute with a specific account
+
+When you have multiple accounts, specify which one to use with `connected_account_id`:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/authentication/python/connected-accounts-management.py" 
+  title="Python"
+  startLine={95}
+  endLine={102}
+/>
+
+<SnippetCode 
+  src="fern/snippets/authentication/typescript/connected-accounts-management.ts" 
+  title="TypeScript"
+  startLine={101}
+  endLine={107}
+/>
+</CodeGroup>
+

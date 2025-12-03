@@ -40,7 +40,7 @@ abstract class BaseProvider<TMcpResponse> {
   /**
    * @public
    * Global function to execute a tool.
-   * This function is used by providerds to implement helper functions to execute tools.
+   * This function is used by providers to implement helper functions to execute tools.
    * This is a 1:1 mapping of the `execute` method in the `Tools` class.
    * @param {string} toolSlug - The slug of the tool to execute.
    * @param {ToolExecuteParams} body - The body of the tool execution.
@@ -55,6 +55,8 @@ abstract class BaseProvider<TMcpResponse> {
     if (!this._globalExecuteToolFn) {
       throw new ComposioGlobalExecuteToolFnNotSetError('executeToolFn is not set');
     }
+
+    // For provider controlled execution, always skip version check.
     return this._globalExecuteToolFn(toolSlug, body, modifers);
   }
 

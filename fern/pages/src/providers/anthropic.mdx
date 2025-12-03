@@ -15,7 +15,7 @@ The Anthropic provider can be installed for both SDKs.
 
 <CodeGroup>
 ```bash title="Python" for="python" maxLines=60  wordWrap
-pip install composio_anthropic==0.8.0
+pip install composio composio-anthropic
 ```
 
 ```bash title="TypeScript" for="typescript" maxLines=60  wordWrap
@@ -40,6 +40,7 @@ composio = Composio(provider=AnthropicProvider())
 ```typescript TypeScript maxLines=60 wordWrap {5}
 import { Composio } from "@composio/core";
 import { AnthropicProvider } from "@composio/anthropic";
+import Anthropic from '@anthropic-ai/sdk';
 
 const composio = new Composio({
   provider: new AnthropicProvider({
@@ -56,18 +57,18 @@ const anthropic = new Anthropic();
 <CodeGroup>
 ```python Python maxLines=60  wordWrap
 # Define your user ID
-user_id = "default"
+user_id = "your-user-id"
 
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id=user_id, toolkits=["GITHUB"])
+# Get GitHub tool for listing stargazers
+tools = composio.tools.get(user_id=user_id, tools=["GITHUB_LIST_STARGAZERS"])
 
 # Get response from the LLM
 response = anthropic_client.messages.create(
-    model="claude-3-5-sonnet-20240620",
+    model="claude-sonnet-4-5",
     max_tokens=1024,
     tools=tools,
     messages=[
-        {"role": "user", "content": "Star me composiohq/composio repo in github."},
+        {"role": "user", "content": "List my github stargazers. for the repo composiohq/composio"},
     ],
 )
 
@@ -77,17 +78,17 @@ print(result)
 ```
 
 ```typescript TypeScript maxLines=60 wordWrap
-const userId = "user@acme.com";
+const userId = "your-user-id";
 const tools = await composio.tools.get(userId, {
-  tools: ["GITHUB_GET_OCTOCAT", "GITHUB_GET_THE_ZEN_OF_GITHUB"]
+  tools: ["GITHUB_LIST_STARGAZERS"]
 })
 
 const msg = await anthropic.messages.create({
-  model: "claude-3-5-sonnet-20240620",
+  model: "claude-sonnet-4-5",
   messages: [
     {
       role: "user",
-      content: "Get me the GitHub Octocat",
+      content: "List my github stargazers. for the repo composiohq/composio",
     },
   ],
   tools: tools,
@@ -96,7 +97,7 @@ const msg = await anthropic.messages.create({
 
 const res = await composio.provider.handleToolCalls(userId, msg);
 
-console.log(JSON.parse(res[0]).details);
+console.log(res[0].content);
 ```
 </CodeGroup>
 

@@ -1,6 +1,6 @@
 {
   "name": "@composio/cloudflare",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -31,7 +31,7 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@composio/core": "0.2.4"
+    "@composio/core": "0.2.6"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",

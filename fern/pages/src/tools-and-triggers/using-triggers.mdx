@@ -2,7 +2,7 @@
 title: Using Triggers
 subtitle: Send payloads to your AI agents or systems based on events in apps.
 image: "https://og.composio.dev/api/og?title=Using%20Triggers"   # image for socials
-keywords: 'triggers, webhooks, websockets, events, active triggers'
+keywords: 'triggers, webhooks, websockets, events, active triggers, trigger types, verify triggers'
 hide-nav-links: true
 ---
 
@@ -47,8 +47,7 @@ Some triggers require additional configuration. The dashboard will prompt you fo
   <img
     src="../../../assets/images/trigger-config.png"
     alt="Trigger configuration example"
-    width="400px"
-    height="auto"
+    style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }}
   />
 </Frame>
 
@@ -92,22 +91,66 @@ Use a publicly accessible URL where Composio can send event payloads. This endpo
   **Local development:** Use [ngrok](https://ngrok.com) or [webhook.site](https://webhook.site) to
   expose your local server to the internet for testing.
 </Tip>
-**Implement your webhook handler:**
 
-Below are some examples of how to listen in on trigger events
-for a FastAPI/Next.js application.
+Webhook payloads contain:
+- `type`: The trigger type identifier
+- `data`: The actual event data  
+- `timestamp`: When the event occurred
+- `log_id`: Unique identifier for this event
+
+Below are examples of webhook handlers for FastAPI and Next.js applications:
 
 <CodeGroup>
 <SnippetCode
   src="fern/snippets/triggers/python/trigger-webhook.py"
-  title="app/route.py"
+  title="Python (FastAPI)"
+  startLine={34}
+  endLine={47}
 />
 
 <SnippetCode
   src="fern/snippets/triggers/typescript/trigger-webhook.ts"
-  title="app/api/webhook/route.ts"
+  title="TypeScript (Next.js)"
+  startLine={39}
+  endLine={57}
 />
 </CodeGroup>
+
+### Verifying webhook signatures
+
+Composio signs all webhook requests so you can verify they're authentic. Each webhook includes these headers:
+
+- `webhook-signature`: HMAC signature in format `v1,<base64_signature>`  
+- `webhook-id`: Unique message identifier
+- `webhook-timestamp`: Unix timestamp when the webhook was sent
+
+To enable verification:
+
+1. Obtain your webhook secret from the [Composio dashboard](https://platform.composio.dev?next_page=/settings/webhook) under Project Settings → Webhook.
+2. Set it as the `COMPOSIO_WEBHOOK_SECRET` environment variable
+3. Use the verification function in your webhook handler:
+
+<CodeGroup>
+<SnippetCode
+  src="fern/snippets/triggers/python/trigger-webhook.py"
+  title="Python"
+  startLine={10}
+  endLine={32}
+/>
+
+<SnippetCode
+  src="fern/snippets/triggers/typescript/trigger-webhook.ts"
+  title="TypeScript"
+  startLine={12}
+  endLine={37}
+/>
+</CodeGroup>
+
+The signature is calculated as:
+```
+signing_string = "{webhook-id}.{webhook-timestamp}.{raw_body}"
+signature = HMAC-SHA256(signing_string, secret)
+```
 
 ### Prototyping with trigger subscriptions
 

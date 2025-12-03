@@ -13,9 +13,11 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // Serve static llms.txt
-    if (url.pathname === '/llms.txt') {
-      return env.ASSETS.fetch(request);
+    // Serve static llms.txt for both /llm.txt and /llms.txt
+    if (url.pathname === '/llms.txt' || url.pathname === '/llm.txt') {
+      // Always fetch the llms.txt file, regardless of which path was requested
+      const llmsRequest = new Request(new URL('/llms.txt', request.url).toString(), request);
+      return env.ASSETS.fetch(llmsRequest);
     }
 
     // Serve robots-only/tools.json
