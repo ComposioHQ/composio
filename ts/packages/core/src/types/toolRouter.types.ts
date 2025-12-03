@@ -11,8 +11,8 @@ export const ToolRouterConfigManageConnectionsSchema = z
   .object({
     enabled: z
       .boolean()
-      .optional()
       .default(true)
+      .optional()
       .describe(
         'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
       ),
@@ -22,8 +22,8 @@ export const ToolRouterConfigManageConnectionsSchema = z
       .describe('The callback uri to use in the tool router session'),
     inferScopesFromTools: z
       .boolean()
-      .optional()
       .default(false)
+      .optional()
       .describe(
         'Whether to infer scopes from tools in the tool router session. Defaults to false, if set to true, tool router will infer scopes from allowed tools'
       ),
