@@ -83,22 +83,22 @@ def authorize_toolkit_example():
         return None
 
 
-# Example 4: Get connection states
-def get_connections_example():
-    """Get connection states for a session."""
-    print("\n=== Get Connections Example ===")
+# Example 4: Get toolkit connection states
+def get_toolkits_example():
+    """Get toolkit connection states for a session."""
+    print("\n=== Get Toolkits Example ===")
 
     user_id = "user_101"
 
     # Create a session
     session = composio.tool_router.create(user_id=user_id)
 
-    # Get connection states
-    connections = session.connections()
+    # Get toolkit connection states
+    toolkits = session.toolkits()
 
-    print(f"Current connections: {connections}")
+    print(f"Current toolkits: {toolkits}")
 
-    return connections
+    return toolkits
 
 
 # Example 5: Full workflow with advanced configuration
@@ -122,9 +122,9 @@ def full_workflow_example():
     tools = session.tools()
     print(f"✓ Retrieved {len(tools) if isinstance(tools, list) else 'N/A'} tools")
 
-    # 3. Check connections
-    connections = session.connections()
-    print(f"✓ Current connections: {len(connections)} toolkit(s)")
+    # 3. Check toolkits
+    toolkits_result = session.toolkits()
+    print(f"✓ Current toolkits: {len(toolkits_result.items)} toolkit(s)")
 
     # 4. Authorize a toolkit if needed
     try:
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         basic_session_example()
         session_with_connections_example()
         authorize_toolkit_example()
-        get_connections_example()
+        get_toolkits_example()
         full_workflow_example()
         session_with_modifiers_example()
 

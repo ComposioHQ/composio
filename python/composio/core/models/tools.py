@@ -519,7 +519,7 @@ class Tools(Resource, t.Generic[TProvider]):
             if connected_account_id is not None
             else omit,
             parameters=parameters if parameters is not None else omit,
-            custom_connection_data=custom_connection_data  # type: ignore
+            custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
         )

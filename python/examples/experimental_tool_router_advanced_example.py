@@ -45,7 +45,7 @@ def example_with_connection_management_config():
         user_id="user_callback",
         manage_connections={
             "enabled": True,
-            "callback_url": "https://myapp.com/oauth/callback",
+            "callback_uri": "https://myapp.com/oauth/callback",
         },
     )
 
@@ -93,7 +93,7 @@ def example_with_all_parameters():
         toolkits=["github", "slack", "notion"],
         manage_connections={
             "enabled": True,
-            "callback_url": "https://myapp.com/callback",
+            "callback_uri": "https://myapp.com/callback",
         },
         auth_configs={
             "github": "ac_github_xyz",
@@ -124,7 +124,7 @@ def example_minimal_vs_maximal():
     maximal_session = composio.tool_router.create(
         user_id="user_maximal",
         toolkits=["github", "slack"],
-        manage_connections={"enabled": True, "callback_url": "https://app.com/cb"},
+        manage_connections={"enabled": True, "callback_uri": "https://app.com/cb"},
         auth_configs={"github": "ac_1", "slack": "ac_2"},
         connected_accounts={"github": "ca_1"},
     )
@@ -138,17 +138,18 @@ def example_type_safe_configuration():
     print("\n=== Type-Safe Configuration Example ===")
 
     from composio.core.models.tool_router import (
-        ToolRouterToolkitsConfig,
+        ToolRouterToolkitsDisabledConfig,
         ToolRouterManageConnectionsConfig,
     )
 
     # Type-safe toolkit config
-    toolkit_config: ToolRouterToolkitsConfig = {"disabled": ["linear", "asana"]}
+    toolkit_config: ToolRouterToolkitsDisabledConfig = {"disabled": ["linear", "asana"]}
 
     # Type-safe connection management config
     connection_config: ToolRouterManageConnectionsConfig = {
         "enabled": True,
-        "callback_url": "https://secure.app.com/oauth",
+        "callback_uri": "https://secure.app.com/oauth",
+        "infer_scopes_from_tools": False,
     }
 
     session = composio.tool_router.create(
