@@ -17,38 +17,8 @@ Tool Router exposes a set of meta-tools that handle all this complexity includin
 
 This is what powers complex agentic products like [Rube](https://rube.app).
 
-## Getting started
+## Quick links
 
-To use Tool Router, create a session for a user: 
-<CodeGroup>
-```python Python
-session = composio.create(
-    user_id='pg-user-550e8400-e29b-41d4',
-    toolkits=['github', 'slack', 'gmail']
-)
-
-# This gives you: 
-# session.mcp.url → Use with any MCP client
-# session.tools() → Use with any agent  
-# session.authorize() → Authenticate users to toolkits
-# session.toolkits() → Get available toolkits and their connections
-```
-
-```typescript TypeScript
-const { tools, mcp, authorize, toolkits } = await composio.create('pg-user-550e8400-e29b-41d4', {
-  toolkits: ['github', 'slack', 'gmail'],
-});
-
-// This gives you:
-// mcp.url → Use with any MCP client
-// tools() → Use with any agent  
-// authorize() → Authenticate users to toolkits
-// toolkits() → Get available toolkits and their connections
-```
-</CodeGroup>
-
-## Next steps
-
-- **[Quickstart](/tool-router/quickstart)** - Quickly build a prototype
-- **[MCP](/tool-router/mcp)** - Use with any MCP client
-- **[Native Tools](/tool-router/native-tools)** - Use with any agent
+- [Quickstart](/tool-router/quickstart): Build your first AI agent with Tool Router.
+- [Using with MCP clients](/tool-router/using-with-mcp-clients): Guides on how to use Tool Router MCP with popular MCP clients. 
+- [Using as native tools](/tool-router/using-as-native-tools): Guides on how to use Tool router as a tool with popular Agentic Providers.
