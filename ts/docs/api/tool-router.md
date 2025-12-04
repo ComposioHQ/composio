@@ -20,6 +20,19 @@ Tool Router allows you to:
 
 When using Tool Router with MCP clients, you don't need to pass a provider:
 
+## Installation
+
+```bash
+# npm
+npm install @composio/core@0.2.7-alpha.1
+
+# pnpm
+pnpm add @composio/core@0.2.7-alpha.1
+
+# yarn
+yarn add @composio/core@0.2.7-alpha.1
+```
+
 ```typescript
 import { Composio } from '@composio/core';
 
