@@ -21,7 +21,6 @@ import {
   ToolRouterToolkitsFn,
   ToolRouterCreateSessionConfig,
   ToolRouterSession,
-  ToolkitConnectionState,
   ToolkitConnectionStateSchema,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
@@ -89,10 +88,15 @@ export class ToolRouter<
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const connectionsFn = async (options?: { nextCursor?: string; limit?: number }) => {
+    const connectionsFn = async (options?: {
+      toolkits?: Array<string>;
+      nextCursor?: string;
+      limit?: number;
+    }) => {
       const result = await this.client.toolRouter.session.toolkits(sessionId, {
         cursor: options?.nextCursor,
         limit: options?.limit,
+        toolkits: options?.toolkits,
       });
 
       const toolkitConnectedStates = result.items.map(item => {
@@ -196,7 +200,7 @@ export class ToolRouter<
       ? { enabled: routerConfig.toolkits }
       : routerConfig.toolkits;
 
-    const tools = transformToolRouterToolsParams(routerConfig.tools);
+    // const tools = transformToolRouterToolsParams(routerConfig.tools);
 
     const inferScopesFromTools =
       typeof routerConfig.manageConnections === 'object'
@@ -208,7 +212,7 @@ export class ToolRouter<
       toolkits,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
-      tools: tools,
+      // tools: tools,
       connections: {
         infer_scopes_from_tools: inferScopesFromTools,
         auto_manage_connections: manageConnectedAccounts,
