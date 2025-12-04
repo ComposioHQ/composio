@@ -73,10 +73,10 @@ class Composio(t.Generic[TProvider], WithLogger):
         :param base_url: The base URL to use for the SDK.
         :param timeout: The timeout to use for the SDK.
         :param max_retries: The maximum number of retries to use for the SDK.
-        :param toolkit_versions: The versions of the toolkits to use. Can be:
+        :param toolkit_versions: A dictionary mapping toolkit names to specific versions:
+                                - A dictionary mapping toolkit names to specific versions
                                 - A string (e.g., 'latest', '20250906_01') to use the same version for all toolkits
-                                - A dict mapping toolkit names to specific versions
-                                - None to use 'latest' as default
+                                - None or omitted to use 'latest' as default
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
