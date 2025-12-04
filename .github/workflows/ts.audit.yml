@@ -12,7 +12,7 @@ on:
 
 jobs:
   audit:
-    name: Audit Typescript SDK
+    name: Audit
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -29,9 +29,6 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Run pnpm audit (production dependencies only)
         id: audit

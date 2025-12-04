@@ -343,7 +343,12 @@ export const ToolProxyParamsSchema = z.object({
     )
     .optional(),
   connectedAccountId: z.string().optional(),
-  customConnectionData: CustomConnectionDataSchema.optional(),
+  /**
+   * @deprecated
+   */
+  customConnectionData: CustomConnectionDataSchema.describe(
+    'DEPRECATED: This field is deprecated and will be removed in the future.'
+  ).optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 
