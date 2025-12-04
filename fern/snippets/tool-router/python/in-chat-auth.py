@@ -2,12 +2,12 @@ import asyncio
 from composio import Composio
 from agents import Agent, Runner, HostedMCPTool
 
-composio = Composio()
+composio = Composio(api_key="your-composio-api-key")
 
 async def chat():
-    session = await composio.create_session(
-        user="pg-user-550e8400-e29b-41d4",
-    )
+    print("Creating Tool Router session...")
+    session = await composio.create("pg-user-550e8400-e29b-41d4")
+    print(f"Tool Router session created: {session.mcp.url}")
 
     agent = Agent(
         name="GitHub Assistant",
@@ -19,6 +19,9 @@ async def chat():
                     "server_label": "composio",
                     "server_url": session.mcp.url,
                     "require_approval": "never",
+                    "headers": {
+                        "x-api-key": "your-composio-api-key",
+                    },
                 }
             )
         ],

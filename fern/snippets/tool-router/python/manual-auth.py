@@ -1,13 +1,13 @@
 import asyncio
 from composio import Composio
 
-composio = Composio()
+composio = Composio(api_key="your-composio-api-key")
 
 user_id = "pg-user-550e8400-e29b-41d4"
 required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
 
 async def main():
-    session = await composio.create_session(
+    session = await composio.create(
         user=user_id,
         manage_connections=False,
     )

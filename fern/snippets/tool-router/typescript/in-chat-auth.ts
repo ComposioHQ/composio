@@ -1,19 +1,27 @@
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
 import { openai } from "@ai-sdk/openai";
+import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
+import { Composio } from "@composio/core";
 import { generateText } from "ai";
 import * as readline from "readline";
 
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
+const composio = new Composio({ apiKey: "your-composio-api-key" });
 
 async function chat() {
-  const session = await composio.createSession({
-    user: "pg-user-550e8400-e29b-41d4",
+  console.log("Creating Tool Router session...");
+  const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");
+  console.log(`Tool Router session created: ${mcp.url}`);
+
+  const client = await createMCPClient({
+    transport: {
+      type: "http",
+      url: mcp.url,
+      headers: {
+        "x-api-key": "your-composio-api-key",
+      },
+    },
   });
 
-  const tools = await session.tools();
+  const tools = await client.tools();
   const messages: { role: "user" | "assistant"; content: string }[] = [];
 
   const rl = readline.createInterface({

@@ -15,14 +15,13 @@ Disable the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool so the agent doesn't prompt 
 
 <CodeGroup>
 ```python
-session = await composio.create_session(
+session = await composio.create(
     user="pg-user-550e8400-e29b-41d4",
     manage_connections=False,
 )
 ```
 ```typescript
-const session = await composio.createSession({
-  user: "pg-user-550e8400-e29b-41d4",
+const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   manageConnections: false,
 });
 ```
@@ -134,7 +133,7 @@ A common pattern is to verify all required connections before starting the agent
 ```python
 required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
 
-session = await composio.create_session(
+session = await composio.create(
     user=user_id,
     manage_connections=False,
 )
@@ -163,8 +162,7 @@ tools = await session.tools()
 ```typescript
 const requiredToolkits = ["gmail", "googlecalendar", "linear", "slack"];
 
-const session = await composio.createSession({
-  user: userId,
+const session = await composio.create(userId, {
   manageConnections: false,
 });
 
@@ -198,7 +196,7 @@ To use a specific account, pass it in the session config:
 
 <CodeGroup>
 ```python
-session = await composio.create_session(
+session = await composio.create(
     user=user_id,
     connected_accounts={
         "gmail": "ca_specific_account_id",
@@ -206,8 +204,7 @@ session = await composio.create_session(
 )
 ```
 ```typescript
-const session = await composio.createSession({
-  user: userId,
+const session = await composio.create(userId, {
   connectedAccounts: {
     gmail: "ca_specific_account_id",
   },

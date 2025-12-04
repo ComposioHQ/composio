@@ -1,16 +1,12 @@
 import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
 
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
+const composio = new Composio({ apiKey: "your-composio-api-key" });
 
 const userId = "pg-user-550e8400-e29b-41d4";
 const requiredToolkits = ["gmail", "googlecalendar", "linear", "slack"];
 
 async function main() {
-  const session = await composio.createSession({
-    user: userId,
+  const session = await composio.create(userId, {
     manageConnections: false,
   });
 

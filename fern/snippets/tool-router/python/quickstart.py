@@ -1,42 +1,33 @@
-import asyncio
-import os
 from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
 from agents import Agent, Runner, HostedMCPTool
 
-async def main() -> None:
-    # Initialize Composio and create Tool Router session
-    composio = Composio(
-        api_key=os.getenv("COMPOSIO_API_KEY"),  # Uses env var by default
-        provider=OpenAIAgentsProvider()
-    )
-    session = composio.experimental.tool_router.create_session(
-        user_id="user@example.com",
-        toolkits=["gmail", "github"]  # Optional: Limit available toolkits
-    )
-    
-    # Set up OpenAI agent with Tool Router MCP endpoint
-    agent = Agent(
-        name="Assistant",
-        instructions="You are a helpful assistant that can access Gmail and GitHub. "
-                    "Help users fetch emails, create issues, manage pull requests, and more.",
-        tools=[
-            HostedMCPTool(
-                tool_config={
-                    "type": "mcp",
-                    "server_label": "tool_router",
-                    "server_url": session['url'],
-                    "require_approval": "never",
-                }
-            )
-        ],
-    )
+composio = Composio(api_key="your-composio-api-key")
 
-    # Execute the agent
-    result = await Runner.run(
-        agent, 
-        "Fetch the contributors to composiohq/composio github repository and email the list to user@example.com"
-    )
-    print(result.final_output)
+print("Creating Tool Router session...")
+session = composio.create("pg-user-550e8400-e29b-41d4")
+print(f"Tool Router session created: {session.mcp.url}")
 
-asyncio.run(main())
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant.",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "require_approval": "never",
+                "headers": {
+                    "x-api-key": "your-composio-api-key",
+                },
+            }
+        )
+    ],
+)
+
+print("Running the OpenAI agent to fetch gmail inbox")
+result = Runner.run_sync(
+    agent,
+    "Summarize all the emails in my Gmail inbox today"
+)
+print(result.final_output)
