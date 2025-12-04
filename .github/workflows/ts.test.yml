@@ -14,8 +14,6 @@ jobs:
   test:
     name: Test Typescript SDK
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
 
     steps:
       - name: Checkout Code
