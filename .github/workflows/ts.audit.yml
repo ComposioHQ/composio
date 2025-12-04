@@ -1,4 +1,4 @@
-name: Acudit Typescript SDK
+name: Audit Typescript SDK
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - "ts/**"
 
 jobs:
-  test:
+  audit:
     name: Audit
     runs-on: ubuntu-latest
     permissions:
