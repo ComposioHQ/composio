@@ -365,7 +365,8 @@ describe('Tools with autoUploadDownloadFiles', () => {
 
   describe('when autoUploadDownloadFiles is false', () => {
     beforeEach(async () => {
-      context.tools = new Tools(mockClient as unknown as ComposioClient, context.mockProvider, {
+      context.tools = new Tools(mockClient as unknown as ComposioClient, {
+        provider: context.mockProvider,
         autoUploadDownloadFiles: false,
       });
 
