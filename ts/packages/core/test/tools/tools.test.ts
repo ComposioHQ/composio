@@ -19,7 +19,7 @@ describe('Tools', () => {
 
   describe('constructor', () => {
     it('should throw an error if client is not provided', () => {
-      expect(() => new Tools(null as any, context.mockProvider)).toThrow(
+      expect(() => new Tools(null as any, { provider: context.mockProvider })).toThrow(
         'ComposioClient is required'
       );
     });
@@ -742,7 +742,8 @@ describe('Tools', () => {
 
       it('should pass global version string when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
 
@@ -761,7 +762,8 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -788,7 +790,8 @@ describe('Tools', () => {
 
       it('should pass versions when fetching tools by tool slugs', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -814,7 +817,8 @@ describe('Tools', () => {
 
       it('should pass versions when searching tools', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: 'latest',
         });
 
@@ -847,7 +851,8 @@ describe('Tools', () => {
 
       it('should pass global version when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
 
@@ -862,7 +867,8 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -911,7 +917,8 @@ describe('Tools', () => {
 
       it('should use global version when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
         const spies = await mockToolExecution(tools);
@@ -937,7 +944,8 @@ describe('Tools', () => {
 
       it('should use toolkit-specific version when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // Use the actual toolkit slug from mock
             slack: 'latest',
@@ -977,7 +985,8 @@ describe('Tools', () => {
 
       it('should use fallback to "latest" when toolkit not in version mapping', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -1015,7 +1024,8 @@ describe('Tools', () => {
 
       it('should prioritize explicit version parameter over configured versions', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -1046,7 +1056,8 @@ describe('Tools', () => {
 
       it('should handle tool without toolkit gracefully', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
           },
@@ -1102,7 +1113,8 @@ describe('Tools', () => {
 
         const mockProvider = new MockProvider();
         // Pass the processed environment variables to the Tools constructor
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_08',
             slack: 'latest',
@@ -1131,7 +1143,8 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_04', // should override env
             gmail: '20251201_05', // new toolkit not in env
@@ -1160,7 +1173,8 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_09' as any, // global version overrides everything
         });
 
@@ -1236,7 +1250,8 @@ describe('Tools', () => {
 
       it('should succeed when executing with a specific version (not "latest") without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01',
           },
@@ -1300,7 +1315,8 @@ describe('Tools', () => {
 
       it('should throw error when explicit version parameter is "latest" without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // specific version in config
           },
