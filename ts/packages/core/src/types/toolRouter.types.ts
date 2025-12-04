@@ -150,9 +150,9 @@ export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
 
 export const ToolRouterCreateSessionConfigSchema = z
   .object({
-    tools: ToolRouterConfigToolsSchema.optional().describe(
-      'The tools to use in the tool router session'
-    ),
+    // tools: ToolRouterConfigToolsSchema.optional().describe(
+    //   'The tools to use in the tool router session'
+    // ),
     toolkits: z
       .union([
         ToolRouterToolkitsParamSchema,

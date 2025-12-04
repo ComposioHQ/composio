@@ -200,7 +200,7 @@ export class ToolRouter<
       ? { enabled: routerConfig.toolkits }
       : routerConfig.toolkits;
 
-    const tools = transformToolRouterToolsParams(routerConfig.tools);
+    // const tools = transformToolRouterToolsParams(routerConfig.tools);
 
     const inferScopesFromTools =
       typeof routerConfig.manageConnections === 'object'
@@ -212,7 +212,7 @@ export class ToolRouter<
       toolkits,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
-      tools: tools,
+      // tools: tools,
       connections: {
         infer_scopes_from_tools: inferScopesFromTools,
         auto_manage_connections: manageConnectedAccounts,

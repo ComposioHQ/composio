@@ -294,209 +294,209 @@ describe('ToolRouter', () => {
       });
     });
 
-    describe('tools configuration', () => {
-      it('should create a session with tools overrides as array', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    // describe('tools configuration', () => {
+    //   it('should create a session with tools overrides as array', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            overrides: {
-              gmail: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
-            },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         overrides: {
+    //           gmail: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+    //         },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: {
-              gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
-            },
-            filters: undefined,
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: {
+    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //         },
+    //         filters: undefined,
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with tools overrides with enabled tools', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with tools overrides with enabled tools', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            overrides: {
-              gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
-            },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         overrides: {
+    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //         },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: {
-              gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
-            },
-            filters: undefined,
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: {
+    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //         },
+    //         filters: undefined,
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with tools overrides with disabled tools', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with tools overrides with disabled tools', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-            },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //         },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-            },
-            filters: undefined,
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //         },
+    //         filters: undefined,
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with tag filters as array', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with tag filters as array', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            tags: ['important', 'email'],
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         tags: ['important', 'email'],
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: undefined,
-            filters: {
-              tags: { include: ['important', 'email'] },
-            },
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: undefined,
+    //         filters: {
+    //           tags: { include: ['important', 'email'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with enabled tag filters', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with enabled tag filters', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            tags: { enabled: ['important', 'email'] },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         tags: { enabled: ['important', 'email'] },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: undefined,
-            filters: {
-              tags: { include: ['important', 'email'] },
-            },
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: undefined,
+    //         filters: {
+    //           tags: { include: ['important', 'email'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with disabled tag filters', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with disabled tag filters', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            tags: { disabled: ['dangerous'] },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         tags: { disabled: ['dangerous'] },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: undefined,
-            filters: {
-              tags: { exclude: ['dangerous'] },
-            },
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: undefined,
+    //         filters: {
+    //           tags: { exclude: ['dangerous'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with both overrides and tag filters', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with both overrides and tag filters', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          tools: {
-            overrides: {
-              gmail: ['GMAIL_FETCH_EMAILS'],
-              slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
-            },
-            tags: ['important'],
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       tools: {
+    //         overrides: {
+    //           gmail: ['GMAIL_FETCH_EMAILS'],
+    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //         },
+    //         tags: ['important'],
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: {
-              gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
-              slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
-            },
-            filters: {
-              tags: { include: ['important'] },
-            },
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
-    });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: undefined,
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: {
+    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
+    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //         },
+    //         filters: {
+    //           tags: { include: ['important'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
+    // });
 
     describe('manageConnections configuration', () => {
       it('should create a session with manageConnections as boolean (true)', async () => {
@@ -831,157 +831,157 @@ describe('ToolRouter', () => {
       });
     });
 
-    describe('complex configuration combinations', () => {
-      it('should create a session with all configuration options', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    // describe('complex configuration combinations', () => {
+    //   it('should create a session with all configuration options', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          toolkits: ['gmail', 'slack'],
-          tools: {
-            overrides: {
-              gmail: ['GMAIL_FETCH_EMAILS'],
-            },
-            tags: ['important'],
-          },
-          authConfigs: {
-            gmail: 'auth_config_123',
-          },
-          connectedAccounts: {
-            slack: 'conn_456',
-          },
-          manageConnections: {
-            enabled: true,
-            callbackUri: 'https://myapp.com/callback',
-            inferScopesFromTools: true,
-          },
-          execution: {
-            proxyExecutionEnabled: true,
-            timeoutSeconds: 30,
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       toolkits: ['gmail', 'slack'],
+    //       tools: {
+    //         overrides: {
+    //           gmail: ['GMAIL_FETCH_EMAILS'],
+    //         },
+    //         tags: ['important'],
+    //       },
+    //       authConfigs: {
+    //         gmail: 'auth_config_123',
+    //       },
+    //       connectedAccounts: {
+    //         slack: 'conn_456',
+    //       },
+    //       manageConnections: {
+    //         enabled: true,
+    //         callbackUri: 'https://myapp.com/callback',
+    //         inferScopesFromTools: true,
+    //       },
+    //       execution: {
+    //         proxyExecutionEnabled: true,
+    //         timeoutSeconds: 30,
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enabled: ['gmail', 'slack'],
-          },
-          auth_configs: {
-            gmail: 'auth_config_123',
-          },
-          connected_accounts: {
-            slack: 'conn_456',
-          },
-          tools: {
-            overrides: {
-              gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
-            },
-            filters: {
-              tags: { include: ['important'] },
-            },
-          },
-          connections: createExpectedConnections({
-            manageConnections: true,
-            inferScopesFromTools: true,
-            callbackUri: 'https://myapp.com/callback',
-          }),
-          execution: {
-            proxy_execution_enabled: true,
-            timeout_seconds: 30,
-          },
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: {
+    //         enabled: ['gmail', 'slack'],
+    //       },
+    //       auth_configs: {
+    //         gmail: 'auth_config_123',
+    //       },
+    //       connected_accounts: {
+    //         slack: 'conn_456',
+    //       },
+    //       tools: {
+    //         overrides: {
+    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
+    //         },
+    //         filters: {
+    //           tags: { include: ['important'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections({
+    //         manageConnections: true,
+    //         inferScopesFromTools: true,
+    //         callbackUri: 'https://myapp.com/callback',
+    //       }),
+    //       execution: {
+    //         proxy_execution_enabled: true,
+    //         timeout_seconds: 30,
+    //       },
+    //     });
+    //   });
 
-      it('should create a session with toolkits and disabled tools', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with toolkits and disabled tools', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          toolkits: {
-            enabled: ['gmail', 'slack', 'github'],
-          },
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-              slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
-            },
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       toolkits: {
+    //         enabled: ['gmail', 'slack', 'github'],
+    //       },
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //         },
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enabled: ['gmail', 'slack', 'github'],
-          },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-              slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
-            },
-            filters: undefined,
-          },
-          connections: createExpectedConnections(),
-          execution: undefined,
-        });
-      });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: {
+    //         enabled: ['gmail', 'slack', 'github'],
+    //       },
+    //       auth_configs: undefined,
+    //       connected_accounts: undefined,
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //         },
+    //         filters: undefined,
+    //       },
+    //       connections: createExpectedConnections(),
+    //       execution: undefined,
+    //     });
+    //   });
 
-      it('should create a session with complex nested configuration', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+    //   it('should create a session with complex nested configuration', async () => {
+    //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-        const config: ToolRouterCreateSessionConfig = {
-          toolkits: {
-            disabled: ['notion'],
-          },
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-            },
-            tags: { disabled: ['dangerous'] },
-          },
-          authConfigs: {
-            gmail: 'auth_config_123',
-            slack: 'auth_config_456',
-            github: 'auth_config_789',
-          },
-          connectedAccounts: {},
-          manageConnections: {
-            enabled: false,
-            inferScopesFromTools: false,
-          },
-        };
+    //     const config: ToolRouterCreateSessionConfig = {
+    //       toolkits: {
+    //         disabled: ['notion'],
+    //       },
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //         },
+    //         tags: { disabled: ['dangerous'] },
+    //       },
+    //       authConfigs: {
+    //         gmail: 'auth_config_123',
+    //         slack: 'auth_config_456',
+    //         github: 'auth_config_789',
+    //       },
+    //       connectedAccounts: {},
+    //       manageConnections: {
+    //         enabled: false,
+    //         inferScopesFromTools: false,
+    //       },
+    //     };
 
-        await toolRouter.create(userId, config);
+    //     await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            disabled: ['notion'],
-          },
-          auth_configs: {
-            gmail: 'auth_config_123',
-            slack: 'auth_config_456',
-            github: 'auth_config_789',
-          },
-          connected_accounts: {},
-          tools: {
-            overrides: {
-              gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-            },
-            filters: {
-              tags: { exclude: ['dangerous'] },
-            },
-          },
-          connections: createExpectedConnections({
-            manageConnections: false,
-          }),
-          execution: undefined,
-        });
-      });
-    });
+    //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+    //       user_id: userId,
+    //       toolkits: {
+    //         disabled: ['notion'],
+    //       },
+    //       auth_configs: {
+    //         gmail: 'auth_config_123',
+    //         slack: 'auth_config_456',
+    //         github: 'auth_config_789',
+    //       },
+    //       connected_accounts: {},
+    //       tools: {
+    //         overrides: {
+    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //         },
+    //         filters: {
+    //           tags: { exclude: ['dangerous'] },
+    //         },
+    //       },
+    //       connections: createExpectedConnections({
+    //         manageConnections: false,
+    //       }),
+    //       execution: undefined,
+    //     });
+    //   });
+    // });
 
     describe('error handling', () => {
       it('should throw error if API call fails', async () => {
