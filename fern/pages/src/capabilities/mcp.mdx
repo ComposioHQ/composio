@@ -2,37 +2,51 @@
 title: MCP (Model Context Protocol)
 image: "https://og.composio.dev/api/og?title=MCP&description=Universal%20tool%20protocol%20for%20any%20AI%20client"
 subtitle: "Universal tool protocol for any AI client"
-description: "Connect 800+ tools to Claude Desktop, Continue.dev, and any MCP-compatible client. Framework-agnostic integration with zero code changes."
+description: "Connect 500+ tools to Claude Desktop, Continue.dev, and any MCP-compatible client. Framework-agnostic integration with zero code changes."
 keywords: "mcp, model context protocol, claude desktop, continue dev, ai tools, framework agnostic, tool server"
 hide-nav-links: false
 ---
 
-~~**Connect 800+ tools to any MCP-compatible AI client**  
-Works with Claude Desktop, Continue.dev, and custom clients—no code changes needed. Just configure and connect.~~
-
-## ~~Key capabilities~~
+Connect Composio tools to Claude Desktop, Cursor, Windsurf, and any MCP-compatible client. Configure once, use everywhere.
 
 <CardGroup cols={2}>
-  <Card title="Universal compatibility" icon="fa-solid fa-infinity">
-    ~~Works with any MCP client—Claude Desktop, Continue.dev, or your custom implementation.~~
+  <Card
+    title="MCP quickstart"
+    icon="fa-light fa-rocket"
+    href="/mcp/quickstart"
+  >
+    Set up MCP with Claude Desktop or other clients
   </Card>
   
-  <Card title="800+ tools instantly" icon="fa-solid fa-rocket">
-    ~~All Composio tools available through a single MCP server configuration.~~
+  <Card
+    title="Server management"
+    icon="fa-light fa-server"
+    href="/mcp/server-management"
+  >
+    Configure toolkits, authentication, and permissions
   </Card>
   
-  <Card title="Zero code required" icon="fa-solid fa-code-branch">
-    ~~Configure once in JSON, use everywhere. No SDK integration needed.~~
+  <Card
+    title="MCP providers"
+    icon="fa-light fa-plug"
+    href="/mcp/providers"
+  >
+    Integration guides for Claude Desktop, Cursor, Windsurf
   </Card>
   
-  <Card title="Automatic updates" icon="fa-solid fa-arrows-rotate">
-    ~~New tools and capabilities added automatically without client updates.~~
+  <Card
+    title="Tool Router"
+    icon="fa-light fa-route"
+    href="/tool-router/overview"
+  >
+    Single MCP server and Tool that can search, authenticate, and execute across all Composio tools
   </Card>
 </CardGroup>
 
-## ~~How it works~~
+## Example
 
-<CodeGroup>
+Add Composio to Claude Desktop's configuration:
+
 ```json claude_desktop_config.json
 {
   "mcpServers": {
@@ -41,170 +55,9 @@ Works with Claude Desktop, Continue.dev, and custom clients—no code changes ne
       "args": [
         "-y",
         "@composio/mcp-server",
-        "{YOUR_COMPOSIO_API_KEY}"
+        "your-composio-api-key"
       ]
     }
   }
 }
 ```
-
-```python Python SDK Alternative
-# Or use the Python MCP server
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Start MCP server
-composio.mcp.start_server(
-    port=3000,
-    allowed_toolkits=["github", "slack", "gmail"]
-)
-
-# Server now available for any MCP client to connect
-print("MCP server running at localhost:3000")
-```
-
-```typescript TypeScript SDK Alternative
-// Or use the TypeScript MCP server
-import { Composio } from '@composio/core';
-
-const composio = new Composio({ apiKey: 'YOUR_API_KEY' });
-
-// Start MCP server
-await composio.mcp.startServer({
-  port: 3000,
-  allowedToolkits: ['github', 'slack', 'gmail']
-});
-
-// Server now available for any MCP client to connect
-console.log('MCP server running at localhost:3000');
-```
-</CodeGroup>
-
-## ~~Compatible clients~~
-
-<CardGroup cols={3}>
-  <Card title="Claude Desktop" icon="fa-solid fa-desktop">
-    ~~Native support in Anthropic's desktop application~~
-  </Card>
-  
-  <Card title="Continue.dev" icon="fa-solid fa-code">
-    ~~AI-powered IDE extension for VS Code and JetBrains~~
-  </Card>
-  
-  <Card title="Custom Clients" icon="fa-solid fa-wrench">
-    ~~Build your own MCP client with any language or framework~~
-  </Card>
-</CardGroup>
-
-## ~~Use cases~~
-
-### ~~IDE-powered development~~
-~~Give your IDE assistant the ability to create GitHub issues, search documentation, deploy code, and manage infrastructure—all from natural language.~~
-
-### ~~Desktop AI assistants~~
-~~Transform Claude Desktop into a powerful automation tool that can send emails, manage calendars, update CRMs, and interact with any business tool.~~
-
-### ~~Custom AI applications~~
-~~Build your own MCP client to create specialized AI assistants with access to your entire tool ecosystem without writing integrations.~~
-
-### ~~Research and analysis~~
-~~Enable AI to gather data from multiple sources, compile reports, and take action based on findings—all through a standardized protocol.~~
-
-## ~~MCP vs Native SDK~~
-
-<AccordionGroup>
-  <Accordion title="When to use MCP">
-    ~~- Working with MCP-compatible clients (Claude Desktop, Continue.dev)~~
-    ~~- Want framework-agnostic integration~~
-    ~~- Need quick setup without code changes~~
-    ~~- Building polyglot applications~~
-  </Accordion>
-  
-  <Accordion title="When to use Native SDK">
-    ~~- Need programmatic control over tool execution~~
-    ~~- Want to implement custom authentication flows~~
-    ~~- Require response transformations or middleware~~
-    ~~- Building production applications with specific requirements~~
-  </Accordion>
-  
-  <Accordion title="Can I use both?">
-    ~~Yes! MCP and Native SDK can work together. Use MCP for desktop tools and Native SDK for your application backend.~~
-  </Accordion>
-</AccordionGroup>
-
-## ~~Server management~~
-
-<CardGroup cols={2}>
-  <Card title="Configuration options" icon="fa-solid fa-cog">
-    ~~Control which tools are exposed, set rate limits, and manage permissions~~
-  </Card>
-  
-  <Card title="Multiple servers" icon="fa-solid fa-server">
-    ~~Run different MCP servers for different environments or user groups~~
-  </Card>
-  
-  <Card title="Authentication" icon="fa-solid fa-key">
-    ~~Secure your MCP server with API keys and user-specific access~~
-  </Card>
-  
-  <Card title="Monitoring" icon="fa-solid fa-chart-line">
-    ~~Track usage, debug issues, and monitor performance~~
-  </Card>
-</CardGroup>
-
-## ~~Setup guides~~
-
-<Steps>
-  <Step title="Get your API key">
-    ~~Sign up at [app.composio.dev](https://app.composio.dev) and grab your API key~~
-  </Step>
-  
-  <Step title="Configure your client">
-    ~~Add the Composio MCP server to your client's configuration file~~
-  </Step>
-  
-  <Step title="Authenticate tools">
-    ~~Connect your accounts (GitHub, Gmail, etc.) through the Composio dashboard~~
-  </Step>
-  
-  <Step title="Start using tools">
-    ~~Your AI can now access all connected tools through natural language~~
-  </Step>
-</Steps>
-
-## ~~Get started~~
-
-<CardGroup cols={2}>
-  <Card
-    title="MCP quickstart"
-    icon="fa-solid fa-rocket"
-    href="/docs/mcp-quickstart"
-  >
-    ~~Set up MCP with Claude Desktop in 5 minutes~~
-  </Card>
-  
-  <Card
-    title="Server management"
-    icon="fa-solid fa-server"
-    href="/docs/mcp-server-management"
-  >
-    ~~Configure and manage your MCP servers~~
-  </Card>
-  
-  <Card
-    title="MCP providers"
-    icon="fa-solid fa-plug"
-    href="/docs/mcp-providers"
-  >
-    ~~Integration guides for different MCP clients~~
-  </Card>
-  
-  <Card
-    title="Troubleshooting"
-    icon="fa-solid fa-wrench"
-    href="/docs/troubleshooting/mcp"
-  >
-    ~~Common MCP issues and solutions~~
-  </Card>
-</CardGroup>

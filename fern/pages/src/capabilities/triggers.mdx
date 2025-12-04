@@ -1,246 +1,45 @@
 ---
 title: Triggers
-image: "https://og.composio.dev/api/og?title=Triggers&description=Real-time%20events%20from%20800%2B%20integrations"
-subtitle: "Real-time events from 800+ integrations"
+image: "https://og.composio.dev/api/og?title=Triggers&description=Real-time%20events%20from%20500%2B%20integrations"
+subtitle: "Real-time events from 500+ integrations"
 description: "React to events as they happen across your connected services. From GitHub commits to Slack messages—build event-driven AI workflows with zero webhook infrastructure."
 keywords: "webhooks, triggers, real-time events, event-driven, github webhooks, slack events, automation"
 hide-nav-links: false
 ---
 
-~~**Build event-driven AI workflows without managing webhooks**  
-Automatically react to events from GitHub, Slack, Gmail, and 800+ other services—all webhooks and polling handled for you.~~
-
-## ~~Key capabilities~~
-
-<CardGroup cols={2}>
-  <Card title="Real-time event streams" icon="fa-solid fa-bolt">
-    ~~Instant notifications when events occur across any connected service.~~
-  </Card>
-  
-  <Card title="Zero webhook setup" icon="fa-solid fa-plug-circle-xmark">
-    ~~No need to configure endpoints, manage SSL, or handle retries—we do it all.~~
-  </Card>
-  
-  <Card title="Unified event format" icon="fa-solid fa-layer-group">
-    ~~Consistent event structure across all services for easier processing.~~
-  </Card>
-  
-  <Card title="Built-in filtering" icon="fa-solid fa-filter">
-    ~~Filter events by type, user, or custom criteria before they reach your app.~~
-  </Card>
-</CardGroup>
-
-## ~~How it works~~
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Set up a trigger for GitHub push events
-trigger = composio.triggers.subscribe(
-    user_id="user-123",
-    trigger_name="GITHUB_PUSH_EVENT",
-    config={
-        "repository": "my-repo",
-        "branch": "main"
-    }
-)
-
-# Handle incoming events
-@trigger.on_event
-def handle_push(event):
-    print(f"New commit: {event['commit_message']}")
-    
-    # Automatically create a deployment
-    composio.tools.execute(
-        "VERCEL_CREATE_DEPLOYMENT",
-        user_id="user-123",
-        arguments={
-            "repo": event["repository"],
-            "branch": event["branch"]
-        }
-    )
-```
-
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({ apiKey: 'YOUR_API_KEY' });
-
-// Set up a trigger for GitHub push events
-const trigger = await composio.triggers.subscribe({
-  userId: 'user-123',
-  triggerName: 'GITHUB_PUSH_EVENT',
-  config: {
-    repository: 'my-repo',
-    branch: 'main'
-  }
-});
-
-// Handle incoming events
-trigger.onEvent((event) => {
-  console.log(`New commit: ${event.commit_message}`);
-  
-  // Automatically create a deployment
-  composio.tools.execute('VERCEL_CREATE_DEPLOYMENT', {
-    userId: 'user-123',
-    arguments: {
-      repo: event.repository,
-      branch: event.branch
-    }
-  });
-});
-```
-</CodeGroup>
-
-## ~~Popular triggers~~
-
-<CardGroup cols={4}>
-  <Card title="GitHub" icon="fa-brands fa-github">
-    ~~Push, PR, issue, release, star events~~
-  </Card>
-  
-  <Card title="Slack" icon="fa-brands fa-slack">
-    ~~Message, reaction, channel, member events~~
-  </Card>
-  
-  <Card title="Gmail" icon="fa-solid fa-envelope">
-    ~~New email, label change, attachment events~~
-  </Card>
-  
-  <Card title="Calendar" icon="fa-solid fa-calendar">
-    ~~Event created, updated, reminder events~~
-  </Card>
-  
-  <Card title="Stripe" icon="fa-brands fa-stripe">
-    ~~Payment, subscription, invoice events~~
-  </Card>
-  
-  <Card title="Jira" icon="fa-brands fa-jira">
-    ~~Issue created, status change, sprint events~~
-  </Card>
-  
-  <Card title="HubSpot" icon="fa-solid fa-h">
-    ~~Contact, deal, ticket activity events~~
-  </Card>
-  
-  <Card title="Discord" icon="fa-brands fa-discord">
-    ~~Message, reaction, member join events~~
-  </Card>
-</CardGroup>
-
-## ~~Use cases~~
-
-### ~~Automated DevOps~~
-~~Trigger deployments on GitHub pushes, create Jira tickets from Sentry errors, and send Slack notifications for critical alerts—all automatically.~~
-
-### ~~Customer success automation~~
-~~React to support tickets, customer emails, and chat messages to automatically update CRM records and trigger follow-up actions.~~
-
-### ~~Content workflow automation~~
-~~Publish blog posts when documents are approved, cross-post to social media on content updates, and trigger translations for new content.~~
-
-### ~~Sales pipeline automation~~
-~~Update deal stages based on email interactions, schedule follow-ups from calendar events, and sync activity across all sales tools.~~
-
-## ~~Event types~~
-
-<AccordionGroup>
-  <Accordion title="Repository events">
-    ~~Push, pull request, issue, release, star, fork, branch creation/deletion~~
-  </Accordion>
-  
-  <Accordion title="Communication events">
-    ~~Message sent/received, channel created, member joined, reaction added~~
-  </Accordion>
-  
-  <Accordion title="Document events">
-    ~~File created/updated, page edited, comment added, permission changed~~
-  </Accordion>
-  
-  <Accordion title="Calendar events">
-    ~~Event created/updated/deleted, attendee response, reminder triggered~~
-  </Accordion>
-  
-  <Accordion title="Payment events">
-    ~~Payment succeeded/failed, subscription created/cancelled, invoice paid~~
-  </Accordion>
-  
-  <Accordion title="Workflow events">
-    ~~Task created/completed, status changed, assignee updated, due date changed~~
-  </Accordion>
-</AccordionGroup>
-
-## ~~Advanced features~~
-
-<CardGroup cols={3}>
-  <Card title="Event filtering" icon="fa-solid fa-filter">
-    ~~Filter events before they reach your app to reduce noise~~
-  </Card>
-  
-  <Card title="Batch processing" icon="fa-solid fa-layer-group">
-    ~~Group related events for efficient bulk processing~~
-  </Card>
-  
-  <Card title="Replay events" icon="fa-solid fa-clock-rotate-left">
-    ~~Replay historical events for testing or recovery~~
-  </Card>
-</CardGroup>
-
-## ~~Reliability guarantees~~
-
-<CardGroup cols={2}>
-  <Card title="At-least-once delivery" icon="fa-solid fa-check-double">
-    ~~Every event is guaranteed to be delivered at least once~~
-  </Card>
-  
-  <Card title="Automatic retries" icon="fa-solid fa-rotate">
-    ~~Failed deliveries are automatically retried with exponential backoff~~
-  </Card>
-  
-  <Card title="Event ordering" icon="fa-solid fa-arrow-down-1-9">
-    ~~Events from the same source maintain their chronological order~~
-  </Card>
-  
-  <Card title="Idempotency" icon="fa-solid fa-fingerprint">
-    ~~Each event has a unique ID to prevent duplicate processing~~
-  </Card>
-</CardGroup>
-
-## ~~Get started~~
+Subscribe to real-time events from GitHub, Slack, Gmail, and other services. Composio handles webhook configuration, retries, and delivery.
 
 <CardGroup cols={2}>
   <Card
     title="Using triggers"
-    icon="fa-solid fa-bolt"
+    icon="fa-light fa-bolt"
     href="/docs/using-triggers"
   >
-    ~~Learn how to subscribe to and handle trigger events~~
+    Subscribe to events and handle them in your application
   </Card>
   
   <Card
     title="Available triggers"
-    icon="fa-solid fa-list"
-    href="/toolkits/introduction"
+    icon="fa-light fa-list"
+    href="/toolkits/all"
   >
-    ~~Browse all available triggers by toolkit~~
+    Browse triggers by toolkit
   </Card>
   
   <Card
-    title="Event-driven workflows"
-    icon="fa-solid fa-diagram-project"
+    title="Triggers API"
+    icon="fa-light fa-code"
+    href="/api-reference/triggers"
+  >
+    API reference for trigger operations
+  </Card>
+  
+  <Card
+    title="Slack summarizer example"
+    icon="fa-light fa-diagram-project"
     href="/examples/slack-summariser"
   >
-    ~~See real examples of trigger-based automations~~
-  </Card>
-  
-  <Card
-    title="Troubleshooting"
-    icon="fa-solid fa-wrench"
-    href="/docs/troubleshooting/triggers"
-  >
-    ~~Debug common trigger issues and solutions~~
+    Event-driven workflow example
   </Card>
 </CardGroup>
+

@@ -8,7 +8,7 @@ hide-nav-links: false
 
 <CardGroup cols={2}>
   <Card
-    icon="key"
+    icon="fa-light fa-key"
     title="Managed authentication"
     href="/docs/authenticating-tools"
   >
@@ -16,7 +16,7 @@ hide-nav-links: false
   </Card>
 
   <Card
-    icon="wrench"
+    icon="fa-light fa-wrench"
     title="Tool execution"
     href="/docs/executing-tools"
   >
@@ -24,7 +24,7 @@ hide-nav-links: false
   </Card>
 
   <Card
-    icon="database"
+    icon="fa-light fa-database"
     title="MCP server"
     href="/docs/mcp-quickstart"
   >
@@ -32,7 +32,7 @@ hide-nav-links: false
   </Card>
 
   <Card
-    icon="bolt"
+    icon="fa-light fa-bolt"
     title="Triggers"
     href="/docs/using-triggers"
   >
@@ -40,16 +40,20 @@ hide-nav-links: false
   </Card>
 </CardGroup>
 
+<Card icon="fa-light fa-sparkles" title="Tool Router" href="/tool-router/overview">
+  Single MCP server and Tool that can search, authenticate, and execute across all Composio tools
+</Card>
+
 ***
 
 ## Get started
 
 <CardGroup cols={2}>
-  <Card icon="rocket" title="Quickstart" href="/docs/quickstart">
+  <Card icon="fa-light fa-rocket" title="Quickstart" href="/docs/quickstart">
     Build your first agent
   </Card>
 
-  <Card icon="code" title="Providers" href="/docs/providers">
+  <Card icon="fa-light fa-code" title="Providers" href="/docs/providers">
     Integrate with OpenAI, Anthropic, Vercel AI SDK, and more
   </Card>
 </CardGroup>
@@ -91,12 +95,8 @@ Composio is the fastest way to enable your AI agents to take real-world actionsâ
 - **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
 - **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
 - **Use MCP servers** for all 500+ toolkits, compatible with any [MCP client](/docs/mcp-quickstart).
-- **Search, plan and authenticate** across all tools with [Tool Router](/docs/tool-router/quick-start).
+- **Search, plan and authenticate** across all tools with [Tool Router](/tool-router/overview).
 - **Integrate seamlessly** with frameworks like [OpenAI](/providers/openai), [Anthropic](/providers/anthropic), [LangChain](/providers/langchain), [Vercel AI SDK](/providers/vercel), and more.
-
-<Card icon="flask" title="Tool Router (Beta)" href="/docs/tool-router/quick-start">
-  Search, plan, and handle authentication across all the tools.
-</Card>
 
 ***
 

@@ -1,164 +1,39 @@
 ---
 title: Managed Authentication
 image: "https://og.composio.dev/api/og?title=Managed%20Authentication&description=Enterprise-grade%20authentication%20for%20AI%20agents"
-subtitle: "Enterprise-grade authentication for AI agents"
-description: "Let your AI agents authenticate with 800+ apps on behalf of users. OAuth, API keys, user isolation, and white-labeling built in."
+subtitle: "Auth management for your AI agents"
+description: "Let your AI agents authenticate with 500+ apps on behalf of users. OAuth, API keys, user isolation, and white-labeling built in."
 keywords: "managed authentication, ai agent auth, oauth, api keys, user isolation, white-labeling, connected accounts"
 hide-nav-links: false
 ---
 
-~~**Let your AI agents authenticate with 800+ apps on behalf of users**  
-Zero-config OAuth flows, automatic token refresh, and complete user isolation—all managed for you.~~
+Composio handles OAuth flows, API keys, token refresh, and credential storage for 500+ apps. 
 
-## ~~Key capabilities~~
-
-<CardGroup cols={2}>
-  <Card title="800+ pre-configured apps" icon="fa-solid fa-plug">
-    ~~OAuth flows, API keys, and credentials for every major platform—no setup required.~~
-  </Card>
-  
-  <Card title="Automatic token management" icon="fa-solid fa-arrows-rotate">
-    ~~Never worry about expired tokens. Composio handles refresh, rotation, and secure storage.~~
-  </Card>
-  
-  <Card title="Complete user isolation" icon="fa-solid fa-lock">
-    ~~Each user's credentials are encrypted and isolated. Perfect for multi-tenant applications.~~
-  </Card>
-  
-  <Card title="White-label authentication" icon="fa-solid fa-palette">
-    ~~Use your own OAuth apps and branded auth screens for a seamless user experience.~~
-  </Card>
-</CardGroup>
-
-## ~~How it works~~
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Create an authentication link for your user
-auth_link = composio.connected_accounts.link(
-    user_id="user-123",
-    toolkit="github"
-)
-
-# User authenticates via the link
-print(f"Send this link to user: {auth_link.url}")
-
-# Execute authenticated actions
-result = composio.tools.execute(
-    "GITHUB_CREATE_REPO",
-    user_id="user-123",
-    arguments={"name": "my-new-repo"}
-)
-```
-
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({ apiKey: 'YOUR_API_KEY' });
-
-// Create an authentication link for your user
-const authLink = await composio.connectedAccounts.link({
-  userId: 'user-123',
-  toolkit: 'github'
-});
-
-// User authenticates via the link
-console.log(`Send this link to user: ${authLink.url}`);
-
-// Execute authenticated actions
-const result = await composio.tools.execute('GITHUB_CREATE_REPO', {
-  userId: 'user-123',
-  arguments: { name: 'my-new-repo' }
-});
-```
-</CodeGroup>
-
-## ~~Use cases~~
-
-### ~~Customer support automation~~
-~~Enable support agents to access customer accounts across Zendesk, Intercom, and internal tools—with proper audit trails and permissions.~~
-
-### ~~Sales automation~~
-~~Connect CRM, email, and calendar accounts to automate outreach, follow-ups, and meeting scheduling while maintaining personalization.~~
-
-### ~~DevOps workflows~~
-~~Authenticate with GitHub, GitLab, AWS, and monitoring tools to automate deployments, incident response, and infrastructure management.~~
-
-### ~~Content management~~
-~~Connect social media, CMS, and analytics platforms to schedule posts, manage content, and track performance across channels.~~
-
-## ~~Authentication methods~~
-
-<AccordionGroup>
-  <Accordion title="OAuth 2.0">
-    ~~Full OAuth flow with automatic token refresh. Supports Google, Microsoft, GitHub, and 500+ other providers.~~
-  </Accordion>
-  
-  <Accordion title="API Keys">
-    ~~Simple key-based authentication for services like OpenAI, Stripe, and SendGrid. Keys are encrypted at rest.~~
-  </Accordion>
-  
-  <Accordion title="Basic Auth">
-    ~~Username/password authentication for legacy systems and internal tools. Credentials are securely stored.~~
-  </Accordion>
-  
-  <Accordion title="Custom Credentials">
-    ~~Support for any authentication method including JWT, session tokens, and proprietary schemes.~~
-  </Accordion>
-</AccordionGroup>
-
-## ~~Enterprise features~~
+## Quick links 
 
 <CardGroup cols={3}>
-  <Card title="GDPR compliant" icon="fa-solid fa-shield-check">
-    ~~Data residency options and right-to-be-forgotten support~~
-  </Card>
-  
-  <Card title="SOC 2 Type II" icon="fa-solid fa-certificate">
-    ~~Annual audits and continuous compliance monitoring~~
-  </Card>
-  
-  <Card title="HIPAA ready" icon="fa-solid fa-hospital">
-    ~~Healthcare-grade security for sensitive data~~
-  </Card>
-</CardGroup>
-
-## ~~Get started~~
-
-<CardGroup cols={2}>
   <Card
-    title="Authentication guide"
-    icon="fa-solid fa-book"
+    title="Authenticating tools"
+    icon="fa-light fa-key"
     href="/docs/authenticating-tools"
   >
-    ~~Learn how to authenticate tools and manage connections~~
-  </Card>
-  
-  <Card
-    title="Custom auth configs"
-    icon="fa-solid fa-cog"
-    href="/docs/custom-auth-configs"
-  >
-    ~~Use your own OAuth apps and credentials~~
-  </Card>
-  
-  <Card
-    title="Connected accounts"
-    icon="fa-solid fa-users"
-    href="/docs/connected-accounts"
-  >
-    ~~Manage user connections throughout their lifecycle~~
+    Create auth configs and connect user accounts via Connect Link or direct SDK integration
   </Card>
   
   <Card
     title="White-labeling"
-    icon="fa-solid fa-palette"
-    href="/tool-router/white-labeling"
+    icon="fa-light fa-palette"
+    href="/docs/custom-auth-configs"
   >
-    ~~Create branded authentication experiences~~
+    Use your own OAuth apps and remove Composio branding from auth screens
   </Card>
+  
+  <Card
+    title="Connected Accounts API"
+    icon="fa-light fa-plug"
+    href="/api-reference/connected-accounts"
+  >
+    Manage user connections programmatically
+  </Card>
+  
 </CardGroup>

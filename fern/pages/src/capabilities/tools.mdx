@@ -1,214 +1,45 @@
 ---
 title: Tools
-image: "https://og.composio.dev/api/og?title=Tools&description=800%2B%20authenticated%20actions%20for%20AI%20agents"
-subtitle: "800+ authenticated actions for AI agents"
-description: "Give your AI agents the ability to execute real-world actions across 800+ integrations. From GitHub commits to Slack messages—all with user authentication built in."
+image: "https://og.composio.dev/api/og?title=Tools&description=500%2B%20authenticated%20actions%20for%20AI%20agents"
+subtitle: "500+ authenticated actions for AI agents"
+description: "Give your AI agents the ability to execute real-world actions across 500+ integrations. From GitHub commits to Slack messages—all with user authentication built in."
 keywords: "ai tools, agent tools, authenticated actions, tool calling, github actions, slack integration, gmail api"
 hide-nav-links: false
 ---
 
-~~**Give your AI agents the ability to take real-world actions**  
-800+ pre-built integrations with authentication, error handling, and response formatting—ready to use in one line of code.~~
-
-## ~~Key capabilities~~
+Pre-built tools for GitHub, Slack, Gmail, and 500+ other services. Each tool handles authentication, error handling, and returns structured JSON responses.
 
 <CardGroup cols={2}>
-  <Card title="800+ integrations" icon="fa-solid fa-plug">
-    ~~GitHub, Slack, Gmail, Jira, Notion, and hundreds more—all pre-configured and ready.~~
-  </Card>
-  
-  <Card title="User authentication built-in" icon="fa-solid fa-user-lock">
-    ~~Every tool execution is scoped to the authenticated user. No credential mixing.~~
-  </Card>
-  
-  <Card title="Automatic error handling" icon="fa-solid fa-shield">
-    ~~Rate limiting, retries, and graceful degradation handled automatically.~~
-  </Card>
-  
-  <Card title="Structured outputs" icon="fa-solid fa-code">
-    ~~Consistent JSON responses optimized for LLM consumption and parsing.~~
-  </Card>
-</CardGroup>
-
-## ~~How it works~~
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Get tools for a user
-tools = composio.tools.get(
-    user_id="user-123",
-    toolkits=["github", "slack"]
-)
-
-# Execute any tool with natural language arguments
-result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
-    user_id="user-123",
-    arguments={
-        "repo": "my-repo",
-        "title": "Bug: Login not working",
-        "body": "Users report login failures after update"
-    }
-)
-
-print(f"Issue created: {result.data['html_url']}")
-```
-
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({ apiKey: 'YOUR_API_KEY' });
-
-// Get tools for a user
-const tools = await composio.tools.get({
-  userId: 'user-123',
-  toolkits: ['github', 'slack']
-});
-
-// Execute any tool with natural language arguments
-const result = await composio.tools.execute('GITHUB_CREATE_ISSUE', {
-  userId: 'user-123',
-  arguments: {
-    repo: 'my-repo',
-    title: 'Bug: Login not working',
-    body: 'Users report login failures after update'
-  }
-});
-
-console.log(`Issue created: ${result.data.html_url}`);
-```
-</CodeGroup>
-
-## ~~Popular integrations~~
-
-<CardGroup cols={4}>
-  <Card title="GitHub" icon="fa-brands fa-github">
-    ~~Create issues, manage PRs, deploy code~~
-  </Card>
-  
-  <Card title="Slack" icon="fa-brands fa-slack">
-    ~~Send messages, create channels, manage users~~
-  </Card>
-  
-  <Card title="Gmail" icon="fa-solid fa-envelope">
-    ~~Send emails, manage drafts, organize inbox~~
-  </Card>
-  
-  <Card title="Notion" icon="fa-solid fa-n">
-    ~~Create pages, update databases, manage workspace~~
-  </Card>
-  
-  <Card title="Jira" icon="fa-brands fa-jira">
-    ~~Create tickets, update status, manage sprints~~
-  </Card>
-  
-  <Card title="Linear" icon="fa-solid fa-lines-leaning">
-    ~~Track issues, update projects, manage cycles~~
-  </Card>
-  
-  <Card title="Discord" icon="fa-brands fa-discord">
-    ~~Send messages, manage servers, create webhooks~~
-  </Card>
-  
-  <Card title="HubSpot" icon="fa-solid fa-h">
-    ~~Manage contacts, deals, and marketing campaigns~~
-  </Card>
-</CardGroup>
-
-## ~~Use cases~~
-
-### ~~Customer support automation~~
-~~Automatically create support tickets, update CRM records, and send follow-up emails based on customer interactions.~~
-
-### ~~DevOps workflows~~
-~~Trigger deployments, create GitHub issues from error logs, and send Slack notifications—all from natural language commands.~~
-
-### ~~Sales automation~~
-~~Update CRM records, schedule follow-ups, send personalized emails, and track deal progress across multiple platforms.~~
-
-### ~~Content publishing~~
-~~Cross-post to social media, update CMS, schedule publications, and track analytics across all your content channels.~~
-
-## ~~Tool categories~~
-
-<AccordionGroup>
-  <Accordion title="Developer tools">
-    ~~GitHub, GitLab, Bitbucket, Linear, Jira, PagerDuty, Datadog, Sentry~~
-  </Accordion>
-  
-  <Accordion title="Communication">
-    ~~Slack, Discord, Microsoft Teams, Gmail, Outlook, Twilio, SendGrid~~
-  </Accordion>
-  
-  <Accordion title="Productivity">
-    ~~Notion, Asana, Trello, Monday.com, Airtable, Google Workspace~~
-  </Accordion>
-  
-  <Accordion title="Sales & Marketing">
-    ~~HubSpot, Salesforce, Pipedrive, Mailchimp, ActiveCampaign, Intercom~~
-  </Accordion>
-  
-  <Accordion title="Social Media">
-    ~~Twitter/X, LinkedIn, Facebook, Instagram, YouTube, TikTok~~
-  </Accordion>
-  
-  <Accordion title="Storage & Files">
-    ~~Google Drive, Dropbox, Box, OneDrive, AWS S3, SharePoint~~
-  </Accordion>
-</AccordionGroup>
-
-## ~~Advanced features~~
-
-<CardGroup cols={3}>
-  <Card title="Custom tools" icon="fa-solid fa-wrench">
-    ~~Create your own tools with custom logic and integrate any API~~
-  </Card>
-  
-  <Card title="Tool versioning" icon="fa-solid fa-code-branch">
-    ~~Pin specific versions for stability or use latest for new features~~
-  </Card>
-  
-  <Card title="Response modifiers" icon="fa-solid fa-filter">
-    ~~Transform outputs to match your application's needs~~
-  </Card>
-</CardGroup>
-
-## ~~Get started~~
-
-<CardGroup cols={2}>
-  <Card
-    title="Browse all toolkits"
-    icon="fa-solid fa-grid"
-    href="/toolkits/introduction"
-  >
-    ~~Explore the full catalog of available integrations~~
-  </Card>
-  
   <Card
     title="Fetching tools"
-    icon="fa-solid fa-download"
+    icon="fa-light fa-download"
     href="/docs/fetching-tools"
   >
-    ~~Learn how to retrieve and filter tools for your agents~~
+    Retrieve and filter tools by toolkit, tags, or specific tool names
   </Card>
   
   <Card
     title="Executing tools"
-    icon="fa-solid fa-play"
+    icon="fa-light fa-play"
     href="/docs/executing-tools"
   >
-    ~~Execute tools and handle responses in your application~~
+    Execute tools and handle responses in your application
   </Card>
   
   <Card
     title="Custom tools"
-    icon="fa-solid fa-hammer"
+    icon="fa-light fa-hammer"
     href="/docs/custom-tools"
   >
-    ~~Build your own tools for proprietary systems~~
+    Build your own tools for proprietary systems and APIs
+  </Card>
+  
+  <Card
+    title="Tool Router"
+    icon="fa-light fa-route"
+    href="/tool-router/overview"
+  >
+    Single MCP server and Tool that can search, authenticate, and execute across all Composio tools
   </Card>
 </CardGroup>
+
