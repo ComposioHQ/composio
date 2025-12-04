@@ -1,5 +1,12 @@
 # @composio/langchain
 
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.1
+
 ## 0.2.7-alpha.0
 
 ### Patch Changes

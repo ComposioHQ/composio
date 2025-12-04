@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Minor fixes
+
 ## 0.2.7-alpha.0
 
 ### Patch Changes

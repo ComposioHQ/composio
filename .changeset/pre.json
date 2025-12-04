@@ -16,6 +16,7 @@
     "@composio/vercel": "0.2.18"
   },
   "changesets": [
+    "curly-moles-unite",
     "tiny-forks-lie"
   ]
 }
