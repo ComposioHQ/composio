@@ -1,15 +1,12 @@
 import { openai } from '@ai-sdk/openai';
 import { experimental_createMCPClient as createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
 import { stepCountIs, streamText } from 'ai';
 import ora from 'ora';
 
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
+const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.toolRouter.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
+const { mcp } = await composio.experimental.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
 trProgress.succeed(`Tool router session created: ${mcp.url}`);
 
 const mcpProgress = ora("Retrieving tools from MCP...").start();
