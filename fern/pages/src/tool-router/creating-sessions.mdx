@@ -1,26 +1,24 @@
 ---
-title: Creating sessions
-image: "https://og.composio.dev/api/og?title=Creating%20Sessions"
+title: Session configuration
+image: "https://og.composio.dev/api/og?title=Session%20Configuration"
 description: "Configure toolkits, authentication, and connections for a session"
-keywords: "sessions, create session, tool router, configuration"
+keywords: "sessions, create session, tool router, configuration, configuring toolkits"
 hide-nav-links: false
 ---
 
-Create a session to configure what tools are available and how authentication works for a user.
+Sessions are ephemeral, user-scoped containers that manage which tools are available and how authentication works.
 
-## Basic session
-
-Create a session with all available toolkits:
+## Creating a session
 
 <CodeGroup>
-```python Python
+```python
 from composio import Composio
 
 composio = Composio(api_key="your-api-key")
 session = composio.create(user_id="pg-user-550e8400-e29b-41d4")
 ```
 
-```typescript TypeScript
+```typescript
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your-api-key" });
@@ -28,54 +26,52 @@ const session = await composio.create("pg-user-550e8400-e29b-41d4");
 ```
 </CodeGroup>
 
-## Configuration options
+By default, all toolkits are available and in-chat authentication is enabled.
 
-### toolkits
+## Toolkit access
 
-Restrict which toolkits are available in the session.
-
-**Enable specific toolkits:**
+### Allow specific toolkits
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     toolkits=["github", "gmail", "slack"]
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   toolkits: ["github", "gmail", "slack"],
 });
 ```
 </CodeGroup>
 
-**Disable specific toolkits:**
+### Disable specific toolkits
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     toolkits={"disable": ["exa", "firecrawl"]}
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   toolkits: { disable: ["exa", "firecrawl"] },
 });
 ```
 </CodeGroup>
 
-### authConfigs
+## Authentication
 
-Override which auth configs to use for specific toolkits. Use this to:
-- Use your own OAuth credentials ([white-labeling](/tool-router/white-labeling-authentication))
-- Control which auth config Tool Router uses instead of auto-creating one
+### Custom OAuth apps
+
+Use your own OAuth credentials instead of Composio's defaults. See [White-labeling authentication](/tool-router/white-labeling-authentication) for branding, or [Configuring custom auth configs](/tool-router/configuring-custom-auth-configs) for toolkits that require your own credentials.
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     auth_configs={
@@ -85,7 +81,7 @@ session = composio.create(
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   authConfigs: {
     github: "ac_your_github_config",
@@ -95,16 +91,12 @@ const session = await composio.create("pg-user-550e8400-e29b-41d4", {
 ```
 </CodeGroup>
 
-When an auth config override is provided, Tool Router uses it to find or create a connected account for the user on that config.
+### Account selection
 
-### connectedAccounts
-
-Specify which connected account to use for a toolkit. Use this when:
-- A user has multiple accounts for the same toolkit (e.g., personal and work Gmail)
-- You need deterministic account selection instead of "most recent"
+Specify which connected account to use when a user has multiple accounts for the same toolkit.
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     connected_accounts={
@@ -114,7 +106,7 @@ session = composio.create(
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   connectedAccounts: {
     gmail: "ca_work_gmail",
@@ -124,27 +116,21 @@ const session = await composio.create("pg-user-550e8400-e29b-41d4", {
 ```
 </CodeGroup>
 
-This takes highest precedence when selecting which account to use for tool execution. See [connected account precedence](/tool-router/users-and-sessions#connected-account-precedence).
+### In-chat prompts
 
-### manageConnections
-
-Controls whether the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool is included in the session. This tool allows the agent to prompt users to connect accounts during chat.
-
-- `true` (default) - Agent can prompt users to connect accounts via auth links
-- `false` - Tool not included. Use `session.authorize()` for manual auth
-- `{ callbackUrl: "..." }` - Agent can prompt users, redirects to your URL after OAuth
+Control whether the agent can prompt users to connect accounts during chat.
 
 **Disable in-chat authentication:**
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     manage_connections=False
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   manageConnections: false,
 });
@@ -154,14 +140,14 @@ const session = await composio.create("pg-user-550e8400-e29b-41d4", {
 **Custom callback URL:**
 
 <CodeGroup>
-```python Python
+```python
 session = composio.create(
     user_id="pg-user-550e8400-e29b-41d4",
     manage_connections={"callback_url": "https://myapp.com/callback"}
 )
 ```
 
-```typescript TypeScript
+```typescript
 const session = await composio.create("pg-user-550e8400-e29b-41d4", {
   manageConnections: { callbackUrl: "https://myapp.com/callback" },
 });
@@ -170,61 +156,14 @@ const session = await composio.create("pg-user-550e8400-e29b-41d4", {
 
 For more details, see [Using in-chat authentication](/tool-router/using-in-chat-authentication) and [Manually authenticating users](/tool-router/manually-authenticating-users).
 
-## Full example
-
-<CodeGroup>
-```python Python
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
-
-composio = Composio(
-    api_key="your-api-key",
-    provider=OpenAIAgentsProvider()
-)
-
-session = composio.create(
-    user_id="pg-user-550e8400-e29b-41d4",
-    toolkits=["github", "gmail", "slack"],
-    auth_configs={
-        "github": "ac_your_github_config"
-    },
-    connected_accounts={
-        "gmail": "ca_work_gmail"
-    },
-    manage_connections={"callback_url": "https://myapp.com/callback"}
-)
-```
-
-```typescript TypeScript
-import { Composio } from "@composio/core";
-import { OpenAIAgentsProvider } from "@composio/openai-agents";
-
-const composio = new Composio({
-  apiKey: "your-api-key",
-  provider: new OpenAIAgentsProvider(),
-});
-
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
-  toolkits: ["github", "gmail", "slack"],
-  authConfigs: {
-    github: "ac_your_github_config",
-  },
-  connectedAccounts: {
-    gmail: "ca_work_gmail",
-  },
-  manageConnections: { callbackUrl: "https://myapp.com/callback" },
-});
-```
-</CodeGroup>
-
-## Session properties
+## Session methods
 
 ### tools()
 
 Get meta-tools to pass to your agent framework.
 
 <CodeGroup>
-```python Python
+```python
 tools = session.tools()
 
 agent = Agent(
@@ -234,7 +173,7 @@ agent = Agent(
 )
 ```
 
-```typescript TypeScript
+```typescript
 const tools = await session.tools();
 
 const agent = new Agent({
@@ -252,41 +191,24 @@ For framework-specific examples, see [Using as native tools](/tool-router/using-
 Get the MCP server URL to use with any MCP-compatible client.
 
 <CodeGroup>
-```python Python
+```python
 mcp_url = session.mcp.url
 ```
 
-```typescript TypeScript
+```typescript
 const { mcp } = session;
 console.log(mcp.url);
 ```
 </CodeGroup>
 
-Example with OpenAI Agents SDK:
-
-```typescript
-import { Agent } from "@openai/agents";
-
-const agent = new Agent({
-  name: "Assistant",
-  instructions: "You are a helpful assistant.",
-  tools: [
-    hostedMcpTool({
-      serverLabel: "composio",
-      serverUrl: mcp.url,
-    }),
-  ],
-});
-```
-
-For more frameworks, see [Using with MCP clients](/tool-router/using-with-mcp-clients).
+For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients).
 
 ### authorize()
 
-[Manually authenticate](/tool-router/manually-authenticating-users) a user to a toolkit outside of the chat flow.
+Manually authenticate a user to a toolkit outside of the chat flow.
 
 <CodeGroup>
-```python Python
+```python
 connection_request = session.authorize(
     "github",
     callback_url="https://myapp.com/callback"
@@ -297,7 +219,7 @@ print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 ```
 
-```typescript TypeScript
+```typescript
 const connectionRequest = await session.authorize("github", {
   callbackUrl: "https://myapp.com/callback",
 });
@@ -308,22 +230,25 @@ const connectedAccount = await connectionRequest.waitForConnection();
 ```
 </CodeGroup>
 
+For more details, see [Manually authenticating users](/tool-router/manually-authenticating-users).
+
 ### toolkits()
 
-List available toolkits and their connection status for the session. Use this to build a UI showing which apps are connected.
+List available toolkits and their connection status. Use this to build a UI showing which apps are connected.
 
 <CodeGroup>
-```python Python
+```python
 toolkits = session.toolkits(
     order_by="popularity",
     is_connected=True
 )
 
 for toolkit in toolkits:
-    print(f"{toolkit.name}: {toolkit.connected_account.id if toolkit.connected_account else 'Not connected'}")
+    status = toolkit.connected_account.id if toolkit.connected_account else "Not connected"
+    print(f"{toolkit.name}: {status}")
 ```
 
-```typescript TypeScript
+```typescript
 const toolkits = await session.toolkits({
   orderBy: "popularity",
   isConnected: true,
@@ -339,4 +264,3 @@ toolkits.forEach((toolkit) => {
 - `orderBy`: `"popularity"`, `"name"`, or `"connected_at"`
 - `isConnected`: `true` to show only connected toolkits
 - `category`: Filter by category (e.g., `"productivity"`, `"communication"`)
-

@@ -122,7 +122,7 @@ To use OpenAI Agents SDK with Tool Router MCP instead, see [Using with MCP Clien
 <Steps>
 <Step title="Install Composio SDK">
 ```bash
-pip install composio anthropic-agents composio-anthropic
+pip install composio anthropic-agents
 ```
 </Step>
 
@@ -135,12 +135,8 @@ Sessions are ephemeral, user-scoped and manage connections and tools for that us
 </Info>
 ```python
 from composio import Composio
-from composio_anthropic import AnthropicProvider
 
-composio = Composio(
-    api_key="your-api-key",
-    provider=AnthropicProvider()
-)
+composio = Composio(api_key="your-api-key")
 
 # Create a session for a user
 session = composio.create(user_id="pg-user-550e8400-e29b-41d4")
@@ -176,7 +172,7 @@ To use Anthropic Agents SDK with Tool Router as native tools instead, see [Using
 <Steps>
 <Step title="Install Composio SDK">
 ```bash
-npm install @composio/core @composio/anthropic @anthropic-ai/agent
+npm install @composio/core @anthropic-ai/agent
 ```
 </Step>
 
@@ -189,12 +185,8 @@ Sessions are ephemeral, user-scoped and manage connections and tools for that us
 </Info>
 ```typescript
 import { Composio } from "@composio/core";
-import { AnthropicProvider } from "@composio/anthropic";
 
-const composio = new Composio({
-  apiKey: "your-api-key",
-  provider: new AnthropicProvider(),
-});
+const composio = new Composio({ apiKey: "your-api-key" });
 
 // Create a session for a user
 const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");

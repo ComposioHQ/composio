@@ -305,12 +305,9 @@ navigation:
     icon: fa-light fa-book
     skip-slug: true
     contents:
-    - page: Creating Sessions
+    - page: Session Configuration
       path: pages/dist/tool-router/creating-sessions.mdx
       slug: creating-sessions
-    - page: Configuring Toolkits
-      path: pages/dist/tool-router/configuring-toolkits.mdx
-      slug: configuring-toolkits
     - page: Using In-chat Authentication
       path: pages/dist/tool-router/using-in-chat-authentication.mdx
       slug: using-in-chat-authentication
@@ -320,6 +317,9 @@ navigation:
     - page: White-labeling Authentication
       path: pages/dist/tool-router/white-labeling-authentication.mdx
       slug: white-labeling-authentication
+    - page: Configuring Custom Auth Configs
+      path: pages/dist/tool-router/configuring-custom-auth-configs.mdx
+      slug: configuring-custom-auth-configs
     - page: Configuring Workbench
       path: pages/dist/tool-router/configuring-workbench.mdx
       slug: configuring-workbench
