@@ -46,7 +46,7 @@
     }
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.4",
+    "@changesets/cli": "^2.29.8",
     "@composio/anthropic": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
