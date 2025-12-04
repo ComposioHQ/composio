@@ -262,6 +262,7 @@ export type ToolRouterAuthorizeFn = (
 ) => Promise<ConnectionRequest>;
 
 export type ToolRouterToolkitsFn = (options?: {
+  toolkits?: Array<string>;
   nextCursor?: string;
   limit?: number;
 }) => Promise<ToolkitConnectionsDetails>;

@@ -289,6 +289,18 @@ const moreToolkits = await session.toolkits({
   nextCursor: nextCursor,
   limit: 10 
 });
+
+// Filter by specific toolkits
+const filteredToolkits = await session.toolkits({
+  toolkits: ['gmail', 'slack']
+});
+
+// Combine filtering with pagination
+const paginatedFilteredToolkits = await session.toolkits({
+  toolkits: ['gmail', 'github'],
+  limit: 5,
+  nextCursor: 'cursor_abc'
+});
 ```
 
 ## Framework Integrations
@@ -546,9 +558,15 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 const session = await composio.experimental.create('user_123');
 
+// Get all toolkits
 const toolkits = await session.toolkits(); 
 
 console.log(JSON.stringify({ toolkits }, null, 2));
+
+// Filter by specific toolkits
+const gmailAndSlack = await session.toolkits({
+  toolkits: ['gmail', 'slack']
+});
 ```
 
 The response includes:
@@ -661,7 +679,11 @@ interface ToolRouterSession {
   };
   tools: (modifiers?: ProviderOptions) => Promise<Tools>;
   authorize: (toolkit: string, options?: { callbackUrl?: string }) => Promise<ConnectionRequest>;
-  toolkits: (options?: { nextCursor?: string; limit?: number }) => Promise<ToolkitConnectionsDetails>;
+  toolkits: (options?: { 
+    toolkits?: string[];   // Filter by specific toolkit slugs
+    nextCursor?: string;   // Pagination cursor
+    limit?: number;        // Number of items per page
+  }) => Promise<ToolkitConnectionsDetails>;
 }
 ```
 

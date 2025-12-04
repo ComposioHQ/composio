@@ -1186,6 +1186,7 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: undefined,
         limit: undefined,
+        toolkits: undefined,
       });
 
       expect(result).toHaveProperty('items');
@@ -1206,6 +1207,43 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: 'cursor_abc',
         limit: 10,
+        toolkits: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should fetch toolkits with toolkits filter option', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        toolkits: ['gmail', 'slack'],
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: undefined,
+        limit: undefined,
+        toolkits: ['gmail', 'slack'],
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should fetch toolkits with both pagination and toolkits filter options', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        limit: 5,
+        nextCursor: 'cursor_xyz',
+        toolkits: ['github'],
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: 'cursor_xyz',
+        limit: 5,
+        toolkits: ['github'],
       });
 
       expect(result.items).toHaveLength(3);
@@ -1552,10 +1590,12 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith('session_1', {
         cursor: undefined,
         limit: undefined,
+        toolkits: undefined,
       });
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith('session_2', {
         cursor: undefined,
         limit: undefined,
+        toolkits: undefined,
       });
     });
 
@@ -1654,6 +1694,7 @@ describe('ToolRouter', () => {
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: undefined,
         limit: undefined,
+        toolkits: undefined,
       });
       expect(toolkitsResult.items).toHaveLength(3);
       expect(toolkitsResult.items[0].slug).toBe('gmail');

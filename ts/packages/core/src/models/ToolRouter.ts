@@ -21,7 +21,6 @@ import {
   ToolRouterToolkitsFn,
   ToolRouterCreateSessionConfig,
   ToolRouterSession,
-  ToolkitConnectionState,
   ToolkitConnectionStateSchema,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
@@ -89,10 +88,15 @@ export class ToolRouter<
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const connectionsFn = async (options?: { nextCursor?: string; limit?: number }) => {
+    const connectionsFn = async (options?: {
+      toolkits?: Array<string>;
+      nextCursor?: string;
+      limit?: number;
+    }) => {
       const result = await this.client.toolRouter.session.toolkits(sessionId, {
         cursor: options?.nextCursor,
         limit: options?.limit,
+        toolkits: options?.toolkits,
       });
 
       const toolkitConnectedStates = result.items.map(item => {
