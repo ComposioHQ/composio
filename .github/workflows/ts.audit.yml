@@ -1,0 +1,71 @@
+name: Acudit Typescript SDK
+
+on:
+  push:
+    branches: [main, next]
+    paths:
+      - "ts/**"
+  pull_request:
+    branches: [main, next]
+    paths:
+      - "ts/**"
+
+jobs:
+  test:
+    name: Audit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Run pnpm audit (production dependencies only)
+        id: audit
+        continue-on-error: true
+        run: pnpm audit --prod > audit-output.txt 2>&1
+
+      - name: Comment on PR if audit failed
+        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
+        run: |
+          {
+            echo "⚠️ **Security Audit Failed**"
+            echo ""
+            echo "The \`pnpm audit --prod\` check found security vulnerabilities in production dependencies."
+            echo ""
+            echo "Please review and fix the vulnerabilities. You can try running:"
+            echo "\`\`\`bash"
+            echo "pnpm audit --fix --prod"
+            echo "\`\`\`"
+            echo ""
+            echo "<details>"
+            echo "<summary>Audit output</summary>"
+            echo ""
+            echo "\`\`\`"
+            cat audit-output.txt
+            echo "\`\`\`"
+            echo ""
+            echo "</details>"
+          } > audit-comment.txt
+
+      - name: Post audit comment to PR
+        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v3.0.1
+        with:
+          file-path: audit-comment.txt
+
+      - name: Fail if audit failed (push events)
+        if: steps.audit.outcome == 'failure' && github.event_name == 'push'
+        run: |
+          echo "Security vulnerabilities found in production dependencies. Please fix them before merging."
+          exit 1
