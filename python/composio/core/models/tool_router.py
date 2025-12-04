@@ -388,7 +388,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 toolkit_state = ToolkitConnectionState(
                     slug=item.slug,
                     name=item.name,
-                    logo=item.meta.logo,
+                    logo=item.meta.logo if item.meta else None,
                     is_no_auth=False,
                     connection=connection,
                 )
@@ -622,7 +622,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             "auto_manage_connections": auto_manage_connections,
             "infer_scopes_from_tools": infer_scopes_from_tools,
         }
-        if callback_uri is not None:
+        if callback_uri is not None and callback_uri is not omit:
             connections_config["callback_uri"] = callback_uri
 
         create_params["connections"] = connections_config
