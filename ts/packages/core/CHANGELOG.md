@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- 31521bd: Update typedocs and examples for toolkit versions
+
 ## 0.2.7-alpha.1
 
 ### Patch Changes
