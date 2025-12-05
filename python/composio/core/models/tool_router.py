@@ -441,7 +441,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 # Get all toolkits in the session
                 result = session.toolkits()
                 for toolkit in result.items:
-                    status = "Connected" if toolkit.connection.is_active else "Not connected"
+                    status = "Connected" if toolkit.connection and toolkit.connection.is_active else "Not connected"
                     print(f"{toolkit.name}: {status}")
 
                 # Filter by specific toolkits
