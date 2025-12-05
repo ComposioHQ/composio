@@ -226,11 +226,12 @@ console.log(session.sessionId);
 
 ### `mcp`
 
-The MCP server configuration for this session.
+The MCP server configuration for this session, including authentication headers.
 
 ```typescript
-console.log(session.mcp.url);  // The URL to connect to
-console.log(session.mcp.type); // 'HTTP' or 'SSE'
+console.log(session.mcp.url);     // The URL to connect to
+console.log(session.mcp.type);    // 'HTTP' or 'SSE'
+console.log(session.mcp.headers); // Authentication headers (includes x-api-key)
 ```
 
 ### `tools()`
@@ -354,14 +355,12 @@ const { mcp } = await composio.experimental.create('user_123', {
   manageConnections: true 
 });
 
-// Create MCP client using the session URL
+// Create MCP client using the session URL and headers
 const client = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: {
-      'x-api-key': process.env.COMPOSIO_API_KEY!,
-    }
+    headers: mcp.headers, // Uses pre-configured authentication headers
   }
 });
 
@@ -411,9 +410,7 @@ const client = new MultiServerMCPClient({
   composio: {
     transport: "http",  
     url: session.mcp.url,
-    headers: {
-      'x-api-key': process.env.COMPOSIO_API_KEY!,
-    }
+    headers: session.mcp.headers, // Uses pre-configured authentication headers
   },
 });
 
@@ -454,9 +451,7 @@ console.log(`Connecting to MCP server: ${session.mcp.url}`);
 const mcpTool = hostedMcpTool({
   serverLabel: 'ComposioApps',
   serverUrl: session.mcp.url,
-  headers: {
-    'x-api-key': process.env.COMPOSIO_API_KEY!,
-  }
+  headers: session.mcp.headers, // Uses pre-configured authentication headers
 });
 
 const agent = new Agent({
@@ -502,9 +497,7 @@ const stream = await query({
       composio: {
         type: 'http',
         url: session.mcp.url,
-        headers: {
-          'x-api-key': process.env.COMPOSIO_API_KEY!,
-        }
+        headers: session.mcp.headers, // Uses pre-configured authentication headers
       }
     },
   }
@@ -676,6 +669,7 @@ interface ToolRouterSession {
   mcp: {
     type: 'HTTP' | 'SSE';
     url: string;
+    headers?: Record<string, string | undefined>; // Authentication headers (includes x-api-key)
   };
   tools: (modifiers?: ProviderOptions) => Promise<Tools>;
   authorize: (toolkit: string, options?: { callbackUrl?: string }) => Promise<ConnectionRequest>;

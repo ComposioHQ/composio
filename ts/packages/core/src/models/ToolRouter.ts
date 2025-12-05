@@ -24,6 +24,8 @@ import {
   ToolkitConnectionStateSchema,
   ToolRouterToolkitsOptions,
   ToolRouterToolkitsOptionsSchema,
+  MCPServerType,
+  ToolRouterMCPServerConfig,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
@@ -170,6 +172,28 @@ export class ToolRouter<
   };
 
   /**
+   * Creates a MCP server config object.
+   * @param type {MCPServerType} The type of the MCP server
+   * @param url {string} The URL of the MCP server
+   * @returns {ToolRouterMCPServerConfig} The MCP server config object
+   */
+  private createMCPServerConfig = ({
+    type,
+    url,
+  }: {
+    type: MCPServerType;
+    url: string;
+  }): ToolRouterMCPServerConfig => {
+    return {
+      type,
+      url,
+      headers: {
+        'x-api-key': this.config?.apiKey ?? undefined,
+      },
+    };
+  };
+
+  /**
    * Creates a new tool router session for a user.
    *
    * @param userId {string} The user id to create the session for
@@ -240,10 +264,7 @@ export class ToolRouter<
 
     return {
       sessionId: session.session_id,
-      mcp: {
-        type: session.mcp.type,
-        url: session.mcp.url,
-      },
+      mcp: this.createMCPServerConfig(session.mcp),
       tools: this.createToolsFn(userId, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
@@ -268,10 +289,7 @@ export class ToolRouter<
     const session = await this.client.toolRouter.session.retrieve(id);
     return {
       sessionId: session.session_id,
-      mcp: {
-        type: session.mcp.type,
-        url: session.mcp.url,
-      },
+      mcp: this.createMCPServerConfig(session.mcp),
       tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),

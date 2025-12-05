@@ -36,9 +36,7 @@ async def main():
             "server_label": "tool_router",
             "server_url": session.mcp.url,
             "require_approval": "never",
-            "headers": {
-                "x-api-key": api_key,
-            },
+            "headers": session.mcp.headers,
         }
     )
 

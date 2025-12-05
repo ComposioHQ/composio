@@ -256,6 +256,7 @@ export type ToolkitConnectionState = z.infer<typeof ToolkitConnectionStateSchema
 export const ToolRouterMCPServerConfigSchema = z.object({
   type: MCPServerTypeSchema,
   url: z.string(),
+  headers: z.record(z.string(), z.string().optional()).optional(),
 });
 export type ToolRouterMCPServerConfig = z.infer<typeof ToolRouterMCPServerConfigSchema>;
 

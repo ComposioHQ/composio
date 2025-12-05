@@ -229,11 +229,12 @@ print(session.session_id)
 
 ### `mcp`
 
-The MCP server configuration for this session.
+The MCP server configuration for this session, including authentication headers.
 
 ```python
-print(session.mcp.url)   # The URL to connect to
-print(session.mcp.type)  # ToolRouterMCPServerType.HTTP or ToolRouterMCPServerType.SSE
+print(session.mcp.url)     # The URL to connect to
+print(session.mcp.type)    # ToolRouterMCPServerType.HTTP or ToolRouterMCPServerType.SSE
+print(session.mcp.headers) # Authentication headers (includes x-api-key)
 ```
 
 ### `tools(modifiers=None)`
@@ -410,8 +411,10 @@ session = composio.tool_router.create(
 
 # Use with any MCP client
 mcp_url = session.mcp.url
+mcp_headers = session.mcp.headers  # Pre-configured authentication headers
 print(f"MCP URL: {mcp_url}")
 print(f"MCP Type: {session.mcp.type}")  # 'http' or 'sse'
+print(f"MCP Headers: {mcp_headers}")    # {'x-api-key': 'your-api-key'}
 ```
 
 ## Authorization Flow
@@ -562,6 +565,7 @@ class ToolRouterMCPServerType(str, Enum):
 class ToolRouterMCPServerConfig:
     type: ToolRouterMCPServerType
     url: str
+    headers: Optional[Dict[str, Optional[str]]] = None  # Authentication headers (includes x-api-key)
 ```
 
 ### ToolkitConnectionState

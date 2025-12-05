@@ -2,7 +2,6 @@ from composio import Composio
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 from langchain_openai.chat_models import ChatOpenAI
-import os
 import asyncio
 
 composio = Composio()
@@ -18,9 +17,7 @@ async def main():
                 "composio": {
                     "transport": "streamable_http",
                     "url": session.mcp.url,
-                    "headers": {
-                        "x-api-key": os.getenv("COMPOSIO_API_KEY"),
-                    },
+                    "headers": session.mcp.headers,
                 }
             }
         )

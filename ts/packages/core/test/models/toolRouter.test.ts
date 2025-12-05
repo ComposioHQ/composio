@@ -149,6 +149,7 @@ describe('ToolRouter', () => {
     mockProvider = new MockProvider();
     toolRouter = new ToolRouter(mockClient as unknown as ComposioClient, {
       provider: mockProvider,
+      apiKey: 'test-api-key',
     });
   });
 
@@ -163,7 +164,7 @@ describe('ToolRouter', () => {
     });
 
     it('should store the config reference', () => {
-      expect(toolRouter['config']).toEqual({ provider: mockProvider });
+      expect(toolRouter['config']).toEqual({ provider: mockProvider, apiKey: 'test-api-key' });
     });
   });
 
@@ -191,6 +192,9 @@ describe('ToolRouter', () => {
         expect(session.mcp).toEqual({
           type: 'http',
           url: 'https://mcp.example.com/session_123',
+          headers: {
+            'x-api-key': 'test-api-key',
+          },
         });
         expect(session).toHaveProperty('tools');
         expect(session).toHaveProperty('authorize');
@@ -1485,7 +1489,10 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const tools = await session.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
@@ -1582,7 +1589,10 @@ describe('ToolRouter', () => {
       const newSession = await toolRouter.create(userId);
       await newSession.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
         userId,
@@ -1605,7 +1615,10 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       await session.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
         userId,
@@ -1726,6 +1739,9 @@ describe('ToolRouter', () => {
       expect(session.mcp).toEqual({
         type: 'http',
         url: 'https://mcp.example.com/session_123',
+        headers: {
+          'x-api-key': 'test-api-key',
+        },
       });
       expect(session).toHaveProperty('tools');
       expect(session).toHaveProperty('authorize');

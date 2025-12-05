@@ -234,10 +234,17 @@ class ToolRouterMCPServerType(str, Enum):
 
 @dataclass
 class ToolRouterMCPServerConfig:
-    """Configuration for MCP server."""
+    """Configuration for MCP server.
+
+    Attributes:
+        type: The type of MCP server (HTTP or SSE)
+        url: The URL of the MCP server
+        headers: Optional authentication headers (includes x-api-key)
+    """
 
     type: ToolRouterMCPServerType
     url: str
+    headers: t.Optional[t.Dict[str, t.Optional[str]]] = None
 
 
 @dataclass
@@ -301,6 +308,26 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         """
         super().__init__(client)
         self._provider = provider
+
+    def _create_mcp_server_config(
+        self,
+        mcp_type: ToolRouterMCPServerType,
+        url: str,
+    ) -> ToolRouterMCPServerConfig:
+        """
+        Create an MCP server config object with authentication headers.
+
+        :param mcp_type: The type of MCP server (HTTP or SSE)
+        :param url: The URL of the MCP server
+        :return: MCP server config with headers
+        """
+        return ToolRouterMCPServerConfig(
+            type=mcp_type,
+            url=url,
+            headers={
+                "x-api-key": self._client.api_key,
+            },
+        )
 
     def _create_authorize_fn(self, session_id: str) -> AuthorizeFn:
         """
@@ -807,8 +834,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         # Create and return the session
         return ToolRouterSession(
             session_id=session.session_id,
-            mcp=ToolRouterMCPServerConfig(
-                type=ToolRouterMCPServerType(session.mcp.type.lower()),
+            mcp=self._create_mcp_server_config(
+                mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
             tools=self._create_tools_fn(user_id, session.tool_router_tools),
@@ -848,8 +875,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         # Create and return the session
         return ToolRouterSession(
             session_id=session.session_id,
-            mcp=ToolRouterMCPServerConfig(
-                type=ToolRouterMCPServerType(session.mcp.type.lower()),
+            mcp=self._create_mcp_server_config(
+                mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
             tools=self._create_tools_fn(user_id, session.tool_router_tools),

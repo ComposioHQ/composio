@@ -20,6 +20,7 @@ from composio.core.models.tool_router import (
 def mock_client():
     """Create a mock HTTP client."""
     client = MagicMock()
+    client.api_key = "test-api-key"
 
     # Mock session responses
     mock_session_response = MagicMock()
@@ -106,6 +107,7 @@ class TestToolRouter:
         assert session.session_id == "session_123"
         assert session.mcp.type == ToolRouterMCPServerType.HTTP
         assert session.mcp.url == "https://mcp.example.com/session_123"
+        assert session.mcp.headers == {"x-api-key": "test-api-key"}
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
@@ -329,6 +331,7 @@ class TestToolRouter:
         assert session.session_id == "session_123"
         assert session.mcp.type == ToolRouterMCPServerType.HTTP
         assert session.mcp.url == "https://mcp.example.com/session_123"
+        assert session.mcp.headers == {"x-api-key": "test-api-key"}
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
@@ -606,6 +609,18 @@ class TestToolRouterTypes:
         assert mcp.type == ToolRouterMCPServerType.HTTP
         assert mcp.type.value == "http"
         assert mcp.url == "https://mcp.example.com"
+        assert mcp.headers is None  # Headers are optional
+
+    def test_mcp_server_config_with_headers(self):
+        """Test ToolRouterMCPServerConfig dataclass with headers."""
+        mcp = ToolRouterMCPServerConfig(
+            type=ToolRouterMCPServerType.HTTP,
+            url="https://mcp.example.com",
+            headers={"x-api-key": "test-api-key"},
+        )
+        assert mcp.type == ToolRouterMCPServerType.HTTP
+        assert mcp.url == "https://mcp.example.com"
+        assert mcp.headers == {"x-api-key": "test-api-key"}
 
     def test_toolkit_connection_state(self):
         """Test ToolkitConnectionState dataclass."""
