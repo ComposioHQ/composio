@@ -244,7 +244,7 @@ export class ToolRouter<
         type: session.mcp.type,
         url: session.mcp.url,
       },
-      experimentalTools: this.createToolsFn(userId, session.tool_router_tools),
+      tools: this.createToolsFn(userId, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -272,7 +272,7 @@ export class ToolRouter<
         type: session.mcp.type,
         url: session.mcp.url,
       },
-      experimentalTools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };

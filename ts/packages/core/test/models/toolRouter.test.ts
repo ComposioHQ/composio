@@ -192,7 +192,7 @@ describe('ToolRouter', () => {
           type: 'http',
           url: 'https://mcp.example.com/session_123',
         });
-        expect(session).toHaveProperty('experimentalTools');
+        expect(session).toHaveProperty('tools');
         expect(session).toHaveProperty('authorize');
         expect(session).toHaveProperty('toolkits');
       });
@@ -1062,11 +1062,11 @@ describe('ToolRouter', () => {
 
         expect(session).toHaveProperty('sessionId');
         expect(session).toHaveProperty('mcp');
-        expect(session).toHaveProperty('experimentalTools');
+        expect(session).toHaveProperty('tools');
         expect(session).toHaveProperty('authorize');
         expect(session).toHaveProperty('toolkits');
 
-        expect(typeof session.experimentalTools).toBe('function');
+        expect(typeof session.tools).toBe('function');
         expect(typeof session.authorize).toBe('function');
         expect(typeof session.toolkits).toBe('function');
       });
@@ -1483,7 +1483,7 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
       const session = await toolRouter.create(userId);
-      const tools = await session.experimentalTools();
+      const tools = await session.tools();
 
       expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
 
@@ -1510,7 +1510,7 @@ describe('ToolRouter', () => {
       };
 
       const session = await toolRouter.create(userId);
-      const tools = await session.experimentalTools(modifiers);
+      const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
@@ -1533,7 +1533,7 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.create(userId);
 
-      await expect(session.experimentalTools()).rejects.toThrow('Failed to fetch tools');
+      await expect(session.tools()).rejects.toThrow('Failed to fetch tools');
     });
 
     it('should call tools function multiple times with different modifiers', async () => {
@@ -1544,10 +1544,10 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.create(userId);
 
-      // Each call to session.experimentalTools() creates a new Tools instance
+      // Each call to session.tools() creates a new Tools instance
       // So we need to check that Tools was called twice and each instance's get method was called once
-      await session.experimentalTools(modifier1);
-      await session.experimentalTools(modifier2);
+      await session.tools(modifier1);
+      await session.tools(modifier2);
 
       expect(Tools).toHaveBeenCalledTimes(2);
 
@@ -1580,7 +1580,7 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(customResponse);
 
       const newSession = await toolRouter.create(userId);
-      await newSession.experimentalTools();
+      await newSession.tools();
 
       expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
       const toolsInstance = (Tools as any).mock.results[0].value;
@@ -1603,7 +1603,7 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(emptyToolsResponse);
 
       const session = await toolRouter.create(userId);
-      await session.experimentalTools();
+      await session.tools();
 
       expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
       const toolsInstance = (Tools as any).mock.results[0].value;
@@ -1643,7 +1643,7 @@ describe('ToolRouter', () => {
       expect(toolkits.items).toHaveLength(3);
 
       // Use tools function
-      const tools = await session.experimentalTools();
+      const tools = await session.tools();
       expect(tools).toBe('mocked-wrapped-tools');
 
       // Verify all API calls were made
@@ -1727,7 +1727,7 @@ describe('ToolRouter', () => {
         type: 'http',
         url: 'https://mcp.example.com/session_123',
       });
-      expect(session).toHaveProperty('experimentalTools');
+      expect(session).toHaveProperty('tools');
       expect(session).toHaveProperty('authorize');
       expect(session).toHaveProperty('toolkits');
     });
@@ -1747,7 +1747,7 @@ describe('ToolRouter', () => {
 
       expect(session.sessionId).toBe('session_123');
       // The tools function should be created with the correct user ID from config
-      expect(session.experimentalTools).toBeDefined();
+      expect(session.tools).toBeDefined();
     });
 
     it('should return a session with working tools function', async () => {
@@ -1755,7 +1755,7 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.use(sessionId);
 
-      const tools = await session.experimentalTools();
+      const tools = await session.tools();
 
       expect(tools).toBe('mocked-wrapped-tools');
       expect(Tools).toHaveBeenCalled();

@@ -297,7 +297,7 @@ export interface ToolRouterSession<
   /**
    * The tools of the tool router session.
    */
-  experimentalTools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
+  tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
   /**
    * The authorize function of the tool router session.
    */
