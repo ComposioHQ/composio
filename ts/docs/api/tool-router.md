@@ -278,8 +278,8 @@ const { items, nextCursor, totalPages } = await session.toolkits();
 
 for (const toolkit of items) {
   console.log(`${toolkit.name} (${toolkit.slug})`);
-  console.log(`  Connected: ${toolkit.connection.isActive}`);
-  if (toolkit.connection.connectedAccount) {
+  console.log(`  Connected: ${toolkit.connection?.isActive}`);
+  if (toolkit.connection?.connectedAccount) {
     console.log(`  Account ID: ${toolkit.connection.connectedAccount.id}`);
     console.log(`  Status: ${toolkit.connection.connectedAccount.status}`);
   }
