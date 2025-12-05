@@ -1,6 +1,6 @@
 [project]
 name = "composio"
-version = "0.9.5-rc.1"
+version = "0.9.5-rc.2"
 description = "SDK for integrating Composio with your applications."
 readme = "README.md"
 requires-python = ">=3.10,<4"
