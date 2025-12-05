@@ -1,7 +1,6 @@
 from crewai import Agent, Task, Crew
 from composio import Composio
 from crewai.mcp import MCPServerHTTP
-import os
 
 
 composio = Composio()
@@ -16,9 +15,7 @@ agent = Agent(
     mcps=[
         MCPServerHTTP(
             url=session.mcp.url,
-            headers={
-                "x-api-key": os.getenv("COMPOSIO_API_KEY"),
-            },
+            headers=session.mcp.headers,
         )
     ],
 )

@@ -3,7 +3,7 @@ import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ExecuteToolModifiers, ProviderOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 
-export const MCPServerTypeSchema = z.enum(['HTTP', 'SSE']);
+export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 
 // manage connections
@@ -16,7 +16,7 @@ export const ToolRouterConfigManageConnectionsSchema = z
       .describe(
         'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
       ),
-    callbackUri: z
+    callbackUrl: z
       .string()
       .optional()
       .describe('The callback uri to use in the tool router session'),
@@ -207,7 +207,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enabled] - Whether to use tools to manage connections in the tool router session @default true
- * @param {string} [manageConnections.callbackUri] - The callback uri to use in the tool router session
+ * @param {string} [manageConnections.callbackUrl] - The callback uri to use in the tool router session
  * @param {boolean} [manageConnections.inferScopesFromTools] - Whether to infer scopes from tools in the tool router session @default false
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
@@ -218,24 +218,29 @@ export const ToolkitConnectionStateSchema = z
     name: z.string().describe('The name of a toolkit'),
     logo: z.string().optional().describe('The logo of a toolkit'),
     isNoAuth: z.boolean().default(false).describe('Whether the toolkit is no auth or not'),
-    connection: z.object({
-      isActive: z.boolean().describe('Whether the connection is active or not'),
-      authConfig: z
-        .object({
-          id: z.string().describe('The id of the auth config'),
-          mode: z.string().describe('The auth scheme used by the auth config'),
-          isComposioManaged: z.boolean().describe('Whether the auth config is managed by Composio'),
-        })
-        .nullish()
-        .describe('The auth config of a toolkit'),
-      connectedAccount: z
-        .object({
-          id: z.string().describe('The id of the connected account'),
-          status: z.string().describe('The status of the connected account'),
-        })
-        .optional()
-        .describe('The connected account of a toolkit'),
-    }),
+    connection: z
+      .object({
+        isActive: z.boolean().describe('Whether the connection is active or not'),
+        authConfig: z
+          .object({
+            id: z.string().describe('The id of the auth config'),
+            mode: z.string().describe('The auth scheme used by the auth config'),
+            isComposioManaged: z
+              .boolean()
+              .describe('Whether the auth config is managed by Composio'),
+          })
+          .nullish()
+          .describe('The auth config of a toolkit'),
+        connectedAccount: z
+          .object({
+            id: z.string().describe('The id of the connected account'),
+            status: z.string().describe('The status of the connected account'),
+          })
+          .optional()
+          .describe('The connected account of a toolkit'),
+      })
+      .optional()
+      .describe('The connection of a toolkit'),
   })
   .describe('The connection state of a toolkit');
 
@@ -248,7 +253,12 @@ export type ToolkitConnectionsDetails = z.infer<typeof ToolkitConnectionsDetails
 
 export type ToolkitConnectionState = z.infer<typeof ToolkitConnectionStateSchema>;
 
-export type ToolRouterMCPServerConfig = { type: MCPServerType; url: string };
+export const ToolRouterMCPServerConfigSchema = z.object({
+  type: MCPServerTypeSchema,
+  url: z.string(),
+  headers: z.record(z.string(), z.string().optional()).optional(),
+});
+export type ToolRouterMCPServerConfig = z.infer<typeof ToolRouterMCPServerConfigSchema>;
 
 export type ToolRouterToolsFn<
   TToolCollection,
@@ -261,11 +271,17 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string }
 ) => Promise<ConnectionRequest>;
 
-export type ToolRouterToolkitsFn = (options?: {
-  toolkits?: Array<string>;
-  nextCursor?: string;
-  limit?: number;
-}) => Promise<ToolkitConnectionsDetails>;
+export const ToolRouterToolkitsOptionsSchema = z.object({
+  toolkits: z.array(z.string()).optional(),
+  nextCursor: z.string().optional(),
+  limit: z.number().optional(),
+  isConnected: z.boolean().optional(),
+});
+export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
+
+export type ToolRouterToolkitsFn = (
+  options?: ToolRouterToolkitsOptions
+) => Promise<ToolkitConnectionsDetails>;
 export interface ToolRouterSession<
   TToolCollection,
   TTool,

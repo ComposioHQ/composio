@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20251126.0
     '@composio/client':
-      specifier: 0.1.0-alpha.46
-      version: 0.1.0-alpha.46
+      specifier: 0.1.0-alpha.47
+      version: 0.1.0-alpha.47
     '@modelcontextprotocol/sdk':
       specifier: ^1.22.0
       version: 1.23.0
@@ -774,7 +774,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.46
+        version: 0.1.0-alpha.47
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -868,7 +868,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.46
+        version: 0.1.0-alpha.47
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1536,8 +1536,8 @@ packages:
   '@cloudflare/workers-types@4.20251126.0':
     resolution: {integrity: sha512-DSeI1Q7JYmh5/D/tw5eZCjrKY34v69rwj63hHt60nSQW5QLwWCbj/lLtNz9f2EPa+JCACwpLXHgCXfzJ29x66w==}
 
-  '@composio/client@0.1.0-alpha.46':
-    resolution: {integrity: sha512-lhVAf3p2yqjmRfhBsZ+2l7znTPXmcmfD7liZA9a7h9w9qbk5g9D+yn1OhVuc3pnih1W+ahF2uPiFflCRhXfXSw==}
+  '@composio/client@0.1.0-alpha.47':
+    resolution: {integrity: sha512-ggrfbsDrntwBhRn+kncKluISKys9lePNQsJLGS6j/mfH4RBFjtDT4almw3N9vnOwJb0q4OIb/hrmAxZvwsc0Iw==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7691,7 +7691,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20251126.0': {}
 
-  '@composio/client@0.1.0-alpha.46': {}
+  '@composio/client@0.1.0-alpha.47': {}
 
   '@composio/mcp@1.0.3-0': {}
 

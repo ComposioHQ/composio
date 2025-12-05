@@ -1,13 +1,12 @@
 from composio import Composio
 from agents import Agent, Runner, HostedMCPTool
-import os
 
 composio = Composio()
 session = composio.experimental.create(
     user_id="user_123",
 )
 
-print(session.mcp.url)
+print(session.mcp)
 
 composio_mcp = HostedMCPTool(
     tool_config={
@@ -15,7 +14,7 @@ composio_mcp = HostedMCPTool(
         "server_label": "tool_router",
         "server_url": session.mcp.url,
         "require_approval": "never",
-        "headers": {"x-api-key": os.getenv("COMPOSIO_API_KEY")},
+        "headers": session.mcp.headers,
     }
 )
 

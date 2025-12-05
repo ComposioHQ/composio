@@ -12,6 +12,7 @@ from composio.core.models.tool_router import (
     ToolRouterManageConnectionsConfig,
     ToolkitConnectionState,
     ToolkitConnectionsDetails,
+    ToolRouterMCPServerType,
 )
 
 
@@ -19,12 +20,13 @@ from composio.core.models.tool_router import (
 def mock_client():
     """Create a mock HTTP client."""
     client = MagicMock()
+    client.api_key = "test-api-key"
 
     # Mock session responses
     mock_session_response = MagicMock()
     mock_session_response.session_id = "session_123"
     mock_session_response.mcp = MagicMock()
-    mock_session_response.mcp.type = "HTTP"
+    mock_session_response.mcp.type = "http"
     mock_session_response.mcp.url = "https://mcp.example.com/session_123"
     mock_session_response.tool_router_tools = [
         "GMAIL_FETCH_EMAILS",
@@ -48,6 +50,7 @@ def mock_client():
     mock_toolkit_item_active.slug = "gmail"
     mock_toolkit_item_active.name = "Gmail"
     mock_toolkit_item_active.meta.logo = "https://example.com/gmail-logo.png"
+    mock_toolkit_item_active.is_no_auth = False
     mock_toolkit_item_active.connected_account = MagicMock()
     mock_toolkit_item_active.connected_account.id = "conn_123"
     mock_toolkit_item_active.connected_account.status = "ACTIVE"
@@ -60,6 +63,7 @@ def mock_client():
     mock_toolkit_item_inactive.slug = "github"
     mock_toolkit_item_inactive.name = "GitHub"
     mock_toolkit_item_inactive.meta.logo = "https://example.com/github-logo.png"
+    mock_toolkit_item_inactive.is_no_auth = False
     mock_toolkit_item_inactive.connected_account = None
 
     mock_toolkits_response = MagicMock()
@@ -101,8 +105,9 @@ class TestToolRouter:
 
         # Verify session properties
         assert session.session_id == "session_123"
-        assert session.mcp.type == "HTTP"
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
         assert session.mcp.url == "https://mcp.example.com/session_123"
+        assert session.mcp.headers == {"x-api-key": "test-api-key"}
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
@@ -223,7 +228,7 @@ class TestToolRouter:
             user_id="user_123",
             manage_connections={
                 "enabled": True,
-                "callback_uri": "https://example.com/callback",
+                "callback_url": "https://example.com/callback",
                 "infer_scopes_from_tools": True,
             },
         )
@@ -233,7 +238,7 @@ class TestToolRouter:
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert kwargs["connections"]["auto_manage_connections"] is True
-        assert kwargs["connections"]["callback_uri"] == "https://example.com/callback"
+        assert kwargs["connections"]["callback_url"] == "https://example.com/callback"
         assert kwargs["connections"]["infer_scopes_from_tools"] is True
 
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
@@ -297,7 +302,7 @@ class TestToolRouter:
         )
 
         assert session.session_id == "session_123"
-        assert session.mcp.type == "HTTP"
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
 
         # Verify all parameters were passed correctly
         call_args = mock_client.tool_router.session.create.call_args
@@ -324,8 +329,9 @@ class TestToolRouter:
 
         # Verify session properties
         assert session.session_id == "session_123"
-        assert session.mcp.type == "HTTP"
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
         assert session.mcp.url == "https://mcp.example.com/session_123"
+        assert session.mcp.headers == {"x-api-key": "test-api-key"}
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
@@ -338,7 +344,7 @@ class TestToolRouter:
         mock_retrieve_response = MagicMock()
         mock_retrieve_response.session_id = "session_456"
         mock_retrieve_response.mcp = MagicMock()
-        mock_retrieve_response.mcp.type = "HTTP"
+        mock_retrieve_response.mcp.type = "http"
         mock_retrieve_response.mcp.url = "https://mcp.example.com/session_456"
         mock_retrieve_response.tool_router_tools = ["TOOL_1"]
         mock_retrieve_response.config = MagicMock()
@@ -349,7 +355,7 @@ class TestToolRouter:
         session = tool_router.use(session_id="session_456")
 
         assert session.session_id == "session_456"
-        assert session.mcp.type == "HTTP"
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
 
     def test_use_session_throws_error_on_failure(self, tool_router, mock_client):
         """Test that use() throws error if retrieve fails."""
@@ -376,9 +382,7 @@ class TestToolRouter:
         """Test the authorize function with callback URL."""
         session = tool_router.create(user_id="user_123")
 
-        session.authorize(
-            "github", options={"callback_url": "https://myapp.com/callback"}
-        )
+        session.authorize("github", callback_url="https://myapp.com/callback")
 
         # Verify link was called with callback_url
         call_args = mock_client.tool_router.session.link.call_args
@@ -405,7 +409,7 @@ class TestToolRouter:
         """Test the toolkits function with pagination options."""
         session = tool_router.create(user_id="user_123")
 
-        session.toolkits(options={"next_cursor": "cursor_abc", "limit": 10})
+        session.toolkits(next_cursor="cursor_abc", limit=10)
 
         # Verify toolkits was called with pagination params
         call_args = mock_client.tool_router.session.toolkits.call_args
@@ -487,18 +491,19 @@ class TestToolRouter:
         call_args = mock_tools_instance.get.call_args
         assert call_args.kwargs.get("modifiers") == modifiers
 
-    def test_session_mcp_type_uppercase(self, tool_router, mock_client):
-        """Test that MCP type is uppercase."""
+    def test_session_mcp_type_http(self, tool_router, mock_client):
+        """Test that MCP type is correctly set to HTTP enum."""
         session = tool_router.create(user_id="user_123")
 
-        assert session.mcp.type == "HTTP"
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
+        assert session.mcp.type.value == "http"
 
     def test_session_mcp_sse_type(self, tool_router, mock_client):
         """Test that SSE MCP type is handled correctly."""
         mock_sse_response = MagicMock()
         mock_sse_response.session_id = "session_sse"
         mock_sse_response.mcp = MagicMock()
-        mock_sse_response.mcp.type = "SSE"
+        mock_sse_response.mcp.type = "sse"
         mock_sse_response.mcp.url = "https://mcp.example.com/sse/session_sse"
         mock_sse_response.tool_router_tools = ["TOOL_1"]
 
@@ -506,7 +511,8 @@ class TestToolRouter:
 
         session = tool_router.create(user_id="user_123")
 
-        assert session.mcp.type == "SSE"
+        assert session.mcp.type == ToolRouterMCPServerType.SSE
+        assert session.mcp.type.value == "sse"
         assert session.mcp.url == "https://mcp.example.com/sse/session_sse"
 
     def test_multiple_sessions_independently(self, tool_router, mock_client):
@@ -514,14 +520,14 @@ class TestToolRouter:
         mock_session_1 = MagicMock()
         mock_session_1.session_id = "session_1"
         mock_session_1.mcp = MagicMock()
-        mock_session_1.mcp.type = "HTTP"
+        mock_session_1.mcp.type = "http"
         mock_session_1.mcp.url = "https://mcp.example.com/session_1"
         mock_session_1.tool_router_tools = ["TOOL_1"]
 
         mock_session_2 = MagicMock()
         mock_session_2.session_id = "session_2"
         mock_session_2.mcp = MagicMock()
-        mock_session_2.mcp.type = "HTTP"
+        mock_session_2.mcp.type = "http"
         mock_session_2.mcp.url = "https://mcp.example.com/session_2"
         mock_session_2.tool_router_tools = ["TOOL_2"]
 
@@ -543,14 +549,14 @@ class TestToolRouter:
         mock_create_response = MagicMock()
         mock_create_response.session_id = "created_session"
         mock_create_response.mcp = MagicMock()
-        mock_create_response.mcp.type = "HTTP"
+        mock_create_response.mcp.type = "http"
         mock_create_response.mcp.url = "https://mcp.example.com/created"
         mock_create_response.tool_router_tools = ["TOOL_1"]
 
         mock_retrieve_response = MagicMock()
         mock_retrieve_response.session_id = "retrieved_session"
         mock_retrieve_response.mcp = MagicMock()
-        mock_retrieve_response.mcp.type = "HTTP"
+        mock_retrieve_response.mcp.type = "http"
         mock_retrieve_response.mcp.url = "https://mcp.example.com/retrieved"
         mock_retrieve_response.tool_router_tools = ["TOOL_2"]
         mock_retrieve_response.config = MagicMock()
@@ -590,16 +596,31 @@ class TestToolRouterTypes:
         """Test ToolRouterManageConnectionsConfig type."""
         config: ToolRouterManageConnectionsConfig = {
             "enabled": True,
-            "callback_uri": "https://example.com/callback",
+            "callback_url": "https://example.com/callback",
         }
         assert config["enabled"] is True
-        assert config["callback_uri"] == "https://example.com/callback"
+        assert config["callback_url"] == "https://example.com/callback"
 
     def test_mcp_server_config(self):
         """Test ToolRouterMCPServerConfig dataclass."""
-        mcp = ToolRouterMCPServerConfig(type="HTTP", url="https://mcp.example.com")
-        assert mcp.type == "HTTP"
+        mcp = ToolRouterMCPServerConfig(
+            type=ToolRouterMCPServerType.HTTP, url="https://mcp.example.com"
+        )
+        assert mcp.type == ToolRouterMCPServerType.HTTP
+        assert mcp.type.value == "http"
         assert mcp.url == "https://mcp.example.com"
+        assert mcp.headers is None  # Headers are optional
+
+    def test_mcp_server_config_with_headers(self):
+        """Test ToolRouterMCPServerConfig dataclass with headers."""
+        mcp = ToolRouterMCPServerConfig(
+            type=ToolRouterMCPServerType.HTTP,
+            url="https://mcp.example.com",
+            headers={"x-api-key": "test-api-key"},
+        )
+        assert mcp.type == ToolRouterMCPServerType.HTTP
+        assert mcp.url == "https://mcp.example.com"
+        assert mcp.headers == {"x-api-key": "test-api-key"}
 
     def test_toolkit_connection_state(self):
         """Test ToolkitConnectionState dataclass."""

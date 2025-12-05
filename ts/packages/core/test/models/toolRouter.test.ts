@@ -45,7 +45,7 @@ const createMockClient = () => ({
 const mockSessionCreateResponse = {
   session_id: 'session_123',
   mcp: {
-    type: 'HTTP',
+    type: 'http',
     url: 'https://mcp.example.com/session_123',
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
@@ -59,7 +59,7 @@ const mockLinkResponse = {
 const mockSessionRetrieveResponse = {
   session_id: 'session_123',
   mcp: {
-    type: 'HTTP',
+    type: 'http',
     url: 'https://mcp.example.com/session_123',
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
@@ -83,6 +83,7 @@ const mockToolkitsResponse = {
       meta: {
         logo: 'https://example.com/gmail-logo.png',
       },
+      is_no_auth: false,
       connected_account: {
         id: 'conn_123',
         status: 'ACTIVE',
@@ -99,6 +100,7 @@ const mockToolkitsResponse = {
       meta: {
         logo: 'https://example.com/slack-logo.png',
       },
+      is_no_auth: false,
       connected_account: {
         id: 'conn_456',
         status: 'INITIATED',
@@ -115,6 +117,7 @@ const mockToolkitsResponse = {
       meta: {
         logo: 'https://example.com/github-logo.png',
       },
+      is_no_auth: false,
       connected_account: null,
     },
   ],
@@ -131,13 +134,13 @@ describe('ToolRouter', () => {
   const createExpectedConnections = (
     overrides: {
       manageConnections?: boolean;
-      callbackUri?: string;
+      callbackUrl?: string;
       inferScopesFromTools?: boolean;
     } = {}
   ) => ({
     infer_scopes_from_tools: overrides.inferScopesFromTools ?? false,
     auto_manage_connections: overrides.manageConnections ?? true,
-    callback_uri: overrides.callbackUri ?? undefined,
+    callback_url: overrides.callbackUrl ?? undefined,
   });
 
   beforeEach(() => {
@@ -146,6 +149,7 @@ describe('ToolRouter', () => {
     mockProvider = new MockProvider();
     toolRouter = new ToolRouter(mockClient as unknown as ComposioClient, {
       provider: mockProvider,
+      apiKey: 'test-api-key',
     });
   });
 
@@ -160,7 +164,7 @@ describe('ToolRouter', () => {
     });
 
     it('should store the config reference', () => {
-      expect(toolRouter['config']).toEqual({ provider: mockProvider });
+      expect(toolRouter['config']).toEqual({ provider: mockProvider, apiKey: 'test-api-key' });
     });
   });
 
@@ -186,8 +190,11 @@ describe('ToolRouter', () => {
         expect(session).toHaveProperty('sessionId', 'session_123');
         expect(session).toHaveProperty('mcp');
         expect(session.mcp).toEqual({
-          type: 'HTTP',
+          type: 'http',
           url: 'https://mcp.example.com/session_123',
+          headers: {
+            'x-api-key': 'test-api-key',
+          },
         });
         expect(session).toHaveProperty('tools');
         expect(session).toHaveProperty('authorize');
@@ -217,7 +224,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('HTTP');
+        expect(session.mcp.type).toBe('http');
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       });
     });
@@ -562,13 +569,13 @@ describe('ToolRouter', () => {
         });
       });
 
-      it('should create a session with manageConnections object with callbackUri', async () => {
+      it('should create a session with manageConnections object with callbackUrl', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
             enabled: true,
-            callbackUri: 'https://myapp.com/callback',
+            callbackUrl: 'https://myapp.com/callback',
             inferScopesFromTools: false,
           },
         };
@@ -583,7 +590,7 @@ describe('ToolRouter', () => {
           tools: undefined,
           connections: createExpectedConnections({
             manageConnections: true,
-            callbackUri: 'https://myapp.com/callback',
+            callbackUrl: 'https://myapp.com/callback',
           }),
           execution: undefined,
         });
@@ -621,7 +628,7 @@ describe('ToolRouter', () => {
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
             enabled: true,
-            callbackUri: 'https://myapp.com/callback',
+            callbackUrl: 'https://myapp.com/callback',
             inferScopesFromTools: true,
           },
         };
@@ -637,7 +644,7 @@ describe('ToolRouter', () => {
           connections: createExpectedConnections({
             manageConnections: true,
             inferScopesFromTools: true,
-            callbackUri: 'https://myapp.com/callback',
+            callbackUrl: 'https://myapp.com/callback',
           }),
           execution: undefined,
         });
@@ -1020,26 +1027,26 @@ describe('ToolRouter', () => {
 
     describe('response handling', () => {
       it('should handle MCP type correctly', async () => {
-        const responseWithUppercase = {
+        const responseWithHttp = {
           ...mockSessionCreateResponse,
           mcp: {
-            type: 'HTTP',
+            type: 'http',
             url: 'https://mcp.example.com/session_123',
           },
         };
 
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(responseWithUppercase);
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(responseWithHttp);
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('HTTP');
+        expect(session.mcp.type).toBe('http');
       });
 
       it('should handle SSE MCP type correctly', async () => {
         const sseResponse = {
           ...mockSessionCreateResponse,
           mcp: {
-            type: 'SSE',
+            type: 'sse',
             url: 'https://mcp.example.com/sse/session_123',
           },
         };
@@ -1048,7 +1055,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.mcp.type).toBe('SSE');
+        expect(session.mcp.type).toBe('sse');
         expect(session.mcp.url).toBe('https://mcp.example.com/sse/session_123');
       });
 
@@ -1187,6 +1194,7 @@ describe('ToolRouter', () => {
         cursor: undefined,
         limit: undefined,
         toolkits: undefined,
+        is_connected: undefined,
       });
 
       expect(result).toHaveProperty('items');
@@ -1208,6 +1216,7 @@ describe('ToolRouter', () => {
         cursor: 'cursor_abc',
         limit: 10,
         toolkits: undefined,
+        is_connected: undefined,
       });
 
       expect(result.items).toHaveLength(3);
@@ -1225,6 +1234,25 @@ describe('ToolRouter', () => {
         cursor: undefined,
         limit: undefined,
         toolkits: ['gmail', 'slack'],
+        is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should fetch toolkits with isConnected filter option', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        isConnected: true,
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: undefined,
+        limit: undefined,
+        toolkits: undefined,
+        is_connected: true,
       });
 
       expect(result.items).toHaveLength(3);
@@ -1244,6 +1272,28 @@ describe('ToolRouter', () => {
         cursor: 'cursor_xyz',
         limit: 5,
         toolkits: ['github'],
+        is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should fetch toolkits with all options combined', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        limit: 5,
+        nextCursor: 'cursor_xyz',
+        toolkits: ['github', 'gmail'],
+        isConnected: false,
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: 'cursor_xyz',
+        limit: 5,
+        toolkits: ['github', 'gmail'],
+        is_connected: false,
       });
 
       expect(result.items).toHaveLength(3);
@@ -1260,13 +1310,13 @@ describe('ToolRouter', () => {
       expect(gmailToolkit.name).toBe('Gmail');
       expect(gmailToolkit.logo).toBe('https://example.com/gmail-logo.png');
       expect(gmailToolkit.isNoAuth).toBe(false);
-      expect(gmailToolkit.connection.isActive).toBe(true);
-      expect(gmailToolkit.connection.authConfig).toEqual({
+      expect(gmailToolkit.connection?.isActive).toBe(true);
+      expect(gmailToolkit.connection?.authConfig).toEqual({
         id: 'auth_config_123',
         mode: 'OAUTH2',
         isComposioManaged: true,
       });
-      expect(gmailToolkit.connection.connectedAccount).toEqual({
+      expect(gmailToolkit.connection?.connectedAccount).toEqual({
         id: 'conn_123',
         status: 'ACTIVE',
       });
@@ -1280,8 +1330,8 @@ describe('ToolRouter', () => {
 
       const slackToolkit = result.items[1];
       expect(slackToolkit.slug).toBe('slack');
-      expect(slackToolkit.connection.isActive).toBe(false);
-      expect(slackToolkit.connection.connectedAccount?.status).toBe('INITIATED');
+      expect(slackToolkit.connection?.isActive).toBe(false);
+      expect(slackToolkit.connection?.connectedAccount?.status).toBe('INITIATED');
     });
 
     it('should transform toolkit connection state correctly for no connection', async () => {
@@ -1292,9 +1342,38 @@ describe('ToolRouter', () => {
 
       const githubToolkit = result.items[2];
       expect(githubToolkit.slug).toBe('github');
-      expect(githubToolkit.connection.isActive).toBe(false);
-      expect(githubToolkit.connection.authConfig).toBeNull();
-      expect(githubToolkit.connection.connectedAccount).toBeUndefined();
+      expect(githubToolkit.connection?.isActive).toBe(false);
+      expect(githubToolkit.connection?.authConfig).toBeNull();
+      expect(githubToolkit.connection?.connectedAccount).toBeUndefined();
+    });
+
+    it('should transform toolkit connection state correctly for no-auth toolkit', async () => {
+      const noAuthToolkitsResponse = {
+        items: [
+          {
+            slug: 'codeinterpreter',
+            name: 'Code Interpreter',
+            meta: {
+              logo: 'https://example.com/codeinterpreter-logo.png',
+            },
+            is_no_auth: true,
+            connected_account: null,
+          },
+        ],
+        next_cursor: undefined,
+        total_pages: 1,
+      };
+
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(noAuthToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits();
+
+      const codeinterpreterToolkit = result.items[0];
+      expect(codeinterpreterToolkit.slug).toBe('codeinterpreter');
+      expect(codeinterpreterToolkit.name).toBe('Code Interpreter');
+      expect(codeinterpreterToolkit.isNoAuth).toBe(true);
+      expect(codeinterpreterToolkit.connection).toBeUndefined();
     });
 
     it('should handle empty toolkits response', async () => {
@@ -1356,12 +1435,12 @@ describe('ToolRouter', () => {
       await expect(session.toolkits()).rejects.toThrow('Failed to fetch toolkits');
     });
 
-    it('should handle malformed response data', async () => {
+    it('should handle malformed response data gracefully with undefined values', async () => {
       const malformedResponse = {
         items: [
           {
             slug: 'gmail',
-            // Missing required fields
+            // Missing required fields like name, meta, is_no_auth
           },
         ],
         next_cursor: undefined,
@@ -1372,8 +1451,24 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.create(userId);
 
-      // Should throw transformation error due to missing required fields
-      await expect(session.toolkits()).rejects.toThrow();
+      // The code handles malformed data gracefully with undefined values
+      const result = await session.toolkits();
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].slug).toBe('gmail');
+      expect(result.items[0].name).toBeUndefined();
+      expect(result.items[0].logo).toBeUndefined();
+      expect(result.items[0].isNoAuth).toBeUndefined();
+    });
+
+    it('should throw validation error for invalid options', async () => {
+      const session = await toolRouter.create(userId);
+
+      // Invalid options should throw a validation error
+      await expect(
+        session.toolkits({
+          limit: 'invalid' as unknown as number, // Invalid type
+        })
+      ).rejects.toThrow();
     });
   });
 
@@ -1394,7 +1489,10 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const tools = await session.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
@@ -1491,7 +1589,10 @@ describe('ToolRouter', () => {
       const newSession = await toolRouter.create(userId);
       await newSession.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
         userId,
@@ -1514,7 +1615,10 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       await session.tools();
 
-      expect(Tools).toHaveBeenCalledWith(mockClient, { provider: mockProvider });
+      expect(Tools).toHaveBeenCalledWith(mockClient, {
+        provider: mockProvider,
+        apiKey: 'test-api-key',
+      });
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.get).toHaveBeenCalledWith(
         userId,
@@ -1591,11 +1695,13 @@ describe('ToolRouter', () => {
         cursor: undefined,
         limit: undefined,
         toolkits: undefined,
+        is_connected: undefined,
       });
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith('session_2', {
         cursor: undefined,
         limit: undefined,
         toolkits: undefined,
+        is_connected: undefined,
       });
     });
 
@@ -1631,8 +1737,11 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('sessionId', 'session_123');
       expect(session).toHaveProperty('mcp');
       expect(session.mcp).toEqual({
-        type: 'HTTP',
+        type: 'http',
         url: 'https://mcp.example.com/session_123',
+        headers: {
+          'x-api-key': 'test-api-key',
+        },
       });
       expect(session).toHaveProperty('tools');
       expect(session).toHaveProperty('authorize');
@@ -1695,6 +1804,7 @@ describe('ToolRouter', () => {
         cursor: undefined,
         limit: undefined,
         toolkits: undefined,
+        is_connected: undefined,
       });
       expect(toolkitsResult.items).toHaveLength(3);
       expect(toolkitsResult.items[0].slug).toBe('gmail');
@@ -1728,7 +1838,7 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.use(sessionId);
 
-      expect(session.mcp.type).toBe('HTTP');
+      expect(session.mcp.type).toBe('http');
       expect(session.mcp.url).toBe('https://mcp.example.com/session_123');
     });
 
