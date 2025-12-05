@@ -7,7 +7,7 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
-const tools = await session.tools();
+const tools = await session.experimentalTools();
 
 const stream = await streamText({
   model: openai('gpt-4o-mini'),

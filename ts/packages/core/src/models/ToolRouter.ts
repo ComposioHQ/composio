@@ -22,6 +22,8 @@ import {
   ToolRouterCreateSessionConfig,
   ToolRouterSession,
   ToolkitConnectionStateSchema,
+  ToolRouterToolkitsOptions,
+  ToolRouterToolkitsOptionsSchema,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
@@ -31,7 +33,7 @@ import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
 import { transform } from '../utils/transform';
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
-import { transformToolRouterToolsParams } from '../lib/toolRouterParams';
+import { ValidationError } from '../errors';
 
 export class ToolRouter<
   TToolCollection,
@@ -88,15 +90,19 @@ export class ToolRouter<
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const connectionsFn = async (options?: {
-      toolkits?: Array<string>;
-      nextCursor?: string;
-      limit?: number;
-    }) => {
+    const connectionsFn = async (options?: ToolRouterToolkitsOptions) => {
+      const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
+      if (!toolkitOptions.success) {
+        throw new ValidationError('Failed to parse toolkits options', {
+          cause: toolkitOptions.error,
+        });
+      }
+
       const result = await this.client.toolRouter.session.toolkits(sessionId, {
-        cursor: options?.nextCursor,
-        limit: options?.limit,
-        toolkits: options?.toolkits,
+        cursor: toolkitOptions.data.nextCursor,
+        limit: toolkitOptions.data.limit,
+        toolkits: toolkitOptions.data.toolkits,
+        is_connected: toolkitOptions.data.isConnected,
       });
 
       const toolkitConnectedStates = result.items.map(item => {
@@ -105,22 +111,24 @@ export class ToolRouter<
           .using(item => ({
             slug: item.slug,
             name: item.name,
-            logo: item.meta.logo,
-            isNoAuth: false,
-            connection: {
-              isActive: item.connected_account?.status === 'ACTIVE',
-              authConfig: item.connected_account && {
-                id: item.connected_account?.auth_config.id,
-                mode: item.connected_account?.auth_config.auth_scheme,
-                isComposioManaged: item.connected_account?.auth_config.is_composio_managed,
-              },
-              connectedAccount: item.connected_account
-                ? {
-                    id: item.connected_account.id,
-                    status: item.connected_account.status,
-                  }
-                : undefined,
-            },
+            logo: item.meta?.logo,
+            isNoAuth: item.is_no_auth,
+            connection: item.is_no_auth
+              ? undefined
+              : {
+                  isActive: item.connected_account?.status === 'ACTIVE',
+                  authConfig: item.connected_account && {
+                    id: item.connected_account?.auth_config.id,
+                    mode: item.connected_account?.auth_config.auth_scheme,
+                    isComposioManaged: item.connected_account?.auth_config.is_composio_managed,
+                  },
+                  connectedAccount: item.connected_account
+                    ? {
+                        id: item.connected_account.id,
+                        status: item.connected_account.status,
+                      }
+                    : undefined,
+                },
           }));
         return connectedState;
       });
@@ -216,9 +224,9 @@ export class ToolRouter<
       connections: {
         infer_scopes_from_tools: inferScopesFromTools,
         auto_manage_connections: manageConnectedAccounts,
-        callback_uri:
+        callback_url:
           typeof routerConfig.manageConnections === 'object'
-            ? routerConfig.manageConnections.callbackUri
+            ? routerConfig.manageConnections.callbackUrl
             : undefined,
       },
       execution: routerConfig.execution
@@ -236,7 +244,7 @@ export class ToolRouter<
         type: session.mcp.type,
         url: session.mcp.url,
       },
-      tools: this.createToolsFn(userId, session.tool_router_tools),
+      experimentalTools: this.createToolsFn(userId, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -264,7 +272,7 @@ export class ToolRouter<
         type: session.mcp.type,
         url: session.mcp.url,
       },
-      tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
+      experimentalTools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
