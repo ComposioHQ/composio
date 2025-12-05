@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass
+from enum import Enum
 
 from composio_client import omit
 import typing_extensions as te
@@ -22,8 +23,13 @@ if t.TYPE_CHECKING:
     from composio.core.models._modifiers import Modifiers
 
 # Type aliases
-AuthorizeFn = t.Callable[[str, t.Optional[t.Dict[str, str]]], ConnectionRequest]
-ToolkitsFn = t.Callable[[t.Optional[t.Dict[str, t.Any]]], "ToolkitConnectionsDetails"]
+AuthorizeFn = t.Callable[..., ConnectionRequest]
+
+
+ToolkitsFn = t.Callable[
+    ...,
+    "ToolkitConnectionsDetails",
+]
 
 
 class ToolRouterToolkitsEnabledConfig(te.TypedDict, total=False):
@@ -132,13 +138,13 @@ class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     Attributes:
         enabled: Whether to use tools to manage connections. Defaults to True.
                 If False, you need to manage connections manually.
-        callback_uri: Optional callback URI to use for OAuth redirects.
+        callback_uri: Optional callback URL to use for OAuth redirects.
         infer_scopes_from_tools: Whether to infer scopes from tools in the tool router session.
                                 Defaults to False.
     """
 
     enabled: bool
-    callback_uri: str
+    callback_url: str
     infer_scopes_from_tools: bool
 
 
@@ -200,7 +206,7 @@ class ToolkitConnectionState:
     slug: str
     name: str
     is_no_auth: bool
-    connection: ToolkitConnection
+    connection: t.Optional[ToolkitConnection] = None
     logo: t.Optional[str] = None
 
 
@@ -219,11 +225,18 @@ class ToolkitConnectionsDetails:
     next_cursor: t.Optional[str] = None
 
 
+class ToolRouterMCPServerType(str, Enum):
+    """Enum for MCP server types."""
+
+    HTTP = "http"
+    SSE = "sse"
+
+
 @dataclass
 class ToolRouterMCPServerConfig:
     """Configuration for MCP server."""
 
-    type: str
+    type: ToolRouterMCPServerType
     url: str
 
 
@@ -299,18 +312,44 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         def authorize_fn(
             toolkit: str,
-            options: t.Optional[t.Dict[str, str]] = None,
+            *,
+            callback_url: t.Optional[str] = None,
         ) -> ConnectionRequest:
             """
-            Authorize a toolkit for the user.
+            Authorize a toolkit for the user and get a connection request.
 
-            :param toolkit: The toolkit to authorize
-            :param options: Optional options dict with 'callback_url' key for OAuth redirect
-            :return: Connection request object
+            This method initiates the OAuth flow for a toolkit and returns a
+            ConnectionRequest object containing the redirect URL for user authorization.
+
+            Args:
+                toolkit: The toolkit slug to authorize (e.g., 'github', 'slack', 'gmail')
+                callback_url: Optional URL to redirect user after OAuth authorization completes.
+                    Use this to redirect users back to your application after they authorize.
+
+            Returns:
+                ConnectionRequest: Object containing:
+                    - id: The connected account ID
+                    - redirect_url: URL to redirect user for OAuth authorization
+                    - status: Connection status ('INITIATED')
+                    - wait_for_connection(): Method to poll until connection is active
+
+            Example:
+                ```python
+                # Basic authorization
+                connection = session.authorize('github')
+                print(f"Redirect user to: {connection.redirect_url}")
+
+                # With custom callback URL
+                connection = session.authorize(
+                    'slack',
+                    callback_url='https://myapp.com/oauth/callback'
+                )
+
+                # Wait for user to complete authorization
+                connected_account = connection.wait_for_connection(timeout=300)
+                print(f"Connected! Account ID: {connected_account.id}")
+                ```
             """
-            # Make API call to create authorization link
-            callback_url = options.get("callback_url") if options else None
-
             response = self._client.tool_router.session.link(
                 session_id=session_id,
                 toolkit=toolkit,
@@ -336,20 +375,78 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         """
 
         def toolkits_fn(
-            options: t.Optional[t.Dict[str, t.Any]] = None,
+            *,
+            toolkits: t.Optional[t.List[str]] = None,
+            next_cursor: t.Optional[str] = None,
+            limit: t.Optional[int] = None,
+            is_connected: t.Optional[bool] = None,
         ) -> ToolkitConnectionsDetails:
             """
             Get toolkit connection states for the session.
 
-            :param options: Optional dict with 'next_cursor' and 'limit' keys
-            :return: Toolkit connections details with items, next_cursor, and total_pages
+            Retrieves information about toolkits available in this session, including
+            their connection status, auth configuration, and metadata.
+
+            Args:
+                toolkits: List of toolkit slugs to filter by (e.g., ['github', 'slack']).
+                    If None, returns all toolkits in the session.
+                next_cursor: Cursor for pagination to fetch the next page of results.
+                    Use the `next_cursor` from a previous response to get more results.
+                limit: Maximum number of toolkit items to return per page.
+                is_connected: Filter by connection status:
+                    - True: Only return toolkits with active connections
+                    - False: Only return toolkits without active connections
+                    - None: Return all toolkits regardless of connection status
+
+            Returns:
+                ToolkitConnectionsDetails: Object containing:
+                    - items: List of ToolkitConnectionState objects with:
+                        - slug: Toolkit identifier (e.g., 'github')
+                        - name: Display name (e.g., 'GitHub')
+                        - logo: URL to toolkit logo
+                        - is_no_auth: Whether toolkit requires no authentication
+                        - connection: Connection details (is_active, auth_config, connected_account)
+                    - next_cursor: Cursor for fetching next page (None if no more pages)
+                    - total_pages: Total number of pages available
+
+            Example:
+                ```python
+                # Get all toolkits in the session
+                result = session.toolkits()
+                for toolkit in result.items:
+                    status = "Connected" if toolkit.connection.is_active else "Not connected"
+                    print(f"{toolkit.name}: {status}")
+
+                # Filter by specific toolkits
+                result = session.toolkits(toolkits=['github', 'slack', 'gmail'])
+
+                # Get only connected toolkits
+                connected = session.toolkits(is_connected=True)
+                print(f"You have {len(connected.items)} connected toolkits")
+
+                # Get only disconnected toolkits (need authorization)
+                disconnected = session.toolkits(is_connected=False)
+                for toolkit in disconnected.items:
+                    print(f"Please connect: {toolkit.name}")
+
+                # Pagination example
+                result = session.toolkits(limit=10)
+                all_toolkits = list(result.items)
+                while result.next_cursor:
+                    result = session.toolkits(limit=10, next_cursor=result.next_cursor)
+                    all_toolkits.extend(result.items)
+                ```
             """
-            options = options or {}
             toolkits_params: t.Dict[str, t.Any] = {}
-            if "next_cursor" in options and options["next_cursor"]:
-                toolkits_params["cursor"] = options["next_cursor"]
-            if "limit" in options and options["limit"]:
-                toolkits_params["limit"] = options["limit"]
+
+            if next_cursor is not None:
+                toolkits_params["cursor"] = next_cursor
+            if limit is not None:
+                toolkits_params["limit"] = limit
+            if toolkits is not None:
+                toolkits_params["toolkits"] = toolkits
+            if is_connected is not None:
+                toolkits_params["is_connected"] = is_connected
 
             result = self._client.tool_router.session.toolkits(
                 session_id=session_id,
@@ -375,21 +472,25 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                         status=connected_account.status,
                     )
 
-                connection = ToolkitConnection(
-                    is_active=(
-                        connected_account.status == "ACTIVE"
-                        if connected_account
-                        else False
-                    ),
-                    auth_config=auth_config,
-                    connected_account=connected_acc,
+                connection = (
+                    None
+                    if item.is_no_auth
+                    else ToolkitConnection(
+                        is_active=(
+                            connected_account.status == "ACTIVE"
+                            if connected_account
+                            else False
+                        ),
+                        auth_config=auth_config,
+                        connected_account=connected_acc,
+                    )
                 )
 
                 toolkit_state = ToolkitConnectionState(
                     slug=item.slug,
                     name=item.name,
                     logo=item.meta.logo if item.meta else None,
-                    is_no_auth=False,
+                    is_no_auth=item.is_no_auth if item.is_no_auth else False,
                     connection=connection,
                 )
                 toolkit_states.append(toolkit_state)
@@ -429,10 +530,58 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         def tools_fn(modifiers: t.Optional[Modifiers] = None) -> t.Any:
             """
-            Get provider-wrapped tools for execution.
+            Get provider-wrapped tools for execution with your AI framework.
 
-            :param modifiers: Optional execution modifiers
-            :return: Provider-wrapped tools
+            Returns tools configured for this session, wrapped in the format expected
+            by your AI provider (OpenAI, Anthropic, LangChain, etc.). The tools are
+            ready to be passed directly to your AI model for function calling.
+
+            Args:
+                modifiers: Optional execution modifiers to customize tool behavior:
+                    - Custom pre/post processing hooks
+                    - Schema modifications
+                    - Execution callbacks
+
+            Returns:
+                Provider-wrapped tools in the format expected by your AI framework.
+                The exact type depends on the provider configured during initialization.
+
+            Example:
+                ```python
+                # Basic usage - get tools for your AI model
+                tools = session.tools()
+
+                # Use with OpenAI
+                from openai import OpenAI
+                client = OpenAI()
+
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": "Star the composio repo"}],
+                    tools=tools,
+                )
+
+                # Use with Anthropic
+                from anthropic import Anthropic
+                client = Anthropic()
+
+                response = client.messages.create(
+                    model="claude-3-opus-20240229",
+                    messages=[{"role": "user", "content": "Send an email"}],
+                    tools=tools,
+                )
+
+                # With custom modifiers
+                tools = session.tools(modifiers={
+                    'pre_execute': lambda tool, args: print(f"Executing {tool}"),
+                    'post_execute': lambda tool, result: print(f"Result: {result}"),
+                })
+                ```
+
+            Note:
+                The tools returned are specific to this session and user. They include
+                only the tools enabled for this session based on the configuration
+                provided during session creation.
             """
             router_tools = tools_model.get(
                 user_id=user_id, tools=list(tool_slugs), modifiers=modifiers
@@ -474,7 +623,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                        Example: ['important'] or {'enabled': ['safe']} or {'disabled': ['dangerous']}
         :param manage_connections: Whether to enable connection management tools.
                                   - Boolean: True/False
-                                  - Dict with keys: 'enabled', 'callback_uri', 'infer_scopes_from_tools'
+                                  - Dict with keys: 'enabled', 'callback_url', 'infer_scopes_from_tools'
         :param auth_configs: Optional mapping of toolkit slug to auth config ID.
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
@@ -520,7 +669,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 'user_123',
                 manage_connections={
                     'enabled': True,
-                    'callback_uri': 'https://example.com/callback',
+                    'callback_url': 'https://example.com/callback',
                     'infer_scopes_from_tools': True
                 }
             )
@@ -606,8 +755,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         )
 
         # Parse callback_uri
-        callback_uri = (
-            manage_connections.get("callback_uri")
+        callback_url = (
+            manage_connections.get("callback_url")
             if isinstance(manage_connections, dict)
             else omit
         )
@@ -622,8 +771,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             "auto_manage_connections": auto_manage_connections,
             "infer_scopes_from_tools": infer_scopes_from_tools,
         }
-        if callback_uri is not None and callback_uri is not omit:
-            connections_config["callback_uri"] = callback_uri
+        if callback_url is not None and callback_url is not omit:
+            connections_config["callback_url"] = callback_url
 
         create_params["connections"] = connections_config
 
@@ -659,7 +808,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         return ToolRouterSession(
             session_id=session.session_id,
             mcp=ToolRouterMCPServerConfig(
-                type=session.mcp.type.upper(),
+                type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
             tools=self._create_tools_fn(user_id, session.tool_router_tools),
@@ -700,7 +849,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         return ToolRouterSession(
             session_id=session.session_id,
             mcp=ToolRouterMCPServerConfig(
-                type=session.mcp.type.upper(),
+                type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
             tools=self._create_tools_fn(user_id, session.tool_router_tools),
@@ -724,4 +873,5 @@ __all__ = [
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
     "ToolRouterMCPServerConfig",
+    "ToolRouterMCPServerType",
 ]
