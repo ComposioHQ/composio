@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- f0e67c4: Update API client and tool router types
+
 ## 0.2.7-alpha.2
 
 ### Patch Changes
