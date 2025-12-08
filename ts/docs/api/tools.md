@@ -63,7 +63,7 @@ const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
 
 Executes a given tool with the provided parameters manually.
 
-> **Important:** When manually executing tools (especially in workflows), a specific version is **required**. The method will throw an error if `'latest'` is used as the version. This ensures there are no mismatches in tool arguments when new versions are released. You can bypass this requirement using `dangerouslySkipVersionCheck: true`, but this is **not recommended for production**.
+> **Important:** When manually executing tools (especially in workflows), a specific version is **required**. The method will throw an error if toolkitVersion is not provided or `latest` is used as the version. This ensures there are no mismatches in tool arguments when new versions are released. You can bypass this requirement using `dangerouslySkipVersionCheck: true`, but this is **not recommended for production**.
 
 ```typescript
 // Execute with a pinned version (REQUIRED for workflows and manual execution)

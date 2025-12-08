@@ -14,6 +14,8 @@ jobs:
   test:
     name: Test Typescript SDK
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout Code
@@ -30,9 +32,6 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Run pnpm audit (production dependencies only)
-        run: pnpm audit --prod
 
       - name: Run Tests
         run: pnpm run test

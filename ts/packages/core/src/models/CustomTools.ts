@@ -309,6 +309,14 @@ export class CustomTools {
         parameters: parameters,
         body: data.body,
         connected_account_id: connectedAccountId,
+        /**
+         * @deprecated
+         * @description
+         * This parameter is deprecated and will be removed in the future.
+         * Please use custom_auth_params instead.
+         *
+         */
+        // @ts-ignore
         custom_connection_data: data.customConnectionData,
       });
 

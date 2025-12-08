@@ -1,5 +1,33 @@
 # @composio/llamaindex
 
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- Updated dependencies [f0e67c4]
+  - @composio/core@0.2.7-alpha.3
+
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- Updated dependencies [31521bd]
+  - @composio/core@0.2.7-alpha.2
+
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.1
+
+## 0.2.7-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.0
+
 ## 0.2.6
 
 ### Patch Changes
