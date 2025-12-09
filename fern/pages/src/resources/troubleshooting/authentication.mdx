@@ -2,7 +2,7 @@
 title: Authentication
 subtitle: Troubleshooting authentication issues
 image: "https://og.composio.dev/api/og?title=Authentication%20Troubleshooting"
-keywords: 'authentication, oauth, connections, scopes, troubleshooting'
+keywords: 'authentication, oauth, connections, scopes, troubleshooting, redacted, mask secrets, mask connected account secrets'
 hide-nav-links: true
 ---
 
@@ -29,6 +29,7 @@ For setup guides by toolkit: [OAuth Configuration Guides](https://composio.dev/o
 - **Scope mismatch**: Ensure requested scopes are configured in both auth config and OAuth app
 - **Expired tokens**: Try refreshing the connection
 - **Rate limits**: Some providers limit authentication attempts
+- **Credentials showing as `REDACTED`**: The "Mask Connected Account Secrets" setting is enabled on your account, which redacts all sensitive credential data. Navigate to **Settings → Project Settings → Project Configuration** and disable "Mask Connected Account Secrets" to view actual values
 
 ## Reporting authentication issues
 
