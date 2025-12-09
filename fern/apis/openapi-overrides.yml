@@ -14,9 +14,8 @@ paths:
   /api/v3/tool_router/session/{session_id}/execute:
     post:
       parameters:
-        - name: x-session-access-key
-          in: header
-          x-fern-ignore: true
+        - ~  # keep session_id (first param)
+        - x-fern-ignore: true  # hide x-session-access-key (second param)
 components:
   securitySchemes:
     ApiKeyAuth:
