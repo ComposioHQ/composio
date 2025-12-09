@@ -22,57 +22,25 @@ npm install @composio/core @openai/agents
 [Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Info>
-Replace `your-composio-api-key` with your Composio API key from the [settings](https://platform.composio.dev/?next_page=/settings) page.
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
 When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
 
-```typescript
-import { Composio } from "@composio/core";
-import { Agent, run, hostedMcpTool } from "@openai/agents";
-
-const composio = new Composio({ apiKey: "your-composio-api-key" });
-
-console.log("Creating Tool Router session...");
-const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");
-console.log(`Tool Router session created: ${mcp.url}`);
-
-const agent = new Agent({
-  name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant.",
-  tools: [
-    hostedMcpTool({
-      serverLabel: "composio",
-      serverUrl: mcp.url,
-      headers: {
-        "x-api-key": "your-composio-api-key",
-      },
-    }),
-  ],
-});
-
-console.log("Running the Open AI agent to fetch gmail inbox")
-const result = await run(
-  agent,
-  "Summarize all the emails in my Gmail inbox today"
-);
-console.log(result.finalOutput);
-```
-
-<Info>
-`pg-user-550e8400-e29b-41d4` is a placeholder for your user's ID. See [User Management](/docs/user-management) for details.
-</Info>
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-openai.ts" />
 </Step>
 </Steps>
 
 </Tab>
 
-<Tab title="Vercel AI SDK">
+<Tab title="Vercel AI SDK (Anthropic)">
 
 <Steps>
 <Step title="Install Composio SDK">
 ```bash
-npm install @composio/core ai @ai-sdk/openai @ai-sdk/mcp
+npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 ```
 </Step>
 
@@ -80,57 +48,14 @@ npm install @composio/core ai @ai-sdk/openai @ai-sdk/mcp
 [Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Info>
-Replace `your-composio-api-key` with your Composio API key from the [settings](https://platform.composio.dev/?next_page=/settings) page.
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
 When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
 
-```typescript
-import { openai } from "@ai-sdk/openai";
-import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
-import { Composio } from "@composio/core";
-import { stepCountIs, streamText } from "ai";
-
-const composio = new Composio({ apiKey: "your-composio-api-key" });
-
-console.log("Creating Tool Router session...");
-const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");
-console.log(`Tool Router session created: ${mcp.url}`);
-
-const client = await createMCPClient({
-  transport: {
-    type: "http",
-    url: mcp.url,
-    headers: {
-      "x-api-key": "your-composio-api-key",
-    },
-  },
-});
-
-const tools = await client.tools();
-
-const stream = await streamText({
-  model: openai("gpt-5"),
-  prompt: "Summarize all the emails in my Gmail inbox today",
-  stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
-    if (step.toolCalls.length > 0) {
-      for (const toolCall of step.toolCalls) {
-        console.log(`Executed ${toolCall.toolName}`);
-      }
-    }
-  },
-  tools,
-});
-
-for await (const textPart of stream.textStream) {
-  process.stdout.write(textPart);
-}
-```
-
-<Info>
-`pg-user-550e8400-e29b-41d4` is a placeholder for your user's ID. See [User Management](/docs/user-management) for details.
-</Info>
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-vercel.ts" />
 </Step>
 </Steps>
 
