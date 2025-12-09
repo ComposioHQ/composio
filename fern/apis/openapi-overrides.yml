@@ -11,6 +11,11 @@ paths:
   /api/v3/auth/session/logout:
     post:
       x-fern-ignore: true
+  /api/v3/tool_router/session/{session_id}/execute:
+    post:
+      parameters:
+        - name: x-session-access-key
+          x-fern-ignore: true
 components:
   securitySchemes:
     ApiKeyAuth:
