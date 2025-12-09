@@ -15,6 +15,7 @@ paths:
     post:
       parameters:
         - name: x-session-access-key
+          in: header
           x-fern-ignore: true
 components:
   securitySchemes:
