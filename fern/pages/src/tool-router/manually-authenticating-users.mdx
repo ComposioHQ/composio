@@ -131,14 +131,19 @@ A common pattern is to verify all required connections before starting the agent
 
 <CodeGroup>
 ```python
+from composio import Composio
+from agents import Agent, Runner, HostedMCPTool
+
+composio = Composio()
+
 required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
 
-session = await composio.create(
-    user=user_id,
+session = composio.create(
+    user_id=user_id,
     manage_connections=False,
 )
 
-toolkits = await session.toolkits()
+toolkits = session.toolkits()
 
 def is_connected(slug):
     toolkit = next((t for t in toolkits if t.slug == slug), None)
@@ -148,18 +153,37 @@ pending = [slug for slug in required_toolkits if not is_connected(slug)]
 
 if pending:
     for slug in pending:
-        connection_request = await session.authorize(
+        connection_request = session.authorize(
             slug,
             callback_url="https://yourapp.com/onboarding"
         )
-        # Show connection_request.redirect_url to user
+        print(f"Connect {slug}: {connection_request.redirect_url}")
+        connection_request.wait_for_connection()
 
-    # Wait for all connections before continuing
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant.",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "require_approval": "never",
+            }
+        )
+    ],
+)
 
-# All apps connected, start the agent
-tools = await session.tools()
+result = Runner.run_sync(agent, "Summarize my emails from today")
+print(result.final_output)
 ```
 ```typescript
+import { Composio } from "@composio/core";
+import { Agent, run, hostedMcpTool } from "@openai/agents";
+
+const composio = new Composio();
+
 const requiredToolkits = ["gmail", "googlecalendar", "linear", "slack"];
 
 const session = await composio.create(userId, {
@@ -173,18 +197,27 @@ const pending = requiredToolkits.filter((slug) => {
   return !toolkit?.connectedAccount;
 });
 
-if (pending.length > 0) {
-  for (const slug of pending) {
-    const connectionRequest = await session.authorize(slug, {
-      callbackUrl: "https://yourapp.com/onboarding",
-    });
-    // Show connectionRequest.redirectUrl to user
-  }
-  // Wait for all connections before continuing
+for (const slug of pending) {
+  const connectionRequest = await session.authorize(slug, {
+    callbackUrl: "https://yourapp.com/onboarding",
+  });
+  console.log(`Connect ${slug}: ${connectionRequest.redirectUrl}`);
+  await connectionRequest.waitForConnection();
 }
 
-// All apps connected, start the agent
-const tools = await session.tools();
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant.",
+  tools: [
+    hostedMcpTool({
+      serverLabel: "composio",
+      serverUrl: session.mcp.url,
+    }),
+  ],
+});
+
+const result = await run(agent, "Summarize my emails from today");
+console.log(result.finalOutput);
 ```
 </CodeGroup>
 

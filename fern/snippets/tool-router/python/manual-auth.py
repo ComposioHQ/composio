@@ -1,43 +1,52 @@
-import asyncio
 from composio import Composio
+from agents import Agent, Runner, HostedMCPTool
 
 composio = Composio(api_key="your-composio-api-key")
 
 user_id = "pg-user-550e8400-e29b-41d4"
 required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
 
-async def main():
-    session = await composio.create(
-        user=user_id,
-        manage_connections=False,
-    )
+session = composio.create(
+    user_id=user_id,
+    manage_connections=False,
+)
 
-    toolkits = await session.toolkits()
+toolkits = session.toolkits()
 
-    def is_connected(slug):
-        toolkit = next((t for t in toolkits if t.slug == slug), None)
-        return toolkit and toolkit.connected_account
+def is_connected(slug):
+    toolkit = next((t for t in toolkits if t.slug == slug), None)
+    return toolkit and toolkit.connected_account
 
-    pending = [slug for slug in required_toolkits if not is_connected(slug)]
+pending = [slug for slug in required_toolkits if not is_connected(slug)]
 
-    if pending:
-        print("Connect these apps to continue:")
+if pending:
+    print("Connect these apps to continue:")
 
-        for slug in pending:
-            connection_request = await session.authorize(
-                slug,
-                callback_url="https://yourapp.com/onboarding"
-            )
-            print(f"  {slug}: {connection_request.redirect_url}")
+    for slug in pending:
+        connection_request = session.authorize(
+            slug,
+            callback_url="https://yourapp.com/onboarding"
+        )
+        print(f"  {slug}: {connection_request.redirect_url}")
+        connection_request.wait_for_connection(60000)
+        print(f"  {slug} connected")
 
-        print("\nWaiting for connections...")
+print("\nAll apps connected. Starting assistant...")
 
-        for slug in pending:
-            connection_request = await session.authorize(slug)
-            await connection_request.wait_for_connection(60000)
-            print(f"  {slug} connected")
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant.",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "require_approval": "never",
+            }
+        )
+    ],
+)
 
-    print("\nAll apps connected. Starting assistant...")
-    tools = await session.tools()
-
-asyncio.run(main())
+result = Runner.run_sync(agent, "Summarize my emails from today")
+print(result.final_output)
