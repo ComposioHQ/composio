@@ -65,17 +65,17 @@ export class Tools<
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
 
-  constructor(client: ComposioClient, provider: TProvider, config?: ComposioConfig<TProvider>) {
+  constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
     }
-    if (!provider) {
+    if (!config?.provider) {
       throw new ComposioProviderNotDefinedError('Provider not passed into Tools instance');
     }
 
     this.client = client;
     this.customTools = new CustomTools(client);
-    this.provider = provider;
+    this.provider = config.provider;
     this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     // Bind the execute method to ensure correct 'this' context
@@ -568,20 +568,27 @@ export class Tools<
   ): Promise<TToolCollection> {
     // Handle the two-parameter overloads
     const options = arg3 as ProviderOptions<TProvider>;
-    const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
 
     // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getRawComposioToolBySlug(arg2, {
         modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
-      return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
+      return this.wrapToolsForProvider(
+        userId,
+        [tool],
+        options as ExecuteToolModifiers
+      ) as TToolCollection;
     } else {
       // if the second argument is an object, get a list of tools
       const tools = await this.getRawComposioTools(arg2, {
         modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
-      return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
+      return this.wrapToolsForProvider(
+        userId,
+        tools,
+        options as ExecuteToolModifiers
+      ) as TToolCollection;
     }
   }
   /**
@@ -599,6 +606,24 @@ export class Tools<
         modifiers
       );
     };
+  }
+
+  /**
+   * @inte
+   * Utility to wrap a given set of tools in the format expected by the provider
+   *
+   * @param userId - The user id to get the tools for
+   * @param tools - The tools to wrap
+   * @param modifiers - The modifiers to be applied to the tools
+   * @returns The wrapped tools
+   */
+  wrapToolsForProvider<T extends TProvider>(
+    userId: string,
+    tools: Tool[],
+    modifiers?: ExecuteToolModifiers
+  ): ReturnType<T['wrapTools']> {
+    const executeToolFn = this.createExecuteToolFn(userId, modifiers);
+    return this.provider.wrapTools(tools, executeToolFn) as ReturnType<T['wrapTools']>;
   }
 
   /**
@@ -650,6 +675,13 @@ export class Tools<
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
         custom_auth_params: body.customAuthParams,
+        /**
+         * @deprecated: customConnectionData
+         * @description
+         * This parameter is deprecated and will be removed in the future.
+         * Please use custom_connection_data instead.
+         *
+         */
         custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
@@ -880,6 +912,14 @@ export class Tools<
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
       parameters: parameters,
+      /**
+       * @deprecated: customConnectionData
+       * @description
+       * This parameter is deprecated and will be removed in the future.
+       * Please use custom_auth_params instead.
+       *
+       */
+      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     });
   }
