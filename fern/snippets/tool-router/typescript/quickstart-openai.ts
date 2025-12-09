@@ -10,7 +10,7 @@ console.log(`Tool Router session created: ${mcp.url}`);
 
 const agent = new Agent({
   name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant.",
+  instructions: "You are a helpful personal assistant. You should use composio tools to take action.",
   model: 'gpt-5.1',
   modelSettings: {
     reasoning: { effort: 'low' },

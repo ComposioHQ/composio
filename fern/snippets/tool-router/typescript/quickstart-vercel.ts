@@ -23,6 +23,7 @@ const client = await createMCPClient({
 const tools = await client.tools();
 
 const stream = await streamText({
+  system: "You are a helpful personal assistant. You should use composio MCP tools to take action.",
   model: anthropic("claude-sonnet-4-5"),
   prompt: "Summarize all the emails in my Gmail inbox today",
   stopWhen: stepCountIs(10),
