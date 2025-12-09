@@ -3,7 +3,7 @@ import { Agent, run, hostedMcpTool } from "@openai/agents";
 import { createInterface } from "readline/promises";
 
 const composioApiKey = process.env.COMPOSIO_API_KEY;
-const userId = "550e8400-e29b-41d4-a716-446655440000"; // Your user's unique identifier
+const userId = "user-1234"; // Your user's unique identifier
 
 const composio = new Composio({ apiKey: composioApiKey });
 const { mcp } = await composio.create(userId);

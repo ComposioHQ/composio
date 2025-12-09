@@ -5,7 +5,7 @@ description: "Access 800+ integrations through Tool Router"
 keywords: "tool router, tools, toolkits, integrations, composio"
 ---
 
-Tool Router gives your agent access to most Composio toolkits by default. For details on configuring which toolkits and tools are available in a session, see [Session configuration](/tool-router/creating-sessions).
+Tool Router gives your agent access to most Composio toolkits by default. For details on configuring which toolkits are available in a session, see [Users and sessions](/tool-router/users-and-sessions#enabling-toolkits).
 
 ## Toolkits and tools
 
@@ -32,14 +32,14 @@ When you create a session, all toolkits are available:
 
 <CodeGroup>
 ```python
-session = composio.create(user_id="pg-user-550e8400-e29b-41d4")
+session = composio.create(user_id="user_123")
 ```
 ```typescript
-const session = await composio.create("pg-user-550e8400-e29b-41d4");
+const session = await composio.create("user_123");
 ```
 </CodeGroup>
 
-Your agent can search and use tools from any toolkit. To restrict or configure which toolkits are available, see [Session configuration](/docs/tool-router/creating-sessions).
+Your agent can search and use tools from any toolkit. To restrict or configure which toolkits are available, see [Users and sessions](/tool-router/users-and-sessions#enabling-toolkits).
 
 <Tip>
 Triggers can be used alongside Tool Router to respond to events in connected apps. See [Using triggers](/docs/tools-and-triggers/using-triggers) for setup instructions.

@@ -1,0 +1,958 @@
+---
+title: Quickstart
+subtitle: Connect AI agents to 500+ tools in under 5 minutes
+description: "Build production-ready AI agents with real-world tool access using Composio's powerful integration platform"
+---
+
+
+## Prerequisites
+
+Before you begin, ensure you have:
+- **Composio account**: [Sign up free](https://platform.composio.dev) (no credit card required)
+- **API key**: Get it from [your dashboard](https://platform.composio.dev?next_page=/settings)
+- **Development environment**: Python 3.10+ or Node.js 18+
+- **AI provider API key**: OpenAI, Anthropic, or other supported provider
+
+
+## Execute your first tool
+
+Composio offers three ways to connect AI agents to tools:
+
+<Tabs>
+<Tab title="Tool Router">
+Single MCP server and Tool that can search, authenticate, and execute across all Composio tools.
+
+<Steps>
+<Step title="Install SDK">
+<CodeGroup>
+```bash Python
+pip install composio
+```
+```bash TypeScript
+npm install @composio/core
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a session">
+Initialize Tool Router with your toolkits:
+
+<CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio()
+
+session = composio.tool_router.create(
+    user_id='user-123',
+    toolkits=['gmail', 'calendar', 'slack', 'notion']
+)
+
+print(f'Session created: {session.id}')
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const session = await composio.toolRouter.create({
+  userId: 'user-123',
+  toolkits: ['gmail', 'calendar', 'slack', 'notion']
+});
+
+console.log('Session created:', session.id);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Get tools and execute">
+Use the session to get tools for any AI framework:
+
+<CodeGroup>
+```python Python
+from openai import OpenAI
+
+client = OpenAI()
+
+tools = session.get_tools()
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{
+        "role": "user",
+        "content": "Send an email to john@example.com about the meeting"
+    }],
+    tools=tools,
+    tool_choice="auto"
+)
+
+result = session.handle_tool_call(response)
+print(f"Result: {result}")
+```
+```typescript TypeScript
+import OpenAI from 'openai';
+
+const client = new OpenAI();
+
+const tools = await session.getTools();
+
+const response = await client.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{
+    role: 'user',
+    content: 'Send an email to john@example.com about the meeting'
+  }],
+  tools: tools,
+  tool_choice: 'auto'
+});
+
+const result = await session.handleToolCall(response);
+console.log('Result:', result);
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+<CardGroup cols={2}>
+<Card title="Tool Router Overview" icon="fa-light fa-sparkles" href="/tool-router/overview">
+Learn about Tool Router capabilities
+</Card>
+<Card title="Tool Router Quickstart" icon="fa-light fa-rocket" href="/tool-router/quickstart">
+Complete quickstart guide
+</Card>
+</CardGroup>
+
+</Tab>
+
+<Tab title="Composio Tools">
+Use Composio SDK to integrate tools directly with your favorite AI frameworks.
+
+<Tabs>
+<Tab title="OpenAI">
+<Steps>
+<Step title="Install Composio SDK and Authenticate your Users">
+Install the toolkit to get started
+
+<CodeGroup>
+```bash Python
+pip install composio composio-openai
+```
+```bash TypeScript  
+npm install @composio/core @composio/openai
+```
+</CodeGroup>
+
+**Create an Auth Config for Gmail**
+
+Auth Configs help you define how users should be authenticated.
+
+<CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio()
+
+# Create auth config for Gmail
+auth_config = composio.auth_configs.create(
+    toolkit="gmail",
+    config={
+        "client_id": "your_gmail_client_id",
+        "client_secret": "your_gmail_client_secret",
+        "scopes": ["https://www.googleapis.com/auth/gmail.send"]
+    }
+)
+
+print(f"Auth Config ID: {auth_config.id}")
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Create auth config for Gmail
+const authConfig = await composio.authConfigs.create({
+  toolkit: 'gmail',
+  config: {
+    clientId: 'your_gmail_client_id',
+    clientSecret: 'your_gmail_client_secret',
+    scopes: ['https://www.googleapis.com/auth/gmail.send']
+  }
+});
+
+console.log(`Auth Config ID: ${authConfig.id}`);
+```
+</CodeGroup>
+
+**Connect your users via the auth config**
+
+Use composio auth links to let your users authenticate their accounts.
+
+<CodeGroup>
+```python Python
+# Generate connection request for a user
+connection_request = composio.connected_accounts.link(
+    user_id="user-123",
+    auth_config_id=auth_config.id
+)
+
+# Redirect user to this URL for authentication
+print(f"Please authorize at: {connection_request.redirect_url}")
+
+# Wait for connection to be established
+connection = connection_request.wait_for_connection()
+print(f"Connected: {connection.id}")
+```
+```typescript TypeScript
+// Generate connection request for a user
+const connectionRequest = await composio.connectedAccounts.link({
+  userId: 'user-123',
+  authConfigId: authConfig.id
+});
+
+// Redirect user to this URL for authentication
+console.log(`Please authorize at: ${connectionRequest.redirectUrl}`);
+
+// Wait for connection to be established
+const connection = await connectionRequest.waitForConnection();
+console.log(`Connected: ${connection.id}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Fetch tools and execute">
+Get the tool your agent needs from composio and execute it.
+
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet
+import openai
+
+# Initialize
+openai_client = openai.Client()
+toolset = ComposioToolSet()
+
+# Fetch tools for the user
+tools = toolset.get_tools(
+    actions=["GMAIL_SEND_EMAIL"],
+    entity_id="user-123"
+)
+
+# Use with OpenAI
+response = openai_client.chat.completions.create(
+    model="gpt-4",
+    messages=[{
+        "role": "user", 
+        "content": "Send an email to john@example.com saying 'Meeting confirmed for 3pm tomorrow'"
+    }],
+    tools=tools,
+    tool_choice="auto"
+)
+
+# Execute the tool call
+result = toolset.handle_tool_call(response, entity_id="user-123")
+print(f"Email sent successfully: {result}")
+```
+```typescript TypeScript
+import { OpenAIToolSet } from '@composio/openai';
+import OpenAI from 'openai';
+
+// Initialize
+const openai = new OpenAI();
+const toolset = new OpenAIToolSet({ 
+  apiKey: process.env.COMPOSIO_API_KEY 
+});
+
+// Fetch tools for the user
+const tools = await toolset.getTools({ 
+  actions: ['GMAIL_SEND_EMAIL'],
+  entityId: 'user-123'
+});
+
+// Use with OpenAI
+const response = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{
+    role: 'user',
+    content: "Send an email to john@example.com saying 'Meeting confirmed for 3pm tomorrow'"
+  }],
+  tools: tools,
+  tool_choice: 'auto'
+});
+
+// Execute the tool call
+const result = await toolset.handleToolCall(response, { 
+  entityId: 'user-123' 
+});
+console.log('Email sent successfully:', result);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create triggers and listen to events">
+Setup triggers to run agents when specific events occur.
+
+<CodeGroup>
+```python Python
+# Create a trigger for new Gmail messages
+trigger = composio.triggers.create(
+    user_id="user-123",
+    toolkit="gmail",
+    trigger_name="GMAIL_NEW_MESSAGE",
+    config={
+        "label_ids": ["INBOX"],
+        "poll_interval": 60  # Check every 60 seconds
+    }
+)
+
+print(f"Trigger created: {trigger.id}")
+
+# Subscribe to trigger events
+@composio.triggers.on("GMAIL_NEW_MESSAGE")
+def handle_new_email(event):
+    print(f"New email from: {event['from']}")
+    print(f"Subject: {event['subject']}")
+    
+    # Process with AI
+    response = openai_client.chat.completions.create(
+        model="gpt-4",
+        messages=[{
+            "role": "user",
+            "content": f"Summarize this email: {event['body']}"
+        }]
+    )
+    
+    print(f"Summary: {response.choices[0].message.content}")
+
+# Start listening for events
+composio.triggers.start_listening()
+```
+```typescript TypeScript
+// Create a trigger for new Gmail messages
+const trigger = await composio.triggers.create({
+  userId: 'user-123',
+  toolkit: 'gmail',
+  triggerName: 'GMAIL_NEW_MESSAGE',
+  config: {
+    labelIds: ['INBOX'],
+    pollInterval: 60  // Check every 60 seconds
+  }
+});
+
+console.log(`Trigger created: ${trigger.id}`);
+
+// Subscribe to trigger events
+composio.triggers.subscribe('GMAIL_NEW_MESSAGE', async (event) => {
+  console.log(`New email from: ${event.from}`);
+  console.log(`Subject: ${event.subject}`);
+  
+  // Process with AI
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{
+      role: 'user',
+      content: `Summarize this email: ${event.body}`
+    }]
+  });
+  
+  console.log(`Summary: ${response.choices[0].message.content}`);
+});
+
+// Start listening for events
+await composio.triggers.startListening();
+```
+</CodeGroup>
+
+<Note>
+For production use, consider using webhooks instead of polling for better performance. See [Triggers documentation](/docs/using-triggers) for more details.
+</Note>
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Anthropic">
+<Steps>
+<Step title="Install SDK">
+<CodeGroup>
+```bash Python
+pip install composio composio-anthropic
+```
+```bash TypeScript
+npm install @composio/core @composio/anthropic
+```
+</CodeGroup>
+</Step>
+
+<Step title="Initialize and authenticate">
+<CodeGroup>
+```python Python
+from composio import Composio
+from composio_anthropic import ComposioToolSet
+import anthropic
+
+# Initialize
+composio = Composio()
+client = anthropic.Anthropic()
+toolset = ComposioToolSet()
+
+# Create auth config for Slack
+auth_config = composio.auth_configs.create(
+    toolkit="slack",
+    config={"client_id": "your_id", "client_secret": "your_secret"}
+)
+
+# Connect user account
+connection = composio.connected_accounts.link(
+    user_id="user-123",
+    auth_config_id=auth_config.id
+)
+print(f"Authorize at: {connection.redirect_url}")
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+import { AnthropicToolSet } from '@composio/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+// Initialize
+const composio = new Composio();
+const client = new Anthropic();
+const toolset = new AnthropicToolSet({ composio });
+
+// Create auth config for Slack
+const authConfig = await composio.authConfigs.create({
+  toolkit: 'slack',
+  config: { clientId: 'your_id', clientSecret: 'your_secret' }
+});
+
+// Connect user account
+const connection = await composio.connectedAccounts.link({
+  userId: 'user-123',
+  authConfigId: authConfig.id
+});
+console.log(`Authorize at: ${connection.redirectUrl}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Execute tools">
+<CodeGroup>
+```python Python
+# Get tools for the user
+tools = toolset.get_tools(actions=["SLACK_SEND_MESSAGE"])
+
+# Use with Claude
+response = client.messages.create(
+    model="claude-3-sonnet-20240229",
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "Send a message to #general channel about the standup"}
+    ],
+    tools=tools
+)
+
+# Execute the tool call
+result = toolset.handle_tool_call(response, entity_id="user-123")
+print(f"Message sent: {result}")
+```
+```typescript TypeScript
+// Get tools for the user
+const tools = await toolset.getTools({ actions: ['SLACK_SEND_MESSAGE'] });
+
+// Use with Claude
+const response = await client.messages.create({
+  model: 'claude-3-sonnet-20240229',
+  max_tokens: 1024,
+  messages: [
+    { role: 'user', content: 'Send a message to #general channel about the standup' }
+  ],
+  tools: tools
+});
+
+// Execute the tool call
+const result = await toolset.handleToolCall(response, { entityId: 'user-123' });
+console.log('Message sent:', result);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="LangChain">
+<Steps>
+<Step title="Install SDK">
+```bash
+pip install composio-langchain langchain langchain-openai
+```
+</Step>
+
+<Step title="Initialize and authenticate">
+```python
+from composio_langchain import ComposioToolSet
+from langchain.agents import create_openai_functions_agent
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+
+# Initialize
+toolset = ComposioToolSet()
+llm = ChatOpenAI(model="gpt-4")
+
+# Create auth config for GitHub
+auth_config = toolset.client.auth_configs.create(
+    toolkit="github",
+    config={"client_id": "your_id", "client_secret": "your_secret"}
+)
+
+# Connect user account
+connection = toolset.client.connected_accounts.link(
+    user_id="user-123",
+    auth_config_id=auth_config.id
+)
+print(f"Authorize at: {connection.redirect_url}")
+```
+</Step>
+
+<Step title="Execute tools">
+```python
+# Get tools for the user
+tools = toolset.get_tools(actions=["GITHUB_CREATE_ISSUE"])
+
+# Create agent
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant that can interact with GitHub."),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}")
+])
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+from langchain.agents import AgentExecutor
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+# Execute
+result = agent_executor.invoke({
+    "input": "Create a new issue in the main repo about the bug we found"
+}, config={"metadata": {"entity_id": "user-123"}})
+
+print(f"Issue created: {result['output']}")
+```
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Vercel AI SDK">
+<Steps>
+<Step title="Install SDK">
+```bash
+npm install @composio/vercel ai
+```
+</Step>
+
+<Step title="Initialize and authenticate">
+```typescript
+import { Composio } from '@composio/core';
+import { VercelAIToolSet } from '@composio/vercel';
+import { openai } from '@ai-sdk/openai';
+
+// Initialize
+const composio = new Composio();
+const toolset = new VercelAIToolSet({ composio });
+
+// Create auth config for Notion
+const authConfig = await composio.authConfigs.create({
+  toolkit: 'notion',
+  config: { clientId: 'your_id', clientSecret: 'your_secret' }
+});
+
+// Connect user account
+const connection = await composio.connectedAccounts.link({
+  userId: 'user-123',
+  authConfigId: authConfig.id
+});
+console.log(`Authorize at: ${connection.redirectUrl}`);
+```
+</Step>
+
+<Step title="Execute tools">
+```typescript
+import { generateText } from 'ai';
+
+// Get tools for the user
+const tools = await toolset.getTools({ 
+  actions: ['NOTION_CREATE_PAGE'],
+  entityId: 'user-123'
+});
+
+// Use with Vercel AI SDK
+const { text } = await generateText({
+  model: openai('gpt-4'),
+  prompt: 'Create a new Notion page for the Q4 planning',
+  tools: tools,
+});
+
+console.log('Page created:', text);
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+
+<AccordionGroup>
+<Accordion title="Supported frameworks">
+- OpenAI (GPT-4, GPT-3.5)
+- Anthropic (Claude 3.5)
+- Google (Gemini)
+- Vercel AI SDK
+- LangChain
+- LlamaIndex
+- CrewAI
+- Autogen
+</Accordion>
+
+<Accordion title="Advanced features">
+- Custom tool creation
+- Response modifiers
+- Error handling
+- Rate limiting
+- Webhook triggers
+</Accordion>
+</AccordionGroup>
+
+</Tab>
+
+<Tab title="MCP Server">
+Use Model Context Protocol to connect tools with any MCP-compatible AI client.
+
+<Tabs>
+<Tab title="Anthropic">
+<Steps>
+<Step title="Install SDK and create MCP server">
+<CodeGroup>
+```bash Python
+pip install composio anthropic
+```
+```bash TypeScript
+npm install @composio/core @anthropic-ai/sdk
+```
+</CodeGroup>
+
+Set up MCP server with your tools:
+
+<CodeGroup>
+```python Python
+from composio import Composio
+from anthropic import Anthropic
+
+# Initialize clients
+composio = Composio()
+anthropic = Anthropic()
+
+# Create MCP server config
+mcp_config = composio.mcp.create(
+    name="dev-workflow-server",
+    toolkits=[
+        {"toolkit": "github", "auth_config": "ac_github_123"},
+        {"toolkit": "linear", "auth_config": "ac_linear_456"}
+    ],
+    allowed_tools=["GITHUB_LIST_PRS", "GITHUB_CREATE_COMMENT", "LINEAR_CREATE_ISSUE"]
+)
+
+print(f"MCP Config created: {mcp_config.id}")
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+import Anthropic from '@anthropic-ai/sdk';
+
+// Initialize clients
+const composio = new Composio();
+const anthropic = new Anthropic();
+
+// Create MCP server config
+const mcpConfig = await composio.mcp.create({
+  name: 'dev-workflow-server',
+  toolkits: [
+    { toolkit: 'github', authConfig: 'ac_github_123' },
+    { toolkit: 'linear', authConfig: 'ac_linear_456' }
+  ],
+  allowedTools: ['GITHUB_LIST_PRS', 'GITHUB_CREATE_COMMENT', 'LINEAR_CREATE_ISSUE']
+});
+
+console.log(`MCP Config created: ${mcpConfig.id}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Generate user URL and use with Anthropic">
+Get user-specific URL and connect to Claude:
+
+<CodeGroup>
+```python Python
+# Generate MCP instance for user
+instance = mcp_config.generate("user-123")
+
+# Use MCP with Anthropic to manage development workflow
+response = anthropic.beta.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    system="You are a helpful assistant with access to GitHub and Linear tools.",
+    max_tokens=1000,
+    messages=[{
+        "role": "user",
+        "content": "Check my GitHub PRs for review comments and create Linear tasks for any requested changes"
+    }],
+    mcp_servers=[{
+        "type": "url",
+        "url": instance['url'],
+        "name": "composio-mcp-server"
+    }],
+    betas=["mcp-client-2025-04-04"]  # Enable MCP beta
+)
+
+print(response.content)
+```
+```typescript TypeScript
+// Generate MCP instance for user
+const instance = await mcpConfig.generate('user-123');
+
+// Use MCP with Anthropic to manage development workflow
+const response = await anthropic.beta.messages.create({
+  model: 'claude-3-5-sonnet-20241022',
+  system: 'You are a helpful assistant with access to GitHub and Linear tools.',
+  maxTokens: 1000,
+  messages: [{
+    role: 'user',
+    content: 'Check my GitHub PRs for review comments and create Linear tasks for any requested changes'
+  }],
+  mcpServers: [{
+    type: 'url',
+    url: instance.url,
+    name: 'composio-mcp-server'
+  }],
+  betas: ['mcp-client-2025-04-04']  // Enable MCP beta
+});
+
+console.log(response.content);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="OpenAI">
+<Steps>
+<Step title="Install SDK and create MCP server">
+<CodeGroup>
+```bash Python
+pip install composio openai
+```
+```bash TypeScript
+npm install @composio/core openai
+```
+</CodeGroup>
+
+Set up MCP server with your tools:
+
+<CodeGroup>
+```python Python
+from composio import Composio
+from openai import OpenAI
+
+# Initialize clients
+composio = Composio()
+openai = OpenAI()
+
+# Create MCP server config
+mcp_config = composio.mcp.create(
+    name="data-docs-server",
+    toolkits=[
+        {"toolkit": "googlesheets", "auth_config": "ac_sheets_123"},
+        {"toolkit": "notion", "auth_config": "ac_notion_456"}
+    ],
+    allowed_tools=["GOOGLESHEETS_GET_DATA", "GOOGLESHEETS_UPDATE_DATA", "NOTION_CREATE_PAGE"]
+)
+
+print(f"MCP Config created: {mcp_config.id}")
+```
+```typescript TypeScript
+import { Composio } from '@composio/core';
+import OpenAI from 'openai';
+
+// Initialize clients
+const composio = new Composio();
+const openai = new OpenAI();
+
+// Create MCP server config
+const mcpConfig = await composio.mcp.create({
+  name: 'data-docs-server',
+  toolkits: [
+    { toolkit: 'googlesheets', authConfig: 'ac_sheets_123' },
+    { toolkit: 'notion', authConfig: 'ac_notion_456' }
+  ],
+  allowedTools: ['GOOGLESHEETS_GET_DATA', 'GOOGLESHEETS_UPDATE_DATA', 'NOTION_CREATE_PAGE']
+});
+
+console.log(`MCP Config created: ${mcpConfig.id}`);
+```
+</CodeGroup>
+</Step>
+
+<Step title="Generate user URL and use with OpenAI">
+Get user-specific URL and use with GPT:
+
+<CodeGroup>
+```python Python
+# Generate MCP instance for user
+instance = mcp_config.generate("user-123")
+
+# Use MCP with OpenAI for data management
+response = openai.responses.create(
+    model="gpt-4",
+    tools=[{
+        "type": "mcp",
+        "server_label": "composio-server",  
+        "server_description": "Composio MCP server with Google Sheets and Notion integrations",
+        "server_url": instance['url'],
+        "require_approval": "never",
+    }],
+    input="Export the Q4 metrics from Google Sheets and create a comprehensive Notion page with analysis"
+)
+
+print("Response:", response.output_text)
+```
+```typescript TypeScript
+// Generate MCP instance for user
+const instance = await mcpConfig.generate('user-123');
+
+// Use MCP with OpenAI for data management
+const response = await openai.responses.create({
+  model: 'gpt-4',
+  tools: [{
+    type: 'mcp',
+    serverLabel: 'composio-server',
+    serverDescription: 'Composio MCP server with Google Sheets and Notion integrations',
+    serverUrl: instance.url,
+    requireApproval: 'never'
+  }],
+  input: 'Export the Q4 metrics from Google Sheets and create a comprehensive Notion page with analysis'
+});
+
+console.log('Response:', response.outputText);
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Mastra">
+<Steps>
+<Step title="Install SDK and create MCP server">
+```bash
+npm install @composio/core @mastra/core
+```
+
+Set up MCP server with your tools:
+
+```typescript
+import { Composio } from '@composio/core';
+import { Mastra } from '@mastra/core';
+
+// Initialize clients
+const composio = new Composio();
+
+// Create MCP server config
+const mcpConfig = await composio.mcp.create({
+  name: 'automation-server',
+  toolkits: [
+    { toolkit: 'slack', authConfig: 'ac_slack_123' },
+    { toolkit: 'jira', authConfig: 'ac_jira_456' }
+  ]
+});
+
+console.log(`MCP Config created: ${mcpConfig.id}`);
+```
+</Step>
+
+<Step title="Use with Mastra framework">
+```typescript
+// Generate MCP instance for user
+const instance = await mcpConfig.generate('user-123');
+
+// Configure Mastra with MCP
+const mastra = new Mastra({
+  mcp: {
+    servers: [{
+      name: 'composio-mcp',
+      url: instance.url
+    }]
+  }
+});
+
+// Use in Mastra workflow
+const workflow = mastra.createWorkflow({
+  id: 'issue-tracker',
+  execute: async (context) => {
+    const tools = await context.mcp.getTools('composio-mcp');
+    
+    // Use Slack and Jira tools
+    const result = await tools.execute('SLACK_SEND_MESSAGE', {
+      channel: '#dev-team',
+      text: 'New Jira ticket created'
+    });
+    
+    return result;
+  }
+});
+
+await workflow.run();
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+
+</Tab>
+</Tabs>
+
+## Real-world examples
+
+See Composio in action with these practical examples:
+
+<CardGroup cols={3}>
+<Card title="AI Research Assistant" icon="magnifying-glass">
+Perplexity + Notion + Gmail
+
+Researches topics and organizes findings
+</Card>
+
+<Card title="DevOps Agent" icon="code-branch">
+GitHub + Slack + PagerDuty
+
+Manages deployments and incidents
+</Card>
+
+<Card title="Sales Automation" icon="chart-line">
+Salesforce + Calendar + Email
+
+Automates CRM and follow-ups
+</Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+<Card title="Explore providers" icon="plug" href="/providers">
+Deep dive into framework-specific integrations
+</Card>
+
+<Card title="Browse tools" icon="toolbox" href="/tools">
+Discover all 500+ available integrations
+</Card>
+
+<Card title="Authentication guide" icon="key" href="/docs/authenticating-tools">
+Master user authentication flows
+</Card>
+
+<Card title="Build custom tools" icon="hammer" href="/docs/custom-tools">
+Create your own tool integrations
+</Card>
+</CardGroup>
+
+<Tip>
+**Need help?** Join our [Discord community](https://discord.com/invite/composio)
+</Tip>

@@ -20,11 +20,11 @@ In-chat auth is enabled by default. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool 
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
 )
 ```
 ```typescript
-const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");
+const { mcp } = await composio.create("user_123");
 ```
 </CodeGroup>
 
@@ -35,14 +35,14 @@ Redirect users to a specific page after authentication:
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
     manage_connections={
         "callback_url": "https://yourapp.com/chat"
     },
 )
 ```
 ```typescript
-const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4", {
+const { mcp } = await composio.create("user_123", {
   manageConnections: {
     callbackUrl: "https://yourapp.com/chat",
   },
@@ -57,12 +57,12 @@ To manage authentication outside of chat, disable the `COMPOSIO_MANAGE_CONNECTIO
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
     manage_connections=False,
 )
 ```
 ```typescript
-const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4", {
+const { mcp } = await composio.create("user_123", {
   manageConnections: false,
 });
 ```

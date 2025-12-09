@@ -49,14 +49,14 @@ Pass your auth config ID in the session:
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
     auth_configs={
         "github": "ac_your_github_config"
     },
 )
 ```
 ```typescript
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
+const session = await composio.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
   },
@@ -75,7 +75,7 @@ You can white-label some toolkits while using Composio's default credentials for
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
     auth_configs={
         "github": "ac_your_github_config",
         "slack": "ac_your_slack_config",
@@ -84,7 +84,7 @@ session = await composio.create(
 )
 ```
 ```typescript
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
+const session = await composio.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
     slack: "ac_your_slack_config",

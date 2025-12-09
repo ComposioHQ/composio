@@ -6,67 +6,122 @@ keywords: "sessions, users, tool router, configuration"
 hide-nav-links: false
 ---
 
-Sessions are ephemeral, user-scoped configurations that define what tools are available and how authentication works.
+A **user ID** is an identifier from your system (database ID, UUID, or any unique string) that scopes connected accounts and tool access to a specific user. User IDs can represent individuals, teams, or organizations. See [User Management](/docs/user-management) for patterns.
 
-## Users
-
-A user ID is an identifier from your system (database UUID, primary key) that Composio uses to scope connected accounts and tool access.
-
-<CodeGroup>
-```python Python
-session = composio.create(user_id="pg-user-550e8400-e29b-41d4")
-```
-
-```typescript TypeScript
-const session = await composio.create("pg-user-550e8400-e29b-41d4");
-```
-</CodeGroup>
-
-User IDs can represent individuals, teams, or organizations depending on your application. For detailed patterns, see [User Management](/docs/user-management).
-
-## Sessions
-
-A session defines the execution context for Tool Router's meta-tools. It combines:
+A **session** is an ephemeral configuration that combines:
 - Which user's connected accounts to use
 - Which toolkits are available
 - Which auth configs to use
 
-Tool Router's meta-tools (search, execute, workbench, manage connections) are the same for everyone. The session determines the context they operate within - when the agent searches for tools, it searches within the session's allowed toolkits. When it executes a tool, it uses the session user's connected accounts.
+Tool Router's meta-tools are the same for everyone. The session determines the context they operate within.
 
-### Creating a session
+## Creating a session
 
-A session pulls together your user's auth state with your toolkit configuration. All options are optional - by default, all toolkits with Composio managed auth are enabled.
+<CodeGroup>
+```python Python
+session = composio.create(user_id="user_123")
+```
+
+```typescript TypeScript
+const session = await composio.create("user_123");
+```
+</CodeGroup>
+
+### Enabling toolkits
+
+Restrict the session to specific toolkits:
 
 <CodeGroup>
 ```python Python
 session = composio.create(
-    user_id="pg-user-550e8400-e29b-41d4",
-    toolkits=["github", "gmail", "slack"],
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"]
+)
+```
+
+```typescript TypeScript
+const session = await composio.create("user_123", {
+  toolkits: ["github", "gmail", "slack"],
+});
+```
+</CodeGroup>
+
+### Disabling toolkits
+
+Keep all toolkits enabled except specific ones:
+
+<CodeGroup>
+```python Python
+session = composio.create(
+    user_id="user_123",
+    toolkits={"disable": ["exa", "firecrawl"]}
+)
+```
+
+```typescript TypeScript
+const session = await composio.create("user_123", {
+  toolkits: { disable: ["exa", "firecrawl"] },
+});
+```
+</CodeGroup>
+
+### Custom auth configs
+
+Use your own OAuth credentials instead of Composio's defaults:
+
+<CodeGroup>
+```python Python
+session = composio.create(
+    user_id="user_123",
     auth_configs={
-        "github": "ac_your_github_config"
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
     }
 )
 ```
 
 ```typescript TypeScript
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
-  toolkits: ["github", "gmail", "slack"],
+const session = await composio.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
+    slack: "ac_your_slack_config",
   },
 });
 ```
 </CodeGroup>
 
-For all configuration options, see [Creating sessions](/tool-router/creating-sessions).
+See [White-labeling authentication](/tool-router/white-labeling-authentication) for branding, or [Configuring custom auth configs](/tool-router/configuring-custom-auth-configs) for toolkits that require your own credentials.
 
-### Connections persist
+## Connected accounts
 
-Connected accounts are stored in Composio and persist across sessions. When a user connects their GitHub account in one session, it remains available in future sessions.
+Connected accounts are stored in Composio and persist across sessions. When a user connects their GitHub account in one session, it remains available in future sessions. Sessions configure *which* connections to use, but don't own the connections themselves.
 
-Sessions configure *which* connections to use, but don't own the connections themselves.
+### Account selection
 
-## Connected account precedence
+If a user has multiple connected accounts for the same toolkit, you can specify which one to use:
+
+<CodeGroup>
+```python Python
+session = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": "ca_work_gmail",
+        "github": "ca_personal_github"
+    }
+)
+```
+
+```typescript TypeScript
+const session = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: "ca_work_gmail",
+    github: "ca_personal_github",
+  },
+});
+```
+</CodeGroup>
+
+### Precedence
 
 When executing a tool, Tool Router selects the connected account in this order:
 
@@ -78,3 +133,74 @@ When executing a tool, Tool Router selects the connected account in this order:
 
 If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
 
+## Session methods
+
+### mcp
+
+Get the MCP server URL to use with any MCP-compatible client.
+
+<CodeGroup>
+```python Python
+mcp_url = session.mcp.url
+```
+
+```typescript TypeScript
+const { mcp } = session;
+console.log(mcp.url);
+```
+</CodeGroup>
+
+For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients).
+
+### authorize()
+
+Manually authenticate a user to a toolkit outside of the chat flow.
+
+<CodeGroup>
+```python Python
+connection_request = session.authorize(
+    "github",
+    callback_url="https://myapp.com/callback"
+)
+
+print(connection_request.redirect_url)
+
+connected_account = connection_request.wait_for_connection()
+```
+
+```typescript TypeScript
+const connectionRequest = await session.authorize("github", {
+  callbackUrl: "https://myapp.com/callback",
+});
+
+console.log(connectionRequest.redirectUrl);
+
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+</CodeGroup>
+
+For more details, see [Manually authenticating users](/tool-router/manually-authenticating-users).
+
+### toolkits()
+
+List available toolkits and their connection status. You can use this to build a UI showing which apps are connected.
+
+<CodeGroup>
+```python Python
+toolkits = session.toolkits()
+
+for toolkit in toolkits:
+    status = toolkit.connected_account.id if toolkit.connected_account else "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+
+```typescript TypeScript
+const toolkits = await session.toolkits();
+
+toolkits.items.forEach((toolkit) => {
+  console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount?.id ?? "Not connected"}`);
+});
+```
+</CodeGroup>
+
+Returns the first 20 toolkits by default.

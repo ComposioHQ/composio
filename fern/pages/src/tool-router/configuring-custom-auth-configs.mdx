@@ -33,14 +33,14 @@ Pass your auth config ID when creating a session:
 <CodeGroup>
 ```python
 session = composio.create(
-    user_id="pg-user-550e8400-e29b-41d4",
+    user_id="user_123",
     auth_configs={
         "posthog": "ac_your_posthog_config"
     }
 )
 ```
 ```typescript
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
+const session = await composio.create("user_123", {
   authConfigs: {
     posthog: "ac_your_posthog_config",
   },

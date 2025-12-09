@@ -16,12 +16,12 @@ Disable the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool so the agent doesn't prompt 
 <CodeGroup>
 ```python
 session = await composio.create(
-    user="pg-user-550e8400-e29b-41d4",
+    user="user_123",
     manage_connections=False,
 )
 ```
 ```typescript
-const session = await composio.create("pg-user-550e8400-e29b-41d4", {
+const session = await composio.create("user_123", {
   manageConnections: false,
 });
 ```
