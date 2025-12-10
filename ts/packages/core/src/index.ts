@@ -4,7 +4,6 @@ export { OpenAIProvider } from './provider/OpenAIProvider';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
-export { ToolRouter } from './models/ToolRouter.experimental';
 export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';

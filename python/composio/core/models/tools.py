@@ -22,12 +22,12 @@ from composio.core.provider import (
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
 from composio.core.provider.none_agentic import (
     NonAgenticProvider,
-    NoneAgenticProviderExecuteFn,
 )
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
+from composio.core.provider.base import ExecuteToolFn
 
 from ._modifiers import (
     Modifiers,
@@ -78,6 +78,17 @@ class Tools(Resource, t.Generic[TProvider]):
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
+
+        self.provider.set_execute_tool_fn(
+            t.cast(
+                ExecuteToolFn,
+                functools.partial(
+                    self.execute,
+                    # Dangerously skip version check for provider controlled tool execution
+                    dangerously_skip_version_check=True,
+                ),
+            ),
+        )
 
     def _filter_custom_tools(
         self, tools: t.List[str]
@@ -187,19 +198,6 @@ class Tools(Resource, t.Generic[TProvider]):
             )
 
         if issubclass(type(self.provider), NonAgenticProvider):
-            t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
-                t.cast(
-                    NoneAgenticProviderExecuteFn,
-                    functools.partial(
-                        self.execute,
-                        # Dangerously skip version check for non-agentic tool execution
-                        # via providers (e.g. OpenAI tool calling). This mirrors the
-                        # behavior used for agentic providers in `_wrap_execute_tool`
-                        # and keeps manual `tools.execute(...)` calls strict by default.
-                        dangerously_skip_version_check=True,
-                    ),
-                ),
-            )
             return t.cast(NonAgenticProvider, self.provider).wrap_tools(
                 tools=tools_list
             )
@@ -303,7 +301,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 self.execute,
                 modifiers=modifiers,
                 user_id=user_id,
-                # Dangerously skip version check for agentic and non-agentic tool execution via providers
+                # Dangerously skip version check for agentic tool execution via providers
                 # This can be safe because most agentic flows users fetch latest version and then execute the tool
                 dangerously_skip_version_check=True,
             ),
@@ -420,9 +418,11 @@ class Tools(Resource, t.Generic[TProvider]):
         """
 
         tool = self._tool_schemas.get(slug)
-        if tool is None and self._custom_tools.get(slug=slug) is not None:
-            tool = self._custom_tools[slug].info
-            self._tool_schemas[slug] = tool
+        if tool is None:
+            custom_tool = self._custom_tools.get(slug=slug)
+            if custom_tool is not None:
+                tool = custom_tool.info
+                self._tool_schemas[slug] = tool
 
         if tool is None:
             tool = t.cast(

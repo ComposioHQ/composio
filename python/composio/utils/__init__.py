@@ -1,3 +1,6 @@
+from .uuid import generate_short_id, generate_uuid
+
+
 class DeprecationError(Exception):
     """Raised when deprecating some older functions. This is strictly for use
     while developing and will be removed from the codebase later."""
@@ -19,3 +22,11 @@ def deprecate(reason: str = "This function is deprecated"):
         return wrapper
 
     return decorator
+
+
+__all__ = [
+    "DeprecationError",
+    "deprecate",
+    "generate_short_id",
+    "generate_uuid",
+]
