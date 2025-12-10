@@ -22,7 +22,7 @@
     "dotenv": "^16.4.1",
     "openai": "^5.19.1",
     "zod": "catalog:",
-    "zod-to-json-schema": "^3.24.5"
+    "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
