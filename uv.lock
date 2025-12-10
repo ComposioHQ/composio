@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <4"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -23,7 +23,7 @@ members = [
 ]
 
 [manifest.dependency-groups]
-dev = [{ name = "composio", editable = "python" }]
+dev = [{ name = "composio", virtual = "python" }]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -478,7 +478,7 @@ wheels = [
 [[package]]
 name = "composio"
 version = "0.9.5rc2"
-source = { editable = "python" }
+source = { virtual = "python" }
 dependencies = [
     { name = "composio-client" },
     { name = "openai" },
@@ -516,7 +516,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "click", specifier = ">=8.2.1" },
-    { name = "composio", editable = "python" },
+    { name = "composio", virtual = "python" },
     { name = "fastapi", specifier = ">=0.115.9" },
     { name = "langchain-openai", specifier = "==1.1.0" },
     { name = "nox", specifier = ">=2025.5.1" },
@@ -533,7 +533,7 @@ dev = [
 [[package]]
 name = "composio-anthropic"
 version = "0.9.5rc2"
-source = { editable = "python/providers/anthropic" }
+source = { virtual = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
     { name = "composio" },
@@ -565,7 +565,7 @@ wheels = [
 [[package]]
 name = "composio-crewai"
 version = "0.9.5rc2"
-source = { editable = "python/providers/crewai" }
+source = { virtual = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
     { name = "crewai" },
@@ -580,7 +580,7 @@ requires-dist = [
 [[package]]
 name = "composio-gemini"
 version = "0.9.5rc2"
-source = { editable = "python/providers/gemini" }
+source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
     { name = "google-genai" },
@@ -595,7 +595,7 @@ requires-dist = [
 [[package]]
 name = "composio-google"
 version = "0.9.5rc2"
-source = { editable = "python/providers/google" }
+source = { virtual = "python/providers/google" }
 dependencies = [
     { name = "composio" },
     { name = "google-cloud-aiplatform" },
@@ -610,7 +610,7 @@ requires-dist = [
 [[package]]
 name = "composio-google-adk"
 version = "0.9.5rc2"
-source = { editable = "python/providers/google_adk" }
+source = { virtual = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
     { name = "google-adk" },
@@ -625,7 +625,7 @@ requires-dist = [
 [[package]]
 name = "composio-langchain"
 version = "0.9.5rc2"
-source = { editable = "python/providers/langchain" }
+source = { virtual = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
     { name = "langchain" },
@@ -640,7 +640,7 @@ requires-dist = [
 [[package]]
 name = "composio-openai"
 version = "0.9.5rc2"
-source = { editable = "python/providers/openai" }
+source = { virtual = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
     { name = "openai" },
@@ -655,7 +655,7 @@ requires-dist = [
 [[package]]
 name = "composio-openai-agents"
 version = "0.9.5rc2"
-source = { editable = "python/providers/openai_agents" }
+source = { virtual = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
     { name = "openai-agents" },
@@ -891,11 +891,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
-    { name = "composio", editable = "python" },
+    { name = "composio", virtual = "python" },
     { name = "composio-client" },
-    { name = "composio-gemini", editable = "python/providers/gemini" },
-    { name = "composio-langchain", editable = "python/providers/langchain" },
-    { name = "composio-openai", editable = "python/providers/openai" },
+    { name = "composio-gemini", virtual = "python/providers/gemini" },
+    { name = "composio-langchain", virtual = "python/providers/langchain" },
+    { name = "composio-openai", virtual = "python/providers/openai" },
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "inflection", specifier = ">=0.5.1" },
     { name = "nbformat", specifier = ">=5.0.0" },
@@ -910,10 +910,10 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "composio", editable = "python" },
-    { name = "composio-gemini", editable = "python/providers/gemini" },
-    { name = "composio-langchain", editable = "python/providers/langchain" },
-    { name = "composio-openai-agents", editable = "python/providers/openai_agents" },
+    { name = "composio", virtual = "python" },
+    { name = "composio-gemini", virtual = "python/providers/gemini" },
+    { name = "composio-langchain", virtual = "python/providers/langchain" },
+    { name = "composio-openai-agents", virtual = "python/providers/openai_agents" },
     { name = "google-genai", specifier = ">=1.20.0" },
     { name = "langchain", specifier = ">=0.3.25" },
     { name = "openai-agents", specifier = ">=0.0.19" },
