@@ -67,12 +67,14 @@
   This PR adds support for toolkit versions in the TypeScript SDK and introduces new fields for tracking tool deprecation status and no-auth capabilities.
 
   ### Core Features
+
   - **Toolkit Versions Support**:
     - Added `toolkit_versions` parameter to the `Triggers` class, defaulting to `"latest"`
     - Made `Triggers` class generic to accept provider configuration
     - Pass `toolkit_versions` when listing trigger types
 
   ### New Fields
+
   - **Tool Types**:
     - Added `isDeprecated` field to track deprecated tools
     - Added `isNoAuth` field to identify tools that support no-auth mode
@@ -82,17 +84,20 @@
     - Added `availableVersions` array to track all available versions
 
   ### Code Changes
+
   - Updated `Composio` class to pass config to `Triggers` constructor
   - Updated `Tools.get()` to include new `isDeprecated` and `isNoAuth` fields
   - Updated transformers for toolkits and triggers to handle new fields
   - Added TypeScript types for all new fields
 
   ### Tests
+
   - Updated trigger tests to account for `toolkit_versions` and `cursor` parameters
   - Fixed generic type usage in `Triggers` test declarations
   - All 376 tests passing ✅
 
   ### Dependencies
+
   - Updated `@composio/client` to version `0.1.0-alpha.38`
   - Updated `pnpm-lock.yaml` with dependency resolution changes
 
@@ -117,6 +122,7 @@
 ### Minor Changes
 
 - 157bf7b: ### Added
+
   - **Version validation for manual tool execution**: Tools now require explicit toolkit version specification when executing manually to prevent unexpected behavior from `latest` version changes
   - **New `dangerously_skip_version_check` parameter** (Python) / `dangerouslySkipVersionCheck` (TypeScript): Optional flag to bypass version validation (use with caution)
   - **`ToolVersionRequiredError` exception** (Python): Raised when attempting to execute tools with `latest` version without skip flag, includes helpful error messages with 4 possible fixes
@@ -124,6 +130,7 @@
   - **Comprehensive test coverage**: Added 19 new test methods in Python covering all tool execution scenarios including version resolution, error handling, modifiers, and environment variables
 
   ### Changed
+
   - **Tool execution behavior**: Manual execution via `tools.execute()` now validates toolkit versions before API calls
   - **Agentic provider flows**: Automatically set `dangerously_skip_version_check=True` internally to maintain backward compatibility for framework integrations
   - **Instance-level version resolution**: Both `execute()` and `_execute_tool()` methods now consistently resolve versions from instance-level `toolkit_versions` configuration
@@ -131,6 +138,7 @@
   - **Test version format**: Updated all test files to use production date-based version format (`20251201_XX`) instead of semantic versioning
 
   ### Fixed
+
   - **Consistent version handling**: Removed `toolkit_versions` parameter from `_execute_tool()` in favor of instance-level configuration, ensuring consistent version resolution across the SDK
   - **Code formatting**: Applied ruff formatting to all modified Python files
   - **Array parsing to ZodSchema**: Fixes in json-schema-to-zod to parse array without properties and with properties
@@ -172,6 +180,7 @@
   ```
 
   ### Developer Notes
+
   - Agentic framework integrations (LangChain, CrewAI, etc.) are not affected as they automatically use the skip flag
   - The `latest` version can still be used with the skip flag, but specific versions are strongly recommended
   - Error messages include all available resolution options for better developer experience
