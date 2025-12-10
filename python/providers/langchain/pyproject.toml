@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "langchain",
+    "langchain>=1.1.0,<2.0.0",
     "composio",
 ]
 
