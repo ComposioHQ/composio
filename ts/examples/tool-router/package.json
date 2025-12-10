@@ -18,7 +18,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@ai-sdk/mcp": "^0.0.10",
+    "@ai-sdk/mcp": "^0.0.11",
     "@ai-sdk/openai": "^2.0.72",
     "@anthropic-ai/claude-agent-sdk": "^0.1.55",
     "@composio/core": "workspace:*",

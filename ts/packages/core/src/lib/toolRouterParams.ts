@@ -1,53 +1,54 @@
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
-import { ToolRouterConfigTools } from '../types/toolRouter.types';
+import {
+  ToolRouterConfigTools,
+  ToolRouterConfigToolsSchema,
+  ToolRouterToolsParam,
+} from '../types/toolRouter.types';
+import { ValidationError } from '../errors';
 
 export const transformToolRouterToolsParams = (
-  params?: ToolRouterConfigTools | undefined
-): SessionCreateParams.Tools | undefined => {
+  params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
+):
+  | Record<
+      string,
+      SessionCreateParams.Enabled | SessionCreateParams.Disabled | SessionCreateParams.Tags
+    >
+  | undefined => {
   if (!params) {
     return undefined;
   }
 
-  const { overrides, tags } = params;
-
-  const toolOverrides = overrides
-    ? Object.keys(overrides).reduce(
-        (acc, key) => {
-          const override = overrides[key];
-          if (Array.isArray(override)) {
-            acc[key] = { enabled: override };
-          } else if (override !== undefined) {
-            if ('enabled' in override && override.enabled) {
-              acc[key] = { enabled: override.enabled };
-            } else if ('disabled' in override && override.disabled) {
-              acc[key] = { disabled: override.disabled };
+  if (typeof params === 'object') {
+    const result = Object.keys(params).reduce(
+      (acc, key) => {
+        if (Array.isArray(params[key])) {
+          acc[key] = { enabled: params[key] };
+        } else if (typeof params[key] === 'object') {
+          const parsedResult = ToolRouterConfigToolsSchema.safeParse(params[key]);
+          if (parsedResult.success) {
+            const data = parsedResult.data;
+            if (Array.isArray(data)) {
+              acc[key] = { enabled: data };
+            } else if ('enabled' in data) {
+              acc[key] = { enabled: data.enabled };
+            } else if ('disabled' in data) {
+              acc[key] = { disabled: data.disabled };
+            } else if ('tags' in data) {
+              acc[key] = { tags: data.tags };
             }
+          } else {
+            throw new ValidationError(parsedResult.error.message);
           }
-          return acc;
-        },
-        {} as Record<string, SessionCreateParams.Tools.Enabled | SessionCreateParams.Tools.Disabled>
-      )
-    : undefined;
-
-  const tagFilters = tags
-    ? (() => {
-        if (Array.isArray(tags)) {
-          return { include: tags };
-        } else if ('enabled' in tags && tags.enabled) {
-          return { include: tags.enabled };
-        } else if ('disabled' in tags && tags.disabled) {
-          return { exclude: tags.disabled };
+        } else {
+          acc[key] = { enabled: params[key] };
         }
-        return undefined;
-      })()
-    : undefined;
-
-  return {
-    overrides: toolOverrides,
-    filters: tagFilters
-      ? {
-          tags: tagFilters,
-        }
-      : undefined,
-  };
+        return acc;
+      },
+      {} as Record<
+        string,
+        SessionCreateParams.Enabled | SessionCreateParams.Disabled | SessionCreateParams.Tags
+      >
+    );
+    return result;
+  }
 };

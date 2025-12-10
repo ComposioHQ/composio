@@ -15,9 +15,7 @@ const stream = await query({
       composio: {
         type: 'http',
         url: session.mcp.url,
-        headers: {
-          'x-api-key': process.env.COMPOSIO_API_KEY!,
-        }
+        headers: session.mcp.headers
       }
     },
     

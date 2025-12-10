@@ -11,9 +11,7 @@ console.log(`Connecting to MCP server: ${session.mcp.url}`);
 const mcpTool = hostedMcpTool({
   serverLabel: 'ComposioApps',
   serverUrl: session.mcp.url,
-  headers: {
-    'x-api-key': process.env.COMPOSIO_API_KEY!,
-  }
+  headers: session.mcp.headers
 });
 
 

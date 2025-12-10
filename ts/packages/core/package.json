@@ -42,8 +42,8 @@
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
-    "tsup": "catalog:",
     "tsdown": "catalog:",
+    "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
@@ -53,7 +53,7 @@
     "zod": "^3.25 || ^4"
   },
   "dependencies": {
-    "@composio/client": "catalog:",
+    "@composio/client": "0.1.0-alpha.48",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
