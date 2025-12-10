@@ -1,6 +1,6 @@
 [project]
 name = "composio-autogen"
-version = "0.9.3"
+version = "0.9.5-rc.2"
 description = "Use Composio to get an array of tools with your autogen agent."
 readme = "README.md"
 requires-python = ">=3.9,<4"

@@ -24,7 +24,7 @@
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
     "@google/genai": "^1.1.0",
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "catalog:",
     "dotenv": "^16.4.1"
   },
   "devDependencies": {

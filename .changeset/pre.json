@@ -1,0 +1,24 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "composio-docs": "0.0.0",
+    "@composio/core": "0.2.6",
+    "@composio/json-schema-to-zod": "0.1.19",
+    "@composio/anthropic": "0.2.6",
+    "@composio/cloudflare": "0.2.6",
+    "@composio/google": "0.2.6",
+    "@composio/langchain": "0.2.6",
+    "@composio/llamaindex": "0.2.6",
+    "@composio/mastra": "0.2.6",
+    "@composio/openai": "0.2.6",
+    "@composio/openai-agents": "0.2.6",
+    "@composio/vercel": "0.2.18"
+  },
+  "changesets": [
+    "curly-moles-unite",
+    "shaggy-zoos-give",
+    "silly-parrots-grab",
+    "tiny-forks-lie"
+  ]
+}
