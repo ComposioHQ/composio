@@ -1,60 +1,37 @@
-import { openai } from "@ai-sdk/openai";
-import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { Composio } from "@composio/core";
-import { generateText } from "ai";
-import * as readline from "readline";
+import { Agent, run, hostedMcpTool } from "@openai/agents";
+import { createInterface } from "readline/promises";
 
-const composio = new Composio({ apiKey: "your-composio-api-key" });
+const composioApiKey = process.env.COMPOSIO_API_KEY;
+const userId = "user-1234"; // Your user's unique identifier
 
-async function chat() {
-  console.log("Creating Tool Router session...");
-  const { mcp } = await composio.create("pg-user-550e8400-e29b-41d4");
-  console.log(`Tool Router session created: ${mcp.url}`);
+const composio = new Composio({ apiKey: composioApiKey });
+const { mcp } = await composio.create(userId);
 
-  const client = await createMCPClient({
-    transport: {
-      type: "http",
-      url: mcp.url,
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.1",
+  modelSettings: {
+    reasoning: { effort: "low" },
+  },
+  tools: [
+    hostedMcpTool({
+      serverLabel: "composio",
+      serverUrl: mcp.url,
       headers: {
-        "x-api-key": "your-composio-api-key",
+        "x-api-key": composioApiKey,
       },
-    },
-  });
+    }),
+  ],
+});
 
-  const tools = await client.tools();
-  const messages: { role: "user" | "assistant"; content: string }[] = [];
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  console.log("Chat with your agent. Type 'exit' to quit.\n");
-
-  const prompt = () => {
-    rl.question("You: ", async (input) => {
-      if (input.toLowerCase() === "exit") {
-        rl.close();
-        return;
-      }
-
-      messages.push({ role: "user", content: input });
-
-      const { text } = await generateText({
-        model: openai("gpt-4o"),
-        tools,
-        messages,
-        maxSteps: 5,
-      });
-
-      console.log(`Agent: ${text}\n`);
-      messages.push({ role: "assistant", content: text });
-
-      prompt();
-    });
-  };
-
-  prompt();
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+console.log("Assistant: What would you like me to do today?\n");
+while (true) {
+  const input = await rl.question("> ");
+  if (input === "exit") break;
+  const result = await run(agent, input);
+  console.log(`Assistant: ${result.finalOutput}\n`);
 }
-
-chat();
+rl.close();

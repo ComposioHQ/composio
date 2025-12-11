@@ -1,5 +1,5 @@
 ---
-title: Using in-chat authentication
+title: Using In-chat authentication
 image: "https://og.composio.dev/api/og?title=Using%20In-chat%20Authentication"
 description: "Let your agent prompt users to connect accounts during conversation"
 keywords: "tool router, authentication, in-chat, MANAGE_CONNECTIONS"
@@ -9,22 +9,25 @@ In-chat authentication lets your agent prompt users to connect accounts during c
 
 ## How it works
 
-1. Agent searches for tools via `COMPOSIO_SEARCH_TOOLS`
-2. `COMPOSIO_MANAGE_CONNECTIONS` checks connection status, returns Connect Link URL if needed
+1. Agent searches for tools via the `COMPOSIO_SEARCH_TOOLS` meta-tool
+2. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool checks connection status, returns Connect Link URL if needed
 3. User authenticates, confirms in chat, agent continues
 
 ## Configuration
 
-In-chat auth is enabled by default. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool is included automatically.
+By just creating a session with default configs, you are enabling in-chat auth. The `manage_connections` parameter defaults to `True`, which includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool automatically:
 
 <CodeGroup>
 ```python
 session = await composio.create(
     user="user_123",
+    manage_connections=True,  # default
 )
 ```
 ```typescript
-const { mcp } = await composio.create("user_123");
+const session = await composio.create("user_123", {
+  manageConnections: true,  // default
+});
 ```
 </CodeGroup>
 
@@ -50,50 +53,16 @@ const { mcp } = await composio.create("user_123", {
 ```
 </CodeGroup>
 
-### Disabling in-chat auth
-
-To manage authentication outside of chat, disable the `COMPOSIO_MANAGE_CONNECTIONS` tool:
-
-<CodeGroup>
-```python
-session = await composio.create(
-    user="user_123",
-    manage_connections=False,
-)
-```
-```typescript
-const { mcp } = await composio.create("user_123", {
-  manageConnections: false,
-});
-```
-</CodeGroup>
-
-See [Manually authenticating users](/tool-router/manually-authenticating-users) for the alternative approach.
-
 ## Examples
 
 <CodeGroup>
-<CodeGroupItem title="OpenAI Agents SDK (Python)">
-<SnippetCode src="fern/snippets/tool-router/python/in-chat-auth.py" />
-</CodeGroupItem>
-<CodeGroupItem title="Vercel AI SDK (TypeScript)">
-<SnippetCode src="fern/snippets/tool-router/typescript/in-chat-auth.ts" />
-</CodeGroupItem>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-openai.py" title="Python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-openai.ts" title="TypeScript" />
 </CodeGroup>
 
-### Example conversation
+What this looks like when you run the code:
 
 ```
-You: Star the composio repo on GitHub
+Assistant: What would you like me to do today?
 
-Agent: I'll help you star the Composio repo. Let me search for the right tools.
-
-I found the tool to star repositories, but I need you to connect your GitHub 
-account first. Please click the link below to authorize:
-https://connect.composio.dev/link/ln_abc123
-
-You: Done
-
-Agent: Done! I've starred ComposioHQ/composio.
-```
-
+> Star the composio repo on GitHub
