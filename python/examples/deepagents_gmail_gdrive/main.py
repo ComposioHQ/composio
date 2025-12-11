@@ -29,9 +29,13 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 
 
+DEFAULT_OPENAI_MODEL = "gpt-4o"
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929"
+
+
 def create_gmail_gdrive_agent(
     user_id: str = "default",
-    model_name: str = "gpt-4o",
+    model_name: str | None = None,
     use_anthropic: bool = False,
 ):
     """
@@ -39,7 +43,8 @@ def create_gmail_gdrive_agent(
 
     Args:
         user_id: The Composio user ID for authentication
-        model_name: The model to use (default: gpt-4o)
+        model_name: The model to use. Defaults to gpt-4o for OpenAI or
+            claude-sonnet-4-5-20250929 for Anthropic if not specified.
         use_anthropic: Whether to use Anthropic's Claude model instead of OpenAI
 
     Returns:
@@ -61,12 +66,12 @@ def create_gmail_gdrive_agent(
 
     if use_anthropic:
         model = ChatAnthropic(
-            model_name="claude-sonnet-4-5-20250929",
+            model_name=model_name or DEFAULT_ANTHROPIC_MODEL,
             max_tokens=8192,
         )
     else:
         model = ChatOpenAI(
-            model=model_name,
+            model=model_name or DEFAULT_OPENAI_MODEL,
             temperature=0,
         )
 
@@ -197,8 +202,8 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="gpt-4o",
-        help="Model to use (default: gpt-4o)",
+        default=None,
+        help="Model to use (default: gpt-4o for OpenAI, claude-sonnet-4-5-20250929 for Anthropic)",
     )
     parser.add_argument(
         "--anthropic",
