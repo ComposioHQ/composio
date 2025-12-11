@@ -53,7 +53,7 @@
     "zod": "^3.25 || ^4"
   },
   "dependencies": {
-    "@composio/client": "0.1.0-alpha.48",
+    "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",

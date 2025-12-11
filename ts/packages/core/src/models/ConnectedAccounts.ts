@@ -89,7 +89,6 @@ export class ConnectedAccounts {
       rawQuery = {
         auth_config_ids: parsedQuery.data.authConfigIds,
         cursor: parsedQuery.data.cursor?.toString(),
-        labels: parsedQuery.data.labels,
         limit: parsedQuery.data.limit,
         order_by: parsedQuery.data.orderBy,
         statuses: parsedQuery.data.statuses,

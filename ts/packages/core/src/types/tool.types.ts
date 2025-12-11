@@ -317,6 +317,12 @@ export const ToolExecuteParamsSchema = z.object({
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
 
+export const ToolExecuteMetaParamsSchema = z.object({
+  sessionId: z.string(),
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+export type ToolExecuteMetaParams = z.infer<typeof ToolExecuteMetaParamsSchema>;
+
 /**
  * ToolResponse Schema
  */

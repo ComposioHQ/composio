@@ -34,7 +34,11 @@ import {
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
-import { ProviderOptions } from '../types/modifiers.types';
+import {
+  ExecuteToolModifiers,
+  ProviderOptions,
+  TransformToolSchemaModifier,
+} from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
@@ -161,19 +165,27 @@ export class ToolRouter<
    * @returns A function that wraps the tools based on the provider.
    */
   private createToolsFn = (
-    userId: string,
+    sessionId: string,
     toolSlugs: string[]
   ): ((modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>) => {
     return async (modifiers?: ProviderOptions<TProvider>) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.get(
-        userId,
+      const tools = await ToolsModel.getRawComposioTools(
         {
           tools: toolSlugs,
         },
-        modifiers
+        modifiers?.modifySchema
+          ? {
+              modifySchema: modifiers?.modifySchema,
+            }
+          : undefined
       );
-      return tools;
+      const wrappedTools = ToolsModel.wrapToolsForToolRouter(
+        sessionId,
+        tools,
+        modifiers as ExecuteToolModifiers
+      );
+      return wrappedTools as ReturnType<TProvider['wrapTools']>;
     };
   };
 
@@ -278,7 +290,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(userId, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -306,7 +318,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
