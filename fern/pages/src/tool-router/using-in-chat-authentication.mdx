@@ -19,35 +19,30 @@ By just creating a session with default configs, you are enabling in-chat auth. 
 
 <CodeGroup>
 ```python
-session = await composio.create(
-    user="user_123",
-    manage_connections=True,  # default
-)
+session = composio.create(user_id="user_123")
 ```
 ```typescript
-const session = await composio.create("user_123", {
-  manageConnections: true,  // default
-});
+const session = await composio.create("user_123");
 ```
 </CodeGroup>
 
 ### Custom callback URL
 
-Redirect users to a specific page after authentication:
+Redirect users back to your chat page after they complete authentication:
 
 <CodeGroup>
 ```python
-session = await composio.create(
-    user="user_123",
+session = composio.create(
+    user_id="user_123",
     manage_connections={
         "callback_url": "https://yourapp.com/chat"
     },
 )
 ```
 ```typescript
-const { mcp } = await composio.create("user_123", {
+const session = await composio.create("user_123", {
   manageConnections: {
-    callbackUrl: "https://yourapp.com/chat",
+    callbackUri: "https://yourapp.com/chat",
   },
 });
 ```
@@ -66,3 +61,12 @@ What this looks like when you run the code:
 Assistant: What would you like me to do today?
 
 > Star the composio repo on GitHub
+Assistant: I need you to connect your GitHub account first.
+Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+
+> Done
+
+Assistant: Done! I've starred ComposioHQ/composio.
+```
+
+To manage authentication outside of chat, see [Manually authenticating users](/tool-router/manually-authenticating-users).

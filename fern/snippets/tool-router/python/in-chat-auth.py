@@ -5,7 +5,7 @@ from agents import Agent, Runner, HostedMCPTool, ModelSettings
 composio_api_key = os.environ.get("COMPOSIO_API_KEY")
 user_id = "user_123"  # Your user's unique identifier
 
-composio = Composio()
+composio = Composio(api_key=composio_api_key)
 session = composio.create(user_id=user_id)
 
 agent = Agent(
