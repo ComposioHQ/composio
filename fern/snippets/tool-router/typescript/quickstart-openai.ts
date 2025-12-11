@@ -27,10 +27,11 @@ const agent = new Agent({
 });
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
+console.log("Assistant: What would you like me to do today?\n");
 while (true) {
-  const input = await rl.question("You: ");
+  const input = await rl.question("> ");
   if (input === "exit") break;
   const result = await run(agent, input);
-  console.log(`Agent: ${result.finalOutput}\n`);
+  console.log(`Assistant: ${result.finalOutput}\n`);
 }
 rl.close();

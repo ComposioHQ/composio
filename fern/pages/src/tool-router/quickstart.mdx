@@ -6,16 +6,21 @@ keywords: "tool router quickstart, quickstart"
 hide-nav-links: false
 ---
 
-Build an agent that summarizes your Gmail inbox.
+Build an interactive agent with access to 1000+ tools.
 
 <Tabs>
-<Tab title="OpenAI (TypeScript)">
+<Tab title="OpenAI Agents SDK">
 
 <Steps>
-<Step title="Install Composio SDK">
-```bash
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai-agents
+```
+```bash title="TypeScript" for="typescript"
 npm install @composio/core @openai/agents
 ```
+</CodeGroup>
 </Step>
 
 <Step title="Create session and run agent">
@@ -29,13 +34,17 @@ npm install @composio/core @openai/agents
 
 When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
 
-<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-openai.ts" />
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+
 </Step>
 </Steps>
 
 </Tab>
 
-<Tab title="Vercel AI SDK (Anthropic)">
+<Tab title="Vercel AI SDK">
 
 <Steps>
 <Step title="Install Composio SDK">
