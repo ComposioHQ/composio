@@ -255,10 +255,10 @@ export class ToolRouter<
     const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
-        : (routerConfig.manageConnections?.enabled ?? true);
+        : (routerConfig.manageConnections?.enable ?? true);
 
     const toolkits = Array.isArray(routerConfig.toolkits)
-      ? { enabled: routerConfig.toolkits }
+      ? { enable: routerConfig.toolkits }
       : routerConfig.toolkits;
 
     const tools = transformToolRouterToolsParams(routerConfig.tools);
@@ -271,7 +271,7 @@ export class ToolRouter<
       tools: tools,
       tags: routerConfig.tags,
       manage_connections: {
-        enabled: manageConnectedAccounts,
+        enable: manageConnectedAccounts,
         callback_url:
           typeof routerConfig.manageConnections === 'object'
             ? routerConfig.manageConnections.callbackUrl
@@ -279,7 +279,7 @@ export class ToolRouter<
       },
       workbench: routerConfig.workbench
         ? {
-            proxy_execution_enabled: routerConfig.workbench?.proxyExecutionEnabled,
+            enable_proxy_execution: routerConfig.workbench?.enableProxyExecution,
             auto_offload_threshold: routerConfig.workbench?.autoOffloadThreshold,
           }
         : undefined,

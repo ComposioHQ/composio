@@ -9,7 +9,7 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
   .object({
-    enabled: z
+    enable: z
       .boolean()
       .default(true)
       .optional()
@@ -20,13 +20,6 @@ export const ToolRouterConfigManageConnectionsSchema = z
       .string()
       .optional()
       .describe('The callback uri to use in the tool router session'),
-    inferScopesFromTools: z
-      .boolean()
-      .default(false)
-      .optional()
-      .describe(
-        'Whether to infer scopes from tools in the tool router session. Defaults to false, if set to true, tool router will infer scopes from allowed tools'
-      ),
   })
   .strict();
 
@@ -37,21 +30,21 @@ export const ToolRouterToolkitsParamSchema = z
 
 export const ToolRouterToolkitsDisabledConfigSchema = z
   .object({
-    disabled: ToolRouterToolkitsParamSchema.describe(
+    disable: ToolRouterToolkitsParamSchema.describe(
       'List of toolkits to disable in the tool router session'
     ),
   })
   .strict();
 export const ToolRouterToolkitsEnabledConfigSchema = z
   .object({
-    enabled: ToolRouterToolkitsParamSchema.describe(
+    enable: ToolRouterToolkitsParamSchema.describe(
       'List of toolkits to enable in the tool router session'
     ),
   })
   .strict();
 
 export const ToolRouterManageConnectionsConfigSchema = z.object({
-  enabled: z
+  enable: z
     .boolean()
     .optional()
     .describe(
@@ -67,12 +60,12 @@ export const ToolRouterTagsParamSchema = z
   .describe('The tags to use in the tool router session');
 export const ToolRouterEnabledTagsConfigSchema = z
   .object({
-    enabled: ToolRouterTagsParamSchema.describe('The tags to enable in the tool router session'),
+    enable: ToolRouterTagsParamSchema.describe('The tags to enable in the tool router session'),
   })
   .strict();
 export const ToolRouterDisabledTagsConfigSchema = z
   .object({
-    disabled: ToolRouterTagsParamSchema.describe('The tags to disable in the tool router session'),
+    disable: ToolRouterTagsParamSchema.describe('The tags to disable in the tool router session'),
   })
   .strict();
 export const ToolRouterConfigTagsSchema = z
@@ -89,10 +82,10 @@ export const ToolRouterConfigTagsSchema = z
  * ```typescript
  *  {
  *      gmail: {
- *          enabled: ['gmail_search', 'gmail_send']
+ *          enable: ['gmail_search', 'gmail_send']
  *      },
  *      slack: {
- *          disabled: ['slack_delete_message']
+ *          disable: ['slack_delete_message']
  *      }
  *  }
  * ```
@@ -120,14 +113,14 @@ export const ToolRouterConfigToolsSchema = z
     ToolRouterToolsParamSchema,
     z
       .object({
-        enabled: ToolRouterToolsParamSchema.describe(
+        enable: ToolRouterToolsParamSchema.describe(
           'The tools to enable in the tool router session'
         ),
       })
       .strict(),
     z
       .object({
-        disabled: ToolRouterToolsParamSchema.describe(
+        disable: ToolRouterToolsParamSchema.describe(
           'The tools to disable in the tool router session'
         ),
       })
@@ -147,7 +140,7 @@ export const ToolRouterConfigToolsSchema = z
       if (keys.length > 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Only one of 'enabled', 'disabled', or 'tags' can be specified, but found: ${keys.join(', ')}`,
+          message: `Only one of 'enable', 'disable', or 'tags' can be specified, but found: ${keys.join(', ')}`,
           path: keys,
         });
       }
@@ -194,7 +187,7 @@ export const ToolRouterCreateSessionConfigSchema = z
       ),
     workbench: z
       .object({
-        proxyExecutionEnabled: z
+        enableProxyExecution: z
           .boolean()
           .optional()
           .describe('Whether to enable proxy execution in the tool router session'),
@@ -219,7 +212,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
- * @param {boolean} [manageConnections.enabled] - Whether to use tools to manage connections in the tool router session @default true
+ * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
  * @param {object} workbench - Workbench configuration for tool execution
  * @param {boolean} [workbench.proxyExecutionEnabled] - Whether to enable proxy execution
