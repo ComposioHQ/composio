@@ -10,15 +10,41 @@ Tool Router handles authentication through [Connect Links](/docs/authenticating-
 
 ## In-chat authentication
 
-By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat.
+By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. The agent handles OAuth flows, token refresh, and credential management automatically.
+
+Here's what this looks like in a conversation:
+
+```
+You: Star the composio repo on GitHub
+
+Agent: I need you to connect your GitHub account first.
+       Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+
+You: Done
+
+Agent: Done! I've starred ComposioHQ/composio.
+```
 
 This flow works well for chat applications where users interact directly with the agent. See [Using in-chat authentication](/tool-router/using-in-chat-authentication).
 
 ## Manual authentication
 
-For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically.
+For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically:
 
-Use this when you want users to connect accounts during onboarding, or when building a custom connections page. See [Manually authenticating users](/tool-router/manually-authenticating-users).
+<CodeGroup>
+```python
+connection_request = session.authorize("github")
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/ln_abc123
+```
+```typescript
+const connectionRequest = await session.authorize("github");
+console.log(connectionRequest.redirectUrl);
+// https://connect.composio.dev/link/ln_abc123
+```
+</CodeGroup>
+
+Use this when you want users to connect accounts during onboarding, or when building a custom connections page. See [Manually authenticating users](/tool-router/manually-authenticating-users) for a detailed guide.
 
 ## How Tool Router manages auth configs
 
