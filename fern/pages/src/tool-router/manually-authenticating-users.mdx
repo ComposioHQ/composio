@@ -15,8 +15,8 @@ Disable the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool so the agent doesn't prompt 
 
 <CodeGroup>
 ```python
-session = await composio.create(
-    user="user_123",
+session = composio.create(
+    user_id="user_123",
     manage_connections=False,
 )
 ```
@@ -33,7 +33,7 @@ Use `session.toolkits()` to see which apps the user has connected:
 
 <CodeGroup>
 ```python
-toolkits = await session.toolkits()
+toolkits = session.toolkits()
 
 for toolkit in toolkits:
     status = toolkit.connected_account.status if toolkit.connected_account else "Not connected"
@@ -59,7 +59,7 @@ Use filters to show relevant toolkits in your UI:
 
 <CodeGroup>
 ```python
-toolkits = await session.toolkits(
+toolkits = session.toolkits(
     order_by="popularity",        # Sort by most used
     order_direction="desc",
     category="developer-tools",   # Filter by category
@@ -82,7 +82,7 @@ Use `session.authorize()` to generate a [Connect Link](/docs/authenticating-tool
 
 <CodeGroup>
 ```python
-connection_request = await session.authorize(
+connection_request = session.authorize(
     "gmail",
     callback_url="https://yourapp.com/callback"
 )
@@ -92,7 +92,7 @@ print(connection_request.redirect_url)
 ```
 ```typescript
 const connectionRequest = await session.authorize("gmail", {
-  callbackUrl: "https://yourapp.com/callback",
+  callbackUri: "https://yourapp.com/callback",
 });
 
 console.log(connectionRequest.redirectUrl);
@@ -108,7 +108,7 @@ Use `waitForConnection()` to poll until the user completes authentication:
 
 <CodeGroup>
 ```python
-connected_account = await connection_request.wait_for_connection(60000)
+connected_account = connection_request.wait_for_connection(60000)
 print(f"Connected: {connected_account.id}")
 ```
 ```typescript
@@ -130,129 +130,6 @@ If the user closes the Connect Link without completing auth, the connection rema
 A common pattern is to verify all required connections before starting the agent. For example, a personal assistant might need Gmail, Calendar, Linear, and Slack:
 
 <CodeGroup>
-```python
-from composio import Composio
-from agents import Agent, Runner, HostedMCPTool
-
-composio = Composio()
-
-required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
-
-session = composio.create(
-    user_id=user_id,
-    manage_connections=False,
-)
-
-toolkits = session.toolkits()
-
-def is_connected(slug):
-    toolkit = next((t for t in toolkits if t.slug == slug), None)
-    return toolkit and toolkit.connected_account
-
-pending = [slug for slug in required_toolkits if not is_connected(slug)]
-
-if pending:
-    for slug in pending:
-        connection_request = session.authorize(
-            slug,
-            callback_url="https://yourapp.com/onboarding"
-        )
-        print(f"Connect {slug}: {connection_request.redirect_url}")
-        connection_request.wait_for_connection()
-
-agent = Agent(
-    name="Personal Assistant",
-    instructions="You are a helpful personal assistant.",
-    tools=[
-        HostedMCPTool(
-            tool_config={
-                "type": "mcp",
-                "server_label": "composio",
-                "server_url": session.mcp.url,
-                "require_approval": "never",
-            }
-        )
-    ],
-)
-
-result = Runner.run_sync(agent, "Summarize my emails from today")
-print(result.final_output)
-```
-```typescript
-import { Composio } from "@composio/core";
-import { Agent, run, hostedMcpTool } from "@openai/agents";
-
-const composio = new Composio();
-
-const requiredToolkits = ["gmail", "googlecalendar", "linear", "slack"];
-
-const session = await composio.create(userId, {
-  manageConnections: false,
-});
-
-const toolkits = await session.toolkits();
-
-const pending = requiredToolkits.filter((slug) => {
-  const toolkit = toolkits.find((t) => t.slug === slug);
-  return !toolkit?.connectedAccount;
-});
-
-for (const slug of pending) {
-  const connectionRequest = await session.authorize(slug, {
-    callbackUrl: "https://yourapp.com/onboarding",
-  });
-  console.log(`Connect ${slug}: ${connectionRequest.redirectUrl}`);
-  await connectionRequest.waitForConnection();
-}
-
-const agent = new Agent({
-  name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant.",
-  tools: [
-    hostedMcpTool({
-      serverLabel: "composio",
-      serverUrl: session.mcp.url,
-    }),
-  ],
-});
-
-const result = await run(agent, "Summarize my emails from today");
-console.log(result.finalOutput);
-```
+<SnippetCode src="fern/snippets/tool-router/python/manual-auth.py" title="Python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/manual-auth.ts" title="TypeScript" />
 </CodeGroup>
-
-## Multiple accounts
-
-Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail). Tool Router uses the most recently connected account by default.
-
-To use a specific account, pass it in the session config:
-
-<CodeGroup>
-```python
-session = await composio.create(
-    user=user_id,
-    connected_accounts={
-        "gmail": "ca_specific_account_id",
-    },
-)
-```
-```typescript
-const session = await composio.create(userId, {
-  connectedAccounts: {
-    gmail: "ca_specific_account_id",
-  },
-});
-```
-</CodeGroup>
-
-## Full example
-
-<CodeGroup>
-<CodeGroupItem title="Python">
-<SnippetCode src="fern/snippets/tool-router/python/manual-auth.py" />
-</CodeGroupItem>
-<CodeGroupItem title="TypeScript">
-<SnippetCode src="fern/snippets/tool-router/typescript/manual-auth.ts" />
-</CodeGroupItem>
-</CodeGroup>
-

@@ -1,9 +1,8 @@
 import { Composio } from "@composio/core";
 import { Agent, run, hostedMcpTool } from "@openai/agents";
 
-const composio = new Composio({ apiKey: "your-composio-api-key" });
+const composio = new Composio();
 
-const userId = "pg-user-550e8400-e29b-41d4";
 const requiredToolkits = ["gmail", "googlecalendar", "linear", "slack"];
 
 const session = await composio.create(userId, {
@@ -17,20 +16,13 @@ const pending = requiredToolkits.filter((slug) => {
   return !toolkit?.connectedAccount;
 });
 
-if (pending.length > 0) {
-  console.log("Connect these apps to continue:");
-
-  for (const slug of pending) {
-    const connectionRequest = await session.authorize(slug, {
-      callbackUrl: "https://yourapp.com/onboarding",
-    });
-    console.log(`  ${slug}: ${connectionRequest.redirectUrl}`);
-    await connectionRequest.waitForConnection(60000);
-    console.log(`  ${slug} connected`);
-  }
+for (const slug of pending) {
+  const connectionRequest = await session.authorize(slug, {
+    callbackUri: "https://yourapp.com/onboarding",
+  });
+  console.log(`Connect ${slug}: ${connectionRequest.redirectUrl}`);
+  await connectionRequest.waitForConnection();
 }
-
-console.log("\nAll apps connected. Starting assistant...");
 
 const agent = new Agent({
   name: "Personal Assistant",

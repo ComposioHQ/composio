@@ -1,0 +1,53 @@
+---
+title: Managing multiple accounts for a user
+image: "https://og.composio.dev/api/og?title=Managing%20Multiple%20Accounts"
+description: "Handle users with multiple accounts for the same toolkit"
+keywords: "tool router, multiple accounts, connected accounts, account selection"
+---
+
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail). Tool Router uses the most recently connected account by default.
+
+## Selecting a specific account
+
+To use a specific account, pass it in the session config:
+
+<CodeGroup>
+```python
+session = composio.create(
+    user_id=user_id,
+    connected_accounts={
+        "gmail": "ca_specific_account_id",
+    },
+)
+```
+```typescript
+const session = await composio.create(userId, {
+  connectedAccounts: {
+    gmail: "ca_specific_account_id",
+  },
+});
+```
+</CodeGroup>
+
+## Listing connected accounts
+
+Use `session.toolkits()` to see all connected accounts for a user:
+
+<CodeGroup>
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits:
+    if toolkit.connected_account:
+        print(f"{toolkit.name}: {toolkit.connected_account.id}")
+```
+```typescript
+const toolkits = await session.toolkits();
+
+for (const toolkit of toolkits) {
+  if (toolkit.connectedAccount) {
+    console.log(`${toolkit.name}: ${toolkit.connectedAccount.id}`);
+  }
+}
+```
+</CodeGroup>

@@ -314,6 +314,9 @@ navigation:
     - page: Manually Authenticating Users
       path: pages/dist/tool-router/manually-authenticating-users.mdx
       slug: manually-authenticating-users
+    - page: Managing Multiple Accounts for a User
+      path: pages/dist/tool-router/managing-multiple-accounts.mdx
+      slug: managing-multiple-accounts
     - page: White-labeling Authentication
       path: pages/dist/tool-router/white-labeling-authentication.mdx
       slug: white-labeling-authentication
