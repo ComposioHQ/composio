@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { pipe, Console, Effect, Option } from 'effect';
+import { pipe, Console, Effect, Option, Array } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import type { GetCmdParams } from 'src/type-utils';
@@ -18,13 +18,23 @@ export const outputOpt = Options.optional(
   Options.withDescription('Output directory for the generated Python type stubs')
 );
 
-const _pyCmd$Generate = Command.make('generate', { outputOpt }).pipe(
+export const toolkitsOpt = Options.text('toolkits').pipe(
+  Options.repeated,
+  Options.withDescription(
+    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+  )
+);
+
+const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pipe(
   Command.withDescription('Updates the local type stubs with the latest app data.')
 );
 
 export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));
 
-export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCmd$Generate>) {
+export function generatePythonTypeStubs({
+  outputOpt,
+  toolkitsOpt,
+}: GetCmdParams<typeof _pyCmd$Generate>) {
   return Effect.gen(function* () {
     const process = yield* NodeProcess;
     const cwd = process.cwd;
@@ -48,11 +58,28 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
+    // Validate toolkit slugs if specified
+    const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
+    const validatedToolkitSlugs = hasToolkitsFilter
+      ? yield* client
+          .validateToolkits(toolkitsOpt)
+          .pipe(
+            Effect.catchTag('services/InvalidToolkitsError', error =>
+              Effect.fail(
+                new Error(
+                  `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
+                    `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
+                )
+              )
+            )
+          )
+      : [];
+
     const triggerTypesAsEnums = yield* Effect.logDebug('Fetching trigger types...').pipe(
       Effect.flatMap(() => client.getTriggerTypesAsEnums())
     );
 
-    const [toolkits, tools, triggerTypes] = yield* Effect.all(
+    const [allToolkits, tools, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
         Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
@@ -62,6 +89,17 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
       ],
       { concurrency: 'unbounded' }
     );
+
+    // Filter toolkits if --toolkits was specified
+    const toolkits = hasToolkitsFilter
+      ? client.filterToolkitsBySlugs(allToolkits, validatedToolkitSlugs)
+      : allToolkits;
+
+    if (hasToolkitsFilter) {
+      yield* Console.log(
+        `Filtering to ${toolkits.length} toolkit(s): ${toolkits.map(t => t.slug).join(', ')}`
+      );
+    }
 
     const typeableTools = { withTypes: false as const, tools };
 

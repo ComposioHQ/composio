@@ -18,17 +18,24 @@ export const typeTools = Options.boolean('type-tools').pipe(
   )
 );
 
+export const toolkitsOpt = Options.text('toolkits').pipe(
+  Options.repeated,
+  Options.withDescription(
+    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+  )
+);
+
 /**
  * @example
  * ```bash
  * composio generate <command>
  * ```
  */
-export const generateCmd = Command.make('generate', { outputOpt, typeTools }).pipe(
+export const generateCmd = Command.make('generate', { outputOpt, typeTools, toolkitsOpt }).pipe(
   Command.withDescription(
     'Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).'
   ),
-  Command.withHandler(({ outputOpt, typeTools }) =>
+  Command.withHandler(({ outputOpt, typeTools, toolkitsOpt }) =>
     Effect.gen(function* () {
       const process = yield* NodeProcess;
       const cwd = process.cwd;
@@ -41,9 +48,15 @@ export const generateCmd = Command.make('generate', { outputOpt, typeTools }).pi
       // Redirect to either `ts generate` or `py generate` commands
       yield* Match.value(envLang).pipe(
         Match.when('TypeScript', () =>
-          generateTypescriptTypeStubs({ outputOpt, compact: false, transpiled: false, typeTools })
+          generateTypescriptTypeStubs({
+            outputOpt,
+            compact: false,
+            transpiled: false,
+            typeTools,
+            toolkitsOpt,
+          })
         ),
-        Match.when('Python', () => generatePythonTypeStubs({ outputOpt })),
+        Match.when('Python', () => generatePythonTypeStubs({ outputOpt, toolkitsOpt })),
         Match.exhaustive
       );
     })
