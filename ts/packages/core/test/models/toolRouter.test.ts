@@ -67,12 +67,11 @@ const mockSessionRetrieveResponse = {
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
     user_id: 'user_123',
-    toolkits: { enabled: ['gmail', 'slack', 'github'] },
+    toolkits: { enable: ['gmail', 'slack', 'github'] },
     auth_configs: {},
     connected_accounts: {},
-    connections: {
-      auto_manage_connections: true,
-      infer_scopes_from_tools: false,
+    manage_connections: {
+      enable: true,
     },
   },
 };
@@ -135,11 +134,11 @@ describe('ToolRouter', () => {
   // Helper function to create expected manage_connections object
   const createExpectedManageConnections = (
     overrides: {
-      enabled?: boolean;
+      enable?: boolean;
       callbackUrl?: string;
     } = {}
   ) => ({
-    enabled: overrides.enabled ?? true,
+    enable: overrides.enable ?? true,
     callback_url: overrides.callbackUrl ?? undefined,
   });
 
@@ -232,7 +231,7 @@ describe('ToolRouter', () => {
     });
 
     describe('toolkits configuration', () => {
-      it('should create a session with toolkits as array (enabled toolkits)', async () => {
+      it('should create a session with toolkits as array (enable toolkits)', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
@@ -244,7 +243,7 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            enabled: ['gmail', 'slack', 'github'],
+            enable: ['gmail', 'slack', 'github'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
@@ -255,12 +254,12 @@ describe('ToolRouter', () => {
         });
       });
 
-      it('should create a session with enabled toolkits configuration', async () => {
+      it('should create a session with enable toolkits configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           toolkits: {
-            enabled: ['gmail', 'slack'],
+            enable: ['gmail', 'slack'],
           },
         };
 
@@ -269,7 +268,7 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            enabled: ['gmail', 'slack'],
+            enable: ['gmail', 'slack'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
@@ -280,12 +279,12 @@ describe('ToolRouter', () => {
         });
       });
 
-      it('should create a session with disabled toolkits configuration', async () => {
+      it('should create a session with disable toolkits configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           toolkits: {
-            disabled: ['notion', 'trello'],
+            disable: ['notion', 'trello'],
           },
         };
 
@@ -294,7 +293,7 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            disabled: ['notion', 'trello'],
+            disable: ['notion', 'trello'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
@@ -327,7 +326,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -336,13 +335,13 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with tools overrides with enabled tools', async () => {
+    //   it('should create a session with tools overrides with enable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //       },
     //     };
@@ -356,7 +355,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -365,13 +364,13 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with tools overrides with disabled tools', async () => {
+    //   it('should create a session with tools overrides with disable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //       },
     //     };
@@ -385,7 +384,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -421,12 +420,12 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with enabled tag filters', async () => {
+    //   it('should create a session with enable tag filters', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
-    //         tags: { enabled: ['important', 'email'] },
+    //         tags: { enable: ['important', 'email'] },
     //       },
     //     };
 
@@ -448,12 +447,12 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with disabled tag filters', async () => {
+    //   it('should create a session with disable tag filters', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
-    //         tags: { disabled: ['dangerous'] },
+    //         tags: { disable: ['dangerous'] },
     //       },
     //     };
 
@@ -482,7 +481,7 @@ describe('ToolRouter', () => {
     //       tools: {
     //         overrides: {
     //           gmail: ['GMAIL_FETCH_EMAILS'],
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         tags: ['important'],
     //       },
@@ -497,8 +496,8 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         filters: {
     //           tags: { include: ['important'] },
@@ -527,7 +526,7 @@ describe('ToolRouter', () => {
           connected_accounts: undefined,
           tools: undefined,
           tags: undefined,
-          manage_connections: createExpectedManageConnections({ enabled: true }),
+          manage_connections: createExpectedManageConnections({ enable: true }),
           workbench: undefined,
         });
       });
@@ -548,17 +547,17 @@ describe('ToolRouter', () => {
           connected_accounts: undefined,
           tools: undefined,
           tags: undefined,
-          manage_connections: createExpectedManageConnections({ enabled: false }),
+          manage_connections: createExpectedManageConnections({ enable: false }),
           workbench: undefined,
         });
       });
 
-      it('should create a session with manageConnections as object with enabled', async () => {
+      it('should create a session with manageConnections as object with enable', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
+            enable: true,
           },
         };
 
@@ -571,7 +570,7 @@ describe('ToolRouter', () => {
           connected_accounts: undefined,
           tools: undefined,
           tags: undefined,
-          manage_connections: createExpectedManageConnections({ enabled: true }),
+          manage_connections: createExpectedManageConnections({ enable: true }),
           workbench: undefined,
         });
       });
@@ -581,7 +580,7 @@ describe('ToolRouter', () => {
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           },
         };
@@ -596,7 +595,7 @@ describe('ToolRouter', () => {
           tools: undefined,
           tags: undefined,
           manage_connections: createExpectedManageConnections({
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           }),
           workbench: undefined,
@@ -608,7 +607,7 @@ describe('ToolRouter', () => {
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           },
         };
@@ -623,7 +622,7 @@ describe('ToolRouter', () => {
           tools: undefined,
           tags: undefined,
           manage_connections: createExpectedManageConnections({
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           }),
           workbench: undefined,
@@ -718,12 +717,12 @@ describe('ToolRouter', () => {
     });
 
     describe('workbench configuration', () => {
-      it('should create a session with proxyExecutionEnabled only', async () => {
+      it('should create a session with enableProxyExecution only', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           workbench: {
-            proxyExecutionEnabled: true,
+            enableProxyExecution: true,
           },
         };
 
@@ -738,7 +737,7 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
-            proxy_execution_enabled: true,
+            enable_proxy_execution: true,
             auto_offload_threshold: undefined,
           },
         });
@@ -764,7 +763,7 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
-            proxy_execution_enabled: undefined,
+            enable_proxy_execution: undefined,
             auto_offload_threshold: 1000,
           },
         });
@@ -775,7 +774,7 @@ describe('ToolRouter', () => {
 
         const config: ToolRouterCreateSessionConfig = {
           workbench: {
-            proxyExecutionEnabled: true,
+            enableProxyExecution: true,
             autoOffloadThreshold: 500,
           },
         };
@@ -791,18 +790,18 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
-            proxy_execution_enabled: true,
+            enable_proxy_execution: true,
             auto_offload_threshold: 500,
           },
         });
       });
 
-      it('should create a session with workbench disabled', async () => {
+      it('should create a session with workbench disable', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           workbench: {
-            proxyExecutionEnabled: false,
+            enableProxyExecution: false,
             autoOffloadThreshold: 0,
           },
         };
@@ -818,7 +817,7 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
-            proxy_execution_enabled: false,
+            enable_proxy_execution: false,
             auto_offload_threshold: 0,
           },
         });
@@ -844,13 +843,12 @@ describe('ToolRouter', () => {
     //         slack: 'conn_456',
     //       },
     //       manageConnections: {
-    //         enabled: true,
+    //         enable: true,
     //         callbackUri: 'https://myapp.com/callback',
-    //         inferScopesFromTools: true,
     //       },
     //       execution: {
-    //         proxyExecutionEnabled: true,
-    //         timeoutSeconds: 30,
+    //         enableProxyExecution: true,
+    //         autoOffloadThreshould: 30,
     //       },
     //     };
 
@@ -859,7 +857,7 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         enabled: ['gmail', 'slack'],
+    //         enable: ['gmail', 'slack'],
     //       },
     //       auth_configs: {
     //         gmail: 'auth_config_123',
@@ -869,7 +867,7 @@ describe('ToolRouter', () => {
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS'] },
     //         },
     //         filters: {
     //           tags: { include: ['important'] },
@@ -877,27 +875,26 @@ describe('ToolRouter', () => {
     //       },
     //       connections: createExpectedConnections({
     //         manageConnections: true,
-    //         inferScopesFromTools: true,
     //         callbackUri: 'https://myapp.com/callback',
     //       }),
     //       execution: {
-    //         proxy_execution_enabled: true,
-    //         timeout_seconds: 30,
+    //         enable_proxy_execution: true,
+    //         auto_offload_threshould: 30,
     //       },
     //     });
     //   });
 
-    //   it('should create a session with toolkits and disabled tools', async () => {
+    //   it('should create a session with toolkits and disable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       toolkits: {
-    //         enabled: ['gmail', 'slack', 'github'],
+    //         enable: ['gmail', 'slack', 'github'],
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //       },
     //     };
@@ -907,14 +904,14 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         enabled: ['gmail', 'slack', 'github'],
+    //         enable: ['gmail', 'slack', 'github'],
     //       },
     //       auth_configs: undefined,
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         filters: undefined,
     //       },
@@ -928,13 +925,13 @@ describe('ToolRouter', () => {
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       toolkits: {
-    //         disabled: ['notion'],
+    //         disable: ['notion'],
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
-    //         tags: { disabled: ['dangerous'] },
+    //         tags: { disable: ['dangerous'] },
     //       },
     //       authConfigs: {
     //         gmail: 'auth_config_123',
@@ -943,8 +940,7 @@ describe('ToolRouter', () => {
     //       },
     //       connectedAccounts: {},
     //       manageConnections: {
-    //         enabled: false,
-    //         inferScopesFromTools: false,
+    //         enable: false,
     //       },
     //     };
 
@@ -953,7 +949,7 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         disabled: ['notion'],
+    //         disable: ['notion'],
     //       },
     //       auth_configs: {
     //         gmail: 'auth_config_123',
@@ -963,7 +959,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: {},
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //         filters: {
     //           tags: { exclude: ['dangerous'] },
