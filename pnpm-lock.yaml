@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20250917.0
     '@composio/client':
-      specifier: 0.1.0-alpha.47
-      version: 0.1.0-alpha.47
+      specifier: 0.1.0-alpha.50
+      version: 0.1.0-alpha.50
     '@modelcontextprotocol/sdk':
       specifier: ^1.24.0
       version: 1.24.1
@@ -637,8 +637,8 @@ importers:
   ts/examples/tool-router:
     dependencies:
       '@ai-sdk/mcp':
-        specifier: ^0.0.10
-        version: 0.0.10(zod@4.1.12)
+        specifier: ^0.0.11
+        version: 0.0.11(zod@4.1.12)
       '@ai-sdk/openai':
         specifier: ^2.0.72
         version: 2.0.77(zod@4.1.12)
@@ -806,7 +806,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.47
+        version: 0.1.0-alpha.50
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -900,7 +900,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.47
+        version: 0.1.0-alpha.50
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1255,8 +1255,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mcp@0.0.10':
-    resolution: {integrity: sha512-BZ7DQkFFg+oTrLkoAHyd7E8tKbPCR2flVo75ruxjQejPt5gXIVcEXhgC1aE8yvuL9O/rGQ+pzYVRAsU0gX2FmA==}
+  '@ai-sdk/mcp@0.0.11':
+    resolution: {integrity: sha512-n0oZsxhPdMaXhAn6LrpMpxABufmeSatfhR3epbrCjJcLEHPOucKwQciwE8CTgIGgwBxHNy1FFLZmcFI77JmJfg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1583,8 +1583,8 @@ packages:
   '@cloudflare/workers-types@4.20250917.0':
     resolution: {integrity: sha512-Lsn9dZoRYZZCXXHZNa50cMP8kWhQZG9M7WjxNSiXFzC8bk4Wh/0SYYo4YINxEjEt6h2o69LmAhFaJ+qgaJTh8Q==}
 
-  '@composio/client@0.1.0-alpha.47':
-    resolution: {integrity: sha512-ggrfbsDrntwBhRn+kncKluISKys9lePNQsJLGS6j/mfH4RBFjtDT4almw3N9vnOwJb0q4OIb/hrmAxZvwsc0Iw==}
+  '@composio/client@0.1.0-alpha.50':
+    resolution: {integrity: sha512-+7LE16XL2D0Z90y0PdBGLDyi9qi8P4TyqTqj2Kwa930rhDaZOkFMmAx9BbjXmx0KWjqpSxwxszcW7FgNpX5jqw==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -2068,6 +2068,7 @@ packages:
 
   '@finom/zod-to-json-schema@3.24.11':
     resolution: {integrity: sha512-fL656yBPiWebtfGItvtXLWrFNGlF1NcDFS0WdMQXMs9LluVg0CfT5E2oXYp0pidl0vVG53XkW55ysijNkU5/hA==}
+    deprecated: 'Use https://www.npmjs.com/package/zod-v3-to-json-schema instead. See issue comment for details: https://github.com/StefanTerdell/zod-to-json-schema/issues/178#issuecomment-3533122539'
     peerDependencies:
       zod: ^4.0.14
 
@@ -5869,6 +5870,7 @@ packages:
   next@16.0.3:
     resolution: {integrity: sha512-Ka0/iNBblPFcIubTA1Jjh6gvwqfjrGq1Y2MTI5lbjeLIAfmC+p5bQmojpRZqgHHVu5cG4+qdIiwXiBSm/8lZ3w==}
     engines: {node: '>=20.9.0'}
+    deprecated: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
@@ -7520,10 +7522,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.17(zod@4.1.12)
       zod: 4.1.12
 
-  '@ai-sdk/mcp@0.0.10(zod@4.1.12)':
+  '@ai-sdk/mcp@0.0.11(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.17(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.18(zod@4.1.12)
       pkce-challenge: 5.0.0
       zod: 4.1.12
 
@@ -7950,7 +7952,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250917.0': {}
 
-  '@composio/client@0.1.0-alpha.47': {}
+  '@composio/client@0.1.0-alpha.50': {}
 
   '@composio/mcp@1.0.3-0': {}
 

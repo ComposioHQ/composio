@@ -136,11 +136,6 @@ export const ConnectedAccountListParamsSchema = z.object({
     .optional()
     .describe('The auth config ids of the connected accounts'),
   cursor: z.string().nullish().describe('The cursor to paginate through the connected accounts'),
-  labels: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe('The labels of the connected accounts'),
   limit: z.number().nullable().optional().describe('The limit of the connected accounts to return'),
   orderBy: z
     .enum(['created_at', 'updated_at'])

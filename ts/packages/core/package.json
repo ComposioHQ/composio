@@ -42,8 +42,8 @@
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
-    "tsup": "catalog:",
     "tsdown": "catalog:",
+    "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
