@@ -36,7 +36,7 @@
 	"dependencies": {
 		"fern-api": "^0.51.39",
 		"gray-matter": "^4.0.3",
-		"supergateway": "^2.8.3"
+		"supergateway": "^3.4.3"
 	},
 	"devDependencies": {
 		"@openai/agents": "^0.2.1",

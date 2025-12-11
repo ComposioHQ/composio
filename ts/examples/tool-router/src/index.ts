@@ -7,6 +7,8 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
+
+
 const tools = await session.tools();
 
 const stream = await streamText({

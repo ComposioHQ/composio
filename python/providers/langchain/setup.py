@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["langchain"],
+    install_requires=["langchain>=1.1.0,<2.0.0"],
     include_package_data=True,
 )

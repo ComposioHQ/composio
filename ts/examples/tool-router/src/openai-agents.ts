@@ -1,3 +1,4 @@
+
 import { Composio } from "@composio/core";
 import { Agent, run, hostedMcpTool } from "@openai/agents";
 import { createInterface } from "node:readline/promises";
@@ -8,7 +9,11 @@ const agent = new Agent({
   name: "Personal Assistant",
   model: "gpt-5.1",
   instructions: "You are a helpful personal assistant. Use Composio tools to execute tasks.",
-  tools: [hostedMcpTool({ serverLabel: "composio", serverUrl: mcp.url, headers: { "x-api-key": process.env.COMPOSIO_API_KEY! } })],
+  tools: [
+    hostedMcpTool({ serverLabel: "composio", serverUrl: mcp.url, headers: {
+      'x-api-key': process.env.COMPOSIO_API_KEY!,
+    } }),
+  ],
 });
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });

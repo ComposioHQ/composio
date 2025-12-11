@@ -9,7 +9,12 @@
  * const composio = new Composio();
  * const userId = 'user_123';
  *
- * const session = await composio.create(userId);
+ * const session = await composio.experimental.create(userId, {
+ *   toolkits: ['gmail'],
+ *   manageConnections: true
+ * });
+ *
+ * console.log(session.mcp.url);
  * ```
  */
 import { Composio as ComposioClient } from '@composio/client';
@@ -29,13 +34,18 @@ import {
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
-import { ProviderOptions } from '../types/modifiers.types';
+import {
+  ExecuteToolModifiers,
+  ProviderOptions,
+  TransformToolSchemaModifier,
+} from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
 import { transform } from '../utils/transform';
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
 import { ValidationError } from '../errors';
+import { transformToolRouterToolsParams } from '../lib/toolRouterParams';
 
 export class ToolRouter<
   TToolCollection,
@@ -77,18 +87,18 @@ export class ToolRouter<
 
   /**
    *
-   * @param sessionId {string} The session id to create the connections function for
-   * @returns {ToolRouterConectionsFn} The connections function
+   * @param sessionId {string} The session id to create the toolkits function for
+   * @returns {ToolRouterToolkitsFn} The toolkits function
    *
    * @example
    * ```typescript
    * import { Composio } from '@composio/core';
    *
    * const composio = new Composio();
-   * const sessionId = 'session_123';
+   * const session = await composio.toolRouter.use('session_123');
    *
-   * const session = await composio.create(sessionId);
-   * console.log(connections);
+   * const toolkits = await session.toolkits();
+   * console.log(toolkits);
    * ```
    */
   private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
@@ -155,19 +165,27 @@ export class ToolRouter<
    * @returns A function that wraps the tools based on the provider.
    */
   private createToolsFn = (
-    userId: string,
+    sessionId: string,
     toolSlugs: string[]
   ): ((modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>) => {
     return async (modifiers?: ProviderOptions<TProvider>) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.get(
-        userId,
+      const tools = await ToolsModel.getRawComposioTools(
         {
           tools: toolSlugs,
         },
-        modifiers
+        modifiers?.modifySchema
+          ? {
+              modifySchema: modifiers?.modifySchema,
+            }
+          : undefined
       );
-      return tools;
+      const wrappedTools = ToolsModel.wrapToolsForToolRouter(
+        sessionId,
+        tools,
+        modifiers as ExecuteToolModifiers
+      );
+      return wrappedTools as ReturnType<TProvider['wrapTools']>;
     };
   };
 
@@ -188,7 +206,7 @@ export class ToolRouter<
       type,
       url,
       headers: {
-        'x-api-key': this.config?.apiKey ?? undefined,
+        ...(this.config?.apiKey ? { 'x-api-key': this.config?.apiKey } : {}),
       },
     };
   };
@@ -197,7 +215,7 @@ export class ToolRouter<
    * Creates a new tool router session for a user.
    *
    * @param userId {string} The user id to create the session for
-   * @param config {ToolRouterConfig} The config for the tool router session
+   * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example
@@ -207,14 +225,25 @@ export class ToolRouter<
    * const composio = new Composio();
    * const userId = 'user_123';
    *
-   * const session = await composio.create(userId, {
-   *  manageConnections: true,
+   * const session = await composio.experimental.create(userId, {
+   *   toolkits: ['gmail'],
+   *   manageConnections: true,
+   *   tools: {
+   *     gmail: {
+   *       disabled: ['gmail_send_email']
+   *     }
+   *   },
+   *   tags: ['readOnlyHint']
    * });
    *
    * console.log(session.sessionId);
-   * console.log(session.url);
-   * console.log(session.tools());
-   * console.log(session.toolkits());
+   * console.log(session.mcp.url);
+   *
+   * // Get tools formatted for your framework (requires provider)
+   * const tools = await session.tools();
+   *
+   * // Check toolkit connection states
+   * const toolkits = await session.toolkits();
    * ```
    */
   async create(
@@ -226,46 +255,42 @@ export class ToolRouter<
     const manageConnectedAccounts =
       typeof routerConfig.manageConnections === 'boolean'
         ? routerConfig.manageConnections
-        : (routerConfig.manageConnections?.enabled ?? true);
+        : (routerConfig.manageConnections?.enable ?? true);
 
     const toolkits = Array.isArray(routerConfig.toolkits)
-      ? { enabled: routerConfig.toolkits }
+      ? { enable: routerConfig.toolkits }
       : routerConfig.toolkits;
 
-    // const tools = transformToolRouterToolsParams(routerConfig.tools);
-
-    const inferScopesFromTools =
-      typeof routerConfig.manageConnections === 'object'
-        ? routerConfig.manageConnections.inferScopesFromTools
-        : false;
+    const tools = transformToolRouterToolsParams(routerConfig.tools);
 
     const payload: SessionCreateParams = {
       user_id: userId,
       toolkits,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
-      // tools: tools,
-      connections: {
-        infer_scopes_from_tools: inferScopesFromTools,
-        auto_manage_connections: manageConnectedAccounts,
+      tools: tools,
+      tags: routerConfig.tags,
+      manage_connections: {
+        enable: manageConnectedAccounts,
         callback_url:
           typeof routerConfig.manageConnections === 'object'
             ? routerConfig.manageConnections.callbackUrl
             : undefined,
       },
-      execution: routerConfig.execution
+      workbench: routerConfig.workbench
         ? {
-            proxy_execution_enabled: routerConfig.execution?.proxyExecutionEnabled,
-            timeout_seconds: routerConfig.execution?.timeoutSeconds,
+            enable_proxy_execution: routerConfig.workbench?.enableProxyExecution,
+            auto_offload_threshold: routerConfig.workbench?.autoOffloadThreshold,
           }
         : undefined,
     };
+
     const session = await this.client.toolRouter.session.create(payload);
 
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(userId, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -283,14 +308,17 @@ export class ToolRouter<
    * const composio = new Composio();
    * const id = 'session_123';
    * const session = await composio.toolRouter.use(id);
-   *```
+   *
+   * console.log(session.mcp.url);
+   * console.log(session.mcp.headers);
+   * ```
    */
   async use(id: string): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const session = await this.client.toolRouter.session.retrieve(id);
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.config.user_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };

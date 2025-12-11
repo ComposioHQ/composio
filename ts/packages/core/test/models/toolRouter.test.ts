@@ -17,7 +17,8 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 vi.mock('../../src/models/Tools', () => {
   return {
     Tools: vi.fn().mockImplementation(() => ({
-      get: vi.fn().mockResolvedValue('mocked-wrapped-tools'),
+      getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+      wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
     })),
   };
 });
@@ -32,6 +33,7 @@ const createMockClient = () => ({
       retrieve: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
+      executeMeta: vi.fn(),
     },
   },
   tools: {
@@ -65,12 +67,11 @@ const mockSessionRetrieveResponse = {
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
     user_id: 'user_123',
-    toolkits: { enabled: ['gmail', 'slack', 'github'] },
+    toolkits: { enable: ['gmail', 'slack', 'github'] },
     auth_configs: {},
     connected_accounts: {},
-    connections: {
-      auto_manage_connections: true,
-      infer_scopes_from_tools: false,
+    manage_connections: {
+      enable: true,
     },
   },
 };
@@ -130,16 +131,14 @@ describe('ToolRouter', () => {
   let mockClient: ReturnType<typeof createMockClient>;
   let mockProvider: MockProvider;
 
-  // Helper function to create expected connections object
-  const createExpectedConnections = (
+  // Helper function to create expected manage_connections object
+  const createExpectedManageConnections = (
     overrides: {
-      manageConnections?: boolean;
+      enable?: boolean;
       callbackUrl?: string;
-      inferScopesFromTools?: boolean;
     } = {}
   ) => ({
-    infer_scopes_from_tools: overrides.inferScopesFromTools ?? false,
-    auto_manage_connections: overrides.manageConnections ?? true,
+    enable: overrides.enable ?? true,
     callback_url: overrides.callbackUrl ?? undefined,
   });
 
@@ -183,8 +182,9 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
 
         expect(session).toHaveProperty('sessionId', 'session_123');
@@ -212,8 +212,9 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
 
         expect(session.sessionId).toBe('session_123');
@@ -230,7 +231,7 @@ describe('ToolRouter', () => {
     });
 
     describe('toolkits configuration', () => {
-      it('should create a session with toolkits as array (enabled toolkits)', async () => {
+      it('should create a session with toolkits as array (enable toolkits)', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
@@ -242,22 +243,23 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            enabled: ['gmail', 'slack', 'github'],
+            enable: ['gmail', 'slack', 'github'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
 
-      it('should create a session with enabled toolkits configuration', async () => {
+      it('should create a session with enable toolkits configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           toolkits: {
-            enabled: ['gmail', 'slack'],
+            enable: ['gmail', 'slack'],
           },
         };
 
@@ -266,22 +268,23 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            enabled: ['gmail', 'slack'],
+            enable: ['gmail', 'slack'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
 
-      it('should create a session with disabled toolkits configuration', async () => {
+      it('should create a session with disable toolkits configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           toolkits: {
-            disabled: ['notion', 'trello'],
+            disable: ['notion', 'trello'],
           },
         };
 
@@ -290,13 +293,14 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
           user_id: userId,
           toolkits: {
-            disabled: ['notion', 'trello'],
+            disable: ['notion', 'trello'],
           },
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
     });
@@ -322,7 +326,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -331,13 +335,13 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with tools overrides with enabled tools', async () => {
+    //   it('should create a session with tools overrides with enable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //       },
     //     };
@@ -351,7 +355,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -360,13 +364,13 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with tools overrides with disabled tools', async () => {
+    //   it('should create a session with tools overrides with disable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //       },
     //     };
@@ -380,7 +384,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //         filters: undefined,
     //       },
@@ -416,12 +420,12 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with enabled tag filters', async () => {
+    //   it('should create a session with enable tag filters', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
-    //         tags: { enabled: ['important', 'email'] },
+    //         tags: { enable: ['important', 'email'] },
     //       },
     //     };
 
@@ -443,12 +447,12 @@ describe('ToolRouter', () => {
     //     });
     //   });
 
-    //   it('should create a session with disabled tag filters', async () => {
+    //   it('should create a session with disable tag filters', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       tools: {
-    //         tags: { disabled: ['dangerous'] },
+    //         tags: { disable: ['dangerous'] },
     //       },
     //     };
 
@@ -477,7 +481,7 @@ describe('ToolRouter', () => {
     //       tools: {
     //         overrides: {
     //           gmail: ['GMAIL_FETCH_EMAILS'],
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         tags: ['important'],
     //       },
@@ -492,8 +496,8 @@ describe('ToolRouter', () => {
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         filters: {
     //           tags: { include: ['important'] },
@@ -521,8 +525,9 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections({ manageConnections: true }),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections({ enable: true }),
+          workbench: undefined,
         });
       });
 
@@ -541,18 +546,18 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections({ manageConnections: false }),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections({ enable: false }),
+          workbench: undefined,
         });
       });
 
-      it('should create a session with manageConnections as object with enabled', async () => {
+      it('should create a session with manageConnections as object with enable', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
-            inferScopesFromTools: false,
+            enable: true,
           },
         };
 
@@ -564,8 +569,9 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections({ manageConnections: true }),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections({ enable: true }),
+          workbench: undefined,
         });
       });
 
@@ -574,9 +580,8 @@ describe('ToolRouter', () => {
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
-            inferScopesFromTools: false,
           },
         };
 
@@ -588,37 +593,12 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections({
-            manageConnections: true,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections({
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           }),
-          execution: undefined,
-        });
-      });
-
-      it('should create a session with manageConnections object with inferScopesFromTools', async () => {
-        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-
-        const config: ToolRouterCreateSessionConfig = {
-          manageConnections: {
-            enabled: true,
-            inferScopesFromTools: true,
-          },
-        };
-
-        await toolRouter.create(userId, config);
-
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          connections: createExpectedConnections({
-            manageConnections: true,
-            inferScopesFromTools: true,
-          }),
-          execution: undefined,
+          workbench: undefined,
         });
       });
 
@@ -627,9 +607,8 @@ describe('ToolRouter', () => {
 
         const config: ToolRouterCreateSessionConfig = {
           manageConnections: {
-            enabled: true,
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
-            inferScopesFromTools: true,
           },
         };
 
@@ -641,12 +620,12 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections({
-            manageConnections: true,
-            inferScopesFromTools: true,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections({
+            enable: true,
             callbackUrl: 'https://myapp.com/callback',
           }),
-          execution: undefined,
+          workbench: undefined,
         });
       });
     });
@@ -673,8 +652,9 @@ describe('ToolRouter', () => {
           },
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
 
@@ -699,8 +679,9 @@ describe('ToolRouter', () => {
             slack: 'conn_456',
           },
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
 
@@ -728,19 +709,20 @@ describe('ToolRouter', () => {
             slack: 'conn_456',
           },
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
         });
       });
     });
 
-    describe('execution configuration', () => {
-      it('should create a session with proxyExecutionEnabled only', async () => {
+    describe('workbench configuration', () => {
+      it('should create a session with enableProxyExecution only', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
-          execution: {
-            proxyExecutionEnabled: true,
+          workbench: {
+            enableProxyExecution: true,
           },
         };
 
@@ -752,20 +734,21 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: {
-            proxy_execution_enabled: true,
-            timeout_seconds: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable_proxy_execution: true,
+            auto_offload_threshold: undefined,
           },
         });
       });
 
-      it('should create a session with timeoutSeconds only', async () => {
+      it('should create a session with autoOffloadThreshold only', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
-          execution: {
-            timeoutSeconds: 60,
+          workbench: {
+            autoOffloadThreshold: 1000,
           },
         };
 
@@ -777,21 +760,22 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: {
-            proxy_execution_enabled: undefined,
-            timeout_seconds: 60,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable_proxy_execution: undefined,
+            auto_offload_threshold: 1000,
           },
         });
       });
 
-      it('should create a session with full execution configuration', async () => {
+      it('should create a session with full workbench configuration', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
-          execution: {
-            proxyExecutionEnabled: true,
-            timeoutSeconds: 30,
+          workbench: {
+            enableProxyExecution: true,
+            autoOffloadThreshold: 500,
           },
         };
 
@@ -803,21 +787,22 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: {
-            proxy_execution_enabled: true,
-            timeout_seconds: 30,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable_proxy_execution: true,
+            auto_offload_threshold: 500,
           },
         });
       });
 
-      it('should create a session with execution disabled', async () => {
+      it('should create a session with workbench disable', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
-          execution: {
-            proxyExecutionEnabled: false,
-            timeoutSeconds: 0,
+          workbench: {
+            enableProxyExecution: false,
+            autoOffloadThreshold: 0,
           },
         };
 
@@ -829,10 +814,11 @@ describe('ToolRouter', () => {
           auth_configs: undefined,
           connected_accounts: undefined,
           tools: undefined,
-          connections: createExpectedConnections(),
-          execution: {
-            proxy_execution_enabled: false,
-            timeout_seconds: 0,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable_proxy_execution: false,
+            auto_offload_threshold: 0,
           },
         });
       });
@@ -857,13 +843,12 @@ describe('ToolRouter', () => {
     //         slack: 'conn_456',
     //       },
     //       manageConnections: {
-    //         enabled: true,
+    //         enable: true,
     //         callbackUri: 'https://myapp.com/callback',
-    //         inferScopesFromTools: true,
     //       },
     //       execution: {
-    //         proxyExecutionEnabled: true,
-    //         timeoutSeconds: 30,
+    //         enableProxyExecution: true,
+    //         autoOffloadThreshould: 30,
     //       },
     //     };
 
@@ -872,7 +857,7 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         enabled: ['gmail', 'slack'],
+    //         enable: ['gmail', 'slack'],
     //       },
     //       auth_configs: {
     //         gmail: 'auth_config_123',
@@ -882,7 +867,7 @@ describe('ToolRouter', () => {
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { enabled: ['GMAIL_FETCH_EMAILS'] },
+    //           gmail: { enable: ['GMAIL_FETCH_EMAILS'] },
     //         },
     //         filters: {
     //           tags: { include: ['important'] },
@@ -890,27 +875,26 @@ describe('ToolRouter', () => {
     //       },
     //       connections: createExpectedConnections({
     //         manageConnections: true,
-    //         inferScopesFromTools: true,
     //         callbackUri: 'https://myapp.com/callback',
     //       }),
     //       execution: {
-    //         proxy_execution_enabled: true,
-    //         timeout_seconds: 30,
+    //         enable_proxy_execution: true,
+    //         auto_offload_threshould: 30,
     //       },
     //     });
     //   });
 
-    //   it('should create a session with toolkits and disabled tools', async () => {
+    //   it('should create a session with toolkits and disable tools', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       toolkits: {
-    //         enabled: ['gmail', 'slack', 'github'],
+    //         enable: ['gmail', 'slack', 'github'],
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //       },
     //     };
@@ -920,14 +904,14 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         enabled: ['gmail', 'slack', 'github'],
+    //         enable: ['gmail', 'slack', 'github'],
     //       },
     //       auth_configs: undefined,
     //       connected_accounts: undefined,
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
-    //           slack: { disabled: ['SLACK_DELETE_MESSAGE'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
+    //           slack: { disable: ['SLACK_DELETE_MESSAGE'] },
     //         },
     //         filters: undefined,
     //       },
@@ -941,13 +925,13 @@ describe('ToolRouter', () => {
 
     //     const config: ToolRouterCreateSessionConfig = {
     //       toolkits: {
-    //         disabled: ['notion'],
+    //         disable: ['notion'],
     //       },
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
-    //         tags: { disabled: ['dangerous'] },
+    //         tags: { disable: ['dangerous'] },
     //       },
     //       authConfigs: {
     //         gmail: 'auth_config_123',
@@ -956,8 +940,7 @@ describe('ToolRouter', () => {
     //       },
     //       connectedAccounts: {},
     //       manageConnections: {
-    //         enabled: false,
-    //         inferScopesFromTools: false,
+    //         enable: false,
     //       },
     //     };
 
@@ -966,7 +949,7 @@ describe('ToolRouter', () => {
     //     expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
     //       user_id: userId,
     //       toolkits: {
-    //         disabled: ['notion'],
+    //         disable: ['notion'],
     //       },
     //       auth_configs: {
     //         gmail: 'auth_config_123',
@@ -976,7 +959,7 @@ describe('ToolRouter', () => {
     //       connected_accounts: {},
     //       tools: {
     //         overrides: {
-    //           gmail: { disabled: ['GMAIL_DELETE_EMAIL'] },
+    //           gmail: { disable: ['GMAIL_DELETE_EMAIL'] },
     //         },
     //         filters: {
     //           tags: { exclude: ['dangerous'] },
@@ -1010,7 +993,7 @@ describe('ToolRouter', () => {
         await expect(toolRouter.create(userId, invalidConfig)).rejects.toThrow();
       });
 
-      it('should throw error for empty userId', async () => {
+      it('should pass through empty userId', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         // The test validates that even empty userId is passed through
@@ -1474,12 +1457,14 @@ describe('ToolRouter', () => {
 
   describe('tools function', () => {
     const userId = 'user_123';
+    const sessionId = 'session_123';
 
     beforeEach(() => {
       // Reset the Tools mock before each test
       vi.clearAllMocks();
       (Tools as any).mockImplementation(() => ({
-        get: vi.fn().mockResolvedValue('mocked-wrapped-tools'),
+        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
     });
 
@@ -1495,11 +1480,15 @@ describe('ToolRouter', () => {
       });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
         },
+        undefined
+      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         undefined
       );
 
@@ -1514,17 +1503,22 @@ describe('ToolRouter', () => {
           ...tool,
           description: 'Modified description',
         })),
+        beforeExecute: vi.fn(),
       };
 
       const session = await toolRouter.create(userId);
       const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
         },
+        { modifySchema: modifiers.modifySchema }
+      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         modifiers
       );
 
@@ -1535,7 +1529,8 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
       (Tools as any).mockImplementation(() => ({
-        get: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+        getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
 
       const session = await toolRouter.create(userId);
@@ -1552,27 +1547,35 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
 
       // Each call to session.tools() creates a new Tools instance
-      // So we need to check that Tools was called twice and each instance's get method was called once
+      // So we need to check that Tools was called twice and each instance's methods were called
       await session.tools(modifier1);
       await session.tools(modifier2);
 
       expect(Tools).toHaveBeenCalledTimes(2);
 
       const firstToolsInstance = (Tools as any).mock.results[0].value;
-      expect(firstToolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(firstToolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
         },
+        { modifySchema: modifier1.modifySchema }
+      );
+      expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         modifier1
       );
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
-      expect(secondToolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(secondToolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
         },
+        { modifySchema: modifier2.modifySchema }
+      );
+      expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         modifier2
       );
     });
@@ -1594,11 +1597,15 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: ['CUSTOM_TOOL_1', 'CUSTOM_TOOL_2'],
         },
+        undefined
+      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        'custom_session_123',
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         undefined
       );
     });
@@ -1620,11 +1627,15 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.get).toHaveBeenCalledWith(
-        userId,
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
         {
           tools: [],
         },
+        undefined
+      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        'empty_session_123',
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
         undefined
       );
     });
@@ -1748,7 +1759,7 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('toolkits');
     });
 
-    it('should return a session with correct user ID from config', async () => {
+    it('should return a session with correct session ID', async () => {
       const customResponse = {
         ...mockSessionRetrieveResponse,
         config: {
@@ -1762,7 +1773,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.use(sessionId);
 
       expect(session.sessionId).toBe('session_123');
-      // The tools function should be created with the correct user ID from config
+      // The tools function should be created with the session ID
       expect(session.tools).toBeDefined();
     });
 
@@ -1775,6 +1786,19 @@ describe('ToolRouter', () => {
 
       expect(tools).toBe('mocked-wrapped-tools');
       expect(Tools).toHaveBeenCalled();
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
+        {
+          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
+        },
+        undefined
+      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        undefined
+      );
     });
 
     it('should return a session with working authorize function', async () => {

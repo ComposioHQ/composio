@@ -721,6 +721,326 @@ describe('Tools', () => {
     });
   });
 
+  describe('Tool Router Execution', () => {
+    const sessionId = 'test-session-123';
+
+    describe('executeMetaTool', () => {
+      it('should execute a tool via tool router session', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const result = await context.tools.executeMetaTool(toolSlug, body);
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: toolSlug,
+          arguments: body.arguments,
+        });
+        expect(result).toEqual({
+          data: { results: true },
+          error: null,
+          successful: true,
+          logId: '123',
+        });
+      });
+
+      it('should throw validation error for invalid parameters', async () => {
+        const invalidBody = {
+          // missing sessionId
+          arguments: { query: 'test' },
+        } as any;
+
+        await expect(context.tools.executeMetaTool('COMPOSIO_TOOL', invalidBody)).rejects.toThrow(
+          'Invalid tool execute meta parameters'
+        );
+      });
+
+      it('should throw error if tool is not found', async () => {
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(undefined as any);
+
+        await expect(
+          context.tools.executeMetaTool('NONEXISTENT_TOOL', {
+            sessionId,
+            arguments: { query: 'test' },
+          })
+        ).rejects.toThrow('Tool NONEXISTENT_TOOL not found');
+      });
+
+      it('should apply beforeExecute modifier', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'original' },
+        };
+
+        const toolWithToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => ({
+          ...params,
+          query: 'modified',
+        }));
+
+        await context.tools.executeMetaTool(toolSlug, body, { beforeExecute });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'test-toolkit',
+          params: { query: 'original' },
+        });
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: toolSlug,
+          arguments: { query: 'modified' },
+        });
+      });
+
+      it('should apply afterExecute modifier', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const toolWithToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const afterExecute = vi.fn().mockImplementation(({ result }) => ({
+          ...result,
+          data: { results: 'modified result' },
+        }));
+
+        const result = await context.tools.executeMetaTool(toolSlug, body, { afterExecute });
+
+        expect(afterExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'test-toolkit',
+          result: {
+            data: { results: true },
+            error: null,
+            successful: true,
+            logId: '123',
+          },
+        });
+
+        expect(result.data).toEqual({ results: 'modified result' });
+      });
+
+      it('should handle error responses from tool router', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: null,
+          error: 'Something went wrong',
+          log_id: '456',
+        });
+
+        const result = await context.tools.executeMetaTool(toolSlug, body);
+
+        expect(result).toEqual({
+          data: null,
+          error: 'Something went wrong',
+          successful: false,
+          logId: '456',
+        });
+      });
+
+      it('should handle tool without toolkit gracefully', async () => {
+        const toolSlug = 'TOOL_WITHOUT_TOOLKIT';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const toolWithoutToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: undefined,
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithoutToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+
+        await context.tools.executeMetaTool(toolSlug, body, { beforeExecute });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'unknown',
+          params: { query: 'test' },
+        });
+      });
+    });
+
+    describe('wrapToolsForToolRouter', () => {
+      it('should wrap tools with tool router execute function', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
+        expect(result).toBe('wrapped-tools');
+      });
+
+      it('should create execute function that calls executeMetaTool', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+
+        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+
+        context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
+          capturedExecuteFn = executeFn;
+          return 'wrapped-tools';
+        });
+
+        context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        // Setup mocks for execution
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        // Call the captured execute function
+        const result = await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: 'COMPOSIO_TOOL',
+          arguments: { query: 'test' },
+        });
+        expect(result).toEqual({
+          data: { results: true },
+          error: null,
+          successful: true,
+          logId: '123',
+        });
+      });
+
+      it('should pass modifiers to the execute function', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+        const modifiers = {
+          beforeExecute: vi.fn().mockImplementation(({ params }) => ({
+            ...params,
+            modified: true,
+          })),
+        };
+
+        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+
+        context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
+          capturedExecuteFn = executeFn;
+          return 'wrapped-tools';
+        });
+
+        context.tools.wrapToolsForToolRouter(sessionId, tools, modifiers);
+
+        // Setup mocks for execution
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        // Call the captured execute function
+        await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
+
+        expect(modifiers.beforeExecute).toHaveBeenCalled();
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: 'COMPOSIO_TOOL',
+          arguments: { query: 'test', modified: true },
+        });
+      });
+
+      it('should handle multiple tools', async () => {
+        const tools = [
+          toolMocks.transformedTool as unknown as Tool,
+          { ...toolMocks.transformedTool, slug: 'ANOTHER_TOOL' } as unknown as Tool,
+        ];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
+        expect(result).toBe('wrapped-tools');
+      });
+
+      it('should handle empty tools array', async () => {
+        const tools: Tool[] = [];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce([]);
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith([], expect.any(Function));
+        expect(result).toEqual([]);
+      });
+    });
+  });
+
   describe('Version Integration Tests', () => {
     describe('toolkit versions in tool fetching', () => {
       it('should pass default "latest" version when no version is configured', async () => {
