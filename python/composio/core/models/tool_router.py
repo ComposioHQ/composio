@@ -525,6 +525,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         :param tool_slugs: List of tool slugs to wrap
         :return: Function that returns provider-wrapped tools
         """
+        from composio.client.types import Tool
         from composio.core.models._modifiers import apply_modifier_by_type
         from composio.core.models.tools import Tools as ToolsModel
         from composio.core.provider import AgenticProvider, NonAgenticProvider
@@ -606,7 +607,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                         toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
                         tool=tool.slug,
                         type="schema",
-                        schema=tool,
+                        schema=t.cast(Tool, tool),
                     )
                     for tool in router_tools
                 ]

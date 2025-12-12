@@ -343,7 +343,7 @@ class Tools(Resource, t.Generic[TProvider]):
             # Apply before_execute modifiers
             processed_arguments = arguments
             if modifiers is not None:
-                params = {"arguments": arguments}
+                params: ToolExecuteParams = {"arguments": arguments}
                 modified_params = apply_modifier_by_type(
                     modifiers=modifiers,
                     toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
@@ -361,7 +361,7 @@ class Tools(Resource, t.Generic[TProvider]):
             )
 
             # Convert response to standard format
-            result = {
+            result: ToolExecutionResponse = {
                 "data": response.data if hasattr(response, "data") else {},
                 "error": response.error if hasattr(response, "error") else None,
                 "successful": not (hasattr(response, "error") and response.error),

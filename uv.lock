@@ -477,7 +477,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python" }
 dependencies = [
     { name = "composio-client" },
@@ -532,7 +532,7 @@ dev = [
 
 [[package]]
 name = "composio-anthropic"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
@@ -564,7 +564,7 @@ wheels = [
 
 [[package]]
 name = "composio-crewai"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
@@ -579,7 +579,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-gemini"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
@@ -594,7 +594,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/google" }
 dependencies = [
     { name = "composio" },
@@ -609,7 +609,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google-adk"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
@@ -624,7 +624,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-langchain"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
@@ -639,7 +639,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
@@ -654,7 +654,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai-agents"
-version = "0.9.5rc2"
+version = "0.9.5rc3"
 source = { virtual = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
