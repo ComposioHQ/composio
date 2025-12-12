@@ -6,6 +6,7 @@ export const modifiers: ExecuteToolModifiers = {
   beforeExecute: ({ toolSlug, params }) => {
     spinner = ora();
     spinner.start(`Executing ${toolSlug}`);
+    console.log(JSON.stringify(params, null, 2));
     return params;
   },
   afterExecute: ({ toolSlug, result }) => {

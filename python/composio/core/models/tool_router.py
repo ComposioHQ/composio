@@ -32,120 +32,95 @@ ToolkitsFn = t.Callable[
 ]
 
 
-class ToolRouterToolkitsEnabledConfig(te.TypedDict, total=False):
+class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
     """Configuration for enabling specific toolkits in tool router session.
 
     Attributes:
-        enabled: List of toolkit slugs to enable in the tool router session.
+        enable: List of toolkit slugs to enable in the tool router session.
     """
 
-    enabled: t.List[str]
+    enable: t.List[str]
 
 
-class ToolRouterToolkitsDisabledConfig(te.TypedDict, total=False):
+class ToolRouterToolkitsDisableConfig(te.TypedDict, total=False):
     """Configuration for disabling specific toolkits in tool router session.
 
     Attributes:
-        disabled: List of toolkit slugs to disable in the tool router session.
+        disable: List of toolkit slugs to disable in the tool router session.
     """
 
-    disabled: t.List[str]
+    disable: t.List[str]
 
 
-class ToolRouterToolsOverrideEnabledConfig(te.TypedDict, total=False):
+class ToolRouterToolsEnableConfig(te.TypedDict, total=False):
     """Configuration for enabling specific tools for a toolkit.
 
     Attributes:
-        enabled: List of tool slugs to enable for this toolkit.
+        enable: List of tool slugs to enable for this toolkit.
     """
 
-    enabled: t.List[str]
+    enable: t.List[str]
 
 
-class ToolRouterToolsOverrideDisabledConfig(te.TypedDict, total=False):
+class ToolRouterToolsDisableConfig(te.TypedDict, total=False):
     """Configuration for disabling specific tools for a toolkit.
 
     Attributes:
-        disabled: List of tool slugs to disable for this toolkit.
+        disable: List of tool slugs to disable for this toolkit.
     """
 
-    disabled: t.List[str]
+    disable: t.List[str]
 
 
-class ToolRouterToolsTagsEnabledConfig(te.TypedDict, total=False):
-    """Configuration for enabling tools by tags.
+class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
+    """Configuration for filtering tools by MCP tags.
 
     Attributes:
-        enabled: List of tags - tools with at least one of these tags will be included.
+        tags: List of MCP tags to filter tools by.
+              Only tools with these tags will be available.
     """
 
-    enabled: t.List[str]
+    tags: t.List[t.Literal["readOnlyHint", "destructiveHint", "idempotentHint"]]
 
 
-class ToolRouterToolsTagsDisabledConfig(te.TypedDict, total=False):
-    """Configuration for disabling tools by tags.
-
-    Attributes:
-        disabled: List of tags - tools with any of these tags will be excluded.
-    """
-
-    disabled: t.List[str]
-
-
-class ToolRouterToolsConfig(te.TypedDict, total=False):
-    """Configuration for tools in tool router session.
-
-    Attributes:
-        overrides: Per-toolkit tool overrides. Key is toolkit slug, value is list of tools
-                  or dict with 'enabled'/'disabled' key.
-                  Example: {'gmail': ['GMAIL_SEND_EMAIL'], 'github': {'enabled': [...]}}
-        tags: Tag-based filtering. Can be a list of tags to include, or dict with
-             'enabled'/'disabled' key.
-             Example: ['important', 'safe'] or {'enabled': ['important']} or {'disabled': ['dangerous']}
-    """
-
-    overrides: t.Dict[
-        str,
-        t.Union[
-            t.List[str],
-            ToolRouterToolsOverrideEnabledConfig,
-            ToolRouterToolsOverrideDisabledConfig,
-        ],
-    ]
-    tags: t.Union[
-        t.List[str],
-        ToolRouterToolsTagsEnabledConfig,
-        ToolRouterToolsTagsDisabledConfig,
-    ]
+# Type alias for per-toolkit tool configuration
+# Can be:
+# - List of tool slugs (shorthand for enable)
+# - Dict with 'enable' key (whitelist)
+# - Dict with 'disable' key (blacklist)
+# - Dict with 'tags' key (filter by MCP tags)
+ToolRouterToolsConfig = t.Union[
+    t.List[str],
+    ToolRouterToolsEnableConfig,
+    ToolRouterToolsDisableConfig,
+    ToolRouterToolsTagsConfig,
+]
 
 
 class ToolRouterExecutionConfig(te.TypedDict, total=False):
     """Configuration for execution settings in tool router session.
 
     Attributes:
-        proxy_execution_enabled: Whether to allow proxy execute calls in the workbench.
+        enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
                                 If False, prevents arbitrary HTTP requests.
-        timeout_seconds: Maximum execution time for workbench operations in seconds.
+        auto_offload_threshold: Maximum execution time for workbench operations in seconds.
     """
 
-    proxy_execution_enabled: bool
-    timeout_seconds: int
+    enable_proxy_execution: bool
+    auto_offload_threshold: int
 
 
 class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     """Configuration for connection management in tool router session.
 
     Attributes:
-        enabled: Whether to use tools to manage connections. Defaults to True.
+        enable: Whether to use tools to manage connections. Defaults to True.
                 If False, you need to manage connections manually.
         callback_uri: Optional callback URL to use for OAuth redirects.
-        infer_scopes_from_tools: Whether to infer scopes from tools in the tool router session.
-                                Defaults to False.
     """
 
-    enabled: bool
+    enable: bool
     callback_url: str
-    infer_scopes_from_tools: bool
 
 
 @dataclass
@@ -607,7 +582,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
             Note:
                 The tools returned are specific to this session and user. They include
-                only the tools enabled for this session based on the configuration
+                only the tools enable for this session based on the configuration
                 provided during session creation.
             """
             router_tools = tools_model.get(
@@ -624,11 +599,14 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         toolkits: t.Optional[
             t.Union[
                 t.List[str],
-                ToolRouterToolkitsEnabledConfig,
-                ToolRouterToolkitsDisabledConfig,
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
             ]
         ] = None,
-        tools: t.Optional[ToolRouterToolsConfig] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[
+            t.List[t.Literal["readOnlyHint", "destructiveHint", "idempotentHint"]]
+        ] = None,
         manage_connections: t.Optional[
             t.Union[bool, ToolRouterManageConnectionsConfig]
         ] = None,
@@ -640,73 +618,85 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         Create a new tool router session for a user.
 
         :param user_id: The user ID to create the session for
-        :param toolkits: Optional list of toolkit slugs or dict with 'enabled'/'disabled' key.
+        :param toolkits: Optional list of toolkit slugs or dict with 'enable'/'disable' key.
                         - List: ['github', 'slack'] - enable only these toolkits
-                        - Dict: {'enabled': ['github']} or {'disabled': ['linear']}
-        :param tools: Optional dict with 'overrides' and/or 'tags' for tool-level configuration.
-                     - overrides: Per-toolkit tool enable/disable
-                       Example: {'gmail': ['GMAIL_SEND_EMAIL'], 'github': {'enabled': [...]}}
-                     - tags: Tag-based filtering
-                       Example: ['important'] or {'enabled': ['safe']} or {'disabled': ['dangerous']}
+                        - Dict: {'enable': ['github']} or {'disable': ['linear']}
+        :param tools: Optional per-toolkit tool configuration. Key is toolkit slug, value can be:
+                     - List of tool slugs: ['GMAIL_SEND_EMAIL'] (shorthand for enable)
+                     - Dict with 'enable' key: {'enable': ['GMAIL_SEND_EMAIL']}
+                     - Dict with 'disable' key: {'disable': ['GMAIL_DELETE_EMAIL']}
+                     - Dict with 'tags' key: {'tags': ['readOnlyHint']}
+                     Example: {
+                         'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
+                         'github': {'enable': ['GITHUB_CREATE_ISSUE']},
+                         'slack': {'tags': ['readOnlyHint']}
+                     }
+        :param tags: Optional global MCP tags to filter tools by.
+                    List of tags: ['readOnlyHint', 'destructiveHint', 'idempotentHint']
+                    Toolkit-level tags override this global setting.
         :param manage_connections: Whether to enable connection management tools.
                                   - Boolean: True/False
-                                  - Dict with keys: 'enabled', 'callback_url', 'infer_scopes_from_tools'
+                                  - Dict with keys: 'enable', 'callback_url'
         :param auth_configs: Optional mapping of toolkit slug to auth config ID.
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
         :param execution: Optional execution configuration.
-                         - proxy_execution_enabled: Whether to allow proxy execute calls
-                         - timeout_seconds: Maximum execution time in seconds
+                         - enable_proxy_execution: Whether to allow proxy execute calls
+                         - auto_offload_threshold: Maximum execution time in seconds
         :return: Tool router session object
 
         Example:
             ```python
             # Create a basic session
-            session = tool_router.create('user_123')
+            session = tool_router.create(user_id='user_123')
 
             # Create a session with specific toolkits
             session = tool_router.create(
-                'user_123',
+                user_id='user_123',
                 toolkits=['github', 'slack']
             )
 
-            # Create a session with tool overrides
+            # Create a session with per-toolkit tool configuration
             session = tool_router.create(
-                'user_123',
+                user_id='user_123',
                 tools={
-                    'overrides': {
-                        'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
-                        'github': {'enabled': ['GITHUB_CREATE_ISSUE']}
-                    },
-                    'tags': ['safe', 'important']
+                    'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],  # List shorthand
+                    'github': {'enable': ['GITHUB_CREATE_ISSUE']},  # Explicit enable
+                    'slack': {'disable': ['SLACK_DELETE_MESSAGE']},  # Explicit disable
                 }
             )
 
-            # Create a session with tag filtering
+            # Create a session with global tag filtering
             session = tool_router.create(
-                'user_123',
+                user_id='user_123',
+                tags=['readOnlyHint', 'idempotentHint']
+            )
+
+            # Create a session with toolkit-specific tag filtering
+            session = tool_router.create(
+                user_id='user_123',
                 tools={
-                    'tags': {'enabled': ['read_only_hint', 'non_destructive_hint']}
+                    'gmail': {'tags': ['readOnlyHint']},
+                    'github': {'tags': ['readOnlyHint', 'idempotentHint']}
                 }
             )
 
             # Create a session with connection management
             session = tool_router.create(
-                'user_123',
+                user_id='user_123',
                 manage_connections={
-                    'enabled': True,
+                    'enable': True,
                     'callback_url': 'https://example.com/callback',
-                    'infer_scopes_from_tools': True
                 }
             )
 
             # Create a session with execution config
             session = tool_router.create(
-                'user_123',
+                user_id='user_123',
                 execution={
-                    'proxy_execution_enabled': False,
-                    'timeout_seconds': 300
+                    'enable_proxy_execution': False,
+                    'auto_offload_threshold': 300
                 }
             )
 
@@ -724,62 +714,30 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         auto_manage_connections = (
             manage_connections
             if isinstance(manage_connections, bool)
-            else manage_connections.get("enabled", True)
+            else manage_connections.get("enable", True)
         )
 
         # Parse toolkits config
         toolkits_payload: t.Optional[t.Dict[str, t.List[str]]] = None
         if toolkits is not None:
             if isinstance(toolkits, list):
-                toolkits_payload = {"enabled": toolkits}
+                toolkits_payload = {"enable": toolkits}
             else:
                 toolkits_payload = t.cast(t.Dict[str, t.List[str]], toolkits)
 
         # Parse tools config - transform to API format
-        tools_payload = None
+        # Transform tools from Dict[str, Union[List, enable/disable/tags]] to client SDK format
+        tools_payload: t.Optional[t.Dict[str, t.Any]] = None
         if tools is not None:
             tools_payload = {}
-
-            # Handle overrides
-            if "overrides" in tools:
-                overrides_dict: t.Dict[str, t.Any] = {}
-                for toolkit_slug, override_value in tools["overrides"].items():
-                    if isinstance(override_value, list):
-                        # Simple list means enabled tools
-                        overrides_dict[toolkit_slug] = {"enabled": override_value}
-                    else:
-                        # Already in dict format with 'enabled' or 'disabled'
-                        overrides_dict[toolkit_slug] = dict(override_value)
-
-                tools_payload["overrides"] = overrides_dict
-
-            # Handle tags
-            if "tags" in tools:
-                tags_value = tools["tags"]
-                tag_filters: t.Dict[str, t.List[str]] = {}
-
-                if isinstance(tags_value, list):
-                    # Simple list means include these tags
-                    tag_filters = {"include": tags_value}
-                elif isinstance(tags_value, dict):
-                    # Check which key exists in the dict
-                    tags_dict = t.cast(t.Dict[str, t.List[str]], tags_value)
-                    if "enabled" in tags_dict:
-                        # enabled means include
-                        tag_filters = {"include": tags_dict["enabled"]}
-                    elif "disabled" in tags_dict:
-                        # disabled means exclude
-                        tag_filters = {"exclude": tags_dict["disabled"]}
-
-                if tag_filters:
-                    tools_payload["filters"] = {"tags": tag_filters}
-
-        # Parse infer_scopes_from_tools
-        infer_scopes_from_tools = (
-            manage_connections.get("infer_scopes_from_tools", False)
-            if isinstance(manage_connections, dict)
-            else False
-        )
+            for toolkit_slug, config in tools.items():
+                if isinstance(config, list):
+                    # List shorthand means enable these tools
+                    tools_payload[toolkit_slug] = {"enable": config}
+                elif isinstance(config, dict):
+                    # Already in dict format with 'enable', 'disable', or 'tags'
+                    # Pass through as-is since it matches the client SDK format
+                    tools_payload[toolkit_slug] = dict(config)
 
         # Parse callback_uri
         callback_url = (
@@ -796,7 +754,6 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
             "auto_manage_connections": auto_manage_connections,
-            "infer_scopes_from_tools": infer_scopes_from_tools,
         }
         if callback_url is not None and callback_url is not omit:
             connections_config["callback_url"] = callback_url
@@ -816,14 +773,19 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         if tools_payload:
             create_params["tools"] = tools_payload
 
+        if tags is not None:
+            create_params["tags"] = tags
+
         if execution is not None:
             execution_payload: t.Dict[str, t.Any] = {}
-            if "proxy_execution_enabled" in execution:
-                execution_payload["proxy_execution_enabled"] = execution[
-                    "proxy_execution_enabled"
+            if "enable_proxy_execution" in execution:
+                execution_payload["enable_proxy_execution"] = execution[
+                    "enable_proxy_execution"
                 ]
-            if "timeout_seconds" in execution:
-                execution_payload["timeout_seconds"] = int(execution["timeout_seconds"])
+            if "auto_offload_threshold" in execution:
+                execution_payload["auto_offload_threshold"] = int(
+                    execution["auto_offload_threshold"]
+                )
 
             if execution_payload:
                 create_params["execution"] = execution_payload
@@ -888,12 +850,11 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
-    "ToolRouterToolkitsEnabledConfig",
-    "ToolRouterToolkitsDisabledConfig",
-    "ToolRouterToolsOverrideEnabledConfig",
-    "ToolRouterToolsOverrideDisabledConfig",
-    "ToolRouterToolsTagsEnabledConfig",
-    "ToolRouterToolsTagsDisabledConfig",
+    "ToolRouterToolkitsEnableConfig",
+    "ToolRouterToolkitsDisableConfig",
+    "ToolRouterToolsEnableConfig",
+    "ToolRouterToolsDisableConfig",
+    "ToolRouterToolsTagsConfig",
     "ToolRouterToolsConfig",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterExecutionConfig",
