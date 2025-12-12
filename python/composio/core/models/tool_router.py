@@ -525,9 +525,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         :param tool_slugs: List of tool slugs to wrap
         :return: Function that returns provider-wrapped tools
         """
-        from composio.client.types import Tool
         from composio.core.models._modifiers import apply_modifier_by_type
-        from composio.core.models.tools import Tools as ToolsModel
+        from composio.core.models.tools import Tool, Tools as ToolsModel
         from composio.core.provider import AgenticProvider, NonAgenticProvider
 
         if self._provider is None:
@@ -601,12 +600,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
             # Apply schema modifiers
             if modifiers is not None:
+                type_schema: t.Literal["schema"] = "schema"
                 router_tools = [
                     apply_modifier_by_type(
                         modifiers=modifiers,
                         toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
                         tool=tool.slug,
-                        type="schema",
+                        type=type_schema,
                         schema=t.cast(Tool, tool),
                     )
                     for tool in router_tools
