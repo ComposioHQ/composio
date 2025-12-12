@@ -307,6 +307,80 @@ class Tools(Resource, t.Generic[TProvider]):
             ),
         )
 
+    def _wrap_execute_tool_for_tool_router(
+        self,
+        session_id: str,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> AgenticProviderExecuteFn:
+        """
+        Create an execute function for tool router that uses the session's execute_meta endpoint.
+
+        This method creates a function that executes tools within a tool router session context.
+        It uses the session's execute_meta endpoint which handles authentication and connection
+        management automatically.
+
+        :param session_id: The session ID
+        :param modifiers: Optional modifiers to apply before and after execution
+        :return: Execute function for tool router
+        """
+
+        def execute_tool_fn(slug: str, arguments: t.Dict) -> t.Dict:
+            """
+            Execute a tool in the tool router session.
+
+            This function is used by agentic providers to execute tools within
+            a tool router session context. It uses the session's execute_meta
+            endpoint which handles authentication and connection management
+            automatically.
+
+            :param slug: The tool slug to execute
+            :param arguments: The tool arguments
+            :return: Tool execution response
+            """
+            # Get tool schema for modifiers
+            tool = self.get_raw_composio_tool_by_slug(slug)
+
+            # Apply before_execute modifiers
+            processed_arguments = arguments
+            if modifiers is not None:
+                params = {"arguments": arguments}
+                modified_params = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    tool=slug,
+                    type="before_execute",
+                    request=params,
+                )
+                processed_arguments = modified_params.get("arguments", arguments)
+
+            # Execute the tool via the session's execute_meta endpoint
+            response = self._client.tool_router.session.execute_meta(
+                session_id=session_id,
+                slug=slug,
+                arguments=processed_arguments,
+            )
+
+            # Convert response to standard format
+            result = {
+                "data": response.data if hasattr(response, "data") else {},
+                "error": response.error if hasattr(response, "error") else None,
+                "successful": not (hasattr(response, "error") and response.error),
+            }
+
+            # Apply after_execute modifiers
+            if modifiers is not None:
+                result = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    tool=slug,
+                    type="after_execute",
+                    response=result,
+                )
+
+            return result
+
+        return t.cast(AgenticProviderExecuteFn, execute_tool_fn)
+
     def _execute_custom_tool(
         self,
         slug: str,

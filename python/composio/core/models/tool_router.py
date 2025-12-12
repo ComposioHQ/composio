@@ -32,6 +32,14 @@ ToolkitsFn = t.Callable[
 ]
 
 
+class ToolsFn(t.Protocol):
+    """Protocol for the tools function that returns provider-wrapped tools."""
+
+    def __call__(self, modifiers: t.Optional["Modifiers"] = None) -> t.Any:
+        """Get provider-wrapped tools for execution with your AI framework."""
+        ...
+
+
 class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
     """Configuration for enabling specific toolkits in tool router session.
 
@@ -237,7 +245,7 @@ class ToolRouterSession(t.Generic[TProvider]):
 
     session_id: str
     mcp: ToolRouterMCPServerConfig
-    tools: t.Callable[[t.Optional[Modifiers]], t.Any]
+    tools: ToolsFn
     authorize: AuthorizeFn
     toolkits: ToolkitsFn
 
@@ -507,17 +515,19 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
     def _create_tools_fn(
         self,
-        user_id: str,
+        session_id: str,
         tool_slugs: t.Sequence[str],
-    ) -> t.Callable[[t.Optional[Modifiers]], t.Any]:
+    ) -> ToolsFn:
         """
         Create a tools function that wraps tools for the provider.
 
-        :param user_id: The user ID
+        :param session_id: The session ID
         :param tool_slugs: List of tool slugs to wrap
         :return: Function that returns provider-wrapped tools
         """
+        from composio.core.models._modifiers import apply_modifier_by_type
         from composio.core.models.tools import Tools as ToolsModel
+        from composio.core.provider import AgenticProvider, NonAgenticProvider
 
         if self._provider is None:
             raise ValueError(
@@ -581,14 +591,47 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 ```
 
             Note:
-                The tools returned are specific to this session and user. They include
-                only the tools enable for this session based on the configuration
+                The tools returned are specific to this session. They include
+                only the tools enabled for this session based on the configuration
                 provided during session creation.
             """
-            router_tools = tools_model.get(
-                user_id=user_id, tools=list(tool_slugs), modifiers=modifiers
+            # Get raw tool schemas
+            router_tools = tools_model.get_raw_composio_tools(tools=list(tool_slugs))
+
+            # Apply schema modifiers
+            if modifiers is not None:
+                router_tools = [
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    )
+                    for tool in router_tools
+                ]
+
+            # Process file schemas
+            for tool in router_tools:
+                tool.input_parameters = (
+                    tools_model._file_helper.process_schema_recursively(
+                        schema=tool.input_parameters,
+                    )
+                )
+
+            # Wrap tools with provider
+            if issubclass(type(self._provider), NonAgenticProvider):
+                return t.cast(NonAgenticProvider, self._provider).wrap_tools(
+                    tools=router_tools
+                )
+
+            return t.cast(AgenticProvider, self._provider).wrap_tools(
+                tools=router_tools,
+                execute_tool=tools_model._wrap_execute_tool_for_tool_router(
+                    session_id=session_id,
+                    modifiers=modifiers,
+                ),
             )
-            return router_tools
 
         return tools_fn
 
@@ -753,12 +796,12 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
-            "auto_manage_connections": auto_manage_connections,
+            "enable": auto_manage_connections,
         }
         if callback_url is not None and callback_url is not omit:
             connections_config["callback_url"] = callback_url
 
-        create_params["connections"] = connections_config
+        create_params["manage_connections"] = connections_config
 
         # Add optional fields
         if auth_configs is not None:
@@ -800,7 +843,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(user_id, session.tool_router_tools),
+            tools=self._create_tools_fn(session.session_id, session.tool_router_tools),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
         )
@@ -831,9 +874,6 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         # Retrieve the session from the API
         session = self._client.tool_router.session.retrieve(session_id)
 
-        # Extract user_id from session config
-        user_id = session.config.user_id
-
         # Create and return the session
         return ToolRouterSession(
             session_id=session.session_id,
@@ -841,7 +881,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(user_id, session.tool_router_tools),
+            tools=self._create_tools_fn(session.session_id, session.tool_router_tools),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
         )

@@ -459,40 +459,72 @@ class TestToolRouter:
         """Test the tools function returned by session."""
         # Setup mock Tools instance
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = "mocked-wrapped-tools"
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_FETCH_EMAILS"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
 
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = "mocked-wrapped-tools"
+
         session = tool_router.create(user_id="user_123")
-        session.tools()
+        result = session.tools()
 
         # Verify Tools was instantiated
         mock_tools_class.assert_called_once_with(
             client=mock_client, provider=mock_provider
         )
 
-        # Verify get was called
-        mock_tools_instance.get.assert_called_once()
-        call_args = mock_tools_instance.get.call_args
-        assert call_args.kwargs["user_id"] == "user_123"
-        assert "tools" in call_args.kwargs
+        # Verify get_raw_composio_tools was called
+        mock_tools_instance.get_raw_composio_tools.assert_called_once()
+
+        # Verify provider's wrap_tools was called
+        mock_provider.wrap_tools.assert_called_once()
+        assert result == "mocked-wrapped-tools"
 
     @patch("composio.core.models.tools.Tools")
+    @patch("composio.core.models._modifiers.apply_modifier_by_type")
     def test_tools_function_with_modifiers(
-        self, mock_tools_class, tool_router, mock_client, mock_provider
+        self,
+        mock_apply_modifier,
+        mock_tools_class,
+        tool_router,
+        mock_client,
+        mock_provider,
     ):
         """Test the tools function with modifiers."""
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = "mocked-wrapped-tools"
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_FETCH_EMAILS"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
+
+        # Setup apply_modifier_by_type to return the tool unchanged
+        mock_apply_modifier.return_value = mock_tool
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = "mocked-wrapped-tools"
 
         session = tool_router.create(user_id="user_123")
 
-        modifiers = [{"name": "test_modifier"}]
-        session.tools(modifiers=modifiers)
+        # Create a proper modifier structure
+        from composio.core.models._modifiers import Modifier
 
-        # Verify get was called with modifiers
-        call_args = mock_tools_instance.get.call_args
-        assert call_args.kwargs.get("modifiers") == modifiers
+        modifier = Modifier(modifier=None, type_="schema", tools=[], toolkits=[])
+        modifiers = [modifier]
+        result = session.tools(modifiers=modifiers)
+
+        # Verify provider's wrap_tools was called
+        mock_provider.wrap_tools.assert_called_once()
+        # Verify apply_modifier_by_type was called with the modifier
+        assert mock_apply_modifier.called
+        assert result == "mocked-wrapped-tools"
 
     def test_session_mcp_type_http(self, tool_router, mock_client):
         """Test that MCP type is correctly set to HTTP enum."""
@@ -656,16 +688,202 @@ class TestToolRouterTypes:
         assert state.connection.auth_config.id == "ac_123"
 
 
+class TestToolRouterExecution:
+    """Tests for tool router execution functionality."""
+
+    @patch("composio.core.models.tools.Tools")
+    def test_wrap_execute_tool_for_tool_router_called(
+        self, mock_tools_class, tool_router, mock_client, mock_provider
+    ):
+        """Test that _wrap_execute_tool_for_tool_router is called when creating tools."""
+        # Setup
+        mock_tools_instance = MagicMock()
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_SEND_EMAIL"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
+        mock_tools_instance._wrap_execute_tool_for_tool_router = MagicMock(
+            return_value=lambda slug, args: {
+                "data": {},
+                "error": None,
+                "successful": True,
+            }
+        )
+        mock_tools_class.return_value = mock_tools_instance
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = ["wrapped_tool"]
+
+        # Create session and get tools
+        session = tool_router.create(user_id="user_123")
+        session.tools()
+
+        # Verify _wrap_execute_tool_for_tool_router was called with correct session_id
+        mock_tools_instance._wrap_execute_tool_for_tool_router.assert_called_once()
+        call_args = mock_tools_instance._wrap_execute_tool_for_tool_router.call_args
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_execute_meta_endpoint_called(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Test that execute_meta endpoint is called when executing tools."""
+        # Setup execute_meta response
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"result": "success"}
+        mock_execute_response.error = None
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Setup mock tool
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_SEND_EMAIL"
+        mock_tool.toolkit.slug = "gmail"
+
+        # Mock get_raw_composio_tool_by_slug
+        mock_client.tools.retrieve.return_value = mock_tool
+
+        # Create a real Tools instance to test the execute function
+        from composio.core.models.tools import Tools as RealTools
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify execute_meta was called with correct parameters
+        mock_client.tool_router.session.execute_meta.assert_called_once_with(
+            session_id="session_123",
+            slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "test@example.com"},
+        )
+
+        # Verify result format
+        assert result["data"] == {"result": "success"}
+        assert result["error"] is None
+        assert result["successful"] is True
+
+    def test_modifiers_applied_in_tool_router_execution(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Test that modifiers are applied before and after tool execution."""
+        # Setup mock tool
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_SEND_EMAIL"
+        mock_tool.toolkit.slug = "gmail"
+
+        # Mock get_raw_composio_tool_by_slug
+        mock_client.tools.retrieve.return_value = mock_tool
+
+        # Setup execute_meta response
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"result": "success"}
+        mock_execute_response.error = None
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Create modifier functions
+        def before_modifier(tool, toolkit, params):
+            """Modifier to change arguments before execution."""
+            params["arguments"] = {"to": "modified@example.com"}
+            return params
+
+        def after_modifier(tool, toolkit, response):
+            """Modifier to change response after execution."""
+            response["data"] = {"modified": True}
+            return response
+
+        # Create a real execute function with modifiers
+        from composio.core.models.tools import Tools as RealTools
+        from composio.core.models._modifiers import Modifier
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+
+        modifiers = [
+            Modifier(
+                modifier=before_modifier, type_="before_execute", tools=[], toolkits=[]
+            ),
+            Modifier(
+                modifier=after_modifier, type_="after_execute", tools=[], toolkits=[]
+            ),
+        ]
+
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123", modifiers=modifiers
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify execute_meta was called with modified arguments
+        mock_client.tool_router.session.execute_meta.assert_called_once()
+        call_args = mock_client.tool_router.session.execute_meta.call_args
+        assert call_args.kwargs["arguments"] == {"to": "modified@example.com"}
+
+        # Verify result was modified by after_execute
+        assert result["data"] == {"modified": True}
+
+    def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
+        """Test that tool execution errors are handled correctly."""
+        # Setup mock tool
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_SEND_EMAIL"
+        mock_tool.toolkit.slug = "gmail"
+
+        # Mock get_raw_composio_tool_by_slug
+        mock_client.tools.retrieve.return_value = mock_tool
+
+        # Setup execute_meta to return an error
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {}
+        mock_execute_response.error = "Authentication failed"
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Create a real execute function
+        from composio.core.models.tools import Tools as RealTools
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify error is returned correctly
+        assert result["error"] == "Authentication failed"
+        assert result["successful"] is False
+        assert result["data"] == {}
+
+
 class TestToolRouterIntegration:
     """Integration tests for ToolRouter."""
 
     @patch("composio.core.models.tools.Tools")
-    def test_full_session_workflow(self, mock_tools_class, tool_router, mock_client):
+    def test_full_session_workflow(
+        self, mock_tools_class, tool_router, mock_client, mock_provider
+    ):
         """Test a complete session workflow."""
         # Setup
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = ["tool1", "tool2"]
+        mock_tool = MagicMock()
+        mock_tool.slug = "TOOL1"
+        mock_tool.toolkit.slug = "github"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = ["tool1", "tool2"]
 
         # Create session
         session = tool_router.create(
