@@ -224,7 +224,7 @@ class TestToolRouter:
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["connections"]["auto_manage_connections"] is True
+        assert kwargs["manage_connections"]["enable"] is True
 
     def test_create_session_with_manage_connections_config(
         self, tool_router, mock_client
@@ -242,8 +242,11 @@ class TestToolRouter:
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["connections"]["auto_manage_connections"] is True
-        assert kwargs["connections"]["callback_url"] == "https://example.com/callback"
+        assert kwargs["manage_connections"]["enable"] is True
+        assert (
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
+        )
 
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
         """Test creating a session with auth configs."""
@@ -313,7 +316,7 @@ class TestToolRouter:
         assert "toolkits" in kwargs
         assert "tools" in kwargs
         assert "tags" in kwargs
-        assert "connections" in kwargs
+        assert "manage_connections" in kwargs
         assert "auth_configs" in kwargs
         assert "connected_accounts" in kwargs
         assert "execution" in kwargs
