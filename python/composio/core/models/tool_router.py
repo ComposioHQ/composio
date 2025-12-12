@@ -93,10 +93,10 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
 
 # Type alias for per-toolkit tool configuration
 # Can be:
-# - List of tool slugs (shorthand for enable)
-# - Dict with 'enable' key (whitelist)
-# - Dict with 'disable' key (blacklist)
-# - Dict with 'tags' key (filter by MCP tags)
+# - List[str]: List of tool slugs (shorthand for enable)
+# - ToolRouterToolsEnableConfig: Dict with 'enable' key (whitelist)
+# - ToolRouterToolsDisableConfig: Dict with 'disable' key (blacklist)
+# - ToolRouterToolsTagsConfig: Dict with 'tags' key (filter by MCP tags)
 ToolRouterToolsConfig = t.Union[
     t.List[str],
     ToolRouterToolsEnableConfig,
@@ -124,7 +124,7 @@ class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     Attributes:
         enable: Whether to use tools to manage connections. Defaults to True.
                 If False, you need to manage connections manually.
-        callback_uri: Optional callback URL to use for OAuth redirects.
+        callback_url: Optional callback URL to use for OAuth redirects.
     """
 
     enable: bool
@@ -661,33 +661,55 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         """
         Create a new tool router session for a user.
 
-        :param user_id: The user ID to create the session for
-        :param toolkits: Optional list of toolkit slugs or dict with 'enable'/'disable' key.
-                        - List: ['github', 'slack'] - enable only these toolkits
-                        - Dict: {'enable': ['github']} or {'disable': ['linear']}
-        :param tools: Optional per-toolkit tool configuration. Key is toolkit slug, value can be:
-                     - List of tool slugs: ['GMAIL_SEND_EMAIL'] (shorthand for enable)
-                     - Dict with 'enable' key: {'enable': ['GMAIL_SEND_EMAIL']}
-                     - Dict with 'disable' key: {'disable': ['GMAIL_DELETE_EMAIL']}
-                     - Dict with 'tags' key: {'tags': ['readOnlyHint']}
+        :param user_id: The user ID to create the session for.
+        :param toolkits: Optional toolkit configuration. Can be:
+                        - List[str]: List of toolkit slugs to enable.
+                          Example: ['github', 'slack']
+                        - ToolRouterToolkitsEnableConfig: Dict with 'enable' key.
+                          Example: {'enable': ['github', 'slack']}
+                        - ToolRouterToolkitsDisableConfig: Dict with 'disable' key.
+                          Example: {'disable': ['linear']}
+        :param tools: Optional per-toolkit tool configuration. Key is toolkit slug,
+                     value is ToolRouterToolsConfig which can be:
+                     - List[str]: List of tool slugs (shorthand for enable).
+                       Example: ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH']
+                     - ToolRouterToolsEnableConfig: Dict with 'enable' key.
+                       Example: {'enable': ['GMAIL_SEND_EMAIL']}
+                     - ToolRouterToolsDisableConfig: Dict with 'disable' key.
+                       Example: {'disable': ['GMAIL_DELETE_EMAIL']}
+                     - ToolRouterToolsTagsConfig: Dict with 'tags' key.
+                       Example: {'tags': ['readOnlyHint', 'idempotentHint']}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
                          'github': {'enable': ['GITHUB_CREATE_ISSUE']},
-                         'slack': {'tags': ['readOnlyHint']}
+                         'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
+                         'linear': {'tags': ['readOnlyHint']}
                      }
         :param tags: Optional global MCP tags to filter tools by.
-                    List of tags: ['readOnlyHint', 'destructiveHint', 'idempotentHint']
+                    Must be a list of literal values: 'readOnlyHint', 'destructiveHint',
+                    or 'idempotentHint'.
+                    Example: ['readOnlyHint', 'destructiveHint', 'idempotentHint']
                     Toolkit-level tags override this global setting.
-        :param manage_connections: Whether to enable connection management tools.
-                                  - Boolean: True/False
-                                  - Dict with keys: 'enable', 'callback_url'
+        :param manage_connections: Optional connection management configuration. Can be:
+                                  - bool: Simple boolean to enable/disable.
+                                    Example: True or False
+                                  - ToolRouterManageConnectionsConfig: Dict with:
+                                    - 'enable' (bool): Whether to use tools to manage
+                                      connections. Defaults to True.
+                                    - 'callback_url' (str, optional): Callback URL for
+                                      OAuth redirects.
+                                    Example: {'enable': True, 'callback_url': 'https://example.com/callback'}
         :param auth_configs: Optional mapping of toolkit slug to auth config ID.
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
-        :param execution: Optional execution configuration.
-                         - enable_proxy_execution: Whether to allow proxy execute calls
-                         - auto_offload_threshold: Maximum execution time in seconds
+        :param execution: Optional execution configuration (ToolRouterExecutionConfig).
+                         Dict with:
+                         - 'enable_proxy_execution' (bool): Whether to allow proxy execute
+                           calls in the workbench. If False, prevents arbitrary HTTP requests.
+                         - 'auto_offload_threshold' (int): Maximum execution time for
+                           workbench operations in seconds.
+                         Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
         :return: Tool router session object
 
         Example:
