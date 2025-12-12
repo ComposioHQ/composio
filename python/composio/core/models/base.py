@@ -29,7 +29,7 @@ def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callab
         return method
 
     @functools.wraps(method)
-    def trace_wrapper(self, *args, **kwargs):
+    def trace_wrapper(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
         if not allow_tracking.get():
             return method(self, *args, **kwargs)
 
