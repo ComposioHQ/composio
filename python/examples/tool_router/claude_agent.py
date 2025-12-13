@@ -3,7 +3,7 @@ from claude_agent_sdk import query, ClaudeAgentOptions
 import asyncio
 
 composio = Composio()
-session = composio.experimental.create(
+session = composio.create(
     user_id="user_123",
 )
 

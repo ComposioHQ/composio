@@ -6,12 +6,12 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.experimental.create('dhawal', {
+const { mcp } = await composio.create('dhawal', {
   toolkits: ['gmail'], 
   manageConnections: true,
   tools: {
     'gmail': {
-      enabled: ['gmail_search_emails'],
+      enable: ['gmail_search_emails'],
     }
   }
 });
