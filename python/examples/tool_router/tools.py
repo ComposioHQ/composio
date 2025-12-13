@@ -19,7 +19,7 @@ async def main():
 
     # Create a tool router session for a specific user
     # This creates an isolated session with tools for the specified toolkits
-    session = composio.tool_router.create(
+    session = composio.create(
         user_id="user_123",
         toolkits=["gmail"],
     )

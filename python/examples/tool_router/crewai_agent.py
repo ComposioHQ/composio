@@ -4,7 +4,7 @@ from crewai.mcp import MCPServerHTTP
 
 
 composio = Composio()
-session = composio.experimental.create(
+session = composio.create(
     user_id="user_123",
 )
 

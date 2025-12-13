@@ -11,7 +11,7 @@ composio = Composio()
 
 # Create a tool router session
 # When manage_connections is enabled, tools for managing connections are included
-session = composio.tool_router.create(
+session = composio.create(
     user_id="pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b",
     manage_connections=True,
 )
