@@ -1,5 +1,12 @@
 # @composio/vercel
 
+## 0.2.19-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+  - @composio/core@0.2.7-alpha.4
+
 ## 0.2.19-alpha.3
 
 ### Patch Changes

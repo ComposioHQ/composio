@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- 07551cd: Add support for native tool execution in tool router
+
 ## 0.2.7-alpha.3
 
 ### Patch Changes
