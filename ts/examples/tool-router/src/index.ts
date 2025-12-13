@@ -7,7 +7,7 @@ import { modifiers } from './logger';
 const composio = new Composio({
   provider: new VercelProvider(),
 });
-const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
+const session = await composio.create('user_123', { toolkits: ['gmail'] });
 
 
 const tools = await session.tools(modifiers);
