@@ -1,46 +1,25 @@
 from composio import Composio
-from agents import Agent, Runner, HostedMCPTool
 
-composio = Composio()
+composio = Composio(api_key="your-api-key")
 
-required_toolkits = ["gmail", "googlecalendar", "linear", "slack"]
+required_toolkits = ["gmail", "github"]
 
 session = composio.create(
-    user_id=user_id,
-    manage_connections=False,
+    user_id="user_123",
+    manage_connections=False,  # Disable in-chat auth prompts
 )
 
 toolkits = session.toolkits()
 
-def is_connected(slug):
-    toolkit = next((t for t in toolkits if t.slug == slug), None)
-    return toolkit and toolkit.connected_account
+connected = {t.slug for t in toolkits.items if t.connection.is_active}
+pending = [slug for slug in required_toolkits if slug not in connected]
 
-pending = [slug for slug in required_toolkits if not is_connected(slug)]
+print(f"Connected: {connected}")
+print(f"Pending: {pending}")
 
-if pending:
-    for slug in pending:
-        connection_request = session.authorize(
-            slug,
-            callback_url="https://yourapp.com/onboarding"
-        )
-        print(f"Connect {slug}: {connection_request.redirect_url}")
-        connection_request.wait_for_connection()
+for slug in pending:
+    connection_request = session.authorize(slug)
+    print(f"Connect {slug}: {connection_request.redirect_url}")
+    connection_request.wait_for_connection()
 
-agent = Agent(
-    name="Personal Assistant",
-    instructions="You are a helpful personal assistant.",
-    tools=[
-        HostedMCPTool(
-            tool_config={
-                "type": "mcp",
-                "server_label": "composio",
-                "server_url": session.mcp.url,
-                "require_approval": "never",
-            }
-        )
-    ],
-)
-
-result = Runner.run_sync(agent, "Summarize my emails from today")
-print(result.final_output)
+print(f"All toolkits connected! MCP URL: {session.mcp.url}")

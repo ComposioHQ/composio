@@ -9,9 +9,65 @@ Manual authentication lets you connect users to toolkits outside of the chat flo
 - Pre-authenticate users before they start chatting
 - Build a custom connections UI in your app
 
-## Create session
+## Authorize a toolkit
 
-Disable the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool so the agent doesn't prompt for auth during chat:
+Use `session.authorize()` to generate a [Connect Link](/docs/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to complete:
+
+<CodeGroup>
+```python
+session = composio.create(user_id="user_123")
+
+connection_request = session.authorize("gmail")
+
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/ln_abc123
+
+connected_account = connection_request.wait_for_connection(60000)
+print(f"Connected: {connected_account.id}")
+```
+```typescript
+const session = await composio.create("user_123");
+
+const connectionRequest = await session.authorize("gmail");
+
+console.log(connectionRequest.redirectUrl);
+// https://connect.composio.dev/link/ln_abc123
+
+const connectedAccount = await connectionRequest.waitForConnection(60000);
+console.log(`Connected: ${connectedAccount.id}`);
+```
+</CodeGroup>
+
+Redirect the user to the redirect URL. After they authenticate, they'll return to your callback URL. The connection request polls until the user completes authentication (default timeout: 60 seconds).
+
+<Note>
+If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
+</Note>
+
+## Check connection status
+
+Use `session.toolkits()` to see all toolkits in the session and their connection status:
+
+<CodeGroup>
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits.items:
+    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+```typescript
+const toolkits = await session.toolkits();
+
+toolkits.items.forEach((toolkit) => {
+  console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount?.id ?? "Not connected"}`);
+});
+```
+</CodeGroup>
+
+## Disabling in-chat auth
+
+By default, Tool Router includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To disable this and handle auth entirely in your UI:
 
 <CodeGroup>
 ```python
@@ -27,107 +83,9 @@ const session = await composio.create("user_123", {
 ```
 </CodeGroup>
 
-## Check connection status
-
-Use `session.toolkits()` to see which apps the user has connected:
-
-<CodeGroup>
-```python
-toolkits = session.toolkits()
-
-for toolkit in toolkits:
-    status = toolkit.connected_account.status if toolkit.connected_account else "Not connected"
-    print(f"{toolkit.name}: {status}")
-```
-```typescript
-const toolkits = await session.toolkits();
-
-for (const toolkit of toolkits) {
-  const status = toolkit.connectedAccount?.status || "Not connected";
-  console.log(`${toolkit.name}: ${status}`);
-}
-```
-</CodeGroup>
-
-Each toolkit includes:
-- `name`, `slug`, `logo`, `description`
-- `connectedAccount` - present if user is connected, includes `id`, `status`, `createdAt`
-
-### Filter and sort
-
-Use filters to show relevant toolkits in your UI:
-
-<CodeGroup>
-```python
-toolkits = session.toolkits(
-    order_by="popularity",        # Sort by most used
-    order_direction="desc",
-    category="developer-tools",   # Filter by category
-    is_connected=True,            # Only show connected apps
-)
-```
-```typescript
-const toolkits = await session.toolkits({
-  orderBy: "popularity",        // Sort by most used
-  orderDirection: "desc",
-  category: "developer-tools",  // Filter by category
-  isConnected: true,            // Only show connected apps
-});
-```
-</CodeGroup>
-
-## Generate auth URL
-
-Use `session.authorize()` to generate a [Connect Link](/docs/authenticating-tools#hosted-authentication-connect-link) URL:
-
-<CodeGroup>
-```python
-connection_request = session.authorize(
-    "gmail",
-    callback_url="https://yourapp.com/callback"
-)
-
-print(connection_request.redirect_url)
-# https://connect.composio.dev/link/ln_abc123
-```
-```typescript
-const connectionRequest = await session.authorize("gmail", {
-  callbackUri: "https://yourapp.com/callback",
-});
-
-console.log(connectionRequest.redirectUrl);
-// https://connect.composio.dev/link/ln_abc123
-```
-</CodeGroup>
-
-Redirect the user to `redirectUrl`. After they authenticate, they'll be redirected to your `callbackUrl`.
-
-## Wait for connection
-
-Use `waitForConnection()` to poll until the user completes authentication:
-
-<CodeGroup>
-```python
-connected_account = connection_request.wait_for_connection(60000)
-print(f"Connected: {connected_account.id}")
-```
-```typescript
-const connectedAccount = await connectionRequest.waitForConnection(60000);
-console.log(`Connected: ${connectedAccount.id}`);
-```
-</CodeGroup>
-
-- Default timeout: 60 seconds (60000ms)
-- Throws `ConnectionRequestTimeoutError` if timeout expires
-- Throws `ConnectionRequestFailedError` if connection fails or expires
-
-<Note>
-If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
-</Note>
-
 ## Putting it together
 
-A common pattern is to verify all required connections before starting the agent. For example, a personal assistant might need Gmail, Calendar, Linear, and Slack:
+A common pattern is to verify all required connections before starting the agent:
 
 <CodeGroup>
 <SnippetCode src="fern/snippets/tool-router/python/manual-auth.py" title="Python" />
