@@ -104,36 +104,51 @@ export class TelemetryTransport {
       ) => Promise<unknown>;
 
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
-        // Only collect telemetry if setup() has been called (telemetry is enabled)
-        if (this.shouldSendTelemetry()) {
-          const telemetryPayload: TelemetryPayload = {
-            functionName: `${instrumentedClassName}.${name}`,
-            durationMs: 0,
-            timestamp: Date.now() / 1000,
-            props: {
-              fileName: instrumentedClassName,
-              method: name,
-              params: args,
-            },
-            metadata: {
-              provider: this.telemetryMetadata?.provider ?? 'openai',
-            },
-            error: undefined,
-            source: this.telemetrySource,
-          };
-
-          this.batchProcessor.pushItem(telemetryPayload);
-        }
+        // Check telemetry status once at the start to ensure consistent behavior
+        const telemetryEnabled = this.shouldSendTelemetry();
+        const startTime = telemetryEnabled ? Date.now() : undefined;
 
         try {
-          return await originalMethod.apply(instance, args);
+          const result = await originalMethod.apply(instance, args);
+
+          // Only collect telemetry if setup() has been called (telemetry is enabled)
+          if (telemetryEnabled && startTime !== undefined) {
+            const durationMs = Date.now() - startTime;
+            const telemetryPayload: TelemetryPayload = {
+              functionName: `${instrumentedClassName}.${name}`,
+              durationMs,
+              timestamp: startTime / 1000,
+              props: {
+                fileName: instrumentedClassName,
+                method: name,
+                params: args,
+              },
+              metadata: {
+                provider: this.telemetryMetadata?.provider ?? 'openai',
+              },
+              error: undefined,
+              source: this.telemetrySource,
+            };
+
+            this.batchProcessor.pushItem(telemetryPayload);
+          }
+
+          return result;
         } catch (error) {
           if (error instanceof Error) {
             if (!error.errorId) {
               error.errorId = getRandomUUID();
               // Only send error telemetry if telemetry is enabled
-              if (this.shouldSendTelemetry()) {
-                await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+              if (telemetryEnabled && startTime !== undefined) {
+                const durationMs = Date.now() - startTime;
+                await this.prepareAndSendErrorTelemetry(
+                  error,
+                  instrumentedClassName,
+                  name,
+                  args,
+                  startTime,
+                  durationMs
+                );
               }
             }
           }
@@ -166,17 +181,22 @@ export class TelemetryTransport {
    * @param {unknown} error - The error to send.
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
+   * @param {unknown[]} args - The arguments passed to the method.
+   * @param {number} startTime - The start time of the method invocation in milliseconds.
+   * @param {number} durationMs - The duration of the method invocation in milliseconds.
    */
   private async prepareAndSendErrorTelemetry(
     error: unknown,
     instrumentedClassName: string,
     name: string,
-    args: unknown[]
+    args: unknown[],
+    startTime: number,
+    durationMs: number
   ) {
     const telemetryPayload: TelemetryPayload = {
       functionName: `${instrumentedClassName}.${name}`,
-      durationMs: 0,
-      timestamp: Date.now() / 1000,
+      durationMs,
+      timestamp: startTime / 1000,
       props: {
         fileName: instrumentedClassName,
         method: name,

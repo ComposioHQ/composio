@@ -16,6 +16,7 @@
     "@composio/vercel": "0.2.18"
   },
   "changesets": [
+    "bumpy-jars-turn",
     "curly-moles-unite",
     "shaggy-zoos-give",
     "silly-parrots-grab",

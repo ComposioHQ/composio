@@ -6,7 +6,15 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.experimental.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
+const { mcp } = await composio.create('dhawal', {
+  toolkits: ['gmail'], 
+  manageConnections: true,
+  tools: {
+    'gmail': {
+      enable: ['gmail_search_emails'],
+    }
+  }
+});
 trProgress.succeed(`Tool router session created: ${mcp.url}`);
 
 const mcpProgress = ora("Retrieving tools from MCP...").start();
@@ -14,9 +22,7 @@ const client = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: {
-      'x-api-key': process.env.COMPOSIO_API_KEY!,
-    }
+    headers: mcp.headers
   }
 });
 

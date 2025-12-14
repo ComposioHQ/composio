@@ -5,7 +5,7 @@ from langchain_openai.chat_models import ChatOpenAI
 import asyncio
 
 composio = Composio()
-session = composio.experimental.create(
+session = composio.create(
     user_id="user_123",
 )
 

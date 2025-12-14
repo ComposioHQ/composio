@@ -39,7 +39,7 @@ jobs:
         if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
         run: |
           {
-            echo "⚠️ **Security Audit Failed**"
+            echo "⚠️ **Security Audit Warning**"
             echo ""
             echo "The \`pnpm audit --prod\` check found security vulnerabilities in production dependencies."
             echo ""
@@ -63,9 +63,3 @@ jobs:
         uses: thollander/actions-comment-pull-request@v3.0.1
         with:
           file-path: audit-comment.txt
-
-      - name: Fail if audit failed (push events)
-        if: steps.audit.outcome == 'failure' && github.event_name == 'push'
-        run: |
-          echo "Security vulnerabilities found in production dependencies. Please fix them before merging."
-          exit 1

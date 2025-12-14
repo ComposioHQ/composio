@@ -112,40 +112,56 @@ session = composio.tool_router.create(
 # Explicit enabled configuration
 session = composio.tool_router.create(
     user_id='user_123',
-    toolkits={'enabled': ['gmail', 'slack']}
+    toolkits={'enable': ['gmail', 'slack']}
 )
 
 # Disable specific toolkits (enable all others)
 session = composio.tool_router.create(
     user_id='user_123',
-    toolkits={'disabled': ['calendar']}
+    toolkits={'disable': ['calendar']}
 )
 ```
 
 ### `tools`
 
-Fine-grained control over which tools are available within toolkits.
+Fine-grained control over which tools are available within toolkits. This is a dictionary where keys are toolkit slugs and values specify tool configuration for that toolkit.
 
 ```python
 session = composio.tool_router.create(
     user_id='user_123',
-    toolkits=['gmail'],
+    toolkits=['gmail', 'github', 'slack'],
     tools={
-        # Override tools per toolkit
-        'overrides': {
-            'gmail': ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],  # Only these tools
-            # OR use enabled/disabled dicts
-            # 'gmail': {'enabled': ['GMAIL_FETCH_EMAILS']}
-            # 'gmail': {'disabled': ['GMAIL_DELETE_EMAIL']}
-        },
-        # Filter by tags
-        'tags': ['email', 'messaging']
-        # OR use enabled/disabled
-        # 'tags': {'enabled': ['email']}
-        # 'tags': {'disabled': ['destructive']}
+        # List shorthand - enables only these tools
+        'gmail': ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+        
+        # Explicit enable configuration
+        'github': {'enable': ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_ISSUES']},
+        
+        # Explicit disable configuration
+        'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
+        
+        # Filter by MCP tags (readOnlyHint, destructiveHint, idempotentHint)
+        'linear': {'tags': ['readOnlyHint', 'idempotentHint']}
     }
 )
 ```
+
+### `tags`
+
+Global MCP tags to filter tools by across all toolkits. Only tools matching these tags will be available. Toolkit-level tags (specified in `tools`) override this global setting.
+
+```python
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail', 'github', 'slack'],
+    tags=['readOnlyHint', 'idempotentHint']  # Only show read-only and idempotent tools
+)
+```
+
+Available tag values:
+- `'readOnlyHint'`: Tools that only read data
+- `'destructiveHint'`: Tools that modify or delete data
+- `'idempotentHint'`: Tools that can be safely retried
 
 ### `auth_configs`
 
@@ -193,9 +209,8 @@ session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail'],
     manage_connections={
-        'enabled': True,
-        'callback_url': 'https://your-app.com/auth/callback',
-        'infer_scopes_from_tools': True  # Infer OAuth scopes from allowed tools
+        'enable': True,  # Whether to use tools to manage connections
+        'callback_url': 'https://your-app.com/auth/callback'  # Optional OAuth callback URL
     }
 )
 ```
@@ -209,8 +224,8 @@ session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail'],
     execution={
-        'proxy_execution_enabled': True,
-        'timeout_seconds': 30
+        'enable_proxy_execution': False,  # Whether to allow proxy execute calls in workbench
+        'auto_offload_threshold': 300  # Maximum execution time in seconds
     }
 )
 ```
@@ -523,7 +538,7 @@ The response structure:
 
 3. **Connection Management**: Use `manage_connections=True` (default) for interactive applications where users can be prompted to connect accounts.
 
-4. **Scope Inference**: Enable `infer_scopes_from_tools` when you want OAuth scopes to be automatically derived from the tools you've enabled.
+4. **Tag Filtering**: Use global `tags` to restrict tools to safe operations (e.g., `['readOnlyHint']`) or toolkit-specific tags in the `tools` configuration for fine-grained control.
 
 5. **Session Reuse**: Store and reuse `session_id` to maintain user sessions across requests.
 
@@ -610,38 +625,66 @@ class ToolkitConnectionsDetails:
 ### Configuration Types
 
 ```python
+from typing import List, Dict, Union, Literal
+from typing_extensions import TypedDict
+
 # Toolkits configuration
+ToolRouterToolkitsEnableConfig = TypedDict('ToolRouterToolkitsEnableConfig', {
+    'enable': List[str]
+})
+
+ToolRouterToolkitsDisableConfig = TypedDict('ToolRouterToolkitsDisableConfig', {
+    'disable': List[str]
+})
+
 toolkits: Union[
     List[str],                          # ['gmail', 'slack']
-    Dict[str, List[str]]                # {'enabled': [...]} or {'disabled': [...]}
+    ToolRouterToolkitsEnableConfig,     # {'enable': ['gmail', 'slack']}
+    ToolRouterToolkitsDisableConfig      # {'disable': ['calendar']}
 ]
 
 # Tools configuration
-tools: TypedDict({
-    'overrides': Dict[str, Union[
-        List[str],                      # ['TOOL_1', 'TOOL_2']
-        Dict[str, List[str]]            # {'enabled': [...]} or {'disabled': [...]}
-    ]],
-    'tags': Union[
-        List[str],                      # ['tag1', 'tag2']
-        Dict[str, List[str]]            # {'enabled': [...]} or {'disabled': [...]}
-    ]
+ToolRouterToolsEnableConfig = TypedDict('ToolRouterToolsEnableConfig', {
+    'enable': List[str]
 })
 
+ToolRouterToolsDisableConfig = TypedDict('ToolRouterToolsDisableConfig', {
+    'disable': List[str]
+})
+
+ToolRouterToolsTagsConfig = TypedDict('ToolRouterToolsTagsConfig', {
+    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint']]
+})
+
+ToolRouterToolsConfig = Union[
+    List[str],                          # ['GMAIL_SEND_EMAIL', 'GMAIL_FETCH_EMAILS']
+    ToolRouterToolsEnableConfig,        # {'enable': ['GMAIL_SEND_EMAIL']}
+    ToolRouterToolsDisableConfig,       # {'disable': ['GMAIL_DELETE_EMAIL']}
+    ToolRouterToolsTagsConfig           # {'tags': ['readOnlyHint']}
+]
+
+tools: Dict[str, ToolRouterToolsConfig]  # Key is toolkit slug, value is ToolRouterToolsConfig
+
+# Tags configuration (global)
+tags: List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint']]
+
 # Manage connections configuration
+ToolRouterManageConnectionsConfig = TypedDict('ToolRouterManageConnectionsConfig', {
+    'enable': bool,
+    'callback_url': str  # Optional
+})
+
 manage_connections: Union[
     bool,
-    TypedDict({
-        'enabled': bool,
-        'callback_url': str,
-        'infer_scopes_from_tools': bool
-    })
+    ToolRouterManageConnectionsConfig   # {'enable': True, 'callback_url': 'https://...'}
 ]
 
 # Execution configuration
-execution: TypedDict({
-    'proxy_execution_enabled': bool,
-    'timeout_seconds': int
+ToolRouterExecutionConfig = TypedDict('ToolRouterExecutionConfig', {
+    'enable_proxy_execution': bool,      # Whether to allow proxy execute calls
+    'auto_offload_threshold': int        # Maximum execution time in seconds
 })
+
+execution: ToolRouterExecutionConfig
 ```
 

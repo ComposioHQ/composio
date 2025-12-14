@@ -13,6 +13,7 @@ import {
   ToolExecuteParamsSchema,
   ToolkitVersionParam,
   SchemaModifierOptions,
+  ToolExecuteMetaParamsSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -50,6 +51,7 @@ import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
+import { ToolExecuteMetaParams } from '../types/tool.types';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -628,6 +630,24 @@ export class Tools<
 
   /**
    * @internal
+   * Utility to wrap a given set of tools in the format expected by the tool router
+   *
+   * @param sessionId {string} The session id to execute the tool for
+   * @param tools {Tool[]} The tools to wrap
+   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @returns {Tool[]} The wrapped tools
+   */
+  wrapToolsForToolRouter(
+    sessionId: string,
+    tools: Tool[],
+    modifiers?: ExecuteToolModifiers
+  ): Tool[] {
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
+    return this.provider.wrapTools(tools, executeToolFn) as Tool[];
+  }
+
+  /**
+   * @internal
    * @description
    * Creates a function that executes a tool.
    * This function is used by agentic providers to execute the tool
@@ -646,6 +666,34 @@ export class Tools<
           // dangerously skip version check for agentic tool execution via providers
           // this can be safe because most agentic flows users fetch latest version and then execute the tool
           dangerouslySkipVersionCheck: true,
+        },
+        modifiers
+      );
+    };
+    return executeToolFn;
+  }
+
+  /**
+   * @internal
+   * Creates a function that executes a tool for a tool router session
+   *
+   * @param sessionId {string} The session id to execute the tool for
+   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @returns {ExecuteToolFn} The execute tool function
+   */
+  private createExecuteToolFnForToolRouter(
+    sessionId: string,
+    modifiers?: ExecuteToolModifiers
+  ): ExecuteToolFn {
+    const executeToolFn = async (
+      toolSlug: string,
+      input: Record<string, unknown>
+    ): Promise<ToolExecuteResponse> => {
+      return await this.executeMetaTool(
+        toolSlug,
+        {
+          sessionId,
+          arguments: input,
         },
         modifiers
       );
@@ -813,6 +861,70 @@ export class Tools<
         toolSlug: slug,
         toolkitSlug,
         result,
+      },
+      modifiers?.afterExecute
+    );
+
+    return result;
+  }
+
+  /**
+   * Executes a composio meta tool based on tool router session
+   *
+   * @param sessionId {string} The session id to execute the tool for
+   * @param body.slug {string} The slug of the tool to execute
+   * @param body.arguments {Record<string, unknown>} The input to pass to the tool
+   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
+   */
+  async executeMetaTool(
+    toolSlug: string,
+    body: ToolExecuteMetaParams,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<ToolExecuteResponse> {
+    const executeMetaParams = ToolExecuteMetaParamsSchema.safeParse(body);
+    if (!executeMetaParams.success) {
+      throw new ValidationError('Invalid tool execute meta parameters', {
+        cause: executeMetaParams.error,
+      });
+    }
+
+    const tool = await this.getRawComposioToolBySlug(toolSlug);
+    if (!tool) {
+      throw new ComposioToolNotFoundError(`Tool ${toolSlug} not found`, {
+        meta: {
+          slug: toolSlug,
+          sessionId: body.sessionId,
+        },
+      });
+    }
+
+    const params = await this.applyBeforeExecuteModifiers(
+      tool,
+      {
+        toolSlug: toolSlug,
+        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+        params: body.arguments ?? {},
+      },
+      modifiers?.beforeExecute
+    );
+
+    const response = await this.client.toolRouter.session.executeMeta(body.sessionId, {
+      slug: toolSlug,
+      arguments: params,
+    });
+
+    const result = await this.applyAfterExecuteModifiers(
+      tool,
+      {
+        toolSlug: toolSlug,
+        toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+        result: {
+          data: response.data,
+          error: response.error,
+          successful: !response.error,
+          logId: response.log_id,
+        },
       },
       modifiers?.afterExecute
     );
