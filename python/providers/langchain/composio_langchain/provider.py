@@ -1,5 +1,6 @@
 """ComposioLangChain class definition"""
 
+import re
 import types
 import typing as t
 from inspect import Signature
@@ -16,6 +17,8 @@ from composio.utils.shared import (
 )
 
 _python_reserved = {"for", "async"}
+# Regex pattern for valid Python identifiers
+_valid_identifier_pattern = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 _obj_marker = "-_object_-"
 
 
@@ -23,13 +26,53 @@ def _clean_reserved_keyword(keyword: str):
     return f"{keyword}_rs"
 
 
+def _is_valid_python_identifier(name: str) -> bool:
+    """Check if a string is a valid Python identifier."""
+    return bool(_valid_identifier_pattern.match(name))
+
+
+def _sanitize_param_name(name: str) -> str:
+    """
+    Sanitize a parameter name to be a valid Python identifier.
+
+    Replaces invalid characters (like brackets) with underscores and ensures
+    the name starts with a letter or underscore.
+    """
+    # Replace common invalid patterns
+    # e.g., "parameters[date]" -> "parameters_date_"
+    sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
+
+    # Ensure it starts with a letter or underscore
+    if sanitized and sanitized[0].isdigit():
+        sanitized = f"_{sanitized}"
+
+    # Remove consecutive underscores and trailing underscores for cleaner names
+    sanitized = re.sub(r"_+", "_", sanitized)
+    sanitized = sanitized.rstrip("_")
+
+    return sanitized if sanitized else "_param"
+
+
 def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
+    """Substitute reserved Python keywords and invalid parameter names in schema.
+
+    This function handles:
+    1. Reserved Python keywords (e.g., 'for', 'async')
+    2. Invalid Python identifiers (e.g., 'parameters[date]' with brackets)
+
+    Returns the modified schema and a mapping of sanitized names to original names.
+    """
     if "properties" not in schema:
         return schema, {}
 
     keywords = {}
     for p_name in list(schema["properties"]):
-        if p_name not in _python_reserved:
+        # Check if name needs substitution (reserved keyword or invalid identifier)
+        needs_substitution = (
+            p_name in _python_reserved or not _is_valid_python_identifier(p_name)
+        )
+
+        if not needs_substitution:
             continue
 
         _keywords = {}
@@ -37,7 +80,12 @@ def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
         if p_val.get("type") == "object":
             p_val, _keywords = _substitute_reserved_python_keywords(schema=p_val)
 
-        p_name_clean = _clean_reserved_keyword(keyword=p_name)
+        # Use appropriate cleaning method
+        if p_name in _python_reserved:
+            p_name_clean = _clean_reserved_keyword(keyword=p_name)
+        else:
+            p_name_clean = _sanitize_param_name(p_name)
+
         schema["properties"][p_name_clean] = p_val
         keywords[p_name_clean] = p_name
         keywords[f"{p_name_clean}{_obj_marker}"] = _keywords
