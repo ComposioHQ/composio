@@ -17,7 +17,10 @@ session = composio.create(user_id=user_id)
 
 # Configure Claude with Composio MCP server
 options = ClaudeAgentOptions(
-    system_prompt="You are a helpful assistant with access to external tools. Always use the available tools to complete user requests instead of just explaining how to do them.",
+    system_prompt=(
+        "You are a helpful assistant with access to external tools. "
+        "Always use the available tools to complete user requests instead of just explaining how to do them."
+    ),
     mcp_servers={
         "composio": {
             "type": "http",
