@@ -19,7 +19,7 @@ if not api_key:
 composio = Composio(api_key=api_key)
 
 # Create a tool router session
-session = composio.tool_router.create(
+session = composio.create(
     user_id="user_123",
     toolkits=["github", "gmail"],
 )

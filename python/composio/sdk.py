@@ -37,17 +37,16 @@ class SDKConfig(te.TypedDict):
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
 
 
-class ExperimentalNamespace:
-    """Namespace for experimental Composio features."""
+# class ExperimentalNamespace:
+#     """Namespace for experimental Composio features."""
 
-    def __init__(self, tool_router: ToolRouter):
-        """
-        Initialize experimental namespace.
+#     def __init__(self, tool_router: ToolRouter):
+#         """
+#         Initialize experimental namespace.
 
-        :param tool_router: Experimental ToolRouter instance
-        """
-        self.create = tool_router.create
-        self.use = tool_router.use
+#         :param tool_router: Experimental ToolRouter instance
+#         """
+#         self.tool_router = tool_router
 
 
 class Composio(t.Generic[TProvider], WithLogger):
@@ -57,7 +56,7 @@ class Composio(t.Generic[TProvider], WithLogger):
 
     tools: Tools[TProvider]
     tool_router: ToolRouter[TProvider]
-    experimental: ExperimentalNamespace
+    # experimental: ExperimentalNamespace
 
     def __init__(
         self,
@@ -102,20 +101,20 @@ class Composio(t.Generic[TProvider], WithLogger):
             file_download_dir=kwargs.get("file_download_dir"),
             toolkit_versions=toolkit_versions,
         )
-        self.tool_router = ToolRouter(
-            client=self._client,
-            provider=self.provider,
-        )
+
         self.toolkits = Toolkits(client=self._client)
         self.triggers = Triggers(client=self._client, toolkit_versions=toolkit_versions)
         self.auth_configs = AuthConfigs(client=self._client)
         self.connected_accounts = ConnectedAccounts(client=self._client)
         self.mcp = MCP(client=self._client)
 
-        # Initialize experimental features
-        self.experimental = ExperimentalNamespace(
-            tool_router=self.tool_router,
+        # initialize tool router methods
+        self.tool_router = ToolRouter(
+            client=self._client,
+            provider=self.provider,
         )
+        self.create = self.tool_router.create
+        self.use = self.tool_router.use
 
     @property
     def client(self):

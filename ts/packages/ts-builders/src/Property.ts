@@ -1,6 +1,7 @@
 import type { BasicBuilder } from './BasicBuilder';
 import { DocComment } from './DocComment';
 import { isValidJsIdentifier } from './isValidJsIdentifier';
+import { TypeContext } from './OperatorPrecedence';
 import { TypeBuilder } from './TypeBuilder';
 import { WellKnownSymbol } from './WellKnownSymbol';
 import { Writer } from './Writer';
@@ -51,7 +52,8 @@ export class Property implements BasicBuilder {
     if (this.isOptional) {
       writer.write('?');
     }
-    writer.write(': ').write(this.type);
+    writer.write(': ');
+    this.type.writeInContext(writer, TypeContext.ObjectProperty);
   }
 }
 

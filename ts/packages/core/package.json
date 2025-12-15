@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.2.7-alpha.3",
+  "version": "0.3.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -42,8 +42,8 @@
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
-    "tsup": "catalog:",
     "tsdown": "catalog:",
+    "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

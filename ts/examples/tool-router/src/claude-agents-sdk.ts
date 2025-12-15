@@ -4,7 +4,7 @@ import 'dotenv/config';
 
 const composio = new Composio();
 
-const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
+const session = await composio.create('user_123', { toolkits: ['gmail'] });
 
 const stream = await query({
   prompt: 'Use composio tools to fetch my last email from gmail',
@@ -15,9 +15,7 @@ const stream = await query({
       composio: {
         type: 'http',
         url: session.mcp.url,
-        headers: {
-          'x-api-key': process.env.COMPOSIO_API_KEY!,
-        }
+        headers: session.mcp.headers
       }
     },
     

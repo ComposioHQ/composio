@@ -25,7 +25,7 @@ async def main():
     composio = Composio(api_key=api_key, provider=OpenAIAgentsProvider())
 
     # Create a tool router session
-    session = composio.tool_router.create(
+    session = composio.create(
         user_id="user_123",
         toolkits=["github", "gmail"],
     )

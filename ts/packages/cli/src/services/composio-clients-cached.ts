@@ -161,6 +161,12 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           underlyingRepository.getTools(limit)
         );
       },
+
+      // These methods don't need caching as they operate on already fetched data
+      // or perform validation that should always be fresh
+      validateToolkits: toolkitSlugs => underlyingRepository.validateToolkits(toolkitSlugs),
+      filterToolkitsBySlugs: (toolkits, toolkitSlugs) =>
+        underlyingRepository.filterToolkitsBySlugs(toolkits, toolkitSlugs),
     });
   })
 ).pipe(

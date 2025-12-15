@@ -1,5 +1,21 @@
 # @composio/core
 
+## 0.3.0
+
+### Minor Changes
+
+- 07551cd: Add support for native tool execution in tool router
+- 9e002c5: Minor fixes
+- f0e67c4: Update API client and tool router types
+- 31521bd: Update typedocs and examples for toolkit versions
+- 9e002c5: Alpha release of tool router
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- 07551cd: Add support for native tool execution in tool router
+
 ## 0.2.7-alpha.3
 
 ### Patch Changes
