@@ -137,8 +137,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
 3. Update your auth config in the Composio dashboard to use your custom redirect URI:
 
-<Frame caption="Enter your custom redirect URI in the auth config">
-  <img src="../../../assets/images/tool-router/auth-config-custom-redirect.png" />
+<Frame caption="Enter your custom redirect URI in the auth config" background="subtle">
+  <img src="../../../assets/images/tool-router/auth-config-custom-redirect.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 
 This makes the OAuth flow go through your domain first, then to Composio for token storage.
