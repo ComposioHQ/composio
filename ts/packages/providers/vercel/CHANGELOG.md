@@ -1,5 +1,23 @@
 # @composio/vercel
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.3.0
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+- Updated dependencies [9e002c5]
+- Updated dependencies [f0e67c4]
+- Updated dependencies [31521bd]
+- Updated dependencies [9e002c5]
+  - @composio/core@0.2.7
+
 ## 0.2.19-alpha.4
 
 ### Patch Changes
