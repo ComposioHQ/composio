@@ -34,7 +34,7 @@ while (true) {
     if (msg.type === "assistant") {
       for (const block of msg.message.content) {
         if (block.type === "tool_use") {
-          console.log(`\n[🔧 Using tool: ${block.name}]`);
+          console.log(`\n[Using tool: ${block.name}]`);
         } else if (block.type === "text") {
           process.stdout.write(block.text);
         }

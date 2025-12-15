@@ -41,7 +41,7 @@ async def main():
                 if isinstance(msg, AssistantMessage):
                     for block in msg.content:
                         if isinstance(block, ToolUseBlock):
-                            print(f"[🔧 Using tool: {block.name}]")
+                            print(f"[Using tool: {block.name}]")
                         elif isinstance(block, TextBlock):
                             print(block.text, end="")
                 elif isinstance(msg, ResultMessage) and msg.result:
