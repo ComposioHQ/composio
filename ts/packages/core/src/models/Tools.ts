@@ -611,7 +611,7 @@ export class Tools<
   }
 
   /**
-   * @inte
+   * @internal
    * Utility to wrap a given set of tools in the format expected by the provider
    *
    * @param userId - The user id to get the tools for
@@ -632,9 +632,9 @@ export class Tools<
    * @internal
    * Utility to wrap a given set of tools in the format expected by the tool router
    *
-   * @param sessionId {string} The session id to execute the tool for
-   * @param tools {Tool[]} The tools to wrap
-   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @param {string} sessionId - The session id to execute the tool for
+   * @param {Tool[]} tools - The tools to wrap
+   * @param {ExecuteToolModifiers} modifiers - The modifiers to apply to the tool
    * @returns {Tool[]} The wrapped tools
    */
   wrapToolsForToolRouter(
@@ -677,8 +677,8 @@ export class Tools<
    * @internal
    * Creates a function that executes a tool for a tool router session
    *
-   * @param sessionId {string} The session id to execute the tool for
-   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @param {string} sessionId - The session id to execute the tool for
+   * @param {ExecuteToolModifiers} modifiers - The modifiers to apply to the tool
    * @returns {ExecuteToolFn} The execute tool function
    */
   private createExecuteToolFnForToolRouter(
@@ -871,10 +871,11 @@ export class Tools<
   /**
    * Executes a composio meta tool based on tool router session
    *
-   * @param sessionId {string} The session id to execute the tool for
-   * @param body.slug {string} The slug of the tool to execute
-   * @param body.arguments {Record<string, unknown>} The input to pass to the tool
-   * @param modifiers {ExecuteToolModifiers} The modifiers to apply to the tool
+   * @param {string} toolSlug - The slug of the tool to execute
+   * @param {ToolExecuteMetaParams} body - The execution parameters
+   * @param {string} body.sessionId - The session id to execute the tool for
+   * @param {Record<string, unknown>} body.arguments - The input to pass to the tool
+   * @param {ExecuteToolModifiers} modifiers - The modifiers to apply to the tool
    * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
    */
   async executeMetaTool(

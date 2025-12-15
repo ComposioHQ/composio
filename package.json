@@ -1,6 +1,6 @@
 {
   "name": "composio",
-  "version": "0.1.12-alpha.1",
+  "version": "0.10.0-alpha.1",
   "private": true,
   "description": "",
   "workspaces": [
