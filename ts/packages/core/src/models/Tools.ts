@@ -1080,6 +1080,7 @@ export class Tools<
    *     return { data: { result: 'Success!' } };
    *   }
    * });
+   * ```
    */
   async createCustomTool<T extends CustomToolInputParameter>(
     body: CustomToolOptions<T>
