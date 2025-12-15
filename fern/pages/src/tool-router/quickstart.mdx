@@ -69,6 +69,40 @@ When the agent needs authentication, it will prompt the user with a link to conn
 </Steps>
 
 </Tab>
+
+<Tab title="Claude Agent SDK">
+
+<Steps>
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio claude-agent-sdk
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @anthropic-ai/claude-agent-sdk
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create session and run agent">
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-claude.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-claude.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+</Step>
+</Steps>
+
+</Tab>
 </Tabs>
 
 ## What just happened?
