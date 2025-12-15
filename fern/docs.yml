@@ -320,9 +320,9 @@ navigation:
     - page: White-labeling Authentication
       path: pages/dist/tool-router/white-labeling-authentication.mdx
       slug: white-labeling-authentication
-    - page: Configuring Custom Auth Configs
-      path: pages/dist/tool-router/configuring-custom-auth-configs.mdx
-      slug: configuring-custom-auth-configs
+    - page: Using Custom Auth Configs
+      path: pages/dist/tool-router/using-custom-auth-configs.mdx
+      slug: using-custom-auth-configs
     - page: Using with MCP Clients
       path: pages/dist/tool-router/using-with-mcp-clients.mdx
       slug: using-with-mcp-clients
