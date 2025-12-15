@@ -10,6 +10,7 @@ Users can connect multiple accounts for the same toolkit (e.g., personal and wor
 ## Default account behavior
 
 When multiple accounts are connected for the same toolkit:
+- Each session can only use **one account per toolkit** at a time
 - Tool Router uses the **most recently connected account** by default
 - You can override this by explicitly selecting an account
 - Each account maintains its own authentication and permissions
@@ -57,21 +58,38 @@ Store the account IDs returned after connection to explicitly select accounts la
 
 ## Selecting a specific account for a session
 
-To use a specific account in a session, pass it in the session config:
+Each Tool Router session can only use one account per toolkit at a time. To use a specific account in a session, pass it in the session config:
 
 <CodeGroup>
 ```python
+# This session will use a specific Gmail account
 session = composio.create(
     user_id="user_123",
     connected_accounts={
         "gmail": "ca_specific_account_id",  # Connected account ID
     },
 )
+
+# To switch accounts, create a new session with a different account ID
+session2 = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": "ca_different_account_id",  # Different account
+    },
+)
 ```
 ```typescript
+// This session will use a specific Gmail account
 const session = await composio.create("user_123", {
   connectedAccounts: {
     gmail: "ca_specific_account_id",  // Connected account ID
+  },
+});
+
+// To switch accounts, create a new session with a different account ID
+const session2 = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: "ca_different_account_id",  // Different account
   },
 });
 ```
@@ -79,7 +97,7 @@ const session = await composio.create("user_123", {
 
 ## Listing all user accounts
 
-To list all accounts a user has connected (not just the active one), see [List accounts](/docs/connected-accounts#list-accounts) in the Connected Accounts guide.
+To list all accounts a user has connected (not just the active one), see [List accounts](/docs/connected-accounts#list-accounts).
 
 ## Viewing session's active account
 
