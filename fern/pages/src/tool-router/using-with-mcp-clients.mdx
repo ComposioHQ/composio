@@ -1,7 +1,91 @@
 ---
-title: Using with MCP Clients
+title: Using with MCP clients
 image: "https://og.composio.dev/api/og?title=Using%20with%20MCP%20Clients"
 description: "Use Tool Router as an MCP server with any MCP client"
-keywords: "tool router"
+keywords: "tool router, mcp, model context protocol, claude agent sdk, vercel ai"
 ---
+
+Every Tool Router session provides a unique MCP server URL. This URL exposes the exact session you created - with the specific user, toolkits, and auth configs you configured. Any MCP client that supports HTTP transport can connect using just the URL and your API key.
+
+## Examples for popular frameworks
+
+Jump to examples for:
+- [OpenAI Agents SDK](#openai-agents-sdk) - Python, TypeScript
+- [Claude Agent SDK](#claude-agent-sdk) - Python, TypeScript
+- [Vercel AI SDK](#vercel-ai-sdk) - TypeScript
+
+## OpenAI Agents SDK
+
+### Installation
+
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai-agents
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @openai/agents
+```
+</CodeGroup>
+
+### Usage
+
+Create a Tool Router session and execute tasks with OpenAI agents:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/mcp-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/mcp-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+
+## Claude Agent SDK
+
+### Installation
+
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio claude-agent-sdk
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @anthropic-ai/claude-agent-sdk
+```
+</CodeGroup>
+
+### Usage
+
+Create a Tool Router session and execute tasks with Claude:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/mcp-claude.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/mcp-claude.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+
+## Vercel AI SDK
+
+
+### Installation
+
+```bash
+npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
+```
+
+### Usage
+
+Use Tool Router with Vercel AI SDK's `generateText` for single completions:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+</Info>
+
+<SnippetCode src="fern/snippets/tool-router/typescript/mcp-vercel.ts" />
+
 
