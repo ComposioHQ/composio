@@ -62,7 +62,7 @@ settings:
 colors:
   accent-primary:
     light: '#FF782F'
-    dark: '#FF9233'
+    dark: '#7aa0ff'
   background:
     light: '#F7F4F0'
     dark: '#0F0602'
