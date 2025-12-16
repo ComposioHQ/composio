@@ -165,6 +165,20 @@ console.log(mcp.url);
 
 For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients) or [Using as a native tool](/tool-router/using-as-a-native-tool).
 
+### tools()
+
+Get native tools from the session for use with AI frameworks.
+
+<CodeGroup>
+```python Python
+tools = session.tools()
+```
+
+```typescript TypeScript
+const tools = await session.tools();
+```
+</CodeGroup>
+
 ### authorize()
 
 Manually authenticate a user to a toolkit outside of the chat flow.

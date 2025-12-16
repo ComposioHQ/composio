@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { openai } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { createInterface } from "readline/promises";
+import { anthropic } from "@ai-sdk/anthropic";
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -25,9 +25,10 @@ while (true) {
   messages.push({ role: "user", content: userInput });
   
   const result = await generateText({
-    model: openai("gpt-4-turbo"),
+    model: anthropic("claude-sonnet-4-5")   ,
     messages: messages,
     tools: tools,
+    stopWhen: stepCountIs(10),
   });
   
   messages.push({ role: "assistant", content: result.text });
