@@ -1,50 +1,37 @@
-import "dotenv/config"; // Load environment variables from .env file
+import "dotenv/config";
 import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { createInterface } from "readline/promises";
 
-const composioApiKey = process.env.COMPOSIO_API_KEY;
-const userId = "user_123"; // Your user's unique identifier
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
 
-// Initialize Composio and create a Tool Router session
-const composio = new Composio({ apiKey: composioApiKey });
-const session = await composio.create(userId);
-
-// Get Tool Router as a native tool
-const toolRouter = await session.getToolRouter();
+const session = await composio.create("user_123");
+const tools = await session.tools();
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
+const messages: any[] = [];
+
 console.log("Assistant: What would you like me to do today?\n");
 
-// Interactive loop with conversation history
-const messages: any[] = [];
 while (true) {
   const userInput = await rl.question("> ");
   if (userInput === "exit") break;
   
-  // Add user message to history
   messages.push({ role: "user", content: userInput });
   
-  // Generate response with Vercel AI SDK
-  const { text, toolCalls, toolResults } = await generateText({
+  const result = await generateText({
     model: openai("gpt-4-turbo"),
     messages: messages,
-    tools: {
-      composio_tool_router: toolRouter.tool,
-    },
+    tools: tools,
   });
   
-  // Add assistant response to history
-  messages.push({ role: "assistant", content: text });
-  
-  // Show tool execution feedback
-  if (toolCalls && toolCalls.length > 0) {
-    for (const toolCall of toolCalls) {
-      console.log(`[Executed: ${toolCall.toolName}]`);
-    }
-  }
-  
-  console.log(`Assistant: ${text}\n`);
+  messages.push({ role: "assistant", content: result.text });
+  console.log(`Assistant: ${result.text}\n`);
 }
+
 rl.close();
