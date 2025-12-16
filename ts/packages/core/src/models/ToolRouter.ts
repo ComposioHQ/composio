@@ -71,7 +71,7 @@ export class ToolRouter<
       options?: { callbackUrl?: string }
     ): Promise<ConnectionRequest> => {
       const response = await this.client.toolRouter.session.link(sessionId, {
-        ...(options ?? {}),
+        ...(options?.callbackUrl ? { callback_url: options.callbackUrl } : {}),
         toolkit,
       });
 
