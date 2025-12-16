@@ -1,5 +1,3 @@
-# Fetch GitHub issues and organize them in a Google Sheet using Claude
-
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -16,7 +14,8 @@ session = composio.create(user_id=user_id)
 
 # Configure Claude with Composio MCP server
 options = ClaudeAgentOptions(
-    system_prompt="You are a helpful assistant with access to external tools. Always use the available tools to complete user requests.",
+    system_prompt=("You are a helpful assistant with access to external tools. "
+                   "Always use the available tools to complete user requests."),
     mcp_servers={
         "composio": {
             "type": "http",
@@ -33,7 +32,8 @@ async def main():
     
     async with ClaudeSDKClient(options) as client:
         # Initial task
-        query = "Fetch all open issues from the composio/composio GitHub repository and create a Google Sheet with issue number, title, labels, and author"
+        query = ("Fetch all open issues from the composio/composio GitHub repository "
+                 "and create a Google Sheet with issue number, title, labels, and author")
         
         print(f"Task: {query}\n")
         print("Claude: ", end="")

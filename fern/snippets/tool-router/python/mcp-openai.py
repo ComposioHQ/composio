@@ -1,5 +1,3 @@
-# An agent that fetches and categorizes GitHub issues using OpenAI and Composio Tool Router
-
 import os
 from dotenv import load_dotenv
 from composio import Composio
@@ -52,6 +50,7 @@ print("Running the OpenAI agent to fetch GitHub issues...\n")
 # Execute a task that requires GitHub access
 result = Runner.run_sync(
     starting_agent=agent,
-    input="Fetch all the open GitHub issues on the composio/composio repository and group them by bugs/features/docs."
+    input=("Fetch all the open GitHub issues on the composio/composio repository "
+           "and group them by bugs/features/docs.")
 )
 print(f"Result: {result.final_output}")

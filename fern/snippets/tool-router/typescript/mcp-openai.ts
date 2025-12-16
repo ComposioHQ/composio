@@ -1,5 +1,3 @@
-// An agent that fetches and categorizes GitHub issues using OpenAI and Composio Tool Router
-
 import "dotenv/config"; // Load environment variables from .env file
 import { Composio } from "@composio/core";
 import { Agent, hostedMcpTool, run } from "@openai/agents";
@@ -37,7 +35,8 @@ const agent = new Agent({
 // Execute a task that requires GitHub access
 const result = await run(
   agent,
-  "Fetch all the open GitHub issues on the composio/composio repository and group them by bugs/features/docs."
+  "Fetch all the open GitHub issues on the composio/composio repository " +
+  "and group them by bugs/features/docs."
 );
 
 console.log(`Result: ${result.finalOutput}`);

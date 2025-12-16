@@ -1,5 +1,3 @@
-// Fetch GitHub issues and organize them in a Google Sheet using Claude
-
 import "dotenv/config"; // Load environment variables from .env file
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import { Composio } from "@composio/core";
@@ -17,7 +15,8 @@ const session = await composio.create(userId);
 
 // Configure Claude with Composio MCP server
 const options: Options = {
-  systemPrompt: "You are a helpful assistant with access to external tools. Always use the available tools to complete user requests.",
+  systemPrompt: "You are a helpful assistant with access to external tools. " +
+    "Always use the available tools to complete user requests.",
   mcpServers: {
     composio: { 
       type: "http", 
@@ -35,7 +34,8 @@ async function main() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   
   // Initial task
-  const task = "Fetch all open issues from the composio/composio GitHub repository and create a Google Sheet with issue number, title, labels, and author";
+  const task = "Fetch all open issues from the composio/composio GitHub repository " +
+    "and create a Google Sheet with issue number, title, labels, and author";
   
   console.log(`Task: ${task}\n`);
   

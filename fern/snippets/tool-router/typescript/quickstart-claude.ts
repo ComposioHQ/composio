@@ -13,7 +13,8 @@ const composio = new Composio({ apiKey: composioApiKey });
 const session = await composio.create(userId);
 
 const options: Options = {
-  systemPrompt: "You are a helpful assistant with access to external tools. Always use the available tools to complete user requests instead of just explaining how to do them.",
+  systemPrompt: "You are a helpful assistant with access to external tools. " +
+    "Always use the available tools to complete user requests instead of just explaining how to do them.",
   mcpServers: {
     composio: { 
       type: "http", 
