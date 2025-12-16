@@ -847,6 +847,108 @@ describe('CLI: composio ts generate', () => {
             assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
           })
         );
+
+        it.scoped(
+          '[Given] --toolkits gmail [Then] it generates type stubs only for the gmail toolkit',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered');
+
+              const args = ['ts', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts and index.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('index.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // Verify index only references gmail
+              const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
+              expect(indexSourceCode).toContain('GMAIL');
+              expect(indexSourceCode).not.toContain('SLACK');
+
+              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail --toolkits slack [Then] it generates type stubs for both toolkits',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-multi-filtered');
+
+              const args = [
+                'ts',
+                'generate',
+                '--toolkits',
+                'gmail',
+                '--toolkits',
+                'slack',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - both gmail.ts and slack.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('slack.ts');
+              expect(fileNames).toContain('index.ts');
+
+              // Verify index references both
+              const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
+              expect(indexSourceCode).toContain('GMAIL');
+              expect(indexSourceCode).toContain('SLACK');
+
+              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+            })
+        );
+
+        it.scoped('[Given] --toolkits with invalid toolkit [Then] it fails with an error', () =>
+          Effect.gen(function* () {
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const outputDir = path.join(cwd, 'generated-invalid');
+
+            const args = ['ts', 'generate', '--toolkits', 'nonexistent', '--output-dir', outputDir];
+            const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+
+            expect(result).toBeInstanceOf(Error);
+            expect((result as Error).message).toContain('Invalid toolkit(s): nonexistent');
+          })
+        );
+
+        it.scoped(
+          '[Given] --toolkits GMAIL (uppercase) [Then] it handles case-insensitive matching',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-uppercase');
+
+              const args = ['ts', 'generate', '--toolkits', 'GMAIL', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).not.toContain('slack.ts');
+            })
+        );
       });
     });
 
