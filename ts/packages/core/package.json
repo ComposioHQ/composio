@@ -1,18 +1,22 @@
 {
   "name": "@composio/core",
-  "version": "0.2.5",
+  "version": "0.3.1",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts"
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "types": {
+        "import": "./dist/index.d.mts",
+        "require": "./dist/index.d.cts",
+        "default": "./dist/index.d.cts"
+      },
       "require": "./dist/index.cjs"
     },
     "./generated": {
@@ -27,7 +31,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json"
   },
@@ -38,6 +42,7 @@
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
+    "tsdown": "catalog:",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
@@ -45,7 +50,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": ">=3.25.76 <5"
+    "zod": "^3.25 || ^4"
   },
   "dependencies": {
     "@composio/client": "catalog:",

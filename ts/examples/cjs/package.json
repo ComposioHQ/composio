@@ -1,0 +1,24 @@
+{
+  "name": "cjs-example",
+  "type": "commonjs",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Example project for CommonJS",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node ./src/index.cjs"
+  },
+  "keywords": ["composio", "example", "cjs"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "dotenv": "^16.4.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "typescript": "catalog:"
+  }
+}
