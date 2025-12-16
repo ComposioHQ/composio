@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { generateText, stepCountIs } from "ai";
+import { generateText, stepCountIs, ModelMessage } from "ai";
 import { createInterface } from "readline/promises";
 import { anthropic } from "@ai-sdk/anthropic";
 
@@ -14,7 +14,7 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
-const messages: any[] = [];
+const messages: ModelMessage[] = [];
 
 console.log("Assistant: What would you like me to do today?\n");
 
