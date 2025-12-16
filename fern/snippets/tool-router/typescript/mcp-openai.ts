@@ -35,7 +35,7 @@ const agent = new Agent({
 // Execute a task that requires GitHub access
 const result = await run(
   agent,
-  "Fetch all the open GitHub issues on the composio/composio repository " +
+  "Fetch all the open GitHub issues on the composio repository " +
   "and group them by bugs/features/docs."
 );
 

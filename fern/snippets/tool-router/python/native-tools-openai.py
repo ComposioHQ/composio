@@ -29,7 +29,7 @@ response = client.chat.completions.create(
         {
             "role": "user",
             "content": (
-                "Fetch all open issues from the composio/composio GitHub repository "
+                "Fetch all open issues from the composio GitHub repository "
                 "and create a summary of the top 5 by priority"
             )
         }
@@ -57,7 +57,7 @@ if tool_calls:
                 {
                     "role": "user",
                     "content": (
-                        "Fetch all open issues from the composio/composio GitHub repository "
+                        "Fetch all open issues from the composio GitHub repository "
                         "and create a summary of the top 5 by priority"
                     )
                 },

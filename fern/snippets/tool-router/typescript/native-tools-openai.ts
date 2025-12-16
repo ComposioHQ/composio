@@ -23,7 +23,7 @@ const response = await openai.chat.completions.create({
   messages: [
     {
       role: "user",
-      content: "Fetch all open issues from the composio/composio GitHub repository " +
+      content: "Fetch all open issues from the composio GitHub repository " +
         "and create a summary of the top 5 by priority",
     },
   ],
@@ -49,7 +49,7 @@ if (toolCalls && toolCalls.length > 0) {
       messages: [
         {
           role: "user",
-          content: "Fetch all open issues from the composio/composio GitHub repository " +
+          content: "Fetch all open issues from the composio GitHub repository " +
             "and create a summary of the top 5 by priority",
         },
         response.choices[0].message,

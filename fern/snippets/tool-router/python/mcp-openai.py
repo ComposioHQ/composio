@@ -50,7 +50,7 @@ print("Running the OpenAI agent to fetch GitHub issues...\n")
 # Execute a task that requires GitHub access
 result = Runner.run_sync(
     starting_agent=agent,
-    input=("Fetch all the open GitHub issues on the composio/composio repository "
+    input=("Fetch all the open GitHub issues on the composio repository "
            "and group them by bugs/features/docs.")
 )
 print(f"Result: {result.final_output}")

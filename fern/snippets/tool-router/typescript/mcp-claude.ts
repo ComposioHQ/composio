@@ -34,7 +34,7 @@ async function main() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   
   // Initial task
-  const task = "Fetch all open issues from the composio/composio GitHub repository " +
+  const task = "Fetch all open issues from the composio GitHub repository " +
     "and create a Google Sheet with issue number, title, labels, and author";
   
   console.log(`Task: ${task}\n`);

@@ -16,7 +16,7 @@ const toolRouter = await session.getToolRouter();
 // Use with Vercel AI SDK
 const { text, toolCalls, toolResults } = await generateText({
   model: openai("gpt-4-turbo"),
-  prompt: "Fetch all open issues from the composio/composio GitHub repository " +
+  prompt: "Fetch all open issues from the composio GitHub repository " +
     "and create a summary of the top 5 by priority",
   tools: {
     composio_tool_router: toolRouter.tool,

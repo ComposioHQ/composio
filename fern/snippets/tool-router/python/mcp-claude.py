@@ -32,7 +32,7 @@ async def main():
     
     async with ClaudeSDKClient(options) as client:
         # Initial task
-        query = ("Fetch all open issues from the composio/composio GitHub repository "
+        query = ("Fetch all open issues from the composio GitHub repository "
                  "and create a Google Sheet with issue number, title, labels, and author")
         
         print(f"Task: {query}\n")
