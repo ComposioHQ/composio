@@ -1,0 +1,77 @@
+---
+title: Using as a native tool
+image: "https://og.composio.dev/api/og?title=Using%20as%20a%20Native%20Tool"
+description: "Use Tool Router as a native tool with any AI framework"
+keywords: "native tool, tool router, meta-tool"
+---
+
+Tool Router can be used as a single native tool with any AI framework. The tool handles search, authentication, and execution internally.
+
+## Examples for popular frameworks
+
+Jump to examples for:
+- [OpenAI](#openai) - Python, TypeScript
+- [Vercel AI SDK](#vercel-ai-sdk) - TypeScript
+
+## OpenAI
+
+### Installation
+
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core openai
+```
+</CodeGroup>
+
+### Usage
+
+Create a Tool Router session and use it as a native tool:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/native-tools-openai.py" title="Python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/native-tools-openai.ts" title="TypeScript" />
+</CodeGroup>
+
+## Vercel AI SDK
+
+### Installation
+
+```bash
+npm install @composio/core ai @ai-sdk/openai
+```
+
+### Usage
+
+Create a Tool Router session and use it as a native tool:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Info>
+
+<SnippetCode src="fern/snippets/tool-router/typescript/native-tools-vercel.ts" />
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" href="/tool-router/quickstart">
+    See both MCP and native tool in action
+  </Card>
+  <Card title="Using with MCP" href="/tool-router/using-with-mcp-clients">
+    Use Tool Router with MCP-compatible clients
+  </Card>
+  <Card title="Authentication" href="/tool-router/authentication">
+    Learn about authentication options
+  </Card>
+  <Card title="Session management" href="/tool-router/users-and-sessions">
+    Configure sessions for your users
+  </Card>
+</CardGroup>

@@ -6,7 +6,10 @@ keywords: "tool router quickstart, quickstart"
 hide-nav-links: false
 ---
 
-Build an interactive agent with access to 1000+ tools.
+Choose how you want to integrate Tool Router:
+
+<AccordionGroup>
+<Accordion title="Using Tool Router MCP">
 
 <Tabs>
 <Tab title="Claude Agent SDK">
@@ -105,15 +108,86 @@ When the agent needs authentication, it will prompt the user with a link to conn
 </Tab>
 </Tabs>
 
-## What just happened?
+### What just happened?
 
-When you ran this agent, Tool Router handled everything behind the scenes:
+When you run this agent, Tool Router:
+1. **Creates an MCP server** with your session configuration
+2. **Searches** for the right tools based on your request
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
 
-1. **[Search](/tool-router/tool-search)** - Found the right Gmail tools from 1000+ available tools
-2. **[Authentication](/tool-router/authentication)** - Prompted you to connect your Gmail account
-3. **[Execution](/tool-router/tool-execution)** - Fetched your emails and processed results efficiently
+</Accordion>
 
-All you wrote was a prompt. Tool Router handled the rest!
+<Accordion title="Using Tool router as a native tool">
+
+<Tabs>
+<Tab title="OpenAI">
+
+<Steps>
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core openai
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create session and use as native tool">
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-native-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-native-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Vercel AI SDK">
+
+<Steps>
+<Step title="Install">
+```bash title="TypeScript"
+npm install @composio/core ai @ai-sdk/openai
+```
+</Step>
+
+<Step title="Create session and use as native tool">
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-native-vercel.ts" title="TypeScript" />
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+### What just happened?
+
+When you run this agent, Tool Router:
+1. **Provides a single tool** to your agent framework
+2. **Interprets requests** and **searches** for the right tools internally
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
+
+</Accordion>
+</AccordionGroup>
 
 ## Next steps
 
@@ -129,5 +203,8 @@ All you wrote was a prompt. Tool Router handled the rest!
   </Card>
   <Card title="Using MCP" href="/tool-router/using-with-mcp-clients">
     Connect Tool Router to any MCP-compatible client.
+  </Card>
+  <Card title="Using as a native tool" href="/tool-router/using-as-a-native-tool">
+    Use Tool Router as a native tool with any AI framework.
   </Card>
 </CardGroup>

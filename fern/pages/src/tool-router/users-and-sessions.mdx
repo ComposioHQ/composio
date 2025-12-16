@@ -33,15 +33,28 @@ Restrict the session to specific toolkits:
 
 <CodeGroup>
 ```python Python
+# Using array format
 session = composio.create(
     user_id="user_123",
     toolkits=["github", "gmail", "slack"]
 )
+
+# Using object format with enable key
+session = composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["github", "gmail", "slack"]}
+)
 ```
 
 ```typescript TypeScript
+// Using array format
 const session = await composio.create("user_123", {
   toolkits: ["github", "gmail", "slack"],
+});
+
+// Using object format with enable key
+const session = await composio.create("user_123", {
+  toolkits: { enable: ["github", "gmail", "slack"] },
 });
 ```
 </CodeGroup>
@@ -54,13 +67,13 @@ Keep all toolkits enabled except specific ones:
 ```python Python
 session = composio.create(
     user_id="user_123",
-    toolkits={"disabled": ["exa", "firecrawl"]}
+    toolkits={"disable": ["exa", "firecrawl"]}
 )
 ```
 
 ```typescript TypeScript
 const session = await composio.create("user_123", {
-  toolkits: { disabled: ["exa", "firecrawl"] },
+  toolkits: { disable: ["exa", "firecrawl"] },
 });
 ```
 </CodeGroup>
@@ -150,7 +163,7 @@ console.log(mcp.url);
 ```
 </CodeGroup>
 
-For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients).
+For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients) or [Using as a native tool](/tool-router/using-as-a-native-tool).
 
 ### authorize()
 
