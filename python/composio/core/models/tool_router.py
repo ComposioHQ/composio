@@ -105,13 +105,13 @@ ToolRouterToolsConfig = t.Union[
 ]
 
 
-class ToolRouterExecutionConfig(te.TypedDict, total=False):
-    """Configuration for execution settings in tool router session.
+class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
+    """Configuration for workbench settings in tool router session.
 
     Attributes:
         enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
                                 If False, prevents arbitrary HTTP requests.
-        auto_offload_threshold: Maximum execution time for workbench operations in seconds.
+        auto_offload_threshold: Maximum execution payload size to offload to workbench.
     """
 
     enable_proxy_execution: bool
@@ -656,7 +656,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         ] = None,
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
-        execution: t.Optional[ToolRouterExecutionConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
     ) -> ToolRouterSession[TProvider]:
         """
         Create a new tool router session for a user.
@@ -703,12 +703,12 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
-        :param execution: Optional execution configuration (ToolRouterExecutionConfig).
+        :param workbench: Optional workbench configuration (ToolRouterWorkbenchConfig).
                          Dict with:
                          - 'enable_proxy_execution' (bool): Whether to allow proxy execute
                            calls in the workbench. If False, prevents arbitrary HTTP requests.
-                         - 'auto_offload_threshold' (int): Maximum execution time for
-                           workbench operations in seconds.
+                         - 'auto_offload_threshold' (int): Maximum execution payload size to
+                           offload to workbench.
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
         :return: Tool router session object
 
@@ -757,10 +757,10 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 }
             )
 
-            # Create a session with execution config
+            # Create a session with workbench config
             session = tool_router.create(
                 user_id='user_123',
-                execution={
+                workbench={
                     'enable_proxy_execution': False,
                     'auto_offload_threshold': 300
                 }
@@ -842,19 +842,19 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         if tags is not None:
             create_params["tags"] = tags
 
-        if execution is not None:
+        if workbench is not None:
             execution_payload: t.Dict[str, t.Any] = {}
-            if "enable_proxy_execution" in execution:
-                execution_payload["enable_proxy_execution"] = execution[
+            if "enable_proxy_execution" in workbench:
+                execution_payload["enable_proxy_execution"] = workbench[
                     "enable_proxy_execution"
                 ]
-            if "auto_offload_threshold" in execution:
+            if "auto_offload_threshold" in workbench:
                 execution_payload["auto_offload_threshold"] = int(
-                    execution["auto_offload_threshold"]
+                    workbench["auto_offload_threshold"]
                 )
 
             if execution_payload:
-                create_params["execution"] = execution_payload
+                create_params["workbench"] = execution_payload
 
         # Make API call to create session
         session = self._client.tool_router.session.create(**create_params)
@@ -920,7 +920,7 @@ __all__ = [
     "ToolRouterToolsTagsConfig",
     "ToolRouterToolsConfig",
     "ToolRouterManageConnectionsConfig",
-    "ToolRouterExecutionConfig",
+    "ToolRouterWorkbenchConfig",
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
     "ToolRouterMCPServerConfig",
