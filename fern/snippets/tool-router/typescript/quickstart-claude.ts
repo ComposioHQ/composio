@@ -38,6 +38,7 @@ while (true) {
   if (input.toLowerCase() === "quit" || input.toLowerCase() === "exit") break;
 
   process.stdout.write("Claude: ");
+  // First query starts a new conversation, subsequent queries continue it
   const queryOptions = isFirstQuery ? options : { ...options, continue: true };
   isFirstQuery = false;
   

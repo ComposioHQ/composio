@@ -66,9 +66,8 @@ async function main() {
   const userInput = await rl.question("You: ");
   
   if (userInput.toLowerCase() !== "quit" && userInput.toLowerCase() !== "exit" && userInput) {
-    const queryOptions = isFirstQuery ? options : { ...options, continue: true };
-    
-    for await (const msg of query({ prompt: userInput, options: queryOptions })) {
+    // Continue the conversation with the same context
+    for await (const msg of query({ prompt: userInput, options: { ...options, continue: true } })) {
       if (msg.type === "assistant") {
         for (const block of msg.message.content) {
           if (block.type === "tool_use") {
