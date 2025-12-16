@@ -125,9 +125,6 @@ navigation:
     - page: Quickstart
       path: pages/dist/get-started/quickstart.mdx
       slug: quickstart
-    - page: Quickstart Preview
-      path: pages/dist/get-started/quickstart-preview.mdx
-      slug: quickstart-preview
     - page: IDE and Agent Setup
       path: pages/dist/get-started/dev-setup.mdx
       slug: dev-setup
