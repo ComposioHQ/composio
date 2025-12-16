@@ -1,3 +1,4 @@
+import "dotenv/config"; // Load environment variables from .env file
 import { Composio } from "@composio/core";
 import { Agent, run, hostedMcpTool } from "@openai/agents";
 import { createInterface } from "readline/promises";

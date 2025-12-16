@@ -298,12 +298,6 @@ navigation:
     - page: Tools and Toolkits
       path: pages/dist/tool-router/tools-and-toolkits.mdx
       slug: tools-and-toolkits
-    - page: Tool Search
-      path: pages/dist/tool-router/tool-search.mdx
-      slug: tool-search
-    - page: Tool Execution and Workbench
-      path: pages/dist/tool-router/tool-execution-and-workbench.mdx
-      slug: tool-execution-and-workbench
   - section: Guides
     icon: fa-light fa-book
     skip-slug: true

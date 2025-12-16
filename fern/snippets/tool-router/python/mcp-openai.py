@@ -1,8 +1,12 @@
 # An agent that fetches and categorizes GitHub issues using OpenAI and Composio Tool Router
 
 import os
+from dotenv import load_dotenv
 from composio import Composio
 from agents import Agent, Runner, HostedMCPTool, ModelSettings
+
+# Load environment variables from .env file
+load_dotenv()
 
 composio_api_key = os.environ["COMPOSIO_API_KEY"]
 user_id = "user_123"  # Your user's unique identifier

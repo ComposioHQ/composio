@@ -1,4 +1,6 @@
 import asyncio
+import os
+from dotenv import load_dotenv
 from claude_agent_sdk.client import ClaudeSDKClient
 from claude_agent_sdk.types import (
     ClaudeAgentOptions, 
@@ -8,7 +10,9 @@ from claude_agent_sdk.types import (
     ToolUseBlock
 )
 from composio import Composio
-import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize Composio and create a Tool Router session
 composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])

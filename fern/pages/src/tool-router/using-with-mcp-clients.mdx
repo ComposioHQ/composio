@@ -10,36 +10,9 @@ Every Tool Router session provides a unique MCP server URL. This URL exposes the
 ## Examples for popular frameworks
 
 Jump to examples for:
-- [OpenAI Agents SDK](#openai-agents-sdk) - Python, TypeScript
 - [Claude Agent SDK](#claude-agent-sdk) - Python, TypeScript
+- [OpenAI Agents SDK](#openai-agents-sdk) - Python, TypeScript
 - [Vercel AI SDK](#vercel-ai-sdk) - TypeScript
-
-## OpenAI Agents SDK
-
-### Installation
-
-<CodeGroup>
-```bash title="Python" for="python"
-pip install composio openai-agents
-```
-```bash title="TypeScript" for="typescript"
-npm install @composio/core @openai/agents
-```
-</CodeGroup>
-
-### Usage
-
-Create a Tool Router session and execute tasks with OpenAI agents:
-
-<Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
-</Info>
-
-<CodeGroup>
-<SnippetCode src="fern/snippets/tool-router/python/mcp-openai.py" title="Python" for="python" />
-<SnippetCode src="fern/snippets/tool-router/typescript/mcp-openai.ts" title="TypeScript" for="typescript" />
-</CodeGroup>
 
 ## Claude Agent SDK
 
@@ -68,8 +41,34 @@ Create a Tool Router session and execute tasks with Claude:
 <SnippetCode src="fern/snippets/tool-router/typescript/mcp-claude.ts" title="TypeScript" for="typescript" />
 </CodeGroup>
 
-## Vercel AI SDK
+## OpenAI Agents SDK
 
+### Installation
+
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai-agents
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @openai/agents
+```
+</CodeGroup>
+
+### Usage
+
+Create a Tool Router session and execute tasks with OpenAI agents:
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/mcp-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/mcp-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+
+## Vercel AI SDK
 
 ### Installation
 
@@ -87,5 +86,3 @@ Use Tool Router with Vercel AI SDK's `generateText` for single completions:
 </Info>
 
 <SnippetCode src="fern/snippets/tool-router/typescript/mcp-vercel.ts" />
-
-

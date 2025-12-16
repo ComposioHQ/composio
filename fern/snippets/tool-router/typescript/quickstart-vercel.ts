@@ -1,3 +1,4 @@
+import "dotenv/config"; // Load environment variables from .env file
 import { anthropic } from "@ai-sdk/anthropic";
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { Composio } from "@composio/core";

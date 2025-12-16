@@ -1,16 +1,19 @@
+import "dotenv/config"; // Load environment variables from .env file
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import { Composio } from "@composio/core";
 import { createInterface } from "readline/promises";
 
-const composioApiKey = process.env.COMPOSIO_API_KEY!;
+const composioApiKey = process.env.COMPOSIO_API_KEY;
+if (!composioApiKey) {
+  console.warn("⚠️  Warning: COMPOSIO_API_KEY not set - Claude won't be able to use Composio tools");
+}
 const userId = "user_123"; // Your user's unique identifier
 
 const composio = new Composio({ apiKey: composioApiKey });
 const session = await composio.create(userId);
 
 const options: Options = {
-  systemPrompt: "You are a helpful assistant with access to external tools. "
-    + "Always use the available tools to complete user requests instead of just explaining how to do them.",
+  systemPrompt: "You are a helpful assistant with access to external tools. Always use the available tools to complete user requests instead of just explaining how to do them.",
   mcpServers: {
     composio: { 
       type: "http", 
@@ -24,14 +27,20 @@ const options: Options = {
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-console.log("Chat with Claude (type 'quit' to exit)\n");
+console.log("What task would you like me to help you with?");
+console.log("(Type 'quit' to exit)\n");
+
+let isFirstQuery = true;
 
 while (true) {
   const input = (await rl.question("You: ")).trim();
   if (input.toLowerCase() === "quit" || input.toLowerCase() === "exit") break;
 
   process.stdout.write("Claude: ");
-  for await (const msg of query({ prompt: input, options })) {
+  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
+  isFirstQuery = false;
+  
+  for await (const msg of query({ prompt: input, options: queryOptions })) {
     if (msg.type === "assistant") {
       for (const block of msg.message.content) {
         if (block.type === "tool_use") {
