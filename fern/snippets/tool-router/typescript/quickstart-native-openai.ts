@@ -1,6 +1,7 @@
 import "dotenv/config"; // Load environment variables from .env file
 import { Composio } from "@composio/core";
 import OpenAI from "openai";
+import { createInterface } from "readline/promises";
 
 const composioApiKey = process.env.COMPOSIO_API_KEY;
 const userId = "user_123"; // Your user's unique identifier
@@ -17,51 +18,58 @@ const openai = new OpenAI({
 // Get Tool Router as a native tool
 const toolRouter = await session.getToolRouter();
 
-// Create a chat completion with the tool
-const response = await openai.chat.completions.create({
-  model: "gpt-4-turbo-preview",
-  messages: [
-    {
-      role: "user",
-      content: "Fetch all open issues from the composio/composio GitHub repository " +
-        "and create a summary of the top 5 by priority",
-    },
-  ],
-  tools: [toolRouter.tool],
-  tool_choice: "auto",
-});
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+console.log("Assistant: What would you like me to do today?\n");
 
-console.log("Assistant:", response.choices[0].message.content);
-
-// Handle tool calls if the assistant wants to use Tool Router
-const toolCalls = response.choices[0].message.tool_calls;
-if (toolCalls && toolCalls.length > 0) {
-  const toolCall = toolCalls[0];
+// Interactive loop
+const messages: any[] = [];
+while (true) {
+  const userInput = await rl.question("> ");
+  if (userInput === "exit") break;
   
-  if (toolCall.function.name === "composio_tool_router") {
-    // Execute the tool with Tool Router
-    const args = JSON.parse(toolCall.function.arguments);
-    const result = await toolRouter.execute(args);
-    
-    // Send the result back to OpenAI
-    const finalResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "user",
-          content: "Fetch all open issues from the composio/composio GitHub repository " +
-            "and create a summary of the top 5 by priority",
-        },
-        response.choices[0].message,
-        {
+  // Add user message
+  messages.push({ role: "user", content: userInput });
+  
+  // Get response from OpenAI
+  const response = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    messages: messages,
+    tools: [toolRouter.tool],
+    tool_choice: "auto",
+  });
+  
+  const assistantMessage = response.choices[0].message;
+  messages.push(assistantMessage);
+  
+  // Handle tool calls
+  if (assistantMessage.tool_calls) {
+    for (const toolCall of assistantMessage.tool_calls) {
+      if (toolCall.function.name === "composio_tool_router") {
+        // Execute the tool
+        const args = JSON.parse(toolCall.function.arguments);
+        const result = await toolRouter.execute(args);
+        
+        // Add tool result to messages
+        messages.push({
           role: "tool",
           tool_call_id: toolCall.id,
           content: JSON.stringify(result),
-        },
-      ],
+        });
+      }
+    }
+    
+    // Get final response after tool execution
+    const finalResponse = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview",
+      messages: messages,
       tools: [toolRouter.tool],
     });
     
-    console.log("Assistant:", finalResponse.choices[0].message.content);
+    const finalMessage = finalResponse.choices[0].message;
+    messages.push(finalMessage);
+    console.log(`Assistant: ${finalMessage.content}\n`);
+  } else {
+    console.log(`Assistant: ${assistantMessage.content}\n`);
   }
 }
+rl.close();
