@@ -640,6 +640,12 @@ class ToolDocGenerator:
         logger.info(f"Toolkit tools: {toolkit}")
 
         logger.info(f"Retrieved {len(tools)} tools for {toolkit.name}")
+        
+        # Skip toolkits with zero tools
+        if len(tools) == 0:
+            logger.info(f"Skipping {toolkit.name} - no tools available")
+            return
+        
         if tools:
             logger.debug(f"First tool type: {type(tools[0])}")
             if hasattr(tools[0], "__dict__"):

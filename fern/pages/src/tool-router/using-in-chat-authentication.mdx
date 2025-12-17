@@ -1,0 +1,72 @@
+---
+title: Using In-chat authentication
+image: "https://og.composio.dev/api/og?title=Using%20In-chat%20Authentication"
+description: "Let your agent prompt users to connect accounts during conversation"
+keywords: "tool router, authentication, in-chat, MANAGE_CONNECTIONS"
+---
+
+In-chat authentication lets your agent prompt users to connect accounts during chat. When a tool requires authentication, the agent returns a Connect Link URL. The user authenticates, confirms in chat, and the agent retries.
+
+## How it works
+
+1. Agent searches for tools via the `COMPOSIO_SEARCH_TOOLS` meta-tool
+2. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool checks connection status, returns Connect Link URL if needed
+3. User authenticates, confirms in chat, agent continues
+
+## Configuration
+
+By just creating a session with default configs, you are enabling in-chat auth. The `manage_connections` parameter defaults to `True`, which includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool automatically:
+
+<CodeGroup>
+```python
+session = composio.create(user_id="user_123")
+```
+```typescript
+const session = await composio.create("user_123");
+```
+</CodeGroup>
+
+### Custom callback URL
+
+Redirect users back to your chat page after they complete authentication:
+
+<CodeGroup>
+```python
+session = composio.create(
+    user_id="user_123",
+    manage_connections={
+        "callback_url": "https://yourapp.com/chat"
+    },
+)
+```
+```typescript
+const session = await composio.create("user_123", {
+  manageConnections: {
+    callbackUri: "https://yourapp.com/chat",
+  },
+});
+```
+</CodeGroup>
+
+## Examples
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-openai.py" title="Python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-openai.ts" title="TypeScript" />
+</CodeGroup>
+
+What this looks like when you run the code:
+
+```
+Assistant: What would you like me to do today?
+
+> Star the composio repo on GitHub
+Assistant: I need you to connect your GitHub account first.
+Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+
+> Done
+
+Assistant: Done! I've starred ComposioHQ/composio.
+```
+
+To manage authentication outside of chat, see [Manually authenticating users](/tool-router/manually-authenticating-users).
