@@ -20,7 +20,7 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "dotenv": "^16.4.1",
-    "openai": "^5.19.1",
+    "openai": "^6.14.0",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },

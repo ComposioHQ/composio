@@ -18,6 +18,6 @@
 	"dependencies": {
 		"@composio/core": "workspace:^",
 		"hono": "^4.10.3",
-		"openai": "^4.94.0"
+		"openai": "^6.14.0"
 	}
 }

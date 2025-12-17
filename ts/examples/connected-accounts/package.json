@@ -15,7 +15,7 @@
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "openai": "^4.94.0"
+    "openai": "^6.14.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
