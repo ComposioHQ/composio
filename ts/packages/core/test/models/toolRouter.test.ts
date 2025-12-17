@@ -1094,7 +1094,7 @@ describe('ToolRouter', () => {
 
       expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
         toolkit,
-        callbackUrl: 'https://myapp.com/callback',
+        callback_url: 'https://myapp.com/callback',
       });
 
       expect(connectionRequest.id).toBe('conn_456');
