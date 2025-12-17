@@ -412,64 +412,8 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
             self._blocks.append("## Tools")
             self._blocks.append("### Executing tools")
             self._blocks.append(f"""To prototype you can execute some tools to see the responses and working on the [{app_name} toolkit's playground](https://app.composio.dev/app/{app_name})""")
-            
-            # Prepare template variables
-            template_vars = {
-                "toolkit_name": app_name,
-                "toolkit_slug": app_slug.lower(),
-                "user_id": "user@example.com"
-            }
-            
-            # Generate code blocks from templates
-            openai_block = MDX.as_code_block_from_template(
-                "templates/python/openai_tools.py",
-                template_vars=template_vars,
-                title="Python",
-                max_lines=40,
-                word_wrap=True
-            )
-            
-            anthropic_block = MDX.as_code_block_from_template(
-                "templates/typescript/anthropic_tools.ts",
-                template_vars=template_vars,
-                title="TypeScript",
-                max_lines=40,
-                word_wrap=True
-            )
-            
-            google_block = MDX.as_code_block_from_template(
-                "templates/python/google_tools.py",
-                template_vars=template_vars,
-                title="Python",
-                max_lines=40,
-                word_wrap=True
-            )
-            
-            vercel_block = MDX.as_code_block_from_template(
-                "templates/typescript/vercel_tools.ts",
-                template_vars=template_vars,
-                title="TypeScript",
-                max_lines=40,
-                word_wrap=True
-            )
-            
-            # Build the tabs with populated code blocks
-            self._blocks.append(
-                f"""<Tabs>
-<Tab title="OpenAI (Python)">
-{openai_block}
-</Tab>
-<Tab title="Anthropic (TypeScript)">
-{anthropic_block}
-</Tab>
-<Tab title="Google (Python)">
-{google_block}
-</Tab>
-<Tab title="Vercel (TypeScript)">
-{vercel_block}
-</Tab>
-</Tabs>"""
-            )
+            self._blocks.append("")
+            self._blocks.append("For code examples, see the [Tool calling guide](/tool-calling/executing-tool-calls) and [Provider examples](/provider-apis).")
             self._blocks.append("### Tool List")
 
         action_contents = []
