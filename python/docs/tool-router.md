@@ -215,17 +215,17 @@ session = composio.tool_router.create(
 )
 ```
 
-### `execution`
+### `workbench`
 
-Configure tool execution behavior:
+Configure workbench behavior:
 
 ```python
 session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail'],
-    execution={
+    workbench={
         'enable_proxy_execution': False,  # Whether to allow proxy execute calls in workbench
-        'auto_offload_threshold': 300  # Maximum execution time in seconds
+        'auto_offload_threshold': 300  # Maximum execution payload size to offload to workbench
     }
 )
 ```
@@ -679,12 +679,12 @@ manage_connections: Union[
     ToolRouterManageConnectionsConfig   # {'enable': True, 'callback_url': 'https://...'}
 ]
 
-# Execution configuration
-ToolRouterExecutionConfig = TypedDict('ToolRouterExecutionConfig', {
+# Workbench configuration
+ToolRouterWorkbenchConfig = TypedDict('ToolRouterWorkbenchConfig', {
     'enable_proxy_execution': bool,      # Whether to allow proxy execute calls
-    'auto_offload_threshold': int        # Maximum execution time in seconds
+    'auto_offload_threshold': int        # Maximum execution payload size to offload to workbench
 })
 
-execution: ToolRouterExecutionConfig
+workbench: ToolRouterWorkbenchConfig
 ```
 
