@@ -6,7 +6,7 @@
 #Currently set to run every Friday at 06:30 UTC/12:00 IST
 version: 2
 updates:
-  - package-ecosystem: "npm"
+  - package-ecosystem: "pnpm"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
