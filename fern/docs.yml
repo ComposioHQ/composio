@@ -218,6 +218,14 @@ navigation:
     - page: Providers
       path: pages/dist/mcp/providers.mdx
       slug: mcp-providers
+  - section: Tool Router (Beta)
+    icon: fa-light fa-flask
+    skip-slug: true
+    hidden: true
+    contents:
+    - page: Quick Start
+      path: pages/dist/tool-router/quick-start.mdx
+      slug: tool-router/quick-start
   - section: Resources
     icon: fa-light fa-book
     skip-slug: true
@@ -320,10 +328,6 @@ navigation:
     - page: Using as a native tool
       path: pages/dist/tool-router/using-as-a-native-tool.mdx
       slug: using-as-a-native-tool
-  - page: Tool Router Quick Start
-    path: pages/dist/tool-router/quick-start.mdx
-    slug: tool-router/quick-start
-    hidden: true
 - tab: providers
   layout:
   - section: Supported Providers
