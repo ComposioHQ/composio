@@ -31,10 +31,11 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@composio/core": "0.3.1",
-    "@langchain/core": "^0.3.63"
+    "@langchain/core": "^1.1.4"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
+    "@langchain/core": "^1.1.4",
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
