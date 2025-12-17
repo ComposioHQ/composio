@@ -90,8 +90,6 @@ redirects:
   destination: /type-script
 - source: /sdk-reference/type-script/:path
   destination: /type-script/:path
-- source: /docs/tool-router/quick-start
-  destination: /tool-router/overview
 tabs:
   docs:
     display-name: Docs
@@ -223,9 +221,10 @@ navigation:
     skip-slug: true
     hidden: true
     contents:
-    - page: Quick Start
-      path: pages/dist/tool-router/quick-start.mdx
-      slug: tool-router/quick-start
+    - page: Quick Start (Deprecated)
+      path: pages/dist/tool-router/quick-start-deprecated.mdx
+      slug: tool-router/quick-start-deprecated
+      hidden: true
   - section: Resources
     icon: fa-light fa-book
     skip-slug: true
