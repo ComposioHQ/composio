@@ -90,6 +90,8 @@ redirects:
   destination: /type-script
 - source: /sdk-reference/type-script/:path
   destination: /type-script/:path
+- source: /tool-router/quick-start
+  destination: /tool-router/quick-start-deprecated
 tabs:
   docs:
     display-name: Docs
