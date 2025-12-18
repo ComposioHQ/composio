@@ -15,10 +15,7 @@ session = composio.create(user_id=user_id)
 agent = Agent(
     name="Personal Assistant",
     instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-5.1",
-    model_settings= ModelSettings(
-        reasoning={"effort": "low"},
-    ),  
+    model="gpt-5.2",  
     tools=[
         HostedMCPTool(
             tool_config={

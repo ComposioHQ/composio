@@ -22,10 +22,7 @@ agent = Agent(
         "You are a helpful assistant with access to external tools. "
         "Always use the available tools to complete user requests instead of just explaining how to do them."
     ),
-    model="gpt-5.1",
-    model_settings=ModelSettings(
-        reasoning={"effort": "low"},
-    ),  
+    model="gpt-5.2",  
     tools=[
         HostedMCPTool(
             tool_config={

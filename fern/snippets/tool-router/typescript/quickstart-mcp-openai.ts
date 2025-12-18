@@ -12,10 +12,7 @@ const { mcp } = await composio.create(userId);
 const agent = new Agent({
   name: "Personal Assistant",
   instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-5.1",
-  modelSettings: {
-    reasoning: { effort: "low" },
-  },
+  model: "gpt-5.2",
   tools: [
     hostedMcpTool({
       serverLabel: "composio",

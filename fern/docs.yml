@@ -329,6 +329,16 @@ navigation:
     - page: Using as a native tool
       path: pages/dist/tool-router/using-as-a-native-tool.mdx
       slug: using-as-a-native-tool
+  - section: Resources
+    icon: fa-light fa-book
+    skip-slug: true
+    contents:
+    - section: Migration Guides
+      slug: migration-guide
+      contents:
+        - page: Beta to Stable Migration
+          path: pages/dist/tool-router/migration/tool-router-beta-to-stable.mdx
+          slug: tool-router/migration-guide/beta-to-stable
 - tab: providers
   layout:
   - section: Supported Providers
