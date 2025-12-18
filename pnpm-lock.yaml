@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20250917.0
     '@composio/client':
-      specifier: 0.1.0-alpha.50
-      version: 0.1.0-alpha.50
+      specifier: 0.1.0-alpha.51
+      version: 0.1.0-alpha.51
     '@modelcontextprotocol/sdk':
       specifier: ^1.24.0
       version: 1.24.1
@@ -812,7 +812,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.50
+        version: 0.1.0-alpha.51
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -906,7 +906,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.50
+        version: 0.1.0-alpha.51
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1588,8 +1588,8 @@ packages:
   '@cloudflare/workers-types@4.20250917.0':
     resolution: {integrity: sha512-Lsn9dZoRYZZCXXHZNa50cMP8kWhQZG9M7WjxNSiXFzC8bk4Wh/0SYYo4YINxEjEt6h2o69LmAhFaJ+qgaJTh8Q==}
 
-  '@composio/client@0.1.0-alpha.50':
-    resolution: {integrity: sha512-+7LE16XL2D0Z90y0PdBGLDyi9qi8P4TyqTqj2Kwa930rhDaZOkFMmAx9BbjXmx0KWjqpSxwxszcW7FgNpX5jqw==}
+  '@composio/client@0.1.0-alpha.51':
+    resolution: {integrity: sha512-Qy7Ag2G2/6t226cXNZnCJmaVO3zMmKWnX4zHewvmqAgufUSwKAc/l4t5TTPN5EjMGUuzCwGE0FeHXODJffBNQg==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7902,7 +7902,7 @@ snapshots:
 
   '@cloudflare/workers-types@4.20250917.0': {}
 
-  '@composio/client@0.1.0-alpha.50': {}
+  '@composio/client@0.1.0-alpha.51': {}
 
   '@composio/mcp@1.0.3-0': {}
 
@@ -10664,14 +10664,6 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 7.2.6(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.0)
-
   '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -10679,22 +10671,6 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 7.2.6(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1)
-
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 7.2.6(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1)
-
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@24.6.2)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 7.2.6(@types/node@24.6.2)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -14087,7 +14063,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@20.19.1)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -14171,7 +14147,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@24.0.3)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -14213,7 +14189,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@24.6.2)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

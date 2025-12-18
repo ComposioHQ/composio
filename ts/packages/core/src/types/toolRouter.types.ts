@@ -104,7 +104,7 @@ export const ToolRouterToolsParamSchema = z
 export type ToolRouterToolsParam = z.infer<typeof ToolRouterToolsParamSchema>;
 
 export const ToolRouterToolsTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint']))
+  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
   .describe('The tags to filter the tools by');
 export type ToolRouterToolsTagsParam = z.infer<typeof ToolRouterToolsTagsParamSchema>;
 
@@ -208,7 +208,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  *
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
- * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint'>} tags - Global tags to filter tools by behavior
+ * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.

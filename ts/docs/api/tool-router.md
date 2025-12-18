@@ -161,6 +161,7 @@ Available tags:
 - `readOnlyHint` - Tools that only read data
 - `destructiveHint` - Tools that modify or delete data
 - `idempotentHint` - Tools that can be safely retried
+- `openWorldHint` - Tools that operate in an open world context
 
 ### `authConfigs`
 
@@ -637,7 +638,7 @@ const tools = await session.tools(modifiers);
 
 3. **Connection Management**: Use `manageConnections: true` (default) for interactive applications where users can be prompted to connect accounts.
 
-4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, idempotentHint) and override per toolkit when needed.
+4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, idempotentHint, openWorldHint) and override per toolkit when needed.
 
 5. **Session Reuse**: Store and reuse `sessionId` to maintain user sessions across requests.
 
@@ -664,9 +665,9 @@ interface ToolRouterCreateSessionConfig {
     string[] | 
     { enable: string[] } | 
     { disable: string[] } | 
-    { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint')[] }
+    { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[] }
   >;
-  tags?: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint')[];
+  tags?: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[];
   authConfigs?: Record<string, string>;
   connectedAccounts?: Record<string, string>;
   manageConnections?: boolean | {
