@@ -1,16 +1,15 @@
 import os
 from dotenv import load_dotenv
 from composio import Composio
-from agents import Agent, Runner, HostedMCPTool, ModelSettings
+from agents import Agent, Runner, HostedMCPTool, SQLiteSession
 
-# Load environment variables from .env file
 load_dotenv()
 
 composio_api_key = os.environ.get("COMPOSIO_API_KEY")
 user_id = "user_123"  # Your user's unique identifier
 
 composio = Composio(api_key=composio_api_key)
-session = composio.create(user_id=user_id)
+composio_session = composio.create(user_id=user_id)
 
 agent = Agent(
     name="Personal Assistant",
@@ -21,7 +20,7 @@ agent = Agent(
             tool_config={
                 "type": "mcp",
                 "server_label": "composio",
-                "server_url": session.mcp.url,
+                "server_url": composio_session.mcp.url,
                 "require_approval": "never",
                 "headers": {"x-api-key": composio_api_key},
             }
@@ -29,11 +28,21 @@ agent = Agent(
     ],
 )
 
+# Create a session for multi-turn conversation memory
+conversation_session = SQLiteSession(user_id)
+
 print("Assistant: What would you like me to do today?\n")
 
 while True:
     user_input = input("> ")
     if user_input == "exit":
         break
-    result = Runner.run_sync(starting_agent=agent, input=user_input)
+    
+    result = Runner.run_sync(
+        starting_agent=agent, 
+        input=user_input,
+        session=conversation_session
+    )
+    
     print(f"Assistant: {result.final_output}\n")
+

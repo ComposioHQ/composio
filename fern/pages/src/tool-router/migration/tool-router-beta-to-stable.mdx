@@ -44,10 +44,12 @@ The stable version includes improved session management, multiple configuring op
         </CodeGroup>
     </Step>
     <Step title="Moving users (optional)">
-        If you have existing users on tool router and you don't want them to authenticate again: 
-        - Search for the Auth config created by Tool Router for that connected account. See [Connected Accounts](/docs/connected-accounts) to fetch existing accounts programmatically.
-        - While creating a session configure to use this Auth config.
-        - You need to repeat this for each toolkit you want to enable for that session.
+        If you have existing users on tool router and you don't want them to authenticate again:
+        - Tool Router will auto-detect auth configs and connected accounts it created(from the beta version).
+        - If you have custom auth configs (not created by Tool Router):
+            - Search for the Auth config for that connected account. See [Connected Accounts](/docs/connected-accounts) to fetch existing accounts programmatically.
+            - While creating a session configure to use this Auth config.
+            - You need to repeat this for each toolkit you want to enable for that session.
         <CodeGroup>
         ```python title="Python" for="python"
         session = composio.create(
