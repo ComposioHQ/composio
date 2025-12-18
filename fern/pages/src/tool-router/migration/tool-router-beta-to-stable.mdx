@@ -13,81 +13,69 @@ This guide covers migrating from the Tool Router beta to the stable release vers
 <Steps>
     <Step title="Upgrade composio package">
     Upgrade to the latest stable version:
-        <Tabs>
-            <Tab title="Python" for="Python">
-                ```bash
-                pip install --upgrade composio
-                ```
-            </Tab>
-            <Tab title="TypeScript" for="Typescript">
-                ```bash
-                npm install @composio/core@latest
-                ```
-            </Tab>
-        </Tabs>
+        <CodeGroup>
+        ```bash title="Python" for="python"
+        pip install --upgrade composio
+        ```
+        ```bash title="TypeScript" for="typescript"
+        npm install @composio/core@latest
+        ```
+        </CodeGroup>
     </Step>
     <Step title="Update session creation">
-        <Tabs>
-            <Tab title="Python" for="Python">
-                ```python
-                # Beta (before)
-                composio = Composio()
-                session = composio.experimental.tool_router.create_session(
-                    user_id="user@example.com"
-                )
-                
-                # Stable (after)
-                composio = Composio()
-                session = composio.create(
-                    user_id="user@example.com"
-                )
-                ```
-            </Tab>
-            <Tab title="TypeScript" for="Typescript">
-                ```typescript
-                // Beta (before)
-                const composio = new Composio();
-                const session = await composio.experimental.toolRouter.createSession('user_123');
+        <CodeGroup>
+        ```python title="Python" for="python"
+        # Beta (before)
+        composio = Composio()
+        session = composio.experimental.tool_router.create_session(
+            user_id="user@example.com"
+        )
+        
+        # Stable (after)
+        composio = Composio()
+        session = composio.create(
+            user_id="user@example.com"
+        )
+        ```
+        ```typescript title="TypeScript" for="typescript"
+        // Beta (before)
+        const composio = new Composio();
+        const session = await composio.experimental.toolRouter.createSession('user_123');
 
-                // Stable (after)
-                const composio = new Composio();
-                const session = await composio.create('user_123');
-                ```
-            </Tab>
-        </Tabs>
+        // Stable (after)
+        const composio = new Composio();
+        const session = await composio.create('user_123');
+        ```
+        </CodeGroup>
     </Step>
     <Step title="Moving users (optional)">
         If you have existing users on tool router and you don't want them to authenticate again: 
         - Search for the Auth config created by Tool Router for that connected account. See [Connected Accounts](/docs/connected-accounts) to fetch existing accounts programmatically.
         - While creating a session configure to use this Auth config.
         - You need to repeat this for each toolkit you want to enable for that session.
-        <Tabs>
-            <Tab title="Python" for="Python">
-                ```python
-                composio = Composio()
-                session = composio.create(
-                    user_id="user_123",
-                    auth_configs={
-                        "github": "ac_your_github_config",
-                        "slack": "ac_your_slack_config"
-                    }
-                )
-                ```
-            </Tab>
-            <Tab title="TypeScript" for="Typescript">
-                ```typescript
-                const composio = new Composio();
-                const session = await composio.create('user_123',
-                    {
-                        authConfigs: {
-                            github: "ac_your_github_config",
-                            slack: "ac_your_slack_config",
-                        },
-                    }
-                );
-                ```
-            </Tab>
-        </Tabs> 
+        <CodeGroup>
+        ```python title="Python" for="python"
+        composio = Composio()
+        session = composio.create(
+            user_id="user_123",
+            auth_configs={
+                "github": "ac_your_github_config",
+                "slack": "ac_your_slack_config"
+            }
+        )
+        ```
+        ```typescript title="TypeScript" for="typescript"
+        const composio = new Composio();
+        const session = await composio.create('user_123',
+            {
+                authConfigs: {
+                    github: "ac_your_github_config",
+                    slack: "ac_your_slack_config",
+                },
+            }
+        );
+        ```
+        </CodeGroup> 
     </Step>
     <Step title="Explore new capabilities">
         Check out these new features available in the stable version:
