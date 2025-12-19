@@ -238,6 +238,18 @@ describe('ClaudeCodeAgentsProvider', () => {
         ],
       });
     });
+
+    it('should handle undefined results from tool execution and convert to "null" string', async () => {
+      mockExecuteToolFn.mockResolvedValueOnce(undefined);
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+
+      const handler = (tool as any).mock.calls[0][3];
+      const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
+
+      // text should always be a string, never undefined
+      expect(result.content[0].text).toBe('');
+      expect(typeof result.content[0].text).toBe('string');
+    });
   });
 
   describe('wrapTools', () => {

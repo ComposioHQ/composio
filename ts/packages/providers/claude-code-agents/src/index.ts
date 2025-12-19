@@ -211,7 +211,7 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
           content: [
             {
               type: 'text' as const,
-              text: typeof result === 'string' ? result : JSON.stringify(result),
+              text: typeof result === 'string' ? result : (JSON.stringify(result) ?? ''),
             },
           ],
         };
