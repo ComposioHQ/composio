@@ -26,7 +26,7 @@ class ClaudeCodeAgentsProvider(
     name="claude_code_agents",
 ):
     """
-    Composio toolset for Claude Code Agents SDK.
+    Composio provider for Claude Code Agents SDK.
 
     This provider wraps Composio tools as MCP tools that can be used with
     the Claude Agent SDK's `query()` function via the `mcp_servers` option.

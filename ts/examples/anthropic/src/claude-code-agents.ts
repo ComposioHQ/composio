@@ -36,7 +36,7 @@ async function main() {
    * This tool allows the agent to retrieve emails from Gmail
    * The tools are already wrapped by composio.tools.get() into Claude Agent SDK format
    */
-  const tools = await composio.tools.get('jkomyno', 'GMAIL_FETCH_EMAILS');
+  const tools = await composio.tools.get('default', 'GMAIL_FETCH_EMAILS');
   console.log(`✅ Fetched ${tools.length} tool(s)`);
 
   /**
