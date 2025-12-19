@@ -21,7 +21,7 @@ import {
   type McpServerConfig,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
