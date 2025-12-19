@@ -54,43 +54,64 @@ def _sanitize_param_name(name: str) -> str:
 
 
 def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
-    """Substitute reserved Python keywords and invalid parameter names in schema.
+    """Make JSON-schema property names safe for LangChain/Pydantic.
 
-    This function handles:
-    1. Reserved Python keywords (e.g., 'for', 'async')
-    2. Invalid Python identifiers (e.g., 'parameters[date]' with brackets)
+    LangChain ultimately turns JSON schema into Python call signatures / Pydantic models,
+    so property names must be valid Python identifiers.
 
-    Returns the modified schema and a mapping of sanitized names to original names.
+    This function rewrites `schema["properties"]` keys when needed:
+    - Reserved Python keywords (e.g. `for`, `async`) are renamed via `_clean_reserved_keyword`.
+    - Invalid identifiers (e.g. `parameters[date]`) are sanitized via `_sanitize_param_name`.
+
+    Returns:
+    - The modified schema
+    - A mapping from the sanitized name back to the original name, plus nested mappings
+      stored under `<sanitized>-_object_-` for object-typed properties.
     """
     if "properties" not in schema:
         return schema, {}
 
-    keywords = {}
-    for p_name in list(schema["properties"]):
-        # Check if name needs substitution (reserved keyword or invalid identifier)
-        needs_substitution = (
-            p_name in _python_reserved or not _is_valid_python_identifier(p_name)
-        )
+    rename_map: dict = {}
 
-        if not needs_substitution:
+    # NOTE: We iterate over a snapshot of keys because we'll be popping/reinserting keys.
+    for original_name in list(schema["properties"]):
+        # Step 1: Determine whether the name needs rewriting.
+        is_reserved = original_name in _python_reserved
+        is_valid_identifier = _is_valid_python_identifier(original_name)
+        if not (is_reserved or not is_valid_identifier):
             continue
 
-        _keywords = {}
-        p_val = schema["properties"].pop(p_name)
-        if p_val.get("type") == "object":
-            p_val, _keywords = _substitute_reserved_python_keywords(schema=p_val)
+        # Step 2: Detach the property's schema so we can reinsert it under a new key.
+        prop_schema = schema["properties"].pop(original_name)
 
-        # Use appropriate cleaning method
-        if p_name in _python_reserved:
-            p_name_clean = _clean_reserved_keyword(keyword=p_name)
+        # Step 3: Recurse for nested objects so we also sanitize their sub-properties.
+        nested_rename_map: dict = {}
+        if prop_schema.get("type") == "object":
+            prop_schema, nested_rename_map = _substitute_reserved_python_keywords(
+                schema=prop_schema
+            )
+
+        # Step 4: Compute a valid Python identifier for this property.
+        if is_reserved:
+            sanitized_name = _clean_reserved_keyword(keyword=original_name)
         else:
-            p_name_clean = _sanitize_param_name(p_name)
+            sanitized_name = _sanitize_param_name(original_name)
 
-        schema["properties"][p_name_clean] = p_val
-        keywords[p_name_clean] = p_name
-        keywords[f"{p_name_clean}{_obj_marker}"] = _keywords
+        # Step 5: Ensure we don't overwrite an existing property.
+        # If a collision happens, add an incrementing suffix: <name>_2, <name>_3, ...
+        base_name = sanitized_name
+        if base_name in schema["properties"]:
+            i = 2
+            while f"{base_name}_{i}" in schema["properties"]:
+                i += 1
+            sanitized_name = f"{base_name}_{i}"
 
-    return schema, keywords
+        # Step 6: Reinsert + record the mapping for later reinstatement of original keys.
+        schema["properties"][sanitized_name] = prop_schema
+        rename_map[sanitized_name] = original_name
+        rename_map[f"{sanitized_name}{_obj_marker}"] = nested_rename_map
+
+    return schema, rename_map
 
 
 def _reinstate_reserved_python_keywords(request: dict, keywords: dict) -> dict:

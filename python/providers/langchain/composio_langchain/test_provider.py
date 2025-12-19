@@ -132,6 +132,18 @@ class TestSubstituteReservedPythonKeywords:
         modified, keywords = _substitute_reserved_python_keywords(schema)
         assert keywords == {}
 
+    def test_invalid_identifier_collision_is_not_silently_overwritten(self):
+        schema = {
+            "properties": {
+                "parameters[date]": {"type": "string"},
+                "parameters-date": {"type": "string"},
+            }
+        }
+        modified, keywords = _substitute_reserved_python_keywords(schema)
+        assert "parameters_date" in modified["properties"]
+        assert "parameters_date_2" in modified["properties"]
+        assert keywords["parameters_date"] != keywords["parameters_date_2"]
+
 
 class TestReinstateReservedPythonKeywords:
     """Tests for _reinstate_reserved_python_keywords function."""
