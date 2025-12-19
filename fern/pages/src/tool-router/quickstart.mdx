@@ -1,0 +1,210 @@
+---
+title: Quickstart
+image: "https://og.composio.dev/api/og?title=Tool%20Router%20Quickstart"
+description: "Build an AI agent with access to 1000+ tools"
+keywords: "tool router quickstart, quickstart"
+hide-nav-links: false
+---
+
+Choose how you want to integrate Tool Router:
+
+<AccordionGroup>
+<Accordion title="Using Tool Router MCP">
+
+<Tabs>
+<Tab title="Claude Agent SDK">
+
+<Steps>
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio claude-agent-sdk
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @anthropic-ai/claude-agent-sdk
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create session and run agent">
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-mcp-claude.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-mcp-claude.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="OpenAI Agents SDK">
+
+<Steps>
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio openai-agents
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @openai/agents
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create session and run agent">
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-mcp-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-mcp-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Vercel AI SDK">
+
+<Steps>
+<Step title="Install Composio SDK">
+```bash
+npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
+```
+</Step>
+
+<Step title="Create session and run agent">
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-mcp-vercel.ts" />
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+### What just happened?
+
+When you run this agent, Tool Router:
+1. **Creates an MCP server** with your session configuration
+2. **Searches** for the right tools based on your request
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
+
+</Accordion>
+
+<Accordion title="Using Tool router as a native tool">
+
+<Tabs>
+<Tab title="OpenAI">
+
+<Steps>
+<Step title="Install">
+<CodeGroup>
+```bash title="Python" for="python"
+pip install composio composio-openai-agents openai-agents
+```
+```bash title="TypeScript" for="typescript"
+npm install @composio/core @composio/openai-agents @openai/agents
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create session and use as native tool">
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+<CodeGroup>
+<SnippetCode src="fern/snippets/tool-router/python/quickstart-native-openai.py" title="Python" for="python" />
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-native-openai.ts" title="TypeScript" for="typescript" />
+</CodeGroup>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab title="Vercel AI SDK">
+
+<Steps>
+<Step title="Install">
+```bash title="TypeScript"
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
+```
+</Step>
+
+<Step title="Create session and use as native tool">
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Info>
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Info>
+
+<SnippetCode src="fern/snippets/tool-router/typescript/quickstart-native-vercel.ts" title="TypeScript" />
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+### What just happened?
+
+When you run this agent, Tool Router:
+1. **Provides a single tool** to your agent framework
+2. **Interprets requests** and **searches** for the right tools internally
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
+
+</Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Session management" href="/tool-router/users-and-sessions">
+    Learn about users, sessions, and how they work.
+  </Card>
+  <Card title="Tools and toolkits" href="/tool-router/tools-and-toolkits">
+    Learn about tools, toolkits, and how to configure them.
+  </Card>
+  <Card title="Manual authentication" href="/tool-router/manually-authenticating-users">
+    Customise the authentication flow for your users.
+  </Card>
+  <Card title="Using MCP" href="/tool-router/using-with-mcp-clients">
+    Connect Tool Router to any MCP-compatible client.
+  </Card>
+  <Card title="Using as a native tool" href="/tool-router/using-as-a-native-tool">
+    Use Tool Router as a native tool with any AI framework.
+  </Card>
+</CardGroup>

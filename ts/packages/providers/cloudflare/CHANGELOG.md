@@ -1,5 +1,12 @@
 # @composio/cloudflare
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [73db5f5]
+  - @composio/core@0.3.1
+
 ## 0.3.0
 
 ### Patch Changes

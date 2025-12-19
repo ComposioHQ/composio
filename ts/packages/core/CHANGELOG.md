@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.3.1
+
+### Patch Changes
+
+- 73db5f5: Fix callback url not working in toolrouter's session.authorize()
+
 ## 0.3.0
 
 ### Minor Changes
