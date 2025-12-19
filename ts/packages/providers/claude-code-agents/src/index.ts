@@ -206,15 +206,30 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
       composioTool.description ?? `Execute ${composioTool.slug}`,
       zodSchema,
       async args => {
-        const result = await executeTool(composioTool.slug, args);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: typeof result === 'string' ? result : (JSON.stringify(result) ?? ''),
-            },
-          ],
-        };
+        try {
+          const result = await executeTool(composioTool.slug, args);
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: typeof result === 'string' ? result : (JSON.stringify(result) ?? ''),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify({
+                  successful: false,
+                  error: error instanceof Error ? error.message : String(error),
+                  data: null,
+                }),
+              },
+            ],
+          };
+        }
       }
     );
   }

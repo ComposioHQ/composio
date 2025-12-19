@@ -250,6 +250,23 @@ describe('ClaudeCodeAgentsProvider', () => {
       expect(result.content[0].text).toBe('');
       expect(typeof result.content[0].text).toBe('string');
     });
+
+    it('should handle errors from tool execution and return formatted error response', async () => {
+      const testError = new Error('Test execution error');
+      mockExecuteToolFn.mockRejectedValueOnce(testError);
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+
+      const handler = (tool as any).mock.calls[0][3];
+      const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
+
+      expect(result.content[0].type).toBe('text');
+      expect(typeof result.content[0].text).toBe('string');
+
+      const errorResponse = JSON.parse(result.content[0].text);
+      expect(errorResponse.successful).toBe(false);
+      expect(errorResponse.error).toBe('Test execution error');
+      expect(errorResponse.data).toBe(null);
+    });
   });
 
   describe('wrapTools', () => {
