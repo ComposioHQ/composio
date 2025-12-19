@@ -144,6 +144,20 @@ class TestSubstituteReservedPythonKeywords:
         assert "parameters_date_2" in modified["properties"]
         assert keywords["parameters_date"] != keywords["parameters_date_2"]
 
+    def test_sanitized_name_collision_with_existing_valid_identifier(self):
+        schema = {
+            "properties": {
+                "parameters_date": {"type": "integer"},
+                "parameters[date]": {"type": "string"},
+            }
+        }
+        modified, keywords = _substitute_reserved_python_keywords(schema)
+        assert "parameters_date" in modified["properties"]
+        assert "parameters_date_2" in modified["properties"]
+        assert modified["properties"]["parameters_date"]["type"] == "integer"
+        assert modified["properties"]["parameters_date_2"]["type"] == "string"
+        assert keywords["parameters_date_2"] == "parameters[date]"
+
 
 class TestReinstateReservedPythonKeywords:
     """Tests for _reinstate_reserved_python_keywords function."""
