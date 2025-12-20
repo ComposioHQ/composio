@@ -10,7 +10,7 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like _Gmail, Slack, or GitHub_, and Composio handles authentication and user scoping.
 
-<Tip icon="info">
+<Tip icon="fa-light fa-info">
   **User Scoping**: All tools are scoped to a specific user - that's why every example includes a
   `user_id`. Learn how to structure User IDs in [User Management](./user-management). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](./authenticating-tools)
 </Tip>
@@ -58,7 +58,7 @@ Composio provides support for frameworks like this by making sure the tools are 
 
 In case you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
 
-<Tip icon="lightbulb">
+<Tip icon="fa-light fa-lightbulb">
   **Finding tool parameters and types:** 
   
   **Platform UI**: [Auth Configs](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools & Triggers → Select the tool to see its required and optional parameters
@@ -105,7 +105,7 @@ The `endpoint` can be a relative path or absolute URL. Composio uses the `connec
 
 </CodeGroup>
 
-<Tip icon="info">
+<Tip icon="fa-light fa-info">
   Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn
   how to [create custom tools](/docs/custom-tools).
 </Tip>

@@ -90,10 +90,16 @@ redirects:
   destination: /type-script
 - source: /sdk-reference/type-script/:path
   destination: /type-script/:path
+- source: /docs/tool-router/quick-start
+  destination: /docs/tool-router/quick-start-deprecated
 tabs:
   docs:
     display-name: Docs
     slug: docs
+  tool-router:
+    display-name: Tool Router
+    icon: fa-light fa-sparkles
+    slug: tool-router
   providers:
     display-name: Providers
     skip-slug: true
@@ -128,6 +134,24 @@ navigation:
     - changelog: ./pages/src/changelog
       title: Changelog
       slug: changelog
+  - section: Capabilities
+    icon: fa-light fa-layer-group
+    skip-slug: true
+    contents:
+    - link: Tool Router
+      href: /tool-router/overview
+    - page: Managed Authentication
+      path: pages/dist/capabilities/managed-authentication.mdx
+      slug: managed-authentication
+    - page: Tools
+      path: pages/dist/capabilities/tools.mdx
+      slug: tools
+    - page: MCP
+      path: pages/dist/capabilities/mcp.mdx
+      slug: mcp
+    - page: Triggers
+      path: pages/dist/capabilities/triggers.mdx
+      slug: triggers
   - section: Tools and Triggers
     icon: fa-light fa-wrench
     skip-slug: true
@@ -197,10 +221,12 @@ navigation:
   - section: Tool Router (Beta)
     icon: fa-light fa-flask
     skip-slug: true
+    hidden: true
     contents:
-    - page: Quick Start
-      path: pages/dist/tool-router/quick-start.mdx
-      slug: tool-router/quick-start
+    - page: Quick Start (Deprecated)
+      path: pages/dist/tool-router/quick-start-deprecated.mdx
+      slug: tool-router/quick-start-deprecated
+      hidden: true
   - section: Resources
     icon: fa-light fa-book
     skip-slug: true
@@ -253,6 +279,66 @@ navigation:
       - page: Triggers
         path: pages/dist/resources/troubleshooting/triggers.mdx
         slug: triggers
+- tab: tool-router
+  layout:
+  - section: Get Started
+    icon: fa-light fa-rocket
+    skip-slug: true
+    contents:
+    - page: Overview
+      path: pages/dist/tool-router/overview.mdx
+      slug: overview
+    - page: Quickstart
+      path: pages/dist/tool-router/quickstart.mdx
+      slug: quickstart
+  - section: Core Concepts
+    icon: fa-light fa-brain
+    skip-slug: true
+    contents:
+    - page: Users and Sessions
+      path: pages/dist/tool-router/users-and-sessions.mdx
+      slug: users-and-sessions
+    - page: Authentication
+      path: pages/dist/tool-router/authentication.mdx
+      slug: authentication
+    - page: Tools and Toolkits
+      path: pages/dist/tool-router/tools-and-toolkits.mdx
+      slug: tools-and-toolkits
+  - section: Guides
+    icon: fa-light fa-book
+    skip-slug: true
+    contents:
+    - page: Using In-chat Authentication
+      path: pages/dist/tool-router/using-in-chat-authentication.mdx
+      slug: using-in-chat-authentication
+    - page: Manually Authenticating Users
+      path: pages/dist/tool-router/manually-authenticating-users.mdx
+      slug: manually-authenticating-users
+    - page: Managing Multiple Accounts for a User
+      path: pages/dist/tool-router/managing-multiple-accounts.mdx
+      slug: managing-multiple-accounts
+    - page: White-labeling Authentication
+      path: pages/dist/tool-router/white-labeling-authentication.mdx
+      slug: white-labeling-authentication
+    - page: Using Custom Auth Configs
+      path: pages/dist/tool-router/using-custom-auth-configs.mdx
+      slug: using-custom-auth-configs
+    - page: Using with MCP Clients
+      path: pages/dist/tool-router/using-with-mcp-clients.mdx
+      slug: using-with-mcp-clients
+    - page: Using as a native tool
+      path: pages/dist/tool-router/using-as-a-native-tool.mdx
+      slug: using-as-a-native-tool
+  - section: Resources
+    icon: fa-light fa-book
+    skip-slug: true
+    contents:
+    - section: Migration Guides
+      slug: migration-guide
+      contents:
+        - page: Beta to Stable Migration
+          path: pages/dist/tool-router/migration/tool-router-beta-to-stable.mdx
+          slug: tool-router/migration-guide/beta-to-stable
 - tab: providers
   layout:
   - section: Supported Providers

@@ -1,6 +1,6 @@
 {
   "name": "composio",
-  "version": "0.1.12-alpha.1",
+  "version": "0.10.0-alpha.1",
   "private": true,
   "description": "",
   "workspaces": [
@@ -41,12 +41,22 @@
       "js-yaml": ">=4.1.1",
       "hono": ">=4.10.3",
       "next": ">=15.4.7",
-      "ai": ">=5.0.52",
-      "@mastra/core>ai": ">=5.0.52"
+      "ai": ">=5.0.102",
+      "@mastra/core>ai": ">=5.0.102",
+      "@eslint/plugin-kit@<0.3.4": ">=0.3.4",
+      "vite@>=6.0.0 <=6.3.5": ">=6.3.6",
+      "axios@>=1.0.0 <1.12.0": ">=1.12.0",
+      "vite@>=6.0.0 <=6.4.0": ">=6.4.1",
+      "tmp@<=0.2.3": ">=0.2.4",
+      "glob@>=10.2.0 <10.5.0": ">=10.5.0",
+      "body-parser@>=2.2.0 <2.2.1": ">=2.2.1",
+      "@modelcontextprotocol/sdk@<1.24.0": ">=1.24.0",
+      "next@>=16.0.0-canary.0 <16.0.7": ">=16.0.7",
+      "jws@=4.0.0": ">=4.0.1"
     }
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.4",
+    "@changesets/cli": "^2.29.8",
     "@composio/anthropic": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",

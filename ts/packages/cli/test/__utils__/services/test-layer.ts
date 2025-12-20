@@ -12,6 +12,7 @@ import {
   Logger,
   LogLevel,
   Schedule,
+  String,
 } from 'effect';
 import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
@@ -21,6 +22,7 @@ import { NodeProcess } from 'src/services/node-process';
 import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  InvalidToolkitsError,
 } from 'src/services/composio-clients';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
@@ -94,6 +96,28 @@ export const TestLayer = (input?: TestLiveInput) =>
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
         getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
         getTools: limit => Effect.succeed(toolkitsData.tools.slice(0, limit)),
+        validateToolkits: (toolkitSlugs: ReadonlyArray<string>) => {
+          const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+          const availableSlugs = toolkitsData.toolkits.map(toolkit =>
+            String.toLowerCase(toolkit.slug)
+          );
+          const invalidSlugs = normalizedInputSlugs.filter(slug => !availableSlugs.includes(slug));
+
+          if (invalidSlugs.length > 0) {
+            return Effect.fail(
+              new InvalidToolkitsError({
+                invalidToolkits: invalidSlugs,
+                availableToolkits: availableSlugs,
+              })
+            );
+          }
+
+          return Effect.succeed(normalizedInputSlugs);
+        },
+        filterToolkitsBySlugs: (toolkits, toolkitSlugs) => {
+          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
+          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+        },
       })
     );
 

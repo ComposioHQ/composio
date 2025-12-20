@@ -1,6 +1,6 @@
 [project]
 name = "composio-crewai"
-version = "0.9.4"
+version = "0.10.1"
 description = "Use Composio to get an array of tools with your CrewAI agent."
 readme = "README.md"
 requires-python = ">=3.9,<4"

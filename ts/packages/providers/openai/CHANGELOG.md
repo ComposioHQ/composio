@@ -1,5 +1,65 @@
 # @composio/openai
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [73db5f5]
+  - @composio/core@0.3.1
+
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.3.0
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+- Updated dependencies [9e002c5]
+- Updated dependencies [f0e67c4]
+- Updated dependencies [31521bd]
+- Updated dependencies [9e002c5]
+  - @composio/core@0.2.7
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+  - @composio/core@0.2.7-alpha.4
+
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- Updated dependencies [f0e67c4]
+  - @composio/core@0.2.7-alpha.3
+
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- Updated dependencies [31521bd]
+  - @composio/core@0.2.7-alpha.2
+
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.1
+
+## 0.2.7-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.0
+
 ## 0.2.6
 
 ### Patch Changes

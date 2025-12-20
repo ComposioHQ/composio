@@ -232,7 +232,10 @@ class FileHelper(WithLogger):
                 ).model_dump()
                 continue
 
-            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+            if (
+                isinstance(request[_param], dict)
+                and params[_param].get("type") == "object"
+            ):
                 request[_param] = self._substitute_file_uploads_recursively(
                     schema=params[_param],
                     request=request[_param],
@@ -305,7 +308,10 @@ class FileHelper(WithLogger):
                     continue
                 params[_param] = obj
 
-            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+            if (
+                isinstance(request[_param], dict)
+                and params[_param].get("type") == "object"
+            ):
                 request[_param] = self._substitute_file_downloads_recursively(
                     schema=params[_param],
                     request=request[_param],

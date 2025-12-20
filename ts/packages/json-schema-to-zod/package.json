@@ -41,6 +41,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": ">=3.25.76 <4 || >=4.1 <5"
+    "zod": ">=3.25.76 <5"
   }
 }
