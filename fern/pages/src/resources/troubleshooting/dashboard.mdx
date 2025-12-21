@@ -11,11 +11,31 @@ hide-nav-links: true
 When reporting dashboard issues to support, provide:
 
 - **Screenshot or recording**: Visual evidence of the issue
-- **Error details**: Complete error message shown in the UI
+- **Error details**: Complete error message shown in the UI. For example:
+
+  <img
+    src="../../../../assets/images/troubleshooting/Dashboard-UI-error.png"
+    alt="Example dashboard UI error: A project with this name already exists"
+    style={{ maxWidth: '640px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+  />
+
 - **Network logs**: Check browser DevTools for failing API calls and share:
   - Error message
   - Request ID (`x-request-id` header)
-  - Failed endpoint URL
+
+    <img
+      src="../../../../assets/images/troubleshooting/Dashboard-requestId.png"
+      alt="Tool call error"
+      style={{ maxWidth: '720px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+    />
+
+  - Failed endpoint URL (`https://backend.composio.dev/api/v3/org/project/new`)
+
+    <img
+      src="../../../../assets/images/troubleshooting/Dashboard-renameError.jpg"
+      alt="Example network log and dashboard error for a failed tool call"
+      style={{ maxWidth: '720px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+    />
 
 ## Getting help
 

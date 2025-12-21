@@ -44,10 +44,30 @@ Verify the connected account has necessary permissions:
 
 When reporting to support, provide:
 
-- **Error message**: Complete error details
-- **Log ID**: From the error response
-- **Tool name**: Exact tool slug being executed
-- **Connected account ID**: Account used for execution
+- **Error message**: Complete error details. For example:
+
+  ```json
+  {
+    "data": {
+      "message": "{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"errors\": [\n      {\n        \"message\": \"Requested entity was not found.\",\n        \"domain\": \"global\",\n        \"reason\": \"notFound\"\n      }\n    ],\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "status_code": 404
+    },
+    "successful": false,
+    "error": "404 Client Error: Not Found for url: https://gmail.googleapis.com/gmail/v1/users/me/messages/123456?format=full",
+    "log_id": "log_tVqomBgg11-t"
+  }
+  ```
+
+- **Log ID**: From the error response.
+
+  <img
+    src="../../../../assets/images/troubleshooting/Tool-logId.png"
+    alt="Example tool execution log showing log_id in the Composio dashboard"
+    style={{ maxWidth: '720px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+  />
+
+- **Tool name**: Exact tool slug being executed (for example, `GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID`)
+- **Connected account ID**: Account used for execution (for example, `ca_xxx`)
 
 ## Getting help
 
