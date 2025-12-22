@@ -21,7 +21,8 @@ import {
   type McpServerConfig,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
-import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
+import { jsonSchemaToZodShape } from '@composio/json-schema-to-zod';
+import type { ZodRawShape } from 'zod';
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
@@ -134,12 +135,17 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
     const inputParams = composioTool.inputParameters ?? {};
-    const zodSchema = jsonSchemaToZod(inputParams);
+
+    // This breaks the type inference chain between `zod/v3` (used by `@composio/json-schema-to-zod`)
+    // and `zod` (used by `@anthropic-ai/claude-agent-sdk`).
+    // TODO: This code block should be revisited after
+    // https://github.com/anthropics/claude-agent-sdk-typescript/issues/38 is resolved.
+    const zodShape = jsonSchemaToZodShape(inputParams) as unknown as ZodRawShape;
 
     return sdkTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
-      zodSchema,
+      zodShape,
       async args => {
         try {
           const result = await executeTool(composioTool.slug, args);
