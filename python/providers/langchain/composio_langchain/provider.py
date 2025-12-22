@@ -96,6 +96,9 @@ def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
             sanitized_name = _clean_reserved_keyword(keyword=original_name)
         else:
             sanitized_name = _sanitize_param_name(original_name)
+            # Check if sanitization resulted in a reserved keyword
+            if sanitized_name in _python_reserved:
+                sanitized_name = _clean_reserved_keyword(keyword=sanitized_name)
 
         # Step 5: Ensure we don't overwrite an existing property.
         # If a collision happens, add an incrementing suffix: <name>_2, <name>_3, ...

@@ -158,6 +158,27 @@ class TestSubstituteReservedPythonKeywords:
         assert modified["properties"]["parameters_date_2"]["type"] == "string"
         assert keywords["parameters_date_2"] == "parameters[date]"
 
+    def test_sanitized_name_becomes_reserved_keyword(self):
+        """
+        Regression test: When an invalid identifier is sanitized, the result
+        can become a reserved keyword (e.g., 'for[]' -> 'for', 'async-' -> 'async').
+        The sanitized result must be checked for reserved keywords and cleaned.
+        """
+        schema = {
+            "properties": {
+                "for[]": {"type": "string"},
+                "async-": {"type": "string"},
+            }
+        }
+        modified, keywords = _substitute_reserved_python_keywords(schema)
+        # Both sanitized names should be cleaned to avoid reserved keywords
+        assert "for_rs" in modified["properties"]
+        assert "async_rs" in modified["properties"]
+        assert "for" not in modified["properties"]
+        assert "async" not in modified["properties"]
+        assert keywords["for_rs"] == "for[]"
+        assert keywords["async_rs"] == "async-"
+
 
 class TestReinstateReservedPythonKeywords:
     """Tests for _reinstate_reserved_python_keywords function."""
