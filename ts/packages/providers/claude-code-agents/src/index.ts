@@ -21,7 +21,7 @@ import {
   type McpServerConfig,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
-import { z } from 'zod/v3';
+import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
@@ -107,71 +107,6 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
   }
 
   /**
-   * Converts a JSON Schema to a Zod schema for use with the Claude Agent SDK.
-   *
-   * @param jsonSchema - The JSON Schema to convert
-   * @returns A Zod schema object compatible with Claude Agent SDK
-   */
-  private jsonSchemaToZod(jsonSchema: Record<string, unknown>): z.ZodRawShape {
-    const properties = (jsonSchema.properties as Record<string, unknown>) ?? {};
-    const required = (jsonSchema.required as string[]) ?? [];
-
-    const zodShape: z.ZodRawShape = {};
-
-    for (const [key, value] of Object.entries(properties)) {
-      const prop = value as Record<string, unknown>;
-      let zodType: z.ZodTypeAny;
-
-      switch (prop.type) {
-        case 'string':
-          zodType = z.string();
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-          break;
-        case 'number':
-        case 'integer':
-          zodType = z.number();
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-          break;
-        case 'boolean':
-          zodType = z.boolean();
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-          break;
-        case 'array':
-          zodType = z.array(z.unknown());
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-          break;
-        case 'object':
-          zodType = z.record(z.unknown());
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-          break;
-        default:
-          zodType = z.unknown();
-          if (prop.description) {
-            zodType = zodType.describe(prop.description as string);
-          }
-      }
-
-      if (!required.includes(key)) {
-        zodType = zodType.optional();
-      }
-
-      zodShape[key] = zodType;
-    }
-
-    return zodShape;
-  }
-
-  /**
    * Wraps a Composio tool as a Claude Agent SDK MCP tool.
    *
    * @param composioTool - The Composio tool to wrap
@@ -199,7 +134,7 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
     const inputParams = composioTool.inputParameters ?? {};
-    const zodSchema = this.jsonSchemaToZod(inputParams);
+    const zodSchema = jsonSchemaToZod(inputParams);
 
     return sdkTool(
       composioTool.slug,

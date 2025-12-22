@@ -36,6 +36,10 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@composio/json-schema-to-zod": "workspace:*",
+    "zod": "^3.25.76"
+  },
   "peerDependencies": {
     "@composio/core": "0.3.1",
     "@anthropic-ai/claude-agent-sdk": ">=0.1.0"
