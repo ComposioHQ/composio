@@ -43,8 +43,8 @@ while (true) {
     process.stdout.write("Assistant: ");
 
     try {
-    const result = await run(agent, input, { session: memory });
-    process.stdout.write(`${result.finalOutput}`);
+      const result = await run(agent, input, { session: memory });
+      process.stdout.write(`${result.finalOutput}`);
     } catch (error) {
     console.error("\n[Error]:", error instanceof Error ? error.message : error);
     }
