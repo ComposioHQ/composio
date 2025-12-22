@@ -1,38 +1,52 @@
-import "dotenv/config"; // Load environment variables from .env file
+import "dotenv/config";
 import { Composio } from "@composio/core";
 import { Agent, run, MemorySession } from "@openai/agents";
 import { OpenAIAgentsProvider } from "@composio/openai-agents";
 import { createInterface } from "readline/promises";
 
-const composioApiKey = process.env.COMPOSIO_API_KEY;
-const userId = "user_123"; // Your user's unique identifier
+// Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
-const composio = new Composio({ apiKey: composioApiKey, provider: new OpenAIAgentsProvider() });
+// Unique identifier of the user
+const userId = "user-123aer4";
+// Create a tool router session for the user
 const session = await composio.create(userId);
-
-// Get native tools from Composio
 const tools = await session.tools();
 
-// Create OpenAI agent with Composio tools
 const agent = new Agent({
-  name: "AI Assistant",
-  instructions: "You are a helpful assistant with access to external tools. Use the available tools to complete user requests.",
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
   model: "gpt-5.2",
-  tools: tools,
+  tools,
 });
 
-// Create session for multi-turn conversation
-const conversationSession = new MemorySession();
+// Set up interactive terminal input/output for the conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+// Create a memory session for persistent multi-turn conversation
+const memory = new MemorySession();
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-console.log("Assistant: What would you like me to do today? Type 'exit' to end the conversation.\n");
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
 
+// Multi-turn conversation with agentic tool calling
 while (true) {
-  const userInput = await rl.question("> ");
-  if (userInput.toLowerCase() === "exit") break;
-  
-  // Run agent with session to maintain context
-  const result = await run(agent, userInput, { session: conversationSession });
-  console.log(`Assistant: ${result.finalOutput}\n`);
+    const query = await readline.question("You: ");
+    const input = query.trim();
+
+    if (input.toLowerCase() === "exit") break;
+    process.stdout.write("Assistant: ");
+
+    try {
+    const result = await run(agent, input, { session: memory });
+    process.stdout.write(`${result.finalOutput}`);
+    } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+    }
 }
-rl.close();
+readline.close();

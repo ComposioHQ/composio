@@ -1,50 +1,62 @@
-import "dotenv/config"; // Load environment variables from .env file
+import "dotenv/config";
 import { Composio } from "@composio/core";
 import { Agent, run, MemorySession } from "@openai/agents";
 import { OpenAIAgentsProvider } from "@composio/openai-agents";
 import { createInterface } from "readline/promises";
 
-const composioApiKey = process.env.COMPOSIO_API_KEY;
-const userId = "user_123"; // Your user's unique identifier
+// Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
-const composio = new Composio({ apiKey: composioApiKey, provider: new OpenAIAgentsProvider() });
+// Unique identifier of the user
+const userId = "user-1234";
+
+// Create a session and get native tools for the user
 const session = await composio.create(userId);
-
-// Get native tools from Composio
 const tools = await session.tools();
 
-// Create OpenAI agent with Composio tools
 const agent = new Agent({
-  name: "AI Assistant",
-  instructions: 
-    "You are a helpful assistant with access to external tools. " +
-    "Always use the available tools to complete user requests instead of just explaining how to do them.",
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
   model: "gpt-5.2",
-  tools: tools,
+  tools,
 });
 
-// Create session for multi-turn conversation
-const conversationSession = new MemorySession();
+// Create a memory session for persistent multi-turn conversation
+const memory = new MemorySession();
 
-// Execute an initial task that requires GitHub access
-console.log("Executing initial task: Fetching GitHub issues...\n");
-const initialResult = await run(
-  agent,
-  "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
-  { session: conversationSession }
-);
-console.log(`Result: ${initialResult.finalOutput}\n`);
+// Execute an initial task
+console.log("Fetching GitHub issues from the Composio repository...\n");
+try {
+  const initialResult = await run(
+    agent,
+    "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
+    { session: memory }
+  );
+  console.log(`${initialResult.finalOutput}\n`);
+} catch (error) {
+  console.error("[Error]:", error instanceof Error ? error.message : error);
+}
 
 // Continue with interactive conversation
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-console.log("Assistant: What else would you like me to do? Type 'exit' to end the conversation.\n");
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What else would you like me to do?
+(Type 'exit' to exit)
+`);
+
 
 while (true) {
-  const userInput = await rl.question("> ");
-  if (userInput.toLowerCase() === "exit") break;
-  
-  // Run agent with session to maintain context
-  const result = await run(agent, userInput, { session: conversationSession });
-  console.log(`Assistant: ${result.finalOutput}\n`);
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  console.log("Assistant: ");
+
+  try {
+    const result = await run(agent, input, { session: memory });
+    console.log(`${result.finalOutput}\n`);
+  } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+  }
 }
-rl.close();
+readline.close();
