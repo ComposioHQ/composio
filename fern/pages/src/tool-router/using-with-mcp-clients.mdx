@@ -20,7 +20,7 @@ Jump to examples for:
 
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio claude-agent-sdk
+pip install python-dotenv composio claude-agent-sdk
 ```
 ```bash title="TypeScript" for="typescript"
 npm install @composio/core @anthropic-ai/claude-agent-sdk
@@ -47,7 +47,7 @@ Create a Tool Router session and execute tasks with Claude:
 
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio openai-agents
+pip install python-dotenv composio openai-agents
 ```
 ```bash title="TypeScript" for="typescript"
 npm install @composio/core @openai/agents
@@ -59,8 +59,8 @@ npm install @composio/core @openai/agents
 Create a Tool Router session and execute tasks with OpenAI agents:
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Info>
 
 <CodeGroup>
@@ -81,8 +81,8 @@ npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 Use Tool Router with Vercel AI SDK's `generateText` for single completions:
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
 </Info>
 
 <SnippetCode src="fern/snippets/tool-router/typescript/mcp-vercel.ts" />
