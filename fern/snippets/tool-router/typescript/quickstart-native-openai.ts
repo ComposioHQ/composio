@@ -8,7 +8,7 @@ import { createInterface } from "readline/promises";
 const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
 // Unique identifier of the user
-const userId = "user-123aer4";
+const userId = "user_123";
 // Create a tool router session for the user
 const session = await composio.create(userId);
 const tools = await session.tools();

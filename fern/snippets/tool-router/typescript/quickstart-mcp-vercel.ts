@@ -8,7 +8,7 @@ import { stepCountIs, streamText } from "ai";
 const composio = new Composio();
 
 // Unique identifier of the user
-const userId = "user-1234";
+const userId = "user_123";
 
 // Create a tool router session for the user
 const { mcp } = await composio.create(userId);

@@ -7,7 +7,7 @@ import { createInterface } from "readline/promises";
 const composio = new Composio();
 
 // Unique identifier of the user
-const userId = "user-1234";
+const userId = "user_123";
 
 // Create a tool router session for the user
 const session = await composio.create(userId);

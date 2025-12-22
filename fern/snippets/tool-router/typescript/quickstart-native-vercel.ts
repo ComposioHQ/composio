@@ -8,7 +8,7 @@ import { stepCountIs, streamText } from "ai";
 const composio = new Composio({ provider: new VercelProvider() });
 
 // Unique identifier of the user
-const userId = "user-1234";
+const userId = "user_123";
 
 // Create a session and get native tools for the user
 const session = await composio.create(userId);
