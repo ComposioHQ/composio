@@ -22,6 +22,6 @@ setup(
     ],
     python_requires=">=3.9,<4",
     packages=find_packages(),
-    install_requires=["openai-agents>=0.0.3"],
+    install_requires=["openai-agents>=0.0.3", "composio"],
     include_package_data=True,
 )
