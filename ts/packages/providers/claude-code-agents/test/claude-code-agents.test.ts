@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ClaudeCodeAgentsProvider } from '../src';
 import { Tool } from '@composio/core';
+import { ClaudeCodeAgentsProvider } from '../src';
 
 // Mock the claude-agent-sdk module
 vi.mock('@anthropic-ai/claude-agent-sdk', () => {
@@ -14,20 +14,11 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => {
         _isMockedClaudeAgentTool: true,
       };
     }),
-    createSdkMcpServer: vi.fn().mockImplementation(options => {
-      return {
-        type: 'sdk',
-        name: options.name,
-        version: options.version,
-        tools: options.tools,
-        _isMockedMcpServer: true,
-      };
-    }),
   };
 });
 
 // Import mocked functions for assertions
-import { tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
+import { tool } from '@anthropic-ai/claude-agent-sdk';
 
 // Define interface for mocked tool
 interface MockedClaudeAgentTool {
@@ -36,15 +27,6 @@ interface MockedClaudeAgentTool {
   schema: any;
   handler: Function;
   _isMockedClaudeAgentTool: boolean;
-}
-
-// Define interface for mocked MCP server
-interface MockedMcpServer {
-  type: string;
-  name: string;
-  version: string;
-  tools: MockedClaudeAgentTool[];
-  _isMockedMcpServer: boolean;
 }
 
 describe('ClaudeCodeAgentsProvider', () => {
@@ -104,37 +86,6 @@ describe('ClaudeCodeAgentsProvider', () => {
   describe('_isAgentic property', () => {
     it('should be agentic', () => {
       expect(provider._isAgentic).toBe(true);
-    });
-  });
-
-  describe('constructor options', () => {
-    it('should use default server name and version', () => {
-      const defaultProvider = new ClaudeCodeAgentsProvider();
-      // First wrap the tools, then create MCP server with wrapped tools
-      const wrappedTools = defaultProvider.wrapTools([mockTool], mockExecuteToolFn);
-      defaultProvider.createMcpServer(wrappedTools);
-
-      expect(createSdkMcpServer).toHaveBeenCalledWith({
-        name: 'composio',
-        version: '1.0.0',
-        tools: expect.any(Array),
-      });
-    });
-
-    it('should use custom server name and version', () => {
-      const customProvider = new ClaudeCodeAgentsProvider({
-        serverName: 'my-custom-server',
-        serverVersion: '2.0.0',
-      });
-      // First wrap the tools, then create MCP server with wrapped tools
-      const wrappedTools = customProvider.wrapTools([mockTool], mockExecuteToolFn);
-      customProvider.createMcpServer(wrappedTools);
-
-      expect(createSdkMcpServer).toHaveBeenCalledWith({
-        name: 'my-custom-server',
-        version: '2.0.0',
-        tools: expect.any(Array),
-      });
     });
   });
 
@@ -289,36 +240,6 @@ describe('ClaudeCodeAgentsProvider', () => {
       const wrapped = provider.wrapTools([], mockExecuteToolFn);
       expect(wrapped).toEqual([]);
       expect(tool).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('createMcpServer', () => {
-    it('should create an MCP server configuration from wrapped tools', () => {
-      // First wrap the tools (simulating what composio.tools.get() does)
-      const wrappedTools = provider.wrapTools([mockTool], mockExecuteToolFn);
-      const mcpServer = provider.createMcpServer(wrappedTools) as unknown as MockedMcpServer;
-
-      expect(createSdkMcpServer).toHaveBeenCalledWith({
-        name: 'composio',
-        version: '1.0.0',
-        tools: expect.any(Array),
-      });
-      expect(mcpServer._isMockedMcpServer).toBe(true);
-      expect(mcpServer.name).toBe('composio');
-    });
-
-    it('should include all wrapped tools in the MCP server', () => {
-      const anotherTool: Tool = {
-        ...mockTool,
-        slug: 'SLACK_POST_MESSAGE',
-        name: 'Slack Post Message',
-      };
-      // First wrap the tools
-      const wrappedTools = provider.wrapTools([mockTool, anotherTool], mockExecuteToolFn);
-      provider.createMcpServer(wrappedTools);
-
-      const callArgs = (createSdkMcpServer as any).mock.calls[0][0];
-      expect(callArgs.tools).toHaveLength(2);
     });
   });
 
