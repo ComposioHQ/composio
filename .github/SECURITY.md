@@ -32,6 +32,9 @@ Please include as much of the following information as possible:
 - We will provide a more detailed response within 7 days indicating the next steps
 - We will keep you informed of the progress toward resolving the issue
 - We may ask for additional information or guidance
+- Please **DO NOT** test against production systems without permission
+- Please **DO NOT** access or modify user data
+- Please **DO NOT** exploit vulnerabilities beyond what is needed for a proof of concept. For instance, on discovery of a credential or unauthorized access to a protected resource, do not attempt to exploit the vulnerability to gather all resources that can be accessed
 
 ## Supported Versions
 
@@ -44,3 +47,5 @@ We release patches for security vulnerabilities. Please ensure you are using the
 - We appreciate responsible disclosure and will acknowledge reporters in the advisory (unless you prefer to remain anonymous)
 
 Thank you for helping keep Composio and our users safe!
+
+We follow responsible disclosure practices and work with researchers to ensure vulnerabilities are properly addressed before public disclosure.
