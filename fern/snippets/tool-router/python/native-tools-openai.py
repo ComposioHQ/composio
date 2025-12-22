@@ -19,7 +19,7 @@ tools = session.tools()
 agent = Agent(
     name="Personal Assistant",
     instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-4o",
+    model="gpt-5.2",
     tools=tools,
 )
 
