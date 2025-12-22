@@ -16,7 +16,7 @@
  */
 import { Composio } from '@composio/core';
 import { ClaudeCodeAgentsProvider } from '@composio/claude-code-agents';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import 'dotenv/config';
 
 /**
@@ -41,10 +41,14 @@ async function main() {
 
   /**
    * Create an MCP server configuration with the Composio tools
-   * The tools are already wrapped by composio.tools.get(), so we just pass them directly
+   * Using createSdkMcpServer directly from the Claude Agent SDK
    */
   console.log('🔄 Creating MCP server with Composio tools...');
-  const mcpServer = provider.createMcpServer(tools);
+  const mcpServer = createSdkMcpServer({
+    name: 'composio',
+    version: '1.0.0',
+    tools,
+  });
   console.log('✅ MCP server created');
 
   /**

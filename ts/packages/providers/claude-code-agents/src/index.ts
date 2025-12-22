@@ -16,9 +16,7 @@ import {
   McpServerGetResponse,
 } from '@composio/core';
 import {
-  createSdkMcpServer,
   tool as sdkTool,
-  type McpServerConfig,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
 import { jsonSchemaToZodShape } from '@composio/json-schema-to-zod';
@@ -35,27 +33,6 @@ export type ClaudeAgentTool = ReturnType<typeof sdkTool>;
 export type ClaudeAgentToolCollection = ClaudeAgentTool[];
 
 /**
- * Type for the MCP server configuration returned by the provider
- */
-export type ClaudeAgentMcpServerConfig = McpServerConfig;
-
-/**
- * Options for the ClaudeCodeAgentsProvider
- */
-export interface ClaudeCodeAgentsProviderOptions {
-  /**
-   * Name for the MCP server that will host Composio tools
-   * @default 'composio'
-   */
-  serverName?: string;
-  /**
-   * Version for the MCP server
-   * @default '1.0.0'
-   */
-  serverVersion?: string;
-}
-
-/**
  * Provider for integrating Composio tools with Claude Code Agents SDK.
  *
  * This provider wraps Composio tools as MCP tools that can be used with
@@ -65,20 +42,24 @@ export interface ClaudeCodeAgentsProviderOptions {
  * ```typescript
  * import { Composio } from '@composio/core';
  * import { ClaudeCodeAgentsProvider } from '@composio/claude-code-agents';
- * import { query } from '@anthropic-ai/claude-agent-sdk';
+ * import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
  *
  * const composio = new Composio({
  *   apiKey: process.env.COMPOSIO_API_KEY,
  *   provider: new ClaudeCodeAgentsProvider(),
  * });
  *
- * // Get tools and create MCP server config
+ * // Get tools and create MCP server config using claude-agent-sdk's `createSdkMcpServer`
  * const tools = await composio.tools.get('default', 'GMAIL_SEND_EMAIL');
- * const mcpServer = composio.provider.createMcpServer(tools, composio.tools.execute);
+ * const mcpServer = createSdkMcpServer({
+ *   name: 'composio',
+ *   version: '1.0.0',
+ *   tools,
+ * });
  *
  * // Use with Claude Agent SDK
  * for await (const message of query({
- *   prompt: 'Send an email to john@example.com',
+ *   prompt: 'Send an email',
  *   options: {
  *     mcpServers: { composio: mcpServer },
  *   },
@@ -93,19 +74,6 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
   McpServerGetResponse
 > {
   readonly name = 'claude-code-agents';
-  private serverName: string;
-  private serverVersion: string;
-
-  /**
-   * Creates a new instance of the ClaudeCodeAgentsProvider.
-   *
-   * @param options - Configuration options for the provider
-   */
-  constructor(options: ClaudeCodeAgentsProviderOptions = {}) {
-    super();
-    this.serverName = options.serverName ?? 'composio';
-    this.serverVersion = options.serverVersion ?? '1.0.0';
-  }
 
   /**
    * Wraps a Composio tool as a Claude Agent SDK MCP tool.
@@ -190,38 +158,6 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
    */
   wrapTools(tools: Tool[], executeTool: ExecuteToolFn): ClaudeAgentToolCollection {
     return tools.map(tool => this.wrapTool(tool, executeTool));
-  }
-
-  /**
-   * Creates an MCP server configuration for use with Claude Agent SDK's `query()` function.
-   *
-   * This is the primary method for integrating Composio tools with Claude agents.
-   * The returned configuration can be passed directly to the `mcpServers` option.
-   *
-   * @param wrappedTools - Array of wrapped Claude Agent SDK MCP tools (from composio.tools.get())
-   * @returns MCP server configuration for Claude Agent SDK
-   *
-   * @example
-   * ```typescript
-   * const tools = await composio.tools.get('default', 'GMAIL_SEND_EMAIL');
-   * const mcpServer = composio.provider.createMcpServer(tools);
-   *
-   * for await (const message of query({
-   *   prompt: 'Send an email',
-   *   options: {
-   *     mcpServers: { composio: mcpServer },
-   *   },
-   * })) {
-   *   console.log(message);
-   * }
-   * ```
-   */
-  createMcpServer(wrappedTools: ClaudeAgentToolCollection): ClaudeAgentMcpServerConfig {
-    return createSdkMcpServer({
-      name: this.serverName,
-      version: this.serverVersion,
-      tools: wrappedTools,
-    });
   }
 
   /**
