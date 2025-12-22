@@ -63,6 +63,7 @@ overrides:
   '@modelcontextprotocol/sdk@<1.24.0': '>=1.24.0'
   next@>=16.0.0-canary.0 <16.0.7: '>=16.0.7'
   jws@=4.0.0: '>=4.0.1'
+  next@>=16.0.0-beta.0 <16.0.9: '>=16.0.9'
 
 pnpmfileChecksum: sha256-X6eCJXmBNe7VV40iD0uZlsr4IMg+ZL/Qodvx5bNk4wI=
 
