@@ -1,0 +1,21 @@
+[project]
+name = "composio-livekit"
+version = "0.10.1"
+description = "Use Composio to get an array of tools with your LiveKit Agents."
+readme = "README.md"
+requires-python = ">=3.10,<4"
+authors = [
+    { name = "Composio", email = "tech@composio.dev" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "livekit-agents>=1.0.0",
+    "composio",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"
