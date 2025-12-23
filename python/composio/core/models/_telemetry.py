@@ -123,25 +123,34 @@ def _setup():
 
 
 def _teardown(queue: EventQueue, event: tr.Event, thread: tr.Thread):
-    while queue.qsize():
+    # Wait max 2 seconds for queue to empty
+    deadline = time.time() + 2.0
+    while queue.qsize() and time.time() < deadline:
         time.sleep(0.1)
 
     event.set()
-    thread.join()
+    # Join with timeout to prevent infinite waiting
+    thread.join(timeout=3.0)
 
 
 def _push(event: Event):
-    _ = (
-        httpx.post(
-            url=METRIC_ENDPOINT,
-            json=[event[1]],
+    try:
+        _ = (
+            httpx.post(
+                url=METRIC_ENDPOINT,
+                json=[event[1]],
+                timeout=2.0,  # 2 second timeout to prevent hanging
+            )
+            if event[0] == "metric"
+            else httpx.post(
+                url=ERROR_ENDPOINT,
+                json=event[1],
+                timeout=2.0,  # 2 second timeout to prevent hanging
+            )
         )
-        if event[0] == "metric"
-        else httpx.post(
-            url=ERROR_ENDPOINT,
-            json=event[1],
-        )
-    )
+    except (httpx.TimeoutException, httpx.HTTPError, Exception):
+        # Silently fail - telemetry shouldn't break the application
+        pass
 
 
 def _thread_loop(queue: EventQueue, event: tr.Event):

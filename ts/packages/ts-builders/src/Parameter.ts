@@ -1,4 +1,5 @@
 import type { BasicBuilder } from './BasicBuilder';
+import { TypeContext } from './OperatorPrecedence';
 import { TypeBuilder } from './TypeBuilder';
 import { Writer } from './Writer';
 
@@ -19,7 +20,8 @@ export class Parameter implements BasicBuilder {
     if (this.isOptional) {
       writer.write('?');
     }
-    writer.write(': ').write(this.type);
+    writer.write(': ');
+    this.type.writeInContext(writer, TypeContext.FunctionParameter);
   }
 }
 

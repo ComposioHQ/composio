@@ -49,6 +49,7 @@ The SDK interacts with the following Composio API endpoints for trigger manageme
 
 - `GET /api/v3/trigger_instances/active` - List active triggers
 - `POST /api/v3/trigger_instances/{slug}` - Create/update trigger instance
+  - Includes `toolkit_versions` parameter to specify the toolkit version for the trigger instance (defaults to global configuration)
 - `PATCH /api/v3/trigger_instances/manage/{id}` - Update trigger instance
 - `DELETE /api/v3/trigger_instances/manage/{id}` - Delete trigger instance
 

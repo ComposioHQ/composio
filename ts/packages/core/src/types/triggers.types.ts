@@ -194,3 +194,29 @@ export type TriggerEventData<TPayload = unknown> = TPayload & {
   trigger_nano_id: string;
   user_id: string;
 };
+
+/**
+ * Parameters for verifying a webhook signature
+ */
+export const VerifyWebhookParamsSchema = z.object({
+  /** The raw webhook payload as a string (request body) */
+  payload: z.string(),
+  /** The signature from the webhook header (e.g., 'x-composio-signature') */
+  signature: z.string(),
+  /** The webhook secret used to sign the payload */
+  secret: z.string(),
+  /**
+   * Maximum allowed age of the webhook in seconds.
+   * If the webhook timestamp is older than this, verification will fail.
+   * Set to 0 to disable timestamp validation.
+   * @default 300 (5 minutes)
+   */
+  tolerance: z.number().optional().default(300),
+});
+
+export type VerifyWebhookParams = z.input<typeof VerifyWebhookParamsSchema>;
+
+/**
+ * Result of a successful webhook verification
+ */
+export type VerifyWebhookResult = IncomingTriggerPayload;

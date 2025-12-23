@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import ComposioClient, { APIError } from '@composio/client';
 import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/index';
 import {
@@ -18,12 +19,19 @@ import {
   TriggersTypeListResponse,
   TriggersTypeListParamsSchema,
   TriggersTypeRetrieveResponse,
+  VerifyWebhookParams,
+  VerifyWebhookParamsSchema,
+  VerifyWebhookResult,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
 import { ComposioConnectedAccountNotFoundError, ValidationError } from '../errors';
 import { PusherService } from '../services/pusher/Pusher';
-import { ComposioTriggerTypeNotFoundError } from '../errors/TriggerErrors';
+import {
+  ComposioTriggerTypeNotFoundError,
+  ComposioWebhookPayloadError,
+  ComposioWebhookSignatureVerificationError,
+} from '../errors/TriggerErrors';
 import { transform } from '../utils/transform';
 import {
   transformIncomingTriggerPayload,
@@ -31,7 +39,7 @@ import {
   transformTriggerTypeListResponse,
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
-import { ToolkitVersionParam } from '../types/tool.types';
+import { ToolkitVersion, ToolkitVersionParam } from '../types/tool.types';
 import { ComposioConfig } from '../composio';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 /**
@@ -132,6 +140,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
           cause: error,
           possibleFixes: [
             `Please check the trigger slug`,
+            `Please check the provided version of toolkit has the trigger`,
             `Visit the toolkit page to see the available triggers`,
           ],
         });
@@ -199,6 +208,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     const result = await this.client.triggerInstances.upsert(slug, {
       connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
+      toolkit_versions: this.toolkitVersions,
     });
 
     return {
@@ -283,14 +293,17 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   }
 
   /**
-   * Retrieve a trigger type by its slug
+   * Retrieve a trigger type by its slug for the provided version of the app
+   * Use the global toolkit versions param when initializing composio to pass a toolkitversion
    *
    * @param {string} slug - The slug of the trigger type
-   * @param {RequestOptions} options - request options
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
   async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    const result = await this.client.triggersTypes.retrieve(slug);
+    const result = await this.client.triggersTypes.retrieve(slug, {
+      // if the version is provided override the global version
+      toolkit_versions: this.toolkitVersions,
+    });
     return transformTriggerTypeRetrieveResponse(result);
   }
 
@@ -298,7 +311,6 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Fetches the list of all the available trigger enums
    *
    * This method is used by the CLI where filters are not required.
-   * @param options
    * @returns
    */
   async listEnum(): Promise<TriggersTypeRetrieveEnumResponse> {
@@ -447,5 +459,154 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async unsubscribe() {
     await this.pusherService.unsubscribe();
+  }
+
+  /**
+   * Verify an incoming webhook payload and signature.
+   *
+   * This method validates that the webhook request is authentic by:
+   * 1. Verifying the HMAC-SHA256 signature matches the payload
+   * 2. Optionally checking that the webhook timestamp is within the tolerance window
+   *
+   * @param {VerifyWebhookParams} params - The verification parameters
+   * @param {string} params.payload - The raw webhook payload as a string (request body)
+   * @param {string} params.signature - The signature from the webhook header (e.g., 'x-composio-signature')
+   * @param {string} params.secret - The webhook secret used to sign the payload
+   * @param {number} [params.tolerance=300] - Maximum allowed age of the webhook in seconds (default: 5 minutes). Set to 0 to disable timestamp validation.
+   * @returns {VerifyWebhookResult} The verified and parsed webhook payload
+   *
+   * @throws {ValidationError} If the parameters are invalid
+   * @throws {ComposioWebhookSignatureVerificationError} If the signature verification fails
+   * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed or is invalid
+   *
+   * @example
+   * ```ts
+   * // In an Express.js webhook handler
+   * app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+   *   try {
+   *     const payload = composio.triggers.verifyWebhook({
+   *       payload: req.body.toString(),
+   *       signature: req.headers['x-composio-signature'] as string,
+   *       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+   *     });
+   *
+   *     // Process the verified payload
+   *     console.log('Received trigger:', payload.triggerSlug);
+   *     res.status(200).send('OK');
+   *   } catch (error) {
+   *     console.error('Webhook verification failed:', error);
+   *     res.status(401).send('Unauthorized');
+   *   }
+   * });
+   * ```
+   */
+  verifyWebhook(params: VerifyWebhookParams): VerifyWebhookResult {
+    // Validate input parameters
+    const parsedParams = VerifyWebhookParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Invalid parameters passed to verifyWebhook', {
+        cause: parsedParams.error,
+      });
+    }
+
+    const { payload, signature, secret, tolerance } = parsedParams.data;
+
+    // Verify signature
+    this.verifyWebhookSignature(payload, signature, secret);
+
+    // Parse and validate payload
+    let parsedPayload: TriggerData;
+    try {
+      parsedPayload = JSON.parse(payload) as TriggerData;
+    } catch (error) {
+      throw new ComposioWebhookPayloadError('Failed to parse webhook payload as JSON', {
+        cause: error,
+      });
+    }
+
+    // Transform to IncomingTriggerPayload format
+    const transformedPayload = transformIncomingTriggerPayload(parsedPayload);
+
+    // Validate timestamp if tolerance is set and payload contains timestamp
+    if (tolerance > 0) {
+      this.validateWebhookTimestamp(parsedPayload, tolerance);
+    }
+
+    return transformedPayload;
+  }
+
+  /**
+   * Verifies the HMAC-SHA256 signature of a webhook payload
+   * @private
+   */
+  private verifyWebhookSignature(payload: string, signature: string, secret: string): void {
+    if (payload.length === 0) {
+      throw new ComposioWebhookSignatureVerificationError('No webhook payload was provided.');
+    }
+
+    if (signature.length === 0) {
+      throw new ComposioWebhookSignatureVerificationError(
+        'No signature header value was provided. Please pass the value of the webhook signature header.'
+      );
+    }
+
+    if (secret.length === 0) {
+      throw new ComposioWebhookSignatureVerificationError(
+        'No webhook secret was provided. You can find your webhook secret in your Composio dashboard.'
+      );
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload, 'utf8')
+      .digest('hex');
+
+    // Use timing-safe comparison to prevent timing attacks
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
+      throw new ComposioWebhookSignatureVerificationError('The signature provided is invalid.');
+    }
+  }
+
+  /**
+   * Validates that the webhook timestamp is within the allowed tolerance
+   * @private
+   */
+  private validateWebhookTimestamp(payload: TriggerData, tolerance: number): void {
+    // Check if payload has a timestamp field (may be in metadata or at root level)
+    const timestamp =
+      (payload as unknown as { timestamp?: string }).timestamp ||
+      (payload as unknown as { webhookTimestamp?: string }).webhookTimestamp ||
+      (payload.metadata as unknown as { timestamp?: string })?.timestamp;
+
+    if (!timestamp) {
+      // If no timestamp is present, skip validation
+      // This allows backwards compatibility with webhooks that don't include timestamps
+      logger.debug('No timestamp found in webhook payload, skipping timestamp validation');
+      return;
+    }
+
+    const webhookTime = Date.parse(timestamp);
+    if (Number.isNaN(webhookTime)) {
+      throw new ComposioWebhookPayloadError(
+        `Invalid timestamp in webhook payload: ${timestamp}. Expected ISO 8601 format.`
+      );
+    }
+
+    const currentTime = Date.now();
+    const timeDifference = Math.abs(currentTime - webhookTime);
+
+    if (timeDifference > tolerance * 1000) {
+      throw new ComposioWebhookSignatureVerificationError(
+        `The webhook timestamp is outside the allowed tolerance. ` +
+          `The webhook was sent ${Math.round(timeDifference / 1000)} seconds ago, ` +
+          `but the maximum allowed age is ${tolerance} seconds.`
+      );
+    }
   }
 }

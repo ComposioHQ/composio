@@ -22,12 +22,12 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@composio/openai-agents": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "catalog:",
     "@openai/agents": "^0.1.4",
     "dotenv": "^16.4.1",
     "openai": "^5.16.0",
     "zod": "catalog:",
-    "zod-to-json-schema": "^3.24.5"
+    "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["api:pull", "add-og", "snippets:build", "tools:generate", "sdkdocs"],
-      "outputs": ["apis/openapi.json", "apis/openapi-mcp.json", "pages/dist/**", "tools/**"],
+      "outputs": ["apis/openapi.json", "apis/openapi-mcp.json", "pages/dist/**", "toolkits/**"],
       "cache": true
     },
     
@@ -48,7 +48,7 @@
     },
     
     "tools:generate": {
-      "outputs": ["tools/**"],
+      "outputs": ["toolkits/**"],
       "inputs": ["generators/tool_doc_generator/**/*.py", "generators/tool_doc_generator/templates/**/*"],
       "cache": true,
       "env": ["COMPOSIO_API_KEY"]
@@ -82,7 +82,7 @@
     "llms:build": {
       "dependsOn": ["build"],
       "outputs": ["llms-txt/public/llms.txt"],
-      "inputs": ["docs.yml", "pages/**/*.mdx", "pages/**/*.md", "tools/**/*.mdx", "scripts/build-llms-txt.ts"],
+      "inputs": ["docs.yml", "pages/**/*.mdx", "pages/**/*.md", "toolkits/**/*.mdx", "scripts/build-llms-txt.ts"],
       "cache": true
     },
     

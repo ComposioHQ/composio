@@ -22,7 +22,7 @@ jobs:
     if: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1) || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
     permissions: write-all
     env:
-      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

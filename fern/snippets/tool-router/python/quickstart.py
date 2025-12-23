@@ -14,7 +14,7 @@ async def main() -> None:
         user_id="user@example.com",
         toolkits=["gmail", "github"]  # Optional: Limit available toolkits
     )
-    
+
     # Set up OpenAI agent with Tool Router MCP endpoint
     agent = Agent(
         name="Assistant",

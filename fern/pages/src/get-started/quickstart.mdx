@@ -3,7 +3,7 @@ title: Quickstart
 image: "https://og.composio.dev/api/og?title=Quickstart"   # image for socials
 description: "Add authenticated tool-calling to any LLM agent in three steps."
 keywords: ""
-subtitle: ""
+subtitle: "Add composio tools to your AI agents"
 hide-nav-links: false
 ---
 
@@ -38,81 +38,52 @@ npm install @composio/core
 ```
 </CodeGroup>
 
-## Initialize the SDK
-You’ll need to initialize the SDK with your Composio API key. This allows you to authenticate requests and access tools on behalf of your users.
-
-<CodeGroup>
-```python Python
-from composio import Composio
-
-composio = Composio(
-  # api_key="your-api-key",
-)
-```
-```typescript TypeScript
-import { Composio } from '@composio/core';
-
-// Initialize the SDK
-const composio = new Composio({
-  // apiKey: 'your-api-key',
-});
-```
-</CodeGroup>
-
-
 ## Authorize Tools & Run Them with an Agent
 Composio supports multiple LLM providers. Here’s how to use Composio with some of the most popular ones:
 <Tabs>
-<Tab title="OpenAI (Python)">
-Composio ships with support for OpenAI provider out of the box.
-<SnippetCode
-  src="fern/snippets/get-started/python/quickstart.py"
-  startLine={1}
-  endLine={34}
-/>
-</Tab>
-<Tab title="Anthropic (Typescript)">
-You may install the Anthropic provider as well!
+<Tab title="OpenAI Agent(Python)">
+Install the OpenAI Agents provider!
 
 **Installation**
 ```bash
-npm install @composio/anthropic
+pip install composio openai-agents composio-openai-agents
+```
+
+<SnippetCode
+  src="fern/snippets/get-started/python/quickstart.py"
+  startLine={1}
+  endLine={46}
+/>
+</Tab>
+<Tab title="Anthropic (TypeScript)">
+Install the Composio Anthropic provider
+
+**Installation**
+```bash
+npm i @composio/core @composio/anthropic
+npm i @anthropic-ai/sdk
 ```
 
 <SnippetCode
   src="fern/snippets/get-started/typescript/quickstart.ts"
   startLine={1}
-  endLine={30}
+  endLine={57}
 />
 
 </Tab>
 <Tab title="Vercel AI SDK (Typescript)">
-You may install the Vercel AI provider as well!
+Install the Composio Vercel Provider
 
 **Installation**
 ```bash
-npm install @composio/vercel
+npm i @composio/core @composio/vercel
+npm i ai @ai-sdk/openai
 ```
 
 <SnippetCode
   src="fern/snippets/get-started/typescript/vercel-quickstart.ts"
   startLine={1}
-  endLine={27}
-/>
-
-</Tab>
-<Tab title="OpenAI Agents (Python)">
-You may install the OpenAI Agents provider as well!
-
-**Installation**
-```bash
-pip install composio_openai_agents==0.8.0
-```
-
-<SnippetCode
-  src="fern/snippets/get-started/python/quickstart-openai-agents.py"
-  startLine={1}
-  endLine={46}
+  endLine={43}
 />
 
 </Tab>
@@ -131,16 +102,16 @@ All OAuth flows and tool execution were automatically handled by Composio.
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Use Providers" icon="fa-solid fa-plug" href="/providers/openai">
+  <Card title="Use Providers" icon="fa-light fa-plug" href="/providers/openai">
     Learn how to use Composio with various agent SDK and frameworks.
   </Card>
-  <Card title="Work with tools" icon="fa-solid fa-toolbox" href="/docs/executing-tools">
+  <Card title="Work with tools" icon="fa-light fa-toolbox" href="/docs/executing-tools">
     Learn how to work with tools and tool calling on a deeper level with Composio.
   </Card>
-  <Card title="Manage authentication" icon="fa-solid fa-key" href="/docs/custom-auth-configs">
+  <Card title="Manage authentication" icon="fa-light fa-key" href="/docs/custom-auth-configs">
     Authorize tools for multiple users.
   </Card>
-  <Card title="Triggers" icon="fa-solid fa-bolt" href="/docs/using-triggers">
+  <Card title="Triggers" icon="fa-light fa-bolt" href="/docs/using-triggers">
     Listen for external events to trigger actions in your agents
   </Card>
 </CardGroup>

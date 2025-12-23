@@ -90,19 +90,11 @@ def update_mdx_image(file_path, dry_run=False, verbose=False):
     image_match = re.search(image_pattern, frontmatter, re.MULTILINE)
 
     if image_match:
-        # Check if it's already the correct URL
-        current_image_line = image_match.group(0)
-        if image_url in current_image_line:
-            return {"updated": False, "message": "Image URL already up to date", "title": title}
-
-        # Update existing image property
-        new_frontmatter = re.sub(
-            image_pattern,
-            f"image: {image_url}   # image for socials",
-            frontmatter,
-            flags=re.MULTILINE,
-        )
-        action = "Updated existing"
+        return {
+            "updated": False,
+            "message": "Image property already present, skipping",
+            "title": title,
+        }
     else:
         # Add image property after title
         title_pattern = r"^title:\s*.*$"

@@ -1,0 +1,137 @@
+---
+title: Fetching tools and schemas
+image: "https://og.composio.dev/api/og?title=Fetching%20tools%20and%20schemas"   # image for socials
+keywords: "fetch tool, filter tool, tool schema, tool types, inspect schema, raw tools"
+subtitle: "Fetch and filter tools, and inspect schemas"
+hide-nav-links: false
+---
+
+Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.
+
+## Basic usage
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={6}
+  endLine={9}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={6}
+  endLine={8}
+/>
+</CodeGroup>
+
+Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](./user-management) and [Authentication](./authenticating-tools).
+
+## Tool schemas
+
+Inspect tool parameters and types without a user_id:
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={66}
+  endLine={66}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={60}
+  endLine={60}
+/>
+</CodeGroup>
+
+Generate type-safe code for direct SDK execution with [`composio generate`](/docs/cli#generate-type-definitions). This creates TypeScript or Python types from tool schemas.
+
+<Tip>
+View tool parameters and schemas visually in the [Composio platform](https://platform.composio.dev). Navigate to any toolkit and select a tool to see its input/output parameters.
+</Tip>
+
+## Filtering tools
+
+### By toolkit
+
+Get tools from specific apps. Returns top 20 tools by default.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={12}
+  endLine={23}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={11}
+  endLine={21}
+/>
+</CodeGroup>
+
+
+### By name
+
+Fetch specific tools when you know their names.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={25}
+  endLine={34}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={23}
+  endLine={31}
+/>
+</CodeGroup>
+
+
+### By scopes
+
+Filter OAuth tools by permission level. Only works with a single toolkit.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={36}
+  endLine={41}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={33}
+  endLine={37}
+/>
+</CodeGroup>
+
+### By search (experimental)
+
+Find tools semantically.
+
+<CodeGroup>
+<SnippetCode 
+  src="fern/snippets/tool-calling/python/fetching-tools.py" 
+  title="Python"
+  startLine={43}
+  endLine={65}
+/>
+<SnippetCode 
+  src="fern/snippets/tool-calling/typescript/fetching-tools.ts" 
+  title="TypeScript"
+  startLine={39}
+  endLine={59}
+/>
+</CodeGroup>
+
+<Tip>
+Use specific toolkit versions in production to prevent breaking changes. See [toolkit versioning](./toolkit-versioning).
+</Tip>

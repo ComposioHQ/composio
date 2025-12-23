@@ -91,3 +91,31 @@ def sample_mcp_config_data():
 def test_user_id():
     """Provide a consistent test user ID."""
     return "pytest_integration_user_123"
+
+
+# Track created resources for cleanup
+_created_mcp_servers = []
+
+
+@pytest.fixture
+def mcp_server_cleanup(composio_client):
+    """Fixture to track and cleanup MCP servers created during tests."""
+    created_servers = []
+
+    yield created_servers
+
+    # Cleanup after test
+    for server_id in created_servers:
+        try:
+            composio_client.mcp.delete(server_id)
+            print(f"✅ Cleaned up MCP server: {server_id}")
+        except Exception as e:
+            print(f"⚠️  Failed to cleanup MCP server {server_id}: {e}")
+
+
+def pytest_configure(config):
+    """Configure pytest with custom settings."""
+    # Add timeout marker
+    config.addinivalue_line(
+        "markers", "timeout: mark test to run with a specific timeout"
+    )

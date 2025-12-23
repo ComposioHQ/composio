@@ -142,30 +142,40 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
+export const ToolkitLatestVersionSchema = z.literal('latest');
 /**
  * latest toolkit version param
  */
-export type ToolkitLatestVersion = 'latest';
+export type ToolkitLatestVersion = z.infer<typeof ToolkitLatestVersionSchema>;
+
+export const ToolkitVersionSchema = z.union([ToolkitLatestVersionSchema, z.string()]);
 /**
  * Versioning a tool based on it's toolkit version, either 'latest' or actual tool version as string '20250902_00'
  * @example
  * 'latest'
  * '20250902_00'
  */
-export type ToolkitVersion = ToolkitLatestVersion | string;
+export type ToolkitVersion = z.infer<typeof ToolkitVersionSchema>;
+
+export const ToolkitVersionsSchema = z.record(z.string(), ToolkitVersionSchema);
 /**
  * Versioning multiple toolkits
  *  @example
  * { 'github': 'latest', 'slack': '20250902_00' }
  */
 export type ToolkitVersions = Record<string, ToolkitVersion>;
+
+export const ToolkitVersionParamSchema = z
+  .union([ToolkitVersionsSchema, ToolkitLatestVersionSchema, z.undefined()])
+  .describe('The versioning of the toolkits. eg: { "github": "latest", "slack": "20250902_00" }');
 /**
- * Versioning a toolkit based on it's tool versions, either 'latest' or actual tool version as string '20250902_00'
+ * Versioning a tool based on it's toolkit version
  * @example
- * 'latest'
+ * ```json
  * { 'github': 'latest', 'slack': '20250902_00' }
+ * ```
  */
-export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions | undefined;
+export type ToolkitVersionParam = z.infer<typeof ToolkitVersionParamSchema>;
 
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
@@ -307,6 +317,12 @@ export const ToolExecuteParamsSchema = z.object({
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
 
+export const ToolExecuteMetaParamsSchema = z.object({
+  sessionId: z.string(),
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+export type ToolExecuteMetaParams = z.infer<typeof ToolExecuteMetaParamsSchema>;
+
 /**
  * ToolResponse Schema
  */
@@ -333,7 +349,12 @@ export const ToolProxyParamsSchema = z.object({
     )
     .optional(),
   connectedAccountId: z.string().optional(),
-  customConnectionData: CustomConnectionDataSchema.optional(),
+  /**
+   * @deprecated
+   */
+  customConnectionData: CustomConnectionDataSchema.describe(
+    'DEPRECATED: This field is deprecated and will be removed in the future.'
+  ).optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 

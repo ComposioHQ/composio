@@ -33,7 +33,7 @@ const triggers = await composio.triggers.listActive({
 
 ### Create Trigger Instance
 
-Create a new trigger instance for a specific user and trigger type. If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
+Create a new trigger instance for a specific user and trigger type. The trigger instance version is determined by the global `toolkitVersions` configuration set during Composio initialization (defaults to `'latest'`). If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
 
 **With Connected Account ID:**
 
@@ -78,11 +78,41 @@ const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSA
 }
 ```
 
+**Behavior:**
+
+- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'`)
+- To use a specific toolkit version for trigger creation, configure `toolkitVersions` when initializing the Composio instance
+- See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for details on setting toolkit versions
+
 **Throws:**
 
 - `ValidationError`: If the provided parameters are invalid
 - `ComposioTriggerTypeNotFoundError`: If the trigger type with the given slug is not found
 - `ComposioConnectedAccountNotFoundError`: If no connected account is found for the user, or if the specified connected account ID is not found
+
+**Example with Specific Toolkit Version:**
+
+```typescript
+// Configure toolkit versions at initialization
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: {
+    gmail: '12082025_00',
+    github: '10082025_01'
+  }
+});
+
+// Now create will use the configured version for Gmail
+const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSAGE', {
+  connectedAccountId: 'ca_jjYIG9L40LDIS',
+  triggerConfig: {
+    labelIds: 'INBOX',
+    userId: 'me',
+    interval: 60,
+  },
+});
+// This will create the trigger instance using version '12082025_00' for Gmail
+```
 
 **Example with Error Handling:**
 
@@ -200,17 +230,83 @@ await composio.triggers.unsubscribe();
 
 ### Manage Trigger Types
 
-List and retrieve available trigger types:
+#### List Trigger Types
+
+List all available trigger types with optional filtering:
 
 ```typescript
-// List all trigger types
 const triggerTypes = await composio.triggers.listTypes({
-  toolkits: ['github']
+  toolkits: ['github'],
+  cursor: 'cursor-string',
+  limit: 10
+});
+```
+
+**Parameters:**
+
+- `toolkits` (string[], optional): Filter trigger types by toolkit slugs
+- `cursor` (string, optional): Pagination cursor for fetching the next page
+- `limit` (number, optional): Maximum number of trigger types to return
+
+**Returns:** Promise<TriggersTypeListResponse> - A paginated list of trigger types
+
+#### Get Trigger Type
+
+Retrieve details of a specific trigger type by its slug. The trigger type version is determined by the global `toolkitVersions` configuration set during Composio initialization.
+
+```typescript
+// Get trigger type using the globally configured toolkit version
+const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
+```
+
+**Parameters:**
+
+- `slug` (string, required): The slug of the trigger type to retrieve
+
+**Returns:** Promise<TriggersTypeRetrieveResponse> - The trigger type object containing details such as:
+
+```typescript
+{
+  slug: string;
+  name: string;
+  description: string;
+  toolkit: {
+    slug: string;
+    name: string;
+  };
+  // ... other trigger type properties
+}
+```
+
+**Behavior:**
+
+- The method uses the global toolkit version configured in the Composio client (defaults to `'latest'` if not provided)
+- To use a specific toolkit version, configure `toolkitVersions` when initializing the Composio instance
+- See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for details on setting toolkit versions
+
+**Example with Specific Toolkit Version:**
+
+```typescript
+// Configure toolkit versions at initialization
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: {
+    gmail: '12082025_00',
+    github: '10082025_01'
+  }
 });
 
-// Get details of a specific trigger type
-const triggerType = await composio.triggers.getType('trigger-slug');
+// Now getType will use the configured version for Gmail
+const triggerType = await composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE');
+// This will fetch the trigger type using version '12082025_00' for Gmail
+```
 
-// Get enum of all available triggers
+#### Get Trigger Enums
+
+Fetch the list of all available trigger enums:
+
+```typescript
 const triggerEnum = await composio.triggers.listEnum();
 ```
+
+This method returns an enumeration of all available trigger types and is primarily used by the CLI.

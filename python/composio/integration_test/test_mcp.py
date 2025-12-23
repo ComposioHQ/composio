@@ -383,27 +383,27 @@ class TestMCPNoAuthToolkits:
         mcp_url = server_instance["url"]
 
         try:
-            # Test with SSE-appropriate headers
+            # Just verify the URL is valid and endpoint exists
+            # Don't try to read the stream as SSE endpoints can hang indefinitely
             headers = {
                 "Accept": "text/event-stream, application/json, */*",
                 "Cache-Control": "no-cache",
                 "User-Agent": "Composio-Python-MCP-Test",
             }
 
-            response = requests.get(mcp_url, headers=headers, timeout=5, stream=True)
+            # Use HEAD request if supported, otherwise quick GET with immediate close
+            response = requests.head(mcp_url, headers=headers, timeout=3)
+
+            if response.status_code == 405:  # Method not allowed for HEAD
+                # Try GET but immediately close without reading stream
+                response = requests.get(
+                    mcp_url, headers=headers, timeout=3, stream=True
+                )
+                response.close()  # Close immediately without reading
 
             print("✅ MCP URL is accessible!")
             print(f"   Status Code: {response.status_code}")
-            print(f"   Content-Type: {response.headers.get('Content-Type', 'N/A')}")
-
-            # Try to read first event
-            try:
-                chunk = next(
-                    response.iter_content(chunk_size=1024, decode_unicode=True)
-                )
-                print(f"   First Event: {chunk.strip()[:100]}...")
-            except StopIteration:
-                print("   No initial content received")
+            print(f"   URL: {mcp_url[:50]}...")
 
         except requests.exceptions.Timeout:
             print("⚠️  MCP URL timeout (normal for SSE endpoints)")

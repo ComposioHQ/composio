@@ -6,7 +6,7 @@ The `Tools` class provides methods to list, retrieve, and execute tools from var
 
 ### get(userId, filters, options?)
 
-Retrieves and wraps tools based on the provided filters. Tool versions are controlled at the Composio SDK initialization level through the `toolkitVersions` configuration.
+Retrieves and wraps tools based on the provided filters. Tool versions are controlled at the Composio SDK initialization level through the `toolkitVersions` configuration. See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for more details on version management.
 
 **Note:** When fetching tools by `toolkits` or `search`, if no `limit` is provided, the API defaults to returning 20 tools. To fetch all available tools, explicitly specify a `limit` value up to the maximum of 999.
 
@@ -70,13 +70,38 @@ const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
 
 ### execute(slug, body, modifiers?)
 
-Executes a given tool with the provided parameters.
+Executes a given tool with the provided parameters manually.
+
+> **Important:** When manually executing tools (especially in workflows), a specific version is **required**. The method will throw an error if toolkitVersion is not provided or `latest` is used as the version. This ensures there are no mismatches in tool arguments when new versions are released. You can bypass this requirement using `dangerouslySkipVersionCheck: true`, but this is **not recommended for production**.
 
 ```typescript
-// Execute a Composio API tool
-const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
+// Execute with a pinned version (REQUIRED for workflows and manual execution)
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
   userId: 'default',
-  arguments: { userId: 'pg' },
+  arguments: { owner: 'composio', repo: 'sdk' },
+  version: '12082025_00', // Specific version required
+});
+
+// Or configure versions at initialization (RECOMMENDED)
+const composio = new Composio({
+  toolkitVersions: { 
+    github: '12082025_00',
+    slack: '10082025_01'
+  }
+});
+
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+  userId: 'default',
+  arguments: { owner: 'composio', repo: 'sdk' },
+  // Uses pinned version from initialization
+});
+
+// Execute with dangerouslySkipVersionCheck (NOT recommended for production)
+// This allows using 'latest' version and bypasses version validation
+const result = await composio.tools.execute('SLACK_SEND_MESSAGE', {
+  userId: 'default',
+  arguments: { channel: '#general', text: 'Hello!' },
+  dangerouslySkipVersionCheck: true, // Skip version validation (use with caution)
 });
 
 // Execute with modifiers
@@ -85,6 +110,7 @@ const result = await composio.tools.execute(
   {
     userId: 'default',
     arguments: { owner: 'composio', repo: 'sdk' },
+    version: '12082025_00', // Always specify version
   },
   {
     beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
@@ -104,6 +130,54 @@ const result = await composio.tools.execute(
 - `slug` (string): The slug/ID of the tool to be executed
 - `body` (ToolExecuteParams): The parameters to be passed to the tool
 - `modifiers` (ExecuteToolModifiers): Optional modifiers to transform the request or response
+
+#### Version Requirements for Manual Tool Execution
+
+When building workflows that require manually executing tools, **a specific pinned version is mandatory**. Using `'latest'` is not allowed and will throw an error. This strict requirement prevents argument mismatches that can occur when tool schemas change in newer versions.
+
+**Why Version Pinning is Required:**
+- Tool argument schemas can change between versions
+- Using `'latest'` in workflows can cause runtime errors when tools are updated
+- Pinned versions ensure workflow stability and predictability
+- Version validation prevents production issues from schema mismatches
+
+**Three Approaches to Handle Versions:**
+
+**1. Specify a concrete version in the execute call** (Recommended):
+```typescript
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+  userId: 'default',
+  arguments: { owner: 'composio', repo: 'sdk' },
+  version: '12082025_00', // Explicit version for this tool
+});
+```
+
+**2. Configure toolkit versions at initialization** (Recommended for production):
+```typescript
+const composio = new Composio({
+  toolkitVersions: { 
+    github: '12082025_00',
+    slack: '10082025_01'
+  }
+});
+
+// Now execute without version parameter - uses pinned version from config
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+  userId: 'default',
+  arguments: { owner: 'composio', repo: 'sdk' },
+});
+```
+
+**3. Use `dangerouslySkipVersionCheck: true`** (NOT recommended for production):
+```typescript
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+  userId: 'default',
+  arguments: { owner: 'composio', repo: 'sdk' },
+  dangerouslySkipVersionCheck: true, // Bypasses version validation and uses 'latest'
+});
+```
+
+> ⚠️ **Warning:** Using `dangerouslySkipVersionCheck: true` bypasses version validation and allows the use of `'latest'` version. This can lead to unexpected behavior and argument mismatches when tool schemas change. **Only use this flag during development or testing.** Always pin specific versions in production environments to ensure workflow stability.
 
 **Returns:** Promise<ToolExecuteResponse> - The response from the tool execution
 
@@ -340,11 +414,18 @@ interface ToolExecuteParams {
   customAuthParams?: CustomAuthParams; // Custom auth parameters
   customConnectionData?: CustomConnectionData; // Custom connection data
   arguments?: Record<string, unknown>; // Tool arguments
-  userId: string; // User ID
-  version?: string; // Tool version
+  userId: string; // User ID (required)
+  version?: string; // Tool version (e.g., '12082025_00') - overrides global toolkit version
+  dangerouslySkipVersionCheck?: boolean; // Skip version validation (NOT recommended for production)
   text?: string; // Text input
 }
 ```
+
+**Parameter Details:**
+
+- **`version`** (string, conditionally required): Specifies the toolkit version to use for this tool execution. **Required when manually executing tools** unless a specific version is configured at initialization or `dangerouslySkipVersionCheck` is set to `true`. Using `'latest'` will throw a `ValidationError` to prevent schema mismatches in workflows. Format: `'DDMMYYYY_NN'` (e.g., `'12082025_00'`). See [Toolkit Versions Configuration](../getting-started.md#toolkit-versions) for more details.
+
+- **`dangerouslySkipVersionCheck`** (boolean, optional): When set to `true`, bypasses version validation during tool execution and allows using `'latest'` version. This is useful for development and testing but **NOT recommended for production** as it can lead to unexpected behavior and argument mismatches when tool schemas change. Always pin specific toolkit versions at initialization or pass a `version` parameter in production environments.
 
 ### ToolExecuteResponse
 

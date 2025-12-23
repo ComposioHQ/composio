@@ -1,7 +1,7 @@
 ---
 title: Custom Auth Configs
 image: "https://og.composio.dev/api/og?title=Custom%20Auth%20Configs"   # image for socials
-subtitle: 'Guide to customizing auth configs for a toolkit'
+subtitle: 'Customize auth configs for any toolkit'
 keywords: ''
 hide-nav-links: true
 ---
@@ -20,7 +20,7 @@ You'll need to customize the auth config when you want to use different values t
 <Tab title="Example: PostHog">
 You may change the subdomain for the PostHog toolkit to match your own instance.
 <Frame background="subtle" title="PostHog Auth Config Settings">
-<img src="../../../assets/images/custom-auth-posthog.png" />
+<img src="../../../assets/images/custom-auth-posthog.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 </Tab>
 <Tab title="Example: Hubspot">
@@ -29,14 +29,14 @@ For Hubspot you may customize everything here. For each auth scheme there is a d
 If you choose to use your own developer app for the OAuth2 scheme, you will have to provide the client ID and client secret.
 
 <Frame background="subtle" title="Hubspot Auth Config Settings">
-<img src="../../../assets/images/custom-auth-hubspot.png" />
+<img src="../../../assets/images/custom-auth-hubspot.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 </Tab>
 </Tabs>
 
 Toolkits that support OAuth2 allow using your own developer app. This is the recommended approach for most cases.
 
-<Tip title="Use your own developer app!" icon="exclamation">
+<Tip title="Use your own developer app!" icon="fa-light fa-exclamation">
 We recommend using your own developer app for the OAuth2 scheme as it is more suited for production usage with many users and more granular control over scopes.
 
 However, getting OAuth approvals takes time, so Composio provides a default developer app!
@@ -56,12 +56,12 @@ Examples for Google and GitHub:
 <Tabs>
   <Tab title="Google">
     <Frame background="subtle" caption="Google OAuth Configuration">
-      <img src="../../../assets/images/google-oauth-config.png" />
+      <img src="../../../assets/images/google-oauth-config.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
     </Frame>
   </Tab>
   <Tab title="GitHub">
     <Frame background="subtle" caption="GitHub OAuth Configuration">
-      <img src="../../../assets/images/github-oauth-config.png" />
+      <img src="../../../assets/images/github-oauth-config.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
     </Frame>
   </Tab>
 </Tabs>
@@ -84,7 +84,7 @@ Once you have the OAuth credentials, you can add them to the auth config in the 
 4. Click Create!
 
 <Frame background="subtle" title="Auth Config Settings">
-  <img src="../../../assets/images/integration-step-3-0.png" />
+  <img src="../../../assets/images/integration-step-3-0.png" style={{ maxHeight: '450px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 
 
@@ -126,7 +126,7 @@ console.log(connection);
 By default the users will see an OAuth screen like the one below:
 
 <Frame background="subtle" caption="Composio's Domain in OAuth Consent Screen">
-  <img src="../../../assets/images/oauth-branding.png" />
+  <img src="../../../assets/images/oauth-branding.png" style={{ maxHeight: '350px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 
 The OAuth redirect URL is surfaced in some OAuth providers' consent screens. This may cause confusion for some users as that URL is not of the same domain as the application.
@@ -205,7 +205,7 @@ res.redirect(302, redirectUrl);
 Specify your custom redirect URI in the auth config settings!
 
 <Frame background="subtle" title="Auth Config Settings">
-<img src="../../../assets/images/custom-redirect-uri.png" />
+<img src="../../../assets/images/custom-redirect-uri.png" style={{ maxHeight: '400px', width: 'auto', display: 'block', margin: '0 auto' }} />
 </Frame>
 </Step>
 </Steps>

@@ -176,7 +176,7 @@ jobs:
     runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
     permissions: read-all
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
     steps:
       - name: Checkout repository
@@ -213,8 +213,10 @@ jobs:
         working-directory: ./python
         run: |
           echo "🧪 Running Integration Tests..."
-          uv run pytest composio/integration_test/ -v --tb=short --maxfail=3
-        timeout-minutes: 15
+          # Run with per-test timeout of 2 minutes and overall timeout
+          # pytest-timeout should be installed via pyproject.toml dev dependencies
+          uv run pytest composio/integration_test/ -v --tb=short --maxfail=3 --timeout=120 --timeout-method=thread
+        timeout-minutes: 10
 
       - name: Upload Test Results
         if: always()

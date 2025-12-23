@@ -42,7 +42,99 @@ const composio = new Composio({
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
   provider: new OpenAIProvider(), // Optional: Custom provider
-  toolkitVersions: { github: '20250909_00', slack: 'latest' }, // Optional: Toolkit versions
+  toolkitVersions: { github: '12082025_00', slack: 'latest' }, // Optional: Toolkit versions
+});
+```
+
+### Toolkit Versions
+
+Toolkit versions allow you to pin specific versions of tools and triggers, ensuring consistency across your application. By default, Composio uses the `'latest'` version for all toolkits, but you can specify exact versions for production stability.
+
+#### Version Format
+
+Toolkit versions follow the format `DDMMYYYY_NN`, where:
+- `DD` = Day (01-31)
+- `MM` = Month (01-12)
+- `YYYY` = Year
+- `NN` = Version number for that day (00, 01, 02, etc.)
+
+Example: `12082025_00` represents version 00 released on August 12, 2025.
+
+#### Configuration Options
+
+**Option 1: Specific Versions per Toolkit (Recommended for Production)**
+
+```typescript
+const composio = new Composio({
+  toolkitVersions: {
+    github: '12082025_00',
+    slack: '10082025_01',
+    gmail: 'latest', // You can mix specific versions with 'latest'
+  }
+});
+```
+
+**Option 2: Using Environment Variables**
+
+You can set toolkit versions using environment variables:
+
+```bash
+# Set specific versions for individual toolkits
+export COMPOSIO_TOOLKIT_VERSION_GITHUB=12082025_00
+export COMPOSIO_TOOLKIT_VERSION_SLACK=10082025_01
+export COMPOSIO_TOOLKIT_VERSION_GMAIL=latest
+```
+
+Then initialize Composio without specifying `toolkitVersions`:
+
+```typescript
+const composio = new Composio({
+  apiKey: 'your-api-key'
+  // Will automatically use environment variables
+});
+```
+
+**Option 3: Latest version for all toolkits**
+If omitted, SDK will use `latest` version for all the toolkits
+
+```typescript
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  // since omitted, this will use `latest` for all toolkits
+})
+```
+
+#### Version Behavior
+
+- **Tools & Triggers:** The toolkit version configuration applies to both tools and triggers
+- **Override Support:** Tools can override the global version for specific operations:
+  - When executing tools: Pass a `version` parameter in the execute call to override the configured version
+- **Defaults:** If no version is specified, the SDK defaults to `'latest'`
+- **Triggers:** Trigger types always use the global toolkit version configured at initialization. To use a specific version for triggers, set it in the `toolkitVersions` configuration when creating the Composio instance.
+
+#### Best Practices
+
+1. **Use `'latest'` for Development:** Get the newest features and improvements automatically
+2. **Pin Versions in Production:** Use specific version numbers to prevent unexpected changes
+3. **Test Before Upgrading:** When moving to a new version, test thoroughly before deploying
+4. **Version Per Toolkit:** Different toolkits can use different versions based on your needs
+
+#### Example: Production Configuration
+
+```typescript
+import { Composio } from '@composio/core';
+
+// Production setup with pinned versions
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: {
+    // Pin critical toolkits to stable versions
+    github: '12082025_00',
+    slack: '10082025_01',
+    gmail: '15082025_00',
+    // Use latest for non-critical toolkits
+    hackernews: 'latest'
+  }
 });
 ```
 
