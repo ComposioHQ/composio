@@ -18,10 +18,10 @@ Choose how you want to integrate Tool Router:
 <Step title="Install">
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio claude-agent-sdk
+pip install python-dotenv composio claude-agent-sdk
 ```
 ```bash title="TypeScript" for="typescript"
-npm install @composio/core @anthropic-ai/claude-agent-sdk
+npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
 ```
 </CodeGroup>
 </Step>
@@ -30,8 +30,8 @@ npm install @composio/core @anthropic-ai/claude-agent-sdk
 [Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
@@ -52,10 +52,10 @@ When the agent needs authentication, it will prompt the user with a link to conn
 <Step title="Install">
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio openai-agents
+pip install python-dotenv composio openai-agents
 ```
 ```bash title="TypeScript" for="typescript"
-npm install @composio/core @openai/agents
+npm install dotenv @composio/core @openai/agents zod@3
 ```
 </CodeGroup>
 </Step>
@@ -64,8 +64,8 @@ npm install @composio/core @openai/agents
 [Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
@@ -86,7 +86,7 @@ When the agent needs authentication, it will prompt the user with a link to conn
 <Steps>
 <Step title="Install Composio SDK">
 ```bash
-npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
+npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 ```
 </Step>
 
@@ -94,8 +94,8 @@ npm install @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 [Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
@@ -127,7 +127,7 @@ When you run this agent, Tool Router:
 <Step title="Install">
 <CodeGroup>
 ```bash title="Python" for="python"
-pip install composio composio-openai-agents openai-agents
+pip install python-dotenv composio composio-openai-agents openai-agents
 ```
 ```bash title="TypeScript" for="typescript"
 npm install @composio/core @composio/openai-agents @openai/agents
@@ -139,8 +139,8 @@ npm install @composio/core @composio/openai-agents @openai/agents
 Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 
@@ -166,8 +166,8 @@ npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
 
 <Info>
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Info>
 

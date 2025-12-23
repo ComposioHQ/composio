@@ -1,40 +1,38 @@
 import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { generateText, stepCountIs, ModelMessage } from "ai";
-import { createInterface } from "readline/promises";
-import { anthropic } from "@ai-sdk/anthropic";
+import { stepCountIs, streamText } from "ai";
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
+// Initialize Composio with Vercel provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new VercelProvider() });
 
-const session = await composio.create("user_123");
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a session and get native tools for the user
+const session = await composio.create(userId);
 const tools = await session.tools();
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const messages: ModelMessage[] = [];
+console.log("Fetching GitHub issues from the Composio repository...");
 
-// Initial task
-const initialPrompt = "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.";
-console.log("Executing initial task: Fetching GitHub issues...\n");
+// Stream the response with tool calling
+const stream = await streamText({
+  system: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: anthropic("claude-sonnet-4-5"),
+  prompt: "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
+  stopWhen: stepCountIs(10),
+  onStepFinish: (step) => {
+    for (const toolCall of step.toolCalls) {
+      console.log(`[Using tool: ${toolCall.toolName}]`);
+    }
+  },
+  tools,
+});
 
-while (true) {
-  const userInput = messages.length === 0 ? initialPrompt : await rl.question("> ");
-  if (userInput.toLowerCase() === "exit") break;
-  
-  messages.push({ role: "user", content: userInput });
-  
-  const result = await generateText({
-    model: anthropic("claude-sonnet-4-5"),
-    messages: messages,
-    tools: tools,
-    stopWhen: stepCountIs(10),
-  });
-  
-  messages.push({ role: "assistant", content: result.text });
-  console.log(`Assistant: ${result.text}\n`);
+for await (const textPart of stream.textStream) {
+  process.stdout.write(textPart);
 }
 
-rl.close();
+console.log("\n\n---");
+console.log("Tip: If prompted to authenticate, complete the auth flow and run again.");

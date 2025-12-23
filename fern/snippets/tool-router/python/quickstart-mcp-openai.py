@@ -1,48 +1,56 @@
-import os
 from dotenv import load_dotenv
 from composio import Composio
 from agents import Agent, Runner, HostedMCPTool, SQLiteSession
 
 load_dotenv()
 
-composio_api_key = os.environ.get("COMPOSIO_API_KEY")
-user_id = "user_123"  # Your user's unique identifier
+# Initialize Composio (API key from env var COMPOSIO_API_KEY)
+composio = Composio()
 
-composio = Composio(api_key=composio_api_key)
-composio_session = composio.create(user_id=user_id)
+# Unique identifier of the user
+user_id = "user_123"
 
+# Create a Tool Router session for the user
+session = composio.create(user_id=user_id)
+
+# Configure OpenAI agent with Composio MCP server
 agent = Agent(
     name="Personal Assistant",
     instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-5.2",  
+    model="gpt-5.2",
     tools=[
         HostedMCPTool(
             tool_config={
                 "type": "mcp",
                 "server_label": "composio",
-                "server_url": composio_session.mcp.url,
+                "server_url": session.mcp.url,
                 "require_approval": "never",
-                "headers": {"x-api-key": composio_api_key},
+                "headers": session.mcp.headers,
             }
         )
     ],
 )
 
-# Create a session for multi-turn conversation memory
-conversation_session = SQLiteSession(user_id)
+# Memory for multi-turn conversation
+memory = SQLiteSession(user_id)
 
-print("Assistant: What would you like me to do today?\n")
+print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository'
+""")
 
 while True:
-    user_input = input("> ")
-    if user_input == "exit":
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
         break
-    
-    result = Runner.run_sync(
-        starting_agent=agent, 
-        input=user_input,
-        session=conversation_session
-    )
-    
-    print(f"Assistant: {result.final_output}\n")
 
+    print("Assistant: ", end="", flush=True)
+    try:
+        result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+        print(f"{result.final_output}\n")
+    except Exception as e:
+        print(f"\n[Error]: {e}")

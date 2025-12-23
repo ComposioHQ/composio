@@ -1,35 +1,36 @@
 import asyncio
-import os
 from dotenv import load_dotenv
 from claude_agent_sdk.client import ClaudeSDKClient
 from claude_agent_sdk.types import (
-    ClaudeAgentOptions, 
-    ResultMessage, 
-    AssistantMessage, 
-    TextBlock, 
-    ToolUseBlock
+    ClaudeAgentOptions,
+    AssistantMessage,
+    TextBlock,
+    ToolUseBlock,
 )
 from composio import Composio
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Initialize Composio and create a Tool Router session
-composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
-user_id = "user_123"  # Your user's unique identifier
+# Initialize Composio (API key from env var COMPOSIO_API_KEY)
+composio = Composio()
+
+# Unique identifier of the user
+user_id = "user_123"
+
+# Create a tool router session for the user
 session = composio.create(user_id=user_id)
 
 # Configure Claude with Composio MCP server
 options = ClaudeAgentOptions(
     system_prompt=(
         "You are a helpful assistant with access to external tools. "
-        "Always use the available tools to complete user requests instead of just explaining how to do them."
+        "Always use the available tools to complete user requests."
     ),
     mcp_servers={
         "composio": {
             "type": "http",
             "url": session.mcp.url,
-            "headers": {"x-api-key": os.environ["COMPOSIO_API_KEY"]},
+            "headers": session.mcp.headers,
         }
     },
     permission_mode="bypassPermissions",
@@ -37,22 +38,35 @@ options = ClaudeAgentOptions(
 
 
 async def main():
+    print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a notion page with the issues'
+""")
+
     async with ClaudeSDKClient(options) as client:
+        # Multi-turn conversation with agentic tool calling
         while True:
             user_input = input("You: ").strip()
-            if user_input.lower() in ("quit", "exit"):
+            if user_input.lower() == "exit":
                 break
 
-            await client.query(user_input)
-            async for msg in client.receive_response():
-                if isinstance(msg, AssistantMessage):
-                    for block in msg.content:
-                        if isinstance(block, ToolUseBlock):
-                            print(f"[Using tool: {block.name}]")
-                        elif isinstance(block, TextBlock):
-                            print(block.text, end="")
-                elif isinstance(msg, ResultMessage) and msg.result:
-                    print(f"\n{msg.result}\n")
+            print("\nClaude: ", end="", flush=True)
+            try:
+                await client.query(user_input)
+                async for msg in client.receive_response():
+                    if isinstance(msg, AssistantMessage):
+                        for block in msg.content:
+                            if isinstance(block, ToolUseBlock):
+                                print(f"\n[Using tool: {block.name}]", end="")
+                            elif isinstance(block, TextBlock):
+                                print(block.text, end="", flush=True)
+                print()
+            except Exception as e:
+                print(f"\n[Error]: {e}")
 
 
 if __name__ == "__main__":
