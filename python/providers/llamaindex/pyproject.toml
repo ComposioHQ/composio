@@ -14,6 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "llama_index",
+    "composio",
 ]
 
 [project.urls]

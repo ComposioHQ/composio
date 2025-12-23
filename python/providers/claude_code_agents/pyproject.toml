@@ -1,9 +1,9 @@
 [project]
-name = "composio-autogen"
+name = "composio-claude-code-agents"
 version = "0.10.1"
-description = "Use Composio to get an array of tools with your autogen agent."
+description = "Use Composio to get an array of tools with Claude Code Agents SDK."
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.10,<4"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]
@@ -13,10 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pyautogen>=0.2.19",
-    "flaml==2.2.0",
-    "autogen_core>=0.4.0",
-    "autogen_agentchat>=0.4.0",
+    "claude-agent-sdk>=0.1.0",
     "composio",
 ]
 

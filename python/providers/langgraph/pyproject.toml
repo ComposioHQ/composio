@@ -14,6 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "langgraph",
+    "composio",
 ]
 
 [project.urls]
