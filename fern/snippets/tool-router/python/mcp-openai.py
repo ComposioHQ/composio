@@ -1,28 +1,22 @@
-import os
 from dotenv import load_dotenv
 from composio import Composio
-from agents import Agent, Runner, HostedMCPTool, ModelSettings
+from agents import Agent, Runner, HostedMCPTool
 
-# Load environment variables from .env file
 load_dotenv()
 
-composio_api_key = os.environ["COMPOSIO_API_KEY"]
-user_id = "user_123"  # Your user's unique identifier
+# Initialize Composio (API key from env var COMPOSIO_API_KEY)
+composio = Composio()
+# Unique identifier of the user
+user_id = "user_123"
 
-print("Starting OpenAI agent with Composio...\n")
-
-# Initialize Composio and create a Tool Router session
-composio = Composio(api_key=composio_api_key)
+# Create a Tool Router session for the user
 session = composio.create(user_id=user_id)
 
 # Configure OpenAI agent with Composio MCP server
 agent = Agent(
-    name="AI Assistant",
-    instructions=(
-        "You are a helpful assistant with access to external tools. "
-        "Always use the available tools to complete user requests instead of just explaining how to do them."
-    ),
-    model="gpt-5.2",  
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
     tools=[
         HostedMCPTool(
             tool_config={
@@ -30,24 +24,22 @@ agent = Agent(
                 "server_label": "composio",
                 "server_url": session.mcp.url,
                 "require_approval": "never",
-                "headers": {"x-api-key": composio_api_key},
+                "headers": session.mcp.headers,
             }
         )
     ],
 )
 
-# Optional: Pre-authorize tools before use (otherwise you'll get a link during execution)
-# connection_request = session.authorize("github")
-# print(connection_request.redirect_url)
-# connected_account = connection_request.wait_for_connection(timeout=60000)
-# print(f"Connected: {connected_account.id}")
+# Execute the task
+print("Fetching GitHub issues from the Composio repository @ComposioHQ/composio...\n")
+try:
+    result = Runner.run_sync(
+        starting_agent=agent,
+        input="Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
+    )
+    print(result.final_output)
+except Exception as e:
+    print(f"[Error]: {e}")
 
-print("Running the OpenAI agent to fetch GitHub issues...\n")
-
-# Execute a task that requires GitHub access
-result = Runner.run_sync(
-    starting_agent=agent,
-    input=("Fetch all the open GitHub issues on the composio repository "
-           "and group them by bugs/features/docs.")
-)
-print(f"Result: {result.final_output}")
+print("\n\n---")
+print("Tip: If prompted to authenticate, complete the auth flow and run again.")

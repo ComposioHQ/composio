@@ -88,7 +88,9 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
               Only tools with these tags will be available.
     """
 
-    tags: t.List[t.Literal["readOnlyHint", "destructiveHint", "idempotentHint"]]
+    tags: t.List[
+        t.Literal["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]
+    ]
 
 
 # Type alias for per-toolkit tool configuration
@@ -649,7 +651,11 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
         tags: t.Optional[
-            t.List[t.Literal["readOnlyHint", "destructiveHint", "idempotentHint"]]
+            t.List[
+                t.Literal[
+                    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+                ]
+            ]
         ] = None,
         manage_connections: t.Optional[
             t.Union[bool, ToolRouterManageConnectionsConfig]
@@ -687,8 +693,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                      }
         :param tags: Optional global MCP tags to filter tools by.
                     Must be a list of literal values: 'readOnlyHint', 'destructiveHint',
-                    or 'idempotentHint'.
-                    Example: ['readOnlyHint', 'destructiveHint', 'idempotentHint']
+                    'idempotentHint', or 'openWorldHint'.
+                    Example: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
