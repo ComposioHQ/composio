@@ -26,6 +26,7 @@ setup(
         "flaml==2.2.0",
         "autogen_core>=0.4.0",
         "autogen_agentchat>=0.4.0",
+        "composio",
     ],
     include_package_data=True,
 )

@@ -1,9 +1,9 @@
 [project]
-name = "composio-llamaindex"
-version = "0.10.2"
-description = "Use Composio to get array of tools with LlamaIndex Agent Workflows."
+name = "composio-claude-code-agents"
+version = "0.10.1"
+description = "Use Composio to get an array of tools with Claude Code Agents SDK."
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.10,<4"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "llama_index",
+    "claude-agent-sdk>=0.1.0",
     "composio",
 ]
 

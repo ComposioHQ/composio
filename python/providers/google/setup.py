@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["google-cloud-aiplatform>=1.38.0", "vertexai"],
+    install_requires=["google-cloud-aiplatform>=1.38.0", "vertexai", "composio"],
     include_package_data=True,
 )

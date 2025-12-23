@@ -19,6 +19,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["crewai>=0.51.0"],
+    install_requires=["crewai>=0.51.0", "composio"],
     include_package_data=True,
 )
