@@ -1,89 +1,73 @@
-import "dotenv/config"; // Load environment variables from .env file
+import "dotenv/config";
 import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import { Composio } from "@composio/core";
 import { createInterface } from "readline/promises";
 
-const composioApiKey = process.env.COMPOSIO_API_KEY;
-if (!composioApiKey) {
-  console.warn("⚠️  Warning: COMPOSIO_API_KEY not set - Claude won't be able to use Composio tools");
-}
-const userId = "user_123"; // Your user's unique identifier
+// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
+const composio = new Composio();
 
-// Initialize Composio and create a Tool Router session
-const composio = new Composio({ apiKey: composioApiKey });
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a tool router session for the user
 const session = await composio.create(userId);
 
-// Configure Claude with Composio MCP server
 const options: Options = {
-  systemPrompt: "You are a helpful assistant with access to external tools. " +
-    "Always use the available tools to complete user requests.",
+  systemPrompt: `You are a helpful assistant with access to external tools. ` +
+    `Always use the available tools to complete user requests.`,
   mcpServers: {
     composio: { 
       type: "http", 
       url: session.mcp.url, 
-      headers: { "x-api-key": composioApiKey } 
+      headers: session.mcp.headers // Authentication headers for the Composio MCP server 
     },
   },
-  permissionMode: "bypassPermissions",
-  allowDangerouslySkipPermissions: true,
+  permissionMode: "bypassPermissions", // Auto-approve tools (demo only - use "default" in production)
 };
 
-async function main() {
-  console.log("Starting Claude agent with Composio Tool Router...\n");
+// Set up interactive terminal input/output for the conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a notion page with the issues'
+`);
+
+let isFirstQuery = true;
+
+// Multi-turn conversation with agentic tool calling
+while (true) {
+  const answer = await readline.question('You: ');
+  const input = answer.trim();
+  if (input.toLowerCase() === "exit") break;
+
+  process.stdout.write("Claude: ");
   
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  
-  // Initial task
-  const task = "Fetch all open issues from the composio GitHub repository " +
-    "and create a Google Sheet with issue number, title, labels, and author";
-  
-  console.log(`Task: ${task}\n`);
-  
-  let isFirstQuery = true;
-  
-  for await (const msg of query({ prompt: task, options })) {
-    if (msg.type === "assistant") {
-      for (const block of msg.message.content) {
-        if (block.type === "tool_use") {
-          console.log(`\n[🔧 Using tool: ${block.name}]`);
-        } else if (block.type === "text") {
-          process.stdout.write(block.text);
-        }
-      }
-    } else if (msg.type === "result" && msg.subtype === "success") {
-      console.log(`\n${msg.result}\n`);
-    }
-  }
-  console.log("\n");
-  
+  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
   isFirstQuery = false;
   
-  // If authentication is needed, Claude will provide a link
-  console.log("\nOptions:");
-  console.log("  - Type 'quit' to exit");
-  console.log("  - Say 'connected' or enter a new task\n");
-  
-  const userInput = await rl.question("You: ");
-  
-  if (userInput.toLowerCase() !== "quit" && userInput.toLowerCase() !== "exit" && userInput) {
-    // Continue the conversation with the same context
-    for await (const msg of query({ prompt: userInput, options: { ...options, continue: true } })) {
-      if (msg.type === "assistant") {
-        for (const block of msg.message.content) {
+  try {
+    for await (const stream of query({ prompt: input, options: queryOptions })) {
+      // Only process assistant messages (the SDK also sends result/error messages)
+      if (stream.type === "assistant") {
+        const { content } = stream.message;
+        for (const block of content) {
           if (block.type === "tool_use") {
-            console.log(`\n[🔧 Using tool: ${block.name}]`);
+            process.stdout.write(`\n[Using tool: ${block.name}]`);
           } else if (block.type === "text") {
             process.stdout.write(block.text);
           }
         }
-      } else if (msg.type === "result" && msg.subtype === "success") {
-        console.log(`\n${msg.result}\n`);
       }
     }
-    console.log();
+  } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
   }
-  
-  rl.close();
+  process.stdout.write("\n");
 }
 
-main().catch(console.error);
+readline.close();
