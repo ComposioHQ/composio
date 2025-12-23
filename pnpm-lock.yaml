@@ -42,13 +42,16 @@ catalogs:
     zod:
       specifier: ^4.1.0
       version: 4.1.12
+    zod-to-json-schema:
+      specifier: ^3.25.0
+      version: 3.25.0
 
 overrides:
   form-data: '>=4.0.4'
   js-yaml: '>=4.1.1'
   hono: '>=4.10.3'
   sharp: 0.34.5
-  zod-to-json-schema: 3.25.0
+  '@google/genai>zod-to-json-schema': 3.25.0
   next: '>=15.4.7'
   ai: '>=5.0.102'
   '@mastra/core>ai': '>=5.0.102'
@@ -282,7 +285,7 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@3.25.76)
     devDependencies:
       '@types/bun':
@@ -440,7 +443,7 @@ importers:
         specifier: ^16.4.1
         version: 16.5.0
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@4.1.12)
     devDependencies:
       '@types/bun':
@@ -525,16 +528,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.20
-        version: 0.4.20(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(ws@8.18.2)(zod@3.25.76)
+        version: 0.4.20(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(ws@8.18.2)(zod@4.1.12)
       '@llamaindex/workflow':
         specifier: ^1.1.24
-        version: 1.1.24(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
+        version: 1.1.24(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)
       dotenv:
         specifier: ^16.4.1
         version: 16.6.1
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(@huggingface/transformers@3.7.2)(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76)
+        version: 0.12.0(@huggingface/transformers@3.7.2)(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9
@@ -651,7 +654,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@4.1.12)
     devDependencies:
       '@types/bun':
@@ -769,7 +772,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@4.1.12)
     devDependencies:
       '@types/bun':
@@ -816,7 +819,7 @@ importers:
         specifier: ^16.5.0
         version: 16.5.0
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@4.1.12)
     devDependencies:
       '@types/bun':
@@ -966,7 +969,7 @@ importers:
         specifier: 'catalog:'
         version: 13.0.0
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@4.1.12)
     devDependencies:
       '@type-challenges/utils':
@@ -1024,7 +1027,7 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
       zod-to-json-schema:
-        specifier: 3.25.0
+        specifier: 'catalog:'
         version: 3.25.0(zod@3.25.76)
     devDependencies:
       vitest:
@@ -1176,7 +1179,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.0(@huggingface/transformers@3.7.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
+        version: 0.12.0(@huggingface/transformers@3.7.2)(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -2699,7 +2702,7 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       '@langchain/core': '>=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0'
-      zod-to-json-schema: 3.25.0
+      zod-to-json-schema: ^3.x
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
@@ -2710,7 +2713,7 @@ packages:
     peerDependencies:
       '@langchain/core': ^1.0.1
       zod: ^3.25.32 || ^4.1.0
-      zod-to-json-schema: 3.25.0
+      zod-to-json-schema: ^3.x
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
@@ -9617,15 +9620,6 @@ snapshots:
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.20(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(ws@8.18.2)(zod@3.25.76)':
-    dependencies:
-      '@llamaindex/core': 0.6.22(@huggingface/transformers@3.7.2)
-      '@llamaindex/env': 0.1.30(@huggingface/transformers@3.7.2)
-      openai: 5.20.3(ws@8.18.2)(zod@3.25.76)
-    transitivePeerDependencies:
-      - ws
-      - zod
-
   '@llamaindex/openai@0.4.20(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(ws@8.18.2)(zod@4.1.12)':
     dependencies:
       '@llamaindex/core': 0.6.22(@huggingface/transformers@3.7.2)
@@ -9635,14 +9629,6 @@ snapshots:
       - ws
       - zod
 
-  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      hono: 4.10.6
-      next: 16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1)
-      rxjs: 7.8.2
-      zod: 3.25.76
-
   '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12)
@@ -9650,19 +9636,6 @@ snapshots:
       next: 16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1)
       rxjs: 7.8.2
       zod: 4.1.12
-
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)':
-    dependencies:
-      '@llamaindex/core': 0.6.22(@huggingface/transformers@3.7.2)
-      '@llamaindex/env': 0.1.30(@huggingface/transformers@3.7.2)
-      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - zod
 
   '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@4.1.12)':
     dependencies:
@@ -13459,29 +13432,7 @@ snapshots:
       camelcase-keys: 9.1.3
       jose: 5.10.0
 
-  llamaindex@0.12.0(@huggingface/transformers@3.7.2)(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@3.25.76):
-    dependencies:
-      '@llamaindex/core': 0.6.22(@huggingface/transformers@3.7.2)
-      '@llamaindex/env': 0.1.30(@huggingface/transformers@3.7.2)
-      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22(@huggingface/transformers@3.7.2))(@llamaindex/env@0.1.30(@huggingface/transformers@3.7.2))(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@3.25.76))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(zod@3.25.76)
-      '@types/lodash': 4.17.20
-      '@types/node': 24.6.2
-      lodash: 4.17.21
-      magic-bytes.js: 1.12.1
-    transitivePeerDependencies:
-      - '@huggingface/transformers'
-      - '@modelcontextprotocol/sdk'
-      - gpt-tokenizer
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - tree-sitter
-      - web-tree-sitter
-      - zod
-
-  llamaindex@0.12.0(@huggingface/transformers@3.7.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12):
+  llamaindex@0.12.0(@huggingface/transformers@3.7.2)(@modelcontextprotocol/sdk@1.24.1(@cfworker/json-schema@4.1.1)(zod@4.1.12))(hono@4.10.6)(next@16.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@18.3.1))(react@18.3.1))(rxjs@7.8.2)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.1.12):
     dependencies:
       '@llamaindex/core': 0.6.22(@huggingface/transformers@3.7.2)
       '@llamaindex/env': 0.1.30(@huggingface/transformers@3.7.2)
@@ -13887,11 +13838,6 @@ snapshots:
     optionalDependencies:
       ws: 8.18.2
       zod: 4.1.12
-
-  openai@5.20.3(ws@8.18.2)(zod@3.25.76):
-    optionalDependencies:
-      ws: 8.18.2
-      zod: 3.25.76
 
   openai@5.20.3(ws@8.18.2)(zod@4.1.12):
     optionalDependencies:
