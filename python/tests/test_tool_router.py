@@ -195,6 +195,20 @@ class TestToolRouter:
         assert kwargs["tools"]["gmail"] == {"tags": ["readOnlyHint"]}
         assert kwargs["tools"]["github"] == {"tags": ["readOnlyHint", "idempotentHint"]}
 
+    def test_create_session_with_open_world_hint_tag(self, tool_router, mock_client):
+        """Test creating a session with openWorldHint tag."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=["openWorldHint", "readOnlyHint"],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == ["openWorldHint", "readOnlyHint"]
+
     def test_create_session_with_mixed_tools_config(self, tool_router, mock_client):
         """Test creating a session with mixed tool configuration (enable, disable, tags)."""
         session = tool_router.create(
