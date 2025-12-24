@@ -2,34 +2,39 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
-/* ============================================
-   COMPOSIO DOCS DESIGN SYSTEM
+/* ==========================================================================
+   COMPOSIO DOCS
    
-   Light: Warm cream (#fbfaf8)
-   Dark: Warm brown (#1a1815)
-   Accent: Orange for active/selected items
-   Headings: Flecha serif
-   Body: Inter
-   Code: IBM Plex Mono
-   ============================================ */
+   Palette:
+   - Light: Content #ffffff, Sidebar #fbfaf8
+   - Dark:  Content #1a1815, Sidebar #252220
+   - Accent: #ea580c (Tailwind orange-600)
+   
+   Typography:
+   - Headings: Flecha (serif)
+   - Body: Inter (sans)
+   - Code: IBM Plex Mono
+   ========================================================================== */
 
 @theme inline {
   --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --font-serif: var(--font-flecha), Georgia, serif;
-  
-  /* 10px base radius - matches platform design system */
   --radius: 0.625rem;
 }
 
-/* ============================================
-   LIGHT MODE
-   ============================================ */
+/* ==========================================================================
+   Design Tokens
+   ========================================================================== */
+
 :root {
   --fd-layout-width: 100%;
   
-  /* Fumadocs theme tokens */
-  --color-fd-background: #fbfaf8;
+  /* Brand */
+  --composio-orange: #ea580c;
+  --composio-sidebar: #fbfaf8;
+  
+  /* Fumadocs overrides - Light */
+  --color-fd-background: #ffffff;
   --color-fd-foreground: #171414;
   --color-fd-muted: #f6f4f2;
   --color-fd-muted-foreground: #726f6f;
@@ -39,28 +44,24 @@
   --color-fd-popover: #ffffff;
   --color-fd-popover-foreground: #171414;
   --color-fd-primary: #171414;
-  --color-fd-primary-foreground: #fbfaf8;
+  --color-fd-primary-foreground: #ffffff;
   --color-fd-secondary: #f6f4f2;
   --color-fd-secondary-foreground: #171414;
   --color-fd-accent: #f6f4f2;
   --color-fd-accent-foreground: #171414;
   --color-fd-ring: #e5e0df;
-  
-  /* Composio accent - Tailwind orange-600 */
-  --orange: #ea580c;
-  --orange-hover: #c2410c;
 }
 
-/* ============================================
-   DARK MODE - Warm brown (not pure black)
-   ============================================ */
 .dark {
+  --composio-sidebar: #252220;
+  
+  /* Fumadocs overrides - Dark */
   --color-fd-background: #1a1815;
   --color-fd-foreground: #e8e4e0;
   --color-fd-muted: #2a2725;
   --color-fd-muted-foreground: #9a9590;
   --color-fd-border: #3d3935;
-  --color-fd-card: #252220;
+  --color-fd-card: #1a1815;
   --color-fd-card-foreground: #e8e4e0;
   --color-fd-popover: #252220;
   --color-fd-popover-foreground: #e8e4e0;
@@ -71,142 +72,112 @@
   --color-fd-accent: #2a2725;
   --color-fd-accent-foreground: #e8e4e0;
   --color-fd-ring: #3d3935;
-  
-  /* Lighter orange for dark mode contrast */
-  --orange: #ffb366;
-  --orange-hover: #ffc78a;
 }
 
-/* ============================================
-   BASE
-   ============================================ */
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
 html {
   background-color: var(--color-fd-background);
 }
 
-body {
-  font-family: var(--font-sans);
-  color: var(--color-fd-foreground);
-  background-color: var(--color-fd-background);
-}
-
-/* ============================================
-   TYPOGRAPHY
-   ============================================ */
+/* ==========================================================================
+   Typography
+   ========================================================================== */
 
 /* Headings - Flecha serif */
-.prose h1, .prose h2, .prose h3, .prose h4,
-article h1, article h2, article h3, article h4,
-[data-fumadocs-body] h1, [data-fumadocs-body] h2,
-[data-fumadocs-body] h3, [data-fumadocs-body] h4,
-main h1, main h2, main h3, main h4 {
+h1, h2, h3, h4 {
   font-family: var(--font-serif);
   font-weight: 400;
   letter-spacing: -0.01em;
 }
 
-/* Heading sizes */
-.prose h1, article h1, [data-fumadocs-body] h1, main h1 { font-size: 2rem; }
-.prose h2, article h2, [data-fumadocs-body] h2, main h2 { font-size: 1.5rem; margin-top: 2rem; }
-.prose h3, article h3, [data-fumadocs-body] h3, main h3 { font-size: 1.25rem; margin-top: 1.5rem; }
-
-/* Code - IBM Plex Mono */
-pre, code, kbd, samp {
-  font-family: var(--font-mono);
+article :is(h1, h2, h3, h4),
+.prose :is(h1, h2, h3, h4) {
+  color: var(--color-fd-foreground);
 }
 
-/* Inline code */
+.prose :is(h1, h2, h3, h4) a {
+  color: inherit;
+}
+
+.prose h1 { font-size: 2rem; }
+.prose h2 { font-size: 1.5rem; margin-top: 2rem; }
+.prose h3 { font-size: 1.25rem; margin-top: 1.5rem; }
+
+/* Code - IBM Plex Mono (uses --font-mono from Next.js) */
+pre, code, kbd, samp {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
 :not(pre) > code {
   background: var(--color-fd-muted);
-  padding: 0.125rem 0.375rem; /* 2px 6px */
+  padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 
-/* ============================================
-   LINKS
-   ============================================ */
-a {
-  color: var(--color-fd-foreground);
-  text-decoration: none;
-  transition: color 0.15s ease;
+pre {
+  border-radius: var(--radius);
 }
 
-a:hover {
-  color: var(--color-fd-muted-foreground);
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+/* Content links only */
+.prose a:not([data-card]),
+[data-fumadocs-body] a:not([data-card]):not(:is(h1, h2, h3, h4) a) {
+  color: var(--composio-orange);
 }
 
-/* Focus state for accessibility */
 a:focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--composio-orange);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* Content links - orange */
-.prose a, [data-fumadocs-body] a {
-  color: var(--orange);
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+
+#nd-sidebar,
+#nd-sidebar-mobile {
+  background-color: var(--composio-sidebar);
 }
 
-.prose a:hover, [data-fumadocs-body] a:hover {
-  color: var(--orange-hover);
-}
-
-/* ============================================
-   SIDEBAR ACTIVE STATE
-   - No background, just orange text
-   ============================================ */
-html [data-active="true"],
-html [data-active="true"] > span,
-html [data-active="true"] > a {
-  color: var(--orange);
+#nd-sidebar [data-active="true"],
+#nd-sidebar-mobile [data-active="true"] {
+  color: var(--composio-orange);
   font-weight: 500;
   background: transparent;
-  background-color: transparent;
 }
 
-/* Remove Fumadocs active background */
-html a[data-active="true"],
-html [data-active="true"] {
-  background: none;
-  background-color: transparent;
+/* ==========================================================================
+   Table of Contents
+   ========================================================================== */
+
+[data-toc] [data-active="true"] {
+  color: var(--composio-orange);
 }
 
-/* ============================================
-   TABLE OF CONTENTS
-   ============================================ */
-[data-fumadocs-toc] a {
-  color: var(--color-fd-muted-foreground);
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+[data-card]:hover {
+  border-color: var(--composio-orange);
 }
 
-[data-fumadocs-toc] a:hover {
-  color: var(--color-fd-foreground);
-}
-
-/* ============================================
-   COMPONENTS
-   ============================================ */
-
-/* Cards */
-[data-fumadocs-card]:hover {
-  border-color: var(--orange);
-}
-
-/* Tabs */
 [data-fumadocs-tabs] [data-state="active"] {
-  color: var(--orange);
-  border-color: var(--orange);
+  color: var(--composio-orange);
+  border-color: var(--composio-orange);
 }
 
-/* Blockquotes */
 .prose blockquote {
-  border-left-color: var(--orange);
+  border-left-color: var(--composio-orange);
   background: var(--color-fd-muted);
   padding: 1rem;
   border-radius: 0 var(--radius) var(--radius) 0;
-}
-
-/* Code blocks */
-pre {
-  border-radius: var(--radius);
 }
