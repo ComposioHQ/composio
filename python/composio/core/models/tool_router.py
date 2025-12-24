@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from composio_client import omit
+from composio_client.types.tool_router import session_create_params
 import typing_extensions as te
 
 from composio.client import HttpClient
@@ -38,6 +39,12 @@ class ToolsFn(t.Protocol):
     def __call__(self, modifiers: t.Optional["Modifiers"] = None) -> t.Any:
         """Get provider-wrapped tools for execution with your AI framework."""
         ...
+
+
+# Type alias for MCP tag literals
+ToolRouterTag = t.Literal[
+    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+]
 
 
 class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
@@ -84,13 +91,12 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
     """Configuration for filtering tools by MCP tags.
 
     Attributes:
-        tags: List of MCP tags to filter tools by.
-              Only tools with these tags will be available.
+        tags: Tags configuration - can be a list of tags (shorthand for enable)
+              or an object with enable/disable keys.
+              Only tools matching these tags will be available.
     """
 
-    tags: t.List[
-        t.Literal["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]
-    ]
+    tags: ToolRouterConfigTags
 
 
 # Type alias for per-toolkit tool configuration
@@ -104,6 +110,28 @@ ToolRouterToolsConfig = t.Union[
     ToolRouterToolsEnableConfig,
     ToolRouterToolsDisableConfig,
     ToolRouterToolsTagsConfig,
+]
+
+
+class ToolRouterTagsConfig(te.TypedDict, total=False):
+    """Configuration for tags in tool router session.
+
+    Attributes:
+        enable: List of tags to enable in the tool router session.
+        disable: List of tags to disable in the tool router session.
+    """
+
+    enable: t.Optional[t.List[ToolRouterTag]]
+    disable: t.Optional[t.List[ToolRouterTag]]
+
+
+# Type alias for tags configuration
+# Can be:
+# - List[ToolRouterTag]: List of tag literals (shorthand for enable)
+# - ToolRouterTagsConfig: Dict with 'enable' and/or 'disable' keys
+ToolRouterConfigTags = t.Union[
+    t.List[ToolRouterTag],
+    ToolRouterTagsConfig,
 ]
 
 
@@ -392,6 +420,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             next_cursor: t.Optional[str] = None,
             limit: t.Optional[int] = None,
             is_connected: t.Optional[bool] = None,
+            search: t.Optional[str] = None,
         ) -> ToolkitConnectionsDetails:
             """
             Get toolkit connection states for the session.
@@ -409,7 +438,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                     - True: Only return toolkits with active connections
                     - False: Only return toolkits without active connections
                     - None: Return all toolkits regardless of connection status
-
+                search: Search term to filter toolkits by name.
             Returns:
                 ToolkitConnectionsDetails: Object containing:
                     - items: List of ToolkitConnectionState objects with:
@@ -459,6 +488,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 toolkits_params["toolkits"] = toolkits
             if is_connected is not None:
                 toolkits_params["is_connected"] = is_connected
+            if search is not None:
+                toolkits_params["search"] = search
 
             result = self._client.tool_router.session.toolkits(
                 session_id=session_id,
@@ -638,6 +669,36 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         return tools_fn
 
+    def _transform_tags_params(
+        self, tags: t.Optional[ToolRouterConfigTags]
+    ) -> t.Optional[session_create_params.TagsUnionMember1]:
+        """Transform tags configuration to API format.
+
+        Args:
+            tags: Tags configuration - can be a list (shorthand for enable)
+                  or an object with enable/disable keys.
+
+        Returns:
+            Transformed tags payload in API format, or None if tags is None.
+        """
+        if tags is None:
+            return None
+
+        if isinstance(tags, list):
+            # List shorthand means enable these tags
+            return {"enable": tags}
+        elif isinstance(tags, dict):
+            # Object format with enable/disable
+            # Only include keys that are present (not None)
+            tags_payload: t.Dict[str, t.Any] = {}
+            if "enable" in tags:
+                tags_payload["enable"] = tags["enable"]
+            if "disable" in tags:
+                tags_payload["disable"] = tags["disable"]
+            return tags_payload
+
+        return None
+
     def create(
         self,
         *,
@@ -650,13 +711,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
-        tags: t.Optional[
-            t.List[
-                t.Literal[
-                    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
-                ]
-            ]
-        ] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
         manage_connections: t.Optional[
             t.Union[bool, ToolRouterManageConnectionsConfig]
         ] = None,
@@ -684,7 +739,9 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                      - ToolRouterToolsDisableConfig: Dict with 'disable' key.
                        Example: {'disable': ['GMAIL_DELETE_EMAIL']}
                      - ToolRouterToolsTagsConfig: Dict with 'tags' key.
+                       Tags can be a list (shorthand for enable) or object with enable/disable.
                        Example: {'tags': ['readOnlyHint', 'idempotentHint']}
+                       Example: {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
                          'github': {'enable': ['GITHUB_CREATE_ISSUE']},
@@ -692,9 +749,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                          'linear': {'tags': ['readOnlyHint']}
                      }
         :param tags: Optional global MCP tags to filter tools by.
-                    Must be a list of literal values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', or 'openWorldHint'.
-                    Example: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']
+                    Can be:
+                    - List[str]: List of tag literals (shorthand for enable).
+                      Example: ['readOnlyHint', 'idempotentHint']
+                    - ToolRouterTagsConfig: Dict with 'enable' and/or 'disable' keys.
+                      Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
+                    Available tag values: 'readOnlyHint', 'destructiveHint',
+                    'idempotentHint', 'openWorldHint'.
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -745,12 +806,21 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 tags=['readOnlyHint', 'idempotentHint']
             )
 
-            # Create a session with toolkit-specific tag filtering
+            # Create a session with toolkit-specific tag filtering (array format)
             session = tool_router.create(
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': ['readOnlyHint']},
                     'github': {'tags': ['readOnlyHint', 'idempotentHint']}
+                }
+            )
+
+            # Create a session with toolkit-specific tag filtering (object format)
+            session = tool_router.create(
+                user_id='user_123',
+                tools={
+                    'gmail': {'tags': {'enable': ['readOnlyHint']}},
+                    'github': {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                 }
             )
 
@@ -807,9 +877,14 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                     # List shorthand means enable these tools
                     tools_payload[toolkit_slug] = {"enable": config}
                 elif isinstance(config, dict):
-                    # Already in dict format with 'enable', 'disable', or 'tags'
-                    # Pass through as-is since it matches the client SDK format
-                    tools_payload[toolkit_slug] = dict(config)
+                    # Transform config dict - handle 'tags' specially if present
+                    transformed_config = dict(config)
+                    if "tags" in transformed_config:
+                        tags_value = transformed_config["tags"]
+                        transformed_tags = self._transform_tags_params(tags_value)
+                        if transformed_tags is not None:
+                            transformed_config["tags"] = transformed_tags
+                    tools_payload[toolkit_slug] = transformed_config
 
         # Parse callback_uri
         callback_url = (
@@ -845,8 +920,10 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         if tools_payload:
             create_params["tools"] = tools_payload
 
-        if tags is not None:
-            create_params["tags"] = tags
+        # Transform tags config
+        tags_payload = self._transform_tags_params(tags)
+        if tags_payload is not None:
+            create_params["tags"] = tags_payload
 
         if workbench is not None:
             execution_payload: t.Dict[str, t.Any] = {}
@@ -925,6 +1002,9 @@ __all__ = [
     "ToolRouterToolsDisableConfig",
     "ToolRouterToolsTagsConfig",
     "ToolRouterToolsConfig",
+    "ToolRouterTag",
+    "ToolRouterTagsConfig",
+    "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterWorkbenchConfig",
     "ToolkitConnectionState",
