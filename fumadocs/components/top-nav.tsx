@@ -63,28 +63,6 @@ export function TopNav() {
           ))}
         </nav>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Right side links */}
-        <div className="flex items-center gap-4">
-          <Link
-            href="https://github.com/ComposioHQ/composio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-fd-muted-foreground hover:text-fd-foreground"
-          >
-            GitHub
-          </Link>
-          <Link
-            href="https://app.composio.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-fd-muted-foreground hover:text-fd-foreground"
-          >
-            Platform
-          </Link>
-        </div>
       </div>
     </header>
   );

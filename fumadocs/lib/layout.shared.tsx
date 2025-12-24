@@ -33,18 +33,5 @@ export function baseOptions(): BaseLayoutProps {
       title: <ComposioLogo />,
       transparentMode: 'top',
     },
-    links: [
-      {
-        text: 'Platform',
-        url: 'https://app.composio.dev',
-        external: true,
-      },
-      {
-        text: 'GitHub',
-        url: 'https://github.com/ComposioHQ',
-        external: true,
-      },
-    ],
-    githubUrl: 'https://github.com/ComposioHQ/composio',
   };
 }

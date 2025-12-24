@@ -27,8 +27,6 @@
    ========================================================================== */
 
 :root {
-  --fd-layout-width: 100%;
-  
   /* Brand */
   --composio-orange: #ea580c;
   --composio-sidebar: #fbfaf8;
@@ -86,21 +84,11 @@ html {
    Typography
    ========================================================================== */
 
-/* Headings - Flecha serif */
+/* Headings - Flecha serif (sizes/spacing from Fumadocs defaults) */
 h1, h2, h3, h4 {
   font-family: var(--font-serif);
-  font-weight: 400;
   letter-spacing: -0.01em;
 }
-
-article :is(h1, h2, h3, h4),
-.prose :is(h1, h2, h3, h4) {
-  color: var(--color-fd-foreground);
-}
-
-.prose h1 { font-size: 2rem; }
-.prose h2 { font-size: 1.5rem; margin-top: 2rem; }
-.prose h3 { font-size: 1.25rem; margin-top: 1.5rem; }
 
 /* Code - IBM Plex Mono (uses --font-mono from Next.js) */
 pre, code, kbd, samp {
@@ -149,6 +137,17 @@ a:focus-visible {
 html body [data-active="true"] {
   color: var(--composio-orange);
   background: transparent;
+}
+
+/* ==========================================================================
+   Page Layout
+   ========================================================================== */
+
+/* Reduce excessive top padding on large screens */
+@media (min-width: 1280px) {
+  #nd-page {
+    padding-top: 2rem;
+  }
 }
 
 /* ==========================================================================
