@@ -7,7 +7,7 @@ This provider enables seamless integration of Composio tools with Claude Code Ag
 ## Installation
 
 ```bash
-npm install @composio/claude-code-agents @composio/core @anthropic-ai/claude-agent-sdk
+npm install @composio/claude-agent-sdk @composio/core @anthropic-ai/claude-agent-sdk
 ```
 
 ### Prerequisites
@@ -34,37 +34,38 @@ npm install @composio/claude-code-agents @composio/core @anthropic-ai/claude-age
 ```typescript
 import { Composio } from '@composio/core';
 import { ClaudeCodeAgentsProvider } from '@composio/claude-code-agents';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 
-// Initialize Composio with the Claude Code Agents provider
+// Initialize Composio
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
   provider: new ClaudeCodeAgentsProvider(),
 });
 
-async function main() {
-  // Get Composio tools (e.g., Gmail tools)
-  const tools = await composio.tools.get('default', 'GMAIL_SEND_EMAIL');
+// Create a tool router session
+const session = await composio.create('external_user_id');
 
-  // Create an MCP server configuration with the tools
-  const mcpServer = composio.provider.createMcpServer(tools, composio.tools.execute);
+// Get tools from the session (native)
+const tools = await session.tools();
+const customServer = createSdkMcpServer({
+  name: 'composio',
+  version: '1.0.0',
+  tools: tools,
+});
 
-  // Run a Claude agent with access to Composio tools
-  for await (const message of query({
-    prompt: 'Send an email to john@example.com saying hello',
-    options: {
-      mcpServers: { composio: mcpServer },
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-    },
-  })) {
-    if (message.type === 'assistant') {
-      console.log('Claude:', message.content);
-    }
+// Initialize Claude client
+for await (const content of query({
+  prompt: 'Fetch my last email from gmail',
+  options: {
+    mcpServers: { composio: customServer },
+    permissionMode: 'bypassPermissions',
+  },
+})) {
+  if (content.type === 'assistant') {
+    console.log('Claude:', content.message);
   }
 }
 
-main();
+console.log(`✅ Received response from Claude`);
 ```
 
 ## API Reference
@@ -76,21 +77,13 @@ The main provider class for integrating Composio tools with Claude Code Agents.
 #### Constructor Options
 
 ```typescript
-interface ClaudeCodeAgentsProviderOptions {
+interface ClaudeAgentSDKProviderOptions {
   serverName?: string; // Name for the MCP server (default: 'composio')
   serverVersion?: string; // Version for the MCP server (default: '1.0.0')
 }
 ```
 
 #### Methods
-
-##### `createMcpServer(tools, executeTool)`
-
-Creates an MCP server configuration for use with Claude Agent SDK's `query()` function.
-
-```typescript
-const mcpServer = provider.createMcpServer(tools, composio.tools.execute);
-```
 
 ##### `wrapTool(tool, executeTool)`
 

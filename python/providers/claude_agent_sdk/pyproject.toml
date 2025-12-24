@@ -1,5 +1,5 @@
 [project]
-name = "composio-claude-code-agents"
+name = "composio-claude-agent-sdk"
 version = "0.10.3"
 description = "Use Composio to get an array of tools with Claude Code Agents SDK."
 readme = "README.md"

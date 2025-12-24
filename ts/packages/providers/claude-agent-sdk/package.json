@@ -1,7 +1,7 @@
 {
-  "name": "@composio/claude-code-agents",
+  "name": "@composio/claude-agent-sdk",
   "version": "0.3.3",
-  "description": "Composio provider for Claude Code Agents SDK",
+  "description": "Composio provider for Claude Agent SDK",
   "main": "src/index.ts",
   "type": "module",
   "publishConfig": {
@@ -37,7 +37,6 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@composio/json-schema-to-zod": "workspace:*",
     "zod": "^3.25.76"
   },
   "peerDependencies": {

@@ -267,9 +267,9 @@ importers:
       '@composio/anthropic':
         specifier: workspace:*
         version: link:../../packages/providers/anthropic
-      '@composio/claude-code-agents':
+      '@composio/claude-agent-sdk':
         specifier: workspace:*
-        version: link:../../packages/providers/claude-code-agents
+        version: link:../../packages/providers/claude-agent-sdk
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1036,7 +1036,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.6.2)(@vitest/ui@3.2.4)(jiti@1.21.7)(tsx@4.20.5)(yaml@2.8.1)
 
-  ts/packages/providers/claude-code-agents:
+  ts/packages/providers/claude-agent-sdk:
     dependencies:
       '@composio/json-schema-to-zod':
         specifier: workspace:*

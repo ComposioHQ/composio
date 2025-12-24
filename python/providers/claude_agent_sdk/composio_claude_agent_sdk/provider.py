@@ -1,7 +1,7 @@
 """
-Claude Code Agents Provider for Composio
+Claude Agent SDK Provider for Composio
 
-This provider enables integration with Claude Code Agents SDK,
+This provider enables integration with Claude Agent SDK,
 allowing Composio tools to be used as MCP tools within Claude agents.
 """
 
@@ -21,12 +21,12 @@ from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
 
 
-class ClaudeCodeAgentsProvider(
+class ClaudeAgentSDKProvider(
     AgenticProvider[SdkMcpTool, list[SdkMcpTool]],
-    name="claude_code_agents",
+    name="claude_agent_sdk",
 ):
     """
-    Composio provider for Claude Code Agents SDK.
+    Composio provider for Claude Agent SDK.
 
     This provider wraps Composio tools as MCP tools that can be used with
     the Claude Agent SDK's `query()` function via the `mcp_servers` option.
@@ -35,10 +35,10 @@ class ClaudeCodeAgentsProvider(
         ```python
         import asyncio
         from composio import Composio
-        from composio_claude_code_agents import ClaudeCodeAgentsProvider
+        from composio_claude_agent_sdk import ClaudeAgentSDKProvider
         from claude_agent_sdk import query, ClaudeAgentOptions
 
-        composio = Composio(provider=ClaudeCodeAgentsProvider())
+        composio = Composio(provider=ClaudeAgentSDKProvider())
 
         async def main():
             tools = composio.tools.get(user_id="default", toolkits=["gmail"])
@@ -63,7 +63,7 @@ class ClaudeCodeAgentsProvider(
         server_version: str = "1.0.0",
     ) -> None:
         """
-        Initialize the Claude Code Agents provider.
+        Initialize the Claude Agent SDK provider.
 
         Args:
             server_name: Name for the MCP server (default: "composio")
@@ -72,26 +72,6 @@ class ClaudeCodeAgentsProvider(
         super().__init__()
         self.server_name = server_name
         self.server_version = server_version
-
-    def _json_schema_to_simple_schema(
-        self, json_schema: t.Dict[str, t.Any]
-    ) -> t.Dict[str, t.Any]:
-        """
-        Convert JSON Schema to simple type mapping for Claude Agent SDK.
-
-        The Claude Agent SDK accepts either:
-        1. Simple type mapping: {"text": str, "count": int}
-        2. Full JSON Schema format
-
-        We use the JSON Schema format directly since it supports more complex validation.
-
-        Args:
-            json_schema: The JSON Schema to convert
-
-        Returns:
-            A schema compatible with Claude Agent SDK's tool() decorator
-        """
-        return json_schema
 
     def wrap_tool(
         self,
@@ -108,7 +88,7 @@ class ClaudeCodeAgentsProvider(
         Returns:
             A Claude Agent SDK MCP tool definition
         """
-        input_schema = self._json_schema_to_simple_schema(tool.input_parameters or {})
+        input_schema = tool.input_parameters or {}
 
         @sdk_tool(
             tool.slug,
