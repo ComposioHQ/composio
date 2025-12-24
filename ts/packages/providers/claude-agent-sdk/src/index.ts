@@ -106,7 +106,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
       composioTool.inputParameters ?? { type: 'object', properties: {} }
     );
     // Some issues with zod types and errors when instantiation is excessively deep and possibly infinite.
-    const inputZodShape = (inputZodSchema as unknown as ZodObject<ZodRawShape>).shape ?? {};
+    const inputZodShape = (inputZodSchema as unknown as ZodObject<ZodRawShape>).shape;
 
     return sdkTool(
       composioTool.slug,
