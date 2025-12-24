@@ -28,7 +28,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: "pnpm"
 
       - name: Run pnpm audit (production dependencies only)
         id: audit
