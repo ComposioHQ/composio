@@ -98,10 +98,6 @@ article :is(h1, h2, h3, h4),
   color: var(--color-fd-foreground);
 }
 
-.prose :is(h1, h2, h3, h4) a {
-  color: inherit;
-}
-
 .prose h1 { font-size: 2rem; }
 .prose h2 { font-size: 1.5rem; margin-top: 2rem; }
 .prose h3 { font-size: 1.25rem; margin-top: 1.5rem; }
@@ -126,10 +122,13 @@ pre {
    Links
    ========================================================================== */
 
-/* Content links only */
-.prose a:not([data-card]),
-[data-fumadocs-body] a:not([data-card]):not(:is(h1, h2, h3, h4) a) {
+:is(.prose, [data-fumadocs-body]) a:not([data-card]) {
   color: var(--composio-orange);
+}
+
+/* Heading anchors stay neutral */
+.prose :is(h1, h2, h3, h4) a {
+  color: inherit;
 }
 
 a:focus-visible {
@@ -139,7 +138,7 @@ a:focus-visible {
 }
 
 /* ==========================================================================
-   Sidebar
+   Navigation
    ========================================================================== */
 
 #nd-sidebar,
@@ -147,19 +146,9 @@ a:focus-visible {
   background-color: var(--composio-sidebar);
 }
 
-#nd-sidebar [data-active="true"],
-#nd-sidebar-mobile [data-active="true"] {
+html body [data-active="true"] {
   color: var(--composio-orange);
-  font-weight: 500;
   background: transparent;
-}
-
-/* ==========================================================================
-   Table of Contents
-   ========================================================================== */
-
-[data-toc] [data-active="true"] {
-  color: var(--composio-orange);
 }
 
 /* ==========================================================================
