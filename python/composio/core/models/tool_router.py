@@ -113,7 +113,7 @@ ToolRouterToolsConfig = t.Union[
 ]
 
 
-class ToolRouterTagsConfig(te.TypedDict, total=False):
+class ToolRouterTagsEnableDisableConfig(te.TypedDict, total=False):
     """Configuration for tags in tool router session.
 
     Attributes:
@@ -128,11 +128,18 @@ class ToolRouterTagsConfig(te.TypedDict, total=False):
 # Type alias for tags configuration
 # Can be:
 # - List[ToolRouterTag]: List of tag literals (shorthand for enable)
-# - ToolRouterTagsConfig: Dict with 'enable' and/or 'disable' keys
+# - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys
 ToolRouterConfigTags = t.Union[
     t.List[ToolRouterTag],
-    ToolRouterTagsConfig,
+    ToolRouterTagsEnableDisableConfig,
 ]
+
+
+def _is_tools_tags_config(
+    config: ToolRouterToolsConfig,
+) -> t.TypeGuard[ToolRouterToolsTagsConfig]:
+    """Type guard to check if config is ToolRouterToolsTagsConfig."""
+    return isinstance(config, dict) and "tags" in config
 
 
 class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
@@ -686,18 +693,27 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
         if isinstance(tags, list):
             # List shorthand means enable these tags
+            # Return value structure matches TagsUnionMember1: {"enable": [...]}
             return {"enable": tags}
         elif isinstance(tags, dict):
             # Object format with enable/disable
-            # Only include keys that are present (not None)
-            tags_payload: t.Dict[str, t.Any] = {}
-            if "enable" in tags:
-                tags_payload["enable"] = tags["enable"]
-            if "disable" in tags:
-                tags_payload["disable"] = tags["disable"]
-            return tags_payload
+            # Only include keys that are present and not None
+            # Return value structure matches TagsUnionMember1
+            enable_value = tags.get("enable")
+            disable_value = tags.get("disable")
 
-        return None
+            # Build result dict only with non-None values
+            if enable_value is not None and disable_value is not None:
+                return {
+                    "enable": enable_value,
+                    "disable": disable_value,
+                }
+            elif enable_value is not None:
+                return {"enable": enable_value}
+            elif disable_value is not None:
+                return {"disable": disable_value}
+            else:
+                return None
 
     def create(
         self,
@@ -752,7 +768,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                     Can be:
                     - List[str]: List of tag literals (shorthand for enable).
                       Example: ['readOnlyHint', 'idempotentHint']
-                    - ToolRouterTagsConfig: Dict with 'enable' and/or 'disable' keys.
+                    - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
                     Available tag values: 'readOnlyHint', 'destructiveHint',
                     'idempotentHint', 'openWorldHint'.
@@ -878,9 +894,27 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                     tools_payload[toolkit_slug] = {"enable": config}
                 elif isinstance(config, dict):
                     # Transform config dict - handle 'tags' specially if present
-                    transformed_config = dict(config)
-                    if "tags" in transformed_config:
-                        tags_value = transformed_config["tags"]
+                    # Build the transformed config explicitly to maintain proper typing
+                    transformed_config: t.Dict[
+                        str,
+                        t.Union[
+                            t.List[str],
+                            session_create_params.TagsUnionMember1,
+                        ],
+                    ] = {}
+                    # Copy existing keys (enable, disable) if present
+                    if "enable" in config:
+                        # config is ToolRouterToolsEnableConfig when "enable" is present
+                        enable_config = t.cast(ToolRouterToolsEnableConfig, config)
+                        transformed_config["enable"] = enable_config["enable"]
+                    if "disable" in config:
+                        # config is ToolRouterToolsDisableConfig when "disable" is present
+                        disable_config = t.cast(ToolRouterToolsDisableConfig, config)
+                        transformed_config["disable"] = disable_config["disable"]
+                    # Use type guard to narrow the type when "tags" is present
+                    if _is_tools_tags_config(config):
+                        # Type narrowed: config is now ToolRouterToolsTagsConfig
+                        tags_value = config["tags"]
                         transformed_tags = self._transform_tags_params(tags_value)
                         if transformed_tags is not None:
                             transformed_config["tags"] = transformed_tags
@@ -1003,7 +1037,7 @@ __all__ = [
     "ToolRouterToolsTagsConfig",
     "ToolRouterToolsConfig",
     "ToolRouterTag",
-    "ToolRouterTagsConfig",
+    "ToolRouterTagsEnableDisableConfig",
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterWorkbenchConfig",
