@@ -1,6 +1,6 @@
 [project]
 name = "composio-autogen"
-version = "0.9.3"
+version = "0.10.2"
 description = "Use Composio to get an array of tools with your autogen agent."
 readme = "README.md"
 requires-python = ">=3.9,<4"
@@ -16,7 +16,8 @@ dependencies = [
     "pyautogen>=0.2.19",
     "flaml==2.2.0",
     "autogen_core>=0.4.0",
-    "autogen_agentchat>=0.4.0"
+    "autogen_agentchat>=0.4.0",
+    "composio",
 ]
 
 [project.urls]

@@ -19,13 +19,13 @@ const composio = new Composio({
  * Alternatively, you can use the `composio.getToolBySlug` method
  */
 async function run() {
-  const tools = await composio.tools.get('test-user-id', 'HUBSPOT_CREATE_LINE_ITEMS', {
+  const tools = await composio.tools.get('test-user-id', 'HACKERNEWS_GET_USER', {
     beforeExecute: ({ params, toolSlug }) => {
       console.log(`🔄 Executing ${toolSlug} with params:`, { params });
       return params;
     },
-    afterExecute: ({ result }) => {
-      console.log(`✅ Executed ${tools.slug} with result:`);
+    afterExecute: ({ result, toolSlug }) => {
+      console.log(`✅ Executed ${toolSlug} with result:`, { result });
       return result;
     },
   });
@@ -33,7 +33,7 @@ async function run() {
   const messages: ModelMessage[] = [
     {
       role: MessageRoles.USER,
-      content: 'What tools do you have access to?',
+      content: 'Who is the user "pg" on hackernews?',
     },
   ];
 

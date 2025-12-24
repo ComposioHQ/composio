@@ -57,9 +57,10 @@ export class Toolkits {
       }
       const result = await this.client.toolkits.list({
         category: parsedQuery.data.category,
-        is_local: parsedQuery.data.isLocal,
         managed_by: parsedQuery.data.managedBy,
         sort_by: parsedQuery.data.sortBy,
+        cursor: parsedQuery.data.cursor,
+        limit: parsedQuery.data.limit,
       });
 
       return transformToolkitListResponse(result);

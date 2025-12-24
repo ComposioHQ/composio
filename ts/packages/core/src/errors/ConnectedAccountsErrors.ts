@@ -24,10 +24,14 @@ export class ComposioConnectedAccountNotFoundError extends ComposioError {
 }
 
 export class ComposioMultipleConnectedAccountsError extends ComposioError {
-  constructor(message: string = 'Multiple connected accounts found') {
+  constructor(
+    message: string = 'Multiple connected accounts found',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
     super(message, {
+      ...options,
       code: ConnectedAccountErrorCodes.MULTIPLE_CONNECTED_ACCOUNTS,
-      possibleFixes: [
+      possibleFixes: options.possibleFixes || [
         'Use the allowMultiple flag to allow multiple connected accounts per user for an auth config',
       ],
     });
