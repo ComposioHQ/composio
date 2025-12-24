@@ -58,7 +58,7 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 export const ToolRouterTagsParamSchema = z
   .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
   .describe('The tags to filter the tools by');
-export const ToolRouterTagsConfigSchema = z
+export const ToolRouterTagsEnableDisableSchema = z
   .object({
     enable: ToolRouterTagsParamSchema.optional().describe(
       'The tags to enable in the tool router session'
@@ -69,7 +69,7 @@ export const ToolRouterTagsConfigSchema = z
   })
   .strict();
 export const ToolRouterConfigTagsSchema = z
-  .union([ToolRouterTagsParamSchema, ToolRouterTagsConfigSchema])
+  .union([ToolRouterTagsParamSchema, ToolRouterTagsEnableDisableSchema])
   .describe('The tags to use in the tool router session');
 export type ToolRouterConfigTags = z.infer<typeof ToolRouterConfigTagsSchema>;
 
@@ -119,7 +119,7 @@ export const ToolRouterConfigToolsSchema = z
       .strict(),
     z
       .object({
-        tags: ToolRouterTagsParamSchema.describe(
+        tags: ToolRouterConfigTagsSchema.describe(
           'The tags to filter the tools by, this will override the global tags'
         ),
       })
