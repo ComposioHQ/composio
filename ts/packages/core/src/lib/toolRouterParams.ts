@@ -35,7 +35,10 @@ export const transformToolRouterToolsParams = (
             } else if ('disable' in data) {
               acc[key] = { disable: data.disable };
             } else if ('tags' in data) {
-              acc[key] = { tags: transformToolRouterTagsParams(data.tags) ?? [] };
+              const tags = transformToolRouterTagsParams(data.tags);
+              if (tags) {
+                acc[key] = { tags };
+              }
             }
           } else {
             throw new ValidationError(parsedResult.error.message);
