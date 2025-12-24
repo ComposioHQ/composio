@@ -45,7 +45,10 @@ import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
 import { transform } from '../utils/transform';
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
 import { ValidationError } from '../errors';
-import { transformToolRouterToolsParams } from '../lib/toolRouterParams';
+import {
+  transformToolRouterTagsParams,
+  transformToolRouterToolsParams,
+} from '../lib/toolRouterParams';
 
 export class ToolRouter<
   TToolCollection,
@@ -115,6 +118,7 @@ export class ToolRouter<
         limit: toolkitOptions.data.limit,
         toolkits: toolkitOptions.data.toolkits,
         is_connected: toolkitOptions.data.isConnected,
+        search: toolkitOptions.data.search,
       });
 
       const toolkitConnectedStates = result.items.map(item => {
@@ -261,6 +265,7 @@ export class ToolRouter<
       ? { enable: routerConfig.toolkits }
       : routerConfig.toolkits;
 
+    const tags = transformToolRouterTagsParams(routerConfig.tags);
     const tools = transformToolRouterToolsParams(routerConfig.tools);
 
     const payload: SessionCreateParams = {
@@ -269,7 +274,7 @@ export class ToolRouter<
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
       tools: tools,
-      tags: routerConfig.tags,
+      tags: tags,
       manage_connections: {
         enable: manageConnectedAccounts,
         callback_url:

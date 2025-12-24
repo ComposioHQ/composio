@@ -1,5 +1,6 @@
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
 import {
+  ToolRouterConfigTags,
   ToolRouterConfigTools,
   ToolRouterConfigToolsSchema,
   ToolRouterToolsParam,
@@ -34,7 +35,10 @@ export const transformToolRouterToolsParams = (
             } else if ('disable' in data) {
               acc[key] = { disable: data.disable };
             } else if ('tags' in data) {
-              acc[key] = { tags: data.tags };
+              const tags = transformToolRouterTagsParams(data.tags);
+              if (tags) {
+                acc[key] = { tags };
+              }
             }
           } else {
             throw new ValidationError(parsedResult.error.message);
@@ -50,5 +54,21 @@ export const transformToolRouterToolsParams = (
       >
     );
     return result;
+  }
+};
+
+export const transformToolRouterTagsParams = (
+  params?: ToolRouterConfigTags
+): SessionCreateParams.Tags['tags'] | undefined => {
+  if (!params) {
+    return undefined;
+  }
+  if (Array.isArray(params)) {
+    return { enable: params };
+  } else if (typeof params === 'object') {
+    return {
+      enable: params.enable,
+      disable: params.disable,
+    };
   }
 };
