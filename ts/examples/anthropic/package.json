@@ -22,7 +22,7 @@
     "@composio/core": "workspace:*",
     "@mastra/mcp": "^0.14.4",
     "dotenv": "^16.4.1",
-    "zod": "^3.25.76",
+    "zod": "^4.2.1",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {

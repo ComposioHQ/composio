@@ -37,7 +37,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "zod": "^3.25.76"
+    "zod": "^4.2.1"
   },
   "peerDependencies": {
     "@composio/core": "0.3.3",
@@ -49,6 +49,6 @@
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^3.25.76"
+    "zod": "^4.2.1"
   }
 }
