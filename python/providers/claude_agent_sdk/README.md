@@ -27,7 +27,7 @@ Use Composio tools with the Claude Code Agents SDK.
 ### Install the package
 
 ```bash
-pip install composio-claude-code-agents
+pip install composio-claude-agent-sdk
 ```
 
 ## Usage
@@ -35,11 +35,11 @@ pip install composio-claude-code-agents
 ```python
 import asyncio
 from composio import Composio
-from composio_claude_code_agents import ClaudeCodeAgentsProvider
+from composio_claude_agent_sdk import ClaudeAgentSDKProvider
 from claude_agent_sdk import query, ClaudeAgentOptions
 
 # Initialize Composio with the Claude Code Agents provider
-composio = Composio(provider=ClaudeCodeAgentsProvider())
+composio = Composio(provider=ClaudeAgentSDKProvider())
 
 async def main():
     # Get tools from Composio

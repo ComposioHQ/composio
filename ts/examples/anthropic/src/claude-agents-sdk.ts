@@ -1,5 +1,5 @@
 /**
- * Example for using Claude Code Agents provider with Composio SDK
+ * Example for using Claude Agent SDK provider with Composio SDK
  *
  * This example demonstrates how to use Composio tools with the Claude Agent SDK
  * to create an AI agent that can interact with external services like Gmail.
@@ -15,17 +15,16 @@
  *   bun src/claude-code-agents.ts
  */
 import { Composio } from '@composio/core';
-import { ClaudeCodeAgentsProvider } from '@composio/claude-code-agents';
+import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
 import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import 'dotenv/config';
 
 /**
- * Initialize Composio with the Claude Code Agents provider
+ * Initialize Composio with the Claude Agent SDK provider
  */
-const provider = new ClaudeCodeAgentsProvider();
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider,
+  provider: new ClaudeAgentSDKProvider(),
 });
 
 async function main() {

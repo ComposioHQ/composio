@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Tool } from '@composio/core';
-import { ClaudeCodeAgentsProvider } from '../src';
+import { ClaudeAgentSDKProvider } from '../src';
 
 // Mock the claude-agent-sdk module
 vi.mock('@anthropic-ai/claude-agent-sdk', () => {
@@ -29,13 +29,13 @@ interface MockedClaudeAgentTool {
   _isMockedClaudeAgentTool: boolean;
 }
 
-describe('ClaudeCodeAgentsProvider', () => {
-  let provider: ClaudeCodeAgentsProvider;
+describe('ClaudeAgentSDKProvider', () => {
+  let provider: ClaudeAgentSDKProvider;
   let mockTool: Tool;
   let mockExecuteToolFn: any;
 
   beforeEach(() => {
-    provider = new ClaudeCodeAgentsProvider();
+    provider = new ClaudeAgentSDKProvider();
 
     // Mock the global execute tool function
     mockExecuteToolFn = vi.fn().mockResolvedValue({
@@ -79,7 +79,7 @@ describe('ClaudeCodeAgentsProvider', () => {
 
   describe('name property', () => {
     it('should have the correct name', () => {
-      expect(provider.name).toBe('claude-code-agents');
+      expect(provider.name).toBe('claude-agent-sdk');
     });
   });
 
