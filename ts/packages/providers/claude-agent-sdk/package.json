@@ -1,6 +1,6 @@
 {
   "name": "@composio/claude-agent-sdk",
-  "version": "0.3.3",
+  "version": "0.3.2",
   "description": "Composio provider for Claude Agent SDK",
   "main": "src/index.ts",
   "type": "module",
