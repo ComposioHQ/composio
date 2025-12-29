@@ -1,9 +1,4 @@
----
-title: "Lookahead: Webhook Payload V3 - Enhanced Structure & Standards"
-description: "Announcing upcoming improvements to webhook payloads with better structure, metadata separation, and industry-standard compliance"
----
-
-## 🔮 Lookahead Announcement
+## Lookahead Announcement
 
 We're introducing **Webhook Payload V3** - a redesigned webhook structure that follows industry standards and provides better developer experience. This update affects how you receive trigger events via webhooks and Pusher.
 
