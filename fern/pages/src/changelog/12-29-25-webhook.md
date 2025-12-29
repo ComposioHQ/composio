@@ -146,8 +146,3 @@ If you have questions about migrating to V3 or need assistance:
 - Join our [Discord community](https://discord.gg/composio)
 - Check our [documentation](https://docs.composio.dev)
 - Contact support at support@composio.dev
-
----
-
-*This is a lookahead announcement. Actual release dates and features may vary slightly.*
-
