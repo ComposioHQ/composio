@@ -33,5 +33,28 @@ export function baseOptions(): BaseLayoutProps {
       title: <ComposioLogo />,
       transparentMode: 'top',
     },
+    links: [
+      {
+        text: 'Guide',
+        url: '/docs',
+        active: 'nested-url',
+      },
+      {
+        text: 'Tool Router',
+        url: '/tool-router',
+      },
+      {
+        text: 'Reference',
+        url: '/reference',
+      },
+      {
+        text: 'Examples',
+        url: '/examples',
+      },
+      {
+        text: 'Playground',
+        url: '/playground',
+      },
+    ],
   };
 }

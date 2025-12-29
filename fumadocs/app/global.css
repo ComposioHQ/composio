@@ -126,28 +126,31 @@ a:focus-visible {
 }
 
 /* ==========================================================================
-   Navigation
+   Navigation - HomeLayout + DocsLayout nested structure
    ========================================================================== */
 
-#nd-sidebar,
+#nd-home-layout {
+  --fd-layout-width: 100%;
+}
+
+#nd-sidebar {
+  position: sticky;
+  top: 3.5rem;
+  height: calc(100vh - 3.5rem);
+  background-color: var(--composio-sidebar);
+}
+
+#nd-sidebar > div:first-child {
+  padding-top: 0;
+}
+
 #nd-sidebar-mobile {
   background-color: var(--composio-sidebar);
 }
 
-html body [data-active="true"] {
+[data-active="true"] {
   color: var(--composio-orange);
   background: transparent;
-}
-
-/* ==========================================================================
-   Page Layout
-   ========================================================================== */
-
-/* Reduce excessive top padding on large screens */
-@media (min-width: 1280px) {
-  #nd-page {
-    padding-top: 2rem;
-  }
 }
 
 /* ==========================================================================
