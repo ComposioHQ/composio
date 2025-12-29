@@ -35,7 +35,7 @@
   --color-fd-background: #ffffff;
   --color-fd-foreground: #171414;
   --color-fd-muted: #f6f4f2;
-  --color-fd-muted-foreground: #726f6f;
+  --color-fd-muted-foreground: #5c5858; /* Improved contrast */
   --color-fd-border: #e5e0df;
   --color-fd-card: #ffffff;
   --color-fd-card-foreground: #171414;
@@ -57,7 +57,7 @@
   --color-fd-background: #1a1815;
   --color-fd-foreground: #e8e4e0;
   --color-fd-muted: #2a2725;
-  --color-fd-muted-foreground: #9a9590;
+  --color-fd-muted-foreground: #a8a29e; /* Improved contrast */
   --color-fd-border: #3d3935;
   --color-fd-card: #1a1815;
   --color-fd-card-foreground: #e8e4e0;
@@ -171,4 +171,154 @@ a:focus-visible {
   background: var(--color-fd-muted);
   padding: 1rem;
   border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* ==========================================================================
+   Header Components
+   ========================================================================== */
+
+/* Shared transition timing */
+:root {
+  --header-transition: 0.15s ease;
+}
+
+/* Header spacing & rhythm */
+#nd-nav {
+  gap: 2rem;
+}
+
+/* Nav links container */
+#nd-nav nav {
+  gap: 0.25rem;
+}
+
+/* Nav link items - consistent height (36px touch target) */
+#nd-nav nav > a {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fd-muted-foreground);
+  border-radius: 0.375rem;
+  transition: color var(--header-transition), background var(--header-transition);
+}
+
+#nd-nav nav > a:hover {
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-accent);
+}
+
+#nd-nav nav > a:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Active nav link - underline style */
+#nd-nav nav > a[data-active="true"] {
+  color: var(--composio-orange);
+  position: relative;
+}
+
+#nd-nav nav > a[data-active="true"]:hover {
+  background: transparent;
+}
+
+#nd-nav nav > a[data-active="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -0.25rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2px;
+  background: var(--composio-orange);
+  border-radius: 1px;
+}
+
+/* Right side items - consistent gaps */
+#nd-nav > div:last-child {
+  gap: 0.5rem;
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.375rem;
+  color: var(--color-fd-muted-foreground);
+  cursor: pointer;
+  transition: color var(--header-transition), background var(--header-transition);
+}
+
+.theme-toggle-btn:hover {
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-accent);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* GitHub icon link */
+#nd-nav a[href*="github.com"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  color: var(--color-fd-muted-foreground);
+  transition: color var(--header-transition), background var(--header-transition);
+}
+
+#nd-nav a[href*="github.com"]:hover {
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-accent);
+}
+
+#nd-nav a[href*="github.com"]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Search toggle - match style */
+#nd-nav [data-search-toggle] {
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  transition: border-color var(--header-transition);
+}
+
+#nd-nav [data-search-toggle]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Dashboard button - CTA with consistent height */
+nav a[href*="app.composio"] {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  background: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: opacity var(--header-transition);
+}
+
+nav a[href*="app.composio"]:hover {
+  opacity: 0.9;
+}
+
+nav a[href*="app.composio"]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
 }
