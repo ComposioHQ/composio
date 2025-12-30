@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.1.10-alpha.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "src/ai-5.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "start": "bun src/index.ts",
+    "start": "bun src/ai-5.ts",
     "start:stream": "bun src/stream.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json"
   },
   "keywords": [],
   "author": "",
@@ -16,12 +17,16 @@
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.16",
+    "@ai-sdk/openai@latest": "npm:@ai-sdk/openai@^3.0.1",
+    "@ai-sdk/mcp": "^1.0.1",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
+    "ai@latest": "npm:ai@^6.0.3",
     "ai": "catalog:",
     "dotenv": "^16.5.0",
-    "zod-to-json-schema": "catalog:"
+    "zod-to-json-schema": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",
