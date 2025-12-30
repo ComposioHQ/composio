@@ -16,7 +16,7 @@ export function ProviderCard({ name, href, logo, icon, languages }: ProviderCard
   return (
     <Link
       href={href}
-      className="flex items-center gap-5 rounded-lg border border-fd-border bg-fd-card p-5 transition-colors hover:bg-fd-accent/50"
+      className="flex items-center gap-5 rounded-lg border border-fd-border bg-fd-card p-5 transition-all hover:bg-fd-accent/50 hover:border-orange-500"
     >
       <div className="flex h-12 w-12 shrink-0 items-center justify-center">
         {logo ? (
