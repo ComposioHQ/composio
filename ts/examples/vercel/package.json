@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.10-alpha.0",
   "description": "",
-  "main": "src/ai-5.ts",
+  "main": "src/ai.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "start": "bun src/ai-5.ts",
+    "start": "bun src/ai.ts",
     "start:stream": "bun src/stream.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "typecheck": "tsc --noEmit -p ./tsconfig.json"
