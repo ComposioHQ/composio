@@ -1,0 +1,84 @@
+---
+title: Welcome
+description: Composio is the simplest way to connect AI agents to external tools and services.
+---
+
+import { Key, Wrench, Database, Zap, Rocket, Code } from 'lucide-react';
+
+<Callout title="New: Tool Router" type="info">
+Single MCP server and Tool that can search, authenticate, and execute across all Composio tools. [Learn more →](/tool-router/overview)
+</Callout>
+
+<Cards>
+  <Card
+    icon={<Key />}
+    title="Managed authentication"
+    href="/docs/authenticating-tools"
+    description="Handle OAuth, API keys, and custom auth flows automatically"
+  />
+  <Card
+    icon={<Wrench />}
+    title="Tool execution"
+    href="/docs/executing-tools"
+    description="Execute actions across 500+ toolkits with support for most AI frameworks"
+  />
+  <Card
+    icon={<Database />}
+    title="MCP server"
+    href="/docs/mcp-quickstart"
+    description="Hosted MCP servers for all 500+ toolkits"
+  />
+  <Card
+    icon={<Zap />}
+    title="Triggers"
+    href="/docs/using-triggers"
+    description="Subscribe to external events and trigger workflows automatically"
+  />
+</Cards>
+
+## Get started
+
+<Cards>
+  <Card
+    icon={<Rocket />}
+    title="Quickstart"
+    href="/docs/quickstart"
+    description="Build your first agent"
+  />
+  <Card
+    icon={<Code />}
+    title="Providers"
+    href="/docs/providers"
+    description="Integrate with OpenAI, Anthropic, Vercel AI SDK, and more"
+  />
+</Cards>
+
+<Tabs defaultValue="python" className="my-6">
+  <TabsList>
+    <TabsTrigger value="python">Python</TabsTrigger>
+    <TabsTrigger value="typescript">TypeScript</TabsTrigger>
+  </TabsList>
+  <div className="relative mt-2">
+    <TabsContent value="python" forceMount className="data-[state=inactive]:invisible data-[state=inactive]:absolute data-[state=inactive]:inset-0">
+      <YouTube id="wkqlR8322F4" title="Composio Python Quickstart" />
+    </TabsContent>
+    <TabsContent value="typescript" forceMount className="data-[state=inactive]:invisible data-[state=inactive]:absolute data-[state=inactive]:inset-0">
+      <YouTube id="ZRGb4xGl-kc" title="Composio TypeScript Quickstart" />
+    </TabsContent>
+  </div>
+</Tabs>
+
+## Why Composio?
+
+Composio is the fastest way to enable your AI agents to take real-world actions—without dealing with individual API integrations, authentication flows, or complex tool formatting.
+
+- **Access 500+ toolkits** out of the box across popular apps like Slack, GitHub, Notion, and more. [Browse toolkits →](/toolkits/introduction)
+- **Enforce strict access and data controls** with [fine-grained permissions](/docs/authenticating-tools) for each tool and user.
+- **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
+- **Use MCP servers** for all 500+ toolkits, compatible with any [MCP client](/docs/mcp-quickstart).
+- **Search, plan and authenticate** across all tools with [Tool Router](/tool-router/overview).
+- **Integrate seamlessly** with frameworks like [OpenAI](/providers/openai), [Anthropic](/providers/anthropic), [LangChain](/providers/langchain), [Vercel AI SDK](/providers/vercel), and more.
+
+## Community
+
+Join our [Discord](https://discord.gg/composio) community!
