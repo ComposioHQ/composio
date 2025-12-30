@@ -38,8 +38,8 @@ const mcpClient = await createMCPClient({
 
 // 4. Retrieve tools.
 console.log(`🔄 Retrieving tools...`);
-const tools = await session.tools();
-console.log(`✅ ${Object.values(tools).length} tools retrieved from ToolRouterSession`);
+const tools = await mcpClient.tools();
+console.log(`✅ ${Object.values(tools).length} tools retrieved from MCP client`);
 console.log(`🔎 Available tools: ${Object.keys(tools).join(', ')}`);
 
 // 5. Pass tools to Vercel-specific Agent.
