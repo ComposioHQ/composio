@@ -3,7 +3,7 @@ title: Welcome
 description: Composio is the simplest way to connect AI agents to external tools and services.
 ---
 
-import { Key, Wrench, Database, Zap, Rocket, Code } from 'lucide-react';
+import { Key, Wrench, Database, Zap, Rocket, Code, Blocks } from 'lucide-react';
 
 <Callout title="New: Tool Router" type="info">
 Single MCP server and Tool that can search, authenticate, and execute across all Composio tools. [Learn more â†’](/tool-router/overview)
@@ -45,12 +45,6 @@ Single MCP server and Tool that can search, authenticate, and execute across all
     href="/docs/quickstart"
     description="Build your first agent"
   />
-  <Card
-    icon={<Code />}
-    title="Providers"
-    href="/docs/providers"
-    description="Integrate with OpenAI, Anthropic, Vercel AI SDK, and more"
-  />
 </Cards>
 
 <Tabs defaultValue="python" className="my-6">
@@ -77,7 +71,23 @@ Composio is the fastest way to enable your AI agents to take real-world actionsâ
 - **Trigger agents and workflows** using [external events](/docs/using-triggers) (e.g., new message in Slack, new issue in GitHub).
 - **Use MCP servers** for all 500+ toolkits, compatible with any [MCP client](/docs/mcp-quickstart).
 - **Search, plan and authenticate** across all tools with [Tool Router](/tool-router/overview).
-- **Integrate seamlessly** with frameworks like [OpenAI](/providers/openai), [Anthropic](/providers/anthropic), [LangChain](/providers/langchain), [Vercel AI SDK](/providers/vercel), and more.
+
+## Providers
+
+Composio works with any AI framework. Pick your preferred SDK:
+
+<ProviderGrid>
+  <ProviderCard name="OpenAI" href="/providers/openai" logo="/providers/openai-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Anthropic" href="/providers/anthropic" logo="/providers/anthropic-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Google Gemini" href="/providers/google" logo="/providers/google-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Vercel AI SDK" href="/providers/vercel" logo="/providers/vercel-logo.svg" languages={["TypeScript"]} />
+  <ProviderCard name="LangChain" href="/providers/langchain" logo="/providers/langchain-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="LlamaIndex" href="/providers/llamaindex" logo="/providers/llamaIndex-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="OpenAI Agents" href="/providers/openai-agents" logo="/providers/openai-logo.svg" languages={["Python"]} />
+  <ProviderCard name="CrewAI" href="/providers/crewai" logo="/providers/crewai-logo.svg" languages={["Python"]} />
+  <ProviderCard name="Mastra" href="/providers/mastra" logo="/providers/mastra-logo.svg" languages={["TypeScript"]} />
+  <ProviderCard name="Build your own" href="/providers/custom" icon={<Blocks size={32} />} languages={["Python", "TypeScript"]} />
+</ProviderGrid>
 
 ## Community
 
