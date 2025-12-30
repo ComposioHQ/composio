@@ -1,0 +1,89 @@
+---
+title: "Authentication & Configuration Updates Across Multiple Toolkits"
+date: "2025-12-29"
+---
+
+### Summary
+
+This release includes significant authentication and configuration improvements across 16+ toolkits. The changes standardize Base URL handling, modernize authentication methods, and fix various endpoint configurations to improve reliability and flexibility.
+
+| Toolkit | Change Type | Description |
+|---------|-------------|-------------|
+| **Make** | Breaking | Removed Region field, replaced with Base URL |
+| **Linear** | Improvement | Base URL is no longer configurable |
+| **Kibana** | Improvement | Removed default value for Base URL |
+| **Insightly** | Fix | Added default value for Pod field |
+| **HelloBar** | Deprecated | Deprecated bearer authentication |
+| **Gong** | Fix | Added default value for Base URL |
+| **FormSite** | Deprecated | Deprecated bearer auth, added API key authentication |
+| **DataScope** | Fix | Fixed Get Current User Endpoint |
+| **D2L Brightspace** | Fix | Updated Get Current User Endpoint |
+| **ClickUp** | Fix | Changed Base URL field type |
+| **Bubble** | Breaking | Fixed Base URL field, removed Subdomain |
+| **Brilliant Directories** | Fix | Implemented dynamic Base URL for user endpoint |
+| **Braintree** | Improvement | Updated to production defaults with dynamic endpoints |
+| **Auth0** | Improvement | Replaced hardcoded endpoint with dynamic tenant Base URL |
+
+### Breaking Changes
+
+We verified that active usage for these toolkits is practically zero before proceeding with these changes.
+
+#### Make Toolkit
+- **Removed Region field** in favor of explicit Base URL configuration
+- Users must now provide the full Base URL instead of selecting a region
+- This change provides more flexibility for custom deployments and regional endpoints
+
+#### Bubble Toolkit
+- **Removed Subdomain field** and restructured Base URL handling
+- Users must now provide the complete Base URL instead of just the Subdomain
+- This change standardizes URL configuration across all toolkits
+
+### Deprecated Features
+
+#### HelloBar Toolkit
+- **Bearer authentication is now deprecated**
+- While still functional, users are encouraged to migrate to newer authentication methods
+- Support for bearer tokens will be removed in a future release
+
+#### FormSite Toolkit
+- **Bearer authentication deprecated** in favor of API key authentication
+- New integrations should use API key authentication for improved security
+- Existing bearer token implementations will continue to work but should be migrated
+
+### Improvements & Fixes
+
+#### Configuration Improvements
+
+**Linear Toolkit** - Base URL is no longer a configurable field. The toolkit now uses a fixed endpoint, simplifying the authentication process.
+
+**Kibana Toolkit** - Removed the default value for Base URL, allowing for more flexible deployment configurations. Users can now specify custom Kibana instances without overriding defaults.
+
+**Gong Toolkit** - Added a sensible default value for Base URL to simplify initial setup. New users can connect without manually configuring the endpoint.
+
+**Insightly Toolkit** - Added default value for the Pod field to streamline configuration. Reduces setup complexity for standard deployments.
+
+**ClickUp Toolkit** - Fixed the Base URL field type for proper validation and handling. Ensures consistent URL formatting across all operations.
+
+#### Dynamic Endpoint Updates
+
+**Brilliant Directories Toolkit** - Implemented dynamic Base URL resolution for the Get Current User Endpoint. Automatically adapts to different deployment environments.
+
+**Braintree Toolkit** - Updated configuration to use production defaults. Implemented dynamic endpoint resolution for better environment handling. Improved reliability for production deployments.
+
+**Auth0 Toolkit** - Replaced hardcoded endpoints with dynamic tenant-based URL resolution. Supports multi-tenant deployments without manual configuration. Automatically constructs the correct endpoint based on the tenant configuration.
+
+#### Endpoint Fixes
+
+**DataScope Toolkit** - Fixed the Get Current User Endpoint to use the correct API path. Resolves authentication verification issues.
+
+**D2L Brightspace Toolkit** - Updated the Get Current User Endpoint to match the latest API specifications. Ensures proper user identification and session validation.
+
+### Migration Guide
+
+For toolkits with breaking changes, please update your configurations as follows:
+
+1. **Make**: Replace Region with the full Base URL (e.g., `https://us-east-1.make.com`)
+2. **Bubble**: Replace Subdomain with the full Base URL (e.g., `https://myapp.bubbleapps.io`)
+
+For deprecated authentication methods:
+- **HelloBar & FormSite**: Generate new API keys from your account settings and update your authentication configuration

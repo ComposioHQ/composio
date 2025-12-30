@@ -1,0 +1,37 @@
+---
+title: "Required API Key Authentication for MCP URLs"
+date: "2025-11-13"
+---
+
+We're strengthening the security of Model Context Protocol (MCP) URLs by making API key authentication mandatory for all requests.
+
+### What's Changing?
+
+Starting **December 15th, 2025**, **all new Composio projects** must include the `x-api-key` header when making requests to MCP URLs. This header authenticates your application and ensures secure communication with the Composio platform.
+
+### Why This Matters
+
+This change provides:
+- **Enhanced Authentication**: Ensures only authorized applications can access MCP endpoints
+- **Industry Best Practices**: Aligns with standard API security patterns
+
+### Impact on Existing Projects
+
+**For existing projects**: We value backward compatibility and understand the need for a smooth transition. Your existing MCP URLs will continue to work without the `x-api-key` header until **April 15th, 2026**.
+
+**Important**: After April 15th, 2026, all MCP URL requests without the `x-api-key` header will be rejected. Please ensure you update your applications before this date to avoid service disruption.
+
+**Note**: If you're already passing the `x-api-key` header in your MCP requests, no action is required—you're all set!
+
+### Migration Guide
+
+To adopt this security enhancement in your existing projects:
+
+1. **Locate Your API Key**: Find your API key in the Composio dashboard under Project Settings
+2. **Update Your Code**: Add the `x-api-key` header to all MCP URL requests
+3. **Test Thoroughly**: Verify the updated requests work in your development environment
+4. **Deploy**: Roll out the changes to your production environment
+
+### Questions?
+
+If you have any questions about this security enhancement or need assistance with migration, please reach out to our support team or check our [MCP documentation](https://docs.composio.dev/docs/mcp).
