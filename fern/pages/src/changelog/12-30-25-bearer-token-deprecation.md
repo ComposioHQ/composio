@@ -1,27 +1,26 @@
-## Deprecating `BEARER_TOKEN` auth scheme for 20 toolkits
+## Deprecating `BEARER_TOKEN` auth scheme for 19 toolkits
 
-We’ve **deprecated** the `BEARER_TOKEN` auth scheme for the following **20 toolkits**:
+We’ve **deprecated** the `BEARER_TOKEN` auth scheme for the following **19 toolkits**:
 
-- `airtable`
-- `baserow`
-- `discord`
-- `discordbot`
-- `formsite`
-- `gmail`
-- `googlecalendar`
-- `googledocs`
-- `googledrive`
-- `googleslides`
-- `googlesuper`
-- `hubspot`
-- `microsoft_clarity`
-- `onepage`
-- `pipedrive`
-- `prisma`
-- `sentry`
-- `slack`
-- `slackbot`
-- `trello`
+- `Airtable`
+- `Discord`
+- `Discordbot`
+- `Gmail`
+- `Google Classroom`
+- `Google Search Console`
+- `Google Calendar`
+- `Google Docs`
+- `Google Drive`
+- `Google Slides`
+- `Google Super`
+- `Instagram`
+- `Ntfy`
+- `Sapling AI`
+- `Slack`
+- `Slackbot`
+- `Tawk To`
+- `TikTok`
+- `Twitter`
 
 ### Recommendation
 
