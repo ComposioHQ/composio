@@ -164,21 +164,73 @@ class TestToolRouter:
         assert kwargs["tools"]["github"] == {"enable": ["GITHUB_CREATE_ISSUE"]}
 
     def test_create_session_with_global_tags(self, tool_router, mock_client):
-        """Test creating a session with global tag filtering."""
+        """Test creating a session with global tag filtering (array format)."""
         session = tool_router.create(
             user_id="user_123", tags=["readOnlyHint", "idempotentHint"]
         )
 
         assert session.session_id == "session_123"
 
-        # Verify the API was called with tags at top level
+        # Verify the API was called with tags transformed to enable format
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "tags" in kwargs
-        assert kwargs["tags"] == ["readOnlyHint", "idempotentHint"]
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+
+    def test_create_session_with_global_tags_object_enable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with enable."""
+        session = tool_router.create(
+            user_id="user_123", tags={"enable": ["readOnlyHint", "idempotentHint"]}
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+
+    def test_create_session_with_global_tags_object_disable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with disable."""
+        session = tool_router.create(
+            user_id="user_123", tags={"disable": ["destructiveHint"]}
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"disable": ["destructiveHint"]}
+
+    def test_create_session_with_global_tags_object_both(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with both enable and disable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags={
+                "enable": ["readOnlyHint", "idempotentHint"],
+                "disable": ["destructiveHint"],
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {
+            "enable": ["readOnlyHint", "idempotentHint"],
+            "disable": ["destructiveHint"],
+        }
 
     def test_create_session_with_toolkit_specific_tags(self, tool_router, mock_client):
-        """Test creating a session with per-toolkit tag filtering."""
+        """Test creating a session with per-toolkit tag filtering (array format)."""
         session = tool_router.create(
             user_id="user_123",
             tools={
@@ -192,8 +244,90 @@ class TestToolRouter:
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "tools" in kwargs
-        assert kwargs["tools"]["gmail"] == {"tags": ["readOnlyHint"]}
-        assert kwargs["tools"]["github"] == {"tags": ["readOnlyHint", "idempotentHint"]}
+        assert kwargs["tools"]["gmail"] == {"tags": {"enable": ["readOnlyHint"]}}
+        assert kwargs["tools"]["github"] == {
+            "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
+        }
+
+    def test_create_session_with_toolkit_specific_tags_object_enable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with enable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": {"tags": {"enable": ["readOnlyHint", "idempotentHint"]}},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
+        }
+
+    def test_create_session_with_toolkit_specific_tags_object_disable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with disable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": {"tags": {"disable": ["destructiveHint"]}},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {"tags": {"disable": ["destructiveHint"]}}
+
+    def test_create_session_with_toolkit_specific_tags_object_both(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with both enable and disable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": {
+                    "tags": {
+                        "enable": ["readOnlyHint", "idempotentHint"],
+                        "disable": ["destructiveHint"],
+                    }
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {
+                "enable": ["readOnlyHint", "idempotentHint"],
+                "disable": ["destructiveHint"],
+            }
+        }
+
+    def test_create_session_with_open_world_hint_tag(self, tool_router, mock_client):
+        """Test creating a session with openWorldHint tag."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=["openWorldHint", "readOnlyHint"],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["openWorldHint", "readOnlyHint"]}
 
     def test_create_session_with_mixed_tools_config(self, tool_router, mock_client):
         """Test creating a session with mixed tool configuration (enable, disable, tags)."""
@@ -212,7 +346,71 @@ class TestToolRouter:
         kwargs = call_args.kwargs
         assert kwargs["tools"]["gmail"] == {"enable": ["GMAIL_SEND_EMAIL"]}
         assert kwargs["tools"]["slack"] == {"disable": ["SLACK_DELETE_MESSAGE"]}
-        assert kwargs["tools"]["github"] == {"tags": ["readOnlyHint"]}
+        assert kwargs["tools"]["github"] == {"tags": {"enable": ["readOnlyHint"]}}
+
+    def test_create_session_with_global_and_toolkit_tags(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with both global tags and toolkit-specific tags."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=["readOnlyHint"],  # Global tags
+            tools={
+                "gmail": {
+                    "tags": {
+                        "enable": ["idempotentHint"],
+                        "disable": ["destructiveHint"],
+                    }
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint"]}
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {"enable": ["idempotentHint"], "disable": ["destructiveHint"]}
+        }
+
+    def test_create_session_with_empty_tags_array(self, tool_router, mock_client):
+        """Test creating a session with empty tags array."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=[],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": []}
+
+    def test_create_session_with_all_tag_types(self, tool_router, mock_client):
+        """Test creating a session with all available tag types."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=[
+                "readOnlyHint",
+                "destructiveHint",
+                "idempotentHint",
+                "openWorldHint",
+            ],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {
+            "enable": [
+                "readOnlyHint",
+                "destructiveHint",
+                "idempotentHint",
+                "openWorldHint",
+            ]
+        }
 
     def test_create_session_with_manage_connections_boolean(
         self, tool_router, mock_client
@@ -454,6 +652,92 @@ class TestToolRouter:
         assert github_toolkit.connection.is_active is False
         assert github_toolkit.connection.auth_config is None
         assert github_toolkit.connection.connected_account is None
+
+    def test_toolkits_function_with_search(self, tool_router, mock_client):
+        """Test the toolkits function with search parameter."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="gmail")
+
+        # Verify toolkits was called with search param
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_toolkits_filter(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and toolkits filter together."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="github", toolkits=["github", "slack"])
+
+        # Verify toolkits was called with both search and toolkits params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "github"
+        assert call_args.kwargs.get("toolkits") == ["github", "slack"]
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_is_connected(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and is_connected filter."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="mail", is_connected=True)
+
+        # Verify toolkits was called with search and is_connected params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "mail"
+        assert call_args.kwargs.get("is_connected") is True
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_pagination(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and pagination parameters."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="slack", next_cursor="cursor_xyz", limit=5)
+
+        # Verify toolkits was called with search and pagination params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "slack"
+        assert call_args.kwargs.get("cursor") == "cursor_xyz"
+        assert call_args.kwargs.get("limit") == 5
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_all_params(self, tool_router, mock_client):
+        """Test the toolkits function with search and all other parameters."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(
+            search="gmail",
+            toolkits=["gmail", "github"],
+            next_cursor="cursor_123",
+            limit=20,
+            is_connected=False,
+        )
+
+        # Verify toolkits was called with all params including search
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs.get("toolkits") == ["gmail", "github"]
+        assert call_args.kwargs.get("cursor") == "cursor_123"
+        assert call_args.kwargs.get("limit") == 20
+        assert call_args.kwargs.get("is_connected") is False
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_empty_search(self, tool_router, mock_client):
+        """Test the toolkits function with empty search string."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="")
+
+        # Verify toolkits was called with empty search string
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == ""
+        assert call_args.kwargs["session_id"] == "session_123"
 
     @patch("composio.core.models.tools.Tools")
     def test_tools_function(

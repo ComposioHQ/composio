@@ -56,25 +56,22 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 
 // Tags
 export const ToolRouterTagsParamSchema = z
-  .array(z.string())
-  .describe('The tags to use in the tool router session');
-export const ToolRouterEnabledTagsConfigSchema = z
+  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
+  .describe('The tags to filter the tools by');
+export const ToolRouterTagsEnableDisableSchema = z
   .object({
-    enable: ToolRouterTagsParamSchema.describe('The tags to enable in the tool router session'),
-  })
-  .strict();
-export const ToolRouterDisabledTagsConfigSchema = z
-  .object({
-    disable: ToolRouterTagsParamSchema.describe('The tags to disable in the tool router session'),
+    enable: ToolRouterTagsParamSchema.optional().describe(
+      'The tags to enable in the tool router session'
+    ),
+    disable: ToolRouterTagsParamSchema.optional().describe(
+      'The tags to disable in the tool router session'
+    ),
   })
   .strict();
 export const ToolRouterConfigTagsSchema = z
-  .union([
-    ToolRouterTagsParamSchema,
-    ToolRouterEnabledTagsConfigSchema,
-    ToolRouterDisabledTagsConfigSchema,
-  ])
+  .union([ToolRouterTagsParamSchema, ToolRouterTagsEnableDisableSchema])
   .describe('The tags to use in the tool router session');
+export type ToolRouterConfigTags = z.infer<typeof ToolRouterConfigTagsSchema>;
 
 /**
  *  Tools config - Configure tools per toolkit using toolkit slug as key
@@ -103,11 +100,6 @@ export const ToolRouterToolsParamSchema = z
   .describe('The tools to use in the tool router session');
 export type ToolRouterToolsParam = z.infer<typeof ToolRouterToolsParamSchema>;
 
-export const ToolRouterToolsTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint']))
-  .describe('The tags to filter the tools by');
-export type ToolRouterToolsTagsParam = z.infer<typeof ToolRouterToolsTagsParamSchema>;
-
 export const ToolRouterConfigToolsSchema = z
   .union([
     ToolRouterToolsParamSchema,
@@ -127,7 +119,7 @@ export const ToolRouterConfigToolsSchema = z
       .strict(),
     z
       .object({
-        tags: ToolRouterToolsTagsParamSchema.describe(
+        tags: ToolRouterConfigTagsSchema.describe(
           'The tags to filter the tools by, this will override the global tags'
         ),
       })
@@ -155,7 +147,7 @@ export const ToolRouterCreateSessionConfigSchema = z
       .optional()
       .describe('The tools to use in the tool router session'),
 
-    tags: ToolRouterToolsTagsParamSchema.optional().describe('Global tags to filter the tools by'),
+    tags: ToolRouterConfigTagsSchema.optional().describe('Global tags to filter the tools by'),
 
     toolkits: z
       .union([
@@ -208,7 +200,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  *
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
- * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint'>} tags - Global tags to filter tools by behavior
+ * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
@@ -284,6 +276,7 @@ export const ToolRouterToolkitsOptionsSchema = z.object({
   nextCursor: z.string().optional(),
   limit: z.number().optional(),
   isConnected: z.boolean().optional(),
+  search: z.string().optional(),
 });
 export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
 

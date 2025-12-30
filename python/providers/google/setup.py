@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_google",
-    version="0.10.1",
+    version="0.10.3",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Google AI Python Gemini model.",
@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["google-cloud-aiplatform>=1.38.0", "vertexai"],
+    install_requires=["google-cloud-aiplatform>=1.38.0", "vertexai", "composio"],
     include_package_data=True,
 )

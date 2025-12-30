@@ -28,7 +28,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: "pnpm"
 
       - name: Run pnpm audit (production dependencies only)
         id: audit
@@ -63,3 +62,4 @@ jobs:
         uses: thollander/actions-comment-pull-request@v3.0.1
         with:
           file-path: audit-comment.txt
+          comment-tag: pnpm-audit-security-warning

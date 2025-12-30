@@ -140,7 +140,7 @@ session = composio.tool_router.create(
         # Explicit disable configuration
         'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
         
-        # Filter by MCP tags (readOnlyHint, destructiveHint, idempotentHint)
+        # Filter by MCP tags (readOnlyHint, destructiveHint, idempotentHint, openWorldHint)
         'linear': {'tags': ['readOnlyHint', 'idempotentHint']}
     }
 )
@@ -162,6 +162,7 @@ Available tag values:
 - `'readOnlyHint'`: Tools that only read data
 - `'destructiveHint'`: Tools that modify or delete data
 - `'idempotentHint'`: Tools that can be safely retried
+- `'openWorldHint'`: Tools that operate in an open world context
 
 ### `auth_configs`
 
@@ -653,7 +654,7 @@ ToolRouterToolsDisableConfig = TypedDict('ToolRouterToolsDisableConfig', {
 })
 
 ToolRouterToolsTagsConfig = TypedDict('ToolRouterToolsTagsConfig', {
-    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint']]
+    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]
 })
 
 ToolRouterToolsConfig = Union[
@@ -666,7 +667,7 @@ ToolRouterToolsConfig = Union[
 tools: Dict[str, ToolRouterToolsConfig]  # Key is toolkit slug, value is ToolRouterToolsConfig
 
 # Tags configuration (global)
-tags: List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint']]
+tags: List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']]
 
 # Manage connections configuration
 ToolRouterManageConnectionsConfig = TypedDict('ToolRouterManageConnectionsConfig', {

@@ -1,6 +1,6 @@
 [project]
 name = "composio-llamaindex"
-version = "0.10.1"
+version = "0.10.3"
 description = "Use Composio to get array of tools with LlamaIndex Agent Workflows."
 readme = "README.md"
 requires-python = ">=3.9,<4"
@@ -14,6 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "llama_index",
+    "composio",
 ]
 
 [project.urls]

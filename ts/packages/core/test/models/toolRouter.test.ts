@@ -305,6 +305,181 @@ describe('ToolRouter', () => {
       });
     });
 
+    describe('tags configuration', () => {
+      it('should create a session with tags as array', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: ['readOnlyHint', 'idempotentHint'],
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint', 'idempotentHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with tags object with enable property', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: {
+            enable: ['readOnlyHint', 'idempotentHint'],
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint', 'idempotentHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with tags object with disable property', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: {
+            disable: ['destructiveHint'],
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: undefined,
+            disable: ['destructiveHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with tags object with both enable and disable properties', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: {
+            enable: ['readOnlyHint', 'idempotentHint'],
+            disable: ['destructiveHint'],
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint', 'idempotentHint'],
+            disable: ['destructiveHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with single tag in array', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: ['readOnlyHint'],
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with all tag types', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          tags: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'],
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+
+      it('should create a session with tags combined with toolkits', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          toolkits: ['gmail', 'slack'],
+          tags: ['readOnlyHint'],
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: {
+            enable: ['gmail', 'slack'],
+          },
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: {
+            enable: ['readOnlyHint'],
+          },
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+        });
+      });
+    });
+
     // describe('tools configuration', () => {
     //   it('should create a session with tools overrides as array', async () => {
     //     mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
