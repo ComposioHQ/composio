@@ -1,0 +1,284 @@
+---
+title: Server management
+description: Create, update, and manage MCP servers
+---
+
+This guide covers all server management operations for MCP servers.
+
+## Create a server
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+server = composio.mcp.create(
+    name="my-gmail-server",
+    toolkits=[{
+        "toolkit": "gmail",
+        "auth_config": "ac_xyz123"
+    }],
+    allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+)
+
+print(f"Created server: {server.id}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const server = await composio.mcp.create(
+  "my-gmail-server",
+  {
+    toolkits: [
+      {
+        authConfigId: "ac_xyz123",
+        toolkit: "gmail"
+      }
+    ],
+    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+    manuallyManageConnections: false
+  }
+);
+
+console.log(`Created server: ${server.id}`);
+```
+  </Tab>
+</Tabs>
+
+## List servers
+
+Find and filter your MCP servers.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# List all servers
+servers = composio.mcp.list()
+print(f"Found {len(servers['items'])} servers")
+
+# Filter by toolkit
+gmail_servers = composio.mcp.list(
+    toolkits="gmail",
+    limit=20
+)
+
+# Filter by name
+production_servers = composio.mcp.list(
+    name="production"
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// List all servers
+const servers = await composio.mcp.list({
+  limit: 10,
+  page: 1,
+  authConfigs: [],
+  toolkits: []
+});
+console.log(`Found ${servers.items.length} servers`);
+
+// Filter by toolkit
+const gmailServers = await composio.mcp.list({
+  limit: 20,
+  page: 1,
+  authConfigs: [],
+  toolkits: ["gmail"]
+});
+
+// Filter by name
+const productionServers = await composio.mcp.list({
+  limit: 10,
+  page: 1,
+  authConfigs: [],
+  toolkits: [],
+  name: "production"
+});
+```
+  </Tab>
+</Tabs>
+
+## Get server details
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Get by ID
+server = composio.mcp.get("mcp_server_id")
+print(f"Server name: {server.name}")
+print(f"Toolkits: {server.toolkits}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Get by ID
+const server = await composio.mcp.get("mcp_server_id");
+
+console.log(`Server: ${server.name}`);
+console.log(`Toolkits: ${server.toolkits}`);
+```
+  </Tab>
+</Tabs>
+
+## Update a server
+
+Modify server configuration, tools, or auth configs.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+updated = composio.mcp.update(
+    server_id="mcp_server_id",
+    name="updated-name",
+    allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"]
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const updated = await composio.mcp.update(
+  "mcp_server_id",
+  {
+    name: "updated-name",
+    toolkits: [
+      {
+        toolkit: "gmail",
+        authConfigId: "ac_new_config"
+      }
+    ],
+    allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"],
+    manuallyManageConnections: false
+  }
+);
+
+console.log(updated);
+```
+  </Tab>
+</Tabs>
+
+## Delete a server
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+result = composio.mcp.delete("mcp_server_id")
+if result['deleted']:
+    print("Server deleted successfully")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const result = await composio.mcp.delete("mcp_server_id");
+if (result.deleted) {
+  console.log("Server deleted successfully");
+}
+```
+  </Tab>
+</Tabs>
+
+## Multi-toolkit servers
+
+Combine multiple services in a single MCP server.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+server = composio.mcp.create(
+    name="productivity-suite",
+    toolkits=[
+        {"toolkit": "gmail", "auth_config": "ac_gmail"},
+        {"toolkit": "slack", "auth_config": "ac_slack"},
+        {"toolkit": "github", "auth_config": "ac_github"}
+    ],
+    allowed_tools=[
+        "GMAIL_FETCH_EMAILS",
+        "SLACK_SEND_MESSAGE",
+        "GITHUB_CREATE_ISSUE"
+    ]
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const server = await composio.mcp.create(
+  "productivity-suite",
+  {
+    toolkits: [
+      {
+        authConfigId: "ac_gmail",
+        toolkit: "gmail"
+      },
+      {
+        authConfigId: "ac_slack",
+        toolkit: "slack"
+      },
+      {
+        authConfigId: "ac_github",
+        toolkit: "github"
+      }
+    ],
+    allowedTools: [
+      "GMAIL_FETCH_EMAILS",
+      "SLACK_SEND_MESSAGE",
+      "GITHUB_CREATE_ISSUE"
+    ],
+    manuallyManageConnections: false
+  }
+);
+```
+  </Tab>
+</Tabs>
+
+## Generate user URLs
+
+After creating a server, generate unique URLs for each user.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Generate instance for user
+instance = server.generate("user@example.com")
+
+print(f"URL: {instance['url']}")
+print(f"Tools: {instance['allowed_tools']}")
+
+# Chat-based authentication is enabled by default
+# Set manually_manage_connections=True to disable it:
+instance_manual = server.generate(
+    "user@example.com",
+    manually_manage_connections=True
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Generate instance for user
+const instance = await server.generate("user@example.com");
+
+console.log("URL:", instance.url);
+console.log("Tools:", instance.allowedTools);
+
+// Chat-based authentication is enabled by default
+// Set manuallyManageConnections: true to disable it:
+const instanceManual = await composio.mcp.generate(
+  "user@example.com",
+  server.id,
+  { manuallyManageConnections: true }
+);
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+**Chat-based authentication:**
+- **TypeScript**: Enabled by default (set `manuallyManageConnections=false` or omit it)
+- **Python**: Enabled by default (set `manually_manage_connections=False` or omit it)
+
+When enabled, the agent can authenticate users dynamically during conversation if they're missing required connections. Set `manuallyManageConnections=true` (TypeScript) or `manually_manage_connections=True` (Python) to disable it.
+</Callout>
+
+## Best practices
+
+- **Use descriptive names** - Makes servers easy to find
+- **Limit tools appropriately** - Only include necessary tools
+- **Reuse servers** - Don't create duplicates for same configuration
+- **Store server IDs** - Keep track of created server IDs

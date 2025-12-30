@@ -1,0 +1,45 @@
+---
+title: Debugging Info
+description: Share your debugging info with Composio team for faster issue resolution
+---
+
+Your debugging info is tied to your project and it helps us trace what happened and debug the issue faster.
+
+## Finding Your Debugging Info
+
+Navigate to your project settings to find your debugging information:
+
+<Figure src="/images/project-settings.jpeg" alt="Project Settings Debugging Info" />
+
+<Figure src="/images/debugging-info.png" alt="Debugging Info Location" />
+
+## What to Share
+
+When reaching out for support, share these identifiers:
+
+```
+@project_id: pr_xxxxxxxxxxxxx
+@org_id: ok_xxxxxxxxxxxxx
+@org_member_email: your-email@example.com
+```
+
+The identifiers with `pr_` (project) and `ok_` (organization) prefixes let us quickly check your logs inside our internal tracing tools, helping us resolve issues faster.
+
+## Getting Help
+
+import { MessageCircle, Github, Bug, Mail } from 'lucide-react';
+
+<Cards>
+  <Card title="Join Discord" href="https://discord.gg/composio" icon={<MessageCircle />}>
+    Get basic support from the community and Composio team
+  </Card>
+  <Card title="GitHub Discussions" href="https://github.com/ComposioHQ/composio/discussions" icon={<Github />}>
+    Request new tools and share feedback
+  </Card>
+  <Card title="File an Issue" href="https://github.com/ComposioHQ/composio/issues" icon={<Bug />}>
+    Report SDK issues and bugs
+  </Card>
+  <Card title="Contact Support" href="mailto:support@composio.dev" icon={<Mail />}>
+    Reach out for dedicated support channels on Growth and Enterprise plans
+  </Card>
+</Cards>

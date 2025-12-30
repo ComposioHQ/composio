@@ -17,6 +17,15 @@
     "programmatic-auth-configs",
     "custom-auth-params",
     "connected-accounts",
-    "user-management"
+    "user-management",
+    "---MCP---",
+    "mcp-quickstart",
+    "mcp-server-management",
+    "mcp-providers",
+    "---Resources---",
+    "cli",
+    "debugging-info",
+    "migration-guide",
+    "troubleshooting"
   ]
 }
