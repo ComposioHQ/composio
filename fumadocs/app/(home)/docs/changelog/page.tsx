@@ -1,4 +1,4 @@
-import { changelogEntries, formatDate } from '@/lib/source';
+import { changelogEntries, formatDate, dateToChangelogUrl } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 import {
   DocsBody,
@@ -6,6 +6,7 @@ import {
   DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
+import { CopyLink } from '@/components/copy-link';
 
 const mdxComponents = getMDXComponents();
 
@@ -17,7 +18,7 @@ export default function ChangelogPage() {
   return (
     <DocsPage toc={[]} footer={{ enabled: false }}>
       <DocsTitle>Changelog</DocsTitle>
-      <DocsDescription>New updates and improvements to Composio.</DocsDescription>
+      <DocsDescription>Latest updates and announcements</DocsDescription>
       <DocsBody>
         <div className="relative">
           {/* Timeline line */}
@@ -30,10 +31,13 @@ export default function ChangelogPage() {
               return (
                 <article key={`${entry.date}-${entry.title}`} className="relative">
                   {/* Date column */}
-                  <div className="mb-3 md:absolute md:left-0 md:w-24 md:text-right md:pr-8">
-                    <time className="text-sm font-medium text-muted-foreground">
+                  <div className="mb-3 md:absolute md:left-0 md:w-28 md:text-right md:pr-6">
+                    <CopyLink
+                      href={dateToChangelogUrl(entry.date)}
+                      className="text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors"
+                    >
                       {formatDate(entry.date)}
-                    </time>
+                    </CopyLink>
                   </div>
 
                   {/* Timeline dot */}

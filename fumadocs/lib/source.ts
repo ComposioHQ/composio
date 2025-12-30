@@ -32,7 +32,26 @@ export function formatDate(dateStr: string): string {
   // Add T12:00 to avoid UTC midnight timezone shift
   return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   });
+}
+
+export function dateToChangelogUrl(dateStr: string): string {
+  // Convert "2025-12-29" to "/docs/changelog/2025/12/29"
+  const [year, month, day] = dateStr.split('-');
+  return `/docs/changelog/${year}/${month}/${day}`;
+}
+
+export function dateToSlug(dateStr: string): string[] {
+  // Convert "2025-12-29" to ["2025", "12", "29"]
+  const [year, month, day] = dateStr.split('-');
+  return [year, month, day];
+}
+
+export function slugToDate(slug: string[]): string | null {
+  // Convert ["2025", "12", "29"] to "2025-12-29"
+  if (slug.length !== 3) return null;
+  const [year, month, day] = slug;
+  return `${year}-${month}-${day}`;
 }
