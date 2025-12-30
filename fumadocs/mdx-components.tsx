@@ -5,6 +5,8 @@ import { Tabs, Tab, TabsList, TabsTrigger, TabsContent } from 'fumadocs-ui/compo
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { ProviderCard, ProviderGrid } from '@/components/provider-card';
+import { CapabilityCard, CapabilityList } from '@/components/capability-card';
+import { ShieldCheck, Route as RouteIcon } from 'lucide-react';
 import {
   Key,
   Wrench,
@@ -30,7 +32,11 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Callout,
     ProviderCard,
     ProviderGrid,
+    CapabilityCard,
+    CapabilityList,
     // Lucide icons - available globally in MDX without imports
+    ShieldCheck,
+    RouteIcon,
     Key,
     Wrench,
     Database,
