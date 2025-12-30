@@ -1,0 +1,324 @@
+---
+title: User Management
+description: Manage users and their connected accounts
+---
+
+## What are User IDs?
+
+User IDs determine whose connected accounts and data you're accessing in Composio. Every tool execution, connection authorization, and account operation requires a `userId` parameter that identifies which context to use.
+
+User IDs act as containers that group connected accounts together across toolkits. Depending on your application, you can use User IDs to represent an individual user, a team, or an entire organization.
+
+## Quick Decision Guide
+
+**How do users access connected accounts in your app?**
+
+- **Each user connects their own personal accounts?**
+  Use User IDs
+  *Use your database UUID or primary key (e.g., `user.id`)*
+  *Example: Users connect their personal Gmail, GitHub*
+
+- **Teams share the same connected accounts?**
+  Use Organization IDs
+  *Use your organization UUID or primary key (e.g., `organization.id`)*
+  *Example: Company Slack workspace*
+
+## Patterns
+
+### User IDs (Individual Accounts)
+
+In production applications with multiple users, where each user connects and manages their own accounts.
+
+**Choosing User IDs:**
+
+- Recommended: Database UUID or primary key (`user.id`)
+- Acceptable: Unique username (`user.username`)
+- Avoid: Email addresses (emails can change)
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Use your database's user ID (UUID, primary key, etc.)
+user_id = user.id; # e.g., "550e8400-e29b-41d4-a716-446655440000"
+
+tools = composio.tools.get(
+  user_id=user_id,
+  toolkits=["GITHUB"],
+)
+
+result = composio.tools.execute(
+  "GITHUB_GET_REPO",
+  user_id=user_id,
+  arguments={
+    "owner": 'example',
+    "repo": 'repo'
+  }
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Use your database's user ID (UUID, primary key, etc.)
+const userId = user.id; // e.g., "550e8400-e29b-41d4-a716-446655440000"
+
+const tools = await composio.tools.get(userId, {
+  toolkits: ['github'],
+});
+
+const result = await composio.tools.execute('GITHUB_GET_REPO', {
+  userId: userId,
+  arguments: { owner: 'example', repo: 'repo' },
+});
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Never use 'default' as a User ID in production with users. This could expose other users' data.
+</Callout>
+
+### Organization IDs (Team Accounts)
+
+For applications where teams share connections - one admin connects accounts, all team members use them.
+
+**When to use:**
+- Team tools: Slack, Microsoft Teams, Jira
+- Shared accounts: support@company.com, company GitHub org
+- Enterprise apps: IT manages connections for all employees
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Use the organization ID as userId
+user_id = organization.id # e.g., "org_550e8400"
+
+# All users in the organization share the same connected accounts
+tools = composio.tools.get(
+  user_id=user_id,
+  toolkits=["SLACK"],
+)
+
+# Execute tools in the organization context
+result = composio.tools.execute(
+  "SLACK_SEND_MESSAGE",
+  user_id=user_id,
+  arguments={
+    "channel": '#general',
+    "text": 'Hello from the team!'
+  }
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Use the organization ID as userId
+const userId = organization.id; // e.g., "org_550e8400"
+
+// All users in the organization share the same connected accounts
+const tools = await composio.tools.get(userId, {
+  toolkits: ['slack'],
+});
+
+// Execute tools in the organization context
+const result = await composio.tools.execute('SLACK_SEND_MESSAGE', {
+  userId: userId,
+  arguments: {
+    channel: '#general',
+    text: 'Hello from the team!',
+  },
+});
+```
+  </Tab>
+</Tabs>
+
+## Multiple Connected Accounts
+
+A single User ID can have multiple connected accounts for the same toolkit. For example, a user might connect both their personal and work Gmail accounts.
+
+**Key concepts:**
+- Each connected account gets a unique Connected Account ID
+- Multiple accounts can exist under the same User ID for any toolkit
+- You can specify which account to use when executing tools
+
+**Account selection:**
+- **Explicit:** Specify the Connected Account ID to target a specific account
+- **Default:** If no Connected Account ID is provided, the most recently connected account is used
+
+## Examples
+
+### Organization-Based Application
+
+In B2B applications, typically an admin connects accounts once and all team members share access. Here's a complete implementation:
+
+**Key concepts:**
+- Admin performs the OAuth connection using organization ID
+- All team members execute tools using the same organization ID
+- Permission checks ensure users can only access their organization's connections
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// 1. Admin connects Slack for the entire organization
+async function connectOrganizationToSlack(organizationId: string, adminUserId: string) {
+  // Use organization ID as userId in Composio
+  const connectionRequest = await composio.toolkits.authorize(organizationId, 'slack');
+
+  // Store the connection request for the admin to complete
+  await storeConnectionRequest(organizationId, adminUserId, connectionRequest);
+
+  return connectionRequest.redirectUrl;
+}
+
+// 2. Any user in the organization can use the connected tools
+async function sendSlackMessage(organizationId: string, channel: string, message: string) {
+  return await composio.tools.execute('SLACK_SEND_MESSAGE', {
+    userId: organizationId, // organization ID, not individual user ID
+    arguments: {
+      channel: channel,
+      text: message,
+    },
+  });
+}
+
+// 3. Check if organization has required connections
+async function getOrganizationTools(organizationId: string) {
+  return await composio.tools.get(organizationId, {
+    toolkits: ['slack', 'github', 'jira'],
+  });
+}
+
+// Usage in your API endpoint
+app.post('/api/slack/message', async (req, res) => {
+  const { channel, message } = req.body;
+  const organizationId = req.user.organizationId; // Get from your auth system
+
+  // Verify user has permission to send messages for this organization
+  if (!(await userCanSendMessages(req.user.id, organizationId))) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  try {
+    const result = await sendSlackMessage(organizationId, channel, message);
+    res.json(result.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+```
+
+### Multi-User Application
+
+In B2C applications, each user connects and manages their own accounts. Every user goes through their own OAuth flow and their data remains completely isolated.
+
+**Key concepts:**
+- Each user authorizes their own accounts using their unique user ID
+- Connections are isolated - users can only access their own connected accounts
+- No permission checks needed since users only access their own data
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// 1. User initiates GitHub connection
+async function connectUserToGitHub(userId: string) {
+  const connectionRequest = await composio.toolkits.authorize(userId, 'github');
+  return connectionRequest.redirectUrl;
+}
+
+// 2. Get user's connected GitHub tools
+async function getUserGitHubTools(userId: string) {
+  return await composio.tools.get(userId, {
+    toolkits: ['github'],
+  });
+}
+
+// 3. Execute tool for specific user
+async function getUserRepos(userId: string) {
+  return await composio.tools.execute('GITHUB_LIST_REPOS', {
+    userId: userId,
+    arguments: {
+      per_page: 10,
+    },
+  });
+}
+
+// Usage in your API endpoint
+app.get('/api/github/repos', async (req, res) => {
+  const userId = req.user.id; // Get from your auth system
+
+  try {
+    const repos = await getUserRepos(userId);
+    res.json(repos.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch repos' });
+  }
+});
+```
+
+**Data isolation**: Composio ensures each userId's connections and data are completely separate. User A can never access User B's repositories.
+
+### Hybrid Pattern
+
+Many applications need both personal and team resources. Users might connect their personal Gmail while sharing the company Slack workspace.
+
+**Common scenarios:**
+- Personal calendars + shared project management
+- Individual GitHub accounts + organization repositories
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Wrong: Using individual user ID for org-connected tool
+user_tools = composio.tools.get(
+    user_id="user_123",  # Individual user ID
+    toolkits=["slack"]  # Fails - Slack is connected at org level
+)
+
+# Correct: Match the ID type to how the tool was connected
+user_personal_tools = composio.tools.get(
+    user_id="user_123",  # Individual user ID
+    toolkits=["gmail"]  # User's personal Gmail
+)
+
+org_shared_tools = composio.tools.get(
+    user_id="org_123",  # Organization ID
+    toolkits=["slack", "jira"]  # Organization's shared tools
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Wrong: Using individual user ID for org-connected tool
+const userTools = await composio.tools.get(req.user.id, {
+  toolkits: ['slack'], // Fails - Slack is connected at org level
+});
+
+// Correct: Match the ID type to how the tool was connected
+const userPersonalTools = await composio.tools.get(req.user.id, {
+  toolkits: ['gmail'], // User's personal Gmail
+});
+
+const orgSharedTools = await composio.tools.get(req.user.organizationId, {
+  toolkits: ['slack', 'jira'], // Organization's shared tools
+});
+```
+  </Tab>
+</Tabs>
+
+Remember: The userId must match how the account was connected. If admin connected Slack with org ID, all members must use org ID to access it.
+
+## Best Practices
+
+**Your responsibilities:**
+- Pass the correct User ID for each user
+- Verify user permissions before executing organization tools
+- Never use 'default' in production with multiple users
+- Keep User IDs consistent across your application and Composio
+- Use stable identifiers that won't change over time
+
+**Data isolation:** Composio ensures complete isolation between User IDs. Users cannot access another ID's connections or data.

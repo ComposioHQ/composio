@@ -11,6 +11,12 @@
     "using-triggers",
     "modify-tool-behavior",
     "custom-tools",
-    "toolkit-versioning"
+    "toolkit-versioning",
+    "---Authentication---",
+    "custom-auth-configs",
+    "programmatic-auth-configs",
+    "custom-auth-params",
+    "connected-accounts",
+    "user-management"
   ]
 }

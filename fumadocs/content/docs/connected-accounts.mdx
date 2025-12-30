@@ -1,0 +1,299 @@
+---
+title: Connected Accounts
+description: Manage and monitor user connections to toolkits
+---
+
+Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/authenticating-tools)), you can manage these accounts throughout their lifecycle.
+
+Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
+
+## List accounts
+
+Retrieve all connected accounts with optional filters:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# List all accounts for a user
+accounts = composio.connected_accounts.list(
+    user_ids=[user_id]
+)
+
+# Filter by status
+active_accounts = composio.connected_accounts.list(
+    user_ids=[user_id],
+    statuses=["ACTIVE"]
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// List all accounts for a user
+const accounts = await composio.connectedAccounts.list({
+  userIds: [userId]
+});
+
+// Filter by status
+const activeAccounts = await composio.connectedAccounts.list({
+  userIds: [userId],
+  statuses: ['ACTIVE']
+});
+```
+  </Tab>
+</Tabs>
+
+## Get account details
+
+Retrieve a connected account by ID:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+account = composio.connected_accounts.get(connected_account_id)
+
+print(f"Status: {account.status}")
+print(f"Toolkit: {account.toolkit.slug}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const account = await composio.connectedAccounts.get(connectedAccountId);
+
+console.log('Status:', account.status);
+console.log('Toolkit:', account.toolkit.slug);
+```
+  </Tab>
+</Tabs>
+
+### Get account credentials
+
+Get account credentials for use with your own tools:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Get the connected account's authentication state
+if account.state:
+    # The state contains the auth scheme and credentials
+    auth_scheme = account.state.auth_scheme
+    credentials = account.state.val
+
+    print(f"Auth scheme: {auth_scheme}")
+    print(f"Credentials: {credentials}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Get the connected account's authentication state
+if (account.state) {
+  // The state contains the auth scheme and credentials
+  const authScheme = account.state.authScheme;
+  const credentials = account.state.val;
+
+  console.log('Auth scheme:', authScheme);
+  console.log('Credentials:', credentials);
+}
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+If credentials return as `REDACTED` instead of actual values, the **Mask Connected Account Secrets** setting is enabled on your account. This setting redacts all sensitive credential data (tokens, secrets, API keys) for security purposes.
+
+To view actual credentials, navigate to **Settings → Project Settings → Project Configuration** and disable "Mask Connected Account Secrets".
+</Callout>
+
+## Refresh credentials
+
+Manually refresh credentials for a connected account:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+try:
+    refreshed = composio.connected_accounts.refresh(connected_account_id)
+    print(f"Redirect URL: {refreshed.redirect_url}")
+
+    # Wait for the connection to be established
+    composio.connected_accounts.wait_for_connection(refreshed.id)
+except Exception as e:
+    print(f"Failed to refresh tokens: {e}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+try {
+  const refreshed = await composio.connectedAccounts.refresh(connectedAccountId);
+  console.log('Redirect URL:', refreshed.redirect_url);
+
+  // Wait for the connection to be established
+  await composio.connectedAccounts.waitForConnection(refreshed.id);
+} catch (error) {
+  console.error('Failed to refresh tokens:', error);
+}
+```
+  </Tab>
+</Tabs>
+
+## Enable and disable accounts
+
+Change account status without deleting. Set to INACTIVE to pause access, or ACTIVE to restore. Useful for:
+- Pausing access during subscription lapses
+- Temporary disconnection
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Disable an account
+disabled = composio.connected_accounts.disable(connected_account_id)
+print(f"Account disabled status: {disabled.success}")
+
+# Re-enable when needed
+enabled = composio.connected_accounts.enable(connected_account_id)
+print(f"Account enabled status: {enabled.success}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Disable an account
+const disabled = await composio.connectedAccounts.disable(connectedAccountId);
+console.log('Account disabled status:', disabled.success);
+
+// Re-enable when needed
+const enabled = await composio.connectedAccounts.enable(connectedAccountId);
+console.log('Account enabled status:', enabled.success);
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+INACTIVE accounts cannot execute tools. Tool execution will fail until the status is changed.
+</Callout>
+
+## Delete accounts
+
+Permanently remove a connected account and revoke all credentials:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Delete a connected account
+composio.connected_accounts.delete(connected_account_id)
+print("Account deleted successfully")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Delete a connected account
+await composio.connectedAccounts.delete(connectedAccountId);
+console.log('Account deleted successfully');
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Deletion is permanent. Users must re-authenticate to reconnect.
+</Callout>
+
+## Multiple accounts
+
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
+
+<Callout type="info">
+Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/authenticating-tools#hosted-authentication-connect-link).
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# First account
+try:
+    first_account = composio.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config_id
+    )
+    print(f"First account redirect URL: {first_account.redirect_url}")
+    connected_first_account = first_account.wait_for_connection()
+    print(f"First account status: {connected_first_account.status}")
+except Exception as e:
+    print(f"Error initiating first account: {e}")
+
+# Second account - must explicitly allow multiple
+try:
+    second_account = composio.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config_id,
+        allow_multiple=True  # Required for additional accounts
+    )
+    print(f"Second account redirect URL: {second_account.redirect_url}")
+    connected_second_account = second_account.wait_for_connection()
+    print(f"Second account status: {connected_second_account.status}")
+except Exception as e:
+    print(f"Error initiating second account: {e}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// First account
+try {
+  const firstAccount = await composio.connectedAccounts.initiate(
+    userId,
+    authConfigId
+  );
+  console.log('First account redirect URL:', firstAccount.redirectUrl);
+  const connectedFirstAccount = await firstAccount.waitForConnection();
+  console.log('First account status:', connectedFirstAccount.status);
+} catch (error) {
+  console.error('Error initiating first account:', error);
+}
+
+// Second account - must explicitly allow multiple
+try {
+  const secondAccount = await composio.connectedAccounts.initiate(
+    userId,
+    authConfigId,
+    {
+      allowMultiple: true  // Required for additional accounts
+    }
+  );
+  console.log('Second account redirect URL:', secondAccount.redirectUrl);
+  const connectedSecondAccount = await secondAccount.waitForConnection();
+  console.log('Second account status:', connectedSecondAccount.status);
+} catch (error) {
+  console.error('Error initiating second account:', error);
+}
+```
+  </Tab>
+</Tabs>
+
+### Execute with a specific account
+
+When you have multiple accounts, specify which one to use with `connected_account_id`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Execute tool with a specific connected account
+result = composio.tools.execute(
+    "GMAIL_GET_PROFILE",
+    user_id=user_id,
+    connected_account_id=connected_account_id,  # Specify which account to use
+    version="20251111_00",
+    arguments={}
+)
+print(f"Tool executed: {result}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Execute tool with a specific connected account
+const result = await composio.tools.execute('GMAIL_GET_PROFILE', {
+  userId: userId,
+  connectedAccountId: connectedAccountId,  // Specify which account to use
+  version: '20251111_00',
+  arguments: {}
+});
+console.log('Tool executed:', result);
+```
+  </Tab>
+</Tabs>
