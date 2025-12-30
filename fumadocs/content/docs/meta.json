@@ -5,6 +5,12 @@
     "quickstart",
     "capabilities",
     "---Tools and Triggers---",
-    "fetching-tools"
+    "fetching-tools",
+    "authenticating-tools",
+    "executing-tools",
+    "using-triggers",
+    "modify-tool-behavior",
+    "custom-tools",
+    "toolkit-versioning"
   ]
 }

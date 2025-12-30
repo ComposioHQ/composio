@@ -8,8 +8,8 @@ const pageTree = {
   children: source.pageTree.children.flatMap((child) =>
     child.type === 'separator' && child.name === 'Tools and Triggers'
       ? [changelogPage, child]
-      : child
-  ),
+      : [child]
+  ) as typeof source.pageTree.children,
 };
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {

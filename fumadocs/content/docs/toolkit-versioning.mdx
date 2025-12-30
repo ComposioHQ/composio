@@ -1,0 +1,154 @@
+---
+title: Toolkit Versioning
+description: Pin specific tool versions for consistent behavior in production
+---
+
+Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back when needed.
+
+<Callout type="info">
+Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution.
+</Callout>
+
+## Configuration methods
+
+Configure toolkit versions using one of three methods:
+
+### SDK initialization
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+# Pin specific versions for each toolkit
+composio = Composio(
+    api_key="YOUR_API_KEY",
+    toolkit_versions={
+        "github": "20251027_00",
+        "slack": "20251027_00",
+        "gmail": "20251027_00"
+    }
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+// Pin specific versions for each toolkit
+const composio = new Composio({
+    apiKey: "YOUR_API_KEY",
+    toolkitVersions: {
+        github: "20251027_00",
+        slack: "20251027_00",
+        gmail: "20251027_00"
+    }
+});
+```
+  </Tab>
+</Tabs>
+
+### Environment variables
+
+```bash
+# Set versions for specific toolkits
+export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_SLACK="20251027_00"
+export COMPOSIO_TOOLKIT_VERSION_GMAIL="20251027_00"
+```
+
+### Per-execution override
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="YOUR_API_KEY")
+
+# Specify version directly in execute call
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio"
+    },
+    user_id="user-k7334",
+    version="20251027_00"  # Override version for this execution
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "YOUR_API_KEY" });
+
+// Specify version directly in execute call
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+    userId: "user-k7334",
+    arguments: {
+        owner: "ComposioHQ",
+        repo: "composio"
+    },
+    version: "20251027_00"  // Override version for this execution
+});
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+## Version format
+
+Versions follow the format `YYYYMMDD_NN`:
+- `YYYYMMDD`: Release date
+- `NN`: Sequential release number
+
+```python
+# Production
+toolkit_versions = {"github": "20251027_00"}
+
+# Development
+toolkit_versions = {"github": "latest"}
+```
+
+<Callout type="warn">
+Never use `latest` in production. It can introduce breaking changes.
+</Callout>
+
+## Version resolution order
+
+1. Per-execution version (highest priority)
+2. SDK initialization version
+3. Environment variable (toolkit-specific)
+
+## Managing versions
+
+Check available versions using:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Get toolkit information including available versions
+toolkit = composio.toolkits.get(slug="github")
+
+# Extract and print version information
+print(f"Toolkit: {toolkit.name}")
+print(f"Current Version: {toolkit.meta.version}")
+print(f"Available Versions: {toolkit.meta.available_versions}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Get toolkit information including available versions
+const toolkit = await composio.toolkits.get("github");
+
+// Extract and print version information
+console.log("Toolkit:", toolkit.name);
+console.log("Current Version:", toolkit.meta.version);
+console.log("Available Versions:", toolkit.meta.availableVersions);
+console.log("Latest Version:", toolkit.meta.availableVersions[0]); // First one is usually the latest
+```
+  </Tab>
+</Tabs>
