@@ -3,8 +3,6 @@ title: Welcome
 description: Composio is the simplest way to connect AI agents to external tools and services.
 ---
 
-import { Key, Wrench, Database, Zap, Rocket, Code, Blocks } from 'lucide-react';
-
 <Callout title="New: Tool Router" type="info">
 Single MCP server and Tool that can search, authenticate, and execute across all Composio tools. [Learn more →](/tool-router/overview)
 </Callout>
@@ -88,6 +86,21 @@ Composio works with any AI framework. Pick your preferred SDK:
   <ProviderCard name="Mastra" href="/providers/mastra" logo="/providers/mastra-logo.svg" languages={["TypeScript"]} />
   <ProviderCard name="Build your own" href="/providers/custom" icon={<Blocks size={32} />} languages={["Python", "TypeScript"]} />
 </ProviderGrid>
+
+## For AI tools
+
+Access Composio documentation in Markdown format for use with Cursor, Copilot, Claude, and other AI tools:
+
+- [composio.dev/llms.txt](/llms.txt) - Documentation index with links
+- [composio.dev/llms-full.txt](/llms-full.txt) - Complete documentation in one file
+
+```
+Documentation:
+{paste documentation from composio.dev/llms-full.txt}
+---
+Based on the above documentation, answer the following:
+{your question}
+```
 
 ## Community
 
