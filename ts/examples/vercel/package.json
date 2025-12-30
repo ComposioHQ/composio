@@ -16,17 +16,15 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.16",
-    "@ai-sdk/openai@latest": "npm:@ai-sdk/openai@^3.0.1",
     "@ai-sdk/mcp": "^1.0.1",
+    "@ai-sdk/openai": "^3.0.1",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
-    "ai@latest": "npm:ai@^6.0.3",
-    "ai": "catalog:",
+    "ai": "^6.0.3",
     "dotenv": "^16.5.0",
-    "zod-to-json-schema": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

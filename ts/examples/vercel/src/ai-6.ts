@@ -1,6 +1,6 @@
 import { Composio } from '@composio/core';
-import { generateText, ModelMessage, stepCountIs } from 'ai@latest';
-import { openai } from '@ai-sdk/openai@latest';
+import { generateText, ModelMessage, stepCountIs } from 'ai';
+import { openai } from '@ai-sdk/openai';
 import { VercelProvider } from '@composio/vercel';
 import { MessageRoles } from './types';
 
@@ -36,7 +36,6 @@ async function run() {
 
   const { text } = await generateText({
     model: openai('gpt-4o-mini'),
-    // @ts-ignore - @composio/vercel currently provides v5-typed tools; runtime-compatible with v6
     tools,
     messages,
     stopWhen: stepCountIs(5),

@@ -28,7 +28,7 @@
     "@langchain/mcp-adapters": "^1.0.1",
     "@langchain/openai": "^1.1.3",
     "@openai/agents": "^0.3.3",
-    "ai": "catalog:",
+    "ai": "^6.0.3",
     "dotenv": "^16.4.1",
     "langchain": "^1.1.1",
     "ora": "^9.0.0",

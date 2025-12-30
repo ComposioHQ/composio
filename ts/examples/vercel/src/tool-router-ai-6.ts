@@ -1,8 +1,8 @@
-import { openai } from '@ai-sdk/openai@latest';
+import { openai } from '@ai-sdk/openai';
 import { createMCPClient } from "@ai-sdk/mcp"
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
-import { stepCountIs, streamText } from 'ai@latest';
+import { stepCountIs, streamText } from 'ai';
 
 // 1. Initialize Composio.
 const composio = new Composio({
@@ -69,7 +69,6 @@ const stream = streamText({
   //     sender: z.string(),
   //   }),
   // }),
-  // @ts-ignore - @composio/vercel currently provides v5-typed tools; runtime-compatible with v6
   tools,
 });
 
