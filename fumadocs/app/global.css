@@ -253,6 +253,18 @@ a:focus-visible {
   background-color: var(--composio-sidebar);
 }
 
+/* Tighten sidebar item spacing */
+#nd-sidebar a {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* Reduce space between sidebar sections */
+#nd-sidebar [data-separator] {
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
 [data-active="true"] {
   color: var(--composio-orange);
   background: transparent;
