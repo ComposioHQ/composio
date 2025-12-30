@@ -216,6 +216,7 @@ pre {
 
 :is(.prose, [data-fumadocs-body]) a:not([data-card]) {
   color: var(--composio-orange);
+  text-decoration: none;
 }
 
 /* Heading anchors stay neutral */

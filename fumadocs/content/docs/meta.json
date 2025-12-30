@@ -1,3 +1,10 @@
 {
-  "pages": ["welcome", "quickstart", "capabilities"]
+  "pages": [
+    "---Get Started---",
+    "welcome",
+    "quickstart",
+    "capabilities",
+    "---Tools and Triggers---",
+    "fetching-tools"
+  ]
 }

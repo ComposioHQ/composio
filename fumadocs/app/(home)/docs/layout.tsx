@@ -1,17 +1,15 @@
 import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 
-// Add changelog to the page tree
+// Insert changelog into page tree at correct position (after capabilities, before Tools and Triggers)
+const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/docs/changelog' };
 const pageTree = {
-  name: source.pageTree.name,
-  children: [
-    ...source.pageTree.children,
-    {
-      type: 'page' as const,
-      name: 'Changelog',
-      url: '/docs/changelog',
-    },
-  ],
+  ...source.pageTree,
+  children: source.pageTree.children.flatMap((child) =>
+    child.type === 'separator' && child.name === 'Tools and Triggers'
+      ? [changelogPage, child]
+      : child
+  ),
 };
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
