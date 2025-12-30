@@ -1,6 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Image from 'next/image';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 // Composio Logo Component with light/dark mode switching
 function ComposioLogo() {
@@ -33,10 +32,6 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: <ComposioLogo />,
       transparentMode: 'top',
-    },
-    themeSwitch: {
-      enabled: true,
-      component: <ThemeToggle />,
     },
     links: [
       {

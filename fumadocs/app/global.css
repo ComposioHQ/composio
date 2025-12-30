@@ -241,31 +241,6 @@ a:focus-visible {
   gap: 0.5rem;
 }
 
-/* Theme toggle button */
-.theme-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  color: var(--color-fd-muted-foreground);
-  cursor: pointer;
-  transition: color var(--header-transition), background var(--header-transition);
-}
-
-.theme-toggle-btn:hover {
-  color: var(--color-fd-foreground);
-  background: var(--color-fd-accent);
-}
-
-.theme-toggle-btn:focus-visible {
-  outline: 2px solid var(--composio-orange);
-  outline-offset: 2px;
-}
-
 /* GitHub icon link */
 #nd-nav a[href*="github.com"] {
   display: inline-flex;
