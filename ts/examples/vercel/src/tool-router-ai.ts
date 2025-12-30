@@ -45,7 +45,7 @@ console.log(`🔎 Available tools: ${Object.keys(tools).join(', ')}`);
 // 5. Pass tools to Vercel-specific Agent.
 console.log(`🔄 Executing agent...`);
 const stream = streamText({
-  model: openai('gpt-4o-mini'),
+  model: openai('gpt-5.2'),
   prompt: `Fetch my latest received email from Gmail and summarize it.`,
   stopWhen: stepCountIs(10),
   onStepFinish: (step) => {
