@@ -44,6 +44,10 @@ export function baseOptions(): BaseLayoutProps {
         url: '/tool-router',
       },
       {
+        text: 'Toolkits',
+        url: '/toolkits',
+      },
+      {
         text: 'Reference',
         url: '/reference',
       },

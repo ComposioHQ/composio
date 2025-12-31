@@ -22,6 +22,46 @@ export const docs = defineDocs({
   },
 });
 
+export const toolRouter = defineDocs({
+  dir: 'content/tool-router',
+  docs: {
+    schema: frontmatterSchema,
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const reference = defineDocs({
+  dir: 'content/reference',
+  docs: {
+    schema: frontmatterSchema,
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const examples = defineDocs({
+  dir: 'content/examples',
+  docs: {
+    schema: frontmatterSchema,
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const toolkits = defineDocs({
+  dir: 'content/toolkits',
+  docs: {
+    schema: frontmatterSchema,
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
 export const changelog = defineCollections({
   type: 'doc',
   dir: 'content/changelog',
