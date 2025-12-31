@@ -2,6 +2,21 @@
   "title": "Tool Router",
   "pages": [
     "---Get Started---",
-    "index"
+    "index",
+    "quickstart",
+    "---Core Concepts---",
+    "users-and-sessions",
+    "authentication",
+    "tools-and-toolkits",
+    "---Guides---",
+    "using-in-chat-authentication",
+    "manually-authenticating-users",
+    "managing-multiple-accounts",
+    "white-labeling-authentication",
+    "using-custom-auth-configs",
+    "using-with-mcp-clients",
+    "using-as-a-native-tool",
+    "---Resources---",
+    "migration-guide"
   ]
 }

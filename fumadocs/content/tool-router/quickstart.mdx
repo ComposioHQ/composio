@@ -1,0 +1,704 @@
+---
+title: Quickstart
+description: Build an AI agent with access to 1000+ tools
+---
+
+Choose how you want to integrate Tool Router:
+
+<Accordions>
+<Accordion title="Using Tool Router MCP">
+
+<Tabs items={['Claude Agent SDK', 'OpenAI Agents SDK', 'Vercel AI SDK']}>
+<Tab value="Claude Agent SDK">
+
+<Steps>
+<Step>
+### Install
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio claude-agent-sdk
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Create session and run agent
+
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Callout type="info">
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Callout>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import asyncio
+from dotenv import load_dotenv
+from claude_agent_sdk.client import ClaudeSDKClient
+from claude_agent_sdk.types import (
+    ClaudeAgentOptions,
+    AssistantMessage,
+    TextBlock,
+    ToolUseBlock,
+)
+from composio import Composio
+
+load_dotenv()
+
+# Initialize Composio (API key from env var COMPOSIO_API_KEY)
+composio = Composio()
+
+# Unique identifier of the user
+user_id = "user_123"
+
+# Create a tool router session for the user
+session = composio.create(user_id=user_id)
+
+# Configure Claude with Composio MCP server
+options = ClaudeAgentOptions(
+    system_prompt=(
+        "You are a helpful assistant with access to external tools. "
+        "Always use the available tools to complete user requests."
+    ),
+    mcp_servers={
+        "composio": {
+            "type": "http",
+            "url": session.mcp.url,
+            "headers": session.mcp.headers,
+        }
+    },
+    permission_mode="bypassPermissions",
+)
+
+
+async def main():
+    print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a notion page with the issues'
+""")
+
+    async with ClaudeSDKClient(options) as client:
+        # Multi-turn conversation with agentic tool calling
+        while True:
+            user_input = input("You: ").strip()
+            if user_input.lower() == "exit":
+                break
+
+            print("\nClaude: ", end="", flush=True)
+            try:
+                await client.query(user_input)
+                async for msg in client.receive_response():
+                    if isinstance(msg, AssistantMessage):
+                        for block in msg.content:
+                            if isinstance(block, ToolUseBlock):
+                                print(f"\n[Using tool: {block.name}]", end="")
+                            elif isinstance(block, TextBlock):
+                                print(block.text, end="", flush=True)
+                print()
+            except Exception as e:
+                print(f"\n[Error]: {e}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
+import { Composio } from "@composio/core";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
+const composio = new Composio();
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a tool router session for the user
+const session = await composio.create(userId);
+
+const options: Options = {
+  systemPrompt: `You are a helpful assistant with access to external tools. ` +
+    `Always use the available tools to complete user requests.`,
+  mcpServers: {
+    composio: {
+      type: "http",
+      url: session.mcp.url,
+      headers: session.mcp.headers // Authentication headers for the Composio MCP server
+    },
+  },
+  permissionMode: "bypassPermissions", // Auto-approve tools (demo only - use "default" in production)
+};
+
+// Set up interactive terminal input/output for the conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
+
+let isFirstQuery = true;
+
+// Multi-turn conversation with agentic tool calling
+while (true) {
+  const answer = await readline.question('You: ');
+  const input = answer.trim();
+  if (input.toLowerCase() === "exit") break;
+
+  process.stdout.write("Claude: ");
+
+  // Use `continue: true` to maintain conversation context
+  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
+  isFirstQuery = false;
+
+  try {
+    for await (const stream of query({ prompt: input, options: queryOptions })) {
+      // Only process assistant messages (the SDK also sends result/error messages)
+      if (stream.type === "assistant") {
+        const { content } = stream.message;
+        for (const block of content) {
+          if (block.type === "tool_use") {
+            process.stdout.write(`\n[Using tool: ${block.name}]`);
+          } else if (block.type === "text") {
+            process.stdout.write(block.text);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+  }
+  process.stdout.write("\n");
+}
+
+readline.close();
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab value="OpenAI Agents SDK">
+
+<Steps>
+<Step>
+### Install
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio openai-agents
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install dotenv @composio/core @openai/agents zod@3
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Create session and run agent
+
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Callout type="info">
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Callout>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from dotenv import load_dotenv
+from composio import Composio
+from agents import Agent, Runner, HostedMCPTool, SQLiteSession
+
+load_dotenv()
+
+# Initialize Composio (API key from env var COMPOSIO_API_KEY)
+composio = Composio()
+
+# Unique identifier of the user
+user_id = "user_123"
+
+# Create a Tool Router session for the user
+session = composio.create(user_id=user_id)
+
+# Configure OpenAI agent with Composio MCP server
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "require_approval": "never",
+                "headers": session.mcp.headers,
+            }
+        )
+    ],
+)
+
+# Memory for multi-turn conversation
+memory = SQLiteSession(user_id)
+
+print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository'
+""")
+
+while True:
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
+        break
+
+    print("Assistant: ", end="", flush=True)
+    try:
+        result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+        print(f"{result.final_output}\n")
+    except Exception as e:
+        print(f"\n[Error]: {e}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { Composio } from "@composio/core";
+import { Agent, run, hostedMcpTool, MemorySession } from "@openai/agents";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
+const composio = new Composio();
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a tool router session for the user
+const session = await composio.create(userId);
+
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.2",
+  tools: [
+    hostedMcpTool({
+      serverLabel: "composio",
+      serverUrl: session.mcp.url,
+      headers: session.mcp.headers // Authentication headers for the Composio MCP server
+    }),
+  ],
+});
+
+// Create a memory session for persistent multi-turn conversation
+const memory = new MemorySession();
+
+// Set up interactive terminal input/output for the conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
+
+// Multi-turn conversation with agentic tool calling
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  console.log("Assistant: ");
+
+  try {
+    // Multi-turn agentic loop: GPT calls tools and reasons until task is complete
+    const result = await run(agent, input, { session: memory });
+    console.log(`${result.finalOutput}`);
+  } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+  }
+}
+readline.close();
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab value="Vercel AI SDK">
+
+<Steps>
+<Step>
+### Install Composio SDK
+
+```bash
+npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
+```
+</Step>
+
+<Step>
+### Create session and run agent
+
+[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+
+<Callout type="info">
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Callout>
+
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+
+```typescript
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
+import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
+import { Composio } from "@composio/core";
+import { stepCountIs, streamText } from "ai";
+
+// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
+const composio = new Composio();
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a tool router session for the user
+const { mcp } = await composio.create(userId);
+
+// Create an MCP client to connect to the Composio tool router
+const client = await createMCPClient({
+  transport: {
+    type: "http",
+    url: mcp.url,
+    headers: mcp.headers, // Authentication headers for the Composio MCP server
+  },
+});
+const tools = await client.tools();
+
+console.log("Summarizing your emails from today");
+
+const stream = await streamText({
+  system: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: anthropic("claude-sonnet-4-5"),
+  prompt: "Summarize my emails from today",
+  stopWhen: stepCountIs(10),
+  onStepFinish: (step) => {
+    for (const toolCall of step.toolCalls) {
+      console.log(`[Using tool: ${toolCall.toolName}]`);
+    }
+  },
+  tools,
+});
+
+for await (const textPart of stream.textStream) {
+  process.stdout.write(textPart);
+}
+
+console.log("\n\n---");
+console.log("Tip: If prompted to authenticate, complete the auth flow and run again.");
+```
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+### What just happened?
+
+When you run this agent, Tool Router:
+1. **Creates an MCP server** with your session configuration
+2. **Searches** for the right tools based on your request
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
+
+</Accordion>
+
+<Accordion title="Using Tool router as a native tool">
+
+<Tabs items={['OpenAI', 'Vercel AI SDK']}>
+<Tab value="OpenAI">
+
+<Steps>
+<Step>
+### Install
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio composio-openai-agents openai-agents
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai-agents @openai/agents
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Create session and use as native tool
+
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Callout type="info">
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from dotenv import load_dotenv
+from composio import Composio
+from agents import Agent, Runner, SQLiteSession
+from composio_openai_agents import OpenAIAgentsProvider
+
+load_dotenv()
+
+# Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+composio = Composio(provider=OpenAIAgentsProvider())
+
+# Unique identifier of the user
+user_id = "user_123"
+
+# Create a session and get native tools for the user
+session = composio.create(user_id=user_id)
+tools = session.tools()
+
+# Configure OpenAI agent with Composio tools
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
+    tools=tools,
+)
+
+# Memory for multi-turn conversation
+memory = SQLiteSession("conversation")
+
+print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository'
+""")
+
+while True:
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
+        break
+
+    print("Assistant: ", end="", flush=True)
+    try:
+        result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+        print(f"{result.final_output}\n")
+    except Exception as e:
+        print(f"\n[Error]: {e}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { Composio } from "@composio/core";
+import { Agent, run, MemorySession } from "@openai/agents";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
+
+// Unique identifier of the user
+const userId = "user_123";
+// Create a tool router session for the user
+const session = await composio.create(userId);
+const tools = await session.tools();
+
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.2",
+  tools,
+});
+
+// Set up interactive terminal input/output for the conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+// Create a memory session for persistent multi-turn conversation
+const memory = new MemorySession();
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  • 'Summarize my emails from today'
+  • 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
+
+// Multi-turn conversation with agentic tool calling
+while (true) {
+    const query = await readline.question("You: ");
+    const input = query.trim();
+
+    if (input.toLowerCase() === "exit") break;
+    process.stdout.write("Assistant: ");
+
+    try {
+      const result = await run(agent, input, { session: memory });
+      process.stdout.write(`${result.finalOutput}`);
+    } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+    }
+}
+readline.close();
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+</Tab>
+
+<Tab value="Vercel AI SDK">
+
+<Steps>
+<Step>
+### Install
+
+```bash
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
+```
+</Step>
+
+<Step>
+### Create session and use as native tool
+
+Tool Router can be added as a single native tool to your agent. This provides a meta-tool that handles search, authentication, and execution across all 1000+ Composio tools.
+
+<Callout type="info">
+- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+- `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
+</Callout>
+
+```typescript
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { stepCountIs, streamText } from "ai";
+
+// Initialize Composio with Vercel provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new VercelProvider() });
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a session and get native tools for the user
+const session = await composio.create(userId);
+const tools = await session.tools();
+
+process.stdout.write("Summarizing your emails from today");
+process.stdout.write("\n");
+
+const stream = await streamText({
+  system: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: anthropic("claude-sonnet-4-5"),
+  prompt: "Summarize my emails from today",
+  stopWhen: stepCountIs(10),
+  onStepFinish: (step) => {
+    for (const toolCall of step.toolCalls) {
+      process.stdout.write(`[Using tool: ${toolCall.toolName}]`);
+      process.stdout.write("\n");
+    }
+  },
+  tools,
+});
+
+for await (const textPart of stream.textStream) {
+  process.stdout.write(textPart);
+}
+
+process.stdout.write("\n");
+process.stdout.write("Tip: If prompted to authenticate, complete the auth flow and run again.");
+```
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+### What just happened?
+
+When you run this agent, Tool Router:
+1. **Provides a single tool** to your agent framework
+2. **Interprets requests** and **searches** for the right tools internally
+3. **Handles authentication** if needed
+4. **Executes tools** and uses a workbench for processing large responses
+
+</Accordion>
+</Accordions>
+
+## Next steps
+
+<Cards>
+  <Card title="Session management" href="/tool-router/users-and-sessions">
+    Learn about users, sessions, and how they work.
+  </Card>
+  <Card title="Tools and toolkits" href="/tool-router/tools-and-toolkits">
+    Learn about tools, toolkits, and how to configure them.
+  </Card>
+  <Card title="Manual authentication" href="/tool-router/manually-authenticating-users">
+    Customise the authentication flow for your users.
+  </Card>
+  <Card title="Using MCP" href="/tool-router/using-with-mcp-clients">
+    Connect Tool Router to any MCP-compatible client.
+  </Card>
+  <Card title="Using as a native tool" href="/tool-router/using-as-a-native-tool">
+    Use Tool Router as a native tool with any AI framework.
+  </Card>
+</Cards>

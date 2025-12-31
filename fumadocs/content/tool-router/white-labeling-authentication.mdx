@@ -1,0 +1,150 @@
+---
+title: White-labeling authentication
+description: Use your own OAuth apps and branded auth screens
+---
+
+White-labeling lets you use your own OAuth apps instead of Composio's. Users will see your app name on consent screens instead of "Composio".
+
+By default, OAuth screens show Composio's branding. With white-labeling, they'll see your app name and logo.
+
+<Steps>
+<Step>
+### Create an OAuth app
+
+Create a developer app in the toolkit's developer portal. You'll need the client ID and client secret. Set the callback URL to:
+
+```
+https://backend.composio.dev/api/v3/toolkits/auth/callback
+```
+
+<Callout type="info">
+For step-by-step guides on creating OAuth apps for some toolkits, see [composio.dev/auth](https://composio.dev/auth).
+</Callout>
+</Step>
+
+<Step>
+### Create auth config
+
+Create an auth config in the [Composio dashboard](https://app.composio.dev):
+
+1. Go to **Authentication management** → **Create Auth Config**
+2. Select the toolkit (e.g., GitHub)
+3. Choose **OAuth2** scheme
+4. Enter your **Client ID** and **Client Secret**
+5. Select the scopes you need
+6. Click **Create**
+
+Copy the auth config ID (e.g., `ac_1234abcd`).
+
+<Callout type="info">
+For detailed instructions with screenshots, see [Custom auth configs](/docs/custom-auth-configs).
+</Callout>
+</Step>
+
+<Step>
+### Use in Tool Router
+
+Pass your auth config ID in the session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config"
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123", {
+  authConfigs: {
+    github: "ac_your_github_config",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+When users connect GitHub, they'll see your OAuth app's name and logo on the consent screen.
+</Step>
+</Steps>
+
+## Mixing custom and Composio-managed auth
+
+You can white-label some toolkits while using Composio's managed credentials for others:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config",
+        # gmail, linear, etc. use Composio managed auth
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123", {
+  authConfigs: {
+    github: "ac_your_github_config",
+    slack: "ac_your_slack_config",
+    // gmail, linear, etc. use Composio managed auth
+  },
+});
+```
+</Tab>
+</Tabs>
+
+## Custom redirect domain
+
+When users authenticate, they briefly see `backend.composio.dev` in their browser URL. Composio needs to receive the OAuth callback to capture and store the authentication tokens.
+
+If you need to hide this URL (for enterprise compliance or complete white-labeling), you can proxy the redirect through your own domain:
+
+1. Set your OAuth app's redirect URI to your domain:
+```
+https://yourdomain.com/api/composio-redirect
+```
+
+2. Create an endpoint that forwards the OAuth callback to Composio:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get("/api/composio-redirect")
+def composio_redirect(request: Request):
+    # Forward all OAuth parameters to Composio
+    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
+    return RedirectResponse(url=f"{composio_url}?{request.url.query}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// pages/api/composio-redirect.ts (Next.js)
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Forward all OAuth parameters to Composio
+  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
+  const params = new URLSearchParams(req.query as Record<string, string>);
+  res.redirect(302, `${composioUrl}?${params.toString()}`);
+}
+```
+</Tab>
+</Tabs>
+
+3. Update your auth config in the Composio dashboard to use your custom redirect URI.
+
+This makes the OAuth flow go through your domain first, then to Composio for token storage.

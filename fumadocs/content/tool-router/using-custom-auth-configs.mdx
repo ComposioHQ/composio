@@ -1,0 +1,61 @@
+---
+title: Using custom auth configs
+description: Set up auth configs for toolkits without Composio managed authentication
+---
+
+Some toolkits don't have Composio managed authentication and require you to provide your own credentials. When Tool Router tries to use these toolkits, it will throw an error asking you to create an auth config.
+
+<Steps>
+<Step>
+### Check if a toolkit needs custom credentials
+
+In the [Composio platform](https://platform.composio.dev), go to "All Toolkits" and select the toolkit. If it shows no Composio managed auth schemes, you'll need to create an auth config.
+</Step>
+
+<Step>
+### Create an auth config
+
+1. Go to **Authentication management** in the [dashboard](https://app.composio.dev)
+2. Click **Create Auth Config**
+3. Select the toolkit
+4. Choose the auth scheme (OAuth2, API Key, etc.)
+5. Enter your credentials (client ID, client secret, API key, etc.)
+6. Click **Create**
+
+Copy the auth config ID (e.g., `ac_1234abcd`).
+
+<Callout type="info">
+For detailed instructions on getting credentials for specific toolkits, see [Custom auth configs](/docs/custom-auth-configs).
+</Callout>
+</Step>
+
+<Step>
+### Use in Tool Router
+
+Pass your auth config ID when creating a session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "posthog": "ac_your_posthog_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123", {
+  authConfigs: {
+    posthog: "ac_your_posthog_config",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Tool Router will now use your auth config when users connect to this toolkit.
+</Step>
+</Steps>

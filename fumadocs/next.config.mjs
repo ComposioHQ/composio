@@ -9,13 +9,18 @@ const config = {
     return [
       {
         source: '/',
-        destination: '/docs/welcome',
+        destination: '/docs',
         permanent: false,
       },
       {
-        source: '/docs',
-        destination: '/docs/welcome',
-        permanent: false,
+        source: '/docs/welcome',
+        destination: '/docs',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/overview',
+        destination: '/tool-router',
+        permanent: true,
       },
     ];
   },

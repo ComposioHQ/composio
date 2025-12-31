@@ -42,6 +42,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Tool Router',
         url: '/tool-router',
+        active: 'nested-url',
       },
       {
         text: 'Toolkits',
