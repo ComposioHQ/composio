@@ -246,24 +246,30 @@ a:focus-visible {
   background-color: var(--composio-sidebar);
 }
 
-#nd-sidebar > div:first-child {
-  padding-top: 0;
+/* Hide empty sidebar header when no title is set */
+#nd-sidebar > div:first-child:has(a:empty) {
+  display: none;
+}
+
+/* Tighter sidebar item spacing */
+#nd-sidebar [data-radix-scroll-area-viewport] a,
+#nd-sidebar [data-radix-scroll-area-viewport] button {
+  min-height: 1.75rem;
+  padding-block: 0.125rem;
+  color: var(--color-fd-foreground);
+}
+
+/* Section headers - distinct from nav items */
+#nd-sidebar [data-radix-scroll-area-viewport] > div > p {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-fd-muted-foreground);
 }
 
 #nd-sidebar-mobile {
   background-color: var(--composio-sidebar);
-}
-
-/* Tighten sidebar item spacing */
-#nd-sidebar a {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-}
-
-/* Reduce space between sidebar sections */
-#nd-sidebar [data-separator] {
-  margin-top: 0.75rem;
-  margin-bottom: 0.25rem;
 }
 
 [data-active="true"] {
