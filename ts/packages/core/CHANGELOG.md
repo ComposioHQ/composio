@@ -1,5 +1,71 @@
 # @composio/core
 
+## 0.3.3
+
+### Patch Changes
+
+- a76b002: Add support for enable/disable tags and search toolkits in tool router
+
+## 0.3.2
+
+### Patch Changes
+
+- 69cfede: Update client version and add openWorldHintSupport in toolrouter tag filters. Removes isLocal param in toolkit fetching
+
+## 0.3.1
+
+### Patch Changes
+
+- 73db5f5: Fix callback url not working in toolrouter's session.authorize()
+
+## 0.3.0
+
+### Minor Changes
+
+- 07551cd: Add support for native tool execution in tool router
+- 9e002c5: Minor fixes
+- f0e67c4: Update API client and tool router types
+- 31521bd: Update typedocs and examples for toolkit versions
+- 9e002c5: Alpha release of tool router
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- 07551cd: Add support for native tool execution in tool router
+
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- f0e67c4: Update API client and tool router types
+
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- 31521bd: Update typedocs and examples for toolkit versions
+
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Minor fixes
+
+## 0.2.7-alpha.0
+
+### Patch Changes
+
+- Alpha release of tool router
+
+## 0.2.6
+
+### Patch Changes
+
+- b5cc23f: Fix dangerously skip version check in non agentic providers, Throw error instead of process.exit when api key doesn't exist, bump zod-to-json-schema to 3.25.0, which supports "zod/3"
+- Updated dependencies [b5cc23f]
+  - @composio/json-schema-to-zod@0.1.19
+
 ## 0.2.5
 
 ### Patch Changes

@@ -2,7 +2,7 @@
 title: Connected Accounts
 image: "https://og.composio.dev/api/og?title=Connected%20Accounts"
 subtitle: "Manage and monitor user connections to toolkits"
-keywords: "connected accounts, manage connections, refresh tokens, account status, account credentials, disable accounts, delete accounts"
+keywords: "connected accounts, manage connections, refresh tokens, account status, account credentials, disable accounts, delete accounts, redacted, mask secrets, mask connected account secrets"
 hide-nav-links: true
 ---
 
@@ -70,6 +70,12 @@ Get account credentials for use with your own tools:
   endLine={40}
 />
 </CodeGroup>
+
+<Warning>
+If credentials return as `REDACTED` instead of actual values, the **Mask Connected Account Secrets** setting is enabled on your account. This setting redacts all sensitive credential data (tokens, secrets, API keys) for security purposes.
+
+To view actual credentials, navigate to **Settings → Project Settings → Project Configuration** and disable "Mask Connected Account Secrets".
+</Warning>
 
 ## Refresh credentials
 

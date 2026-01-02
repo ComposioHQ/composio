@@ -30,3 +30,6 @@ export * from './ValidationErrors';
 
 // SDK Errors
 export * from './SDKErrors';
+
+// Trigger Errors
+export * from './TriggerErrors';

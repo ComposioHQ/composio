@@ -208,7 +208,7 @@ composio = Composio(
     allow_tracking=True,  # Enable/disable telemetry (default: True)
     file_download_dir="./downloads",  # Directory for file downloads
     provider=OpenAIProvider(),  # Custom provider (default: OpenAIProvider)
-    toolkit_versions="latest"  # Toolkit versions to use
+    toolkit_versions={ "github": "12202025_01" }  # Toolkit versions to use
 )
 ```
 

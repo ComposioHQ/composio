@@ -3,6 +3,7 @@
  * - `--compact`: Emit a single module file
  * - `--transpiled`: Emit not just the TypeScript files, but also the transpiled JavaScript files
  * - `--output-dir`: Output directory for the generated TypeScript type stubs.
+ * - `--toolkits`: Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)
  *
  * Invariants:
  * - The `--output-dir` cannot refer to a path inside `node_modules`
@@ -16,10 +17,10 @@
 
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
-import { Console, Effect, Option, pipe } from 'effect';
+import { Console, Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository, InvalidToolkitsError } from 'src/services/composio-clients';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
@@ -52,11 +53,19 @@ export const typeTools = Options.boolean('type-tools').pipe(
   Options.withDescription('Whether to emit type stubs for tools')
 );
 
+export const toolkitsOpt = Options.text('toolkits').pipe(
+  Options.repeated,
+  Options.withDescription(
+    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+  )
+);
+
 const _tsCmd$Generate = Command.make('generate', {
   outputOpt,
   compact,
   transpiled: transpiled,
   typeTools,
+  toolkitsOpt,
 }).pipe(Command.withDescription('Updates the local type stubs with the latest app data.'));
 
 /**
@@ -98,6 +107,7 @@ export function generateTypescriptTypeStubs({
   compact,
   typeTools,
   transpiled = false,
+  toolkitsOpt,
 }: GetCmdParams<typeof _tsCmd$Generate> & { transpiled?: boolean }) {
   return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -122,6 +132,23 @@ export function generateTypescriptTypeStubs({
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
+    // Validate toolkit slugs if specified
+    const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
+    const validatedToolkitSlugs = hasToolkitsFilter
+      ? yield* client
+          .validateToolkits(toolkitsOpt)
+          .pipe(
+            Effect.catchTag('services/InvalidToolkitsError', error =>
+              Effect.fail(
+                new Error(
+                  `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
+                    `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
+                )
+              )
+            )
+          )
+      : [];
+
     const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
       Effect.logDebug('Fetching trigger types...').pipe(
         Effect.flatMap(() => client.getTriggerTypesAsEnums())
@@ -129,7 +156,7 @@ export function generateTypescriptTypeStubs({
       Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
     ]);
 
-    const [toolkits, triggerTypes] = yield* Effect.all(
+    const [allToolkits, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
         Effect.logDebug('Fetching trigger types payloads...').pipe(
@@ -138,6 +165,17 @@ export function generateTypescriptTypeStubs({
       ],
       { concurrency: 'unbounded' }
     );
+
+    // Filter toolkits if --toolkits was specified
+    const toolkits = hasToolkitsFilter
+      ? client.filterToolkitsBySlugs(allToolkits, validatedToolkitSlugs)
+      : allToolkits;
+
+    if (hasToolkitsFilter) {
+      yield* Console.log(
+        `Filtering to ${toolkits.length} toolkit(s): ${toolkits.map(t => t.slug).join(', ')}`
+      );
+    }
 
     // Only fetch tools if `--type-tools` was specified
     const typeableTools = yield* Match.value(typeTools).pipe(

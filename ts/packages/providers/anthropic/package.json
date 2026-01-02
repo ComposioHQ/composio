@@ -1,6 +1,6 @@
 {
   "name": "@composio/anthropic",
-  "version": "0.2.5",
+  "version": "0.3.3",
   "description": "Non-Agentic Provider for Anthropic in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -35,7 +35,7 @@
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
-    "@composio/core": "0.2.5",
+    "@composio/core": "0.3.3",
     "@mastra/mcp": "^0.12.0"
   },
   "devDependencies": {

@@ -90,7 +90,7 @@ The complete API reference documentation is available here:
 - [Providers](./api/providers.md)
 - [Custom Tools](./api/custom-tools.md)
 - [MCP](./api/mcp.md)
-- [ToolRouter (experimental)](./api/tool-router.experimental.md)
+- [ToolRouter](./api/tool-router.md)
 
 ## Providers
 
