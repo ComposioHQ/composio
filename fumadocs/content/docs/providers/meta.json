@@ -10,7 +10,6 @@
     "vercel",
     "openai-agents",
     "mastra",
-    "custom-typescript",
-    "custom-python"
+    "custom-providers"
   ]
 }
