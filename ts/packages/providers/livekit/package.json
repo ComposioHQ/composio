@@ -38,9 +38,6 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
-  "dependencies": {
-    "@composio/json-schema-to-zod": "workspace:*"
-  },
   "peerDependencies": {
     "@composio/core": "0.3.1",
     "@livekit/agents": ">=1.0.0",

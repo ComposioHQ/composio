@@ -1148,10 +1148,6 @@ importers:
         version: 4.1.12
 
   ts/packages/providers/livekit:
-    dependencies:
-      '@composio/json-schema-to-zod':
-        specifier: workspace:*
-        version: link:../../json-schema-to-zod
     devDependencies:
       '@composio/core':
         specifier: workspace:*

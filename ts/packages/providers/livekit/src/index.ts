@@ -14,9 +14,9 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  jsonSchemaToZodSchema,
 } from '@composio/core';
 import { llm } from '@livekit/agents';
-import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 
 /**
  * Type for a single LiveKit Agent tool definition
@@ -97,7 +97,7 @@ export class LivekitProvider extends BaseAgenticProvider<
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): LivekitTool {
     const inputParams = composioTool.inputParameters ?? {};
 
-    const parameters = jsonSchemaToZod(inputParams);
+    const parameters = jsonSchemaToZodSchema(inputParams);
 
     return llm.tool({
       description: composioTool.description ?? `Execute ${composioTool.slug}`,
