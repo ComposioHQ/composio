@@ -357,9 +357,11 @@ class Tools(Resource, t.Generic[TProvider]):
                 processed_arguments = modified_params.get("arguments", arguments)
 
             # Execute the tool via the session's execute_meta endpoint
+            # Note: execute_meta accepts regular tool slugs at runtime, not just meta tool slugs
+            # The type signature expects Literal meta tool slugs, but runtime accepts any str
             response = self._client.tool_router.session.execute_meta(
                 session_id=session_id,
-                slug=slug,
+                slug=slug,  # type: ignore[arg-type]
                 arguments=processed_arguments,
             )
 

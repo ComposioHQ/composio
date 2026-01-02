@@ -1,12 +1,12 @@
 /**
- * Claude Code Agents Provider
+ * Claude Agents Provider
  * To be used with the Claude Agent SDK (@anthropic-ai/claude-agent-sdk)
  *
  * This provider enables integration with Claude Code Agents SDK,
  * allowing Composio tools to be used as MCP tools within Claude agents.
  *
  * @packageDocumentation
- * @module providers/claude-code-agents
+ * @module providers/claude-agents
  */
 import {
   BaseAgenticProvider,
@@ -14,13 +14,13 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  jsonSchemaToZodSchema,
 } from '@composio/core';
 import {
   tool as sdkTool,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
-import { jsonSchemaToZodShape } from '@composio/json-schema-to-zod';
-import type { ZodRawShape } from 'zod';
+import type { ZodObject, ZodRawShape } from 'zod/v3';
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
@@ -41,12 +41,12 @@ export type ClaudeAgentToolCollection = ClaudeAgentTool[];
  * @example
  * ```typescript
  * import { Composio } from '@composio/core';
- * import { ClaudeCodeAgentsProvider } from '@composio/claude-code-agents';
+ * import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
  * import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
  *
  * const composio = new Composio({
  *   apiKey: process.env.COMPOSIO_API_KEY,
- *   provider: new ClaudeCodeAgentsProvider(),
+ *   provider: new ClaudeAgentSDKProvider(),
  * });
  *
  * // Get tools and create MCP server config using claude-agent-sdk's `createSdkMcpServer`
@@ -68,12 +68,12 @@ export type ClaudeAgentToolCollection = ClaudeAgentTool[];
  * }
  * ```
  */
-export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
+export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
   ClaudeAgentToolCollection,
   ClaudeAgentTool,
   McpServerGetResponse
 > {
-  readonly name = 'claude-code-agents';
+  readonly name = 'claude-agent-sdk';
 
   /**
    * Wraps a Composio tool as a Claude Agent SDK MCP tool.
@@ -102,18 +102,16 @@ export class ClaudeCodeAgentsProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
-    const inputParams = composioTool.inputParameters ?? {};
-
-    // This breaks the type inference chain between `zod/v3` (used by `@composio/json-schema-to-zod`)
-    // and `zod` (used by `@anthropic-ai/claude-agent-sdk`).
-    // TODO: This code block should be revisited after
-    // https://github.com/anthropics/claude-agent-sdk-typescript/issues/38 is resolved.
-    const zodShape = jsonSchemaToZodShape(inputParams) as unknown as ZodRawShape;
+    const inputZodSchema = jsonSchemaToZodSchema(
+      composioTool.inputParameters ?? { type: 'object', properties: {} }
+    );
+    // Some issues with zod types and errors when instantiation is excessively deep and possibly infinite.
+    const inputZodShape = (inputZodSchema as unknown as ZodObject<ZodRawShape>).shape;
 
     return sdkTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
-      zodShape,
+      inputZodShape,
       async args => {
         try {
           const result = await executeTool(composioTool.slug, args);

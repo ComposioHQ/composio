@@ -52,6 +52,7 @@ import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
 import { ToolExecuteMetaParams } from '../types/tool.types';
+import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -911,7 +912,8 @@ export class Tools<
     );
 
     const response = await this.client.toolRouter.session.executeMeta(body.sessionId, {
-      slug: toolSlug,
+      // assert this because backend might keep adding more tool slugs
+      slug: toolSlug as SessionExecuteMetaParams['slug'],
       arguments: params,
     });
 

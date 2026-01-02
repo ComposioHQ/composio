@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_llamaindex",
-    version="0.10.2",
+    version="0.10.3",
     author="composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of tools with LlamaIndex Agent Workflows",

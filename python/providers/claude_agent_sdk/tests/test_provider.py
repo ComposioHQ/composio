@@ -7,19 +7,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from composio_claude_code_agents.provider import ClaudeCodeAgentsProvider
+from composio_claude_agent_sdk.provider import ClaudeAgentSDKProvider
 
 
 @pytest.fixture
 def provider():
-    """Create a ClaudeCodeAgentsProvider instance."""
-    return ClaudeCodeAgentsProvider()
+    """Create a ClaudeAgentSDKProvider instance."""
+    return ClaudeAgentSDKProvider()
 
 
 @pytest.fixture
 def custom_provider():
-    """Create a ClaudeCodeAgentsProvider with custom options."""
-    return ClaudeCodeAgentsProvider(
+    """Create a ClaudeAgentSDKProvider with custom options."""
+    return ClaudeAgentSDKProvider(
         server_name="custom-server",
         server_version="2.0.0",
     )
@@ -65,7 +65,7 @@ def mock_execute_tool():
     )
 
 
-class TestClaudeCodeAgentsProviderInit:
+class TestClaudeAgentSDKProviderInit:
     """Tests for provider initialization."""
 
     def test_default_options(self, provider):
@@ -80,7 +80,7 @@ class TestClaudeCodeAgentsProviderInit:
 
     def test_name_property(self, provider):
         """Test provider has correct name."""
-        assert provider.name == "claude_code_agents"
+        assert provider.name == "claude_agent_sdk"
 
 
 class TestJsonSchemaConversion:
@@ -111,7 +111,7 @@ class TestWrapTool:
         self, provider, mock_tool, mock_execute_tool
     ):
         """Test that wrap_tool returns an SdkMcpTool."""
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             mock_sdk_tool.return_value = lambda fn: fn
             provider.wrap_tool(mock_tool, mock_execute_tool)
 
@@ -130,7 +130,7 @@ class TestWrapTool:
             input_parameters={"type": "object", "properties": {}},
         )
 
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             mock_sdk_tool.return_value = lambda fn: fn
             provider.wrap_tool(tool_without_desc, mock_execute_tool)
 
@@ -147,7 +147,7 @@ class TestWrapTool:
             input_parameters=None,
         )
 
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             mock_sdk_tool.return_value = lambda fn: fn
             provider.wrap_tool(tool_without_params, mock_execute_tool)
 
@@ -169,7 +169,7 @@ class TestWrapTools:
         )
         tools = [mock_tool, another_tool]
 
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             mock_sdk_tool.return_value = lambda fn: fn
             wrapped = provider.wrap_tools(tools, mock_execute_tool)
 
@@ -190,7 +190,7 @@ class TestCreateMcpServer:
         mock_tools = [MagicMock(), MagicMock()]
 
         with patch(
-            "composio_claude_code_agents.provider.create_sdk_mcp_server"
+            "composio_claude_agent_sdk.provider.create_sdk_mcp_server"
         ) as mock_create:
             mock_create.return_value = {"type": "sdk", "name": "composio"}
             provider.create_mcp_server(mock_tools)
@@ -206,7 +206,7 @@ class TestCreateMcpServer:
         mock_tools = [MagicMock()]
 
         with patch(
-            "composio_claude_code_agents.provider.create_sdk_mcp_server"
+            "composio_claude_agent_sdk.provider.create_sdk_mcp_server"
         ) as mock_create:
             mock_create.return_value = {"type": "sdk", "name": "custom-server"}
             custom_provider.create_mcp_server(mock_tools)
@@ -220,7 +220,7 @@ class TestCreateMcpServer:
     def test_create_mcp_server_with_empty_tools(self, provider):
         """Test creating MCP server with empty tools list."""
         with patch(
-            "composio_claude_code_agents.provider.create_sdk_mcp_server"
+            "composio_claude_agent_sdk.provider.create_sdk_mcp_server"
         ) as mock_create:
             mock_create.return_value = {"type": "sdk", "name": "composio"}
             provider.create_mcp_server([])
@@ -241,7 +241,7 @@ class TestToolHandlerExecution:
         mock_execute = MagicMock(return_value={"data": "success", "successful": True})
 
         # Create a real wrapped tool to test the handler
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             # Capture the decorated function
             captured_handler = None
 
@@ -267,7 +267,7 @@ class TestToolHandlerExecution:
         """Test tool execution with error."""
         mock_execute = MagicMock(side_effect=Exception("Test error"))
 
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             captured_handler = None
 
             def capture_decorator(name, desc, schema):
@@ -293,7 +293,7 @@ class TestToolHandlerExecution:
         """Test tool execution returning string result."""
         mock_execute = MagicMock(return_value="Simple string result")
 
-        with patch("composio_claude_code_agents.provider.sdk_tool") as mock_sdk_tool:
+        with patch("composio_claude_agent_sdk.provider.sdk_tool") as mock_sdk_tool:
             captured_handler = None
 
             def capture_decorator(name, desc, schema):

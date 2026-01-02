@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio Claude Code Agents plugin
+Setup configuration for Composio Claude Agent SDK plugin
 """
 
 from pathlib import Path
@@ -7,11 +7,11 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 setup(
-    name="composio_claude_code_agents",
-    version="0.10.1",
+    name="composio_claude_agent_sdk",
+    version="0.10.3",
     author="Composio",
     author_email="tech@composio.dev",
-    description="Use Composio to get array of tools for Claude Code Agents SDK",
+    description="Use Composio to get array of tools for Claude Agent SDK",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
