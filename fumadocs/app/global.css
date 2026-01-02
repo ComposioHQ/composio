@@ -10,19 +10,17 @@
    COMPOSIO DOCS
 
    Palette:
-   - Light: Content #ffffff, Sidebar #fbfaf8
+   - Light: Content #ffffff, Sidebar #f7f5f2
    - Dark:  Content #1a1815, Sidebar #252220
    - Accent: #ea580c (Tailwind orange-600)
 
    Typography:
-   - Headings: Flecha (serif)
-   - Body: Inter (sans)
+   - All text: Inter
    - Code: IBM Plex Mono
    ========================================================================== */
 
 @theme inline {
-  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-flecha), Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --radius: 0.625rem;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -71,7 +69,7 @@
 :root {
   /* Brand */
   --composio-orange: #ea580c;
-  --composio-sidebar: #fbfaf8;
+  --composio-sidebar: #f7f5f2;
 
   /* Fumadocs overrides - Light */
   --color-fd-background: #ffffff;
@@ -189,9 +187,10 @@ html {
    Typography
    ========================================================================== */
 
-/* Headings - Flecha serif (sizes/spacing from Fumadocs defaults) */
+/* Headings */
 h1, h2, h3, h4 {
-  font-family: var(--font-serif);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
   letter-spacing: -0.01em;
 }
 
@@ -251,7 +250,7 @@ a:focus-visible {
   display: none;
 }
 
-/* Tighter sidebar item spacing */
+/* Sidebar nav items */
 #nd-sidebar [data-radix-scroll-area-viewport] a,
 #nd-sidebar [data-radix-scroll-area-viewport] button {
   min-height: 1.75rem;
@@ -259,10 +258,14 @@ a:focus-visible {
   color: var(--color-fd-foreground);
 }
 
+#nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
+  color: var(--composio-orange);
+}
+
 /* Section headers - distinct from nav items */
 #nd-sidebar [data-radix-scroll-area-viewport] > div > p {
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-fd-muted-foreground);
@@ -339,25 +342,24 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Active nav link - underline style */
-#nd-nav nav > a[data-active="true"] {
+/* Active nav link */
+#nd-nav a[data-active="true"] {
   color: var(--composio-orange);
   position: relative;
 }
 
-#nd-nav nav > a[data-active="true"]:hover {
+#nd-nav a[data-active="true"]:hover {
   background: transparent;
 }
 
-#nd-nav nav > a[data-active="true"]::after {
+#nd-nav a[data-active="true"]::after {
   content: '';
   position: absolute;
-  bottom: -0.25rem;
-  left: 0.75rem;
-  right: 0.75rem;
+  bottom: -0.8rem;
+  left: 0.25rem;
+  right: 0.25rem;
   height: 2px;
   background: var(--composio-orange);
-  border-radius: 1px;
 }
 
 /* Right side items - consistent gaps */
