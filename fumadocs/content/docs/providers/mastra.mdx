@@ -1,0 +1,62 @@
+---
+title: Mastra Provider
+description: Use Composio with Mastra's TypeScript framework
+---
+
+Mastra is a TypeScript native framework for building agents with tools and MCPs. It expects tools to be in the following format:
+- Inputs: What information the tool needs to run (defined with an `inputSchema`, often using Zod).
+- Outputs: The structure of the data the tool returns (defined with an `outputSchema`).
+- Execution Logic: The code that performs the tool's action.
+- Description: Text that helps the agent understand what the tool does and when to use it.
+
+More documentation [here](https://mastra.ai/en/docs/tools-mcp/overview#creating-tools)
+
+The Mastra provider formats the Composio tools into this format along with the execution logic so that agents can call and execute the Composio tools.
+
+## Setup
+
+```bash
+npm install @composio/mastra
+```
+
+You can specify the provider in the constructor.
+
+```typescript
+import { Composio } from "@composio/core";
+import { MastraProvider } from "@composio/mastra";
+import { Agent } from "@mastra/core/agent";
+import { openai } from "@ai-sdk/openai";
+
+const composio = new Composio({
+  provider: new MastraProvider(),
+});
+```
+
+## Usage
+
+The tools are passed to the agent as a parameter.
+
+```typescript
+const userId = "john doe";
+
+const tools = await composio.tools.get(
+  userId,
+  {
+    toolkits: ["SUPABASE"],
+  }
+);
+
+const agent = new Agent({
+  name: "Supabase Agent",
+  instructions: "You think therefore you are.",
+  model: openai("gpt-4.1"),
+  tools: tools,
+});
+
+const { text } = await agent.generate([
+  { role: "user", content: "Tell me about my Supabase project" },
+]);
+
+console.log("\n🤖 Agent Response:\n");
+console.log(text);
+```

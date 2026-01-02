@@ -4,6 +4,7 @@
     "index",
     "quickstart",
     "capabilities",
+    "providers",
     "---Tools and Triggers---",
     "fetching-tools",
     "authenticating-tools",
