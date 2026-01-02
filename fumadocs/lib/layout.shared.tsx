@@ -51,6 +51,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Reference',
         url: '/reference',
+        active: 'nested-url',
       },
       {
         text: 'Examples',

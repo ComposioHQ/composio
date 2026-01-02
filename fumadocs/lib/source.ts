@@ -1,6 +1,8 @@
 import { docs, toolRouter, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
-import { type InferPageType, loader } from 'fumadocs-core/source';
+import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
+import { openapi } from './openapi';
+import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
@@ -15,10 +17,18 @@ export const toolRouterSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
+// Combined reference source with MDX pages and OpenAPI-generated pages
+const openapiPages = await openapiSource(openapi, {
+  groupBy: 'tag',
+});
+
 export const referenceSource = loader({
   baseUrl: '/reference',
-  source: reference.toFumadocsSource(),
-  plugins: [lucideIconsPlugin()],
+  source: multiple({
+    mdx: reference.toFumadocsSource(),
+    openapi: openapiPages,
+  }),
+  plugins: [lucideIconsPlugin(), openapiPlugin()],
 });
 
 export const examplesSource = loader({
@@ -32,6 +42,7 @@ export const toolkitsSource = loader({
   source: toolkits.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
+
 
 export const changelogEntries = changelog;
 

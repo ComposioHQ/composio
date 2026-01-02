@@ -16,11 +16,13 @@
     "clsx": "^2.1.1",
     "fumadocs-core": "16.3.2",
     "fumadocs-mdx": "14.2.2",
+    "fumadocs-openapi": "^10.2.2",
     "fumadocs-ui": "16.3.2",
     "lucide-react": "^0.562.0",
     "next": "16.0.10",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "shiki": "^3.20.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
