@@ -265,6 +265,14 @@ export class TelemetryTransport {
       logger.error('Error sending error telemetry', error);
     }
   }
+
+  /**
+   * Flush any pending telemetry and wait for it to complete.
+   * Call this before process exit to ensure all telemetry is sent.
+   */
+  async flush(): Promise<void> {
+    await this.batchProcessor.flush();
+  }
 }
 
 export const telemetry = new TelemetryTransport();
