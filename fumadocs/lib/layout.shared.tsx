@@ -47,6 +47,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Toolkits',
         url: '/toolkits',
+        active: 'nested-url',
       },
       {
         text: 'Reference',
@@ -56,6 +57,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Examples',
         url: '/examples',
+        active: 'nested-url',
       },
       {
         type: 'icon',

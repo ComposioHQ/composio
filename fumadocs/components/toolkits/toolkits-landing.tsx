@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, MessageSquarePlus } from 'lucide-react';
+import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits.json';
 import type { Toolkit } from '@/types/toolkit';
 
@@ -153,39 +153,36 @@ export function ToolkitsLanding() {
   return (
     <div className="space-y-5 sm:space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-fd-foreground sm:text-3xl">Toolkits</h1>
-        <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
-          Browse {toolkits.length} toolkits supported by Composio
-        </p>
-      </div>
-
-      {/* Action Cards */}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Link
-          href="/toolkits/premium-tools"
-          className="group flex flex-1 items-center justify-between gap-3 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 transition-all hover:border-orange-500/50 hover:bg-orange-500/10"
-        >
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Sparkles className="h-4 w-4 shrink-0 text-orange-500" />
-            <span className="text-sm font-medium text-fd-foreground">Premium Tools</span>
-            <span className="hidden text-sm text-fd-muted-foreground sm:inline">— Pricing and limits</span>
-          </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
-        </Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-fd-foreground sm:text-3xl">Toolkits</h1>
+          <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
+            Browse {toolkits.length} toolkits supported by Composio
+          </p>
+        </div>
         <a
           href="https://request.composio.dev/boards/tool-requests"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center justify-between gap-3 rounded-md border border-fd-border bg-fd-background px-3 py-2.5 transition-all hover:border-fd-primary/50 hover:bg-fd-accent/50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
         >
-          <div className="flex items-center gap-x-2">
-            <MessageSquarePlus className="h-4 w-4 shrink-0 text-fd-muted-foreground group-hover:text-fd-primary" />
-            <span className="text-sm font-medium text-fd-foreground">Request a Tool</span>
-          </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-fd-primary" />
+          Request a tool
+          <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>
+
+      {/* Premium Tools Card */}
+      <Link
+        href="/toolkits/premium-tools"
+        className="group flex items-center justify-between gap-3 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 transition-all hover:border-orange-500/50 hover:bg-orange-500/10"
+      >
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Sparkles className="h-4 w-4 shrink-0 text-orange-500" />
+          <span className="text-sm font-medium text-fd-foreground">Premium Tools</span>
+          <span className="hidden text-sm text-fd-muted-foreground sm:inline">— Learn about pricing and limits</span>
+        </div>
+        <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
+      </Link>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
