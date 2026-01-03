@@ -43,7 +43,6 @@ export const toolkitsSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-
 export const changelogEntries = changelog;
 
 export function getPageImage(page: InferPageType<typeof source>) {

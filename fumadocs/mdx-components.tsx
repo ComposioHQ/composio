@@ -11,6 +11,7 @@ import { ProviderCard, ProviderGrid } from '@/components/provider-card';
 import { Figure } from '@/components/figure';
 import { Video } from '@/components/video';
 import { CapabilityCard, CapabilityList } from '@/components/capability-card';
+import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { ShieldCheck, Route as RouteIcon } from 'lucide-react';
 import {
   Key,
@@ -46,6 +47,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Video,
     CapabilityCard,
     CapabilityList,
+    ToolkitsLanding,
     // Lucide icons - available globally in MDX without imports
     ShieldCheck,
     RouteIcon,
