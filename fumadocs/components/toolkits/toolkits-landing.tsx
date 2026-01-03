@@ -2,11 +2,24 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check } from 'lucide-react';
+import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, MessageSquarePlus } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits.json';
 import type { Toolkit } from '@/types/toolkit';
 
 const toolkits = toolkitsData as Toolkit[];
+
+// Popular toolkit slugs (shown at top when no filters)
+const POPULAR_SLUGS = [
+  'github',
+  'gmail',
+  'slack',
+  'notion',
+  'googlesheets',
+  'shopify',
+  'googledrive',
+  'supabase',
+  'hubspot',
+];
 
 // Get unique categories
 const categories = Array.from(
@@ -48,9 +61,45 @@ function CopySlugButton({ slug }: { slug: string }) {
   );
 }
 
+function ToolkitRow({ toolkit }: { toolkit: Toolkit }) {
+  return (
+    <Link
+      href={`/toolkits/${toolkit.slug}`}
+      className="group flex flex-col gap-2 px-2 py-3 transition-colors hover:bg-fd-accent/30 sm:flex-row sm:items-center sm:justify-between sm:px-0 sm:py-2.5"
+    >
+      {/* Left side: Icon, Name, Slug */}
+      <div className="flex items-center gap-3">
+        <ToolkitIcon toolkit={toolkit} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <span className="truncate text-sm font-medium text-fd-foreground">{toolkit.name.trim()}</span>
+          <CopySlugButton slug={toolkit.slug} />
+        </div>
+      </div>
+      {/* Right side: Counts */}
+      <div className="flex items-center gap-3 pl-12 text-xs text-fd-muted-foreground sm:pl-0">
+        <span className="flex items-center gap-1">
+          <Wrench className="h-3.5 w-3.5" />
+          {toolkit.toolCount}
+        </span>
+        <span className="flex items-center gap-1">
+          <Zap className="h-3.5 w-3.5" />
+          {toolkit.triggerCount}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export function ToolkitsLanding() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
+
+  // Get popular toolkits
+  const popularToolkits = useMemo(() => {
+    return POPULAR_SLUGS
+      .map((slug) => toolkits.find((t) => t.slug === slug))
+      .filter((t): t is Toolkit => t !== undefined);
+  }, []);
 
   const filteredToolkits = useMemo(() => {
     let result = toolkits;
@@ -111,18 +160,32 @@ export function ToolkitsLanding() {
         </p>
       </div>
 
-      {/* Premium Tools Card */}
-      <Link
-        href="/toolkits/premium-tools"
-        className="group flex items-center justify-between gap-3 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 transition-all hover:border-orange-500/50 hover:bg-orange-500/10"
-      >
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Sparkles className="h-4 w-4 shrink-0 text-orange-500" />
-          <span className="text-sm font-medium text-fd-foreground">Premium Tools</span>
-          <span className="hidden text-sm text-fd-muted-foreground sm:inline">— Learn about pricing and limits</span>
-        </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
-      </Link>
+      {/* Action Cards */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Link
+          href="/toolkits/premium-tools"
+          className="group flex flex-1 items-center justify-between gap-3 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 transition-all hover:border-orange-500/50 hover:bg-orange-500/10"
+        >
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Sparkles className="h-4 w-4 shrink-0 text-orange-500" />
+            <span className="text-sm font-medium text-fd-foreground">Premium Tools</span>
+            <span className="hidden text-sm text-fd-muted-foreground sm:inline">— Pricing and limits</span>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
+        </Link>
+        <a
+          href="https://request.composio.dev/boards/tool-requests"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center justify-between gap-3 rounded-md border border-fd-border bg-fd-background px-3 py-2.5 transition-all hover:border-fd-primary/50 hover:bg-fd-accent/50"
+        >
+          <div className="flex items-center gap-x-2">
+            <MessageSquarePlus className="h-4 w-4 shrink-0 text-fd-muted-foreground group-hover:text-fd-primary" />
+            <span className="text-sm font-medium text-fd-foreground">Request a Tool</span>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-fd-primary" />
+        </a>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -163,6 +226,18 @@ export function ToolkitsLanding() {
         {search && ` matching "${search}"`}
       </p>
 
+      {/* Popular Toolkits - only show when no filters */}
+      {!search && category === 'all' && popularToolkits.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
+          <div className="divide-y divide-fd-border">
+            {popularToolkits.map((toolkit) => (
+              <ToolkitRow key={toolkit.slug} toolkit={toolkit} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Alphabetically grouped list - table style */}
       {groupedToolkits.length > 0 ? (
         <div className="space-y-6">
@@ -171,31 +246,7 @@ export function ToolkitsLanding() {
               <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">{letter}</h2>
               <div className="divide-y divide-fd-border">
                 {items.map((toolkit) => (
-                  <Link
-                    key={toolkit.slug}
-                    href={`/toolkits/${toolkit.slug}`}
-                    className="group flex flex-col gap-2 px-2 py-3 transition-colors hover:bg-fd-accent/30 sm:flex-row sm:items-center sm:justify-between sm:px-0 sm:py-2.5"
-                  >
-                    {/* Left side: Icon, Name, Slug */}
-                    <div className="flex items-center gap-3">
-                      <ToolkitIcon toolkit={toolkit} />
-                      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                        <span className="truncate text-sm font-medium text-fd-foreground">{toolkit.name.trim()}</span>
-                        <CopySlugButton slug={toolkit.slug} />
-                      </div>
-                    </div>
-                    {/* Right side: Counts */}
-                    <div className="flex items-center gap-3 pl-12 text-xs text-fd-muted-foreground sm:pl-0">
-                      <span className="flex items-center gap-1">
-                        <Wrench className="h-3.5 w-3.5" />
-                        {toolkit.toolCount}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Zap className="h-3.5 w-3.5" />
-                        {toolkit.triggerCount}
-                      </span>
-                    </div>
-                  </Link>
+                  <ToolkitRow key={toolkit.slug} toolkit={toolkit} />
                 ))}
               </div>
             </div>
