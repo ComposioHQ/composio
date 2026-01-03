@@ -9,10 +9,16 @@ import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
 // see https://fumadocs.dev/docs/mdx/collections
+
+// Extended schema with keywords for search
+const docsSchema = frontmatterSchema.extend({
+  keywords: z.array(z.string()).optional(),
+});
+
 export const docs = defineDocs({
   dir: 'content/docs',
   docs: {
-    schema: frontmatterSchema,
+    schema: docsSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },
@@ -25,7 +31,7 @@ export const docs = defineDocs({
 export const toolRouter = defineDocs({
   dir: 'content/tool-router',
   docs: {
-    schema: frontmatterSchema,
+    schema: docsSchema,
   },
   meta: {
     schema: metaSchema,
@@ -35,7 +41,7 @@ export const toolRouter = defineDocs({
 export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
-    schema: frontmatterSchema,
+    schema: docsSchema,
   },
   meta: {
     schema: metaSchema,
@@ -45,7 +51,7 @@ export const reference = defineDocs({
 export const examples = defineDocs({
   dir: 'content/examples',
   docs: {
-    schema: frontmatterSchema,
+    schema: docsSchema,
   },
   meta: {
     schema: metaSchema,
@@ -55,7 +61,7 @@ export const examples = defineDocs({
 export const toolkits = defineDocs({
   dir: 'content/toolkits',
   docs: {
-    schema: frontmatterSchema,
+    schema: docsSchema,
   },
   meta: {
     schema: metaSchema,

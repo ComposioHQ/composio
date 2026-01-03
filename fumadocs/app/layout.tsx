@@ -31,6 +31,11 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             attribute: 'class',
             enableSystem: false,
           }}
+          search={{
+            options: {
+              api: '/api/search',
+            },
+          }}
         >
           {children}
         </RootProvider>
