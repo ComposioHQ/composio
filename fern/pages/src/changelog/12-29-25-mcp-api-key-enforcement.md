@@ -14,10 +14,6 @@ A new **"Require API Key for MCP"** toggle is now available in your Project Sett
 |---------|---------|--------|
 | `require_mcp_api_key` | `false` | Opt-in; no changes to existing behavior |
 
-<Note>
-This is an **opt-in security feature**. Your existing MCP integrations will continue to work without any changes unless you explicitly enable this setting.
-</Note>
-
 ## How It Works
 
 When the setting is **disabled** (default):
