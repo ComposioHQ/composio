@@ -376,6 +376,13 @@ a:focus-visible {
   background: var(--composio-orange);
 }
 
+/* Hide underline on mobile nav */
+@media (max-width: 767px) {
+  #nd-nav a[data-active="true"]::after {
+    display: none;
+  }
+}
+
 /* Right side items - consistent gaps */
 #nd-nav > div:last-child {
   gap: 0.5rem;
