@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function HomePage() {
   return (
     <div className="flex flex-col justify-center text-center flex-1 px-6 py-16">
-      <h1 className="text-3xl md:text-4xl mb-4" style={{ fontFamily: 'var(--font-serif)', color: 'var(--orange)' }}>
+      <h1 className="text-3xl md:text-4xl mb-4 font-medium tracking-tight" style={{ color: 'var(--composio-orange)' }}>
         Composio Documentation
       </h1>
       <p className="text-lg text-[var(--color-fd-muted-foreground)] max-w-xl mx-auto mb-8">
