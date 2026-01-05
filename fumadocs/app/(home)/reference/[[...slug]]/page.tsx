@@ -32,7 +32,7 @@ export default async function Page({
   if ('getAPIPageProps' in page.data) {
     const pageData = page.data as OpenAPIPageData;
     return (
-      <DocsPage full>
+      <DocsPage full tableOfContentPopover={{ enabled: false }}>
         <h1 className="text-2xl font-semibold mb-4">{pageData.title}</h1>
         <DocsBody>
           <APIPage {...pageData.getAPIPageProps()} />
@@ -47,7 +47,7 @@ export default async function Page({
   const MDX = mdxData.body;
 
   return (
-    <DocsPage toc={mdxData.toc} full={mdxData.full} footer={{ enabled: false }}>
+    <DocsPage toc={mdxData.toc} full={mdxData.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
       <DocsTitle>{mdxData.title}</DocsTitle>
       <DocsDescription>{mdxData.description}</DocsDescription>
       <DocsBody>
