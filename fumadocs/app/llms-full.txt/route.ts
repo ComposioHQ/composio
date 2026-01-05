@@ -1,10 +1,24 @@
-import { getLLMText, source } from '@/lib/source';
+import { source } from '@/lib/source';
 
 export const revalidate = false;
 
 export async function GET() {
-  const scan = source.getPages().map(getLLMText);
-  const scanned = await Promise.all(scan);
+  const pages = source.getPages();
+  const results: string[] = [];
 
-  return new Response(scanned.join('\n\n'));
+  for (const page of pages) {
+    try {
+      const processed = await page.data.getText('processed');
+      results.push(`# ${page.data.title}\n\n${processed}`);
+    } catch {
+      // Fallback to basic info if getText fails
+      results.push(`# ${page.data.title}\n\n${page.data.description || ''}`);
+    }
+  }
+
+  return new Response(results.join('\n\n'), {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  });
 }
