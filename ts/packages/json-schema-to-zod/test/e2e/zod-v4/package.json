@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
-    "zod": "^4.1.0"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "vitest": "catalog:"
