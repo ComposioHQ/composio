@@ -45,15 +45,15 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
         <span className="shrink-0 text-fd-muted-foreground">
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
-        <span className="flex flex-1 items-center justify-between gap-2">
-          <span className="text-sm font-medium text-fd-foreground">{item.name}</span>
+        <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
           <span
             role="button"
             onClick={copySlug}
-            className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+            className="inline-flex w-fit shrink-0 items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
           >
-            {item.slug}
-            {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+            <span className="max-w-[200px] truncate sm:max-w-[300px]">{item.slug}</span>
+            {copied ? <Check className="h-3 w-3 shrink-0 text-green-500" /> : <Copy className="h-3 w-3 shrink-0" />}
           </span>
         </span>
       </button>
