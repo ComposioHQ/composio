@@ -2,6 +2,7 @@ import { toolkitsSource } from '@/lib/source';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
+import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Metadata } from 'next';
@@ -18,6 +19,9 @@ async function getToolkits(): Promise<Toolkit[]> {
 }
 
 export async function generateStaticParams() {
+  // Index page
+  const indexParam = { slug: [] };
+
   // MDX pages
   const mdxParams = toolkitsSource.generateParams();
 
@@ -27,7 +31,7 @@ export async function generateStaticParams() {
     slug: [toolkit.slug],
   }));
 
-  return [...mdxParams, ...jsonParams];
+  return [indexParam, ...mdxParams, ...jsonParams];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
@@ -68,6 +72,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
 export default async function ToolkitsPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
 
+  // Index page - show landing with search/filter
+  if (!slug || slug.length === 0) {
+    return <ToolkitsLanding />;
+  }
+
   // Check MDX first
   const page = toolkitsSource.getPage(slug);
   if (page) {
@@ -80,7 +89,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
   }
 
   // Check JSON toolkit
-  if (slug?.length === 1) {
+  if (slug.length === 1) {
     const toolkitSlug = slug[0];
     const toolkits = await getToolkits();
     const toolkit = toolkits.find((t) => t.slug === toolkitSlug);
