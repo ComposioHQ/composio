@@ -16,16 +16,12 @@ This is the Composio documentation site built with Fumadocs (Next.js-based docs 
 - `--font-sans: 'Inter'` - Body text
 - `--font-mono: 'IBM Plex Mono'` - Code blocks
 
-## Mobile Considerations
-- The nav active underline (`#nd-nav a[data-active="true"]::after`) is hidden on mobile via media query
-- Always test navigation changes on mobile - fumadocs uses different nav patterns for mobile vs desktop
-- Mobile nav is in a dropdown, desktop nav is horizontal
-
 ## Common Gotchas
 1. **CSS variables**: Use `var(--composio-orange)` not `var(--orange)`. Check `global.css` for defined variables.
 2. **Date format**: Changelog dates must be YYYY-MM-DD format (validated in schema and runtime)
 3. **Toolkits data**: `public/data/toolkits.json` must exist - errors are thrown, not silently ignored
 4. **Root directory on Vercel**: Set to `fumadocs` with "Include files outside root directory" DISABLED
+5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
 
 ## Deployment
 - Vercel project: `composio/fumadocs`
