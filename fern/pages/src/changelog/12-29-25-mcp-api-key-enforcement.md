@@ -56,9 +56,11 @@ curl -X POST "https://mcp.composio.dev/{mcp_url}" \
 ### Via Dashboard
 
 1. Navigate to [Project Settings](https://platform.composio.dev/settings)
-2. Find the **"Require API Key for MCP"** toggle under Security settings
-3. Enable the toggle
-4. Save your changes
+2. Go to the **Project Configuration** tab
+3. Find the **"Require API Key for MCP"** toggle
+4. Enable the toggle
+
+![MCP API Key Toggle in Project Settings](/assets/images/mcp-api-key-toggle.png)
 
 ### Via API
 
