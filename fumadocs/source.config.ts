@@ -72,7 +72,9 @@ export const changelog = defineCollections({
   type: 'doc',
   dir: 'content/changelog',
   schema: frontmatterSchema.extend({
-    date: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+      message: 'Date must be in YYYY-MM-DD format (e.g., "2025-12-29")',
+    }),
   }),
 });
 

@@ -71,14 +71,26 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function validateDateFormat(dateStr: string): void {
+  if (!DATE_REGEX.test(dateStr)) {
+    throw new Error(
+      `Invalid date format: "${dateStr}". Expected YYYY-MM-DD (e.g., "2025-12-29")`
+    );
+  }
+}
+
 export function dateToChangelogUrl(dateStr: string): string {
   // Convert "2025-12-29" to "/docs/changelog/2025/12/29"
+  validateDateFormat(dateStr);
   const [year, month, day] = dateStr.split('-');
   return `/docs/changelog/${year}/${month}/${day}`;
 }
 
 export function dateToSlug(dateStr: string): string[] {
   // Convert "2025-12-29" to ["2025", "12", "29"]
+  validateDateFormat(dateStr);
   const [year, month, day] = dateStr.split('-');
   return [year, month, day];
 }
