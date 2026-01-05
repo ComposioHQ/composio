@@ -29,20 +29,19 @@ When the setting is **enabled**:
 
 **Without API key (when enforcement is enabled):**
 ```bash
-curl -X POST "https://mcp.composio.dev/{mcp_url}" \
+curl -X POST "https://mcp.composio.dev/{your_mcp_server_url}" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}'
 
 # Response: 401 Unauthorized
-# {"error": "API key is required in headers for security reasons"}
 ```
 
 **With API key:**
 ```bash
-curl -X POST "https://mcp.composio.dev/{mcp_url}" \
+curl -X POST "https://mcp.composio.dev/{your_mcp_server_url}" \
   -H "Content-Type: application/json" \
   -H "x-api-key: ak_your_api_key" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}'
 
 # Response: 200 OK
 ```
@@ -56,7 +55,9 @@ curl -X POST "https://mcp.composio.dev/{mcp_url}" \
 3. Find the **"Require API Key for MCP"** toggle
 4. Enable the toggle
 
-![MCP API Key Toggle in Project Settings](/assets/images/mcp-api-key-toggle.png)
+<Frame>
+  <img src="/assets/images/mcp-api-key-toggle.png" alt="MCP API Key Toggle in Project Settings" />
+</Frame>
 
 ### Via API
 
@@ -79,11 +80,10 @@ curl -X PATCH "https://backend.composio.dev/api/v3/org/project/config" \
 }
 ```
 
-### Via SDK
+### Via Code
 
 <CodeGroup>
 ```python title="Python"
-# Update project config to require MCP API key
 import requests
 
 response = requests.patch(
@@ -98,7 +98,6 @@ response = requests.patch(
 print(response.json())
 ```
 ```typescript title="TypeScript"
-// Update project config to require MCP API key
 const response = await fetch(
   "https://backend.composio.dev/api/v3/org/project/config",
   {
@@ -124,15 +123,6 @@ Enable API key enforcement when you need to:
 - **Add an extra security layer** for production deployments
 - **Audit and track** MCP server usage through API key attribution
 
-## Backward Compatibility
-
-This is a **fully opt-in feature** with no impact on existing integrations:
-
-- Default value is `false` — no changes to current behavior
-- Existing MCP servers continue to work without modification
-- You can enable/disable the setting at any time
-- The setting applies project-wide to all MCP servers in that project
-
 ## API Reference
 
 ### Get Current Setting
@@ -145,8 +135,10 @@ GET /api/v3/org/project/config
 
 ```http
 PATCH /api/v3/org/project/config
+```
 
+```json
 {
-  "require_mcp_api_key": true | false
+  "require_mcp_api_key": true
 }
 ```
