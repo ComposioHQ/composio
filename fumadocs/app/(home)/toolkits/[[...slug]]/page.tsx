@@ -9,12 +9,30 @@ import type { Metadata } from 'next';
 import type { Toolkit } from '@/types/toolkit';
 
 async function getToolkits(): Promise<Toolkit[]> {
+  const filePath = join(process.cwd(), 'public/data/toolkits.json');
+
   try {
-    const filePath = join(process.cwd(), 'public/data/toolkits.json');
     const data = await readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
+    const toolkits = JSON.parse(data) as Toolkit[];
+
+    if (!Array.isArray(toolkits)) {
+      throw new Error('toolkits.json must contain an array');
+    }
+
+    if (toolkits.length === 0) {
+      console.warn('[Toolkits] Warning: toolkits.json is empty');
+    }
+
+    return toolkits;
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') {
+      throw new Error(`Toolkits data file not found: ${filePath}`);
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error(`Invalid JSON in toolkits.json: ${error.message}`);
+    }
+    throw error;
   }
 }
 
