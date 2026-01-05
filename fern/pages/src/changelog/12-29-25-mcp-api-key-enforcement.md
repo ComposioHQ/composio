@@ -2,6 +2,10 @@
 
 We've introduced a new project-level security setting that allows you to require API key authentication for all MCP server requests. This opt-in feature gives you fine-grained control over who can access your MCP endpoints.
 
+<Note>
+**Non-breaking change**: This is fully opt-in. Your existing MCP integrations continue to work without any modifications.
+</Note>
+
 ## What's New
 
 A new **"Require API Key for MCP"** toggle is now available in your Project Settings. When enabled, all requests to your MCP servers must include a valid Composio API key in the request headers.
@@ -148,11 +152,3 @@ PATCH /api/v3/org/project/config
   "require_mcp_api_key": true | false
 }
 ```
-
-## Need Help?
-
-If you have questions about implementing API key enforcement for your MCP servers:
-- Join our [Discord community](https://discord.gg/composio)
-- Check our [MCP documentation](/docs/mcp/quickstart)
-- Contact support at support@composio.dev
-
