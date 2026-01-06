@@ -43,6 +43,8 @@ layout:
 settings:
   hide-404-page: true
   http-snippets: true
+js:
+  - path: ./custom.js
 colors:
   accent-primary:
     light: '#FF782F'
