@@ -3,7 +3,7 @@
 We've introduced a new project-level security setting that allows you to require API key authentication for all MCP server requests. This opt-in feature gives you fine-grained control over who can access your MCP endpoints.
 
 <Note>
-**Non-breaking change**: This is fully opt-in. Your existing MCP integrations continue to work without any modifications.
+**Opt-in today, default soon**: This feature is currently opt-in. Starting **March 1, 2026**, it will be enabled by default for new organizations. We recommend enabling it now to prepare your integrations.
 </Note>
 
 ## What's New
