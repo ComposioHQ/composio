@@ -20,6 +20,7 @@ export const toolRouterSource = loader({
 // Combined reference source with MDX pages and OpenAPI-generated pages
 const openapiPages = await openapiSource(openapi, {
   groupBy: 'tag',
+  baseDir: 'api-reference',
 });
 
 export const referenceSource = loader({

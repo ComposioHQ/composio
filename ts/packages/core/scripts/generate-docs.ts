@@ -16,7 +16,10 @@ import { fileURLToPath } from 'url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
-const OUTPUT_DIR = join(PACKAGE_DIR, '../../../fumadocs/content/reference/typescript');
+const OUTPUT_DIR = join(
+  PACKAGE_DIR,
+  '../../../fumadocs/content/reference/sdk-reference/typescript'
+);
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
 
 // Internal classes that should NOT be documented (accessed via other APIs)
@@ -787,7 +790,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${name}\`](/reference/typescript/${toKebabCase(name)}) | ${escapeForMdx(description)} |`
+        `| [\`${name}\`](/reference/sdk-reference/typescript/${toKebabCase(name)}) | ${escapeForMdx(description)} |`
     )
     .join('\n');
 
@@ -857,7 +860,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
 
   // Generate meta.json for sidebar
   const meta = {
-    title: 'TypeScript',
+    title: 'TypeScript SDK',
     pages: documented.map(({ name }) => toKebabCase(name)),
   };
   await writeFile(join(OUTPUT_DIR, 'meta.json'), JSON.stringify(meta, null, 2));

@@ -2,6 +2,7 @@
   "title": "Reference",
   "pages": [
     "index",
-    "typescript"
+    "api-reference",
+    "sdk-reference"
   ]
 }
