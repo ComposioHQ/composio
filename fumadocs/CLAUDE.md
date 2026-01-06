@@ -16,6 +16,16 @@ This is the Composio documentation site built with Fumadocs (Next.js-based docs 
 - `--font-sans: 'Inter'` - Body text
 - `--font-mono: 'IBM Plex Mono'` - Code blocks
 
+## SDK Reference Docs
+Auto-generated TypeScript SDK documentation from `@composio/core` source code.
+
+- **Source**: `ts/packages/core/src/models/*.ts` (JSDoc comments)
+- **Generator**: `ts/packages/core/scripts/generate-docs.ts`
+- **Output**: `content/reference/sdk-reference/typescript/`
+- **Regenerate**: `pnpm --filter @composio/core generate:docs`
+
+CI auto-generates on changes to `ts/packages/core/src/**` via `.github/workflows/generate-sdk-docs.yml`.
+
 ## Common Gotchas
 1. **CSS variables**: Use `var(--composio-orange)` not `var(--orange)`. Check `global.css` for defined variables.
 2. **Date format**: Changelog dates must be YYYY-MM-DD format (validated in schema and runtime)
