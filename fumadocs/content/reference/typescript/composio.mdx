@@ -1,0 +1,148 @@
+---
+title: Composio
+description: This is the core class for Composio.
+---
+
+# Composio
+
+This is the core class for Composio.
+It is used to initialize the Composio SDK and provide a global configuration.
+
+## Constructor
+
+### constructor()
+
+Creates a new instance of the Composio SDK.
+
+The constructor initializes the SDK with the provided configuration options,
+sets up the API client, and initializes all core models (tools, toolkits, etc.).
+
+```typescript
+constructor(config?: ComposioConfig): Composio
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `config?` | `ComposioConfig` | Configuration options for the Composio SDK |
+
+**Returns**
+
+`Composio`
+
+**Example**
+
+```typescript
+// Initialize with default configuration
+const composio = new Composio();
+
+// Initialize with custom API key and base URL
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  baseURL: 'https://api.composio.dev'
+});
+
+// Initialize with custom provider
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  provider: new CustomProvider()
+});
+```
+
+---
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `authConfigs` | `AuthConfigs` |  |
+| `connectedAccounts` | `ConnectedAccounts` |  |
+| `create` | `object` | Creates a new tool router session for a user. |
+| `experimental` | `object` | Experimental features |
+| `files` | `Files` |  |
+| `mcp` | `MCP` |  |
+| `provider` | `TProvider` |  |
+| `toolkits` | `Toolkits` |  |
+| `toolRouter` | `ToolRouter` | Experimental feature, use with caution |
+| `tools` | `Tools` | Core models for Composio. |
+| `triggers` | `Triggers` |  |
+| `use` | `(id: string) => Promise<ToolRouterSession>` | Use an existing tool router session |
+
+## Methods
+
+### createSession()
+
+Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
+This method is particularly useful when you need to:
+- Add custom headers for specific requests
+- Track request contexts with unique identifiers
+- Override default request behavior for a subset of operations
+
+The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
+but allows you to specify custom request options that will be used for all API calls made through this session.
+
+```typescript
+createSession(options?: { headers?: ComposioRequestHeaders }): Composio
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `object` |
+
+**Returns**
+
+`Composio` — A new Composio instance with the custom request options applied.
+
+**Example**
+
+```typescript
+// Create a base Composio instance
+const composio = new Composio({
+  apiKey: 'your-api-key'
+});
+
+// Create a session with request tracking headers
+const composioWithCustomHeaders = composio.createSession({
+  headers: {
+    'x-request-id': '1234567890',
+    'x-correlation-id': 'session-abc-123',
+    'x-custom-header': 'custom-value'
+  }
+});
+
+// Use the session for making API calls with the custom headers
+await composioWithCustomHeaders.tools.list();
+```
+
+---
+
+### getClient()
+
+Get the Composio SDK client.
+
+```typescript
+getClient(): Composio
+```
+
+**Returns**
+
+`Composio` — The Composio API client.
+
+---
+
+### getConfig()
+
+Get the configuration SDK is initialized with
+
+```typescript
+getConfig(): ComposioConfig
+```
+
+**Returns**
+
+`ComposioConfig` — The configuration SDK is initialized with
+
+---

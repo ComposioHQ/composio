@@ -1,0 +1,11 @@
+{
+  "title": "TypeScript",
+  "pages": [
+    "composio",
+    "auth-configs",
+    "connected-accounts",
+    "toolkits",
+    "tools",
+    "triggers"
+  ]
+}

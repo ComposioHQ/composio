@@ -1,0 +1,477 @@
+---
+title: Tools
+description: This class is used to manage tools in the Composio SDK.
+---
+
+# Tools
+
+This class is used to manage tools in the Composio SDK.
+It provides methods to list, get, and execute tools.
+
+## Usage
+
+Access this class through the `composio.tools` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.tools.list();
+```
+
+## Methods
+
+### createCustomTool()
+
+Creates a custom tool that can be used within the Composio SDK.
+
+Custom tools allow you to extend the functionality of Composio with your own implementations
+while keeping a consistent interface for both built-in and custom tools.
+
+```typescript
+async createCustomTool(body: CustomToolOptions<T>): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `body` | `CustomToolOptions<T>` | The configuration for the custom tool |
+
+**Returns**
+
+`Promise<...>` — The created custom tool
+
+**Example**
+
+```typescript
+// creating a custom tool with a toolkit
+await composio.tools.createCustomTool({
+  name: 'My Custom Tool',
+  description: 'A custom tool that does something specific',
+  slug: 'MY_CUSTOM_TOOL',
+  userId: 'default',
+  connectedAccountId: '123',
+  toolkitSlug: 'github',
+  inputParameters: z.object({
+    param1: z.string().describe('First parameter'),
+  }),
+  execute: async (input, connectionConfig, executeToolRequest) => {
+    // Custom logic here
+    return { data: { result: 'Success!' } };
+  }
+});
+```
+
+```typescript
+// creating a custom tool without a toolkit
+await composio.tools.createCustomTool({
+  name: 'My Custom Tool',
+  description: 'A custom tool that does something specific',
+  slug: 'MY_CUSTOM_TOOL',
+  inputParameters: z.object({
+    param1: z.string().describe('First parameter'),
+  }),
+  execute: async (input) => {
+    // Custom logic here
+    return { data: { result: 'Success!' } };
+  }
+});
+```
+
+---
+
+### execute()
+
+Executes a given tool with the provided parameters.
+
+This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
+It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
+
+**Version Control:**
+By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
+the execution will throw a `ComposioToolVersionRequiredError` unless `dangerouslySkipVersionCheck` is set to `true`.
+This helps prevent unexpected behavior when new toolkit versions are released.
+
+```typescript
+async execute(slug: string, body: object, modifiers?: ExecuteToolModifiers): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The slug/ID of the tool to be executed |
+| `body` | `object` | The parameters to be passed to the tool |
+| `modifiers?` | `ExecuteToolModifiers` | Optional modifiers to transform the request or response |
+
+**Returns**
+
+`Promise<...>` — - The response from the tool execution
+
+**Example**
+
+```typescript
+const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+  userId: 'default',
+  version: '20250909_00',
+  arguments: { owner: 'composio' }
+});
+```
+
+```typescript
+const result = await composio.tools.execute('HACKERNEWS_GET_USER', {
+  userId: 'default',
+  arguments: { userId: 'pg' },
+  dangerouslySkipVersionCheck: true // Allows execution with "latest" version
+});
+```
+
+```typescript
+// If toolkitVersions are set during Composio initialization, no need to pass version
+const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
+const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+  userId: 'default',
+  arguments: { owner: 'composio' }
+});
+```
+
+```typescript
+const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
+  userId: 'default',
+  version: '20250909_00',
+  arguments: { owner: 'composio', repo: 'sdk' }
+}, {
+  beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
+    console.log(`Executing ${toolSlug} from ${toolkitSlug}`);
+    return params;
+  },
+  afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+    console.log(`Completed ${toolSlug}`);
+    return result;
+  }
+});
+```
+
+---
+
+### executeMetaTool()
+
+Executes a composio meta tool based on tool router session
+
+```typescript
+async executeMetaTool(toolSlug: string, body: { arguments?: Record<string, unknown>; sessionId: string }, modifiers?: ExecuteToolModifiers): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolSlug` | `string` | The slug of the tool to execute |
+| `body` | `object` | The execution parameters |
+| `modifiers?` | `ExecuteToolModifiers` | The modifiers to apply to the tool |
+
+**Returns**
+
+`Promise<...>` — The response from the tool execution
+
+---
+
+### get()
+
+Get a list of tools from Composio based on filters.
+This method fetches the tools from the Composio API and wraps them using the provider.
+
+**Overload 1**
+
+```typescript
+async get(userId: string, filters: ToolListParams, options?: ProviderOptions): Promise<ReturnType>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | The user id to get the tools for |
+| `filters` | `ToolListParams` | The filters to apply when fetching tools |
+| `options?` | `ProviderOptions` | Optional provider options including modifiers |
+
+**Returns**
+
+`Promise<ReturnType>` — The wrapped tools collection
+
+**Overload 2**
+
+```typescript
+async get(userId: string, slug: string, options?: ProviderOptions): Promise<ReturnType>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | The user id to get the tool for |
+| `slug` | `string` | The slug of the tool to fetch |
+| `options?` | `ProviderOptions` | Optional provider options including modifiers |
+
+**Returns**
+
+`Promise<ReturnType>` — The wrapped tool
+
+**Example**
+
+```typescript
+// Get tools from the GitHub toolkit
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 10
+});
+
+// Get tools with search
+const searchTools = await composio.tools.get('default', {
+  search: 'user',
+  limit: 10
+});
+
+// Get a specific tool by slug
+const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
+
+// Get a tool with schema modifications
+const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
+  modifySchema: (toolSlug, toolkitSlug, schema) => {
+    // Customize the tool schema
+    return {...schema, description: 'Custom description'};
+  }
+});
+```
+
+---
+
+### getInput()
+
+Fetches the input parameters for a given tool.
+
+This method is used to get the input parameters for a tool before executing it.
+
+```typescript
+async getInput(slug: string, body: ToolGetInputParams): Promise<ToolGetInputResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The ID of the tool to find input for |
+| `body` | `ToolGetInputParams` | The parameters to be passed to the tool |
+
+**Returns**
+
+`Promise<ToolGetInputResponse>` — The input parameters schema for the specified tool
+
+**Example**
+
+```typescript
+// Get input parameters for a specific tool
+const inputParams = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+  userId: 'default'
+});
+console.log(inputParams.schema);
+```
+
+---
+
+### getRawComposioToolBySlug()
+
+Retrieves a specific tool by its slug from the Composio API.
+
+This method fetches a single tool in raw format without provider-specific wrapping,
+providing direct access to the tool's schema and metadata. Tool versions are controlled
+at the Composio SDK initialization level through the `toolkitVersions` configuration.
+
+```typescript
+async getRawComposioToolBySlug(slug: string, options?: SchemaModifierOptions): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS') |
+| `options?` | `SchemaModifierOptions` | Optional configuration for tool retrieval |
+
+**Returns**
+
+`Promise<...>` — The requested tool with its complete schema and metadata
+
+**Example**
+
+```typescript
+// Get a tool by slug
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
+console.log(tool.name, tool.description);
+
+// Get a tool with schema transformation
+const customizedTool = await composio.tools.getRawComposioToolBySlug(
+  'SLACK_SEND_MESSAGE',
+  {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+      return {
+        ...schema,
+        description: `Enhanced ${schema.description} with custom modifications`,
+        customMetadata: {
+          lastModified: new Date().toISOString(),
+          toolkit: toolkitSlug
+        }
+      };
+    }
+  }
+);
+
+// Get a custom tool (will check custom tools first)
+const customTool = await composio.tools.getRawComposioToolBySlug('MY_CUSTOM_TOOL');
+
+// Access tool properties
+const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+console.log({
+  slug: githubTool.slug,
+  name: githubTool.name,
+  toolkit: githubTool.toolkit?.name,
+  version: githubTool.version,
+  availableVersions: githubTool.availableVersions,
+  inputParameters: githubTool.inputParameters
+});
+```
+
+---
+
+### getRawComposioTools()
+
+Lists all tools available in the Composio SDK including custom tools.
+
+This method fetches tools from the Composio API in raw format and combines them with
+any registered custom tools. The response can be filtered and modified as needed.
+It provides access to the underlying tool data without provider-specific wrapping.
+
+```typescript
+async getRawComposioTools(query: ToolListParams, options?: SchemaModifierOptions): Promise<ToolList>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `query` | `ToolListParams` | Query parameters to filter the tools (required) |
+| `options?` | `SchemaModifierOptions` | Optional configuration for tool retrieval |
+
+**Returns**
+
+`Promise<ToolList>` — List of tools matching the query criteria
+
+**Example**
+
+```typescript
+// Get tools from specific toolkits
+const githubTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 10
+});
+
+// Get specific tools by slug
+const specificTools = await composio.tools.getRawComposioTools({
+  tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
+});
+
+// Get tools from specific toolkits
+const githubTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 10
+});
+
+// Get tools with schema transformation
+const customizedTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 5
+}, {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Add custom properties to tool schema
+    return {
+      ...schema,
+      customProperty: `Modified ${toolSlug} from ${toolkitSlug}`,
+      tags: [...(schema.tags || []), 'customized']
+    };
+  }
+});
+
+// Search for tools
+const searchResults = await composio.tools.getRawComposioTools({
+  search: 'user management'
+});
+
+// Get tools by authentication config
+const authSpecificTools = await composio.tools.getRawComposioTools({
+  authConfigIds: ['auth_config_123']
+});
+```
+
+---
+
+### getToolsEnum()
+
+Fetches the list of all available tools in the Composio SDK.
+
+This method is mostly used by the CLI to get the list of tools.
+No filtering is done on the tools, the list is cached in the backend, no further optimization is required.
+
+```typescript
+async getToolsEnum(): Promise<ToolRetrieveEnumResponse>
+```
+
+**Returns**
+
+`Promise<ToolRetrieveEnumResponse>` — The complete list of all available tools with their metadata
+
+**Example**
+
+```typescript
+// Get all available tools as an enum
+const toolsEnum = await composio.tools.getToolsEnum();
+console.log(toolsEnum.items);
+```
+
+---
+
+### proxyExecute()
+
+Proxies a custom request to a toolkit/integration.
+
+This method allows sending custom requests to a specific toolkit or integration
+when you need more flexibility than the standard tool execution methods provide.
+
+```typescript
+async proxyExecute(body: object): Promise<ToolProxyResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `body` | `object` | The parameters for the proxy request including toolkit slug and custom data |
+
+**Returns**
+
+`Promise<ToolProxyResponse>` — The response from the proxied request
+
+**Example**
+
+```typescript
+// Send a custom request to a toolkit
+const response = await composio.tools.proxyExecute({
+  toolkitSlug: 'github',
+  userId: 'default',
+  data: {
+    endpoint: '/repos/owner/repo/issues',
+    method: 'GET'
+  }
+});
+console.log(response.data);
+```
+
+---
