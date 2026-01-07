@@ -49,7 +49,13 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsPage
+        toc={page.data.toc}
+        full={page.data.full}
+        footer={{ enabled: false }}
+        tableOfContent={{ enabled: true }}
+        tableOfContentPopover={{ enabled: false }}
+      >
         <DocsTitle>{page.data.title}</DocsTitle>
         <DocsDescription className="mb-4">{page.data.description}</DocsDescription>
         <DocsBody>

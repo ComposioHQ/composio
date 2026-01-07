@@ -1,5 +1,6 @@
 import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
+import { TOCFix } from '@/components/toc-fix';
 
 // Insert changelog into page tree at correct position (after capabilities, before Tools and Triggers)
 const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/docs/changelog' };
@@ -21,6 +22,7 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
       sidebar={{ collapsible: false, footer: null }}
       themeSwitch={{ enabled: false }}
     >
+      <TOCFix />
       {children}
     </DocsLayout>
   );

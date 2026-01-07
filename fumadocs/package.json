@@ -12,6 +12,7 @@
     "generate:toolkits": "bun scripts/generate-toolkits.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@inkeep/cxkit-react": "^0.5.0",
     "@radix-ui/react-tabs": "^1.1.13",
     "@shikijs/twoslash": "^3.0.0",
