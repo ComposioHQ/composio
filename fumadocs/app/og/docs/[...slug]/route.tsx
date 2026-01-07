@@ -17,7 +17,7 @@ export async function GET(
     <DefaultImage
       title={page.data.title}
       description={page.data.description}
-      site="My App"
+      site="Composio"
     />,
     {
       width: 1200,
@@ -28,7 +28,6 @@ export async function GET(
 
 export function generateStaticParams() {
   return source.getPages().map((page) => ({
-    lang: page.locale,
     slug: getPageImage(page).segments,
   }));
 }
