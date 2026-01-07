@@ -25,7 +25,14 @@ except ImportError:
 # Paths
 SCRIPT_DIR = Path(__file__).parent
 PACKAGE_DIR = SCRIPT_DIR.parent
-OUTPUT_DIR = PACKAGE_DIR.parent / "fumadocs" / "content" / "reference" / "sdk-reference" / "python"
+OUTPUT_DIR = (
+    PACKAGE_DIR.parent
+    / "fumadocs"
+    / "content"
+    / "reference"
+    / "sdk-reference"
+    / "python"
+)
 
 # GitHub base URL for source links
 GITHUB_BASE = "https://github.com/composiohq/composio/blob/next/python"
@@ -67,8 +74,8 @@ def to_kebab_case(name: str) -> str:
 
 def escape_yaml_string(s: str) -> str:
     """Escape a string for YAML frontmatter."""
-    if any(c in s for c in [':', '"', "'", '\n', '#', '{', '}']):
-        return f'"{s.replace(chr(34), chr(92)+chr(34))}"'
+    if any(c in s for c in [":", '"', "'", "\n", "#", "{", "}"]):
+        return f'"{s.replace(chr(34), chr(92) + chr(34))}"'
     return s
 
 
@@ -77,7 +84,15 @@ def get_source_link(obj: griffe.Object) -> str | None:
     if not hasattr(obj, "filepath") or not obj.filepath:
         return None
     try:
-        rel_path = Path(obj.filepath).relative_to(PACKAGE_DIR)
+        raw_filepath = obj.filepath
+        # Handle case where filepath might be a list (griffe edge case)
+        if isinstance(raw_filepath, list):
+            resolved_path: Path | None = raw_filepath[0] if raw_filepath else None
+        else:
+            resolved_path = raw_filepath
+        if not resolved_path:
+            return None
+        rel_path = resolved_path.relative_to(PACKAGE_DIR)
     except ValueError:
         return None
     line = obj.lineno if hasattr(obj, "lineno") and obj.lineno else 1
@@ -93,11 +108,11 @@ def format_type(annotation: Any) -> str:
     # Clean up common prefixes
     type_str = type_str.replace("typing.", "").replace("typing_extensions.", "")
     type_str = type_str.replace("composio.client.types.", "")
-    type_str = re.sub(r'\bt\.', '', type_str)
-    type_str = re.sub(r'\bte\.', '', type_str)  # typing_extensions alias
-    type_str = re.sub(r'Optional\[([^\]]+)\]', r'\1 | None', type_str)
+    type_str = re.sub(r"\bt\.", "", type_str)
+    type_str = re.sub(r"\bte\.", "", type_str)  # typing_extensions alias
+    type_str = re.sub(r"Optional\[([^\]]+)\]", r"\1 | None", type_str)
     # Clean up Unpack to just show the type
-    type_str = re.sub(r'Unpack\[([^\]]+)\]', r'\1', type_str)
+    type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
 
     # Truncate very long types
     if len(type_str) > 60:
@@ -164,7 +179,9 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
     }
 
 
-def extract_class_info(cls: griffe.Class, class_name: str, config: dict) -> dict[str, Any]:
+def extract_class_info(
+    cls: griffe.Class, class_name: str, config: dict
+) -> dict[str, Any]:
     """Extract documentation from a class."""
     doc = parse_docstring(cls.docstring.value if cls.docstring else None)
 
@@ -183,49 +200,63 @@ def extract_class_info(cls: griffe.Class, class_name: str, config: dict) -> dict
             continue
         if isinstance(member, griffe.Attribute):
             attr_doc = member.docstring.value if member.docstring else ""
-            info["properties"].append({
-                "name": name,
-                "type": format_type(member.annotation),
-                "description": attr_doc.strip() if attr_doc else "",
-            })
+            info["properties"].append(
+                {
+                    "name": name,
+                    "type": format_type(member.annotation),
+                    "description": attr_doc.strip() if attr_doc else "",
+                }
+            )
 
     # Extract methods
     for name, member in cls.members.items():
         if name.startswith("_"):
             continue
         if isinstance(member, griffe.Function):
-            method_doc = parse_docstring(member.docstring.value if member.docstring else None)
+            method_doc = parse_docstring(
+                member.docstring.value if member.docstring else None
+            )
 
             params = []
             for p in member.parameters:
                 if p.name in ("self", "cls"):
                     continue
-                params.append({
-                    "name": p.name,
-                    "type": format_type(p.annotation),
-                    "optional": p.default is not None,
-                    "description": method_doc["params"].get(p.name, ""),
-                })
+                params.append(
+                    {
+                        "name": p.name,
+                        "type": format_type(p.annotation),
+                        "optional": p.default is not None,
+                        "description": method_doc["params"].get(p.name, ""),
+                    }
+                )
 
-            info["methods"].append({
-                "name": name,
-                "source_link": get_source_link(member),
-                "description": method_doc["description"],
-                "parameters": params,
-                "return_type": format_type(member.returns),
-                "return_description": method_doc["returns"],
-                "examples": method_doc["examples"],
-            })
+            info["methods"].append(
+                {
+                    "name": name,
+                    "source_link": get_source_link(member),
+                    "description": method_doc["description"],
+                    "parameters": params,
+                    "return_type": format_type(member.returns),
+                    "return_description": method_doc["returns"],
+                    "examples": method_doc["examples"],
+                }
+            )
 
     return info
 
 
-def generate_class_mdx(info: dict[str, Any], prop_to_class: dict[str, str] = None) -> str:
+def generate_class_mdx(
+    info: dict[str, Any], prop_to_class: dict[str, str] | None = None
+) -> str:
     """Generate MDX for a class."""
     lines = []
 
     # Frontmatter
-    desc = info["description"].split("\n")[0] if info["description"] else f"{info['name']} class"
+    desc = (
+        info["description"].split("\n")[0]
+        if info["description"]
+        else f"{info['name']} class"
+    )
     if len(desc) > 150:
         desc = desc[:147] + "..."
 
@@ -334,7 +365,11 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
     class_rows = []
     for c in classes:
         link = f"/reference/sdk-reference/python/{to_kebab_case(c['name'])}"
-        desc = c["description"][:80] + "..." if len(c["description"]) > 80 else c["description"]
+        desc = (
+            c["description"][:80] + "..."
+            if len(c["description"]) > 80
+            else c["description"]
+        )
         class_rows.append(f"| [`{c['name']}`]({link}) | {desc} |")
 
     # Decorators section
@@ -363,7 +398,7 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
             dec_lines.append("")
         dec_section = "\n".join(dec_lines)
 
-    return f'''---
+    return f"""---
 title: Python SDK Reference
 description: API reference for the Composio Python SDK
 ---
@@ -409,7 +444,7 @@ result = composio.tools.execute(
 ```
 
 {dec_section}
-'''
+"""
 
 
 def main():
@@ -477,10 +512,12 @@ def main():
         file_path = OUTPUT_DIR / f"{to_kebab_case(class_name)}.mdx"
         file_path.write_text(mdx)
 
-        documented_classes.append({
-            "name": class_name,
-            "description": info["description"] or f"{class_name} class",
-        })
+        documented_classes.append(
+            {
+                "name": class_name,
+                "description": info["description"] or f"{class_name} class",
+            }
+        )
 
     # Process decorators
     decorators = []
@@ -502,19 +539,23 @@ def main():
                 for p in func.parameters:
                     if p.name in ("self", "cls"):
                         continue
-                    params.append({
-                        "name": p.name,
-                        "type": format_type(p.annotation),
-                        "optional": p.default is not None,
-                        "description": doc["params"].get(p.name, ""),
-                    })
+                    params.append(
+                        {
+                            "name": p.name,
+                            "type": format_type(p.annotation),
+                            "optional": p.default is not None,
+                            "description": doc["params"].get(p.name, ""),
+                        }
+                    )
 
-                decorators.append({
-                    "name": dec_name,
-                    "source_link": get_source_link(func),
-                    "description": doc["description"],
-                    "parameters": params,
-                })
+                decorators.append(
+                    {
+                        "name": dec_name,
+                        "source_link": get_source_link(func),
+                        "description": doc["description"],
+                        "parameters": params,
+                    }
+                )
 
     # Generate index
     index_content = generate_index_mdx(documented_classes, decorators)
