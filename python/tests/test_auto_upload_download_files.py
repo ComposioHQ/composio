@@ -38,8 +38,8 @@ def mock_provider():
 def create_mock_tool(
     slug: str,
     toolkit_slug: str,
-    input_parameters: dict = None,
-    output_parameters: dict = None,
+    input_parameters: dict | None = None,
+    output_parameters: dict | None = None,
 ) -> Tool:
     """Create a mock tool for testing."""
     return Tool(
