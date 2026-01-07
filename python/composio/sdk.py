@@ -35,6 +35,7 @@ class SDKConfig(te.TypedDict):
     allow_tracking: te.NotRequired[bool]
     file_download_dir: te.NotRequired[str]
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
+    auto_upload_download_files: te.NotRequired[bool]
 
 
 # class ExperimentalNamespace:
@@ -76,6 +77,7 @@ class Composio(t.Generic[TProvider], WithLogger):
                                 - A dictionary mapping toolkit names to specific versions
                                 - A string (e.g., 'latest', '20250906_01') to use the same version for all toolkits
                                 - None or omitted to use 'latest' as default
+        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
@@ -100,6 +102,7 @@ class Composio(t.Generic[TProvider], WithLogger):
             provider=self.provider,
             file_download_dir=kwargs.get("file_download_dir"),
             toolkit_versions=toolkit_versions,
+            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
         )
 
         self.toolkits = Toolkits(client=self._client)
