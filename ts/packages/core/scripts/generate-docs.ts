@@ -522,22 +522,19 @@ function generateMethodMdx(method: MethodDoc): string {
 function generateClassMdx(classDoc: ClassDoc): string {
   const lines: string[] = [];
 
-  // Frontmatter
+  // Build full description for frontmatter (first sentence + additional context)
+  const fullDescription = classDoc.description
+    ? classDoc.description.replace(/\n/g, ' ').trim()
+    : `${classDoc.name} class reference`;
+
+  // Frontmatter - fumadocs renders title and description automatically
   lines.push('---');
   lines.push(`title: ${classDoc.name}`);
-  lines.push(
-    `description: ${classDoc.description.split('\n')[0] || `${classDoc.name} class reference`}`
-  );
+  lines.push(`description: ${fullDescription}`);
   lines.push('---');
   lines.push('');
 
-  // Class description
-  lines.push(`# ${classDoc.name}`);
-  lines.push('');
-  if (classDoc.description) {
-    lines.push(classDoc.description);
-    lines.push('');
-  }
+  // Content starts directly with Constructor or Usage (no duplicate title/description)
 
   // Constructor - only show for user-instantiated classes
   if (classDoc.constructor && USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
@@ -796,12 +793,8 @@ async function main() {
 
   const indexContent = `---
 title: TypeScript SDK Reference
-description: API reference for the Composio TypeScript SDK
+description: Complete API reference for the Composio TypeScript SDK (@composio/core).
 ---
-
-# TypeScript SDK Reference
-
-Complete API reference for \`@composio/core\`.
 
 ## Installation
 
