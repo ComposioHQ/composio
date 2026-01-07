@@ -1,0 +1,178 @@
+# Cursor AI Rules for Composio Fumadocs
+
+## Project Context
+
+Next.js 16 documentation site using Fumadocs framework.
+Tech stack: Next.js 16, React 19, TypeScript, Tailwind CSS v4, MDX, Bun.
+
+## Quick Commands
+
+```bash
+bun install          # Install dependencies
+bun dev              # Dev server
+bun run build        # Production build
+bun run types:check  # TypeScript check
+bun run lint         # ESLint
+```
+
+## Architecture
+
+```
+fumadocs/
+├── app/                 # Next.js App Router
+├── components/          # React components
+├── content/             # MDX documentation
+├── lib/                 # Utilities
+│   ├── path-validation.ts  # Security validation (SHARED)
+│   ├── mdx-to-markdown.ts  # JSX→Markdown converter
+│   └── source.ts           # Content loaders
+├── proxy.ts             # Content negotiation (NOT middleware!)
+└── source.config.ts     # MDX collection schemas
+```
+
+## Code Style
+
+### TypeScript
+- Use strict TypeScript - avoid `any` types
+- Prefer interfaces over types for component props
+- Use explicit return types for functions
+
+### React Components
+- Use `'use client'` for interactive components
+- ALWAYS use hydration-safe pattern (see below)
+- Never read `window`, `localStorage`, or browser APIs during render
+- Use `cn()` from `@/lib/utils` for conditional classes
+
+### Styling
+- Use Tailwind classes, not inline styles
+- CSS variables in `app/global.css` (Tailwind v4)
+- Always use `cn()` utility for conditional classes
+
+## Required Patterns
+
+### Client Component Template
+```tsx
+'use client';
+
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+interface ComponentProps {
+  className?: string;
+}
+
+export function Component({ className }: ComponentProps) {
+  // REQUIRED: Mounted state for client-only rendering
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
+
+  // REQUIRED: localStorage in try-catch inside useEffect
+  const [value, setValue] = React.useState('');
+  React.useEffect(() => {
+    try {
+      setValue(localStorage.getItem('key') || '');
+    } catch {} // Handle private browsing
+  }, []);
+
+  return (
+    <div className={cn('base-styles', className)}>
+      {mounted ? value : null}
+    </div>
+  );
+}
+```
+
+### Path Validation (REQUIRED for all path handling)
+```tsx
+import { validatePath, validatePathSegments } from '@/lib/path-validation';
+
+// DO NOT duplicate validation logic - use shared module
+const result = validatePath(userPath);
+if (!result.valid) {
+  return { error: result.error };
+}
+```
+
+### YAML Escaping (REQUIRED for dynamic YAML content)
+```tsx
+import { escapeYaml } from '@/lib/path-validation';
+
+// ALWAYS escape user content in YAML
+const yaml = `title: ${escapeYaml(userTitle)}`;
+```
+
+### Event Listener Pattern
+```tsx
+useEffect(() => {
+  const handler = (e: Event) => {
+    const customEvent = e as CustomEvent<string>;
+    // use customEvent.detail
+  };
+  window.addEventListener('my-event', handler);
+  return () => window.removeEventListener('my-event', handler);
+}, []);
+```
+
+### Regex Pattern
+```tsx
+// For detection - NO /g flag
+const detectPattern = /foo/;
+detectPattern.test(str);
+
+// For replacement - /g flag OK
+const replacePattern = /foo/g;
+str.replace(replacePattern, 'bar');
+```
+
+## Key Files
+
+- `proxy.ts` - Content negotiation (Next.js 16, NOT middleware.ts)
+- `lib/path-validation.ts` - Shared security validation
+- `lib/mdx-to-markdown.ts` - JSX→Markdown converter
+- `source.config.ts` - Content collection schemas
+- `lib/source.ts` - Content source loaders
+- `CLAUDE.md` - Comprehensive architecture docs
+
+## Content Sources
+
+| Source | URL | Content Path |
+|--------|-----|--------------|
+| docs | /docs | content/docs/ |
+| tool-router | /tool-router | content/tool-router/ |
+| reference | /reference | content/reference/ |
+| examples | /examples | content/examples/ |
+
+## AI Content Endpoints
+
+```bash
+# Get pure markdown (no JSX)
+curl http://localhost:3000/docs/quickstart.mdx
+
+# Via Accept header
+curl -H "Accept: text/markdown" http://localhost:3000/docs/quickstart
+```
+
+## NEVER DO
+
+1. Use `middleware.ts` - deprecated in Next.js 16, use `proxy.ts`
+2. Read window/localStorage during render - causes hydration mismatch
+3. Use regex `/g` flag with `.test()` - stateful behavior
+4. Duplicate path validation - use `lib/path-validation.ts`
+5. Return JSX from AI endpoints - convert to markdown first
+6. Use `typeof window !== 'undefined'` during render
+7. Forget `aria-label` on icon-only buttons
+8. Use template literals for className instead of `cn()`
+
+## Common Tasks
+
+### Add MDX component
+1. Create in `components/`
+2. Add to `mdx-components.tsx`
+
+### Add content
+1. Create MDX in `content/[section]/`
+2. Include frontmatter with title and description
+
+### Add API route
+1. Create in `app/api/[route]/route.ts`
+2. Use shared validation from `lib/path-validation.ts`

@@ -1,6 +1,6 @@
-# Fumadocs - Composio Documentation
+# CODEX.md - Fumadocs for OpenAI Codex
 
-> **For AI Agents (Claude, Codex, Cursor, Copilot)**: This file contains everything you need to understand and contribute to this codebase.
+> Instructions for OpenAI Codex when working with this codebase.
 
 ## Quick Start
 
@@ -21,9 +21,17 @@ Next.js 16 documentation site for [Composio](https://composio.dev) built with [F
 - `/tool-router` - Tool Router docs
 - `/reference` - API reference
 - `/examples` - Code examples
-- `/toolkits` - Toolkit catalog
 - `/llms.txt` - LLM-friendly index
 - `/llms-full.txt` - Full documentation for LLMs
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **React**: 19
+- **TypeScript**: Strict mode
+- **Styling**: Tailwind CSS v4
+- **Content**: MDX with Fumadocs
+- **Package Manager**: Bun
 
 ## Project Structure
 
@@ -42,9 +50,7 @@ fumadocs/
 │   ├── docs/               # Main docs
 │   ├── reference/          # SDK reference
 │   ├── tool-router/        # Tool Router docs
-│   ├── examples/           # Code examples
-│   ├── changelog/          # Release notes
-│   └── toolkits/           # Toolkit pages
+│   └── examples/           # Code examples
 ├── lib/                    # Utilities
 │   ├── source.ts           # Content source loaders
 │   ├── path-validation.ts  # Security validation (shared)
@@ -55,9 +61,7 @@ fumadocs/
 └── mdx-components.tsx      # Custom MDX components
 ```
 
-## Key Patterns
-
-### 1. Content Sources
+## Content Sources
 
 Defined in `source.config.ts`, loaded in `lib/source.ts`:
 
@@ -68,7 +72,7 @@ Defined in `source.config.ts`, loaded in `lib/source.ts`:
 | `referenceSource` | `/reference` | `content/reference/` |
 | `examplesSource` | `/examples` | `content/examples/` |
 
-### 2. AI Content Negotiation
+## AI Content Negotiation
 
 AI agents can get **pure markdown** (no JSX) via:
 
@@ -87,20 +91,19 @@ curl -H "Accept: text/markdown" https://composio.dev/docs/quickstart
 4. Converts JSX to markdown via `lib/mdx-to-markdown.ts`
 5. Returns pure markdown with YAML frontmatter
 
-### 3. Client Components
+## Required Patterns
 
-All interactive components use `'use client'`:
+### Client Components (Hydration-Safe)
 
 ```tsx
 'use client';
 import * as React from 'react';
 
 export function Component() {
-  // Hydration-safe: use mounted state for browser APIs
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => { setMounted(true); }, []);
 
-  // localStorage/window only in effects, not render
+  // localStorage only in effects with try-catch
   const [value, setValue] = React.useState('');
   React.useEffect(() => {
     try {
@@ -112,58 +115,28 @@ export function Component() {
 }
 ```
 
-### 4. Security Patterns
+### Path Validation
 
-**Path validation** (`lib/path-validation.ts`):
-- Double-encoding protection
-- Unicode normalization
-- Path traversal blocking
-- Prefix validation
+```tsx
+import { validatePath, validatePathSegments } from '@/lib/path-validation';
 
-**YAML escaping** (`lib/path-validation.ts`):
-- Escapes quotes, newlines, special chars
-- Prevents YAML injection
-
-**Input validation** (API routes):
-- Size limits
-- Type checking
-- Sanitization
-
-## Common Tasks
-
-### Add a Documentation Page
-
-```bash
-# Create file
-touch content/docs/my-page.mdx
-
-# Add content with frontmatter
-cat > content/docs/my-page.mdx << 'EOF'
----
-title: My Page
-description: Description for SEO
----
-
-## Introduction
-
-Content here...
-EOF
+// DO NOT duplicate validation logic - use shared module
+const result = validatePath(userPath);
+if (!result.valid) {
+  return { error: result.error };
+}
 ```
 
-### Add a Changelog Entry
+### YAML Escaping
 
-```bash
-# Use YYYY-MM-DD format
-touch content/changelog/2025-01-07.mdx
+```tsx
+import { escapeYaml } from '@/lib/path-validation';
+
+// ALWAYS escape user content in YAML
+const yaml = `title: ${escapeYaml(userTitle)}`;
 ```
 
-### Add a Component
-
-1. Create in `components/`
-2. Use `'use client'` if interactive
-3. Add to `mdx-components.tsx` if used in MDX
-
-## Important Files
+## Key Files
 
 **Read these first:**
 - `source.config.ts` - Content collection schemas
@@ -178,43 +151,65 @@ touch content/changelog/2025-01-07.mdx
 - `app/llms.txt/route.ts` - LLM index
 - `app/llms-full.txt/route.ts` - Full LLM content
 
-**Components:**
-- `components/code-tabs.tsx` - Language switcher
-- `components/copy-button.tsx` - Copy with API key substitution
-- `components/feedback.tsx` - Page rating
+## Common Tasks
 
-## Environment Variables
+### Add Documentation Page
 
 ```bash
-# Required for AI search (optional)
-NEXT_PUBLIC_INKEEP_API_KEY=
-
-# Optional
-COMPOSIO_API_KEY=  # For toolkit generation
+touch content/docs/my-page.mdx
 ```
+
+Add frontmatter:
+```mdx
+---
+title: My Page
+description: Description for SEO
+---
+
+## Introduction
+
+Content here...
+```
+
+### Add Component
+
+1. Create in `components/`
+2. Use `'use client'` if interactive
+3. Add to `mdx-components.tsx` if used in MDX
+
+### Add API Route
+
+1. Create in `app/api/[route]/route.ts`
+2. Use shared validation from `lib/path-validation.ts`
+
+## NEVER DO
+
+1. Use `middleware.ts` - deprecated in Next.js 16, use `proxy.ts`
+2. Read window/localStorage during render - causes hydration mismatch
+3. Use regex `/g` flag with `.test()` - stateful behavior
+4. Duplicate path validation - use `lib/path-validation.ts`
+5. Return JSX from AI endpoints - convert to markdown first
+6. Use `typeof window !== 'undefined'` during render
+7. Forget `aria-label` on icon-only buttons
+8. Use template literals for className instead of `cn()`
 
 ## Testing
 
 ```bash
-# Type check
-bun run types:check
-
-# Lint
-bun run lint
-
-# Build (catches most issues)
-bun run build
+bun run types:check  # TypeScript check
+bun run lint         # Lint check
+bun run build        # Production build (catches most issues)
 
 # Test MDX content API
 curl http://localhost:3000/docs/quickstart.mdx
 ```
 
-## Common Issues
+## Environment Variables
 
-1. **Hydration mismatch**: Never read `window`/`localStorage` during render
-2. **Regex /g flag**: Don't use with `.test()` - stateful behavior
-3. **Next.js 16**: Use `proxy.ts` not `middleware.ts`
-4. **MDX components**: JSX is stripped for AI - design for plain markdown too
+```bash
+NEXT_PUBLIC_INKEEP_API_KEY=  # Required for AI search (optional)
+COMPOSIO_API_KEY=            # For toolkit generation
+```
 
 ## What's Next
 

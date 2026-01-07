@@ -1,6 +1,15 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
-import { IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, Inter } from 'next/font/google';
+import type { ReactNode } from 'react';
+import { AISearchDialog } from '@/components/search-provider';
+
+// Optimized font loading via next/font
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 const ibmPlexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
@@ -9,33 +18,44 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: 'swap',
 });
 
-export default function Layout({ children }: LayoutProps<'/'>) {
+/**
+ * Root layout for the Fumadocs site
+ * Provides theme, search, and font configuration
+ */
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Check if Inkeep is configured (build-time)
+  const hasInkeepKey = !!process.env.NEXT_PUBLIC_INKEEP_API_KEY;
+
   return (
     <html
       lang="en"
-      className={ibmPlexMono.variable}
+      className={`${inter.variable} ${ibmPlexMono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className="flex flex-col min-h-screen font-sans">
+        {/* Skip navigation for accessibility */}
+        <a href="#main-content" className="skip-nav">
+          Skip to main content
+        </a>
         <RootProvider
           theme={{
             defaultTheme: 'light',
             attribute: 'class',
             enableSystem: false,
           }}
-          search={{
-            options: {
-              api: '/api/search',
-            },
-          }}
+          search={
+            hasInkeepKey
+              ? { SearchDialog: AISearchDialog }
+              : {
+                  options: {
+                    api: '/api/search',
+                  },
+                }
+          }
         >
           {children}
         </RootProvider>

@@ -32,6 +32,9 @@ export const toolRouter = defineDocs({
   dir: 'content/tool-router',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -42,6 +45,9 @@ export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -52,6 +58,9 @@ export const examples = defineDocs({
   dir: 'content/examples',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -78,8 +87,4 @@ export const changelog = defineCollections({
   }),
 });
 
-export default defineConfig({
-  mdxOptions: {
-    // MDX options
-  },
-});
+export default defineConfig({});
