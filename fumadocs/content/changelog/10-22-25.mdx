@@ -1,0 +1,52 @@
+---
+title: "Adds Version Checks for Tool Execution and Improved Execution Speed in TS SDK"
+date: "2025-10-22"
+---
+
+
+### Summary
+Added version validation for manual tool execution to prevent unexpected behavior when using `latest` toolkit versions. This ensures users explicitly specify toolkit versions when executing tools manually, while allowing flexibility through a skip flag.
+
+This release also eliminates a lot of redundant API calls made to check connected account during tool execution, effectively increasing the performance of tool execution.
+
+### Key Changes
+
+#### Python SDK (`python/`)
+- Added `ToolVersionRequiredError` exception with detailed error messages and fix suggestions
+- Added `dangerously_skip_version_check` parameter to `execute()` method
+- Modified `_execute_tool()` to validate version is not `latest` unless skip flag is set
+- Automatically passes `dangerously_skip_version_check=True` for agentic provider flows
+- Added comprehensive test coverage (19 test methods) in `test_tool_execution.py`
+
+#### TypeScript SDK (`ts/packages/core/`)
+- Added `ComposioToolVersionRequiredError` error class with possible fixes
+- Added `dangerouslySkipVersionCheck` parameter to execute flow
+- Modified tool execution to validate version before API calls
+- Updated execution type definitions in `tool.types.ts` and `modifiers.types.ts`
+- Updated test files with date-based version format (`20251201_xx`)
+- Improved tool execution by eliminating redundant API calls
+
+### Behavior
+**Before:** Tools could be executed with `latest` version, risking unexpected behavior on toolkit updates
+
+**After:** Manual execution requires specific version or explicit skip flag:
+```python
+# Raises ToolVersionRequiredError
+tools.execute("GITHUB_CREATE_ISSUE", {...})
+
+# Works - explicit version
+tools.execute("GITHUB_CREATE_ISSUE", {...}, version="20251201_01")
+
+# Works - configured toolkit versions
+tools = Tools(client, provider, toolkit_versions={"github": "20251201_01"})
+
+# Works - with skip flag (use cautiously)
+tools.execute("GITHUB_CREATE_ISSUE", {...}, dangerously_skip_version_check=True)
+```
+
+### Breaking Changes
+Manual tool execution without version specification now throws an error. Users must either:
+1. Pass explicit version parameter
+2. Configure toolkit versions in SDK initialization
+3. Set environment variable `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_SLUG>`
+4. Use `dangerously_skip_version_check=True` flag

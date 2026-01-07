@@ -1,0 +1,134 @@
+---
+title: Managing multiple accounts
+description: Handle users with multiple accounts for the same toolkit
+keywords: [multiple accounts, work personal, switch account]
+---
+
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail accounts). This is useful when users need to manage different email accounts, GitHub organizations, or separate work and personal contexts. This guide explains how to connect, select, and manage multiple accounts.
+
+## Default account behavior
+
+When multiple accounts are connected for the same toolkit:
+- Each session can only use **one account per toolkit** at a time
+- Tool Router uses the **most recently connected account** by default
+- You can override this by explicitly selecting an account
+- Each account maintains its own authentication and permissions
+
+## Connecting multiple accounts
+
+Call `session.authorize()` multiple times for the same toolkit. Each authorization creates a separate connected account with its own ID. The most recently connected account becomes the active one for that session. New sessions will also use the most recent account unless you [explicitly select a different one](#selecting-a-specific-account-for-a-session).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+
+# Connect first account (work)
+work_auth = session.authorize("gmail")
+print(f"Connect work Gmail: {work_auth.redirect_url}")
+work_connection = work_auth.wait_for_connection()
+print(f"Work account connected: {work_connection.id}")
+
+# Connect second account (personal)
+personal_auth = session.authorize("gmail")
+print(f"Connect personal Gmail: {personal_auth.redirect_url}")
+personal_connection = personal_auth.wait_for_connection()
+print(f"Personal account connected: {personal_connection.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123");
+
+// Connect first account (work)
+const workAuth = await session.authorize("gmail");
+console.log(`Connect work Gmail: ${workAuth.redirectUrl}`);
+const workConnection = await workAuth.waitForConnection();
+console.log(`Work account connected: ${workConnection.id}`);
+
+// Connect second account (personal)
+const personalAuth = await session.authorize("gmail");
+console.log(`Connect personal Gmail: ${personalAuth.redirectUrl}`);
+const personalConnection = await personalAuth.waitForConnection();
+console.log(`Personal account connected: ${personalConnection.id}`);
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Store the account IDs returned after connection to explicitly select accounts later.
+</Callout>
+
+## Selecting a specific account for a session
+
+Each Tool Router session can only use one account per toolkit at a time. To use a specific account in a session, pass it in the session config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# This session will use a specific Gmail account
+session = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": "ca_specific_account_id",  # Connected account ID
+    },
+)
+
+# To switch accounts, create a new session with a different account ID
+session2 = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": "ca_different_account_id",  # Different account
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// This session will use a specific Gmail account
+const session = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: "ca_specific_account_id",  // Connected account ID
+  },
+});
+
+// To switch accounts, create a new session with a different account ID
+const session2 = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: "ca_different_account_id",  // Different account
+  },
+});
+```
+</Tab>
+</Tabs>
+
+## Listing all user accounts
+
+To list all accounts a user has connected (not just the active one), see [List accounts](/docs/connected-accounts#list-accounts).
+
+## Viewing session's active account
+
+Use `session.toolkits()` to see which account is currently active in the session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits.items:
+    if toolkit.connection.connected_account:
+        print(f"{toolkit.name}: {toolkit.connection.connected_account.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const toolkits = await session.toolkits();
+
+for (const toolkit of toolkits.items) {
+  if (toolkit.connection.connectedAccount) {
+    console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount.id}`);
+  }
+}
+```
+</Tab>
+</Tabs>
