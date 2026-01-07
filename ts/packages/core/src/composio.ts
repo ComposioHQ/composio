@@ -272,14 +272,13 @@ export class Composio<
     this.files = new Files(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);
-    this.toolRouter.create.bind(this.toolRouter);
-    this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize tool router methods
+     * Properly bind the methods to maintain the correct 'this' context
      */
-    this.create = this.toolRouter.create;
-    this.use = this.toolRouter.use;
+    this.create = this.toolRouter.create.bind(this.toolRouter);
+    this.use = this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize Experimental features
