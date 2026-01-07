@@ -1,126 +1,73 @@
 # Composio Docs
 
-The official documentation site for Composio.
-
-## Tech Stack
-
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **React**: React 19
-- **Documentation**: [Fumadocs](https://fumadocs.dev/)
-- **Content**: MDX (Markdown + JSX)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **Language**: TypeScript 5.9
-- **Package Manager**: Bun
+Documentation site for Composio, built with [Fumadocs](https://fumadocs.dev/).
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 20+
-- [Bun](https://bun.sh/) (recommended) or npm/pnpm/yarn
-
-### Installation
-
 ```bash
-# Clone the repository
-git clone https://github.com/composio
-cd docs
-
-# Install dependencies
 bun install
-
-# Start development server
 bun run dev
 ```
 
-Open [http://localhost:3000/docs](http://localhost:3000/docs) to view the documentation.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Project Structure
 
 ```
+fumadocs/
 ├── app/                  # Next.js app router
-│   ├── (home)/           # Landing page
-│   ├── docs/             # Documentation layout & pages
-│   └── api/search/       # Search API endpoint
-├── content/
-│   └── docs/             # Documentation content (MDX files)
-├── lib/
-│   ├── source.ts         # Content source configuration
-│   └── layout.shared.tsx # Shared layout options
-└── source.config.ts      # Fumadocs MDX configuration
+├── content/              # MDX content
+│   ├── docs/
+│   ├── examples/
+│   ├── changelog/
+│   └── reference/
+├── components/           # React components
+├── lib/                  # Utilities
+└── public/               # Static assets
 ```
 
-## Adding Documentation
+## Adding Content
 
-### Create a new page
-
-Add an MDX file to `content/docs/`:
+Create an `.mdx` file in `content/`, add frontmatter, then add to `meta.json`:
 
 ```mdx
 ---
-title: Your Page Title
-description: A brief description
+title: Page Title
+description: Brief description
 ---
 
-Your content here...
+Content here...
 ```
 
-### Create a section
-
-Create a folder with an `index.mdx`:
-
-```
-content/docs/
-└── guides/
-    ├── index.mdx        # Section landing page
-    ├── getting-started.mdx
-    └── advanced.mdx
-```
-
-### Available Components
-
-Fumadocs provides built-in components you can use in MDX:
+### Components
 
 ```mdx
+<Tabs items={['Python', 'TypeScript']}>
+  <Tab value="Python">...</Tab>
+  <Tab value="TypeScript">...</Tab>
+</Tabs>
+
+<Callout type="info">Note</Callout>
+
 <Cards>
-  <Card title="Title" href="/docs/page" description="Description" />
+  <Card title="Title" href="/path" />
 </Cards>
-
-<Callout type="info">
-  Important information here
-</Callout>
 ```
 
-## Contributing
+### Sidebar
 
-We welcome contributions! Here's how to help:
+Each folder has `meta.json` for ordering:
 
-### Content Contributions
+```json
+{
+  "pages": ["page-one", "page-two"]
+}
+```
 
-1. Fork the repository
-2. Create a branch: `git checkout -b docs/your-topic`
-3. Add or edit MDX files in `content/docs/`
-4. Submit a pull request
-
-### Code Contributions
-
-1. Fork the repository
-2. Create a branch: `git checkout -b feature/your-feature`
-3. Make your changes
-4. Run `bun run build` to verify the build passes
-5. Submit a pull request
-
-### Guidelines
-
-- Keep documentation clear and concise
-- Use proper headings hierarchy (h2, h3, etc.)
-- Include code examples where helpful
-- Test your changes locally before submitting
-
-## Scripts
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start development server |
-| `bun run build` | Build for production |
-| `bun run start` | Start production server |
+| `bun run dev` | Dev server |
+| `bun run build` | Production build |
+| `bun run types:check` | Type check |
