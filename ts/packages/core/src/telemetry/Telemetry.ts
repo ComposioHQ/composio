@@ -42,6 +42,7 @@ export class TelemetryTransport {
   private readonly telemetrySourceName = 'typescript-sdk';
   private readonly telemetryServiceName = 'sdk';
   private readonly telemetryLanguage = 'typescript';
+  private exitHandlersRegistered = false;
 
   private batchProcessor = new BatchProcessor(200, 10, async (data: TelemetryMetricPayloadBody) => {
     logger.debug('Sending batch of telemetry metrics', data);
@@ -59,6 +60,9 @@ export class TelemetryTransport {
       platform: this.telemetryMetadata?.isBrowser ? 'browser' : 'node',
       environment: getEnvVariable('NODE_ENV', 'production') as TelemetryMetricSource['environment'],
     };
+    // Register exit handlers to automatically flush telemetry before process exit
+    this.registerExitHandlers();
+
     // send telemetry event for SDK initialization
     this.sendMetric([
       {
@@ -268,10 +272,53 @@ export class TelemetryTransport {
 
   /**
    * Flush any pending telemetry and wait for it to complete.
-   * Call this before process exit to ensure all telemetry is sent.
+   * This is automatically called on process exit in Node.js environments.
    */
   async flush(): Promise<void> {
     await this.batchProcessor.flush();
+  }
+
+  /**
+   * Register process exit handlers to automatically flush telemetry.
+   * Only registers handlers in Node.js environments (not in browsers).
+   */
+  private registerExitHandlers(): void {
+    // Only register once and only in Node.js environments
+    if (this.exitHandlersRegistered || typeof process === 'undefined' || !process.on) {
+      return;
+    }
+
+    this.exitHandlersRegistered = true;
+
+    const flushSync = () => {
+      // Use a flag to track if we're already flushing to prevent double-flush
+      this.flush().catch(error => {
+        logger.debug('Error flushing telemetry on exit', error);
+      });
+    };
+
+    // beforeExit is emitted when Node.js empties its event loop and has nothing else to schedule
+    // This is the best place to flush async operations
+    process.on('beforeExit', () => {
+      flushSync();
+    });
+
+    // Handle SIGINT (Ctrl+C) and SIGTERM (kill command)
+    const signalHandler = (signal: string) => {
+      logger.debug(`Received ${signal}, flushing telemetry...`);
+      this.flush()
+        .catch(error => {
+          logger.debug('Error flushing telemetry on signal', error);
+        })
+        .finally(() => {
+          // Re-emit the signal to allow normal process termination
+          process.removeListener(signal as NodeJS.Signals, () => signalHandler(signal));
+          process.kill(process.pid, signal);
+        });
+    };
+
+    process.on('SIGINT', () => signalHandler('SIGINT'));
+    process.on('SIGTERM', () => signalHandler('SIGTERM'));
   }
 }
 

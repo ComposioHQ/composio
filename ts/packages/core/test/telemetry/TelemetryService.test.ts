@@ -83,7 +83,7 @@ describe('BatchProcessor', () => {
       await asyncProcessor.flush();
     });
 
-    it('should track pending flush promise for async callbacks', async () => {
+    it('should track pending batches for async callbacks', async () => {
       let resolveCallback: () => void;
       const asyncCallback = vi.fn().mockImplementation(() => {
         return new Promise<void>(resolve => {
@@ -96,13 +96,13 @@ describe('BatchProcessor', () => {
       asyncProcessor.pushItem(createPayload());
 
       // @ts-expect-error: private access for test
-      expect(asyncProcessor.pendingFlush).toBeInstanceOf(Promise);
+      expect(asyncProcessor.pendingBatches.size).toBe(1);
 
       resolveCallback!();
       await asyncProcessor.flush();
 
       // @ts-expect-error: private access for test
-      expect(asyncProcessor.pendingFlush).toBeNull();
+      expect(asyncProcessor.pendingBatches.size).toBe(0);
     });
 
     it('should silently handle errors in async callbacks', async () => {
@@ -197,6 +197,100 @@ describe('BatchProcessor', () => {
 
       await expect(asyncProcessor.flush()).resolves.toBeUndefined();
       expect(asyncCallback).not.toHaveBeenCalled();
+    });
+
+    it('should await all concurrent batches when flush is called', async () => {
+      const completionOrder: number[] = [];
+      let resolveFirst: () => void;
+      let resolveSecond: () => void;
+
+      const asyncCallback = vi
+        .fn()
+        .mockImplementationOnce(() => {
+          return new Promise<void>(resolve => {
+            resolveFirst = resolve;
+          }).then(() => {
+            completionOrder.push(1);
+          });
+        })
+        .mockImplementationOnce(() => {
+          return new Promise<void>(resolve => {
+            resolveSecond = resolve;
+          }).then(() => {
+            completionOrder.push(2);
+          });
+        });
+
+      const asyncProcessor = new BatchProcessor(50, 2, asyncCallback);
+
+      // Trigger first batch
+      asyncProcessor.pushItem(createPayload());
+      asyncProcessor.pushItem(createPayload());
+
+      // Trigger second batch while first is still processing
+      asyncProcessor.pushItem(createPayload());
+      asyncProcessor.pushItem(createPayload());
+
+      expect(asyncCallback).toHaveBeenCalledTimes(2);
+
+      // @ts-expect-error: private access for test
+      expect(asyncProcessor.pendingBatches.size).toBe(2);
+
+      // Start flush, which should wait for both batches
+      const flushPromise = asyncProcessor.flush();
+
+      // Resolve second batch first (out of order)
+      resolveSecond!();
+      // Small delay to let promises settle
+      await new Promise(r => setTimeout(r, 10));
+
+      // @ts-expect-error: private access for test
+      expect(asyncProcessor.pendingBatches.size).toBe(1);
+
+      // Resolve first batch
+      resolveFirst!();
+
+      // Now flush should complete
+      await flushPromise;
+
+      // Both batches should have completed
+      expect(completionOrder).toEqual([2, 1]);
+      // @ts-expect-error: private access for test
+      expect(asyncProcessor.pendingBatches.size).toBe(0);
+    });
+
+    it('should not lose earlier batches when new batches are started', async () => {
+      const batchesProcessed: number[][] = [];
+      let resolvers: (() => void)[] = [];
+
+      const asyncCallback = vi.fn().mockImplementation((batch: any[]) => {
+        return new Promise<void>(resolve => {
+          resolvers.push(resolve);
+        }).then(() => {
+          batchesProcessed.push(batch.map((_, i) => i));
+        });
+      });
+
+      const asyncProcessor = new BatchProcessor(50, 1, asyncCallback); // batch size 1 for easier testing
+
+      // Push 3 items, each triggers a batch immediately
+      asyncProcessor.pushItem(createPayload({ functionName: 'batch1' }));
+      asyncProcessor.pushItem(createPayload({ functionName: 'batch2' }));
+      asyncProcessor.pushItem(createPayload({ functionName: 'batch3' }));
+
+      expect(asyncCallback).toHaveBeenCalledTimes(3);
+
+      // @ts-expect-error: private access for test
+      expect(asyncProcessor.pendingBatches.size).toBe(3);
+
+      // Resolve all in order
+      resolvers.forEach(r => r());
+      await asyncProcessor.flush();
+
+      // All 3 batches should have been processed
+      expect(batchesProcessed.length).toBe(3);
+      // @ts-expect-error: private access for test
+      expect(asyncProcessor.pendingBatches.size).toBe(0);
     });
   });
 });

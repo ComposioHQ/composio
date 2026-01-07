@@ -9,7 +9,7 @@ export class BatchProcessor {
   private batchSize: number;
   private processBatchCallback: (data: TelemetryMetricPayloadBody) => Promise<void>;
   private timer: NodeJS.Timeout | null = null;
-  private pendingFlush: Promise<void> | null = null;
+  private pendingBatches: Set<Promise<void>> = new Set();
 
   constructor(
     time: number = 2000,
@@ -40,12 +40,10 @@ export class BatchProcessor {
           // Silently ignore errors - they should be handled by the callback
         })
         .finally(() => {
-          if (this.pendingFlush === pending) {
-            this.pendingFlush = null;
-          }
+          this.pendingBatches.delete(pending);
         });
 
-      this.pendingFlush = pending;
+      this.pendingBatches.add(pending);
     }
     if (this.timer) {
       clearTimeout(this.timer);
@@ -54,13 +52,13 @@ export class BatchProcessor {
   }
 
   /**
-   * Flush any pending batch and wait for it to complete.
+   * Flush any pending batches and wait for all of them to complete.
    * Useful for ensuring telemetry is sent before process exit.
    */
   async flush(): Promise<void> {
     this.processBatch();
-    if (this.pendingFlush) {
-      await this.pendingFlush;
+    if (this.pendingBatches.size > 0) {
+      await Promise.all(this.pendingBatches);
     }
   }
 }
