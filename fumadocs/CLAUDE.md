@@ -17,14 +17,21 @@ This is the Composio documentation site built with Fumadocs (Next.js-based docs 
 - `--font-mono: 'IBM Plex Mono'` - Code blocks
 
 ## SDK Reference Docs
-Auto-generated TypeScript SDK documentation from `@composio/core` source code.
+Auto-generated SDK documentation from source code.
 
+### TypeScript SDK
 - **Source**: `ts/packages/core/src/models/*.ts` (JSDoc comments)
 - **Generator**: `ts/packages/core/scripts/generate-docs.ts`
 - **Output**: `content/reference/sdk-reference/typescript/`
 - **Regenerate**: `pnpm --filter @composio/core generate:docs`
 
-CI auto-generates on changes to `ts/packages/core/src/**` via `.github/workflows/generate-sdk-docs.yml`.
+### Python SDK
+- **Source**: `python/composio/**/*.py` (docstrings)
+- **Generator**: `python/scripts/generate-docs.py` (uses griffe)
+- **Output**: `content/reference/sdk-reference/python/`
+- **Regenerate**: `cd python && uv run --with griffe python scripts/generate-docs.py`
+
+CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**` via `.github/workflows/generate-sdk-docs.yml`.
 
 ## Common Gotchas
 1. **CSS variables**: Use `var(--composio-orange)` not `var(--orange)`. Check `global.css` for defined variables.
