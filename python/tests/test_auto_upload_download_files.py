@@ -242,10 +242,10 @@ class TestAutoUploadDownloadFilesEnabled:
 class TestAutoUploadDownloadFilesDisabled:
     """Test cases when auto_upload_download_files is disabled."""
 
-    def test_get_does_not_process_schema_when_disabled(
+    def test_get_does_not_process_file_uploadable_when_disabled(
         self, mock_client, mock_provider
     ):
-        """Test that _get does not process schema when auto_upload_download_files is False."""
+        """Test that _get does not process file_uploadable fields when auto_upload_download_files is False."""
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
@@ -278,7 +278,7 @@ class TestAutoUploadDownloadFilesDisabled:
         # Get tools
         tools._get(user_id="test-user", tools=["TEST_TOOL"])
 
-        # Verify schema was NOT processed (file_uploadable field unchanged)
+        # Verify file_uploadable schema was NOT processed (not converted to path format)
         wrap_tools_call = mock_provider.wrap_tools.call_args
         processed_tools = wrap_tools_call[1]["tools"]
         file_param = processed_tools[0].input_parameters["properties"]["file"]
@@ -286,6 +286,68 @@ class TestAutoUploadDownloadFilesDisabled:
         # Should NOT have format: "path" since auto_upload_download_files is False
         assert file_param.get("format") is None
         assert file_param.get("file_uploadable") is True
+
+    def test_get_still_enhances_descriptions_when_disabled(
+        self, mock_client, mock_provider
+    ):
+        """Test that _get still adds type hints and required notes when auto_upload_download_files is False.
+
+        The auto_upload_download_files flag should only control file upload/download behavior,
+        not the description enhancements (type hints and required notes).
+        """
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            auto_upload_download_files=False,
+            toolkit_versions={"test_toolkit": "20251201_01"},
+        )
+
+        # Create tool with various parameter types
+        mock_tool = create_mock_tool(
+            slug="TEST_TOOL",
+            toolkit_slug="test_toolkit",
+            input_parameters={
+                "type": "object",
+                "required": ["required_param"],
+                "properties": {
+                    "text_param": {
+                        "type": "string",
+                        "description": "A text parameter",
+                    },
+                    "required_param": {
+                        "type": "integer",
+                        "description": "A required parameter",
+                    },
+                },
+            },
+        )
+
+        # Mock client.tools.list
+        mock_client.tools.list.return_value = Mock(items=[mock_tool])
+
+        # Mock provider.wrap_tools
+        mock_provider.wrap_tools = Mock(return_value=[])
+
+        # Get tools
+        tools._get(user_id="test-user", tools=["TEST_TOOL"])
+
+        # Verify description enhancements were applied
+        wrap_tools_call = mock_provider.wrap_tools.call_args
+        processed_tools = wrap_tools_call[1]["tools"]
+        props = processed_tools[0].input_parameters["properties"]
+
+        # Type hints should be added
+        assert (
+            "Please provide a value of type string"
+            in props["text_param"]["description"]
+        )
+        assert (
+            "Please provide a value of type integer"
+            in props["required_param"]["description"]
+        )
+
+        # Required notes should be added
+        assert "This parameter is required" in props["required_param"]["description"]
 
     def test_execute_skips_file_uploads_when_disabled(self, mock_client, mock_provider):
         """Test that execute does not call substitute_file_uploads when disabled."""

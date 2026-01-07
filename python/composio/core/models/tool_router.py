@@ -652,10 +652,18 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                     for tool in router_tools
                 ]
 
-            # Process file schemas
+            # Always enhance schema descriptions (type hints and required notes)
             for tool in router_tools:
                 tool.input_parameters = (
-                    tools_model._file_helper.process_schema_recursively(
+                    tools_model._file_helper.enhance_schema_descriptions(
+                        schema=tool.input_parameters,
+                    )
+                )
+
+            # Process file uploadable schemas
+            for tool in router_tools:
+                tool.input_parameters = (
+                    tools_model._file_helper.process_file_uploadable_schema(
                         schema=tool.input_parameters,
                     )
                 )

@@ -195,10 +195,21 @@ class Tools(Resource, t.Generic[TProvider]):
         self._tool_schemas.update(
             {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
         )
+
+        # Always enhance schema descriptions (type hints and required notes)
+        # regardless of auto_upload_download_files setting
+        for tool in tools_list:
+            tool.input_parameters = self._file_helper.enhance_schema_descriptions(
+                schema=tool.input_parameters,
+            )
+
+        # Only process file_uploadable schemas when auto_upload_download_files is True
         if self._auto_upload_download_files:
             for tool in tools_list:
-                tool.input_parameters = self._file_helper.process_schema_recursively(
-                    schema=tool.input_parameters,
+                tool.input_parameters = (
+                    self._file_helper.process_file_uploadable_schema(
+                        schema=tool.input_parameters,
+                    )
                 )
 
         if issubclass(type(self.provider), NonAgenticProvider):
