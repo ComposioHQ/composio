@@ -425,9 +425,9 @@ describe('AuthConfigs', () => {
           client_id: 'new_client_id',
           client_secret: 'new_client_secret',
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
+        proxy_config: undefined,
+        shared_credentials: undefined,
+        tool_access_config: undefined,
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -446,9 +446,8 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: 'read:user,repo',
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
+        shared_credentials: undefined,
+        tool_access_config: undefined,
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -471,9 +470,9 @@ describe('AuthConfigs', () => {
         credentials: {
           api_key: 'new_api_key',
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
+        proxy_config: undefined,
+        shared_credentials: undefined,
+        tool_access_config: undefined,
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -725,9 +724,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'custom',
         credentials: largeCredentials,
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
+        proxy_config: undefined,
+        shared_credentials: undefined,
+        tool_access_config: undefined,
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -753,9 +752,8 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: longScopes,
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
+        shared_credentials: undefined,
+        tool_access_config: undefined,
       });
 
       expect(result).toEqual(mockUpdateResponse);
