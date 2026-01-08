@@ -5,9 +5,9 @@ import {
   frontmatterSchema,
   metaSchema,
 } from 'fumadocs-mdx/config';
+import { z } from 'zod';
 
 // Content collections for fumadocs-mdx
-// Note: Using base frontmatterSchema without extensions due to Zod v4 compatibility
 
 export const docs = defineDocs({
   dir: 'content/docs',
@@ -74,7 +74,11 @@ export const toolkits = defineDocs({
 export const changelog = defineCollections({
   type: 'doc',
   dir: 'content/changelog',
-  schema: frontmatterSchema,
+  schema: frontmatterSchema.extend({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+      message: 'Date must be in YYYY-MM-DD format (e.g., "2025-12-29")',
+    }),
+  }),
 });
 
 export default defineConfig({});
