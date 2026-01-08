@@ -217,44 +217,32 @@ export class AuthConfigs {
         cause: parsedData.error,
       });
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API now accepts optional credentials
-    const updatePayload: any =
+    return this.client.authConfigs.update(
+      nanoid,
       parsedData.data.type === 'custom'
         ? {
             type: 'custom',
             credentials: parsedData.data.credentials,
-            proxy_config: parsedData.data.proxyConfig
-              ? {
-                  proxy_url: parsedData.data.proxyConfig.proxyUrl,
-                  proxy_auth_key: parsedData.data.proxyConfig.proxyAuthKey,
-                }
-              : parsedData.data.proxyConfig,
-            shared_credentials: parsedData.data.sharedCredentials,
-            tool_access_config: parsedData.data.toolAccessConfig
-              ? {
-                  tools_for_connected_account_creation:
-                    parsedData.data.toolAccessConfig.toolsForConnectedAccountCreation,
-                  tools_available_for_execution:
-                    parsedData.data.toolAccessConfig.toolsAvailableForExecution ??
-                    parsedData.data.restrictToFollowingTools,
-                }
-              : undefined,
+            tool_access_config: {
+              tools_for_connected_account_creation:
+                parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,
+              tools_available_for_execution:
+                parsedData.data.toolAccessConfig?.toolsAvailableForExecution ??
+                parsedData.data.restrictToFollowingTools,
+            },
           }
         : {
             type: 'default',
             scopes: parsedData.data.scopes,
-            shared_credentials: parsedData.data.sharedCredentials,
-            tool_access_config: parsedData.data.toolAccessConfig
-              ? {
-                  tools_for_connected_account_creation:
-                    parsedData.data.toolAccessConfig.toolsForConnectedAccountCreation,
-                  tools_available_for_execution:
-                    parsedData.data.toolAccessConfig.toolsAvailableForExecution ??
-                    parsedData.data.restrictToFollowingTools,
-                }
-              : undefined,
-          };
-    return this.client.authConfigs.update(nanoid, updatePayload);
+            tool_access_config: {
+              tools_for_connected_account_creation:
+                parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,
+              tools_available_for_execution:
+                parsedData.data.toolAccessConfig?.toolsAvailableForExecution ??
+                parsedData.data.restrictToFollowingTools,
+            },
+          }
+    );
   }
 
   /**

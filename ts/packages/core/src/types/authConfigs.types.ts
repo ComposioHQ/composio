@@ -127,16 +127,8 @@ export const AuthConfigListResponseSchema = z.object({
 export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema>;
 
 export const AuthCustomConfigUpdateParamsSchema = z.object({
+  credentials: z.record(z.string(), z.union([z.string(), z.unknown()])),
   type: z.literal('custom'),
-  credentials: z.record(z.string(), z.union([z.string(), z.unknown()])).optional(),
-  proxyConfig: z
-    .object({
-      proxyUrl: z.string(),
-      proxyAuthKey: z.string().optional(),
-    })
-    .optional()
-    .nullable(),
-  sharedCredentials: z.record(z.unknown()).optional(),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
    */
@@ -145,9 +137,8 @@ export const AuthCustomConfigUpdateParamsSchema = z.object({
 });
 
 export const AuthDefaultConfigUpdateParamsSchema = z.object({
-  type: z.literal('default'),
   scopes: z.string().optional(),
-  sharedCredentials: z.record(z.unknown()).optional(),
+  type: z.literal('default'),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
    */

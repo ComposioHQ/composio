@@ -425,9 +425,9 @@ describe('AuthConfigs', () => {
           client_id: 'new_client_id',
           client_secret: 'new_client_secret',
         },
-        proxy_config: undefined,
-        shared_credentials: undefined,
-        tool_access_config: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -446,8 +446,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: 'read:user,repo',
-        shared_credentials: undefined,
-        tool_access_config: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -470,9 +471,9 @@ describe('AuthConfigs', () => {
         credentials: {
           api_key: 'new_api_key',
         },
-        proxy_config: undefined,
-        shared_credentials: undefined,
-        tool_access_config: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -724,9 +725,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'custom',
         credentials: largeCredentials,
-        proxy_config: undefined,
-        shared_credentials: undefined,
-        tool_access_config: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
@@ -752,8 +753,9 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
         type: 'default',
         scopes: longScopes,
-        shared_credentials: undefined,
-        tool_access_config: undefined,
+        tool_access_config: {
+          tools_for_connected_account_creation: undefined,
+        },
       });
 
       expect(result).toEqual(mockUpdateResponse);
