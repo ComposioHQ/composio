@@ -7,10 +7,9 @@ import {
 } from 'fumadocs-mdx/config';
 import { z } from 'zod';
 
-// You can customise Zod schemas for frontmatter and `meta.json` here
-// see https://fumadocs.dev/docs/mdx/collections
+// Content collections for fumadocs-mdx
 
-// Extended schema with keywords for search
+// Extended schema with keywords for search indexing
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
 });
@@ -32,6 +31,9 @@ export const toolRouter = defineDocs({
   dir: 'content/tool-router',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -42,6 +44,9 @@ export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -52,6 +57,9 @@ export const examples = defineDocs({
   dir: 'content/examples',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -78,8 +86,4 @@ export const changelog = defineCollections({
   }),
 });
 
-export default defineConfig({
-  mdxOptions: {
-    // MDX options
-  },
-});
+export default defineConfig({});
