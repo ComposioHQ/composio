@@ -21,7 +21,10 @@
 
 @theme inline {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --radius: 0.625rem;
+  /* Composio brand color for Tailwind classes like text-composio-orange */
+  --color-composio-orange: #ea580c;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -184,14 +187,80 @@ html {
 }
 
 /* ==========================================================================
-   Typography
+   Typography - Inspired by leerob.com/docs
+   Maximum readability with generous whitespace
    ========================================================================== */
 
-/* Headings */
+/* Headings - weight 600 for better hierarchy */
 h1, h2, h3, h4 {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Prose - optimized for reading */
+.prose {
+  --prose-max-width: 65ch;
+  line-height: 1.75;
+}
+
+/* Generous heading spacing for visual breathing room */
+.prose h1 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 2.25rem;
+}
+
+.prose h2 {
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-fd-border);
+}
+
+.prose h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.prose h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+/* Paragraph rhythm */
+.prose p {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* First paragraph after heading - tighter */
+.prose :is(h1, h2, h3, h4) + p {
+  margin-top: 0.75rem;
+}
+
+/* List spacing */
+.prose ul,
+.prose ol {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Nested lists - tighter */
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Code - IBM Plex Mono (uses --font-mono from Next.js) */
@@ -319,6 +388,32 @@ a:focus-visible {
   background: var(--color-fd-muted);
   padding: 1rem;
   border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* ==========================================================================
+   Enhanced Callouts
+   ========================================================================== */
+
+.callout {
+  position: relative;
+}
+
+.callout a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.callout a:hover {
+  opacity: 0.8;
+}
+
+.callout code {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark .callout code {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* ==========================================================================
@@ -460,3 +555,380 @@ nav a[href*="app.composio"]:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* ==========================================================================
+   Twoslash - Type-checked code examples
+   ========================================================================== */
+
+/* Twoslash hover popup */
+.twoslash-popup {
+  background: var(--color-fd-popover);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  max-width: 400px;
+  z-index: 50;
+}
+
+.twoslash-popup code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+/* Twoslash error underline */
+.twoslash-error {
+  border-bottom: 2px wavy #ef4444;
+}
+
+/* Twoslash highlighted variable */
+.twoslash-highlighted {
+  background: rgba(234, 88, 12, 0.1);
+  border-bottom: 2px solid var(--composio-orange);
+}
+
+/* Twoslash completions */
+.twoslash-completions {
+  background: var(--color-fd-popover);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.twoslash-completions li {
+  padding: 0.25rem 0.5rem;
+}
+
+.twoslash-completions li:hover {
+  background: var(--color-fd-accent);
+}
+
+/* ==========================================================================
+   Code Tabs
+   ========================================================================== */
+
+.code-tabs [data-state="active"] {
+  color: var(--composio-orange);
+  border-color: var(--composio-orange);
+}
+
+/* ==========================================================================
+   Enhanced Code Blocks
+   ========================================================================== */
+
+/* Code block wrapper */
+.code-block-wrapper {
+  border-radius: var(--radius);
+  border: 1px solid var(--color-fd-border);
+  overflow: hidden;
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* Fumadocs code block enhancements */
+[data-rehype-pretty-code-figure] {
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+/* Language badge for Fumadocs code blocks */
+[data-rehype-pretty-code-figure] > [data-language]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--color-fd-muted-foreground);
+  background: var(--color-fd-muted);
+  border-bottom-left-radius: var(--radius);
+  z-index: 10;
+}
+
+/* Copy button for code blocks */
+[data-rehype-pretty-code-figure] .copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+[data-rehype-pretty-code-figure]:hover .copy-button {
+  opacity: 1;
+}
+
+/* Line numbers */
+[data-line-numbers] {
+  counter-reset: line;
+}
+
+[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1rem;
+  margin-right: 1.5rem;
+  text-align: right;
+  color: var(--color-fd-muted-foreground);
+  opacity: 0.5;
+}
+
+/* Highlighted lines */
+[data-highlighted-line] {
+  background: rgba(234, 88, 12, 0.1);
+  border-left: 2px solid var(--composio-orange);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: calc(1rem - 2px);
+  padding-right: 1rem;
+}
+
+/* Highlighted words */
+[data-highlighted-chars] {
+  background: rgba(234, 88, 12, 0.2);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation-duration: 0.2s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top;
+}
+
+/* ==========================================================================
+   Feedback Widget
+   ========================================================================== */
+
+.feedback-widget button:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Mobile Navigation Enhancements
+   ========================================================================== */
+
+/* Better mobile sidebar styling */
+@media (max-width: 767px) {
+  #nd-sidebar-mobile {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* Larger touch targets on mobile */
+  #nd-sidebar-mobile a,
+  #nd-sidebar-mobile button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Better spacing for mobile nav items */
+  #nd-sidebar-mobile [data-radix-scroll-area-viewport] > div {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Mobile nav header styling */
+#nd-nav-mobile {
+  backdrop-filter: blur(12px);
+  background: rgba(var(--color-fd-background), 0.9);
+}
+
+/* ==========================================================================
+   Sticky Table of Contents (TOC) Improvements
+   ========================================================================== */
+
+/* Make TOC sticky with better positioning */
+[data-toc] {
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Hide scrollbar but keep functionality */
+[data-toc]::-webkit-scrollbar {
+  width: 4px;
+}
+
+[data-toc]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-toc]::-webkit-scrollbar-thumb {
+  background: var(--color-fd-border);
+  border-radius: 2px;
+}
+
+[data-toc]::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fd-muted-foreground);
+}
+
+/* TOC link styling */
+[data-toc] a {
+  display: block;
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
+  color: var(--color-fd-muted-foreground);
+  transition: color 0.15s ease;
+  border-left: 2px solid transparent;
+  padding-left: 0.75rem;
+  margin-left: -2px;
+}
+
+[data-toc] a:hover {
+  color: var(--color-fd-foreground);
+}
+
+/* Active TOC item */
+[data-toc] a[data-active="true"] {
+  color: var(--composio-orange);
+  border-left-color: var(--composio-orange);
+}
+
+/* Nested TOC items */
+[data-toc] a[data-depth="2"] {
+  padding-left: 1.5rem;
+}
+
+[data-toc] a[data-depth="3"] {
+  padding-left: 2.25rem;
+  font-size: 0.75rem;
+}
+
+/* TOC header */
+[data-toc-header] {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-fd-muted-foreground);
+  margin-bottom: 0.75rem;
+}
+
+/* ==========================================================================
+   Smooth Scroll Behavior
+   ========================================================================== */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Add offset for fixed header */
+:target {
+  scroll-margin-top: 5rem;
+}
+
+/* ==========================================================================
+   Reading Progress Indicator (Optional Enhancement)
+   ========================================================================== */
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--composio-orange) var(--progress, 0%),
+    transparent var(--progress, 0%)
+  );
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Accessibility - Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Skip Navigation Link
+   ========================================================================== */
+
+.skip-nav {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 1rem;
+  background: var(--color-fd-background);
+  border: 2px solid var(--composio-orange);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: var(--composio-orange);
+}
+
+.skip-nav:focus {
+  top: 1rem;
+  left: 1rem;
+}
+
+/* ==========================================================================
+   Heading Anchor Links
+   ========================================================================== */
+
+/* Heading anchor hover effect */
+.prose :is(h1, h2, h3, h4, h5, h6) {
+  position: relative;
+}
+
+.prose :is(h1, h2, h3, h4, h5, h6) a[href^="#"] {
+  color: var(--color-fd-muted-foreground);
+  text-decoration: none;
+}
+
+.prose :is(h1, h2, h3, h4, h5, h6):hover a[href^="#"] {
+  color: var(--composio-orange);
+}
+
+/* Copied feedback */
+.prose :is(h1, h2, h3, h4, h5, h6) a[href^="#"]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
