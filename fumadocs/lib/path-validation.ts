@@ -133,10 +133,13 @@ export function validatePath(path: string | null | undefined): ValidationResult 
 
   const lowerPath = cleanPath.toLowerCase();
 
-  // Find matching prefix
-  const matchedPrefix = VALID_PATH_PREFIXES.find((prefix) =>
-    lowerPath.startsWith(prefix)
-  );
+  // Find matching prefix with boundary check
+  // Ensures /docsextra doesn't match /docs - must be exact or followed by /
+  const matchedPrefix = VALID_PATH_PREFIXES.find((prefix) => {
+    if (!lowerPath.startsWith(prefix)) return false;
+    // Check boundary: path must equal prefix or have / after it
+    return lowerPath.length === prefix.length || lowerPath[prefix.length] === '/';
+  });
 
   if (!matchedPrefix) {
     return { valid: false, error: 'Invalid path prefix' };
@@ -176,16 +179,43 @@ export function validatePathSegments(
 }
 
 /**
+ * YAML reserved words that must be quoted to prevent type coercion.
+ * These are interpreted as boolean/null in YAML 1.1 and some parsers.
+ */
+const YAML_RESERVED_WORDS = new Set([
+  // Boolean values (case variations)
+  'true', 'false', 'yes', 'no', 'on', 'off',
+  'True', 'False', 'Yes', 'No', 'On', 'Off',
+  'TRUE', 'FALSE', 'YES', 'NO', 'ON', 'OFF',
+  // Null values
+  'null', 'Null', 'NULL', '~',
+]);
+
+/**
  * Escape a string for safe use in YAML frontmatter.
- * Handles special characters, newlines, and injection attempts.
+ * Handles special characters, newlines, reserved words, and numbers.
  */
 export function escapeYaml(str: string): string {
   if (!str) return '""';
 
-  // First check if escaping is needed
-  const needsEscaping = /[:\n\r"'\\@&*#!|>[\]{},%?`]/.test(str);
+  // Check for special characters that need escaping
+  const hasSpecialChars = /[:\n\r"'\\@&*#!|>[\]{},%?`]/.test(str);
 
-  if (!needsEscaping) {
+  // Check if it's a YAML reserved word
+  const isReservedWord = YAML_RESERVED_WORDS.has(str);
+
+  // Check if it looks like a number (would be parsed as number instead of string)
+  // Matches: integers, floats, scientific notation, hex, octal, infinity
+  const looksLikeNumber = /^[-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:[eE][-+]?\d+)?$/.test(str) ||
+    /^0[xX][0-9a-fA-F]+$/.test(str) || // hex
+    /^0[oO]?[0-7]+$/.test(str) || // octal
+    /^[-+]?(?:\.inf|\.Inf|\.INF)$/.test(str) || // infinity
+    /^\.nan|\.NaN|\.NAN$/.test(str); // NaN
+
+  // Check if starts with special indicator characters
+  const startsWithIndicator = /^[-?:,[\]{}#&*!|>'"%@`]/.test(str);
+
+  if (!hasSpecialChars && !isReservedWord && !looksLikeNumber && !startsWithIndicator) {
     return str;
   }
 

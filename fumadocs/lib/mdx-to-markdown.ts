@@ -56,13 +56,25 @@ function convertTabs(mdx: string): string {
 }
 
 /**
+ * Extract attribute value from JSX tag string
+ */
+function extractAttribute(tag: string, attr: string): string | null {
+  const regex = new RegExp(`${attr}="([^"]*)"`, 'i');
+  const match = tag.match(regex);
+  return match ? match[1] : null;
+}
+
+/**
  * Convert <Callout> component to blockquote
  */
 function convertCallouts(mdx: string): string {
-  // Match <Callout title="..." type="...">...</Callout>
-  const calloutRegex = /<Callout[^>]*?(?:title="([^"]*)")?[^>]*?(?:type="([^"]*)")?[^>]*>([\s\S]*?)<\/Callout>/g;
+  // Match <Callout ...>...</Callout> - captures full tag and content
+  const calloutRegex = /<Callout([^>]*)>([\s\S]*?)<\/Callout>/g;
 
-  return mdx.replace(calloutRegex, (match, title, type, content) => {
+  return mdx.replace(calloutRegex, (match, attrs, content) => {
+    // Extract attributes in any order
+    const title = extractAttribute(attrs, 'title');
+    const type = extractAttribute(attrs, 'type');
     const prefix = title || type || 'Note';
     const cleanContent = extractContent(content).replace(/\n/g, '\n> ');
     return `> **${prefix}:** ${cleanContent}\n`;
@@ -135,12 +147,14 @@ function convertAccordions(mdx: string): string {
   const accordionRegex = /<Accordion[^>]*>([\s\S]*?)<\/Accordion>/g;
 
   return mdx.replace(accordionRegex, (match, content) => {
-    const itemRegex = /<Accordions?(?:Item)?[^>]*?(?:title="([^"]*)")?[^>]*>([\s\S]*?)<\/Accordions?(?:Item)?>/g;
+    // Match AccordionItem or Accordions - captures attributes and content separately
+    const itemRegex = /<Accordions?(?:Item)?([^>]*)>([\s\S]*?)<\/Accordions?(?:Item)?>/g;
     let result = '';
     let itemMatch;
 
     while ((itemMatch = itemRegex.exec(content)) !== null) {
-      const title = itemMatch[1] || 'Section';
+      const attrs = itemMatch[1];
+      const title = extractAttribute(attrs, 'title') || 'Section';
       const itemContent = extractContent(itemMatch[2]).trim();
       result += `\n### ${title}\n\n${itemContent}\n`;
     }
