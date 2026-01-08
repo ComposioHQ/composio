@@ -78,6 +78,22 @@ const config = {
         destination: '/docs/providers/custom-providers/python',
         permanent: true,
       },
+      // API reference redirects
+      {
+        source: '/api-reference',
+        destination: '/reference',
+        permanent: true,
+      },
+      {
+        source: '/api-reference/:path*',
+        destination: '/reference/:path*',
+        permanent: true,
+      },
+      {
+        source: '/rest-api/:path*',
+        destination: '/reference/api-reference/:path*',
+        permanent: true,
+      },
     ];
   },
 };

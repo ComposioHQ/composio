@@ -1,0 +1,28 @@
+name: Fumadocs - Check Links
+
+on:
+  pull_request:
+    paths:
+      - 'fumadocs/**'
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./fumadocs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Validate links
+        run: bun run lint:links
