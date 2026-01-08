@@ -77,11 +77,11 @@ curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
 
 ### How to Clear Fields Explicitly
 
-| To Clear             | Send This Value                                 |
-| -------------------- | ----------------------------------------------- |
-| `proxy_config`       | `null`                                          |
-| `tool_access_config` | `{ "tools_available_for_execution": [] }`       |
-| `scopes`             | `""` (empty string)                             |
+| To Clear             | Send This Value                           |
+| -------------------- | ----------------------------------------- |
+| `proxy_config`       | `null`                                    |
+| `tool_access_config` | `{ "tools_available_for_execution": [] }` |
+| `scopes`             | `""` (empty string)                       |
 
 ```bash
 # Clear proxy_config
@@ -96,7 +96,3 @@ curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
   -H "Content-Type: application/json" \
   -d '{"type": "custom", "tool_access_config": {"tools_available_for_execution": []}}'
 ```
-
-<Note>
-**SDK Support**: The Python and TypeScript SDKs will be updated in a future release to fully support all PATCH capabilities. Until then, use the raw HTTP API for features like updating `proxy_config` or `shared_credentials`.
-</Note>
