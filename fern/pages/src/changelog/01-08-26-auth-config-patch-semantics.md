@@ -27,45 +27,78 @@ The `PATCH /api/v3/auth_configs/{id}` endpoint now implements proper partial upd
 
 Update just `client_secret` without resending `client_id` or other fields:
 
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "custom",
-    "credentials": {
-      "client_secret": "new_rotated_secret"
-    }
-  }'
+<CodeBlocks>
+```python title="Python SDK"
+from composio import Composio
+
+composio = Composio()
+
+# Only send the field you want to update - other credentials are preserved
+composio.auth_configs.update(
+    "ac_yourAuthConfigId",
+    options={
+        "type": "custom",
+        "credentials": {
+            "client_secret": "new_rotated_secret",
+        },
+    },
+)
 ```
+
+```typescript title="TypeScript SDK"
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+
+// Only send the field you want to update - other credentials are preserved
+await composio.authConfigs.update("ac_yourAuthConfigId", {
+  type: "custom",
+  credentials: {
+    client_secret: "new_rotated_secret",
+  },
+});
+```
+</CodeBlocks>
 
 ### Update Tool Restrictions Without Touching Credentials
 
 Previously, this would fail because `credentials` was required. Now it works:
 
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "custom",
-    "tool_access_config": {
-      "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"]
-    }
-  }'
+<CodeBlocks>
+```python title="Python SDK"
+from composio import Composio
+
+composio = Composio()
+
+# Update tool restrictions - credentials are automatically preserved
+composio.auth_configs.update(
+    "ac_yourAuthConfigId",
+    options={
+        "type": "custom",
+        "tool_access_config": {
+            "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
+        },
+    },
+)
 ```
 
-### Update Scopes for Default Auth Configs
+```typescript title="TypeScript SDK"
+import { Composio } from "@composio/core";
 
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "default",
-    "scopes": "read:user,repo,write:org"
-  }'
+const composio = new Composio();
+
+// Note: TypeScript SDK currently requires credentials for custom type updates
+await composio.authConfigs.update("ac_yourAuthConfigId", {
+  type: "custom",
+  credentials: {
+    // Include existing credentials when using TS SDK
+  },
+  toolAccessConfig: {
+    toolsAvailableForExecution: ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
+  },
+});
 ```
+</CodeBlocks>
 
 ## Migration Guide
 
@@ -77,13 +110,58 @@ curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
 
 ### How to Clear Fields Explicitly
 
-| To Clear             | Send This Value                           |
-| -------------------- | ----------------------------------------- |
-| `proxy_config`       | `null`                                    |
-| `tool_access_config` | `{ "tools_available_for_execution": [] }` |
-| `scopes`             | `""` (empty string)                       |
+| To Clear             | Python SDK                                                   | TypeScript SDK                                      |
+| -------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
+| `proxy_config`       | `"proxy_config": None`                                       | `proxyConfig: null` (via HTTP API)                  |
+| `tool_access_config` | `"tool_access_config": {"tools_available_for_execution": []}` | `toolAccessConfig: { toolsAvailableForExecution: [] }` |
+
+<CodeBlocks>
+```python title="Python SDK - Clear tool restrictions"
+from composio import Composio
+
+composio = Composio()
+
+# Explicitly clear tool restrictions with empty array
+composio.auth_configs.update(
+    "ac_yourAuthConfigId",
+    options={
+        "type": "custom",
+        "tool_access_config": {
+            "tools_available_for_execution": [],
+        },
+    },
+)
+```
+
+```typescript title="TypeScript SDK - Clear tool restrictions"
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+
+// Explicitly clear tool restrictions with empty array
+await composio.authConfigs.update("ac_yourAuthConfigId", {
+  type: "custom",
+  credentials: {
+    // Include existing credentials when using TS SDK
+  },
+  toolAccessConfig: {
+    toolsAvailableForExecution: [],
+  },
+});
+```
+</CodeBlocks>
+
+### Raw HTTP API
+
+For users calling the API directly:
 
 ```bash
+# Rotate single credential
+curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "custom", "credentials": {"client_secret": "new_secret"}}'
+
 # Clear proxy_config
 curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
   -H "x-api-key: YOUR_API_KEY" \
