@@ -34,12 +34,13 @@ import { Composio } from "@composio/core";
 const composio = new Composio();
 
 const updated = await composio.authConfigs.update("ac_yourAuthConfigId", {
-  type: "custom",
-  credentials: {
-    client_secret: "new_rotated_secret",
-  },
+type: "custom",
+credentials: {
+client_secret: "new_rotated_secret",
+},
 });
-```
+
+````
 
 ```python title="Python SDK"
 from composio import Composio
@@ -55,7 +56,8 @@ composio.auth_configs.update(
         },
     },
 )
-```
+````
+
 </CodeBlocks>
 
 ### Update Tool Restrictions Without Touching Credentials
@@ -81,6 +83,7 @@ composio.auth_configs.update(
     },
 )
 ```
+
 </CodeBlocks>
 
 ## Migration Guide
@@ -93,11 +96,11 @@ composio.auth_configs.update(
 
 ### How to Clear Fields Explicitly
 
-| To Clear                | Send This Value                                     |
-| ----------------------- | --------------------------------------------------- |
-| `proxy_config`          | `null` (Python: `None`)                             |
-| `tool_access_config`    | `{ toolsAvailableForExecution: [] }`                |
-| `scopes` (type:default) | `""` (empty string)                                 |
+| To Clear                | Send This Value                      |
+| ----------------------- | ------------------------------------ |
+| `proxy_config`          | `null` (Python: `None`)              |
+| `tool_access_config`    | `{ toolsAvailableForExecution: [] }` |
+| `scopes` (type:default) | `""` (empty string)                  |
 
 <CodeBlocks>
 ```typescript title="TypeScript SDK - Clear proxy_config"
@@ -116,4 +119,5 @@ composio.auth_configs.update(
     },
 )
 ```
+
 </CodeBlocks>
