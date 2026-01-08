@@ -33,9 +33,7 @@ export interface AuthField {
   name: string;
   displayName: string;
   type: string;
-  description?: string;
   required: boolean;
-  default?: string;
 }
 
 export interface AuthConfigDetail {

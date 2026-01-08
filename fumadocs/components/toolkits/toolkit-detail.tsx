@@ -72,44 +72,32 @@ function SchemaTable({ schema, title }: { schema: ParametersSchema; title: strin
   );
 }
 
-function AuthFieldsTable({ fields, title }: { fields: AuthField[]; title: string }) {
+function AuthFieldsTable({ fields }: { fields: AuthField[] }) {
   if (!fields || fields.length === 0) return null;
 
   return (
-    <div className="mt-3">
-      <h5 className="mb-2 text-xs font-medium text-fd-muted-foreground">{title}</h5>
-      <div className="overflow-x-auto rounded-md border border-fd-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-fd-border bg-fd-muted/50">
-              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Field</th>
-              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
-              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Description</th>
+    <div className="overflow-x-auto rounded-md border border-fd-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-fd-border bg-fd-muted/50">
+            <th className="px-3 py-2 text-left font-medium text-fd-foreground">Field</th>
+            <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fields.map((field) => (
+            <tr key={field.name} className="border-b border-fd-border/50 last:border-0">
+              <td className="px-3 py-2 align-top">
+                <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{field.displayName || field.name}</code>
+                {field.required && <span className="ml-1 text-xs text-orange-500">*</span>}
+              </td>
+              <td className="px-3 py-2 align-top">
+                <code className="text-xs text-fd-muted-foreground">{field.type}</code>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {fields.map((field) => (
-              <tr key={field.name} className="border-b border-fd-border/50 last:border-0">
-                <td className="px-3 py-2 align-top">
-                  <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{field.displayName || field.name}</code>
-                  {field.required && <span className="ml-1 text-xs text-orange-500">*</span>}
-                </td>
-                <td className="px-3 py-2 align-top">
-                  <code className="text-xs text-fd-muted-foreground">{field.type}</code>
-                </td>
-                <td className="px-3 py-2 align-top text-fd-muted-foreground">
-                  {field.description || '—'}
-                  {field.default && (
-                    <span className="ml-2 text-xs">
-                      (default: <code className="rounded bg-fd-muted px-1">{field.default.length > 50 ? field.default.slice(0, 50) + '...' : field.default}</code>)
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -119,6 +107,12 @@ function AuthConfigSection({ authConfigDetails }: { authConfigDetails: AuthConfi
 
   if (!authConfigDetails || authConfigDetails.length === 0) return null;
 
+  // Combine required and optional fields into one array
+  const combineFields = (section?: { required: AuthField[]; optional: AuthField[] }) => {
+    if (!section) return [];
+    return [...(section.required || []), ...(section.optional || [])];
+  };
+
   return (
     <div className="rounded-md border border-fd-border">
       <button
@@ -126,10 +120,15 @@ function AuthConfigSection({ authConfigDetails }: { authConfigDetails: AuthConfi
         className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-fd-accent/30"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-fd-foreground">Authentication Configuration</span>
-          <span className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-muted-foreground">
-            {authConfigDetails.length} {authConfigDetails.length === 1 ? 'scheme' : 'schemes'}
-          </span>
+          <span className="text-sm font-medium text-fd-foreground">Authentication</span>
+          {authConfigDetails.map((config) => (
+            <span
+              key={config.name}
+              className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-foreground"
+            >
+              {config.mode}
+            </span>
+          ))}
         </div>
         <span className="text-fd-muted-foreground">
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -139,32 +138,12 @@ function AuthConfigSection({ authConfigDetails }: { authConfigDetails: AuthConfi
         <div className="border-t border-fd-border bg-fd-muted/20 px-4 py-4 space-y-6">
           {authConfigDetails.map((config) => (
             <div key={config.name}>
-              <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-sm font-medium text-fd-foreground">{config.name}</h4>
-                <span className="rounded bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 text-xs text-orange-600 dark:text-orange-400">
-                  {config.mode}
-                </span>
-              </div>
+              <h4 className="text-sm font-medium text-fd-foreground mb-3">{config.mode}</h4>
 
-              {config.fields.auth_config_creation && (
-                <div className="mb-4">
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground mb-2">
-                    Auth Config Creation
-                  </h5>
-                  <AuthFieldsTable fields={config.fields.auth_config_creation.required} title="Required Fields" />
-                  <AuthFieldsTable fields={config.fields.auth_config_creation.optional} title="Optional Fields" />
-                </div>
-              )}
-
-              {config.fields.connected_account_initiation && (
-                <div>
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground mb-2">
-                    Account Connection
-                  </h5>
-                  <AuthFieldsTable fields={config.fields.connected_account_initiation.required} title="Required Fields" />
-                  <AuthFieldsTable fields={config.fields.connected_account_initiation.optional} title="Optional Fields" />
-                </div>
-              )}
+              <AuthFieldsTable fields={[
+                ...combineFields(config.fields.auth_config_creation),
+                ...combineFields(config.fields.connected_account_initiation),
+              ]} />
             </div>
           ))}
         </div>
@@ -364,19 +343,6 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
                   Authentication guide
                 </Link>
               </div>
-              {toolkit.authSchemes.length > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-fd-muted-foreground">
-                  <span>Auth:</span>
-                  {toolkit.authSchemes.map((scheme, index) => (
-                    <span
-                      key={`${scheme}-${index}`}
-                      className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-foreground"
-                    >
-                      {scheme}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
       </div>

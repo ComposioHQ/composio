@@ -55,9 +55,7 @@ interface AuthField {
   name: string;
   displayName: string;
   type: string;
-  description?: string;
   required: boolean;
-  default?: string;
 }
 
 interface AuthConfigDetail {
@@ -196,17 +194,25 @@ async function fetchToolkitAuthDetails(slug: string): Promise<AuthConfigDetail[]
   const data = await response.json();
   const authDetails = data.auth_config_details || [];
 
+  const mapFields = (fields: any[]): AuthField[] =>
+    (fields || []).map((f: any) => ({
+      name: f.name || '',
+      displayName: f.displayName || f.name || '',
+      type: f.type || 'string',
+      required: f.required || false,
+    }));
+
   return authDetails.map((raw: any) => ({
     name: raw.name || '',
     mode: raw.mode || '',
     fields: {
       auth_config_creation: raw.fields?.auth_config_creation ? {
-        required: raw.fields.auth_config_creation.required || [],
-        optional: raw.fields.auth_config_creation.optional || [],
+        required: mapFields(raw.fields.auth_config_creation.required),
+        optional: mapFields(raw.fields.auth_config_creation.optional),
       } : undefined,
       connected_account_initiation: raw.fields?.connected_account_initiation ? {
-        required: raw.fields.connected_account_initiation.required || [],
-        optional: raw.fields.connected_account_initiation.optional || [],
+        required: mapFields(raw.fields.connected_account_initiation.required),
+        optional: mapFields(raw.fields.connected_account_initiation.optional),
       } : undefined,
     },
   }));
