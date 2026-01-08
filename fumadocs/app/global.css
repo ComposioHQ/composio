@@ -202,6 +202,7 @@ h1, h2, h3, h4 {
 /* Prose - optimized for reading */
 .prose {
   --prose-max-width: 65ch;
+  max-width: var(--prose-max-width);
   line-height: 1.75;
 }
 
@@ -762,7 +763,7 @@ nav a[href*="app.composio"]:focus-visible {
 /* Mobile nav header styling */
 #nd-nav-mobile {
   backdrop-filter: blur(12px);
-  background: rgba(var(--color-fd-background), 0.9);
+  background: color-mix(in srgb, var(--color-fd-background) 90%, transparent);
 }
 
 /* ==========================================================================
