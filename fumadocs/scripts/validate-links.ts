@@ -68,8 +68,8 @@ async function checkLinks() {
     }))
     .filter((fileError) => fileError.errors.length > 0);
 
-  const hasErrors = printErrors(filteredErrors, true);
-  if (hasErrors) {
+  printErrors(filteredErrors, true);
+  if (filteredErrors.length > 0) {
     process.exit(1);
   }
 }
