@@ -161,8 +161,9 @@ export function CopyButton({
   const copyWithKey = (apiKey: string) => {
     let processedCode = code;
     // Uses replacement patterns with /g flag to replace all occurrences
+    // Use function replacement to avoid $ special character interpretation in API keys
     API_KEY_REPLACE_PATTERNS.forEach((pattern) => {
-      processedCode = processedCode.replace(pattern, apiKey);
+      processedCode = processedCode.replace(pattern, () => apiKey);
     });
     copyToClipboard(processedCode);
   };

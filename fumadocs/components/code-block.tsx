@@ -81,15 +81,16 @@ export function CodeBlock({
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(code);
       } else {
-        // Fallback
+        // Fallback for browsers without clipboard API
         const textarea = document.createElement('textarea');
         textarea.value = code;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
         textarea.select();
-        document.execCommand('copy');
+        const success = document.execCommand('copy');
         document.body.removeChild(textarea);
+        if (!success) return; // Don't show success if copy failed
       }
 
       setCopied(true);

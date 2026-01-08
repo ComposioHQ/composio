@@ -64,9 +64,13 @@ export function CodeTabs({
   React.useEffect(() => {
     setMounted(true);
     if (persist) {
-      const saved = localStorage.getItem(LANGUAGE_PREFERENCE_KEY);
-      if (saved && saved in LANGUAGES) {
-        setValue(saved);
+      try {
+        const saved = localStorage.getItem(LANGUAGE_PREFERENCE_KEY);
+        if (saved && saved in LANGUAGES) {
+          setValue(saved);
+        }
+      } catch {
+        // localStorage not available (private browsing)
       }
     }
   }, [persist]);
@@ -75,7 +79,11 @@ export function CodeTabs({
   const handleValueChange = (newValue: string) => {
     setValue(newValue);
     if (persist && typeof window !== 'undefined') {
-      localStorage.setItem(LANGUAGE_PREFERENCE_KEY, newValue);
+      try {
+        localStorage.setItem(LANGUAGE_PREFERENCE_KEY, newValue);
+      } catch {
+        // localStorage not available (private browsing)
+      }
 
       // Sync all CodeTabs on the page
       window.dispatchEvent(

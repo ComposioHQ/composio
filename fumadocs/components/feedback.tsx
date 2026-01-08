@@ -197,7 +197,6 @@ export function Feedback({ pageId, className, onSubmit }: FeedbackProps) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Tell us what could be better..."
-              aria-describedby={`${textareaId}-hint`}
               className={cn(
                 'flex-1 min-h-[80px] px-3 py-2 text-sm rounded-md',
                 'border border-border bg-background',

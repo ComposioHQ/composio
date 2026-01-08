@@ -115,12 +115,16 @@ export function HeadingAnchor({
  */
 function generateId(children: React.ReactNode): string {
   const text = getTextContent(children);
-  return text
+  const id = text
     .toLowerCase()
+    .trim() // Remove leading/trailing whitespace first
     .replace(/[^\w\s-]/g, '') // Remove special chars
     .replace(/\s+/g, '-') // Spaces to hyphens
     .replace(/-+/g, '-') // Collapse multiple hyphens
-    .trim();
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+  // Fallback for empty IDs (e.g., emoji-only headings)
+  return id || `heading-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /**
