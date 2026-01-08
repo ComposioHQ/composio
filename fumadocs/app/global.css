@@ -932,34 +932,3 @@ html {
   border-radius: 2px;
 }
 
-/* ==========================================================================
-   TOC Sidebar - Force display on XL screens
-   The fumadocs TOC grid uses --fd-toc-width CSS variable.
-   We must override this on the layout container AND force display on TOC.
-   ========================================================================== */
-
-/* Force TOC sidebar to show on XL screens (1280px+) */
-@media (min-width: 1280px) {
-  /* Override on the grid container - use style attribute override */
-  #nd-docs-layout {
-    --fd-toc-width: 268px !important;
-  }
-
-  /* Force TOC element to display and have width */
-  div#nd-toc {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 268px !important;
-    min-width: 268px !important;
-    visibility: visible !important;
-    position: sticky !important;
-    top: 5rem !important;
-  }
-}
-
-/* Hide TOC on smaller screens */
-@media (max-width: 1279px) {
-  div#nd-toc {
-    display: none !important;
-  }
-}
