@@ -33,8 +33,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen font-sans">
-        {/* Skip navigation for accessibility */}
-        <a href="#main-content" className="skip-nav">
+        {/* Skip navigation for accessibility - targets Fumadocs #nd-page */}
+        <a href="#nd-page" className="skip-nav">
           Skip to main content
         </a>
         <RootProvider
